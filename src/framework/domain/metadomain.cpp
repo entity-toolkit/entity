@@ -32,10 +32,10 @@ namespace ntt {
   template <SimEngine::type S, class M>
   Metadomain<S, M>::Metadomain(unsigned int            global_ndomains,
                                const std::vector<int>& global_decomposition,
-                               const std::vector<std::size_t>& global_ncells,
-                               const boundaries_t<real_t>&     global_extent,
-                               const boundaries_t<FldsBC>&     global_flds_bc,
-                               const boundaries_t<PrtlBC>&     global_prtl_bc,
+                               const std::vector<ncells_t>& global_ncells,
+                               const boundaries_t<real_t>&  global_extent,
+                               const boundaries_t<FldsBC>&  global_flds_bc,
+                               const boundaries_t<PrtlBC>&  global_prtl_bc,
                                const std::map<std::string, real_t>& metric_params,
                                const std::vector<ParticleSpecies>& species_params)
     : g_ndomains { global_ndomains }
@@ -104,13 +104,13 @@ namespace ntt {
     raise::ErrorIf(d_ncells.size() != (std::size_t)D,
                    "Invalid number of dimensions received",
                    HERE);
-    auto d_offset_ncells = std::vector<std::vector<std::size_t>> {};
+    auto d_offset_ncells = std::vector<std::vector<ncells_t>> {};
     auto d_offset_ndoms  = std::vector<std::vector<unsigned int>> {};
     for (auto& d : d_ncells) {
       g_ndomains_per_dim.push_back(d.size());
-      auto offset_ncell = std::vector<std::size_t> { 0 };
+      auto offset_ncell = std::vector<ncells_t> { 0 };
       auto offset_ndom  = std::vector<unsigned int> { 0 };
-      for (std::size_t i { 1 }; i < d.size(); ++i) {
+      for (auto i { 1u }; i < d.size(); ++i) {
         auto di = d[i - 1];
         offset_ncell.push_back(offset_ncell.back() + di);
         offset_ndom.push_back(offset_ndom.back() + 1);
@@ -121,8 +121,8 @@ namespace ntt {
 
     /* compute tensor products of the domain decompositions --------------- */
     // works similar to np.meshgrid()
-    const auto domain_ncells = tools::TensorProduct<std::size_t>(d_ncells);
-    const auto domain_offset_ncells = tools::TensorProduct<std::size_t>(
+    const auto domain_ncells        = tools::TensorProduct<ncells_t>(d_ncells);
+    const auto domain_offset_ncells = tools::TensorProduct<ncells_t>(
       d_offset_ncells);
     const auto domain_offset_ndoms = tools::TensorProduct<unsigned int>(
       d_offset_ndoms);

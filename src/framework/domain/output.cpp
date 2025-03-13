@@ -96,9 +96,9 @@ namespace ntt {
     g_writer.defineSpectraOutputs(spectra_species);
     for (const auto& type : { "fields", "particles", "spectra" }) {
       g_writer.addTracker(type,
-                          params.template get<std::size_t>(
+                          params.template get<timestep_t>(
                             "output." + std::string(type) + ".interval"),
-                          params.template get<long double>(
+                          params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
     if (is_resuming and std::filesystem::exists(g_writer.fname())) {
@@ -182,10 +182,10 @@ namespace ntt {
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
     const SimulationParams& params,
-    std::size_t             current_step,
-    std::size_t             finished_step,
-    long double             current_time,
-    long double             finished_time,
+    timestep_t              current_step,
+    timestep_t              finished_step,
+    simtime_t               current_time,
+    simtime_t               finished_time,
     std::function<
       void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
       CustomFieldOutput) -> bool {
@@ -234,8 +234,8 @@ namespace ntt {
         const double l = l_offset;
         const double f = math::ceil(l / d) * d - l;
 
-        const auto first_cell = static_cast<std::size_t>(f);
-        const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n - f) / d));
+        const auto first_cell = static_cast<ncells_t>(f);
+        const auto l_size_dwn = static_cast<ncells_t>(math::ceil((n - f) / d));
 
         const auto is_last = l_offset + l_size == g_size;
 
@@ -472,19 +472,19 @@ namespace ntt {
 
     if (write_particles) {
       g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
-      const auto prtl_stride = params.template get<std::size_t>(
+      const auto prtl_stride = params.template get<npart_t>(
         "output.particles.stride");
       for (const auto& prtl : g_writer.speciesWriters()) {
         auto& species = local_domain->species[prtl.species() - 1];
         if (not species.is_sorted()) {
           species.RemoveDead();
         }
-        const std::size_t nout = species.npart() / prtl_stride;
-        array_t<real_t*>  buff_x1, buff_x2, buff_x3;
-        array_t<real_t*>  buff_ux1 { "u1", nout };
-        array_t<real_t*>  buff_ux2 { "ux2", nout };
-        array_t<real_t*>  buff_ux3 { "ux3", nout };
-        array_t<real_t*>  buff_wei { "w", nout };
+        const npart_t    nout = species.npart() / prtl_stride;
+        array_t<real_t*> buff_x1, buff_x2, buff_x3;
+        array_t<real_t*> buff_ux1 { "u1", nout };
+        array_t<real_t*> buff_ux2 { "ux2", nout };
+        array_t<real_t*> buff_ux3 { "ux3", nout };
+        array_t<real_t*> buff_wei { "w", nout };
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
           buff_x1 = array_t<real_t*> { "x1", nout };
@@ -512,16 +512,16 @@ namespace ntt {
                                             local_domain->mesh.metric));
           // clang-format on
         }
-        std::size_t offset   = 0;
-        std::size_t glob_tot = nout;
+        npart_t offset   = 0;
+        npart_t glob_tot = nout;
 #if defined(MPI_ENABLED)
-        auto glob_nout = std::vector<std::size_t>(g_ndomains);
+        auto glob_nout = std::vector<npart_t>(g_ndomains);
         MPI_Allgather(&nout,
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       glob_nout.data(),
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       MPI_COMM_WORLD);
         glob_tot = 0;
         for (auto r = 0; r < g_mpi_size; ++r) {

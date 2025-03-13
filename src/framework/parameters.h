@@ -37,7 +37,7 @@ namespace ntt {
 
     void setImmutableParams(const toml::value&);
     void setMutableParams(const toml::value&);
-    void setCheckpointParams(bool, std::size_t, long double);
+    void setCheckpointParams(bool, timestep_t, simtime_t);
     void setSetupParams(const toml::value&);
     void checkPromises() const;
 

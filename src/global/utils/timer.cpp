@@ -1,5 +1,7 @@
 #include "utils/timer.h"
 
+#include "global.h"
+
 #include "utils/colors.h"
 #include "utils/formatting.h"
 
@@ -18,8 +20,8 @@
 namespace timer {
 
   auto Timers::gather(const std::vector<std::string>& ignore_in_tot,
-                      std::size_t                     npart,
-                      std::size_t                     ncells) const
+                      npart_t                         npart,
+                      ncells_t                        ncells) const
     -> std::map<std::string,
                 std::tuple<duration_t, duration_t, duration_t, unsigned short, unsigned short>> {
     auto timer_stats = std::map<
@@ -44,22 +46,22 @@ namespace timer {
                  MPI_COMM_WORLD);
     }
     // accumulate nparts and ncells from MPI blocks
-    auto all_nparts = std::vector<std::size_t>(size, 0);
-    auto all_ncells = std::vector<std::size_t>(size, 0);
+    auto all_nparts = std::vector<npart_t>(size, 0);
+    auto all_ncells = std::vector<ncells_t>(size, 0);
     MPI_Gather(&npart,
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                all_nparts.data(),
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     MPI_Gather(&ncells,
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<ncells_t>(),
                all_ncells.data(),
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<ncells_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank != MPI_ROOT_RANK) {
@@ -128,9 +130,9 @@ namespace timer {
     return timer_stats;
   }
 
-  auto Timers::printAll(TimerFlags  flags,
-                        std::size_t npart,
-                        std::size_t ncells) const -> std::string {
+  auto Timers::printAll(TimerFlags flags,
+                        npart_t    npart,
+                        ncells_t   ncells) const -> std::string {
     const std::vector<std::string> extras { "PrtlClear", "Output", "Checkpoint" };
     const auto stats = gather(extras, npart, ncells);
     if (stats.empty()) {

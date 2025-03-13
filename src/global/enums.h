@@ -56,7 +56,7 @@ namespace ntt {
                             const char* const* arr_c,
                             const std::size_t  n,
                             const char*        elem) -> T {
-      for (std::size_t i = 0; i < n; ++i) {
+      for (auto i = 0u; i < n; ++i) {
         if (strcmp(arr_c[i], elem) == 0) {
           return (T)(arr[i]);
         }
@@ -70,7 +70,7 @@ namespace ntt {
     constexpr auto baseContains(const char* const* arr_c,
                                 const std::size_t  n,
                                 const char*        elem) -> bool {
-      for (std::size_t i = 0; i < n; ++i) {
+      for (auto i = 0u; i < n; ++i) {
         if (strcmp(arr_c[i], elem) == 0) {
           return true;
         }

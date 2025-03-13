@@ -103,7 +103,7 @@ namespace ntt {
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
-               const std::vector<std::size_t>&,
+               const std::vector<ncells_t>&,
                const boundaries_t<real_t>&,
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
@@ -118,20 +118,20 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void InitWriter(adios2::ADIOS*, const SimulationParams&, bool is_resuming);
     auto Write(const SimulationParams&,
-               std::size_t,
-               std::size_t,
-               long double,
-               long double,
+               timestep_t,
+               timestep_t,
+               simtime_t,
+               simtime_t,
                std::function<void(const std::string&,
                                   ndfield_t<M::Dim, 6>&,
                                   std::size_t,
                                   const Domain<S, M>&)> = {}) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
-                         std::size_t,
-                         std::size_t,
-                         long double,
-                         long double) -> bool;
+                         timestep_t,
+                         timestep_t,
+                         simtime_t,
+                         simtime_t) -> bool;
 
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
 #endif

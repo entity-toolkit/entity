@@ -32,7 +32,7 @@ namespace ntt {
 
   template <typename M>
   auto get_dx0_V0(
-    const std::vector<std::size_t>&      resolution,
+    const std::vector<ncells_t>&         resolution,
     const boundaries_t<real_t>&          extent,
     const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
@@ -78,9 +78,9 @@ namespace ntt {
     promiseToDefine("simulation.domain.decomposition");
 
     /* [grid] --------------------------------------------------------------- */
-    const auto res = toml::find<std::vector<std::size_t>>(toml_data,
-                                                          "grid",
-                                                          "resolution");
+    const auto res = toml::find<std::vector<ncells_t>>(toml_data,
+                                                       "grid",
+                                                       "resolution");
     raise::ErrorIf(res.size() < 1 || res.size() > 3,
                    "invalid `grid.resolution`",
                    HERE);
@@ -198,7 +198,7 @@ namespace ntt {
       const auto def_pusher    = (is_massless ? defaults::ph_pusher
                                               : defaults::em_pusher);
       const auto maxnpart_real = toml::find<double>(sp, "maxnpart");
-      const auto maxnpart      = static_cast<std::size_t>(maxnpart_real);
+      const auto maxnpart      = static_cast<npart_t>(maxnpart_real);
       auto       pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
       const auto npayloads = toml::find_or(sp,
                                            "n_payloads",
@@ -335,7 +335,7 @@ namespace ntt {
     set("simulation.name",
         toml::find<std::string>(toml_data, "simulation", "name"));
     set("simulation.runtime",
-        toml::find<long double>(toml_data, "simulation", "runtime"));
+        toml::find<simtime_t>(toml_data, "simulation", "runtime"));
 
     /* [grid.boundaraies] --------------------------------------------------- */
     auto flds_bc = toml::find<std::vector<std::vector<std::string>>>(
@@ -454,7 +454,7 @@ namespace ntt {
     set("output.interval",
         toml::find_or(toml_data, "output", "interval", defaults::output::interval));
     set("output.interval_time",
-        toml::find_or<long double>(toml_data, "output", "interval_time", -1.0));
+        toml::find_or<simtime_t>(toml_data, "output", "interval_time", -1.0));
     set("output.separate_files",
         toml::find_or<bool>(toml_data, "output", "separate_files", true));
 
@@ -542,23 +542,23 @@ namespace ntt {
 
     // intervals
     for (const auto& type : { "fields", "particles", "spectra" }) {
-      const auto q_int      = toml::find_or<std::size_t>(toml_data,
-                                                    "output",
-                                                    std::string(type),
-                                                    "interval",
-                                                    0);
-      const auto q_int_time = toml::find_or<long double>(toml_data,
-                                                         "output",
-                                                         std::string(type),
-                                                         "interval_time",
-                                                         -1.0);
+      const auto q_int      = toml::find_or<timestep_t>(toml_data,
+                                                   "output",
+                                                   std::string(type),
+                                                   "interval",
+                                                   0);
+      const auto q_int_time = toml::find_or<simtime_t>(toml_data,
+                                                       "output",
+                                                       std::string(type),
+                                                       "interval_time",
+                                                       -1.0);
       set("output." + std::string(type) + ".enable",
           toml::find_or(toml_data, "output", std::string(type), "enable", true));
       if (q_int == 0 && q_int_time == -1.0) {
         set("output." + std::string(type) + ".interval",
-            get<std::size_t>("output.interval"));
+            get<timestep_t>("output.interval"));
         set("output." + std::string(type) + ".interval_time",
-            get<long double>("output.interval_time"));
+            get<simtime_t>("output.interval_time"));
       } else {
         set("output." + std::string(type) + ".interval", q_int);
         set("output." + std::string(type) + ".interval_time", q_int_time);
@@ -590,7 +590,7 @@ namespace ntt {
                       "interval",
                       defaults::checkpoint::interval));
     set("checkpoint.interval_time",
-        toml::find_or<long double>(toml_data, "checkpoint", "interval_time", -1.0));
+        toml::find_or<simtime_t>(toml_data, "checkpoint", "interval_time", -1.0));
     set("checkpoint.keep",
         toml::find_or(toml_data, "checkpoint", "keep", defaults::checkpoint::keep));
 
@@ -888,9 +888,9 @@ namespace ntt {
     }
   }
 
-  void SimulationParams::setCheckpointParams(bool        is_resuming,
-                                             std::size_t start_step,
-                                             long double start_time) {
+  void SimulationParams::setCheckpointParams(bool       is_resuming,
+                                             timestep_t start_step,
+                                             simtime_t  start_time) {
     set("checkpoint.is_resuming", is_resuming);
     set("checkpoint.start_step", start_step);
     set("checkpoint.start_time", start_time);

@@ -53,8 +53,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    KerrSchild0(std::vector<std::size_t> res,
-                boundaries_t<real_t>     ext,
+    KerrSchild0(std::vector<ncells_t> res,
+                boundaries_t<real_t>  ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dr { (x1_max - x1_min) / nx1 }

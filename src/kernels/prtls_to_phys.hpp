@@ -31,7 +31,7 @@ namespace kernel {
     static constexpr Dimension D = M::Dim;
 
   protected:
-    const std::size_t        stride;
+    const npart_t            stride;
     array_t<real_t*>         buff_x1;
     array_t<real_t*>         buff_x2;
     array_t<real_t*>         buff_x3;
@@ -47,7 +47,7 @@ namespace kernel {
     const M                  metric;
 
   public:
-    PrtlToPhys_kernel(std::size_t               stride,
+    PrtlToPhys_kernel(npart_t                   stride,
                       array_t<real_t*>&         buff_x1,
                       array_t<real_t*>&         buff_x2,
                       array_t<real_t*>&         buff_x3,

@@ -208,13 +208,13 @@ namespace arch {
       auto             ppc0 = params.template get<real_t>("particles.ppc0");
       array_t<real_t*> ni { "ni", M::Dim };
       auto             ni_h   = Kokkos::create_mirror_view(ni);
-      std::size_t      ncells = 1;
+      ncells_t         ncells = 1;
       for (auto d = 0; d < M::Dim; ++d) {
         ni_h(d)  = domain.mesh.n_active()[d];
         ncells  *= domain.mesh.n_active()[d];
       }
       Kokkos::deep_copy(ni, ni_h);
-      const auto nparticles = static_cast<std::size_t>(
+      const auto nparticles = static_cast<npart_t>(
         (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
 
       Kokkos::parallel_for(
@@ -320,7 +320,7 @@ namespace arch {
           incl_ghosts.push_back({ false, false });
         }
         const auto extent = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
+        tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
         for (auto d = 0; d < M::Dim; ++d) {
           x_min[d] = extent[d].first;
           x_max[d] = extent[d].second;

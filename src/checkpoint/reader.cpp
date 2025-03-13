@@ -40,15 +40,13 @@ namespace checkpoint {
     }
   }
 
-  auto ReadParticleCount(
-    adios2::IO&     io,
-    adios2::Engine& reader,
-    unsigned short  s,
-    std::size_t     local_dom,
-    std::size_t     ndomains) -> std::pair<std::size_t, std::size_t> {
+  auto ReadParticleCount(adios2::IO&     io,
+                         adios2::Engine& reader,
+                         unsigned short  s,
+                         std::size_t     local_dom,
+                         std::size_t ndomains) -> std::pair<npart_t, npart_t> {
     logger::Checkpoint(fmt::format("Reading particle count for: %d", s + 1), HERE);
-    auto npart_var = io.InquireVariable<std::size_t>(
-      fmt::format("s%d_npart", s + 1));
+    auto npart_var = io.InquireVariable<npart_t>(fmt::format("s%d_npart", s + 1));
     if (npart_var) {
       raise::ErrorIf(npart_var.Shape()[0] != ndomains,
                      "npart_var.Shape()[0] != ndomains",
@@ -57,21 +55,21 @@ namespace checkpoint {
                      "npart_var.Shape().size() != 1",
                      HERE);
       npart_var.SetSelection(adios2::Box<adios2::Dims>({ local_dom }, { 1 }));
-      std::size_t npart;
+      npart_t npart;
       reader.Get(npart_var, &npart, adios2::Mode::Sync);
       const auto loc_npart = npart;
 #if !defined(MPI_ENABLED)
-      std::size_t offset_npart = 0;
+      npart_t offset_npart = 0;
 #else
-      std::vector<std::size_t> glob_nparts(ndomains);
+      std::vector<npart_t> glob_nparts(ndomains);
       MPI_Allgather(&loc_npart,
                     1,
-                    mpi::get_type<std::size_t>(),
+                    mpi::get_type<npart_t>(),
                     glob_nparts.data(),
                     1,
-                    mpi::get_type<std::size_t>(),
+                    mpi::get_type<npart_t>(),
                     MPI_COMM_WORLD);
-      std::size_t offset_npart = 0;
+      npart_t offset_npart = 0;
       for (auto d { 0u }; d < local_dom; ++d) {
         offset_npart += glob_nparts[d];
       }
@@ -89,8 +87,8 @@ namespace checkpoint {
                         const std::string& quantity,
                         unsigned short     s,
                         array_t<T*>&       array,
-                        std::size_t        count,
-                        std::size_t        offset) {
+                        npart_t            count,
+                        npart_t            offset) {
     logger::Checkpoint(
       fmt::format("Reading quantity: s%d_%s", s + 1, quantity.c_str()),
       HERE);
@@ -115,8 +113,8 @@ namespace checkpoint {
                             unsigned short     s,
                             array_t<real_t**>& array,
                             std::size_t        nplds,
-                            std::size_t        count,
-                            std::size_t        offset) {
+                            npart_t            count,
+                            npart_t            offset) {
     logger::Checkpoint(fmt::format("Reading quantity: s%d_plds", s + 1), HERE);
     auto var = io.InquireVariable<real_t>(fmt::format("s%d_plds", s + 1));
     if (var) {
@@ -168,28 +166,28 @@ namespace checkpoint {
                                       const std::string&,
                                       unsigned short,
                                       array_t<int*>&,
-                                      std::size_t,
-                                      std::size_t);
+                                      npart_t,
+                                      npart_t);
   template void ReadParticleData<float>(adios2::IO&,
                                         adios2::Engine&,
                                         const std::string&,
                                         unsigned short,
                                         array_t<float*>&,
-                                        std::size_t,
-                                        std::size_t);
+                                        npart_t,
+                                        npart_t);
   template void ReadParticleData<double>(adios2::IO&,
                                          adios2::Engine&,
                                          const std::string&,
                                          unsigned short,
                                          array_t<double*>&,
-                                         std::size_t,
-                                         std::size_t);
+                                         npart_t,
+                                         npart_t);
   template void ReadParticleData<short>(adios2::IO&,
                                         adios2::Engine&,
                                         const std::string&,
                                         unsigned short,
                                         array_t<short*>&,
-                                        std::size_t,
-                                        std::size_t);
+                                        npart_t,
+                                        npart_t);
 
 } // namespace checkpoint

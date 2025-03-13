@@ -39,16 +39,16 @@ namespace out {
     bool m_separate_files;
 
     // global shape of the fields array to output
-    std::vector<std::size_t> m_flds_g_shape;
+    std::vector<ncells_t> m_flds_g_shape;
     // local corner of the fields array to output
-    std::vector<std::size_t> m_flds_l_corner;
+    std::vector<ncells_t> m_flds_l_corner;
     // local shape of the fields array to output
-    std::vector<std::size_t> m_flds_l_shape;
+    std::vector<ncells_t> m_flds_l_shape;
 
     // downsampling factors for each dimension
     std::vector<unsigned int> m_dwn;
     // starting cell in each dimension (not including ghosts)
-    std::vector<std::size_t>  m_flds_l_first;
+    std::vector<ncells_t>     m_flds_l_first;
 
     // same but downsampled
     adios2::Dims m_flds_g_shape_dwn;
@@ -78,14 +78,14 @@ namespace out {
 
     void setMode(adios2::Mode);
 
-    void addTracker(const std::string&, std::size_t, long double);
-    auto shouldWrite(const std::string&, std::size_t, long double) -> bool;
+    void addTracker(const std::string&, timestep_t, simtime_t);
+    auto shouldWrite(const std::string&, timestep_t, simtime_t) -> bool;
 
     void writeAttrs(const prm::Parameters&);
 
-    void defineMeshLayout(const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
+    void defineMeshLayout(const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
                           const std::vector<unsigned int>&,
                           bool,
                           Coord);
@@ -102,13 +102,13 @@ namespace out {
                     const std::vector<std::size_t>&);
 
     void writeParticleQuantity(const array_t<real_t*>&,
-                               std::size_t,
-                               std::size_t,
+                               npart_t,
+                               npart_t,
                                const std::string&);
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
-    void beginWriting(WriteModeTags, std::size_t, long double);
+    void beginWriting(WriteModeTags, timestep_t, simtime_t);
     void endWriting(WriteModeTags);
 
     /* getters -------------------------------------------------------------- */

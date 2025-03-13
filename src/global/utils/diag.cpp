@@ -22,9 +22,9 @@
 
 namespace diag {
   auto npart_stats(
-    std::size_t npart,
-    std::size_t maxnpart) -> std::vector<std::pair<std::size_t, unsigned short>> {
-    auto stats = std::vector<std::pair<std::size_t, unsigned short>>();
+    npart_t npart,
+    npart_t maxnpart) -> std::vector<std::pair<npart_t, unsigned short>> {
+    auto stats = std::vector<std::pair<npart_t, unsigned short>>();
 #if !defined(MPI_ENABLED)
     stats.push_back(
       { npart,
@@ -34,22 +34,22 @@ namespace diag {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    std::vector<std::size_t> mpi_npart(size, 0);
-    std::vector<std::size_t> mpi_maxnpart(size, 0);
+    std::vector<npart_t> mpi_npart(size, 0);
+    std::vector<npart_t> mpi_maxnpart(size, 0);
     MPI_Gather(&npart,
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                mpi_npart.data(),
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     MPI_Gather(&maxnpart,
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                mpi_maxnpart.data(),
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank != MPI_ROOT_RANK) {
@@ -75,16 +75,16 @@ namespace diag {
     return stats;
   }
 
-  void printDiagnostics(std::size_t                     step,
-                        std::size_t                     tot_steps,
-                        long double                     time,
-                        long double                     dt,
+  void printDiagnostics(timestep_t                      step,
+                        timestep_t                      tot_steps,
+                        simtime_t                       time,
+                        simtime_t                       dt,
                         timer::Timers&                  timers,
                         pbar::DurationHistory&          time_history,
-                        std::size_t                     ncells,
+                        ncells_t                        ncells,
                         const std::vector<std::string>& species_labels,
-                        const std::vector<std::size_t>& species_npart,
-                        const std::vector<std::size_t>& species_maxnpart,
+                        const std::vector<npart_t>&     species_npart,
+                        const std::vector<npart_t>&     species_maxnpart,
                         bool                            print_prtl_clear,
                         bool                            print_output,
                         bool                            print_checkpoint,
@@ -168,7 +168,7 @@ namespace diag {
                                 c_reset);
       });
 #endif
-      for (std::size_t i = 0; i < species_labels.size(); ++i) {
+      for (auto i = 0u; i < species_labels.size(); ++i) {
         const auto part_stats = npart_stats(species_npart[i], species_maxnpart[i]);
         if (part_stats.size() == 0) {
           continue;

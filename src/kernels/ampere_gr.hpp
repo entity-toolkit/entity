@@ -37,7 +37,7 @@ namespace kernel::gr {
     ndfield_t<D, 6>       Dout;
     const ndfield_t<D, 6> H;
     const M               metric;
-    const std::size_t     i2max;
+    const ncells_t        i2max;
     const real_t          coeff;
     bool                  is_axis_i2min { false }, is_axis_i2max { false };
 
@@ -47,7 +47,7 @@ namespace kernel::gr {
                   const ndfield_t<D, 6>&      H,
                   const M&                    metric,
                   real_t                      coeff,
-                  std::size_t                 ni2,
+                  ncells_t                    ni2,
                   const boundaries_t<FldsBC>& boundaries)
       : Din { Din }
       , Dout { Dout }
@@ -67,9 +67,9 @@ namespace kernel::gr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
+        constexpr ncells_t i2min { N_GHOSTS };
+        const real_t       i1_ { COORD(i1) };
+        const real_t       i2_ { COORD(i2) };
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
@@ -118,7 +118,7 @@ namespace kernel::gr {
     ndfield_t<D, 6>       Df;
     const ndfield_t<D, 3> J;
     const M               metric;
-    const std::size_t     i2max;
+    const ncells_t        i2max;
     const real_t          coeff;
     bool                  is_axis_i2min { false };
     bool                  is_axis_i2max { false };
@@ -132,7 +132,7 @@ namespace kernel::gr {
                           const ndfield_t<D, 3>&      J,
                           const M&                    metric,
                           real_t                      coeff,
-                          std::size_t                 ni2,
+                          ncells_t                    ni2,
                           const boundaries_t<FldsBC>& boundaries)
       : Df { Df }
       , J { J }
@@ -148,9 +148,9 @@ namespace kernel::gr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
+        constexpr ncells_t i2min { N_GHOSTS };
+        const real_t       i1_ { COORD(i1) };
+        const real_t       i2_ { COORD(i2) };
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };

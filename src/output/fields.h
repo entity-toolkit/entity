@@ -112,7 +112,7 @@ namespace out {
     }
 
     [[nodiscard]]
-    inline auto name(const std::size_t& ci) const -> std::string {
+    inline auto name(std::size_t ci) const -> std::string {
       raise::ErrorIf(
         comp.size() == 0,
         "OutputField::name(ci) called but no components were available",

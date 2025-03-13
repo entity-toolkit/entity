@@ -78,14 +78,14 @@ namespace arch {
              real_t                g_max,
              real_t                pl_ind)
       : EnergyDistribution<S, M> { metric }
-      , pool { pool }
       , g_min { g_min }
       , g_max { g_max }
-      , pl_ind { pl_ind } {}
+      , pl_ind { pl_ind }
+      , pool { pool } {}
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short         sp = 0) const override {
+                           unsigned short = 0) const override {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -225,7 +225,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short         s = 0) const override {
+                           unsigned short         sp = 0) const override {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;
@@ -245,7 +245,7 @@ namespace arch {
         // boost only when using cartesian coordinates
         if (not cmp::AlmostZero(boost_velocity)) {
           boost(v);
-          if (not zero_current and s % 2 == 0) {
+          if (not zero_current and sp % 2 == 0) {
             v[0] = -v[0];
             v[1] = -v[1];
             v[2] = -v[2];

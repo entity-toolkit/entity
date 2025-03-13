@@ -86,7 +86,7 @@ namespace kernel {
                            bool                               use_weights,
                            const M&                           metric,
                            const boundaries_t<FldsBC>&        boundaries,
-                           std::size_t                        ni2,
+                           ncells_t                           ni2,
                            real_t                             inv_n0,
                            unsigned short                     window)
       : c1 { (components.size() == 2) ? components[0]

@@ -36,10 +36,10 @@ namespace ntt {
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvRanks(Metadomain<S, M>*        metadomain,
-                        Domain<S, M>&            domain,
-                        dir::direction_t<M::Dim> direction)
-    -> std::pair<address_t, address_t> {
+  auto GetSendRecvRanks(
+    Metadomain<S, M>*        metadomain,
+    Domain<S, M>&            domain,
+    dir::direction_t<M::Dim> direction) -> std::pair<address_t, address_t> {
     Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
@@ -119,11 +119,11 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvParams(Metadomain<S, M>*        metadomain,
-                         Domain<S, M>&            domain,
-                         dir::direction_t<M::Dim> direction,
-                         bool                     synchronize)
-    -> std::pair<comm_params_t, comm_params_t> {
+  auto GetSendRecvParams(
+    Metadomain<S, M>*        metadomain,
+    Domain<S, M>&            domain,
+    dir::direction_t<M::Dim> direction,
+    bool synchronize) -> std::pair<comm_params_t, comm_params_t> {
     const auto [send_indrank,
                 recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
     const auto [send_ind, send_rank] = send_indrank;
@@ -140,7 +140,7 @@ namespace ntt {
     auto     recv_slice   = std::vector<range_tuple_t> {};
     const in components[] = { in::x1, in::x2, in::x3 };
     // find the field components and indices to be sent/received
-    for (std::size_t d { 0 }; d < direction.size(); ++d) {
+    for (auto d { 0u }; d < direction.size(); ++d) {
       const auto c   = components[d];
       const auto dir = direction[d];
       if (not synchronize) {
@@ -510,11 +510,11 @@ namespace ntt {
       const auto npart_holes = npart - npart_alive;
 
       // # of particles to receive per each tag (direction)
-      std::vector<std::size_t> npptag_recv_vec(ntags - 2, 0);
+      std::vector<npart_t> npptag_recv_vec(ntags - 2, 0);
       // coordinate shifts per each direction
-      array_t<int*>            shifts_in_x1 { "shifts_in_x1", ntags - 2 };
-      array_t<int*>            shifts_in_x2 { "shifts_in_x2", ntags - 2 };
-      array_t<int*>            shifts_in_x3 { "shifts_in_x3", ntags - 2 };
+      array_t<int*>        shifts_in_x1 { "shifts_in_x1", ntags - 2 };
+      array_t<int*>        shifts_in_x2 { "shifts_in_x2", ntags - 2 };
+      array_t<int*>        shifts_in_x3 { "shifts_in_x3", ntags - 2 };
       auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
       auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
       auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
@@ -527,7 +527,7 @@ namespace ntt {
       std::vector<int> recv_ranks, recv_inds;
 
       // total # of reaceived particles from all directions
-      std::size_t npart_recv = 0u;
+      npart_t npart_recv = 0u;
 
       for (const auto& direction : dir::Directions<D>::all) {
         // tags corresponding to the direction (both send & recv)
@@ -559,7 +559,7 @@ namespace ntt {
 
         // request the # of particles to-be-received ...
         // ... and send the # of particles to-be-sent
-        std::size_t nrecv = 0;
+        npart_t nrecv = 0;
         comm::ParticleSendRecvCount(send_rank, recv_rank, nsend, nrecv);
         npart_recv                    += nrecv;
         npptag_recv_vec[tag_recv - 2]  = nrecv;
@@ -604,8 +604,7 @@ namespace ntt {
       Kokkos::deep_copy(shifts_in_x2, shifts_in_x2_h);
       Kokkos::deep_copy(shifts_in_x3, shifts_in_x3_h);
 
-      array_t<std::size_t*> outgoing_indices { "outgoing_indices",
-                                               npart - npart_alive };
+      array_t<npart_t*> outgoing_indices { "outgoing_indices", npart - npart_alive };
       // clang-format off
       Kokkos::parallel_for(
         "PrepareOutgoingPrtls",
