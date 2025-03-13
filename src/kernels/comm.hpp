@@ -113,14 +113,14 @@ namespace kernel::comm {
     array_t<real_t*>   send_buff_pld;
 
     const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
-    const std::size_t    idx_offset;
+    const npart_t    idx_offset;
 
     const array_t<int*>         i1, i1_prev, i2, i2_prev, i3, i3_prev;
     const array_t<prtldx_t*>    dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
     const array_t<real_t*>      ux1, ux2, ux3, weight, phi;
     const array_t<real_t**>     pld;
     array_t<short*>             tag;
-    const array_t<std::size_t*> outgoing_indices;
+    const array_t<npart_t*> outgoing_indices;
 
   public:
     PopulatePrtlSendBuffer_kernel(array_t<int*>&               send_buff_int,
@@ -131,7 +131,7 @@ namespace kernel::comm {
                                   unsigned short               NREALS,
                                   unsigned short               NPRTLDX,
                                   unsigned short               NPLDS,
-                                  std::size_t                  idx_offset,
+                                  npart_t                  idx_offset,
                                   const array_t<int*>&         i1,
                                   const array_t<int*>&         i1_prev,
                                   const array_t<prtldx_t*>&    dx1,
@@ -151,7 +151,7 @@ namespace kernel::comm {
                                   const array_t<real_t*>&      phi,
                                   const array_t<real_t**>&     pld,
                                   array_t<short*>&             tag,
-                                  const array_t<std::size_t*>& outgoing_indices)
+                                  const array_t<npart_t*>& outgoing_indices)
       : send_buff_int { send_buff_int }
       , send_buff_real { send_buff_real }
       , send_buff_prtldx { send_buff_prtldx }
