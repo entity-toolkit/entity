@@ -125,6 +125,11 @@ namespace ntt {
         }
       }
     }
+    for (const auto& sp : specs) {
+      raise::ErrorIf((sp > prtl_species.size()) or (sp == 0),
+                     "Invalid species index " + std::to_string(sp),
+                     HERE);
+    }
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
 
     // some parameters
