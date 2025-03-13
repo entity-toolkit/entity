@@ -499,7 +499,7 @@ namespace kernel::bc {
 
     AxisBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
-      , i_edge { i_edge }
+      , i_edge { P ? (i_edge + 1) : i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
       , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
 
