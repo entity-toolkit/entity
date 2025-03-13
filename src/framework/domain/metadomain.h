@@ -177,8 +177,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_npart_perspec() const -> std::vector<std::size_t> {
-      std::vector<std::size_t> npart(g_species_params.size(), 0);
+    auto l_npart_perspec() const -> std::vector<npart_t> {
+      std::vector<npart_t> npart(g_species_params.size(), 0);
       for (const auto& ldidx : l_subdomain_indices()) {
         for (std::size_t i = 0; i < g_species_params.size(); ++i) {
           npart[i] += g_subdomains[ldidx].species[i].npart();
@@ -188,8 +188,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_maxnpart_perspec() const -> std::vector<std::size_t> {
-      std::vector<std::size_t> maxnpart(g_species_params.size(), 0);
+    auto l_maxnpart_perspec() const -> std::vector<npart_t> {
+      std::vector<npart_t> maxnpart(g_species_params.size(), 0);
       for (const auto& ldidx : l_subdomain_indices()) {
         for (std::size_t i = 0; i < g_species_params.size(); ++i) {
           maxnpart[i] += g_subdomains[ldidx].species[i].maxnpart();
