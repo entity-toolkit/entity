@@ -64,6 +64,7 @@ auto main(int argc, char* argv[]) -> int {
       writer.defineMeshLayout({ static_cast<unsigned long>(mpi_size) * nx1 },
                               { static_cast<unsigned long>(mpi_rank) * nx1 },
                               { nx1 },
+                              { mpi_rank, mpi_size },
                               { dwn1 },
                               false,
                               Coord::Cart);

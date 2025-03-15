@@ -74,6 +74,7 @@ auto main(int argc, char* argv[]) -> int {
       writer.defineMeshLayout({ nx1, nx2, nx3 },
                               { 0, 0, 0 },
                               { nx1, nx2, nx3 },
+                              { 0, 1 },
                               { dwn1, dwn2, dwn3 },
                               false,
                               Coord::Cart);

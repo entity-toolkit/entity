@@ -86,6 +86,7 @@ namespace out {
     void defineMeshLayout(const std::vector<std::size_t>&,
                           const std::vector<std::size_t>&,
                           const std::vector<std::size_t>&,
+                          const std::pair<unsigned int, unsigned int>&,
                           const std::vector<unsigned int>&,
                           bool,
                           Coord);
@@ -94,7 +95,10 @@ namespace out {
     void defineParticleOutputs(Dimension, const std::vector<unsigned short>&);
     void defineSpectraOutputs(const std::vector<unsigned short>&);
 
-    void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
+    void writeMesh(unsigned short,
+                   const array_t<real_t*>&,
+                   const array_t<real_t*>&,
+                   const std::vector<std::size_t>&);
 
     template <Dimension D, int N>
     void writeField(const std::vector<std::string>&,

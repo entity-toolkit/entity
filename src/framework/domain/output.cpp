@@ -70,6 +70,7 @@ namespace ntt {
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
+                              { local_domain->index(), ndomains() },
                               params.template get<std::vector<unsigned int>>(
                                 "output.fields.downsampling"),
                               incl_ghosts,
@@ -227,6 +228,17 @@ namespace ntt {
       const auto dwn         = params.template get<std::vector<unsigned int>>(
         "output.fields.downsampling");
 
+      auto off_ncells_with_ghosts = local_domain->offset_ncells();
+      auto loc_shape_with_ghosts  = local_domain->mesh.n_active();
+      { // compute positions/sizes of meshblocks in cells in all dimensions
+        const auto off_ndomains = local_domain->offset_ndomains();
+        if (incl_ghosts) {
+          for (auto d { 0 }; d <= M::Dim; ++d) {
+            off_ncells_with_ghosts[d] += 2 * N_GHOSTS * off_ndomains[d];
+            loc_shape_with_ghosts[d]  += 2 * N_GHOSTS;
+          }
+        }
+      }
       for (unsigned short dim = 0; dim < M::Dim; ++dim) {
         const auto l_size   = local_domain->mesh.n_active()[dim];
         const auto l_offset = local_domain->offset_ncells()[dim];
@@ -275,7 +287,11 @@ namespace ntt {
               xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
-        g_writer.writeMesh(dim, xc, xe);
+        g_writer.writeMesh(
+          dim,
+          xc,
+          xe,
+          { off_ncells_with_ghosts[dim], loc_shape_with_ghosts[dim] });
       }
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
