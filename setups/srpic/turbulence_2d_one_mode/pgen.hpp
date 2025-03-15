@@ -118,6 +118,8 @@ namespace user {
       , k22 {ZERO * constant::TWO_PI / sx2}
       , k23 {ONE * constant::TWO_PI / sx3}
       , k24 {ONE} {}
+      // , temperature { params.template get<real_t>("setup.temperature", 0.16) }
+      // , machno { params.template get<real_t>("setup.machno", 1.0) }
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -127,11 +129,11 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      // return ZERO;
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
+      return ZERO;
+      // return (k14 * amps(0, REAL) *
+      //           math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0) +
+      //         k14 * amps(0, IMAG) *
+      //           math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * 0.0)) ;
 
       // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
 
@@ -141,10 +143,13 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
-              k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
+      return (k04 * (machno * constant::PI * constant::PI * temperature / sx1) *
+                math::sin(k01 * x_Ph[0] + k02 * 0.0 + k03 * 0.0));
+                      
+      // return (k04 * amps(2, REAL) *
+      //           math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0) +
+      //         k04 * amps(2, IMAG) *
+      //           math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * 0.0)) ;
       // return ZERO;
     }
 
@@ -167,6 +172,7 @@ namespace user {
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
     const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
+    const real_t         temperature, machno;
   };
 
   template <SimEngine::type S, class M>
