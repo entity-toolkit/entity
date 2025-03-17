@@ -101,7 +101,7 @@ namespace user {
 
   template <Dimension D>
   struct ExtForce {
-    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3, real_t machno, real_t temperature)
       : amps { amplitudes }
       , sx1 { SX1 }
       , sx2 { SX2 }
@@ -117,9 +117,10 @@ namespace user {
       , k21 {ZERO * constant::TWO_PI / sx1}
       , k22 {ZERO * constant::TWO_PI / sx2}
       , k23 {ONE * constant::TWO_PI / sx3}
-      , k24 {ONE} {}
-      // , temperature { params.template get<real_t>("setup.temperature", 0.16) }
-      // , machno { params.template get<real_t>("setup.machno", 1.0) }
+      , k24 {ONE}
+      , MACHNO { machno } 
+      , TEMPERATURE { temperature }  {}
+
 
     const std::vector<unsigned short> species { 1, 2 };
 
@@ -143,7 +144,7 @@ namespace user {
                     const real_t&,
                     const coord_t<D>& x_Ph) const -> real_t {
 
-      return (k04 * (machno * constant::PI * constant::PI * temperature / sx1) *
+      return (k04 * (MACHNO * constant::PI * constant::PI * TEMPERATURE / sx1) *
                 math::sin(k01 * x_Ph[0] + k02 * 0.0 + k03 * 0.0));
                       
       // return (k04 * amps(2, REAL) *
@@ -172,7 +173,7 @@ namespace user {
     array_t<real_t* [2]> amps;
     const real_t         sx1, sx2, sx3;
     const real_t         k01, k02, k03, k04, k11, k12, k13, k14, k21, k22, k23, k24;
-    const real_t         temperature, machno;
+    const real_t         TEMPERATURE, MACHNO;
   };
 
   template <SimEngine::type S, class M>
@@ -217,7 +218,7 @@ namespace user {
       , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
-      , ext_force { amplitudes, SX1, SX2, SX3 }
+      , ext_force { amplitudes, SX1, SX2, SX3, machno, temperature }
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       // Initializing random phases
