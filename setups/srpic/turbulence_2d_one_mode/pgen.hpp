@@ -176,6 +176,87 @@ namespace user {
     const real_t         TEMPERATURE, MACHNO;
   };
 
+
+  template <Dimension D>
+  struct ExtCurrent {
+    ExtCurrent(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
+      : amps { amplitudes }
+      , sx1 { SX1 }
+      , sx2 { SX2 }
+      , sx3 { SX3 }
+      , k11 {ZERO * constant::TWO_PI / sx1}
+      , k12 { ONE * constant::TWO_PI / sx2}
+      , k21 {ZERO * constant::TWO_PI / sx1}
+      , k22 {-ONE * constant::TWO_PI / sx2}
+      , k31 { ONE * constant::TWO_PI / sx1}
+      , k32 {ZERO * constant::TWO_PI / sx2}
+      , k41 {-ONE * constant::TWO_PI / sx1}
+      , k42 {ZERO * constant::TWO_PI / sx2} 
+      , k51 {ZERO * constant::TWO_PI / sx1}
+      , k52 { ONE * constant::TWO_PI / sx2}
+      , k61 {ZERO * constant::TWO_PI / sx1}
+      , k62 {-ONE * constant::TWO_PI / sx2}
+      , k71 { ONE * constant::TWO_PI / sx1}
+      , k72 {ZERO * constant::TWO_PI / sx2}
+      , k81 {-ONE * constant::TWO_PI / sx1}
+      , k82 {ZERO * constant::TWO_PI / sx2} {}
+
+    ExtCurrent() = default;
+
+    Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(4) * amps(4, REAL) *
+      //          math::cos(k51 * x_Ph[0] + k52 * x_Ph[1]) -
+      //        damp(4) * amps(4, IMAG) *
+      //          math::sin(k51 * x_Ph[0] + k52 * x_Ph[1]) +
+      //        damp(5) * amps(5, REAL) *
+      //          math::cos(k61 * x_Ph[0] + k62 * x_Ph[1]) -
+      //        damp(5) * amps(5, IMAG) *
+      //          math::sin(k61 * x_Ph[0] + k62 * x_Ph[1]);
+    }
+
+    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(6) * amps(6, REAL) *
+      //          math::cos(k71 * x_Ph[0] + k72 * x_Ph[1]) -
+      //        damp(6) * amps(6, IMAG) *
+      //          math::sin(k71 * x_Ph[0] + k72 * x_Ph[1]) +
+      //        damp(7) * amps(7, REAL) *
+      //          math::cos(k81 * x_Ph[0] + k82 * x_Ph[1]) -
+      //        damp(7) * amps(7, IMAG) *
+      //          math::sin(k81 * x_Ph[0] + k82 * x_Ph[1]);
+    }
+
+    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+
+      return ZERO;
+      // return damp(0) * amps(0, REAL) *
+      //          math::cos(k11 * x_Ph[0] + k12 * x_Ph[1]) -
+      //        damp(0) * amps(0, IMAG) *
+      //          math::sin(k11 * x_Ph[0] + k12 * x_Ph[1]) +
+      //        damp(1) * amps(1, REAL) *
+      //          math::cos(k21 * x_Ph[0] + k22 * x_Ph[1]) -
+      //        damp(1) * amps(1, IMAG) *
+      //          math::sin(k21 * x_Ph[0] + k22 * x_Ph[1]) +
+      //        damp(2) * amps(2, REAL) *
+      //           math::cos(k31 * x_Ph[0] + k32 * x_Ph[1]) -
+      //         damp(2) * amps(2, IMAG) *
+      //           math::sin(k31 * x_Ph[0] + k32 * x_Ph[1]) +
+      //         damp(3) * amps(3, REAL) *
+      //           math::cos(k41 * x_Ph[0] + k42 * x_Ph[1]) -
+      //         damp(3) * amps(3, IMAG) *
+      //           math::sin(k41 * x_Ph[0] + k42 * x_Ph[1]);
+    }
+
+  private:
+    array_t<real_t* [2]> amps;
+    const real_t         sx1, sx2, sx3;
+    const real_t         k11, k12, k21, k22, k31, k32, k41, k42;
+    const real_t         k51, k52, k61, k62, k71, k72, k81, k82;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -196,6 +277,7 @@ namespace user {
     array_t<real_t* [2]> amplitudes;
     array_t<real_t*> phi0;
     ExtForce<M::PrtlDim> ext_force;
+    ExtCurrent<M::PrtlDim>   ext_current;
     const real_t         dt;
     InitFields<D> init_flds;
 
@@ -219,6 +301,7 @@ namespace user {
       , phi0 { "DrivingPhases", nmodes }
       , amplitudes { "DrivingModes", nmodes }
       , ext_force { amplitudes, SX1, SX2, SX3, machno, temperature }
+      , ext_current { amplitudes, SX1, SX2, SX3}
       , init_flds { Bnorm }
       , dt { params.template get<real_t>("algorithms.timestep.dt") } {
       // Initializing random phases
