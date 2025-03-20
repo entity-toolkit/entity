@@ -66,11 +66,11 @@ namespace arch {
 
         if (x_Ph[fill_dim] < xmin || x_Ph[fill_dim] > xmax)
         {
-          return 0.0;
+          return ZERO;
         }
         else
         {
-          return 1.0;
+          return ONE;
         }
       }
 
