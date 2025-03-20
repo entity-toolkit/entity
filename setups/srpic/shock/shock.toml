@@ -40,11 +40,12 @@
     maxnpart = 1e8
 
 [setup]
-  drift_ux    = 0.1
-  temperature = 1e-4
-  Bmag = 1.0
-  Btheta = 0.0
-  Bphi = 0.0
+  drift_ux    = 0.1       # speed towards the wall [c]
+  temperature = 1e-4      # temeperature of maxwell distribution [m_e c^2]
+  Bmag = 1.0              # magnetic field strength as fraction of magnetisation
+  Btheta = 0.0            # magnetic field angle in the plane
+  Bphi = 0.0              # magnetic field angle out of plane
+  filling_fraction = 1.0  # fraction of the shock piston filled with plasma
 
 [output]
   interval_time = 500.0

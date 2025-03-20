@@ -79,7 +79,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t drift_ux, temperature;
+    const real_t drift_ux, temperature, filling_fraction;
 
     const real_t  Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
@@ -91,40 +91,57 @@ namespace user {
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
-      , init_flds { Bmag, Btheta, Bphi, drift_ux } {}
+      , init_flds { Bmag, Btheta, Bphi, drift_ux } 
+      , filling_fraction { params.template get<real_t>("setup.filling_fraction", 1.0) }{}
 
     inline PGen() {}
-
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
-      if (comp == em::ex2) {
-        return { init_flds.ex2({ ZERO }), true };
-      } else if (comp == em::ex3) {
-        return { init_flds.ex3({ ZERO }), true };
-      } else {
-        return { ZERO, false };
-      }
-    }
 
     auto MatchFields(real_t time) const -> InitFields<D> {
       return init_flds;
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
+      
+      // minimum and maximum position of particles
+      real_t xg_min = local_domain.mesh.extent(in::x1).first;
+      real_t xg_max = local_domain.mesh.extent(in::x1).second * filling_fraction;
+
+      // define box to inject into
+      boundaries_t<real_t> box;
+      // loop over all dimensions
+      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        // compute the range for the x-direction
+        if (d == static_cast<unsigned short>(in::x1)) {
+          box.push_back({xg_min, xg_max});
+        } else {
+          // inject into full range in other directions
+          box.push_back(Range::All);
+        }
+      }
+
+      // spatial distribution of the particles 
+      // -> hack to use the uniform distribution in NonUniformInjector
+      const auto spatial_dist = arch::Piston<S, M>(local_domain.mesh.metric, xg_min, xg_max, in::x1);
+
+      // energy distribution of the particles
       const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool,
                                                       temperature,
                                                       -drift_ux,
                                                       in::x1);
 
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
-        params,
-        local_domain,
-        injector,
-        1.0);
+      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
+          energy_dist,
+          spatial_dist,
+          {1, 2});
+
+      arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>>(
+          params,
+          local_domain,
+          injector,
+          1.0,   // target density
+          false, // no weights
+          box);
     }
   };
 
