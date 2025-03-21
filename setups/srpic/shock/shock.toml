@@ -45,10 +45,10 @@
   Bmag = 1.0              # magnetic field strength as fraction of magnetisation
   Btheta = 0.0            # magnetic field angle in the plane
   Bphi = 0.0              # magnetic field angle out of plane
-  filling_fraction = 1.0  # fraction of the shock piston filled with plasma
+  filling_fraction = 0.1  # fraction of the shock piston filled with plasma
 
 [output]
-  interval_time = 500.0
+  interval_time = 10.0
   format        = "hdf5"
   
   [output.fields]

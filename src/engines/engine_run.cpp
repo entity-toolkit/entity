@@ -52,7 +52,7 @@ namespace ntt {
           traits::has_method<traits::pgen::custom_poststep_t, decltype(m_pgen)>::value) {
           timers.start("Custom");
           m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
-            m_pgen.CustomPostStep(step, time, dom);
+            m_pgen.CustomPostStep(step, time, dt, dom);
           });
           timers.stop("Custom");
         }
