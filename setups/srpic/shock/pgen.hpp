@@ -79,7 +79,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t drift_ux, temperature, filling_fraction;
+    const real_t drift_ux, temperature, filling_fraction, injection_rate;
 
     const real_t  Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
@@ -92,13 +92,19 @@ namespace user {
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux } 
-      , filling_fraction { params.template get<real_t>("setup.filling_fraction", 1.0) }{}
+      , filling_fraction { params.template get<real_t>("setup.filling_fraction", 1.0) }
+      , injection_rate { params.template get<real_t>("setup.injection_rate", 1.0) } {}
 
     inline PGen() {}
 
     auto MatchFields(real_t time) const -> InitFields<D> {
       return init_flds;
     }
+
+    // Inline auto TargetDensity(const coord_t<M::Dim> &x_Ph) const -> real_t
+    // {
+    //   return ONE;
+    // }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       
@@ -142,6 +148,74 @@ namespace user {
           1.0,   // target density
           false, // no weights
           box);
+    }
+
+    void CustomPostStep(std::size_t, long double time, real_t dt, Domain<S, M> &domain)
+    {
+        /*
+            Moving injector for the particles
+        */
+        
+        // energy distribution of the particles
+        const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                        domain.random_pool,
+                                                        temperature,
+                                                        -drift_ux,
+                                                        in::x1);
+
+        // minimum and maximum position of particles
+        // ToDo: Add time offset for start of movement?
+        real_t xg_min = domain.mesh.extent(in::x1).second * filling_fraction +
+                        injection_rate * time - drift_ux * dt;
+        real_t xg_max = domain.mesh.extent(in::x1).second * filling_fraction +
+                        injection_rate * time;
+
+
+    /*
+        I thought this option would be better, but I can't get it to work
+    */
+
+    //     // define box to inject into
+    //     boundaries_t<real_t> box;
+    //     // loop over all dimensions
+    //     for (unsigned short d{0}; d < static_cast<unsigned short>(M::Dim); ++d)
+    //     {
+    //       // compute the range for the x-direction
+    //       if (d == static_cast<unsigned short>(in::x1))
+    //       {
+    //         box.push_back({xg_min, xg_max});
+    //       } else {
+    //       // inject into full range in other directions
+    //       box.push_back(Range::All);
+    //     }
+    //   }
+
+    //   const auto spatial_dist = arch::Replenish<S, M, decltype(TargetDensityProfile)>(domain.mesh.metric,
+    //                                                   domain.fields.bckp,
+    //                                                   box,
+    //                                                   TargetDensity,
+    //                                                   1.0);
+
+    //   const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Replenish>(
+    //       energy_dist,
+    //       spatial_dist,
+    //       {1, 2});
+
+      const auto injector = arch::MovingInjector<S, M, in::x1>{
+          domain.mesh.metric,
+          domain.fields.bckp,
+          energy_dist,
+          xg_max,
+          xg_min,
+          1.0,
+          {1, 2}};
+
+      arch::InjectNonUniform<S, M, decltype(injector)>(
+          params,
+          domain,
+          injector,
+          1.0, // target density
+          false);
     }
   };
 
