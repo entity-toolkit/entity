@@ -170,6 +170,75 @@ namespace arch {
     ~AtmosphereInjector() = default;
   };
 
+  template <SimEngine::type S, class M, in O>
+  struct MovingInjector
+  {
+      struct TargetDensityProfile
+      {
+          const real_t nmax, xinj, xdrift;
+
+          TargetDensityProfile(real_t xinj, real_t xdrift, real_t nmax)
+              : xinj{xinj}, xdrift{xdrift}, nmax{nmax} {}
+
+          Inline auto operator()(const coord_t<M::Dim> &x_Ph) const -> real_t
+          {
+              if constexpr ((O == in::x1) or
+                            (O == in::x2 and (M::Dim == Dim::_2D or M::Dim == Dim::_3D)) or
+                            (O == in::x3 and M::Dim == Dim::_3D))
+              {
+                const auto xi = x_Ph[static_cast<unsigned short>(O)];
+                // + direction
+                if (xi < xinj - xdrift or xi >= xinj)
+                {
+                    return ZERO;
+                }
+                else
+                {
+                    if constexpr (M::CoordType == Coord::Cart)
+                    {
+                        return nmax;
+                    }
+                    else
+                    {
+                        raise::KernelError(
+                            HERE,
+                            "Moving injector in +x cannot be applied for non-cartesian");
+                        return ZERO;
+                    }
+                }
+                }
+              else
+              {
+                  raise::KernelError(HERE, "Wrong direction");
+                  return ZERO;
+              }
+            }
+      };
+      using energy_dist_t  = Maxwellian<S, M>;
+      using spatial_dist_t = Replenish<S, M, TargetDensityProfile>;
+      static_assert(M::is_metric, "M must be a metric class");
+      static constexpr bool is_nonuniform_injector{true};
+      static constexpr Dimension D{M::Dim};
+      static constexpr Coord C{M::CoordType};
+
+      const energy_dist_t energy_dist;
+      const TargetDensityProfile target_density;
+      const spatial_dist_t spatial_dist;
+      const std::pair<spidx_t, spidx_t> species;
+
+      MovingInjector(const M &metric,
+                     const ndfield_t<M::Dim, 6> &density,
+                     const energy_dist_t &energy_dist,
+                     real_t xinj,
+                     real_t xdrift,
+                     real_t nmax,
+                     const std::pair<spidx_t, spidx_t> &species)
+          : energy_dist{energy_dist}, 
+          target_density{xinj, xdrift, nmax}, spatial_dist{metric, density, 0, target_density, nmax}, species{species} {}
+
+      ~MovingInjector() = default;
+  };
+
   /**
    * @brief Injects uniform number density of particles everywhere in the domain
    * @param domain Domain object
