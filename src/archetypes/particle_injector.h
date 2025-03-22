@@ -188,7 +188,7 @@ namespace arch {
               {
                 const auto xi = x_Ph[static_cast<unsigned short>(O)];
                 // + direction
-                if (xi < xinj - xdrift or xi >= xinj)
+                if (xi < xdrift or xi >= xinj)
                 {
                     return ZERO;
                 }
