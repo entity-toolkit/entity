@@ -167,8 +167,8 @@ namespace user {
 
         // minimum and maximum position of particles
         real_t xg_min = domain.mesh.extent(in::x1).second * filling_fraction 
-                        + injector_velocity * (time - injection_start) 
-                        - drift_ux; // distance particles have moved in the last time step
+                        + injector_velocity * (time - injection_start - dt) 
+                        - drift_ux * dt; // distance particles have moved in the last time step
         real_t xg_max = domain.mesh.extent(in::x1).second * filling_fraction +
                         injector_velocity * (time - injection_start);
 
