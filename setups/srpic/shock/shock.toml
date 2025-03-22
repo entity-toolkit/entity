@@ -46,6 +46,8 @@
   Btheta = 0.0            # magnetic field angle in the plane
   Bphi = 0.0              # magnetic field angle out of plane
   filling_fraction = 0.1  # fraction of the shock piston filled with plasma
+  injector_velocity = 1.0 # speed of injector [c]
+  injection_start = 0.0   # start time of moving injector
 
 [output]
   interval_time = 10.0
