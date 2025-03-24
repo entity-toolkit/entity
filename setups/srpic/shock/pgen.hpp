@@ -83,8 +83,7 @@ namespace user {
     const real_t drift_ux, temperature, filling_fraction;
     // injector properties
     const real_t injector_velocity, injection_start, dt;
-    const bool   injection_on;
-
+    // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
@@ -99,7 +98,6 @@ namespace user {
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
-      , injection_on { p.template get<bool>("setup.continuous_injection", true) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
 
     inline PGen() {}
@@ -159,86 +157,82 @@ namespace user {
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& domain) {
 
-      // ToDo: more performant version?
-      if (injection_on) {
-        // same maxwell distribution as above
-        const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                        domain.random_pool,
-                                                        temperature,
-                                                        -drift_ux,
-                                                        in::x1);
+      // same maxwell distribution as above
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                      domain.random_pool,
+                                                      temperature,
+                                                      -drift_ux,
+                                                      in::x1);
 
-        // initial position of injector
-        const auto x_init = domain.mesh.extent(in::x1).first +
-                            filling_fraction * (domain.mesh.extent(in::x1).second -
-                                                domain.mesh.extent(in::x1).first);
+      // initial position of injector
+      const auto x_init = domain.mesh.extent(in::x1).first +
+                          filling_fraction * (domain.mesh.extent(in::x1).second -
+                                              domain.mesh.extent(in::x1).first);
 
-        // check if injector is supposed to start moving already
-        const auto dt_inj = time - injection_start > ZERO ? time - injection_start
-                                                          : ZERO;
+      // check if injector is supposed to start moving already
+      const auto dt_inj = time - injection_start > ZERO ? 
+                          time - injection_start : ZERO;
 
-        // define box to inject into
-        boundaries_t<real_t> box;
+      // define box to inject into
+      boundaries_t<real_t> box;
 
-        // loop over all dimension
-        for (auto d = 0u; d < M::Dim; ++d) {
-          if (d == 0) {
-            box.push_back({ x_init + injector_velocity * (dt_inj)-drift_ux /
-                                       math::sqrt(1 + SQR(drift_ux)) * dt,
-                            x_init + injector_velocity * (dt_inj + dt) });
-          } else {
-            box.push_back(Range::All);
-          }
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          box.push_back({ x_init + injector_velocity * dt_inj - 
+                          drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt,
+                          x_init + injector_velocity * (dt_inj + dt) });
+        } else {
+          box.push_back(Range::All);
         }
-
-        // spatial distribution of the particles
-        // -> hack to use the uniform distribution in NonUniformInjector
-        const auto spatial_dist = arch::Piston<S, M>(domain.mesh.metric,
-                                                     box[0].first,
-                                                     box[0].second,
-                                                     in::x1);
-
-        // ToDo: extend Replenish to replace the current injector
-        const auto injector =
-          arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
-            energy_dist,
-            spatial_dist,
-            { 1, 2 });
-
-        // inject non-uniformly within the defined box
-        arch::InjectNonUniform<S, M, decltype(injector)>(params,
-                                                         domain,
-                                                         injector,
-                                                         ONE,
-                                                         false,
-                                                         box);
-
-        /*
-            I thought this option would be better, but I can't get it to work
-        */
-
-        //   const auto spatial_dist = arch::Replenish<S, M,
-        //   decltype(TargetDensityProfile)>(domain.mesh.metric,
-        //                                                   domain.fields.bckp,
-        //                                                   box,
-        //                                                   TargetDensity,
-        //                                                   1.0);
-
-        //   const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Replenish>(
-        //       energy_dist,
-        //       spatial_dist,
-        //       {1, 2});
-
-        // const auto injector = arch::MovingInjector<S, M, in::x1> {
-        //   domain.mesh.metric,
-        //   domain.fields.bckp,
-        //   energy_dist,
-        //   box[0].first,
-        //   box[0].second,
-        //   1.0,
-        //   { 1, 2 }
-        // };
       }
+
+      // spatial distribution of the particles
+      // -> hack to use the uniform distribution in NonUniformInjector
+      const auto spatial_dist = arch::Piston<S, M>(domain.mesh.metric,
+                                                   box[0].first,
+                                                   box[0].second,
+                                                   in::x1);
+
+      // ToDo: extend Replenish to replace the current injector
+      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
+        energy_dist,
+        spatial_dist,
+        { 1, 2 });
+
+      // inject non-uniformly within the defined box
+      arch::InjectNonUniform<S, M, decltype(injector)>(params,
+                                                       domain,
+                                                       injector,
+                                                       ONE,
+                                                       false,
+                                                       box);
+
+      /*
+          I thought this option would be better, but I can't get it to work
+      */
+
+      //   const auto spatial_dist = arch::Replenish<S, M,
+      //   decltype(TargetDensityProfile)>(domain.mesh.metric,
+      //                                                   domain.fields.bckp,
+      //                                                   box,
+      //                                                   TargetDensity,
+      //                                                   1.0);
+
+      //   const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Replenish>(
+      //       energy_dist,
+      //       spatial_dist,
+      //       {1, 2});
+
+      // const auto injector = arch::MovingInjector<S, M, in::x1> {
+      //   domain.mesh.metric,
+      //   domain.fields.bckp,
+      //   energy_dist,
+      //   box[0].first,
+      //   box[0].second,
+      //   1.0,
+      //   { 1, 2 }
+      // };
     }
   };
 
