@@ -4,8 +4,8 @@
   runtime = 30000.0
 
 [grid]
-  resolution = [16384, 128]
-  extent     = [[0.0, 8000.0], [-31.25, 31.25]]
+  resolution = [4096, 128]
+  extent     = [[0.0, 2000.0], [-31.25, 31.25]]
 
   [grid.metric]
     metric = "minkowski"
