@@ -51,32 +51,27 @@ namespace arch {
   };
 
   template <SimEngine::type S, class M>
-  struct Piston : public arch::SpatialDistribution<S, M>
-  {
-    Piston(const M &metric, real_t xmin, real_t xmax, in piston_direction = in::x1)
-        : arch::SpatialDistribution<S, M>{metric}
-        , xmin {xmin}
-        , xmax {xmax}
-        , piston_direction {piston_direction} {}
+  struct Piston : public arch::SpatialDistribution<S, M> {
+    Piston(const M& metric, real_t xmin, real_t xmax, in piston_direction = in::x1)
+      : arch::SpatialDistribution<S, M> { metric }
+      , xmin { xmin }
+      , xmax { xmax }
+      , piston_direction { piston_direction } {}
 
-      Inline auto operator()(const coord_t<M::Dim> &x_Ph) const -> real_t override
-      {
-        // dimentsion to fill
-        const auto fill_dim = static_cast<int>(piston_direction);
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
+      // dimentsion to fill
+      const auto fill_dim = static_cast<int>(piston_direction);
 
-        if (x_Ph[fill_dim] < xmin || x_Ph[fill_dim] > xmax)
-        {
-          return ZERO;
-        }
-        else
-        {
-          return ONE;
-        }
+      if (x_Ph[fill_dim] < xmin || x_Ph[fill_dim] > xmax) {
+        return ZERO;
+      } else {
+        return ONE;
       }
+    }
 
   private:
     real_t xmin, xmax;
-    in piston_direction;
+    in     piston_direction;
   };
 
   template <SimEngine::type S, class M, class T>
