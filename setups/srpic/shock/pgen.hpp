@@ -83,6 +83,7 @@ namespace user {
     const real_t drift_ux, temperature, filling_fraction;
     // injector properties
     const real_t injector_velocity, injection_start, dt;
+    const int   injection_frequency;
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
@@ -98,12 +99,32 @@ namespace user {
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
+      , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
 
     inline PGen() {}
 
     auto MatchFields(real_t time) const -> InitFields<D> {
       return init_flds;
+    }
+
+    auto ResetFields(const em& comp) const -> real_t {
+      if (comp == em::ex1) {
+        return init_flds.ex1({ ZERO });
+      } else if (comp == em::ex2) {
+        return init_flds.ex2({ ZERO });
+      } else if (comp == em::ex3) {
+        return init_flds.ex3({ ZERO });
+      } else if (comp == em::bx1) {
+        return init_flds.bx1({ ZERO });
+      } else if (comp == em::bx2) {
+        return init_flds.bx2({ ZERO });
+      } else if (comp == em::bx3) {
+        return init_flds.bx3({ ZERO });
+      } else {
+        raise::Error("Invalid component", HERE);
+        return ZERO;
+      }
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
@@ -155,14 +176,12 @@ namespace user {
         box);
     }
 
-    void CustomPostStep(std::size_t, long double time, Domain<S, M>& domain) {
+    void CustomPostStep(std::size_t step, long double time, Domain<S, M>& domain) {
 
-      // same maxwell distribution as above
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      // check if the injector should be active
+      if (step % injection_frequency != 0) {
+        return;
+      }
 
       // initial position of injector
       const auto x_init = domain.mesh.extent(in::x1).first +
@@ -180,13 +199,99 @@ namespace user {
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
           box.push_back({ x_init + injector_velocity * dt_inj - 
-                          drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt,
+                          drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
+                          1.5 * injection_frequency * dt,
                           x_init + injector_velocity * (dt_inj + dt) });
         } else {
           box.push_back(Range::All);
         }
       }
 
+      // define indice range to reset fields
+      boundaries_t<bool> incl_ghosts;
+      for (auto d = 0; d < M::Dim; ++d) {
+        incl_ghosts.push_back({ true, true });
+      }
+      const auto extent = domain.mesh.ExtentToRange(box, incl_ghosts);
+      tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
+      for (auto d = 0; d < M::Dim; ++d) {
+        x_min[d] = extent[d].first;
+        x_max[d] = extent[d].second;
+      }
+
+      // reset fields
+      std::vector<unsigned short> comps = { em::ex1, em::ex2, em::ex3,
+                                            em::bx1, em::bx2, em::bx3 };
+
+      // loop over all components
+      for (const auto& comp : comps) {
+        auto value = ResetFields((em)comp);
+
+        if constexpr (M::Dim == Dim::_1D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(x_min[0], x_max[0]),
+                                            comp),
+                            value);
+        } else if constexpr (M::Dim == Dim::_2D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(x_min[0], x_max[0]),
+                                            std::make_pair(x_min[1], x_max[1]),
+                                            comp),
+                            value);
+        } else if constexpr (M::Dim == Dim::_3D) {
+          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
+                                            std::make_pair(x_min[0], x_max[0]),
+                                            std::make_pair(x_min[1], x_max[1]),
+                                            std::make_pair(x_min[2], x_max[2]),
+                                            comp),
+                            value);
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      }
+
+      /* 
+        tag particles inside the injection zone as dead 
+      */
+
+      // loop over particle species
+      for (std::size_t s { 0 }; s < 2; ++s) {
+
+        // get particle properties
+        auto& species = domain.species[s];
+        auto i1 = species.i1;
+        auto tag = species.tag;
+
+
+        // tag all particles with x > box[0].first as dead
+        Kokkos::parallel_for(
+          "RemoveParticles",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            // check if the particle is already dead
+            if (tag(p) == ParticleTag::dead) {
+              return;
+            }
+            // select the x-coordinate index
+            auto x_i1 = i1(p);
+            // check if the particle is inside the box of new plasma
+            if (x_i1 > x_min[0]) {
+              tag(p) = ParticleTag::dead;
+            }
+          }
+        );
+      }
+
+      /* 
+          Inject piston of fresh plasma
+      */
+
+      // same maxwell distribution as above
+      const auto energy_dist  = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                      domain.random_pool,
+                                                      temperature,
+                                                      -drift_ux,
+                                                      in::x1);
       // spatial distribution of the particles
       // -> hack to use the uniform distribution in NonUniformInjector
       const auto spatial_dist = arch::Piston<S, M>(domain.mesh.metric,
@@ -194,7 +299,7 @@ namespace user {
                                                    box[0].second,
                                                    in::x1);
 
-      // ToDo: extend Replenish to replace the current injector
+      // inject piston of fresh plasma
       const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
         energy_dist,
         spatial_dist,
