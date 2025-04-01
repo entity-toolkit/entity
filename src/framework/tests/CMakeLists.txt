@@ -5,7 +5,6 @@
 #
 # * kokkos [required]
 # * plog [required]
-# * toml11 [required]
 # * mpi [optional]
 # * adios2 [optional]
 #

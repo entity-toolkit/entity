@@ -79,11 +79,10 @@ set(BUILD_TESTING
     CACHE BOOL "Build tests")
 
 # ------------------------ Third-party dependencies ------------------------ #
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
-find_or_fetch_dependency(Kokkos FALSE)
-find_or_fetch_dependency(plog TRUE)
+find_or_fetch_dependency(Kokkos FALSE QUIET)
+find_or_fetch_dependency(plog TRUE QUIET)
 set(DEPENDENCIES Kokkos::kokkos)
 include_directories(${plog_SRC}/include)
 
@@ -92,14 +91,15 @@ set_precision(${precision})
 
 # MPI
 if(${mpi})
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIConfig.cmake)
+  find_or_fetch_dependency(MPI FALSE REQUIRED)
+  include_directories(${MPI_CXX_INCLUDE_PATH})
+  add_compile_options("-D MPI_ENABLED")
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
 endif()
 
 # Output
 if(${output})
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
-  find_or_fetch_dependency(adios2 FALSE)
+  find_or_fetch_dependency(adios2 FALSE QUIET)
   if(NOT DEFINED ENV{HDF5_ROOT})
     if(DEFINED ENV{CONDA_PREFIX})
       execute_process(COMMAND bash -c "conda list | grep \"hdf5\" -q"
@@ -110,7 +110,7 @@ if(${output})
     endif()
   endif()
   find_package(HDF5 REQUIRED)
-
+  add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
   else()
@@ -119,6 +119,13 @@ if(${output})
 endif()
 
 link_libraries(${DEPENDENCIES})
+
+get_cmake_property(all_vars VARIABLES)
+foreach(_var ${all_vars})
+  if(_var MATCHES "^Kokkos_.*")
+    message(STATUS "PRINTING ${_var}=${${_var}}")
+  endif()
+endforeach()
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
@@ -129,7 +136,7 @@ elseif(BENCHMARK)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
-    find_or_fetch_dependency(nttiny FALSE)
+    find_or_fetch_dependency(nttiny FALSE QUIET)
   endif()
 
   # ------------------------------- Main source ------------------------------ #
