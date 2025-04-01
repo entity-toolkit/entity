@@ -190,17 +190,16 @@ namespace user {
 
       // check if injector is supposed to start moving already
       const auto dt_inj = time - injection_start > ZERO ? 
-                          time - injection_start : ZERO;
+                            time - injection_start : ZERO;
 
       // define box to inject into
       boundaries_t<real_t> box;
-
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
           box.push_back({ x_init + injector_velocity * dt_inj - 
                           drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                          1.5 * injection_frequency * dt,
+                          injection_frequency * dt,
                           x_init + injector_velocity * (dt_inj + dt) });
         } else {
           box.push_back(Range::All);
@@ -212,7 +211,9 @@ namespace user {
       for (auto d = 0; d < M::Dim; ++d) {
         incl_ghosts.push_back({ true, true });
       }
-      const auto extent = domain.mesh.ExtentToRange(box, incl_ghosts);
+      auto fields_box = box;
+      fields_box[0].second += injection_frequency * dt;
+      const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
@@ -220,11 +221,13 @@ namespace user {
       }
 
       // reset fields
-      std::vector<unsigned short> comps = { em::ex1, em::ex2, em::ex3,
-                                            em::bx1, em::bx2, em::bx3 };
+      std::vector<unsigned short> comps = { em::bx1, em::bx2, em::bx3, 
+                                            em::ex1, em::ex2, em::ex3 };
 
       // loop over all components
       for (const auto& comp : comps) {
+
+        // get initial field value of component
         auto value = ResetFields((em)comp);
 
         if constexpr (M::Dim == Dim::_1D) {
@@ -261,7 +264,6 @@ namespace user {
         auto& species = domain.species[s];
         auto i1 = species.i1;
         auto tag = species.tag;
-
 
         // tag all particles with x > box[0].first as dead
         Kokkos::parallel_for(
