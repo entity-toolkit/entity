@@ -24,9 +24,13 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 ## Contributors (alphabetical)
 
+🎸 __Ludwig Böss__ {[@LudwigBoess](https://github.com/LudwigBoess): PIC, framework}
+
 👀 __Yangyang Cai__ {[@StaticObserver](https://github.com/StaticObserver): GRPIC}
 
 🍵 __Benjamin Crinquand__ {[@bcrinquand](https://github.com/bcrinquand): GRPIC, cubed-sphere}
+
+🚂 __Evgeny Gorbunov__ {[@Alcauchy](https://github.com/Alcauchy): PIC, framework}
 
 :radio: __Siddhant Solanki__ {[@sidruns30](https://github.com/sidruns30): framework}
 
