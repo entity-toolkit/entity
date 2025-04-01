@@ -60,7 +60,7 @@ auto main(int argc, char* argv[]) -> int {
     {
       // write
       auto writer = out::Writer();
-      writer.init(&adios, "hdf5", "test");
+      writer.init(&adios, "hdf5", "test", false);
       writer.defineMeshLayout({ static_cast<unsigned long>(mpi_size) * nx1 },
                               { static_cast<unsigned long>(mpi_rank) * nx1 },
                               { nx1 },
