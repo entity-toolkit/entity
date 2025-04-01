@@ -105,8 +105,8 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(
-      std::size_t bytes) -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(std::size_t bytes)
+      -> std::pair<long double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       idx_t                          unit_idx = 0;
       auto                           size     = static_cast<long double>(bytes);
@@ -391,7 +391,7 @@ namespace ntt {
         add_subcategory(report, 6, "Memory footprint");
         auto flds_footprint         = domain.fields.memory_footprint();
         auto [flds_size, flds_unit] = bytes_to_human_readable(flds_footprint);
-        add_param(report, 8, "Fields", "%.2Lf %s", flds_size, flds_unit.c_str());
+        add_param(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
         if (domain.species.size() > 0) {
           add_subcategory(report, 8, "Particles");
         }
@@ -400,7 +400,7 @@ namespace ntt {
                                        species.index(),
                                        species.label().c_str());
           auto [size, unit] = bytes_to_human_readable(species.memory_footprint());
-          add_param(report, 10, str.c_str(), "%.2Lf %s", size, unit.c_str());
+          add_param(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
         }
         report.pop_back();
         if (idx == m_metadomain.ndomains() - 1) {

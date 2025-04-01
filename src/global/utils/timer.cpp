@@ -130,9 +130,8 @@ namespace timer {
     return timer_stats;
   }
 
-  auto Timers::printAll(TimerFlags flags,
-                        npart_t    npart,
-                        ncells_t   ncells) const -> std::string {
+  auto Timers::printAll(TimerFlags flags, npart_t npart, ncells_t ncells) const
+    -> std::string {
     const std::vector<std::string> extras { "PrtlClear", "Output", "Checkpoint" };
     const auto stats = gather(extras, npart, ncells);
     if (stats.empty()) {
@@ -192,11 +191,11 @@ namespace timer {
       if (multi_rank) {
         ss << fmt::alignedTable(
           { name,
-            fmt::format("%.2Lf", time) + " " + units,
+            fmt::format("%.2f", time) + " " + units,
             std::to_string(tot_pct) + "%",
             std::to_string(var_pct) + "%",
-            fmt::format("%.2Lf", per_npart) + " " + units_npart,
-            fmt::format("%.2Lf", per_ncells) + " " + units_ncells },
+            fmt::format("%.2f", per_npart) + " " + units_npart,
+            fmt::format("%.2f", per_ncells) + " " + units_ncells },
           { c_reset,
             c_yellow,
             ((tot_pct > 60) ? c_red : ((tot_pct > 40) ? c_yellow : c_green)),
@@ -210,10 +209,10 @@ namespace timer {
       } else {
         ss << fmt::alignedTable(
           { name,
-            fmt::format("%.2Lf", time) + " " + units,
+            fmt::format("%.2f", time) + " " + units,
             std::to_string(tot_pct) + "%",
-            fmt::format("%.2Lf", per_npart) + " " + units_npart,
-            fmt::format("%.2Lf", per_ncells) + " " + units_ncells },
+            fmt::format("%.2f", per_npart) + " " + units_npart,
+            fmt::format("%.2f", per_ncells) + " " + units_ncells },
           { c_reset,
             c_yellow,
             ((tot_pct > 60) ? c_red : ((tot_pct > 40) ? c_yellow : c_green)),
@@ -237,7 +236,7 @@ namespace timer {
       if (multi_rank) {
         ss << fmt::alignedTable(
           { "Total",
-            fmt::format("%.2Lf", time) + " " + units,
+            fmt::format("%.2f", time) + " " + units,
             std::to_string(var_pct) + "%" },
           { c_reset,
             c_blue,
@@ -247,13 +246,12 @@ namespace timer {
           c_bblack,
           c_reset);
       } else {
-        ss << fmt::alignedTable(
-          { "Total", fmt::format("%.2Lf", time) + " " + units },
-          { c_reset, c_blue },
-          { 0, 37 },
-          { ' ', ' ' },
-          c_bblack,
-          c_reset);
+        ss << fmt::alignedTable({ "Total", fmt::format("%.2f", time) + " " + units },
+                                { c_reset, c_blue },
+                                { 0, 37 },
+                                { ' ', ' ' },
+                                c_bblack,
+                                c_reset);
       }
     }
 
@@ -271,7 +269,7 @@ namespace timer {
         convertTime(time, units);
       }
       ss << fmt::alignedTable({ name,
-                                fmt::format("%.2Lf", time) + " " + units,
+                                fmt::format("%.2f", time) + " " + units,
                                 std::to_string(tot_pct) + "%" },
                               { (active ? c_reset : c_bblack),
                                 (active ? c_byellow : c_bblack),
