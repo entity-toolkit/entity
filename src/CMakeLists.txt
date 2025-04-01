@@ -17,7 +17,6 @@
 #
 # * kokkos [required]
 # * plog [required]
-# * toml11 [required]
 # * ADIOS2 [optional]
 # * mpi [optional]
 # ------------------------------

@@ -23,5 +23,3 @@ set(ADIOS2_USE_MPI
 set(ADIOS2_USE_CUDA
     OFF
     CACHE BOOL "Use CUDA for ADIOS2")
-
-add_compile_options("-D OUTPUT_ENABLED")

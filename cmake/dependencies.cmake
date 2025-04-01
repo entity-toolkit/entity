@@ -34,12 +34,17 @@ function(check_internet_connection)
   endif()
 endfunction()
 
-function(find_or_fetch_dependency package_name header_only)
+function(find_or_fetch_dependency package_name header_only mode)
   if(NOT header_only)
-    find_package(${package_name} QUIET)
+    find_package(${package_name} ${mode})
   endif()
 
   if(NOT ${package_name}_FOUND)
+    if (${package_name} STREQUAL "Kokkos")
+      include(${CMAKE_CURRENT_SOURCE_DIR}/kokkosConfig.cmake)
+    elseif(${package_name} STREQUAL "adios2")
+      include(${CMAKE_CURRENT_SOURCE_DIR}/adios2Config.cmake)
+    endif()
     if(DEFINED ${package_name}_REPOSITORY AND NOT
                                               FETCHCONTENT_FULLY_DISCONNECTED)
       # fetching package
@@ -52,7 +57,7 @@ function(find_or_fetch_dependency package_name header_only)
         FetchContent_Declare(
           ${package_name}
           GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG 4.3.00)
+          GIT_TAG 4.5.01)
       else()
         FetchContent_Declare(${package_name}
                              GIT_REPOSITORY ${${package_name}_REPOSITORY})
