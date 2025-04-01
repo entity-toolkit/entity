@@ -80,10 +80,10 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
     // gas properties
-    const real_t drift_ux, temperature, filling_fraction;
+    const real_t  drift_ux, temperature, filling_fraction;
     // injector properties
-    const real_t injector_velocity, injection_start, dt;
-    const int   injection_frequency;
+    const real_t  injector_velocity, injection_start, dt;
+    const int     injection_frequency;
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
@@ -189,18 +189,23 @@ namespace user {
                                               domain.mesh.extent(in::x1).first);
 
       // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? 
-                            time - injection_start : ZERO;
+      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
+                                                        : ZERO;
+
+      // compute the position of the injector
+      auto xmax = x_init + injector_velocity * (dt_inj + dt);
+      if (xmax >= domain.mesh.extent(in::x1).second) {
+        xmax = domain.mesh.extent(in::x1).second;
+      }
 
       // define box to inject into
       boundaries_t<real_t> box;
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
-          box.push_back({ x_init + injector_velocity * dt_inj - 
-                          drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                          injection_frequency * dt,
-                          x_init + injector_velocity * (dt_inj + dt) });
+          box.push_back({ xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
+                            injection_frequency * dt,
+                          xmax });
         } else {
           box.push_back(Range::All);
         }
@@ -212,7 +217,13 @@ namespace user {
         incl_ghosts.push_back({ true, true });
       }
       auto fields_box = box;
-      fields_box[0].second += injection_frequency * dt;
+      // check if the box is still inside the domain
+      if (xmax + injection_frequency * dt < domain.mesh.extent(in::x1).second) {
+        fields_box[0].second += injection_frequency * dt;
+      } else { 
+        // if right side of the box is outside of the domain -> truncate box
+        fields_box[0].second = domain.mesh.extent(in::x1).second;
+      }
       const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
@@ -221,7 +232,7 @@ namespace user {
       }
 
       // reset fields
-      std::vector<unsigned short> comps = { em::bx1, em::bx2, em::bx3, 
+      std::vector<unsigned short> comps = { em::bx1, em::bx2, em::bx3,
                                             em::ex1, em::ex2, em::ex3 };
 
       // loop over all components
@@ -253,8 +264,8 @@ namespace user {
         }
       }
 
-      /* 
-        tag particles inside the injection zone as dead 
+      /*
+        tag particles inside the injection zone as dead
       */
 
       // loop over particle species
@@ -262,8 +273,8 @@ namespace user {
 
         // get particle properties
         auto& species = domain.species[s];
-        auto i1 = species.i1;
-        auto tag = species.tag;
+        auto  i1      = species.i1;
+        auto  tag     = species.tag;
 
         // tag all particles with x > box[0].first as dead
         Kokkos::parallel_for(
@@ -277,14 +288,13 @@ namespace user {
             // select the x-coordinate index
             auto x_i1 = i1(p);
             // check if the particle is inside the box of new plasma
-            if (x_i1 > x_min[0]) {
+            if (x_i1 >= x_min[0]) {
               tag(p) = ParticleTag::dead;
             }
-          }
-        );
+          });
       }
 
-      /* 
+      /*
           Inject piston of fresh plasma
       */
 
