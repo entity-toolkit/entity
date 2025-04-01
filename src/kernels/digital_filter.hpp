@@ -19,7 +19,7 @@
 
 #define FILTER_IN_I1(ARR, COMP, I, J)                                          \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_4*((ARR)((I) - 1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
 namespace kernel {
   using namespace ntt;
@@ -30,12 +30,12 @@ namespace kernel {
     const ndfield_t<D, 3> buffer;
     bool                  is_axis_i2min { false }, is_axis_i2max { false };
     static constexpr auto i2_min = N_GHOSTS;
-    const std::size_t     i2_max;
+    const ncells_t        i2_max;
 
   public:
     DigitalFilter_kernel(ndfield_t<D, 3>&       array,
                          const ndfield_t<D, 3>& buffer,
-                         const std::size_t (&size_)[D],
+                         const ncells_t (&size_)[D],
                          const boundaries_t<FldsBC>& boundaries)
       : array { array }
       , buffer { buffer }

@@ -47,8 +47,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Minkowski(std::vector<std::size_t> res,
-              boundaries_t<real_t>     ext,
+    Minkowski(std::vector<ncells_t> res,
+              boundaries_t<real_t>  ext,
               const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dx { (x1_max - x1_min) / nx1 }
@@ -240,8 +240,7 @@ namespace metric {
      * @note tetrad/cart <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
-      -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {

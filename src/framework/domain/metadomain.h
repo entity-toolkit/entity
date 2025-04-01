@@ -103,7 +103,7 @@ namespace ntt {
      */
     Metadomain(unsigned int,
                const std::vector<int>&,
-               const std::vector<std::size_t>&,
+               const std::vector<ncells_t>&,
                const boundaries_t<real_t>&,
                const boundaries_t<FldsBC>&,
                const boundaries_t<PrtlBC>&,
@@ -118,20 +118,20 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void InitWriter(adios2::ADIOS*, const SimulationParams&, bool is_resuming);
     auto Write(const SimulationParams&,
-               std::size_t,
-               std::size_t,
-               long double,
-               long double,
+               timestep_t,
+               timestep_t,
+               simtime_t,
+               simtime_t,
                std::function<void(const std::string&,
                                   ndfield_t<M::Dim, 6>&,
                                   std::size_t,
                                   const Domain<S, M>&)> = {}) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
-                         std::size_t,
-                         std::size_t,
-                         long double,
-                         long double) -> bool;
+                         timestep_t,
+                         timestep_t,
+                         simtime_t,
+                         simtime_t) -> bool;
 
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
 #endif
@@ -177,8 +177,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_npart_perspec() const -> std::vector<std::size_t> {
-      std::vector<std::size_t> npart(g_species_params.size(), 0);
+    auto l_npart_perspec() const -> std::vector<npart_t> {
+      std::vector<npart_t> npart(g_species_params.size(), 0);
       for (const auto& ldidx : l_subdomain_indices()) {
         for (std::size_t i = 0; i < g_species_params.size(); ++i) {
           npart[i] += g_subdomains[ldidx].species[i].npart();
@@ -188,8 +188,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_maxnpart_perspec() const -> std::vector<std::size_t> {
-      std::vector<std::size_t> maxnpart(g_species_params.size(), 0);
+    auto l_maxnpart_perspec() const -> std::vector<npart_t> {
+      std::vector<npart_t> maxnpart(g_species_params.size(), 0);
       for (const auto& ldidx : l_subdomain_indices()) {
         for (std::size_t i = 0; i < g_species_params.size(); ++i) {
           maxnpart[i] += g_subdomains[ldidx].species[i].maxnpart();

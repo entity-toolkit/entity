@@ -129,7 +129,7 @@ namespace comm {
         }
       }
     } else {
-      std::size_t nsend { comps.second - comps.first },
+      ncells_t nsend { comps.second - comps.first },
         nrecv { comps.second - comps.first };
       ndarray_t<static_cast<unsigned short>(D) + 1> send_fld, recv_fld;
 
@@ -287,29 +287,29 @@ namespace comm {
     }
   }
 
-  void ParticleSendRecvCount(int          send_rank,
-                             int          recv_rank,
-                             std::size_t  send_count,
-                             std::size_t& recv_count) {
+  void ParticleSendRecvCount(int      send_rank,
+                             int      recv_rank,
+                             npart_t  send_count,
+                             npart_t& recv_count) {
     if ((send_rank >= 0) && (recv_rank >= 0)) {
       MPI_Sendrecv(&send_count,
                    1,
-                   mpi::get_type<std::size_t>(),
+                   mpi::get_type<npart_t>(),
                    send_rank,
                    0,
                    &recv_count,
                    1,
-                   mpi::get_type<std::size_t>(),
+                   mpi::get_type<npart_t>(),
                    recv_rank,
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
     } else if (send_rank >= 0) {
-      MPI_Send(&send_count, 1, mpi::get_type<std::size_t>(), send_rank, 0, MPI_COMM_WORLD);
+      MPI_Send(&send_count, 1, mpi::get_type<npart_t>(), send_rank, 0, MPI_COMM_WORLD);
     } else if (recv_rank >= 0) {
       MPI_Recv(&recv_count,
                1,
-               mpi::get_type<std::size_t>(),
+               mpi::get_type<npart_t>(),
                recv_rank,
                0,
                MPI_COMM_WORLD,
@@ -320,14 +320,14 @@ namespace comm {
   }
 
   template <Dimension D, Coord::type C>
-  void CommunicateParticles(Particles<D, C>&                species,
-                            const array_t<std::size_t*>&    outgoing_indices,
-                            const array_t<std::size_t*>&    tag_offsets,
-                            const std::vector<std::size_t>& npptag_vec,
-                            const std::vector<std::size_t>& npptag_recv_vec,
-                            const std::vector<int>&         send_ranks,
-                            const std::vector<int>&         recv_ranks,
-                            const dir::dirs_t<D>&           dirs_to_comm) {
+  void CommunicateParticles(Particles<D, C>&            species,
+                            const array_t<npart_t*>&    outgoing_indices,
+                            const array_t<npart_t*>&    tag_offsets,
+                            const std::vector<npart_t>& npptag_vec,
+                            const std::vector<npart_t>& npptag_recv_vec,
+                            const std::vector<int>&     send_ranks,
+                            const std::vector<int>&     recv_ranks,
+                            const dir::dirs_t<D>&       dirs_to_comm) {
     // number of arrays of each type to send/recv
     const unsigned short NREALS = 4 + static_cast<unsigned short>(
                                         D == Dim::_2D and C != Coord::Cart);
@@ -341,7 +341,7 @@ namespace comm {
     const auto       npart_send  = outgoing_indices.extent(0) - npart_dead;
     const auto       npart_recv  = std::accumulate(npptag_recv_vec.begin(),
                                             npptag_recv_vec.end(),
-                                            static_cast<std::size_t>(0));
+                                            static_cast<npart_t>(0));
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
     array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
     array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };
@@ -376,7 +376,7 @@ namespace comm {
       auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
       Kokkos::deep_copy(tag_offsets_h, tag_offsets);
 
-      std::size_t idx_offset = npart_dead;
+      npart_t idx_offset = npart_dead;
       if (tag_send > 2) {
         idx_offset += tag_offsets_h(tag_send - 3);
       }

@@ -38,7 +38,7 @@ namespace pbar {
 
   class DurationHistory {
     std::size_t                                              capacity;
-    std::vector<long double>                                 durations;
+    std::vector<duration_t>                                  durations;
     const std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::time_point<std::chrono::system_clock>       prev_start;
 
@@ -60,30 +60,31 @@ namespace pbar {
       prev_start = now;
     }
 
-    auto average() const -> long double {
+    auto average() const -> duration_t {
       if (durations.size() > 0) {
         return std::accumulate(durations.begin(), durations.end(), 0.0) /
-               static_cast<long double>(durations.size());
+               static_cast<duration_t>(durations.size());
       } else {
         return 0.0;
       }
     }
 
-    auto elapsed() const -> long double {
+    auto elapsed() const -> duration_t {
       return std::chrono::duration_cast<std::chrono::microseconds>(
                std::chrono::system_clock::now() - start)
         .count();
     }
   };
 
-  auto normalize_duration_fmt(long double t, const std::string& u)
-    -> std::pair<long double, std::string>;
+  auto normalize_duration_fmt(
+    duration_t         t,
+    const std::string& u) -> std::pair<duration_t, std::string>;
 
-  auto to_human_readable(long double t, const std::string& u) -> std::string;
+  auto to_human_readable(duration_t t, const std::string& u) -> std::string;
 
   auto ProgressBar(const DurationHistory& history,
-                   std::size_t            step,
-                   std::size_t            max_steps,
+                   timestep_t             step,
+                   timestep_t             max_steps,
                    DiagFlags&             flags) -> std::string;
 
 } // namespace pbar

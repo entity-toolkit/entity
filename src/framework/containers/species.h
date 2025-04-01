@@ -28,7 +28,7 @@ namespace ntt {
     // Species charge in units of q0
     const float          m_charge;
     // Max number of allocated particles for the species
-    std::size_t          m_maxnpart;
+    npart_t              m_maxnpart;
 
     // Pusher assigned for the species
     const PrtlPusher m_pusher;
@@ -68,7 +68,7 @@ namespace ntt {
                     const std::string& label,
                     float              m,
                     float              ch,
-                    std::size_t        maxnpart,
+                    npart_t            maxnpart,
                     const PrtlPusher&  pusher,
                     bool               use_gca,
                     const Cooling&     cooling,
@@ -111,7 +111,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto maxnpart() const -> std::size_t {
+    auto maxnpart() const -> npart_t {
       return m_maxnpart;
     }
 

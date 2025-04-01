@@ -37,20 +37,20 @@ namespace out {
     m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
 
-    m_io.DefineVariable<std::size_t>("Step");
-    m_io.DefineVariable<long double>("Time");
+    m_io.DefineVariable<timestep_t>("Step");
+    m_io.DefineVariable<simtime_t>("Time");
     m_fname = title;
   }
 
   void Writer::addTracker(const std::string& type,
-                          std::size_t        interval,
-                          long double        interval_time) {
+                          timestep_t         interval,
+                          simtime_t          interval_time) {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
   auto Writer::shouldWrite(const std::string& type,
-                           std::size_t        step,
-                           long double        time) -> bool {
+                           timestep_t         step,
+                           simtime_t          time) -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -63,9 +63,9 @@ namespace out {
     m_mode = mode;
   }
 
-  void Writer::defineMeshLayout(const std::vector<std::size_t>&  glob_shape,
-                                const std::vector<std::size_t>&  loc_corner,
-                                const std::vector<std::size_t>&  loc_shape,
+  void Writer::defineMeshLayout(const std::vector<ncells_t>&     glob_shape,
+                                const std::vector<ncells_t>&     loc_corner,
+                                const std::vector<ncells_t>&     loc_shape,
                                 const std::vector<unsigned int>& dwn,
                                 bool                             incl_ghosts,
                                 Coord                            coords) {
@@ -76,7 +76,7 @@ namespace out {
     m_flds_l_corner = loc_corner;
     m_flds_l_shape  = loc_shape;
 
-    for (std::size_t i { 0 }; i < glob_shape.size(); ++i) {
+    for (auto i { 0u }; i < glob_shape.size(); ++i) {
       raise::ErrorIf(dwn[i] != 1 && incl_ghosts,
                      "Downsampling with ghosts not supported",
                      HERE);
@@ -86,18 +86,17 @@ namespace out {
       const double l = loc_corner[i];
       const double n = loc_shape[i];
       const double f = math::ceil(l / d) * d - l;
-      m_flds_g_shape_dwn.push_back(static_cast<std::size_t>(math::ceil(g / d)));
-      m_flds_l_corner_dwn.push_back(static_cast<std::size_t>(math::ceil(l / d)));
-      m_flds_l_first.push_back(static_cast<std::size_t>(f));
-      m_flds_l_shape_dwn.push_back(
-        static_cast<std::size_t>(math::ceil((n - f) / d)));
+      m_flds_g_shape_dwn.push_back(static_cast<ncells_t>(math::ceil(g / d)));
+      m_flds_l_corner_dwn.push_back(static_cast<ncells_t>(math::ceil(l / d)));
+      m_flds_l_first.push_back(static_cast<ncells_t>(f));
+      m_flds_l_shape_dwn.push_back(static_cast<ncells_t>(math::ceil((n - f) / d)));
     }
 
     m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
     m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
     m_io.DefineAttribute("Coordinates", std::string(coords.to_string()));
 
-    for (std::size_t i { 0 }; i < m_flds_g_shape.size(); ++i) {
+    for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
       // cell-centers
       adios2::Dims g_shape  = { m_flds_g_shape_dwn[i] };
       adios2::Dims l_corner = { m_flds_l_corner_dwn[i] };
@@ -151,7 +150,7 @@ namespace out {
                                     adios2::ConstantDims);
       } else {
         // vector or tensor
-        for (std::size_t i { 0 }; i < fld.comp.size(); ++i) {
+        for (auto i { 0u }; i < fld.comp.size(); ++i) {
           m_io.DefineVariable<real_t>(fld.name(i),
                                       m_flds_g_shape_dwn,
                                       m_flds_l_corner_dwn,
@@ -210,7 +209,7 @@ namespace out {
                   const ndfield_t<D, N>&    field,
                   std::size_t               comp,
                   std::vector<unsigned int> dwn,
-                  std::vector<std::size_t>  first_cell,
+                  std::vector<ncells_t>     first_cell,
                   bool                      ghosts) {
     // when dwn != 1 in any direction, it is assumed that ghosts == false
     auto         var      = io.InquireVariable<real_t>(varname);
@@ -230,7 +229,7 @@ namespace out {
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const auto   first_cell1   = first_cell[0];
 
-        const auto nx1_dwn = static_cast<std::size_t>(
+        const auto nx1_dwn = static_cast<ncells_t>(
           math::ceil((nx1_full - first_cell1_d) / dwn1));
 
         output_field = array_t<real_t*> { "output_field", nx1_dwn };
@@ -260,9 +259,9 @@ namespace out {
         const auto   first_cell1   = first_cell[0];
         const auto   first_cell2   = first_cell[1];
 
-        const auto nx1_dwn = static_cast<std::size_t>(
+        const auto nx1_dwn = static_cast<ncells_t>(
           math::ceil((nx1_full - first_cell1_d) / dwn1));
-        const auto nx2_dwn = static_cast<std::size_t>(
+        const auto nx2_dwn = static_cast<ncells_t>(
           math::ceil((nx2_full - first_cell2_d) / dwn2));
         output_field = array_t<real_t**> { "output_field", nx1_dwn, nx2_dwn };
         Kokkos::parallel_for(
@@ -299,11 +298,11 @@ namespace out {
         const auto   first_cell2   = first_cell[1];
         const auto   first_cell3   = first_cell[2];
 
-        const auto nx1_dwn = static_cast<std::size_t>(
+        const auto nx1_dwn = static_cast<ncells_t>(
           math::ceil((nx1_full - first_cell1_d) / dwn1));
-        const auto nx2_dwn = static_cast<std::size_t>(
+        const auto nx2_dwn = static_cast<ncells_t>(
           math::ceil((nx2_full - first_cell2_d) / dwn2));
-        const auto nx3_dwn = static_cast<std::size_t>(
+        const auto nx3_dwn = static_cast<ncells_t>(
           math::ceil((nx3_full - first_cell3_d) / dwn3));
 
         output_field = array_t<real_t***> { "output_field", nx1_dwn, nx2_dwn, nx3_dwn };
@@ -333,7 +332,7 @@ namespace out {
     raise::ErrorIf(names.size() != addresses.size(),
                    "# of names != # of addresses ",
                    HERE);
-    for (std::size_t i { 0 }; i < addresses.size(); ++i) {
+    for (auto i { 0u }; i < addresses.size(); ++i) {
       WriteField<D, N>(m_io,
                        m_writer,
                        names[i],
@@ -346,8 +345,8 @@ namespace out {
   }
 
   void Writer::writeParticleQuantity(const array_t<real_t*>& array,
-                                     std::size_t             glob_total,
-                                     std::size_t             loc_offset,
+                                     npart_t                 glob_total,
+                                     npart_t                 loc_offset,
                                      const std::string&      varname) {
     auto var = m_io.InquireVariable<real_t>(varname);
     var.SetShape({ glob_total });
@@ -416,8 +415,8 @@ namespace out {
   }
 
   void Writer::beginWriting(WriteModeTags write_mode,
-                            std::size_t   tstep,
-                            long double   time) {
+                            timestep_t    tstep,
+                            simtime_t     time) {
     raise::ErrorIf(write_mode == WriteMode::None, "None is not a valid mode", HERE);
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
     if (m_active_mode != WriteMode::None) {
@@ -468,8 +467,8 @@ namespace out {
       raise::Fatal(e.what(), HERE);
     }
     m_writer.BeginStep();
-    m_writer.Put(m_io.InquireVariable<std::size_t>("Step"), &tstep);
-    m_writer.Put(m_io.InquireVariable<long double>("Time"), &time);
+    m_writer.Put(m_io.InquireVariable<timestep_t>("Step"), &tstep);
+    m_writer.Put(m_io.InquireVariable<simtime_t>("Time"), &time);
   }
 
   void Writer::endWriting(WriteModeTags write_mode) {
@@ -511,7 +510,7 @@ namespace out {
                                         const ndfield_t<Dim::_1D, 3>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
   template void WriteField<Dim::_1D, 6>(adios2::IO&,
                                         adios2::Engine&,
@@ -519,7 +518,7 @@ namespace out {
                                         const ndfield_t<Dim::_1D, 6>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
   template void WriteField<Dim::_2D, 3>(adios2::IO&,
                                         adios2::Engine&,
@@ -527,7 +526,7 @@ namespace out {
                                         const ndfield_t<Dim::_2D, 3>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
   template void WriteField<Dim::_2D, 6>(adios2::IO&,
                                         adios2::Engine&,
@@ -535,7 +534,7 @@ namespace out {
                                         const ndfield_t<Dim::_2D, 6>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
   template void WriteField<Dim::_3D, 3>(adios2::IO&,
                                         adios2::Engine&,
@@ -543,7 +542,7 @@ namespace out {
                                         const ndfield_t<Dim::_3D, 3>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
   template void WriteField<Dim::_3D, 6>(adios2::IO&,
                                         adios2::Engine&,
@@ -551,7 +550,7 @@ namespace out {
                                         const ndfield_t<Dim::_3D, 6>&,
                                         std::size_t,
                                         std::vector<unsigned int>,
-                                        std::vector<std::size_t>,
+                                        std::vector<ncells_t>,
                                         bool);
 
 } // namespace out

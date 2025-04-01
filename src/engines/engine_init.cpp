@@ -53,7 +53,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
         // read simulation data from the checkpoint
         raise::ErrorIf(
-          m_params.template get<std::size_t>("checkpoint.start_step") == 0,
+          m_params.template get<timestep_t>("checkpoint.start_step") == 0,
           "Resuming simulation from a checkpoint requires a valid start_step",
           HERE);
         logger::Checkpoint("Resuming simulation from a checkpoint", HERE);

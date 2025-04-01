@@ -72,7 +72,7 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    KerrSchild(std::vector<std::size_t>             res,
+    KerrSchild(std::vector<ncells_t>                res,
                boundaries_t<real_t>                 ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }

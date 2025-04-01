@@ -61,7 +61,7 @@ namespace metric {
     static constexpr bool      is_metric { true };
     static constexpr Dimension Dim { D };
 
-    MetricBase(std::vector<std::size_t> res, boundaries_t<real_t> ext)
+    MetricBase(std::vector<ncells_t> res, boundaries_t<real_t> ext)
       : nx1 { res.size() > 0 ? (real_t)(res[0]) : ONE }
       , nx2 { res.size() > 1 ? (real_t)(res[1]) : ONE }
       , nx3 { res.size() > 2 ? (real_t)(res[2]) : ONE }

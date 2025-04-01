@@ -38,7 +38,7 @@ namespace ntt {
                             color::BRIGHT_BLACK,
                             fmt::repeat("═", 58).c_str(),
                             color::RESET);
-      for (std::size_t i { 0 }; i < lines.size(); ++i) {
+      for (auto i { 0u }; i < lines.size(); ++i) {
         report += fmt::format("%s║%s %s%s%s%s%s║%s\n",
                               color::BRIGHT_BLACK,
                               color::RESET,
@@ -105,10 +105,10 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(
-      std::size_t bytes) -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(std::size_t bytes)
+      -> std::pair<long double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
-      std::size_t                    unit_idx = 0;
+      idx_t                          unit_idx = 0;
       auto                           size     = static_cast<long double>(bytes);
       while ((size >= 1024) && (unit_idx < units.size() - 1)) {
         size /= 1024;
@@ -236,12 +236,11 @@ namespace ntt {
         add_param(report, 4, "Runtime", "%.3Le [%d steps]", runtime, max_steps);
         report += "\n";
         add_category(report, 4, "Global domain");
-        add_param(
-          report,
-          4,
-          "Resolution",
-          "%s",
-          params.template stringize<std::size_t>("grid.resolution").c_str());
+        add_param(report,
+                  4,
+                  "Resolution",
+                  "%s",
+                  params.template stringize<ncells_t>("grid.resolution").c_str());
         add_param(report,
                   4,
                   "Extent",
@@ -392,7 +391,7 @@ namespace ntt {
         add_subcategory(report, 6, "Memory footprint");
         auto flds_footprint         = domain.fields.memory_footprint();
         auto [flds_size, flds_unit] = bytes_to_human_readable(flds_footprint);
-        add_param(report, 8, "Fields", "%.2Lf %s", flds_size, flds_unit.c_str());
+        add_param(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
         if (domain.species.size() > 0) {
           add_subcategory(report, 8, "Particles");
         }
@@ -401,7 +400,7 @@ namespace ntt {
                                        species.index(),
                                        species.label().c_str());
           auto [size, unit] = bytes_to_human_readable(species.memory_footprint());
-          add_param(report, 10, str.c_str(), "%.2Lf %s", size, unit.c_str());
+          add_param(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
         }
         report.pop_back();
         if (idx == m_metadomain.ndomains() - 1) {

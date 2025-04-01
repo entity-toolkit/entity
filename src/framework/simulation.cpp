@@ -40,9 +40,9 @@ namespace ntt {
       fmt::toLower(toml::find<std::string>(raw_params, "grid", "metric", "metric"))
         .c_str());
 
-    const auto res = toml::find<std::vector<std::size_t>>(raw_params,
-                                                          "grid",
-                                                          "resolution");
+    const auto res = toml::find<std::vector<ncells_t>>(raw_params,
+                                                       "grid",
+                                                       "resolution");
     raise::ErrorIf(res.size() < 1 || res.size() > 3,
                    "invalid `grid.resolution`",
                    HERE);
@@ -51,7 +51,7 @@ namespace ntt {
     // !TODO: when mixing checkpoint metadata with input,
     // ... need to properly take care of the diffs
     m_params.setRawData(raw_params);
-    std::size_t checkpoint_step = 0;
+    timestep_t checkpoint_step = 0;
     if (is_resuming) {
       logger::Checkpoint("Reading params from a checkpoint", HERE);
       if (not std::filesystem::exists("checkpoints")) {
@@ -61,7 +61,7 @@ namespace ntt {
            std::filesystem::directory_iterator("checkpoints")) {
         const auto fname = entry.path().filename().string();
         if (fname.find("step-") == 0) {
-          const std::size_t step = std::stoi(fname.substr(5, fname.size() - 5 - 3));
+          const timestep_t step = std::stoi(fname.substr(5, fname.size() - 5 - 3));
           if (step > checkpoint_step) {
             checkpoint_step = step;
           }
@@ -78,9 +78,9 @@ namespace ntt {
       }
       logger::Checkpoint(fmt::format("Using %08lu", checkpoint_step), HERE);
       const auto raw_checkpoint_params = toml::parse(checkpoint_inputfname);
-      const auto start_time = toml::find<long double>(raw_checkpoint_params,
-                                                      "metadata",
-                                                      "time");
+      const auto start_time = toml::find<simtime_t>(raw_checkpoint_params,
+                                                    "metadata",
+                                                    "time");
       m_params.setImmutableParams(raw_checkpoint_params);
       m_params.setMutableParams(raw_params);
       m_params.setCheckpointParams(true, checkpoint_step, start_time);

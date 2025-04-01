@@ -79,7 +79,7 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
-      const auto clear_interval = m_params.template get<std::size_t>(
+      const auto clear_interval = m_params.template get<timestep_t>(
         "particles.clear_interval");
 
       if (step == 0) {
@@ -558,7 +558,7 @@ namespace ntt {
       auto       range   = range_with_axis_BCs(domain);
       const auto nfilter = m_params.template get<unsigned short>(
         "algorithms.current_filters");
-      tuple_t<std::size_t, M::Dim> size;
+      tuple_t<ncells_t, M::Dim> size;
       if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
         size[0] = domain.mesh.n_active(in::x1);
       }
@@ -644,8 +644,8 @@ namespace ntt {
         return;
       }
       const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> range_min { 0 };
-      tuple_t<std::size_t, M::Dim> range_max { 0 };
+      tuple_t<ncells_t, M::Dim> range_min { 0 };
+      tuple_t<ncells_t, M::Dim> range_max { 0 };
 
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
         range_min[d] = intersect_range[d].first;
@@ -757,8 +757,8 @@ namespace ntt {
       } else {
         raise::Error("Invalid dimension", HERE);
       }
-      std::vector<std::size_t> xi_min, xi_max;
-      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+      std::vector<ncells_t> xi_min, xi_max;
+      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
       for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
         const auto dd = all_dirs[d];
         if (dim == dd) {
@@ -862,15 +862,15 @@ namespace ntt {
           return;
         }
         const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<std::size_t, M::Dim> range_min { 0 };
-        tuple_t<std::size_t, M::Dim> range_max { 0 };
+        tuple_t<ncells_t, M::Dim> range_min { 0 };
+        tuple_t<ncells_t, M::Dim> range_max { 0 };
 
         for (unsigned short d { 0 }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto        atm_fields = m_pgen.AtmFields(time);
-        std::size_t il_edge;
+        auto     atm_fields = m_pgen.AtmFields(time);
+        ncells_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {
@@ -1202,8 +1202,8 @@ namespace ntt {
                      "possible only in -x1 (@ rmin)",
                      HERE);
       }
-      real_t      xg_min { ZERO }, xg_max { ZERO };
-      std::size_t ig_min, ig_max;
+      real_t   xg_min { ZERO }, xg_max { ZERO };
+      ncells_t ig_min, ig_max;
       if (sign > 0) { // + direction
         ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
         ig_max = m_metadomain.mesh().n_active(dim);

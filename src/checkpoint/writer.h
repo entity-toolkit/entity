@@ -47,11 +47,11 @@ namespace checkpoint {
 
     ~Writer() = default;
 
-    void init(adios2::ADIOS*, std::size_t, long double, int);
+    void init(adios2::ADIOS*, timestep_t, simtime_t, int);
 
-    auto shouldSave(std::size_t, long double) -> bool;
+    auto shouldSave(timestep_t, simtime_t) -> bool;
 
-    void beginSaving(std::size_t, long double);
+    void beginSaving(timestep_t, simtime_t);
     void endSaving();
 
     void saveAttrs(const ntt::SimulationParams&, long double);
@@ -64,22 +64,22 @@ namespace checkpoint {
 
     template <typename T>
     void saveParticleQuantity(const std::string&,
-                              std::size_t,
-                              std::size_t,
-                              std::size_t,
+                              npart_t,
+                              npart_t,
+                              npart_t,
                               const array_t<T*>&);
 
     void saveParticlePayloads(const std::string&,
                               std::size_t,
-                              std::size_t,
-                              std::size_t,
-                              std::size_t,
+                              npart_t,
+                              npart_t,
+                              npart_t,
                               const array_t<real_t**>&);
 
     void defineFieldVariables(const ntt::SimEngine&,
-                              const std::vector<std::size_t>&,
-                              const std::vector<std::size_t>&,
-                              const std::vector<std::size_t>&);
+                              const std::vector<ncells_t>&,
+                              const std::vector<ncells_t>&,
+                              const std::vector<ncells_t>&);
 
     void defineParticleVariables(const ntt::Coord&,
                                  Dimension,

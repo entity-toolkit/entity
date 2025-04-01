@@ -493,11 +493,11 @@ namespace kernel::bc {
    */
   template <Dimension D, bool P>
   struct AxisBoundaries_kernel {
-    ndfield_t<D, 6>   Fld;
-    const std::size_t i_edge;
-    const bool        setE, setB;
+    ndfield_t<D, 6> Fld;
+    const ncells_t  i_edge;
+    const bool      setE, setB;
 
-    AxisBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+    AxisBoundaries_kernel(ndfield_t<D, 6> Fld, ncells_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
@@ -558,15 +558,15 @@ namespace kernel::bc {
                     static_cast<unsigned short>(M::Dim),
                   "Invalid Orientation");
 
-    ndfield_t<D, 6>   Fld;
-    const I           fset;
-    const M           metric;
-    const std::size_t i_edge;
+    ndfield_t<D, 6> Fld;
+    const I         fset;
+    const M         metric;
+    const ncells_t  i_edge;
 
     EnforcedBoundaries_kernel(ndfield_t<M::Dim, 6>& Fld,
                               const I&              fset,
                               const M&              metric,
-                              std::size_t           i_edge,
+                              ncells_t              i_edge,
                               BCTags                tags)
       : Fld { Fld }
       , fset { fset }
