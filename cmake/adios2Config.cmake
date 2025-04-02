@@ -12,13 +12,17 @@ set(ADIOS2_USE_Fortran
     CACHE BOOL "Use Fortran for ADIOS2")
 
 # Format/compression support
-set(ADIOS2_USE_ZeroMQ
-    OFF
-    CACHE BOOL "Use ZeroMQ for ADIOS2")
+set(ADIOS2_USE_HDF5
+    ON
+    CACHE BOOL "Use HDF5 for ADIOS2")
 
 set(ADIOS2_USE_MPI
     ${mpi}
     CACHE BOOL "Use MPI for ADIOS2")
+
+set(ADIOS2_USE_ZeroMQ
+    OFF
+    CACHE BOOL "Use ZeroMQ for ADIOS2")
 
 set(ADIOS2_USE_CUDA
     OFF

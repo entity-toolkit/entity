@@ -33,7 +33,7 @@ if(DEFINED ENV{Entity_ENABLE_OUTPUT})
       CACHE INTERNAL "Default flag for output")
 else()
   set(default_output
-      OFF
+      ON
       CACHE INTERNAL "Default flag for output")
 endif()
 

@@ -34,13 +34,10 @@ function(set_problem_generator pgen_name)
     )
   endif()
   set(PGEN
-      ${pgen_name}
-      PARENT_SCOPE)
+      ${pgen_name} PARENT_SCOPE)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/setups/${pgen_name})
   set(PGEN_FOUND
-      TRUE
-      PARENT_SCOPE)
+      TRUE PARENT_SCOPE)
   set(problem_generators
-      ${PGEN_NAMES}
-      PARENT_SCOPE)
+      ${PGEN_NAMES} PARENT_SCOPE)
 endfunction()
