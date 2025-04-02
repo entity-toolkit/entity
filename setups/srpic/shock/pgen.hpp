@@ -9,6 +9,7 @@
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
+#include "archetypes/field_setter.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
@@ -231,38 +232,13 @@ namespace user {
         x_max[d] = extent[d].second;
       }
 
-      // reset fields
-      std::vector<unsigned short> comps = { em::bx1, em::bx2, em::bx3,
-                                            em::ex1, em::ex2, em::ex3 };
+      Kokkos::parallel_for("ResetFields",
+                           CreateRangePolicy<M::Dim>(x_min, x_max),
+                           arch::SetEMFields_kernel<decltype(init_flds), S, M> {
+                             domain.fields.em,
+                             init_flds,
+                             domain.mesh.metric });
 
-      // loop over all components
-      for (const auto& comp : comps) {
-
-        // get initial field value of component
-        auto value = ResetFields((em)comp);
-
-        if constexpr (M::Dim == Dim::_1D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(x_min[0], x_max[0]),
-                                            comp),
-                            value);
-        } else if constexpr (M::Dim == Dim::_2D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(x_min[0], x_max[0]),
-                                            std::make_pair(x_min[1], x_max[1]),
-                                            comp),
-                            value);
-        } else if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::deep_copy(Kokkos::subview(domain.fields.em,
-                                            std::make_pair(x_min[0], x_max[0]),
-                                            std::make_pair(x_min[1], x_max[1]),
-                                            std::make_pair(x_min[2], x_max[2]),
-                                            comp),
-                            value);
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
-      }
 
       /*
         tag particles inside the injection zone as dead
