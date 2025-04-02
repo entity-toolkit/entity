@@ -100,16 +100,6 @@ endif()
 # Output
 if(${output})
   find_or_fetch_dependency(adios2 FALSE QUIET)
-  if(NOT DEFINED ENV{HDF5_ROOT})
-    if(DEFINED ENV{CONDA_PREFIX})
-      execute_process(COMMAND bash -c "conda list | grep \"hdf5\" -q"
-                      RESULT_VARIABLE HDF5_INSTALLED)
-      if(HDF5_INSTALLED EQUAL 0)
-        set(HDF5_ROOT $ENV{CONDA_PREFIX})
-      endif()
-    endif()
-  endif()
-  find_package(HDF5 REQUIRED)
   add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
@@ -119,13 +109,6 @@ if(${output})
 endif()
 
 link_libraries(${DEPENDENCIES})
-
-get_cmake_property(all_vars VARIABLES)
-foreach(_var ${all_vars})
-  if(_var MATCHES "^Kokkos_.*")
-    message(STATUS "PRINTING ${_var}=${${_var}}")
-  endif()
-endforeach()
 
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #

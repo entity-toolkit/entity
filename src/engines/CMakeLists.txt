@@ -38,7 +38,7 @@ add_library(ntt_engines ${SOURCES})
 set(libs ntt_global ntt_framework ntt_metrics ntt_archetypes ntt_kernels
          ntt_pgen)
 if(${output})
-  list(APPEND libs ntt_output hdf5::hdf5)
+  list(APPEND libs ntt_output)
 endif()
 add_dependencies(ntt_engines ${libs})
 target_link_libraries(ntt_engines PUBLIC ${libs})
