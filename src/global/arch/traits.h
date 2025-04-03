@@ -104,6 +104,15 @@ namespace traits {
     using match_fields_t = decltype(&T::MatchFields);
 
     template <typename T>
+    using match_fields_in_x1_t = decltype(&T::MatchFieldsInX1);
+
+    template <typename T>
+    using match_fields_in_x2_t = decltype(&T::MatchFieldsInX2);
+
+    template <typename T>
+    using match_fields_in_x3_t = decltype(&T::MatchFieldsInX3);
+
+    template <typename T>
     using match_fields_const_t = decltype(&T::MatchFieldsConst);
 
     template <typename T>
