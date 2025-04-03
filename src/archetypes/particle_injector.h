@@ -165,6 +165,31 @@ namespace arch {
     }
   };
 
+  template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
+  struct KeepConstantInjector : UniformInjector<S, M, ED> {
+    using energy_dist_t = ED<S, M>;
+    using UniformInjector<S, M, ED>::D;
+    using UniformInjector<S, M, ED>::C;
+
+    const boundaries_t<real_t> probe_box;
+
+    KeepConstantInjector(const energy_dist_t&               energy_dist,
+                         const std::pair<spidx_t, spidx_t>& species,
+                         boundaries_t<real_t>               probe_box = {})
+      : UniformInjector<S, M, ED>(energy_dist, species)
+      , probe_box { probe_box } {}
+
+    ~KeepConstantInjector() = default;
+
+    auto ComputeNumInject(const Domain<S, M>&         domain,
+                          real_t                      ppc0,
+                          real_t                      number_density,
+                          const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+      // ...
+    }
+  };
+
   template <SimEngine::type S,
             class M,
             template <SimEngine::type, class> class ED,
