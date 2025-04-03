@@ -29,12 +29,12 @@ const auto mink_1d = u8R"(
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["PERIODIC"]]
+    fields = [["MATCH", "MATCH"]]
     particles = [["ABSORB", "ABSORB"]]
 
     [grid.boundaries.match]
       coeff = 10.0
-      ds = 0.025
+      ds = [[0.025, 0.1]]
 
 [scales]
   larmor0 = 0.1
@@ -269,7 +269,7 @@ auto main(int argc, char* argv[]) -> int {
                    (real_t)0.0078125,
                    "scales.V0");
       boundaries_t<FldsBC> fbc = {
-        { FldsBC::PERIODIC, FldsBC::PERIODIC }
+        { FldsBC::MATCH, FldsBC::MATCH }
       };
       assert_equal<FldsBC>(
         params_mink_1d.get<boundaries_t<FldsBC>>("grid.boundaries.fields")[0].first,
@@ -283,6 +283,14 @@ auto main(int argc, char* argv[]) -> int {
         params_mink_1d.get<boundaries_t<FldsBC>>("grid.boundaries.fields").size(),
         fbc.size(),
         "grid.boundaries.fields.size()");
+      assert_equal(
+        params_mink_1d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].first,
+        (real_t)0.025,
+        "grid.boundaries.match.ds[0].first");
+      assert_equal(
+        params_mink_1d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].second,
+        (real_t)0.1,
+        "grid.boundaries.match.ds[0].first");
 
       const auto species = params_mink_1d.get<std::vector<ParticleSpecies>>(
         "particles.species");
@@ -383,7 +391,7 @@ auto main(int argc, char* argv[]) -> int {
 
       // match coeffs
       assert_equal<real_t>(
-        params_sph_2d.get<real_t>("grid.boundaries.match.ds"),
+        params_sph_2d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].second,
         (real_t)(defaults::bc::match::ds_frac * 19.0),
         "grid.boundaries.match.ds");
 
@@ -539,7 +547,7 @@ auto main(int argc, char* argv[]) -> int {
 
       // match coeffs
       assert_equal<real_t>(
-        params_qks_2d.get<real_t>("grid.boundaries.match.ds"),
+        params_qks_2d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].second,
         (real_t)(defaults::bc::match::ds_frac * (100.0 - 0.8)),
         "grid.boundaries.match.ds");
 
