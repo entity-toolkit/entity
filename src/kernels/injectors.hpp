@@ -49,7 +49,7 @@ namespace kernel {
 
     npart_t                offset1, offset2;
     const M                metric;
-    const array_t<real_t*> ni;
+    const array_t<real_t*> i_min, i_max;
     const ED               energy_dist;
     const real_t           inv_V0;
     random_number_pool_t   random_pool;
@@ -61,7 +61,8 @@ namespace kernel {
                            npart_t                          offset1,
                            npart_t                          offset2,
                            const M&                         metric,
-                           const array_t<real_t*>&          ni,
+                           const array_t<real_t*>&          i_min,
+                           const array_t<real_t*>&          i_max,
                            const ED&                        energy_dist,
                            real_t                           inv_V0,
                            random_number_pool_t&            random_pool)
@@ -94,7 +95,8 @@ namespace kernel {
       , offset1 { offset1 }
       , offset2 { offset2 }
       , metric { metric }
-      , ni { ni }
+      , i_min { i_min }
+      , i_max { i_max }
       , energy_dist { energy_dist }
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {}
@@ -104,12 +106,12 @@ namespace kernel {
       vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
         auto rand_gen = random_pool.get_state();
-        x_Cd[0]       = Random<real_t>(rand_gen) * ni(0);
+        x_Cd[0] = i_min(0) + Random<real_t>(rand_gen) * (i_max(0) - i_min(0));
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          x_Cd[1] = Random<real_t>(rand_gen) * ni(1);
+          x_Cd[1] = i_min(1) + Random<real_t>(rand_gen) * (i_max(1) - i_min(1));
         }
         if constexpr (M::Dim == Dim::_3D) {
-          x_Cd[2] = Random<real_t>(rand_gen) * ni(2);
+          x_Cd[2] = i_min(2) + Random<real_t>(rand_gen) * (i_max(2) - i_min(2));
         }
         random_pool.free_state(rand_gen);
       }

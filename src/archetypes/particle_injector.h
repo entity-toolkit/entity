@@ -32,6 +32,7 @@
 #include <Kokkos_Core.hpp>
 
 #include <map>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -58,14 +59,79 @@ namespace arch {
       , species { species } {}
 
     ~UniformInjector() = default;
+
+    auto ComputeNumInject(const Domain<S, M>&         domain,
+                          real_t                      ppc0,
+                          real_t                      number_density,
+                          const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+      auto i_min = array_t<real_t*> { "i_min", M::Dim };
+      auto i_max = array_t<real_t*> { "i_max", M::Dim };
+
+      if (not domain.mesh.Intersects(box)) {
+        return { false, (npart_t)0, i_min, i_max };
+      }
+      tuple_t<ncells_t, M::Dim> range_min { 0 };
+      tuple_t<ncells_t, M::Dim> range_max { 0 };
+
+      boundaries_t<bool> incl_ghosts;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        incl_ghosts.push_back({ false, false });
+      }
+      const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        range_min[d] = intersect_range[d].first;
+        range_max[d] = intersect_range[d].second;
+      }
+      ncells_t ncells = 1;
+      for (auto d = 0u; d < M::Dim; ++d) {
+        ncells *= (range_max[d] - range_min[d]);
+      }
+      const auto nparticles = static_cast<npart_t>(
+        (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
+
+      auto i_min_h = Kokkos::create_mirror_view(i_min);
+      auto i_max_h = Kokkos::create_mirror_view(i_max);
+      for (auto d = 0u; d < M::Dim; ++d) {
+        i_min_h(d) = (real_t)(range_min[d]);
+        i_max_h(d) = (real_t)(range_max[d]);
+      }
+      Kokkos::deep_copy(i_min, i_min_h);
+      Kokkos::deep_copy(i_max, i_max_h);
+      return { true, nparticles, i_min, i_max };
+    }
+  };
+
+  template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
+  struct KeepConstantInjector : UniformInjector<S, M, ED> {
+    using energy_dist_t = ED<S, M>;
+    using UniformInjector<S, M, ED>::D;
+    using UniformInjector<S, M, ED>::C;
+
+    const boundaries_t<real_t> probe_box;
+
+    KeepConstantInjector(const energy_dist_t&               energy_dist,
+                         const std::pair<spidx_t, spidx_t>& species,
+                         boundaries_t<real_t>               probe_box = {})
+      : UniformInjector<S, M, ED>(energy_dist, species)
+      , probe_box { probe_box } {}
+
+    ~KeepConstantInjector() = default;
+
+    auto ComputeNumInject(const Domain<S, M>&         domain,
+                          real_t                      ppc0,
+                          real_t                      number_density,
+                          const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+      ...
+    }
   };
 
   template <SimEngine::type S,
             class M,
-            template <SimEngine::type, class>
-            class ED,
-            template <SimEngine::type, class>
-            class SD>
+            template <SimEngine::type, class> class ED,
+            template <SimEngine::type, class> class SD>
   struct NonUniformInjector {
     using energy_dist_t  = ED<S, M>;
     using spatial_dist_t = SD<S, M>;
@@ -243,11 +309,12 @@ namespace arch {
    * @tparam I Injector type
    */
   template <SimEngine::type S, class M, class I>
-  inline void InjectUniform(const SimulationParams& params,
-                            Domain<S, M>&           domain,
-                            const I&                injector,
-                            real_t                  number_density,
-                            bool                    use_weights = false) {
+  inline void InjectUniform(const SimulationParams&     params,
+                            Domain<S, M>&               domain,
+                            const I&                    injector,
+                            real_t                      number_density,
+                            bool                        use_weights = false,
+                            const boundaries_t<real_t>& box         = {}) {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(I::is_uniform_injector, "I must be a uniform injector class");
     raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
@@ -267,17 +334,25 @@ namespace arch {
     }
 
     {
-      auto             ppc0 = params.template get<real_t>("particles.ppc0");
-      array_t<real_t*> ni { "ni", M::Dim };
-      auto             ni_h   = Kokkos::create_mirror_view(ni);
-      ncells_t         ncells = 1;
-      for (auto d = 0; d < M::Dim; ++d) {
-        ni_h(d)  = domain.mesh.n_active()[d];
-        ncells  *= domain.mesh.n_active()[d];
+      boundaries_t<real_t> nonempty_box;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        if (d < box.size()) {
+          nonempty_box.push_back({ box[d].first, box[d].second });
+        } else {
+          nonempty_box.push_back(Range::All);
+        }
       }
-      Kokkos::deep_copy(ni, ni_h);
-      const auto nparticles = static_cast<npart_t>(
-        (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
+      auto       ppc0   = params.template get<real_t>("particles.ppc0");
+      const auto result = injector.ComputeNumInject(domain,
+                                                    ppc0,
+                                                    number_density,
+                                                    nonempty_box);
+      if (not std::get<0>(result)) {
+        return;
+      }
+      const auto nparticles = std::get<1>(result);
+      const auto i_min      = std::get<2>(result);
+      const auto i_max      = std::get<3>(result);
 
       Kokkos::parallel_for(
         "InjectUniform",
@@ -290,7 +365,8 @@ namespace arch {
           domain.species[injector.species.first - 1].npart(),
           domain.species[injector.species.second - 1].npart(),
           domain.mesh.metric,
-          ni,
+          i_min,
+          i_max,
           injector.energy_dist,
           ONE / params.template get<real_t>("scales.V0"),
           domain.random_pool));
@@ -341,12 +417,12 @@ namespace arch {
    * @param box Region to inject the particles in
    */
   template <SimEngine::type S, class M, class I>
-  inline void InjectNonUniform(const SimulationParams& params,
-                               Domain<S, M>&           domain,
-                               const I&                injector,
-                               real_t                  number_density,
-                               bool                    use_weights = false,
-                               boundaries_t<real_t>    box         = {}) {
+  inline void InjectNonUniform(const SimulationParams&     params,
+                               Domain<S, M>&               domain,
+                               const I&                    injector,
+                               real_t                      number_density,
+                               bool                        use_weights = false,
+                               const boundaries_t<real_t>& box         = {}) {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(I::is_nonuniform_injector,
                   "I must be a nonuniform injector class");
