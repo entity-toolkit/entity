@@ -79,7 +79,7 @@ namespace ntt {
         "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.toggles.deposit");
-      const auto clear_interval = m_params.template get<timestep_t>(
+      const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
       if (step == 0) {
@@ -612,15 +612,19 @@ namespace ntt {
       /**
        * matching boundaries
        */
-      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
+      const auto ds_array = m_params.template get<boundaries_t<real_t>>(
+        "grid.boundaries.match.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
       auto       sign = direction.get_sign();
+      real_t     ds;
       if (sign > 0) { // + direction
+        ds      = ds_array[(short)dim].second;
         xg_max  = m_metadomain.mesh().extent(dim).second;
         xg_min  = xg_max - ds;
         xg_edge = xg_max;
       } else { // - direction
+        ds      = ds_array[(short)dim].first;
         xg_min  = m_metadomain.mesh().extent(dim).first;
         xg_max  = xg_min + ds;
         xg_edge = xg_min;
@@ -651,50 +655,81 @@ namespace ntt {
         range_min[d] = intersect_range[d].first;
         range_max[d] = intersect_range[d].second;
       }
-      if constexpr (traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
-        auto match_fields = m_pgen.MatchFields(time);
-        if (dim == in::x1) {
-          Kokkos::parallel_for(
-            "MatchFields",
-            CreateRangePolicy<M::Dim>(range_min, range_max),
-            kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x1>(
-              domain.fields.em,
-              match_fields,
-              domain.mesh.metric,
-              xg_edge,
-              ds,
-              tags));
-        } else if (dim == in::x2) {
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x2>(
-                domain.fields.em,
-                match_fields,
-                domain.mesh.metric,
-                xg_edge,
-                ds,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else if (dim == in::x3) {
-          if constexpr (M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x3>(
-                domain.fields.em,
-                match_fields,
-                domain.mesh.metric,
-                xg_edge,
-                ds,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
+
+      if (dim == in::x1) {
+        if constexpr (
+          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFields(time);
+          call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        } else if constexpr (
+          traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFieldsInX1(time);
+          call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
         }
+      } else if (dim == in::x2) {
+        if constexpr (
+          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFields(time);
+          call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        } else if constexpr (
+          traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFieldsInX2(time);
+          call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        }
+      } else if (dim == in::x3) {
+        if constexpr (
+          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFields(time);
+          call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        } else if constexpr (
+          traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFieldsInX3(time);
+          call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        }
+      } else {
+        raise::Error("Invalid dimension", HERE);
       }
     }
 
@@ -1265,6 +1300,26 @@ namespace ntt {
         }
       }
       return range;
+    }
+
+    template <class T, in O>
+    void call_match_fields(ndfield_t<M::Dim, 6>&      fields,
+                           const T&                   match_fields,
+                           const M&                   metric,
+                           real_t                     xg_edge,
+                           real_t                     ds,
+                           BCTags                     tags,
+                           tuple_t<ncells_t, M::Dim>& range_min,
+                           tuple_t<ncells_t, M::Dim>& range_max) {
+      Kokkos::parallel_for(
+        "MatchFields",
+        CreateRangePolicy<M::Dim>(range_min, range_max),
+        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, T, M, O>(fields,
+                                                                      match_fields,
+                                                                      metric,
+                                                                      xg_edge,
+                                                                      ds,
+                                                                      tags));
     }
   };
 
