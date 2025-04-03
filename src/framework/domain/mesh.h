@@ -74,7 +74,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersection(boundaries_t<real_t> box) -> boundaries_t<real_t> {
+    auto Intersection(boundaries_t<real_t> box) const -> boundaries_t<real_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       boundaries_t<real_t> intersection;
       auto                 d = 0;
@@ -109,7 +109,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersects(boundaries_t<real_t> box) -> bool {
+    auto Intersects(boundaries_t<real_t> box) const -> bool {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       const auto intersection = Intersection(box);
       for (const auto& i : intersection) {
@@ -131,8 +131,8 @@ namespace ntt {
      * @note indices are already shifted by N_GHOSTS (i.e. they start at N_GHOSTS not 0)
      */
     [[nodiscard]]
-    auto ExtentToRange(boundaries_t<real_t> box,
-                       boundaries_t<bool> incl_ghosts) -> boundaries_t<ncells_t> {
+    auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts) const
+      -> boundaries_t<ncells_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       raise::ErrorIf(incl_ghosts.size() != M::Dim,
                      "Invalid incl_ghosts dimension",
