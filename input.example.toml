@@ -107,11 +107,13 @@
     particles = ""
 
     [grid.boundaries.match]
-      # Size of the matching layer for fields in physical (code) units:
-      #   @type: float
+      # Size of the matching layer in each direction for fields in physical (code) units:
+      #   @type: float or array of tuples
       #   @default: 1% of the domain size (in shortest dimension)
       #   @note: In spherical, this is the size of the layer in r from the outer wall
-      #   @note: In cartesian, this is the same for all dimensions where applicable
+      #   @example: ds = 1.5 (will set the same for all directions)
+      #   @example: ds = [[1.5], [2.0, 1.0], [1.1]] (will duplicate 1.5 for +/- x1 and 1.1 for +/- x3)
+      #   @example: ds = [[], [1.5], []] (will only set for x2)
       ds = ""
       # Absorption coefficient for fields:
       #   @type: float: -inf < ... < inf, != 0

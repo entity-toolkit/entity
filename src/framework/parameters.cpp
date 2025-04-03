@@ -738,23 +738,63 @@ namespace ntt {
         for (const auto& e : extent_pairwise) {
           min_extent = std::min(min_extent, e.second - e.first);
         }
-        set("grid.boundaries.match.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "match",
-                          "ds",
-                          min_extent * defaults::bc::match::ds_frac));
+        const auto  default_ds = min_extent * defaults::bc::match::ds_frac;
+        std::size_t n_match_bcs { 0u };
+        for (const auto& bcs : flds_bc_pairwise) {
+          if (bcs.first == FldsBC::MATCH or bcs.second == FldsBC::MATCH) {
+            n_match_bcs += 1;
+          }
+        }
+        boundaries_t<real_t> ds_array;
+        try {
+          auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
+          for (auto d = 0u; d < dim; ++d) {
+            ds_array.push_back({ ds, ds });
+          }
+        } catch (const toml::type_error&) {
+          try {
+            const auto ds = toml::find<std::vector<std::vector<real_t>>>(
+              toml_data,
+              "grid",
+              "boundaries",
+              "match",
+              "ds");
+            raise::ErrorIf(ds.size() != dim,
+                           "invalid # in `grid.boundaries.match.ds`",
+                           HERE);
+            for (auto d = 0u; d < dim; ++d) {
+              if (ds[d].size() == 1) {
+                ds_array.push_back({ ds[d][0], ds[d][0] });
+              } else if (ds[d].size() == 2) {
+                ds_array.push_back({ ds[d][0], ds[d][1] });
+              } else if (ds[d].size() == 0) {
+                ds_array.push_back({});
+              } else {
+                raise::Error("invalid `grid.boundaries.match.ds`", HERE);
+              }
+            }
+          } catch (...) {
+            for (auto d = 0u; d < dim; ++d) {
+              ds_array.push_back({ default_ds, default_ds });
+            }
+          }
+        }
+        set("grid.boundaries.match.ds", ds_array);
       } else {
         auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
-        set("grid.boundaries.match.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "match",
-                          "ds",
-                          r_extent * defaults::bc::match::ds_frac));
+        const auto ds = toml::find_or<real_t>(
+          toml_data,
+          "grid",
+          "boundaries",
+          "match",
+          "ds",
+          r_extent * defaults::bc::match::ds_frac);
+        boundaries_t<real_t> ds_array {
+          { ds, ds }
+        };
+        set("grid.boundaries.match.ds", ds_array);
       }
+
       set("grid.boundaries.match.coeff",
           toml::find_or(toml_data,
                         "grid",
