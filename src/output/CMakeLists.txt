@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103
 # ------------------------------
 # @defines: ntt_output [STATIC/SHARED]
 #

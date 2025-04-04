@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(
-    const std::vector<ncells_t>&         resolution,
-    const boundaries_t<real_t>&          extent,
-    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
+                  const boundaries_t<real_t>&          extent,
+                  const std::map<std::string, real_t>& params)
+    -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -839,7 +839,7 @@ namespace ntt {
 
   void SimulationParams::setSetupParams(const toml::value& toml_data) {
     /* [setup] -------------------------------------------------------------- */
-    const auto& setup = toml::find_or(toml_data, "setup", toml::table {});
+    const auto setup = toml::find_or(toml_data, "setup", toml::table {});
     for (const auto& [key, val] : setup) {
       if (val.is_boolean()) {
         set("setup." + key, (bool)(val.as_boolean()));

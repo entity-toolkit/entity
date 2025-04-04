@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_archetypes` module
 #

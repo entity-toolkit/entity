@@ -66,13 +66,13 @@ printchoices(
   36)
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
-  set(VERSION_SYMBOL
-      "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}"
-  )
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}." "${PROJECT_VERSION_MINOR}.")
+  string(APPEND VERSION_SYMBOL
+         "${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}")
 else()
-  set(VERSION_SYMBOL
-      "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    "
-  )
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.")
+  string(APPEND VERSION_SYMBOL
+         "${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    ")
 endif()
 
 set(REPORT_TEXT
@@ -149,12 +149,13 @@ if(${Kokkos_DEVICES} MATCHES "CUDA")
     set(CUDACOMP ${CMAKE_CUDA_COMPILER})
   endif()
   string(STRIP ${CUDACOMP} CUDACOMP)
+  set(cmd "${CUDACOMP} --version |")
+  string(APPEND cmd " grep release | sed -e 's/.*release //' -e 's/,.*//'")
   execute_process(
-    COMMAND
-      bash -c
-      "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
+    COMMAND bash -c ${cmd}
     OUTPUT_VARIABLE CUDACOMP_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message(STATUS "CUDACOMP: ${CUDACOMP_VERSION}")
   string(
     APPEND
     REPORT_TEXT
@@ -165,8 +166,9 @@ if(${Kokkos_DEVICES} MATCHES "CUDA")
     ${CUDACOMP}
     "${ColorReset}\n")
 elseif(${Kokkos_DEVICES} MATCHES "HIP")
+  set(cmd "hipcc --version | grep HIP | cut -d ':' -f 2 | tr -d ' '")
   execute_process(
-    COMMAND bash -c "hipcc --version | grep HIP | cut -d ':' -f 2 | tr -d ' '"
+    COMMAND bash -c ${cmd}
     OUTPUT_VARIABLE ROCM_VERSION
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(APPEND REPORT_TEXT "  - ROCm: v" ${ROCM_VERSION} "\n")
@@ -196,7 +198,9 @@ string(
   "\n"
   "Notes"
   "\n"
-  "    ${Dim}: Set flags with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value"
+  "    ${Dim}: Set flags with `cmake ... -D "
+  "${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, "
+  "the ${Underline}default${ColorReset}${Dim} value"
   "\n"
   "    :   will be used unless the variable is explicitly set.${ColorReset}")
 
