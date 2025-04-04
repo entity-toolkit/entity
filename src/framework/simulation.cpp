@@ -32,7 +32,12 @@ namespace ntt {
 
     const auto raw_params = toml::parse(inputfname);
     const auto sim_name = toml::find<std::string>(raw_params, "simulation", "name");
-    logger::initPlog<files::LogFile, files::InfoFile, files::ErrFile>(sim_name);
+    const auto log_level = toml::find_or<std::string>(raw_params,
+                                                      "diagnostics",
+                                                      "log_level",
+                                                      defaults::diag::log_level);
+    logger::initPlog<files::LogFile, files::InfoFile, files::ErrFile>(sim_name,
+                                                                      log_level);
 
     m_requested_engine = SimEngine::pick(
       fmt::toLower(toml::find<std::string>(raw_params, "simulation", "engine")).c_str());

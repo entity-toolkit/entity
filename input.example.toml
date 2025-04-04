@@ -478,3 +478,9 @@
   #   @type: bool
   #   @default: true
   colored_stdout = ""
+  # Specify the log level:
+  #   @type: string
+  #   @valid: "VERBOSE", "WARNING", "ERROR"
+  #   @default: "VERBOSE"
+  #   @note: VERBOSE prints all messages, WARNING prints only warnings and errors, ERROR prints only errors
+  log_level = ""

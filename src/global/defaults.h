@@ -68,7 +68,8 @@ namespace ntt::defaults {
   } // namespace checkpoint
 
   namespace diag {
-    const timestep_t interval = 1;
+    const timestep_t  interval  = 1;
+    const std::string log_level = "VERBOSE";
   } // namespace diag
 
   namespace gca {
