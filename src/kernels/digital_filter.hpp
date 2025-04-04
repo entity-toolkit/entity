@@ -59,15 +59,12 @@ namespace kernel {
   class DigitalFilter_kernel {
     ndfield_t<D, 3>       array;
     const ndfield_t<D, 3> buffer;
-    bool                  is_axis_i2min { false }, is_axis_i2max { false };
-    static constexpr auto i2_min = N_GHOSTS;
-    const ncells_t        i2_max;
     const bool            is_axis_i2min, is_axis_i2max;
     const bool            is_conductor_i1min, is_conductor_i1max;
     const bool            is_conductor_i2min, is_conductor_i2max;
     const bool            is_conductor_i3min, is_conductor_i3max;
     static constexpr auto i1_min = N_GHOSTS, i2_min = N_GHOSTS, i3_min = N_GHOSTS;
-    const std::size_t i1_max, i2_max, i3_max;
+    const ncells_t i1_max, i2_max, i3_max;
 
     // @TODO: Current implementation might have issues
     // ... at the corners between two conductors

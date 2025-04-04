@@ -105,8 +105,8 @@ auto main(int argc, char* argv[]) -> int {
       writer.saveField<Dim::_3D, 6>("em", field1);
       writer.saveField<Dim::_3D, 6>("em0", field2);
 
-      writer.savePerDomainVariable<std::size_t>("s1_npart", 1, 0, npart1);
-      writer.savePerDomainVariable<std::size_t>("s2_npart", 1, 0, npart2);
+      writer.savePerDomainVariable<npart_t>("s1_npart", 1, 0, npart1);
+      writer.savePerDomainVariable<npart_t>("s2_npart", 1, 0, npart2);
 
       writer.saveParticleQuantity<int>("s1_i1", npart1, 0, npart1, i1);
       writer.saveParticleQuantity<real_t>("s1_ux1", npart1, 0, npart1, u1);
