@@ -651,7 +651,7 @@ namespace ntt {
       tuple_t<ncells_t, M::Dim> range_min { 0 };
       tuple_t<ncells_t, M::Dim> range_max { 0 };
 
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         range_min[d] = intersect_range[d].first;
         range_max[d] = intersect_range[d].second;
       }
@@ -708,28 +708,32 @@ namespace ntt {
       /**
        * axis boundaries
        */
-      raise::ErrorIf(M::CoordType == Coord::Cart,
-                     "Invalid coordinate type for axis BCs",
-                     HERE);
-      raise::ErrorIf(direction.get_dim() != in::x2,
-                     "Invalid axis direction, should be x2",
-                     HERE);
-      const auto i2_min = domain.mesh.i_min(in::x2);
-      const auto i2_max = domain.mesh.i_max(in::x2);
-      if (direction.get_sign() < 0) {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
-                                                           i2_min,
-                                                           tags));
+      if constexpr (M::CoordType != Coord::Cart) {
+        raise::ErrorIf(direction.get_dim() != in::x2,
+                       "Invalid axis direction, should be x2",
+                       HERE);
+        const auto i2_min = domain.mesh.i_min(in::x2);
+        const auto i2_max = domain.mesh.i_max(in::x2);
+        if (direction.get_sign() < 0) {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
+                                                             i2_min,
+                                                             tags));
+        } else {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
+                                                            i2_max,
+                                                            tags));
+        }
       } else {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
-                                                          i2_max,
-                                                          tags));
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error("Invalid coordinate type for axis BCs", HERE);
       }
     }
 
@@ -834,6 +838,9 @@ namespace ntt {
           }
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Fixed fields not present (both const and non-const)", HERE);
       }
     }
@@ -844,14 +851,7 @@ namespace ntt {
       /**
        * perfect conductor field boundaries
        */
-      if constexpr (M::CoordType != Coord::Cart) {
-        (void)direction;
-        (void)domain;
-        (void)tags;
-        raise::Error(
-          "Perfect conductor BCs only applicable to cartesian coordinates",
-          HERE);
-      } else {
+      if constexpr (M::CoordType == Coord::Cart) {
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
 
@@ -859,7 +859,7 @@ namespace ntt {
 
         const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
-        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        for (auto d { 0u }; d < static_cast<unsigned short>(M::Dim); ++d) {
           const auto dd = all_dirs[d];
           if (dim == dd) {
             xi_min.push_back(0);
@@ -936,6 +936,13 @@ namespace ntt {
                 tags));
           }
         }
+      } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
       }
     }
 
@@ -1060,6 +1067,9 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Atm fields not implemented in PGEN for atmosphere BCs", HERE);
       }
     }
