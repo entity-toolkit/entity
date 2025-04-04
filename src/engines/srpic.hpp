@@ -851,7 +851,14 @@ namespace ntt {
       /**
        * perfect conductor field boundaries
        */
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cart) {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
+      } else {
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
 
@@ -859,7 +866,7 @@ namespace ntt {
 
         const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
-        for (auto d { 0u }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
           const auto dd = all_dirs[d];
           if (dim == dd) {
             xi_min.push_back(0);
@@ -936,13 +943,6 @@ namespace ntt {
                 tags));
           }
         }
-      } else {
-        (void)direction;
-        (void)domain;
-        (void)tags;
-        raise::Error(
-          "Perfect conductor BCs only applicable to cartesian coordinates",
-          HERE);
       }
     }
 
