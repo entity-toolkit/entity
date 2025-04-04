@@ -61,8 +61,8 @@ auto main(int argc, char* argv[]) -> int {
       // write
       auto writer = out::Writer();
       writer.init(&adios, "hdf5", "test", false);
-      writer.defineMeshLayout({ static_cast<unsigned long>(mpi_size) * nx1 },
-                              { static_cast<unsigned long>(mpi_rank) * nx1 },
+      writer.defineMeshLayout({ static_cast<ncells_t>(mpi_size) * nx1 },
+                              { static_cast<ncells_t>(mpi_rank) * nx1 },
                               { nx1 },
                               { dwn1 },
                               false,
@@ -89,9 +89,9 @@ auto main(int argc, char* argv[]) -> int {
     {
       // read
       adios2::IO io = adios.DeclareIO("read-test");
-      io.SetEngine("hdf5");
-      adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read, MPI_COMM_SELF);
-      raise::ErrorIf(io.InquireAttribute<unsigned int>("NGhosts").Data()[0] != 0,
+      io.SetEngine("HDF5");
+      adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read);
+      raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
                      "NGhosts is not correct",
                      HERE);
       raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 1,
@@ -99,13 +99,13 @@ auto main(int argc, char* argv[]) -> int {
                      HERE);
       for (std::size_t step = 0; reader.BeginStep() == adios2::StepStatus::OK;
            ++step) {
-        std::size_t step_read;
-        long double time_read;
+        timestep_t step_read;
+        simtime_t  time_read;
 
-        reader.Get(io.InquireVariable<std::size_t>("Step"),
+        reader.Get(io.InquireVariable<timestep_t>("Step"),
                    &step_read,
                    adios2::Mode::Sync);
-        reader.Get(io.InquireVariable<long double>("Time"),
+        reader.Get(io.InquireVariable<simtime_t>("Time"),
                    &time_read,
                    adios2::Mode::Sync);
         raise::ErrorIf(step_read != step, "Step is not correct", HERE);
@@ -122,9 +122,9 @@ auto main(int argc, char* argv[]) -> int {
         const double l = l_offset;
         const double f = math::ceil(l / d) * d - l;
 
-        const auto first_cell = static_cast<std::size_t>(f);
-        const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n - f) / d));
-        const auto l_corner_dwn = static_cast<std::size_t>(math::ceil(l / d));
+        const auto first_cell = static_cast<ncells_t>(f);
+        const auto l_size_dwn = static_cast<ncells_t>(math::ceil((n - f) / d));
+        const auto l_corner_dwn = static_cast<ncells_t>(math::ceil(l / d));
 
         array_t<real_t*> field_read {};
         int              cntr = 0;
