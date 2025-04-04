@@ -601,6 +601,8 @@ namespace ntt {
         toml::find_or(toml_data, "diagnostics", "blocking_timers", false));
     set("diagnostics.colored_stdout",
         toml::find_or(toml_data, "diagnostics", "colored_stdout", false));
+    set("diagnostics.log_level",
+        toml::find_or(toml_data, "diagnostics", "log_level", defaults::diag::log_level));
 
     /* inferred variables --------------------------------------------------- */
     // fields/particle boundaries
