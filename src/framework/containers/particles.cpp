@@ -84,7 +84,7 @@ namespace ntt {
       rangeActiveParticles(),
       Lambda(index_t p) {
         auto npptag_acc = npptag_scat.access();
-        if (this_tag(p) < 0 || this_tag(p) >= num_tags) {
+        if (this_tag(p) < 0 || this_tag(p) >= static_cast<short>(num_tags)) {
           raise::KernelError(HERE, "Invalid tag value");
         }
         npptag_acc(this_tag(p)) += 1;
@@ -144,9 +144,8 @@ namespace ntt {
 
   template <Dimension D, Coord::type C>
   void Particles<D, C>::RemoveDead() {
-    const auto n_part  = npart();
-    npart_t    n_alive = 0, n_dead = 0;
-    auto&      this_tag = tag;
+    npart_t n_alive = 0, n_dead = 0;
+    auto&   this_tag = tag;
 
     Kokkos::parallel_reduce(
       "CountDeadAlive",
