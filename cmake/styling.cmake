@@ -43,8 +43,8 @@ function(PureLength Text Result)
 
   string(LENGTH "${rt}" TextLength)
   set(${Result}
-    "${TextLength}"
-    PARENT_SCOPE)
+      "${TextLength}"
+      PARENT_SCOPE)
 endfunction()
 
 function(PadTo Text Padding Target Result)
@@ -99,14 +99,20 @@ function(
 
     set(counter 0)
     foreach(ch IN LISTS Choices)
-      if(${ch} STREQUAL ${Value})
-        set(col ${Color})
+      if(NOT ${Value} STREQUAL "")
+        if(${ch} STREQUAL ${Value})
+          set(col ${Color})
+        else()
+          set(col ${Dim})
+        endif()
       else()
         set(col ${Dim})
       endif()
 
-      if(${ch} STREQUAL ${Default})
-        set(col ${Underline}${col})
+      if(NOT ${Default} STREQUAL "")
+        if(${ch} STREQUAL ${Default})
+          set(col ${Underline}${col})
+        endif()
       endif()
 
       string(LENGTH "${ch}" clen)
@@ -131,7 +137,8 @@ function(
 
     set(new_choices ${Choices})
     foreach(ch IN LISTS new_choices)
-      string(REPLACE ${ch} "${Dim}${ch}${ColorReset}" new_choices "${new_choices}")
+      string(REPLACE ${ch} "${Dim}${ch}${ColorReset}" new_choices
+                     "${new_choices}")
     endforeach()
     set(Choices ${new_choices})
     if(${Value} STREQUAL "ON")
@@ -141,8 +148,14 @@ function(
     else()
       set(col ${Color})
     endif()
-    string(REPLACE ${Value} "${col}${Value}${ColorReset}" Choices "${Choices}")
-    string(REPLACE ${Default} "${Underline}${Default}${ColorReset}" Choices "${Choices}")
+    if(NOT "${Value}" STREQUAL "")
+      string(REPLACE ${Value} "${col}${Value}${ColorReset}" Choices
+                     "${Choices}")
+    endif()
+    if(NOT "${Default}" STREQUAL "")
+      string(REPLACE ${Default} "${Underline}${Default}${ColorReset}" Choices
+                     "${Choices}")
+    endif()
     string(REPLACE ";" "/" Choices "${Choices}")
     string(APPEND rstring "${Choices}")
   endif()
