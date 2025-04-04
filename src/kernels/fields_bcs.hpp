@@ -486,38 +486,52 @@ namespace kernel::bc {
     }
   };
 
-  template <Dimension D, in o>
+  template <Dimension D, in o, bool P>
   struct ConductorBoundaries_kernel {
     static_assert(static_cast<unsigned short>(o) < static_cast<unsigned short>(D),
                   "Invalid component index");
 
-    ndfield_t<D, 6> Fld;
-    const BCTags    tags;
+    ndfield_t<D, 6>   Fld;
+    const BCTags      tags;
+    const std::size_t i_edge;
 
-    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, BCTags tags)
+    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
+      , i_edge { i_edge }
       , tags { tags } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (tags & BC::E) {
           if (i1 == 0) {
-            Fld(N_GHOSTS, em::ex2) = ZERO;
-            Fld(N_GHOSTS, em::ex3) = ZERO;
+            Fld(i_edge, em::ex2) = ZERO;
+            Fld(i_edge, em::ex3) = ZERO;
           } else {
-            Fld(N_GHOSTS - i1, em::ex1) = Fld(N_GHOSTS + i1 - 1, em::ex1);
-            Fld(N_GHOSTS - i1, em::ex2) = -Fld(N_GHOSTS + i1, em::ex2);
-            Fld(N_GHOSTS - i1, em::ex3) = -Fld(N_GHOSTS + i1, em::ex3);
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::ex1) = Fld(i_edge + i1 - 1, em::ex1);
+              Fld(i_edge - i1, em::ex2) = -Fld(i_edge + i1, em::ex2);
+              Fld(i_edge - i1, em::ex3) = -Fld(i_edge + i1, em::ex3);
+            } else {
+              Fld(i_edge + i1 - 1, em::ex1) = Fld(i_edge - i1, em::ex1);
+              Fld(i_edge + i1, em::ex2)     = -Fld(i_edge - i1, em::ex2);
+              Fld(i_edge + i1, em::ex3)     = -Fld(i_edge - i1, em::ex3);
+            }
           }
         }
 
         if (tags & BC::B) {
           if (i1 == 0) {
-            Fld(N_GHOSTS, em::bx1) = ZERO;         
+            Fld(i_edge, em::bx1) = ZERO;
           } else {
-            Fld(N_GHOSTS - i1, em::bx1) = -Fld(N_GHOSTS + i1, em::bx1);
-            Fld(N_GHOSTS - i1, em::bx2) = Fld(N_GHOSTS + i1 - 1, em::bx2);
-            Fld(N_GHOSTS - i1, em::bx3) = Fld(N_GHOSTS + i1 - 1, em::bx3);
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::bx1) = -Fld(i_edge + i1, em::bx1);
+              Fld(i_edge - i1, em::bx2) = Fld(i_edge + i1 - 1, em::bx2);
+              Fld(i_edge - i1, em::bx3) = Fld(i_edge + i1 - 1, em::bx3);
+            } else {
+              Fld(i_edge + i1, em::bx1)     = -Fld(i_edge - i1, em::bx1);
+              Fld(i_edge + i1 - 1, em::bx2) = Fld(i_edge - i1, em::bx2);
+              Fld(i_edge + i1 - 1, em::bx3) = Fld(i_edge - i1, em::bx3);
+            }
           }
         }
       } else {
@@ -529,24 +543,71 @@ namespace kernel::bc {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        if (tags & BC::E) {
-          if (i1 == 0) {
-            Fld(N_GHOSTS, i2, em::ex2) = ZERO;
-            Fld(N_GHOSTS, i2, em::ex3) = ZERO;
-          } else {
-            Fld(N_GHOSTS - i1, i2, em::ex1) = Fld(N_GHOSTS + i1 - 1, i2, em::ex1);
-            Fld(N_GHOSTS - i1, i2, em::ex2) = -Fld(N_GHOSTS + i1, i2, em::ex2);
-            Fld(N_GHOSTS - i1, i2, em::ex3) = -Fld(N_GHOSTS + i1, i2, em::ex3);
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::ex2) = ZERO;
+              Fld(i_edge, i2, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::ex1) = Fld(i_edge + i1 - 1, i2, em::ex1);
+                Fld(i_edge - i1, i2, em::ex2) = -Fld(i_edge + i1, i2, em::ex2);
+                Fld(i_edge - i1, i2, em::ex3) = -Fld(i_edge + i1, i2, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, em::ex1) = Fld(i_edge - i1, i2, em::ex1);
+                Fld(i_edge + i1, i2, em::ex2) = -Fld(i_edge - i1, i2, em::ex2);
+                Fld(i_edge + i1, i2, em::ex3) = -Fld(i_edge - i1, i2, em::ex3);
+              }
+            }
           }
-        }
 
-        if (tags & BC::B) {
-          if (i1 == 0) {
-            Fld(N_GHOSTS, i2, em::bx1) = ZERO;
-          } else {
-            Fld(N_GHOSTS - i1, i2, em::bx1) = -Fld(N_GHOSTS + i1, i2, em::bx1);
-            Fld(N_GHOSTS - i1, i2, em::bx2) = Fld(N_GHOSTS + i1 - 1, i2, em::bx2);
-            Fld(N_GHOSTS - i1, i2, em::bx3) = Fld(N_GHOSTS + i1 - 1, i2, em::bx3);
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::bx1) = -Fld(i_edge + i1, i2, em::bx1);
+                Fld(i_edge - i1, i2, em::bx2) = Fld(i_edge + i1 - 1, i2, em::bx2);
+                Fld(i_edge - i1, i2, em::bx3) = Fld(i_edge + i1 - 1, i2, em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, em::bx1) = -Fld(i_edge - i1, i2, em::bx1);
+                Fld(i_edge + i1 - 1, i2, em::bx2) = Fld(i_edge - i1, i2, em::bx2);
+                Fld(i_edge + i1 - 1, i2, em::bx3) = Fld(i_edge - i1, i2, em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::ex1) = ZERO;
+              Fld(i1, i_edge, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::ex1) = -Fld(i1, i_edge + i2, em::ex1);
+                Fld(i1, i_edge - i2, em::ex2) = Fld(i1, i_edge + i2 - 1, em::ex2);
+                Fld(i1, i_edge - i2, em::ex3) = -Fld(i1, i_edge + i2, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, em::ex1) = -Fld(i1, i_edge - i2, em::ex1);
+                Fld(i1, i_edge + i2 - 1, em::ex2) = Fld(i1, i_edge - i2, em::ex2);
+                Fld(i1, i_edge + i2, em::ex3) = -Fld(i1, i_edge - i2, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::bx1) = Fld(i1, i_edge + i2 - 1, em::bx1);
+                Fld(i1, i_edge - i2, em::bx2) = -Fld(i1, i_edge + i2, em::bx2);
+                Fld(i1, i_edge - i2, em::bx3) = Fld(i1, i_edge + i2 - 1, em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, em::bx1) = Fld(i1, i_edge - i2, em::bx1);
+                Fld(i1, i_edge + i2, em::bx2) = -Fld(i1, i_edge - i2, em::bx2);
+                Fld(i1, i_edge + i2 - 1, em::bx3) = Fld(i1, i_edge - i2, em::bx3);
+              }
+            }
           }
         }
       } else {
@@ -558,27 +619,158 @@ namespace kernel::bc {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
-        if (tags & BC::E) {
-          if (i1 == 0) {
-            Fld(N_GHOSTS, i2, i3, em::ex2) = ZERO;
-            Fld(N_GHOSTS, i2, i3, em::ex3) = ZERO;
-          } else {
-            Fld(N_GHOSTS - i1, i2, i3, em::ex1) = Fld(N_GHOSTS + i1 - 1,
-                                                      i2, i3, em::ex1);
-            Fld(N_GHOSTS - i1, i2, i3, em::ex2) = -Fld(N_GHOSTS + i1, i2, i3, em::ex2);
-            Fld(N_GHOSTS - i1, i2, i3, em::ex3) = -Fld(N_GHOSTS + i1, i2, i3, em::ex3);
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::ex2) = ZERO;
+              Fld(i_edge, i2, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::ex1) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::ex1);
+                Fld(i_edge - i1, i2, i3, em::ex2) = -Fld(i_edge + i1, i2, i3, em::ex2);
+                Fld(i_edge - i1, i2, i3, em::ex3) = -Fld(i_edge + i1, i2, i3, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, i3, em::ex1) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::ex1);
+                Fld(i_edge + i1, i2, i3, em::ex2) = -Fld(i_edge - i1, i2, i3, em::ex2);
+                Fld(i_edge + i1, i2, i3, em::ex3) = -Fld(i_edge - i1, i2, i3, em::ex3);
+              }
+            }
           }
-        }
 
-        if (tags & BC::B) {
-          if (i1 == 0) {
-              Fld(N_GHOSTS, i2, i3, em::bx1) = ZERO;
-          } else {
-            Fld(N_GHOSTS - i1, i2, i3, em::bx1) = -Fld(N_GHOSTS + i1, i2, i3, em::bx1);
-            Fld(N_GHOSTS - i1, i2, i3, em::bx2) = Fld(N_GHOSTS + i1 - 1,
-                                                      i2, i3, em::bx2);
-            Fld(N_GHOSTS - i1, i2, i3, em::bx3) = Fld(N_GHOSTS + i1 - 1,
-                                                      i2, i3, em::bx3);
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::bx1) = -Fld(i_edge + i1, i2, i3, em::bx1);
+                Fld(i_edge - i1, i2, i3, em::bx2) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx2);
+                Fld(i_edge - i1, i2, i3, em::bx3) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, i3, em::bx1) = -Fld(i_edge - i1, i2, i3, em::bx1);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx2) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx2);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx3) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else if (o == in::x2) {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::ex1) = ZERO;
+              Fld(i1, i_edge, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::ex1) = -Fld(i1, i_edge + i2, i3, em::ex1);
+                Fld(i1, i_edge - i2, i3, em::ex2) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::ex2);
+                Fld(i1, i_edge - i2, i3, em::ex3) = -Fld(i1, i_edge + i2, i3, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, i3, em::ex1) = -Fld(i1, i_edge - i2, i3, em::ex1);
+                Fld(i1, i_edge + i2 - 1, i3, em::ex2) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::ex2);
+                Fld(i1, i_edge + i2, i3, em::ex3) = -Fld(i1, i_edge - i2, i3, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::bx1) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx1);
+                Fld(i1, i_edge - i2, i3, em::bx2) = -Fld(i1, i_edge + i2, i3, em::bx2);
+                Fld(i1, i_edge - i2, i3, em::bx3) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, i3, em::bx1) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx1);
+                Fld(i1, i_edge + i2, i3, em::bx2) = -Fld(i1, i_edge - i2, i3, em::bx2);
+                Fld(i1, i_edge + i2 - 1, i3, em::bx3) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::ex1) = ZERO;
+              Fld(i1, i2, i_edge, em::ex2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::ex1) = -Fld(i1, i2, i_edge + i3, em::ex1);
+                Fld(i1, i2, i_edge - i3, em::ex2) = -Fld(i1, i2, i_edge + i3, em::ex2);
+                Fld(i1, i2, i_edge - i3, em::ex3) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::ex3);
+              } else {
+                Fld(i1, i2, i_edge + i3, em::ex1) = -Fld(i1, i2, i_edge - i3, em::ex1);
+                Fld(i1, i2, i_edge + i3, em::ex2) = -Fld(i1, i2, i_edge - i3, em::ex2);
+                Fld(i1, i2, i_edge + i3 - 1, em::ex3) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::bx3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::bx1) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx1);
+                Fld(i1, i2, i_edge - i3, em::bx2) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx2);
+                Fld(i1, i2, i_edge - i3, em::bx3) = -Fld(i1, i2, i_edge + i3, em::bx3);
+              } else {
+                Fld(i1, i2, i_edge + i3 - 1, em::bx1) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx1);
+                Fld(i1, i2, i_edge + i3 - 1, em::bx2) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx2);
+                Fld(i1, i2, i_edge + i3, em::bx3) = -Fld(i1, i2, i_edge - i3, em::bx3);
+              }
+            }
           }
         }
       } else {
