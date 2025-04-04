@@ -220,7 +220,6 @@ namespace comm {
 
       if (recv_rank >= 0) {
 
-        // !TODO: perhaps directly recv to the fld?
         if (not additive) {
           if constexpr (D == Dim::_1D) {
             Kokkos::deep_copy(Kokkos::subview(fld, recv_slice[0], comps), recv_fld);
