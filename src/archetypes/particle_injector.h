@@ -60,17 +60,16 @@ namespace arch {
 
     ~UniformInjector() = default;
 
-    auto ComputeNumInject(const Domain<S, M>&         domain,
-                          real_t                      ppc0,
-                          real_t                      number_density,
-                          const boundaries_t<real_t>& box) const
-      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+    auto DeduceInjectRegion(const Domain<S, M>&         domain,
+                            const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, ncells_t, array_t<real_t*>, array_t<real_t*>> {
       auto i_min = array_t<real_t*> { "i_min", M::Dim };
       auto i_max = array_t<real_t*> { "i_max", M::Dim };
 
       if (not domain.mesh.Intersects(box)) {
-        return { false, (npart_t)0, i_min, i_max };
+        return { false, (ncells_t)0, i_min, i_max };
       }
+
       tuple_t<ncells_t, M::Dim> range_min { 0 };
       tuple_t<ncells_t, M::Dim> range_max { 0 };
 
@@ -84,12 +83,11 @@ namespace arch {
         range_min[d] = intersect_range[d].first;
         range_max[d] = intersect_range[d].second;
       }
+
       ncells_t ncells = 1;
       for (auto d = 0u; d < M::Dim; ++d) {
         ncells *= (range_max[d] - range_min[d]);
       }
-      const auto nparticles = static_cast<npart_t>(
-        (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
 
       auto i_min_h = Kokkos::create_mirror_view(i_min);
       auto i_max_h = Kokkos::create_mirror_view(i_max);
@@ -97,8 +95,30 @@ namespace arch {
         i_min_h(d) = (real_t)(range_min[d]);
         i_max_h(d) = (real_t)(range_max[d]);
       }
+
       Kokkos::deep_copy(i_min, i_min_h);
       Kokkos::deep_copy(i_max, i_max_h);
+      return { true, ncells, i_min, i_max };
+    }
+
+    auto ComputeNumInject(const Domain<S, M>&         domain,
+                          real_t                      ppc0,
+                          real_t                      number_density,
+                          const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+      const auto result        = DeduceInjectRegion(domain, box);
+      const auto should_inject = std::get<0>(result);
+      auto       i_min         = std::get<2>(result);
+      auto       i_max         = std::get<3>(result);
+
+      if (not shoult_inject) {
+        return { false, (npart_t)0, i_min, i_max };
+      }
+      const auto ncells = std::get<1>(result);
+
+      const auto nparticles = static_cast<npart_t>(
+        (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
+
       return { true, nparticles, i_min, i_max };
     }
   };
@@ -124,7 +144,24 @@ namespace arch {
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
-      ...
+      const auto result        = DeduceInjectRegion(domain, box);
+      const auto should_inject = std::get<0>(result);
+      auto       i_min         = std::get<2>(result);
+      auto       i_max         = std::get<3>(result);
+
+      if (not shoult_inject) {
+        return { false, (npart_t)0, i_min, i_max };
+      }
+      const auto ncells = std::get<1>(result);
+
+      // @TODO
+      const auto computed_avg_density = ONE;
+
+      const auto nparticles = static_cast<npart_t>(
+        (long double)(ppc0 * (number_density - computed_avg_density) * 0.5) *
+        (long double)(ncells));
+
+      return { true, nparticles, i_min, i_max };
     }
   };
 
@@ -242,6 +279,7 @@ namespace arch {
    * @param injector Uniform injector object
    * @param number_density Total number density (in units of n0)
    * @param use_weights Use weights
+   * @param box Region to inject the particles in global coords
    * @tparam S Simulation engine type
    * @tparam M Metric type
    * @tparam I Injector type
