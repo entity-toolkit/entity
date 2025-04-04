@@ -27,6 +27,7 @@ Inline auto equal(const vec_t<D>& a,
   const auto eps = epsilon * acc;
   for (unsigned short d = 0; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
+      printf("%s: %.12e : %.12e\n", msg, a[d], b[d]);
       return false;
     }
   }
