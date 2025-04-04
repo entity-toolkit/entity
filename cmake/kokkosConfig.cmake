@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 # ----------------------------- Kokkos settings ---------------------------- #
 if(${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION

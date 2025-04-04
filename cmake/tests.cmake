@@ -13,9 +13,7 @@ if(${output})
   add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
 endif()
 
-set(TEST_DIRECTORIES
-    ""
-    PARENT_SCOPE)
+set(TEST_DIRECTORIES "")
 
 if(NOT ${mpi})
   list(APPEND TEST_DIRECTORIES global)

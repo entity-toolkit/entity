@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 # ----------------------------- Defaults ---------------------------------- #
 if(DEFINED ENV{Entity_ENABLE_DEBUG})
   set(default_debug

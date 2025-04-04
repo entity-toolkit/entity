@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103,C0301,C0111,E1120,R0913,R0915
+
 if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColorReset "${Esc}[m")
@@ -23,13 +25,11 @@ if(NOT WIN32)
   set(StrikeEnd "${Esc}[0m")
 endif()
 
-set(DOTTED_LINE_SYMBOL
-    "${ColorReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
-)
+set(DOTTED_LINE_SYMBOL "${ColorReset}. . . . . . . . . . . . . . . .")
+string(APPEND DOTTED_LINE_SYMBOL " . . . . . . . . . . . . . . . . . . . . ")
 
-set(DASHED_LINE_SYMBOL
-    "${ColorReset}....................................................................... "
-)
+set(DASHED_LINE_SYMBOL "${ColorReset}.................................")
+string(APPEND DASHED_LINE_SYMBOL "...................................... ")
 
 set(ON_OFF_VALUES "ON" "OFF")
 

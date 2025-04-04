@@ -1,10 +1,12 @@
+# cmake-lint: disable=C0103,C0111,R0915,R0912
+
 set(Kokkos_REPOSITORY
     https://github.com/kokkos/kokkos.git
     CACHE STRING "Kokkos repository")
 set(plog_REPOSITORY
     https://github.com/SergiusTheBest/plog.git
     CACHE STRING "plog repository")
-set (adios2_REPOSITORY
+set(adios2_REPOSITORY
     https://github.com/ornladios/ADIOS2.git
     CACHE STRING "ADIOS2 repository")
 
@@ -41,7 +43,7 @@ function(find_or_fetch_dependency package_name header_only mode)
   endif()
 
   if(NOT ${package_name}_FOUND)
-    if (${package_name} STREQUAL "Kokkos")
+    if(${package_name} STREQUAL "Kokkos")
       include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
     elseif(${package_name} STREQUAL "adios2")
       include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
@@ -49,10 +51,8 @@ function(find_or_fetch_dependency package_name header_only mode)
     if(DEFINED ${package_name}_REPOSITORY AND NOT
                                               FETCHCONTENT_FULLY_DISCONNECTED)
       # fetching package
-      message(
-        STATUS
-          "${Blue}${package_name} not found. Fetching from ${${package_name}_REPOSITORY}${ColorReset}"
-      )
+      message(STATUS "${Blue}${package_name} not found. "
+                     "Fetching from ${${package_name}_REPOSITORY}${ColorReset}")
       include(FetchContent)
       if(${package_name} STREQUAL "Kokkos")
         FetchContent_Declare(
@@ -100,7 +100,7 @@ function(find_or_fetch_dependency package_name header_only mode)
       endif()
 
       add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
-                        extern/${package_name})
+                       extern/${package_name})
       set(${package_name}_SRC
           ${CMAKE_CURRENT_SOURCE_DIR}/extern/${package_name}
           CACHE PATH "Path to ${package_name} src")
@@ -136,24 +136,35 @@ function(find_or_fetch_dependency package_name header_only mode)
           ${Kokkos_VERSION}
           CACHE INTERNAL "Kokkos version")
     endif()
-    if(NOT DEFINED Kokkos_ARCH OR Kokkos_ARCH STREQUAL ""
-      OR NOT DEFINED Kokkos_DEVICES OR Kokkos_DEVICES STREQUAL "")
+    if(NOT DEFINED Kokkos_ARCH
+       OR Kokkos_ARCH STREQUAL ""
+       OR NOT DEFINED Kokkos_DEVICES
+       OR Kokkos_DEVICES STREQUAL "")
       if(${Kokkos_FOUND})
         include(${Kokkos_DIR}/KokkosConfigCommon.cmake)
       elseif(NOT ${Kokkos_BUILD_DIR} STREQUAL "")
         include(${Kokkos_BUILD_DIR}/KokkosConfigCommon.cmake)
       else()
-        message(STATUS "${Red}Kokkos_DIR and Kokkos_BUILD_DIR not set.${ColorReset}")
+        message(
+          STATUS "${Red}Kokkos_DIR and Kokkos_BUILD_DIR not set.${ColorReset}")
       endif()
     endif()
     set(Kokkos_ARCH
-        ${Kokkos_ARCH} PARENT_SCOPE)
+        ${Kokkos_ARCH}
+        PARENT_SCOPE)
     set(Kokkos_DEVICES
-        ${Kokkos_DEVICES} PARENT_SCOPE)
+        ${Kokkos_DEVICES}
+        PARENT_SCOPE)
   endif()
-  set(${package_name}_FOUND ${${package_name}_FOUND} PARENT_SCOPE)
-  set(${package_name}_FETCHED ${${package_name}_FETCHED} PARENT_SCOPE)
-  set(${package_name}_BUILD_DIR ${${package_name}_BUILD_DIR} PARENT_SCOPE)
+  set(${package_name}_FOUND
+      ${${package_name}_FOUND}
+      PARENT_SCOPE)
+  set(${package_name}_FETCHED
+      ${${package_name}_FETCHED}
+      PARENT_SCOPE)
+  set(${package_name}_BUILD_DIR
+      ${${package_name}_BUILD_DIR}
+      PARENT_SCOPE)
 endfunction()
 
 check_internet_connection()

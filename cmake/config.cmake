@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 # -------------------------------- Precision ------------------------------- #
 function(set_precision precision_name)
   list(FIND precisions ${precision_name} PRECISION_FOUND)
@@ -28,16 +30,17 @@ function(set_problem_generator pgen_name)
   endforeach()
   list(FIND PGEN_NAMES ${pgen_name} PGEN_FOUND)
   if(NOT ${pgen_name} STREQUAL "." AND ${PGEN_FOUND} EQUAL -1)
-    message(
-      FATAL_ERROR
-        "Invalid problem generator: ${pgen_name}\nValid options are: ${PGEN_NAMES}"
-    )
+    message(FATAL_ERROR "Invalid problem generator: "
+                        "${pgen_name}\nValid options are: ${PGEN_NAMES}")
   endif()
   set(PGEN
-      ${pgen_name} PARENT_SCOPE)
+      ${pgen_name}
+      PARENT_SCOPE)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/setups/${pgen_name})
   set(PGEN_FOUND
-      TRUE PARENT_SCOPE)
+      TRUE
+      PARENT_SCOPE)
   set(problem_generators
-      ${PGEN_NAMES} PARENT_SCOPE)
+      ${PGEN_NAMES}
+      PARENT_SCOPE)
 endfunction()

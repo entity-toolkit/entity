@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103,C0111,E1120,R0913,R0915
+
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0110 NEW)
 
@@ -8,10 +10,10 @@ project(
   VERSION 1.2.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
+set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
+string(APPEND hash_cmd "|| echo $(git rev-parse HEAD)-mod")
 execute_process(
-  COMMAND
-    bash -c
-    "git diff --quiet src/ && echo $(git rev-parse HEAD) || echo $(git rev-parse HEAD)-mod"
+  COMMAND bash -c ${hash_cmd}
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_HASH
   ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -55,9 +57,8 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -DNDEBUG -Wno-unused-local-typedefs -Wno-unknown-cuda-version"
-  )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG "
+                      "-Wno-unused-local-typedefs -Wno-unknown-cuda-version")
 else()
   set(CMAKE_BUILD_TYPE
       Debug
