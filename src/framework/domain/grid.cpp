@@ -85,7 +85,6 @@ namespace ntt {
     return CreateRangePolicy<D>(imin, imax);
   }
 
-  // !TODO: too ugly, implement a better solution (combine with device)
   template <Dimension D>
   auto Grid<D>::rangeCellsOnHost(
     const box_region_t<D>& region) const -> range_h_t<D> {
