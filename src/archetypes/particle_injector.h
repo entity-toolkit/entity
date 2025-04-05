@@ -28,8 +28,14 @@
 #include "framework/domain/metadomain.h"
 
 #include "kernels/injectors.hpp"
+#include "kernels/particle_moments.hpp"
+#include "kernels/utils.hpp"
 
 #include <Kokkos_Core.hpp>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
 
 #include <map>
 #include <tuple>
@@ -101,21 +107,21 @@ namespace arch {
       return { true, ncells, i_min, i_max };
     }
 
-    auto ComputeNumInject(const Domain<S, M>&         domain,
-                          real_t                      ppc0,
+    auto ComputeNumInject(const SimulationParams&     params,
+                          const Domain<S, M>&         domain,
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
-      const auto result        = DeduceInjectRegion(domain, box);
-      const auto should_inject = std::get<0>(result);
-      auto       i_min         = std::get<2>(result);
-      auto       i_max         = std::get<3>(result);
+      const auto result = DeduceInjectRegion(domain, box);
+      const auto i_min  = std::get<2>(result);
+      const auto i_max  = std::get<3>(result);
 
-      if (not shoult_inject) {
+      if (not std::get<0>(result)) {
         return { false, (npart_t)0, i_min, i_max };
       }
       const auto ncells = std::get<1>(result);
 
+      const auto ppc0       = params.template get<real_t>("particles.ppc0");
       const auto nparticles = static_cast<npart_t>(
         (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
 
@@ -129,34 +135,110 @@ namespace arch {
     using UniformInjector<S, M, ED>::D;
     using UniformInjector<S, M, ED>::C;
 
-    const boundaries_t<real_t> probe_box;
+    boundaries_t<real_t> probe_box;
 
     KeepConstantInjector(const energy_dist_t&               energy_dist,
                          const std::pair<spidx_t, spidx_t>& species,
-                         boundaries_t<real_t>               probe_box = {})
-      : UniformInjector<S, M, ED>(energy_dist, species)
-      , probe_box { probe_box } {}
+                         boundaries_t<real_t>               box = {})
+      : UniformInjector<S, M, ED> { energy_dist, species } {
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        if (d < box.size()) {
+          probe_box.push_back({ box[d].first, box[d].second });
+        } else {
+          probe_box.push_back(Range::All);
+        }
+      }
+    }
 
     ~KeepConstantInjector() = default;
 
-    auto ComputeNumInject(const Domain<S, M>&         domain,
-                          real_t                      ppc0,
+    auto ComputeAvgDensity(const SimulationParams& params,
+                           const Domain<S, M>&     domain,
+                           boundaries_t<real_t>    box) const -> real_t {
+      const auto use_weights = params.template get<bool>(
+        "particles.use_weights");
+      const auto ni2    = domain.mesh.n_active(in::x2);
+      const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
+
+      auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+        domain.fields.buff);
+
+      for (const auto& sp : { this->species.first, this->species.second }) {
+        raise::ErrorIf(sp >= domain.species.size(),
+                       "Species index out of bounds",
+                       HERE);
+        const auto& prtl_spec = domain.species[sp - 1];
+        Kokkos::deep_copy(domain.fields.buff, ZERO);
+        // clang-format off
+        Kokkos::parallel_for(
+          "ComputeMoments",
+          prtl_spec.rangeActiveParticles(),
+          kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0,
+                                                             prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                             prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                             prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                             prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                             prtl_spec.mass(), prtl_spec.charge(),
+                                                             use_weights,
+                                                             domain.mesh.metric, domain.mesh.flds_bc(),
+                                                             ni2, inv_n0, 0));
+        // clang-format on
+      }
+      Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
+
+      real_t dens { ZERO };
+
+      const auto result       = DeduceInjectRegion(domain, box);
+      const auto should_probe = std::get<0>(result);
+      const auto ncells       = std::get<1>(result);
+      const auto i_min        = std::get<2>(result);
+      const auto i_max        = std::get<3>(result);
+
+      if (should_probe) {
+        range_t<M::Dim> probe_range = CreateRangePolicy<M::Dim>(i_min, i_max);
+        Kokkos::parallel_reduce(
+          "AvgDensity",
+          probe_range,
+          kernel::ComputeSum_kernel<M::Dim, 3>(domain.fields.buff, 0),
+          dens);
+      }
+#if defined(MPI_ENABLED)
+      real_t   tot_dens { ZERO };
+      ncells_t tot_ncells { 0 };
+      MPI_Allreduce(dens, &tot_dens, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(ncells,
+                    &tot_ncells,
+                    1,
+                    mpi::get_type<ncells_t>(),
+                    MPI_SUM,
+                    MPI_COMM_WORLD);
+      dens   = tot_dens;
+      ncells = tot_ncells;
+#endif
+      if (ncells > 0) {
+        return dens / (real_t)(ncells);
+      } else {
+        return ZERO;
+      }
+    }
+
+    auto ComputeNumInject(const SimulationParams&     params,
+                          const Domain<S, M>&         domain,
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
-      const auto result        = DeduceInjectRegion(domain, box);
-      const auto should_inject = std::get<0>(result);
-      auto       i_min         = std::get<2>(result);
-      auto       i_max         = std::get<3>(result);
+      const auto computed_avg_density = ComputeAvgDensity(params, domain);
 
-      if (not shoult_inject) {
+      const auto result = DeduceInjectRegion(domain, box);
+      const auto i_min  = std::get<2>(result);
+      const auto i_max  = std::get<3>(result);
+
+      if (not std::get<0>(result)) {
         return { false, (npart_t)0, i_min, i_max };
       }
       const auto ncells = std::get<1>(result);
 
-      // @TODO
-      const auto computed_avg_density = ONE;
-
+      const auto ppc0       = params.template get<real_t>("particles.ppc0");
       const auto nparticles = static_cast<npart_t>(
         (long double)(ppc0 * (number_density - computed_avg_density) * 0.5) *
         (long double)(ncells));
@@ -380,9 +462,8 @@ namespace arch {
           nonempty_box.push_back(Range::All);
         }
       }
-      auto       ppc0   = params.template get<real_t>("particles.ppc0");
-      const auto result = injector.ComputeNumInject(domain,
-                                                    ppc0,
+      const auto result = injector.ComputeNumInject(params,
+                                                    domain,
                                                     number_density,
                                                     nonempty_box);
       if (not std::get<0>(result)) {

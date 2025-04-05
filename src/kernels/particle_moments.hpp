@@ -18,8 +18,6 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include <Kokkos_ScatterView.hpp>
-
 #include <vector>
 
 namespace kernel {
