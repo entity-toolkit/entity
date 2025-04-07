@@ -695,6 +695,62 @@ namespace ntt {
             raise::Error("Invalid dimension", HERE);
           }
         }
+      } else if (dim == in::x2) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          if constexpr (
+            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFields(time);
+            call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          } else if constexpr (
+            traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFieldsInX2(time);
+            call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          }
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else if (dim == in::x3) {
+        if constexpr (M::Dim == Dim::_3D) {
+          if constexpr (
+            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFields(time);
+            call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          } else if constexpr (
+            traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFieldsInX3(time);
+            call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          }
+        }
+      } else {
+        raise::Error("Invalid dimension", HERE);
       }
     }
 
