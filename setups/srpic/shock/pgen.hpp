@@ -81,7 +81,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::params;
 
     // domain properties
-    const real_t  domain_xmin, domain_xmax;
+    const real_t  global_xmin, global_xmax;
     // gas properties
     const real_t  drift_ux, temperature, filling_fraction;
     // injector properties
@@ -91,10 +91,10 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
-      , domain_xmin { m.mesh.extent(in::x1).first }
-      , domain_xmax { m.mesh.extent(in::x1).second }
+      , global_xmin { global_domain.mesh().extent(in::x1).first }
+      , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
@@ -135,8 +135,8 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& local_domain) {
 
       // minimum and maximum position of particles
-      real_t xg_min = domain_xmin;
-      real_t xg_max = domain_xmin + filling_fraction * (domain_xmax - domain_xmin);
+      real_t xg_min = global_xmin;
+      real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
 
       // define box to inject into
       boundaries_t<real_t> box;
@@ -181,8 +181,8 @@ namespace user {
       }
 
       // initial position of injector
-      const auto x_init = domain_xmin +
-                          filling_fraction * (domain_xmax - domain_xmin);
+      const auto x_init = global_xmin +
+                          filling_fraction * (global_xmax - global_xmin);
 
       // check if injector is supposed to start moving already
       const auto dt_inj = time - injection_start > ZERO ? 
@@ -190,8 +190,8 @@ namespace user {
 
       // compute the position of the injector
       auto xmax = x_init + injector_velocity * (dt_inj + dt);
-      if (xmax >= domain_xmax) {
-        xmax = domain_xmax;
+      if (xmax >= global_xmax) {
+        xmax = global_xmax;
       }
 
       // define box to inject into
@@ -214,11 +214,11 @@ namespace user {
       }
       auto fields_box = box;
       // check if the box is still inside the domain
-      if (xmax + injection_frequency * dt < domain_xmax) {
+      if (xmax + injection_frequency * dt < global_xmax) {
         fields_box[0].second += injection_frequency * dt;
       } else {
         // if right side of the box is outside of the domain -> truncate box
-        fields_box[0].second = domain_xmax;
+        fields_box[0].second = global_xmax;
       }
       const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
