@@ -206,8 +206,8 @@ namespace arch {
 #if defined(MPI_ENABLED)
       real_t   tot_dens { ZERO };
       ncells_t tot_ncells { 0 };
-      MPI_Allreduce(dens, &tot_dens, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(ncells,
+      MPI_Allreduce(&dens, &tot_dens, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&ncells,
                     &tot_ncells,
                     1,
                     mpi::get_type<ncells_t>(),
