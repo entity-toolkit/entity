@@ -163,7 +163,8 @@ namespace arch {
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(
         domain.fields.buff);
 
-      for (const auto& sp : { this->species.first, this->species.second }) {
+      for (const auto& sp : std::vector<unsigned short> { this->species.first,
+                                                          this->species.second }) {
         raise::ErrorIf(sp >= domain.species.size(),
                        "Species index out of bounds",
                        HERE);

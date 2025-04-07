@@ -928,6 +928,12 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
+        std::size_t i_edge;
+        if (sign > 0) {
+          i_edge = domain.mesh.i_max(dim);
+        } else {
+          i_edge = domain.mesh.i_min(dim);
+        }
 
         if (dim == in::x1) {
           if (sign > 0) {
@@ -936,6 +942,7 @@ namespace ntt {
               range,
               kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
                 domain.fields.em,
+                i_edge,
                 tags));
           } else {
             Kokkos::parallel_for(
@@ -943,39 +950,52 @@ namespace ntt {
               range,
               kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
                 domain.fields.em,
+                i_edge,
                 tags));
           }
         } else if (dim == in::x2) {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
-                domain.fields.em,
-                tags));
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
           } else {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
-                domain.fields.em,
-                tags));
+            raise::Error("Invalid dimension", HERE);
           }
         } else {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
-                domain.fields.em,
-                tags));
+          if constexpr (M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
           } else {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
-                domain.fields.em,
-                tags));
+            raise::Error("Invalid dimension", HERE);
           }
         }
       }
