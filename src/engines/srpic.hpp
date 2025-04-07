@@ -834,6 +834,127 @@ namespace ntt {
       }
     }
 
+    void PerfectConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                                  domain_t&                domain,
+                                  BCTags                   tags) {
+      /**
+       * perfect conductor field boundaries
+       */
+      if constexpr (M::CoordType != Coord::Cart) {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
+      } else {
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+
+        std::vector<std::size_t> xi_min, xi_max;
+
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+
+        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
+            xi_min.push_back(0);
+            xi_max.push_back((sign < 0) ? (N_GHOSTS + 1) : N_GHOSTS);
+          } else {
+            xi_min.push_back(0);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          }
+        }
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+
+        range_t<M::Dim> range;
+        if constexpr (M::Dim == Dim::_1D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+        } else if constexpr (M::Dim == Dim::_2D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                            { xi_max[0], xi_max[1] });
+        } else if constexpr (M::Dim == Dim::_3D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                            { xi_max[0], xi_max[1], xi_max[2] });
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+        std::size_t i_edge;
+        if (sign > 0) {
+          i_edge = domain.mesh.i_max(dim);
+        } else {
+          i_edge = domain.mesh.i_min(dim);
+        }
+
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
+                domain.fields.em,
+                i_edge,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
+                domain.fields.em,
+                i_edge,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else {
+          if constexpr (M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        }
+      }
+    }
+
     void AtmosphereFieldsIn(dir::direction_t<M::Dim> direction,
                             domain_t&                domain,
                             BCTags                   tags) {
