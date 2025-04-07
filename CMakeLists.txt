@@ -55,9 +55,7 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -DNDEBUG -Wno-unused-local-typedefs -Wno-unknown-cuda-version"
-  )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
 else()
   set(CMAKE_BUILD_TYPE
       Debug
