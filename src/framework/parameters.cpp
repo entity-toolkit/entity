@@ -751,7 +751,7 @@ namespace ntt {
           for (auto d = 0u; d < dim; ++d) {
             ds_array.push_back({ ds, ds });
           }
-        } catch (const toml::type_error&) {
+        } catch (...) {
           try {
             const auto ds = toml::find<std::vector<std::vector<real_t>>>(
               toml_data,
