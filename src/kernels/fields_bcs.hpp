@@ -5,6 +5,7 @@
  *   - kernel::bc::MatchBoundaries_kernel<>
  *   - kernel::bc::AxisBoundaries_kernel<>
  *   - kernel::bc::EnforcedBoundaries_kernel<>
+ *   - kernel::bc::ConductorBoundaries_kernel<>
  * @namespaces:
  *   - kernel::bc::
  */
@@ -481,6 +482,301 @@ namespace kernel::bc {
         raise::KernelError(
           HERE,
           "MatchBoundaries_kernel: 3D implementation called for D != 3");
+      }
+    }
+  };
+
+  template <Dimension D, in o, bool P>
+  struct ConductorBoundaries_kernel {
+    static_assert(static_cast<unsigned short>(o) < static_cast<unsigned short>(D),
+                  "Invalid component index");
+
+    ndfield_t<D, 6>   Fld;
+    const BCTags      tags;
+    const std::size_t i_edge;
+
+    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+      : Fld { Fld }
+      , i_edge { i_edge }
+      , tags { tags } {}
+
+    Inline void operator()(index_t i1) const {
+      if constexpr (D == Dim::_1D) {
+        if (tags & BC::E) {
+          if (i1 == 0) {
+            Fld(i_edge, em::ex2) = ZERO;
+            Fld(i_edge, em::ex3) = ZERO;
+          } else {
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::ex1) = Fld(i_edge + i1 - 1, em::ex1);
+              Fld(i_edge - i1, em::ex2) = -Fld(i_edge + i1, em::ex2);
+              Fld(i_edge - i1, em::ex3) = -Fld(i_edge + i1, em::ex3);
+            } else {
+              Fld(i_edge + i1 - 1, em::ex1) = Fld(i_edge - i1, em::ex1);
+              Fld(i_edge + i1, em::ex2)     = -Fld(i_edge - i1, em::ex2);
+              Fld(i_edge + i1, em::ex3)     = -Fld(i_edge - i1, em::ex3);
+            }
+          }
+        }
+
+        if (tags & BC::B) {
+          if (i1 == 0) {
+            Fld(i_edge, em::bx1) = ZERO;
+          } else {
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::bx1) = -Fld(i_edge + i1, em::bx1);
+              Fld(i_edge - i1, em::bx2) = Fld(i_edge + i1 - 1, em::bx2);
+              Fld(i_edge - i1, em::bx3) = Fld(i_edge + i1 - 1, em::bx3);
+            } else {
+              Fld(i_edge + i1, em::bx1)     = -Fld(i_edge - i1, em::bx1);
+              Fld(i_edge + i1 - 1, em::bx2) = Fld(i_edge - i1, em::bx2);
+              Fld(i_edge + i1 - 1, em::bx3) = Fld(i_edge - i1, em::bx3);
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 1D implementation called for D != 1");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::ex2) = ZERO;
+              Fld(i_edge, i2, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::ex1) = Fld(i_edge + i1 - 1, i2, em::ex1);
+                Fld(i_edge - i1, i2, em::ex2) = -Fld(i_edge + i1, i2, em::ex2);
+                Fld(i_edge - i1, i2, em::ex3) = -Fld(i_edge + i1, i2, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, em::ex1) = Fld(i_edge - i1, i2, em::ex1);
+                Fld(i_edge + i1, i2, em::ex2) = -Fld(i_edge - i1, i2, em::ex2);
+                Fld(i_edge + i1, i2, em::ex3) = -Fld(i_edge - i1, i2, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::bx1) = -Fld(i_edge + i1, i2, em::bx1);
+                Fld(i_edge - i1, i2, em::bx2) = Fld(i_edge + i1 - 1, i2, em::bx2);
+                Fld(i_edge - i1, i2, em::bx3) = Fld(i_edge + i1 - 1, i2, em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, em::bx1) = -Fld(i_edge - i1, i2, em::bx1);
+                Fld(i_edge + i1 - 1, i2, em::bx2) = Fld(i_edge - i1, i2, em::bx2);
+                Fld(i_edge + i1 - 1, i2, em::bx3) = Fld(i_edge - i1, i2, em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::ex1) = ZERO;
+              Fld(i1, i_edge, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::ex1) = -Fld(i1, i_edge + i2, em::ex1);
+                Fld(i1, i_edge - i2, em::ex2) = Fld(i1, i_edge + i2 - 1, em::ex2);
+                Fld(i1, i_edge - i2, em::ex3) = -Fld(i1, i_edge + i2, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, em::ex1) = -Fld(i1, i_edge - i2, em::ex1);
+                Fld(i1, i_edge + i2 - 1, em::ex2) = Fld(i1, i_edge - i2, em::ex2);
+                Fld(i1, i_edge + i2, em::ex3) = -Fld(i1, i_edge - i2, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::bx1) = Fld(i1, i_edge + i2 - 1, em::bx1);
+                Fld(i1, i_edge - i2, em::bx2) = -Fld(i1, i_edge + i2, em::bx2);
+                Fld(i1, i_edge - i2, em::bx3) = Fld(i1, i_edge + i2 - 1, em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, em::bx1) = Fld(i1, i_edge - i2, em::bx1);
+                Fld(i1, i_edge + i2, em::bx2) = -Fld(i1, i_edge - i2, em::bx2);
+                Fld(i1, i_edge + i2 - 1, em::bx3) = Fld(i1, i_edge - i2, em::bx3);
+              }
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 2D implementation called for D != 2");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::ex2) = ZERO;
+              Fld(i_edge, i2, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::ex1) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::ex1);
+                Fld(i_edge - i1, i2, i3, em::ex2) = -Fld(i_edge + i1, i2, i3, em::ex2);
+                Fld(i_edge - i1, i2, i3, em::ex3) = -Fld(i_edge + i1, i2, i3, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, i3, em::ex1) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::ex1);
+                Fld(i_edge + i1, i2, i3, em::ex2) = -Fld(i_edge - i1, i2, i3, em::ex2);
+                Fld(i_edge + i1, i2, i3, em::ex3) = -Fld(i_edge - i1, i2, i3, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::bx1) = -Fld(i_edge + i1, i2, i3, em::bx1);
+                Fld(i_edge - i1, i2, i3, em::bx2) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx2);
+                Fld(i_edge - i1, i2, i3, em::bx3) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, i3, em::bx1) = -Fld(i_edge - i1, i2, i3, em::bx1);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx2) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx2);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx3) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else if (o == in::x2) {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::ex1) = ZERO;
+              Fld(i1, i_edge, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::ex1) = -Fld(i1, i_edge + i2, i3, em::ex1);
+                Fld(i1, i_edge - i2, i3, em::ex2) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::ex2);
+                Fld(i1, i_edge - i2, i3, em::ex3) = -Fld(i1, i_edge + i2, i3, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, i3, em::ex1) = -Fld(i1, i_edge - i2, i3, em::ex1);
+                Fld(i1, i_edge + i2 - 1, i3, em::ex2) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::ex2);
+                Fld(i1, i_edge + i2, i3, em::ex3) = -Fld(i1, i_edge - i2, i3, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::bx1) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx1);
+                Fld(i1, i_edge - i2, i3, em::bx2) = -Fld(i1, i_edge + i2, i3, em::bx2);
+                Fld(i1, i_edge - i2, i3, em::bx3) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, i3, em::bx1) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx1);
+                Fld(i1, i_edge + i2, i3, em::bx2) = -Fld(i1, i_edge - i2, i3, em::bx2);
+                Fld(i1, i_edge + i2 - 1, i3, em::bx3) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::ex1) = ZERO;
+              Fld(i1, i2, i_edge, em::ex2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::ex1) = -Fld(i1, i2, i_edge + i3, em::ex1);
+                Fld(i1, i2, i_edge - i3, em::ex2) = -Fld(i1, i2, i_edge + i3, em::ex2);
+                Fld(i1, i2, i_edge - i3, em::ex3) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::ex3);
+              } else {
+                Fld(i1, i2, i_edge + i3, em::ex1) = -Fld(i1, i2, i_edge - i3, em::ex1);
+                Fld(i1, i2, i_edge + i3, em::ex2) = -Fld(i1, i2, i_edge - i3, em::ex2);
+                Fld(i1, i2, i_edge + i3 - 1, em::ex3) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::bx3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::bx1) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx1);
+                Fld(i1, i2, i_edge - i3, em::bx2) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx2);
+                Fld(i1, i2, i_edge - i3, em::bx3) = -Fld(i1, i2, i_edge + i3, em::bx3);
+              } else {
+                Fld(i1, i2, i_edge + i3 - 1, em::bx1) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx1);
+                Fld(i1, i2, i_edge + i3 - 1, em::bx2) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx2);
+                Fld(i1, i2, i_edge + i3, em::bx3) = -Fld(i1, i2, i_edge - i3, em::bx3);
+              }
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 3D implementation called for D != 3");
       }
     }
   };

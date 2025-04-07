@@ -48,8 +48,6 @@ namespace ntt {
                    HERE);
     m_requested_dimension = static_cast<Dimension>(res.size());
 
-    // !TODO: when mixing checkpoint metadata with input,
-    // ... need to properly take care of the diffs
     m_params.setRawData(raw_params);
     timestep_t checkpoint_step = 0;
     if (is_resuming) {

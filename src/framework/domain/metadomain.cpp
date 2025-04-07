@@ -234,7 +234,6 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::redefineBoundaries() {
-    // !TODO: not setting CommBC for now
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
       auto&      current_domain = g_subdomains[idx];

@@ -1,22 +1,22 @@
 [simulation]
   name    = "shock"
   engine  = "srpic"
-  runtime = 50.0
+  runtime = 30000.0
 
 [grid]
-  resolution = [2048, 128]
-  extent     = [[0.0, 10.0], [-0.3125, 0.3125]]
+  resolution = [4096, 128]
+  extent     = [[0.0, 2000.0], [-31.25, 31.25]]
 
   [grid.metric]
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["ABSORB", "FIXED"], ["PERIODIC"]]
+    fields = [["CONDUCTOR", "MATCH"], ["PERIODIC"]]
     particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
-
+    
 [scales]
-  larmor0    = 1e-2
-  skindepth0 = 1e-2
+  larmor0    = 100.0
+  skindepth0 = 1.0
 
 [algorithms]
   current_filters = 8
@@ -25,7 +25,7 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 16.0
+  ppc0 = 8.0
 
   [[particles.species]]
     label    = "e-"
@@ -34,21 +34,32 @@
     maxnpart = 1e8
 
   [[particles.species]]
-    label    = "e+"
+    label    = "p+"
     mass     = 1.0
     charge   = 1.0
     maxnpart = 1e8
 
 [setup]
-  drift_ux    = 0.1
-  temperature = 1e-3
-  Bmag = 1.0
-  Btheta = 0.0
-  Bphi = 0.0
+  drift_ux    = 0.1       # speed towards the wall [c]
+  temperature = 1e-4      # temeperature of maxwell distribution [m_e c^2]
+  Bmag = 1.0              # magnetic field strength as fraction of magnetisation
+  Btheta = 0.0            # magnetic field angle in the plane
+  Bphi = 0.0              # magnetic field angle out of plane
+  filling_fraction = 0.1  # fraction of the shock piston filled with plasma
+  injector_velocity = 1.0 # speed of injector [c]
+  injection_start = 0.0   # start time of moving injector
 
 [output]
-  interval_time = 0.1
+  interval_time = 10.0
   format        = "hdf5"
-
+  
   [output.fields]
-    quantities = ["N_1", "N_2", "E", "B", "T0i_1", "T0i_2", "J"]
+    quantities = ["N_1", "N_2", "B", "E"]
+
+  [output.particles]
+    enable = true
+    stride = 10 
+
+  [output.spectra]
+    enable = false
+

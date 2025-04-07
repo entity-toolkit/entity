@@ -596,6 +596,10 @@ namespace ntt {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::FIXED) {
             FixedFieldsIn(direction, domain, tags);
           }
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+            PerfectConductorFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
             CustomFieldsIn(direction, domain, tags);
@@ -647,7 +651,7 @@ namespace ntt {
       tuple_t<ncells_t, M::Dim> range_min { 0 };
       tuple_t<ncells_t, M::Dim> range_max { 0 };
 
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         range_min[d] = intersect_range[d].first;
         range_max[d] = intersect_range[d].second;
       }
@@ -704,28 +708,32 @@ namespace ntt {
       /**
        * axis boundaries
        */
-      raise::ErrorIf(M::CoordType == Coord::Cart,
-                     "Invalid coordinate type for axis BCs",
-                     HERE);
-      raise::ErrorIf(direction.get_dim() != in::x2,
-                     "Invalid axis direction, should be x2",
-                     HERE);
-      const auto i2_min = domain.mesh.i_min(in::x2);
-      const auto i2_max = domain.mesh.i_max(in::x2);
-      if (direction.get_sign() < 0) {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
-                                                           i2_min,
-                                                           tags));
+      if constexpr (M::CoordType != Coord::Cart) {
+        raise::ErrorIf(direction.get_dim() != in::x2,
+                       "Invalid axis direction, should be x2",
+                       HERE);
+        const auto i2_min = domain.mesh.i_min(in::x2);
+        const auto i2_max = domain.mesh.i_max(in::x2);
+        if (direction.get_sign() < 0) {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
+                                                             i2_min,
+                                                             tags));
+        } else {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
+                                                            i2_max,
+                                                            tags));
+        }
       } else {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
-                                                          i2_max,
-                                                          tags));
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error("Invalid coordinate type for axis BCs", HERE);
       }
     }
 
@@ -830,7 +838,111 @@ namespace ntt {
           }
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Fixed fields not present (both const and non-const)", HERE);
+      }
+    }
+
+    void PerfectConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                                  domain_t&                domain,
+                                  BCTags                   tags) {
+      /**
+       * perfect conductor field boundaries
+       */
+      if constexpr (M::CoordType != Coord::Cart) {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
+      } else {
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+
+        std::vector<std::size_t> xi_min, xi_max;
+
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+
+        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
+            xi_min.push_back(0);
+            xi_max.push_back((sign < 0) ? (N_GHOSTS + 1) : N_GHOSTS);
+          } else {
+            xi_min.push_back(0);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          }
+        }
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+
+        range_t<M::Dim> range;
+        if constexpr (M::Dim == Dim::_1D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+        } else if constexpr (M::Dim == Dim::_2D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                            { xi_max[0], xi_max[1] });
+        } else if constexpr (M::Dim == Dim::_3D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                            { xi_max[0], xi_max[1], xi_max[2] });
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
+                domain.fields.em,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+                domain.fields.em,
+                tags));
+          }
+        } else {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+                domain.fields.em,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+                domain.fields.em,
+                tags));
+          }
+        }
       }
     }
 
@@ -862,15 +974,15 @@ namespace ntt {
           return;
         }
         const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<ncells_t, M::Dim> range_min { 0 };
-        tuple_t<ncells_t, M::Dim> range_max { 0 };
+        tuple_t<std::size_t, M::Dim> range_min { 0 };
+        tuple_t<std::size_t, M::Dim> range_max { 0 };
 
         for (unsigned short d { 0 }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto     atm_fields = m_pgen.AtmFields(time);
-        ncells_t il_edge;
+        auto        atm_fields = m_pgen.AtmFields(time);
+        std::size_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {
@@ -955,6 +1067,9 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Atm fields not implemented in PGEN for atmosphere BCs", HERE);
       }
     }

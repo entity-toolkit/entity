@@ -218,13 +218,13 @@ namespace ntt {
 
     Kokkos::Experimental::fill(
       "TagAliveParticles",
-      AccelExeSpace(),
+      Kokkos::DefaultExecutionSpace(),
       Kokkos::subview(this_tag, std::make_pair(static_cast<npart_t>(0), n_alive)),
       ParticleTag::alive);
 
     Kokkos::Experimental::fill(
       "TagDeadParticles",
-      AccelExeSpace(),
+      Kokkos::DefaultExecutionSpace(),
       Kokkos::subview(this_tag, std::make_pair(n_alive, n_alive + n_dead)),
       ParticleTag::dead);
 
