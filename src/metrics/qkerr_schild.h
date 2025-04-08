@@ -480,7 +480,7 @@ namespace metric {
              math::sqrt(
                ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
                        (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
-             (ONE - math::cos(eta2theta(HALF * deta + eta_min)));
+             (ONE - math::cos(eta2theta(HALF * deta)));
     }
 
     /**
