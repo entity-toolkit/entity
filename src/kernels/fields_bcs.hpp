@@ -565,14 +565,36 @@ namespace kernel::bc {
 
     AxisBoundariesGR_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
-      , i_edge { i_edge }
+      // , i_edge { i_edge }
+      , i_edge { P ? (i_edge + 1) : i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
       , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_2D) {
-        if (setB) {
-          Fld(i1, i_edge, em::bx2) = ZERO;
+        // if (setB) {
+        //   Fld(i1, i_edge, em::bx2) = ZERO;
+        // }
+        if constexpr (not P) {
+          if (setE) {
+            Fld(i1, i_edge - 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
+            Fld(i1, i_edge, em::ex3)     = ZERO;
+          }
+          if (setB) {
+            Fld(i1, i_edge - 1, em::bx1) = Fld(i1, i_edge, em::bx1);
+            Fld(i1, i_edge, em::bx2)     = ZERO;
+            Fld(i1, i_edge - 1, em::bx3) = Fld(i1, i_edge, em::bx3);
+          }
+        } else {
+          if (setE) {
+            Fld(i1, i_edge + 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
+            Fld(i1, i_edge + 1, em::ex3) = ZERO;
+          }
+          if (setB) {
+            Fld(i1, i_edge + 1, em::bx1) = Fld(i1, i_edge, em::bx1);
+            Fld(i1, i_edge + 1, em::bx2) = ZERO;
+            Fld(i1, i_edge + 1, em::bx3) = Fld(i1, i_edge, em::bx3);
+          }
         }
       } else {
         raise::KernelError(HERE, "AxisBoundariesGR_kernel: D != 2");
