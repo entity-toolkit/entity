@@ -159,8 +159,9 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t bg_B, bg_Bguide, bg_temperature;
+    const real_t bg_B, bg_Bguide, bg_temperature, inj_ypad;
     const real_t cs_width, cs_overdensity, cs_x, cs_y;
+    const real_t ymin, ymax;
 
     InitFields<D> init_flds;
 
@@ -169,6 +170,7 @@ namespace user {
       , bg_B { p.template get<real_t>("setup.bg_B", 1.0) }
       , bg_Bguide { p.template get<real_t>("setup.bg_Bguide", 0.0) }
       , bg_temperature { p.template get<real_t>("setup.bg_temperature", 0.001) }
+      , inj_ypad { p.template get<real_t>("setup.inj_ypad", (real_t)0.05) }
       , cs_width { p.template get<real_t>("setup.cs_width") }
       , cs_overdensity { p.template get<real_t>("setup.cs_overdensity") }
       , cs_x { m.mesh().extent(in::x1).first +
@@ -177,6 +179,8 @@ namespace user {
       , cs_y { m.mesh().extent(in::x2).first +
                INV_2 * (m.mesh().extent(in::x2).second -
                         m.mesh().extent(in::x2).first) }
+      , ymin { m.mesh().extent(in::x2).first }
+      , ymax { m.mesh().extent(in::x2).second }
       , init_flds { bg_B, bg_Bguide, cs_width, cs_y } {}
 
     inline PGen() {}
@@ -232,81 +236,84 @@ namespace user {
                                                      cs_overdensity);
     }
 
-    void CustomPostStep(std::size_t step, long double time, Domain<S, M>& domain) {
-      //       // 0. define target density profile and box where it has to be
-      //       reached
-      //       // 1. compute density
-      //       // 2. define spatial distribution
-      //       // 3. define energy distribution
-      //       // 4. define particle injector
-      //       // 5. inject particles
-      //
-      //       // step 0.
-      //       // defining the regions of interest (lower and upper
-      //       y-boundaries) boundaries_t<real_t> box_upper, box_lower; const
-      //       auto [xmin, xmax] = domain.mesh.extent(in::x1); const auto [ymin,
-      //       ymax] = domain.mesh.extent(in::x2); box_upper.push_back({ xmin,
-      //       xmax }); box_lower.push_back({ xmin, xmax });
-      //
-      //       box_upper.push_back({ ymax - dy, ymax });
-      //       box_lower.push_back({ ymin, ymin + dy });
-      //
-      //       if constexpr (M::Dim == Dim::_3D) {
-      //         const auto [zmin, zmax] = domain.mesh.extent(in::x3);
-      //         box_upper.push_back({ zmin, zmax });
-      //         box_lower.push_back({ zmin, zmax });
-      //       }
-      //
-      //       const auto const_dens = ConstDens<S, M>();
-      //       const auto inv_n0     = ONE / n0;
-      //
-      //       // step 1 compute density
-      //       auto scatter_bckp = Kokkos::Experimental::create_scatter_view(
-      //         domain.fields.bckp);
-      //       for (auto& prtl_spec : domain.species) {
-      //         // clang-format off
-      //         Kokkos::parallel_for(
-      //           "ComputeMoments",
-      //           prtl_spec.rangeActiveParticles(),
-      //           kernel::ParticleMoments_kernel<S, M, FldsID::N, 6>({},
-      //           scatter_bckp, 0,
-      //                                                     prtl_spec.i1,
-      //                                                     prtl_spec.i2,
-      //                                                     prtl_spec.i3, prtl_spec.dx1,
-      //                                                     prtl_spec.dx2,
-      //                                                     prtl_spec.dx3, prtl_spec.ux1,
-      //                                                     prtl_spec.ux2,
-      //                                                     prtl_spec.ux3, prtl_spec.phi,
-      //                                                     prtl_spec.weight,
-      //                                                     prtl_spec.tag, prtl_spec.mass(),
-      //                                                     prtl_spec.charge(),
-      //                                                     false,
-      //                                                     domain.mesh.metric,
-      //                                                     domain.mesh.flds_bc(),
-      //                                                     0, inv_n0, 0));
-      // 	}
-      // 	Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
-      //
-      //
-      // 	//step 2. define spatial distribution
-      // //	const auto spatial_dist = arch::Replenish<S, M,
-      // user::ConstDens<S,M>>(domain.mesh.metric, domain.fields.bckp, 0,
-      // const_dens, ONE);
-      //   const auto spatial_dist = spatial_dist_t<S,M>(domain.mesh.metric,
-      //   domain.fields.bckp,0,const_dens,ONE);
-      // 	//step 3. define energy distribution
-      // 	const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-      // domain.random_pool, up_temperature);
-      // 	//step 4. define particle injector
-      // 	const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian,
-      // spatial_dist_t>(energy_dist, spatial_dist, {1,2});
-      // 	//step 5. inject particles
-      // 	arch::InjectNonUniform<S, M, decltype(injector)>(params, domain,
-      // injector, ONE, false, box_upper); //upper boudary arch::InjectNonUniform<S,
-      // M, decltype(injector)>(params, domain, injector, ONE, false,
-      // box_lower); //lower boundary
-      //
-      //
+    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                      domain.random_pool,
+                                                      bg_temperature);
+
+      const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
+
+      boundaries_t<real_t> inj_box_up, inj_box_down;
+      boundaries_t<real_t> probe_box_up, probe_box_down;
+      inj_box_up.push_back(Range::All);
+      inj_box_down.push_back(Range::All);
+      probe_box_up.push_back(Range::All);
+      probe_box_down.push_back(Range::All);
+      inj_box_up.push_back({ ymax - inj_ypad - 10 * dx, ymax - inj_ypad });
+      inj_box_down.push_back({ ymin + inj_ypad, ymin + inj_ypad + 10 * dx });
+      probe_box_up.push_back({ ymax - inj_ypad - 10 * dx, ymax - inj_ypad });
+      probe_box_down.push_back({ ymin + inj_ypad, ymin + inj_ypad + 10 * dx });
+
+      if constexpr (M::Dim == Dim::_3D) {
+        inj_box_up.push_back(Range::All);
+        inj_box_down.push_back(Range::All);
+      }
+
+      {
+        // compute density of species #1 and #2
+        const auto use_weights = params.template get<bool>(
+          "particles.use_weights");
+        const auto ni2    = domain.mesh.n_active(in::x2);
+        const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
+
+        auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+          domain.fields.buff);
+        Kokkos::deep_copy(domain.fields.buff, ZERO);
+        for (const auto sp : std::vector<unsigned short> { 1, 2 }) {
+          const auto& prtl_spec = domain.species[sp - 1];
+          // clang-format off
+        Kokkos::parallel_for(
+          "ComputeMoments",
+          prtl_spec.rangeActiveParticles(),
+          kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0u,
+                                                             prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                             prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                             prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                             prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                             prtl_spec.mass(), prtl_spec.charge(),
+                                                             use_weights,
+                                                             domain.mesh.metric, domain.mesh.flds_bc(),
+                                                             ni2, inv_n0, 0u));
+          // clang-format on
+        }
+        Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
+      }
+
+      const auto injector_up = arch::KeepConstantInjector<S, M, arch::Maxwellian>(
+        energy_dist,
+        { 1, 2 },
+        0u,
+        probe_box_up);
+      const auto injector_down = arch::KeepConstantInjector<S, M, arch::Maxwellian>(
+        energy_dist,
+        { 1, 2 },
+        0u,
+        probe_box_down);
+
+      arch::InjectUniform<S, M, decltype(injector_up)>(
+        params,
+        domain,
+        injector_up,
+        ONE,
+        params.template get<bool>("particles.use_weights"),
+        inj_box_up);
+      arch::InjectUniform<S, M, decltype(injector_down)>(
+        params,
+        domain,
+        injector_down,
+        ONE,
+        params.template get<bool>("particles.use_weights"),
+        inj_box_down);
     }
   };
 

@@ -66,45 +66,43 @@ namespace arch {
 
     ~UniformInjector() = default;
 
-    auto DeduceInjectRegion(const Domain<S, M>&         domain,
-                            const boundaries_t<real_t>& box) const
-      -> std::tuple<bool, ncells_t, array_t<real_t*>, array_t<real_t*>> {
-      auto i_min = array_t<real_t*> { "i_min", M::Dim };
-      auto i_max = array_t<real_t*> { "i_max", M::Dim };
-
+    auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box) const
+      -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
       if (not domain.mesh.Intersects(box)) {
-        return { false, (ncells_t)0, i_min, i_max };
+        return { false, array_t<real_t*> {}, array_t<real_t*> {} };
       }
-
-      tuple_t<ncells_t, M::Dim> range_min { 0 };
-      tuple_t<ncells_t, M::Dim> range_max { 0 };
-
-      boundaries_t<bool> incl_ghosts;
-      for (auto d { 0u }; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ false, false });
-      }
-      const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+      coord_t<M::Dim> xCorner_min_Ph { ZERO };
+      coord_t<M::Dim> xCorner_max_Ph { ZERO };
+      coord_t<M::Dim> xCorner_min_Cd { ZERO };
+      coord_t<M::Dim> xCorner_max_Cd { ZERO };
 
       for (auto d { 0u }; d < M::Dim; ++d) {
-        range_min[d] = intersect_range[d].first;
-        range_max[d] = intersect_range[d].second;
+        const auto local_xi_min = domain.mesh.extent(static_cast<in>(d)).first;
+        const auto local_xi_max = domain.mesh.extent(static_cast<in>(d)).second;
+        const auto extent_min   = std::min(std::max(local_xi_min, box[d].first),
+                                         local_xi_max);
+        const auto extent_max = std::max(std::min(local_xi_max, box[d].second),
+                                         local_xi_min);
+        xCorner_min_Ph[d]     = extent_min;
+        xCorner_max_Ph[d]     = extent_max;
       }
+      domain.mesh.metric.template convert<Crd::Ph, Crd::Cd>(xCorner_min_Ph,
+                                                            xCorner_min_Cd);
+      domain.mesh.metric.template convert<Crd::Ph, Crd::Cd>(xCorner_max_Ph,
+                                                            xCorner_max_Cd);
 
-      ncells_t ncells = 1;
-      for (auto d = 0u; d < M::Dim; ++d) {
-        ncells *= (range_max[d] - range_min[d]);
+      array_t<real_t*> xi_min { "xi_min", M::Dim }, xi_max { "xi_max", M::Dim };
+
+      auto xi_min_h = Kokkos::create_mirror_view(xi_min);
+      auto xi_max_h = Kokkos::create_mirror_view(xi_max);
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        xi_min_h(d) = xCorner_min_Cd[d];
+        xi_max_h(d) = xCorner_max_Cd[d];
       }
+      Kokkos::deep_copy(xi_min, xi_min_h);
+      Kokkos::deep_copy(xi_max, xi_max_h);
 
-      auto i_min_h = Kokkos::create_mirror_view(i_min);
-      auto i_max_h = Kokkos::create_mirror_view(i_max);
-      for (auto d = 0u; d < M::Dim; ++d) {
-        i_min_h(d) = (real_t)(range_min[d]);
-        i_max_h(d) = (real_t)(range_max[d]);
-      }
-
-      Kokkos::deep_copy(i_min, i_min_h);
-      Kokkos::deep_copy(i_max, i_max_h);
-      return { true, ncells, i_min, i_max };
+      return { true, xi_min, xi_max };
     }
 
     auto ComputeNumInject(const SimulationParams&     params,
@@ -112,20 +110,28 @@ namespace arch {
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
-      const auto result = DeduceInjectRegion(domain, box);
-      const auto i_min  = std::get<2>(result);
-      const auto i_max  = std::get<3>(result);
-
+      const auto result = DeduceRegion(domain, box);
       if (not std::get<0>(result)) {
-        return { false, (npart_t)0, i_min, i_max };
+        return { false, (npart_t)0, array_t<real_t*> {}, array_t<real_t*> {} };
       }
-      const auto ncells = std::get<1>(result);
+      const auto xi_min   = std::get<1>(result);
+      const auto xi_max   = std::get<2>(result);
+      auto       xi_min_h = Kokkos::create_mirror_view(xi_min);
+      auto       xi_max_h = Kokkos::create_mirror_view(xi_max);
+      Kokkos::deep_copy(xi_min_h, xi_min);
+      Kokkos::deep_copy(xi_max_h, xi_max);
+
+      long double num_cells { 1.0 };
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        num_cells *= static_cast<long double>(xi_max_h(d)) -
+                     static_cast<long double>(xi_min_h(d));
+      }
 
       const auto ppc0       = params.template get<real_t>("particles.ppc0");
       const auto nparticles = static_cast<npart_t>(
-        (long double)(ppc0 * number_density * 0.5) * (long double)(ncells));
+        (long double)(ppc0 * number_density * 0.5) * num_cells);
 
-      return { true, nparticles, i_min, i_max };
+      return { true, nparticles, xi_min, xi_max };
     }
   };
 
@@ -135,12 +141,15 @@ namespace arch {
     using UniformInjector<S, M, ED>::D;
     using UniformInjector<S, M, ED>::C;
 
+    const unsigned short density_buff_idx;
     boundaries_t<real_t> probe_box;
 
     KeepConstantInjector(const energy_dist_t&               energy_dist,
                          const std::pair<spidx_t, spidx_t>& species,
+                         unsigned short                     density_buff_idx,
                          boundaries_t<real_t>               box = {})
-      : UniformInjector<S, M, ED> { energy_dist, species } {
+      : UniformInjector<S, M, ED> { energy_dist, species }
+      , density_buff_idx { density_buff_idx } {
       for (auto d { 0u }; d < M::Dim; ++d) {
         if (d < box.size()) {
           probe_box.push_back({ box[d].first, box[d].second });
@@ -153,98 +162,92 @@ namespace arch {
     ~KeepConstantInjector() = default;
 
     auto ComputeAvgDensity(const SimulationParams& params,
-                           const Domain<S, M>&     domain,
-                           boundaries_t<real_t>    box) const -> real_t {
-      const auto use_weights = params.template get<bool>(
-        "particles.use_weights");
-      const auto ni2    = domain.mesh.n_active(in::x2);
-      const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
-
-      auto scatter_buff = Kokkos::Experimental::create_scatter_view(
-        domain.fields.buff);
-
-      for (const auto& sp : std::vector<unsigned short> { this->species.first,
-                                                          this->species.second }) {
-        raise::ErrorIf(sp >= domain.species.size(),
-                       "Species index out of bounds",
-                       HERE);
-        const auto& prtl_spec = domain.species[sp - 1];
-        Kokkos::deep_copy(domain.fields.buff, ZERO);
-        // clang-format off
-        Kokkos::parallel_for(
-          "ComputeMoments",
-          prtl_spec.rangeActiveParticles(),
-          kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0,
-                                                             prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                             prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                             prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                             prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                             prtl_spec.mass(), prtl_spec.charge(),
-                                                             use_weights,
-                                                             domain.mesh.metric, domain.mesh.flds_bc(),
-                                                             ni2, inv_n0, 0));
-        // clang-format on
+                           Domain<S, M>&           domain) const -> real_t {
+      const auto result       = this->DeduceRegion(domain, probe_box);
+      const auto should_probe = std::get<0>(result);
+      if (not should_probe) {
+        return ZERO;
       }
-      Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
+      const auto xi_min_arr = std::get<1>(result);
+      const auto xi_max_arr = std::get<2>(result);
+
+      tuple_t<ncells_t, M::Dim> i_min { 0 };
+      tuple_t<ncells_t, M::Dim> i_max { 0 };
+
+      auto xi_min_h = Kokkos::create_mirror_view(xi_min_arr);
+      auto xi_max_h = Kokkos::create_mirror_view(xi_max_arr);
+      Kokkos::deep_copy(xi_min_h, xi_min_arr);
+      Kokkos::deep_copy(xi_max_h, xi_max_arr);
+
+      ncells_t num_cells = 1u;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        i_min[d]   = std::floor(xi_min_h(d)) + N_GHOSTS;
+        i_max[d]   = std::ceil(xi_max_h(d)) + N_GHOSTS;
+        num_cells *= (i_max[d] - i_min[d]);
+      }
 
       real_t dens { ZERO };
-
-      const auto result       = DeduceInjectRegion(domain, box);
-      const auto should_probe = std::get<0>(result);
-      const auto ncells       = std::get<1>(result);
-      const auto i_min        = std::get<2>(result);
-      const auto i_max        = std::get<3>(result);
-
       if (should_probe) {
-        range_t<M::Dim> probe_range = CreateRangePolicy<M::Dim>(i_min, i_max);
         Kokkos::parallel_reduce(
           "AvgDensity",
-          probe_range,
-          kernel::ComputeSum_kernel<M::Dim, 3>(domain.fields.buff, 0),
+          CreateRangePolicy<M::Dim>(i_min, i_max),
+          kernel::ComputeSum_kernel<M::Dim, 3>(domain.fields.buff, density_buff_idx),
           dens);
       }
 #if defined(MPI_ENABLED)
       real_t   tot_dens { ZERO };
-      ncells_t tot_ncells { 0 };
+      ncells_t tot_num_cells { 0 };
       MPI_Allreduce(&dens, &tot_dens, 1, mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(&ncells,
-                    &tot_ncells,
+      MPI_Allreduce(&num_cells,
+                    &tot_num_cells,
                     1,
                     mpi::get_type<ncells_t>(),
                     MPI_SUM,
                     MPI_COMM_WORLD);
-      dens   = tot_dens;
-      ncells = tot_ncells;
+      dens      = tot_dens;
+      num_cells = tot_num_cells;
 #endif
-      if (ncells > 0) {
-        return dens / (real_t)(ncells);
+      if (num_cells > 0) {
+        return dens / (real_t)(num_cells);
       } else {
         return ZERO;
       }
     }
 
     auto ComputeNumInject(const SimulationParams&     params,
-                          const Domain<S, M>&         domain,
+                          Domain<S, M>&               domain,
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
       const auto computed_avg_density = ComputeAvgDensity(params, domain);
 
-      const auto result = DeduceInjectRegion(domain, box);
-      const auto i_min  = std::get<2>(result);
-      const auto i_max  = std::get<3>(result);
-
+      const auto result = this->DeduceRegion(domain, box);
       if (not std::get<0>(result)) {
-        return { false, (npart_t)0, i_min, i_max };
+        return { false, (npart_t)0, array_t<real_t*> {}, array_t<real_t*> {} };
       }
-      const auto ncells = std::get<1>(result);
 
-      const auto ppc0       = params.template get<real_t>("particles.ppc0");
-      const auto nparticles = static_cast<npart_t>(
-        (long double)(ppc0 * (number_density - computed_avg_density) * 0.5) *
-        (long double)(ncells));
+      const auto xi_min   = std::get<1>(result);
+      const auto xi_max   = std::get<2>(result);
+      auto       xi_min_h = Kokkos::create_mirror_view(xi_min);
+      auto       xi_max_h = Kokkos::create_mirror_view(xi_max);
+      Kokkos::deep_copy(xi_min_h, xi_min);
+      Kokkos::deep_copy(xi_max_h, xi_max);
 
-      return { true, nparticles, i_min, i_max };
+      long double num_cells { 1.0 };
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        num_cells *= static_cast<long double>(xi_max_h(d)) -
+                     static_cast<long double>(xi_min_h(d));
+      }
+
+      const auto ppc0 = params.template get<real_t>("particles.ppc0");
+      npart_t    nparticles { 0u };
+      if (number_density > computed_avg_density) {
+        nparticles = static_cast<npart_t>(
+          (long double)(ppc0 * (number_density - computed_avg_density) * 0.5) *
+          num_cells);
+      }
+
+      return { nparticles != 0u, nparticles, xi_min, xi_max };
     }
   };
 
@@ -471,8 +474,8 @@ namespace arch {
         return;
       }
       const auto nparticles = std::get<1>(result);
-      const auto i_min      = std::get<2>(result);
-      const auto i_max      = std::get<3>(result);
+      const auto xi_min     = std::get<2>(result);
+      const auto xi_max     = std::get<3>(result);
 
       Kokkos::parallel_for(
         "InjectUniform",
@@ -485,8 +488,8 @@ namespace arch {
           domain.species[injector.species.first - 1].npart(),
           domain.species[injector.species.second - 1].npart(),
           domain.mesh.metric,
-          i_min,
-          i_max,
+          xi_min,
+          xi_max,
           injector.energy_dist,
           ONE / params.template get<real_t>("scales.V0"),
           domain.random_pool));
