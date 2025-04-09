@@ -46,7 +46,7 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
-    raise::ErrorIf(global_ndomains != g_mpi_size,
+    raise::ErrorIf(global_ndomains != (unsigned int)g_mpi_size,
                    "Exactly 1 domain per MPI rank is allowed",
                    HERE);
 #endif

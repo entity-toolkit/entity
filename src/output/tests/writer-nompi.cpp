@@ -23,7 +23,8 @@ void cleanup() {
 }
 
 #define CEILDIV(a, b)                                                          \
-  (static_cast<int>(math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
+  (static_cast<ncells_t>(                                                      \
+    math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);

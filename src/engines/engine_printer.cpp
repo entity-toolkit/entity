@@ -20,7 +20,6 @@
 #endif
 
 #if defined(OUTPUT_ENABLED)
-  #include <H5public.h>
   #include <adios2.h>
 #endif
 
@@ -188,18 +187,11 @@ namespace ntt {
                                                 KOKKOS_VERSION % 100);
 
 #if defined(OUTPUT_ENABLED)
-        unsigned h5_major, h5_minor, h5_release;
-        H5get_libversion(&h5_major, &h5_minor, &h5_release);
-        const std::string hdf5_version   = fmt::format("%d.%d.%d",
-                                                     h5_major,
-                                                     h5_minor,
-                                                     h5_release);
         const std::string adios2_version = fmt::format("%d.%d.%d",
                                                        ADIOS2_VERSION / 10000,
                                                        ADIOS2_VERSION / 100 % 100,
                                                        ADIOS2_VERSION % 100);
 #else // not OUTPUT_ENABLED
-        const std::string hdf5_version   = "OFF";
         const std::string adios2_version = "OFF";
 #endif
 
@@ -217,7 +209,6 @@ namespace ntt {
         add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
         add_param(report, 4, "CUDA", "%s", cuda_version.c_str());
         add_param(report, 4, "MPI", "%s", mpi_version.c_str());
-        add_param(report, 4, "HDF5", "%s", hdf5_version.c_str());
         add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
         add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
         add_param(report, 4, "Precision", "%s", precision);

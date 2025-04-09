@@ -1,15 +1,15 @@
-#include "wrapper.h"
-
 #include <Kokkos_Core.hpp>
 
 #include <iostream>
 #include <stdexcept>
 
+#include "wrapper.h"
+
 #include METRIC_HEADER
 
-#include "particle_macros.h"
-
 #include "kernels/particle_pusher_gr.hpp"
+
+#include "particle_macros.h"
 
 template <typename T>
 void put_value(ntt::array_t<T*>& arr, T value, int i) {
@@ -154,9 +154,10 @@ auto main(int argc, char* argv[]) -> int {
         static_cast<real_t>(1.0e-5),
         10,
         boundaries);
-      Kokkos::parallel_for("ParticlesPush",
-                           Kokkos::RangePolicy<AccelExeSpace, ntt::Massive_t>(0, 1),
-                           kernel);
+      Kokkos::parallel_for(
+        "ParticlesPush",
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, ntt::Massive_t>(0, 1),
+        kernel);
       auto [ra, tha]   = get_physical_coord(0, i1, i2, dx1, dx2, metric);
       const real_t pha = get_value(phi, 0);
 

@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103
 # ------------------------------
 # @defines: entity [STATIC/SHARED]
 #
@@ -17,7 +18,6 @@
 #
 # * kokkos [required]
 # * plog [required]
-# * toml11 [required]
 # * ADIOS2 [optional]
 # * mpi [optional]
 # ------------------------------

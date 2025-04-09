@@ -858,6 +858,7 @@ namespace kernel::bc {
     const I         fset;
     const M         metric;
     const ncells_t  i_edge;
+    const BCTags    tags;
 
     EnforcedBoundaries_kernel(ndfield_t<M::Dim, 6>& Fld,
                               const I&              fset,
@@ -867,7 +868,8 @@ namespace kernel::bc {
       : Fld { Fld }
       , fset { fset }
       , metric { metric }
-      , i_edge { i_edge + N_GHOSTS } {}
+      , i_edge { i_edge + N_GHOSTS }
+      , tags { tags } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -876,8 +878,12 @@ namespace kernel::bc {
         coord_t<Dim::_1D> x_Ph_H { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ }, x_Ph_0);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF }, x_Ph_H);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
@@ -953,8 +959,12 @@ namespace kernel::bc {
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ }, x_Ph_H0);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ + HALF },
                                                   x_Ph_HH);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
@@ -1053,8 +1063,12 @@ namespace kernel::bc {
                                                   x_Ph_H0H);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_, i2_ + HALF, i3_ + HALF },
                                                   x_Ph_0HH);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
