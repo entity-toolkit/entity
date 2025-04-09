@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -738,13 +738,7 @@ namespace ntt {
         for (const auto& e : extent_pairwise) {
           min_extent = std::min(min_extent, e.second - e.first);
         }
-        const auto  default_ds = min_extent * defaults::bc::match::ds_frac;
-        std::size_t n_match_bcs { 0u };
-        for (const auto& bcs : flds_bc_pairwise) {
-          if (bcs.first == FldsBC::MATCH or bcs.second == FldsBC::MATCH) {
-            n_match_bcs += 1;
-          }
-        }
+        const auto default_ds = min_extent * defaults::bc::match::ds_frac;
         boundaries_t<real_t> ds_array;
         try {
           auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
