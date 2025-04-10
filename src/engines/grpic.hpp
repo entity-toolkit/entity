@@ -148,6 +148,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
+          m_metadomain.CommunicateFields(dom, Comm::H | Comm::E);
           FieldBoundaries(dom, BC::H | BC::E, gr_bc::aux);
 
           /**
@@ -188,6 +189,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
+          m_metadomain.CommunicateFields(dom, Comm::H | Comm::E);
           FieldBoundaries(dom, BC::H | BC::E, gr_bc::aux);
 
           // !ADD: GR -- particles?
@@ -225,6 +227,7 @@ namespace ntt {
           /**
            * aux::H <- boundary conditions
            */
+          m_metadomain.CommunicateFields(dom, Comm::H);
           FieldBoundaries(dom, BC::H, gr_bc::aux);
 
           /**
@@ -306,16 +309,15 @@ namespace ntt {
         ComputeAuxE(dom, gr_getE::D0_B);
         timers.stop("FieldSolver");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::E);
+        timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
          * aux::E <- boundary conditions
          */
         FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
-
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E);
-        timers.stop("Communications");
 
         timers.start("FieldSolver");
         /**
@@ -326,15 +328,15 @@ namespace ntt {
         Faraday(dom, gr_faraday::aux, ONE);
         timers.stop("FieldSolver");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        timers.stop("Communications");
         /**
          * em0::B, em::B <- boundary conditions
          */
         timers.start("FieldBoundaries");
         FieldBoundaries(dom, BC::B, gr_bc::main);
         timers.stop("FieldBoundaries");
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
-        timers.stop("Communications");
 
         timers.start("FieldSolver");
         /**
@@ -345,16 +347,15 @@ namespace ntt {
         ComputeAuxH(dom, gr_getH::D_B0);
         timers.stop("FieldSolver");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::H);
+        timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
          * aux::H <- boundary conditions
          */
         FieldBoundaries(dom, BC::H, gr_bc::aux);
         timers.stop("FieldBoundaries");
-
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::H);
-        timers.stop("Communications");
       }
 
       {
@@ -415,16 +416,15 @@ namespace ntt {
         ComputeAuxE(dom, gr_getE::D_B0);
         timers.stop("FieldSolver");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::E);
+        timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
          * aux::Е <- boundary conditions
          */
         FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
-
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E);
-        timers.stop("Communications");
 
         timers.start("FieldSolver");
         /**
@@ -485,16 +485,15 @@ namespace ntt {
         ComputeAuxH(dom, gr_getH::D0_B0);
         timers.stop("FieldSolver");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::H);
+        timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
          * aux::H <- boundary conditions
          */
         FieldBoundaries(dom, BC::B, gr_bc::aux);
         timers.stop("FieldBoundaries");
-
-        timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::H);
-        timers.stop("Communications");
 
         timers.start("FieldSolver");
         /**
