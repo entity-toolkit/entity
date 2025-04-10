@@ -113,22 +113,23 @@ namespace user {
       return init_flds;
     }
 
-    auto ResetFields(const em& comp) const -> real_t {
+    auto FixFieldsConst(const bc_in&, const em& comp) const
+      -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
-        return init_flds.ex1({ ZERO });
+        return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
-        return init_flds.ex2({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::ex3) {
-        return init_flds.ex3({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::bx1) {
-        return init_flds.bx1({ ZERO });
+        return { init_flds.bx1({ ZERO }), true };
       } else if (comp == em::bx2) {
-        return init_flds.bx2({ ZERO });
+        return { init_flds.bx2({ ZERO }), true };
       } else if (comp == em::bx3) {
-        return init_flds.bx3({ ZERO });
+        return { init_flds.bx3({ ZERO }), true };
       } else {
         raise::Error("Invalid component", HERE);
-        return ZERO;
+        return { ZERO, false };
       }
     }
 
@@ -185,47 +186,44 @@ namespace user {
                           filling_fraction * (global_xmax - global_xmin);
 
       // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? 
-                          time - injection_start : ZERO;
+      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
+                                                        : ZERO;
 
-      // compute the position of the injector
+      // compute the position of the injector after the current timestep
       auto xmax = x_init + injector_velocity * (dt_inj + dt);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
 
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimension
-      for (auto d = 0u; d < M::Dim; ++d) {
-        if (d == 0) {
-          box.push_back({ xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                            injection_frequency * dt,
-                          xmax });
-        } else {
-          box.push_back(Range::All);
-        }
-      }
+      // compute the beginning of the injected region
+      const auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
+                  injection_frequency * dt;
+
 
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
         incl_ghosts.push_back({ true, true });
       }
-      auto fields_box = box;
-      // check if the box is still inside the domain
-      if (xmax + injection_frequency * dt < global_xmax) {
-        fields_box[0].second += injection_frequency * dt;
-      } else {
-        // if right side of the box is outside of the domain -> truncate box
-        fields_box[0].second = global_xmax;
+
+      // define box to reset fields
+      boundaries_t<real_t> purge_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          purge_box.push_back({ xmin, global_xmax });
+        } else {
+          purge_box.push_back(Range::All);
+        }
       }
-      const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
+
+      const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
         x_max[d] = extent[d].second;
       }
+
 
       Kokkos::parallel_for("ResetFields",
                            CreateRangePolicy<M::Dim>(x_min, x_max),
@@ -268,8 +266,19 @@ namespace user {
           Inject slab of fresh plasma
       */
 
+      // define box to inject into
+      boundaries_t<real_t> inj_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          inj_box.push_back({ xmin, xmax });
+        } else {
+          inj_box.push_back(Range::All);
+        }
+      }
+
       // same maxwell distribution as above
-      const auto energy_dist  = arch::Maxwellian<S, M>(domain.mesh.metric,
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
                                                       domain.random_pool,
                                                       temperature,
                                                       -drift_ux,
@@ -287,11 +296,8 @@ namespace user {
         injector,
         1.0,   // target density
         false, // no weights
-        box);
+        inj_box);
     }
-
   };
-
 } // namespace user
-
 #endif
