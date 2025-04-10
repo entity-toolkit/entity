@@ -313,6 +313,10 @@ namespace ntt {
         FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::E);
+        timers.stop("Communications");
+
         timers.start("FieldSolver");
         /**
          * em0::B <- (em0::B) <- -curl aux::E
@@ -347,6 +351,10 @@ namespace ntt {
          */
         FieldBoundaries(dom, BC::H, gr_bc::aux);
         timers.stop("FieldBoundaries");
+
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::H);
+        timers.stop("Communications");
       }
 
       {
@@ -414,6 +422,10 @@ namespace ntt {
         FieldBoundaries(dom, BC::E, gr_bc::aux);
         timers.stop("FieldBoundaries");
 
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::E);
+        timers.stop("Communications");
+
         timers.start("FieldSolver");
         /**
          * em0::B <- (em::B) <- -curl aux::E
@@ -479,6 +491,10 @@ namespace ntt {
          */
         FieldBoundaries(dom, BC::B, gr_bc::aux);
         timers.stop("FieldBoundaries");
+
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, Comm::H);
+        timers.stop("Communications");
 
         timers.start("FieldSolver");
         /**
