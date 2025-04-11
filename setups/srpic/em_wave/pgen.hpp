@@ -101,7 +101,6 @@ namespace user {
       , sx3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
       , init_flds { amplitude, sx1, sx2, sx3, kx1, kx2, kx3 } {}
-  };
 
   inline void InitPrtls(Domain<S, M>& domain) {
 
@@ -154,6 +153,7 @@ namespace user {
       species_e.set_npart(offset_e + elec_ind_h());
 
   }
+};
 
 } // namespace user
 
