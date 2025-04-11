@@ -101,14 +101,6 @@ namespace user {
       v[0] = cos_h * v_th[0] - sin_h * v_th[1];
       v[1] = sin_h * v_th[0] + cos_h * v_th[1];
       v[2] = v_th[2];
-
-      // v[1] = ZERO;
-      // maxwellian(x_Ph, v); // the coordinate is not used
-      // const real_t vx = - drift * math::sin(x_Ph[1]);
-      // const real_t vy = + drift * math::sin(x_Ph[0]);
-      // const real_t gamma = ONE / std::sqrt(ONE - NORM_SQR(vx, vy, ZERO));
-      // v[0] += gamma * vx;
-      // v[1] += gamma * vy;
     }
 
   private:
@@ -153,19 +145,6 @@ namespace user {
                                                                                   injector,
                                                                                   1.0);
     }
-
-    // void CustomFieldOutput(const std::string&    name,
-    //                       ndfield_t<M::Dim, 6> buffer,
-    //                       std::size_t          index,
-    //                       const Domain<S, M>&  domain) {
-    //   if (name == "Pressure") {
-    //     if constexpr (M::Dim == Dim::_2D) {
-    //       // kernel::ParticleMoments_kernel<S, M, FldsID::Rho, 3>
-    //     }
-    //   } else {
-    //     raise::Error("Custom output not provided", HERE);
-    //   }
-    // }
   };
 
 } // namespace user

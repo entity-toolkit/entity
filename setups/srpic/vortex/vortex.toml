@@ -1,15 +1,11 @@
 [simulation]
-  name    = "OT_4096"
+  name = "vortex"
   engine  = "srpic"
-  runtime = 10.0
-
-  [simulation.domain]
-    number = 4
-    decomposition = [2, 2]
+  runtime = 20.0
 
 [grid]
-  resolution = [4096, 4096]
-  extent     = [[0.0, 1.0], [0.0, 1.0]]
+  resolution = [1024, 1024]
+  extent     = [[0.0, 6.2831853], [0.0, 6.2831853]]
 
   [grid.metric]
     metric = "minkowski"
@@ -19,8 +15,8 @@
     particles = [["PERIODIC"], ["PERIODIC"]]
 
 [scales]
-  larmor0    = 0.003088
-  skindepth0 = 0.0009765625
+  larmor0    = 0.03
+  skindepth0 = 0.015
 
 [algorithms]
   current_filters = 8
@@ -40,24 +36,23 @@
     label    = "e-"
     mass     = 1.0
     charge   = -1.0
-    maxnpart = 6e8
+    maxnpart = 3e8
     pusher = "Boris"
 
   [[particles.species]]
     label    = "e+"
     mass     = 1.0
     charge   = 1.0
-    maxnpart = 6e8
+    maxnpart = 3e8
     pusher = "Boris"
 
 [setup]
-  temperature = 0.005
+  temperature = 0.05
   Bg          = 2.0
-  drift       = 0.3
+  drift       = 0.1
 
 [output]
   format        = "hdf5"
-  separate_files = false
 
   [output.fields]
     interval_time = 0.1
