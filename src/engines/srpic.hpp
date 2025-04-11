@@ -894,55 +894,55 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
 
-        if (dim == in::x1) {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
-                domain.fields.em,
-                tags));
-          } else {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
-                domain.fields.em,
-                tags));
-          }
-        } else if (dim == in::x2) {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
-                domain.fields.em,
-                tags));
-          } else {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
-                domain.fields.em,
-                tags));
-          }
-        } else {
-          if (sign > 0) {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
-                domain.fields.em,
-                tags));
-          } else {
-            Kokkos::parallel_for(
-              "ConductorFields",
-              range,
-              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
-                domain.fields.em,
-                tags));
-          }
-        }
+        // if (dim == in::x1) {
+        //   if (sign > 0) {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
+        //         domain.fields.em,
+        //         tags));
+        //   } else {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
+        //         domain.fields.em,
+        //         tags));
+        //   }
+        // } else if (dim == in::x2) {
+        //   if (sign > 0) {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+        //         domain.fields.em,
+        //         tags));
+        //   } else {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+        //         domain.fields.em,
+        //         tags));
+        //   }
+        // } else {
+        //   if (sign > 0) {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+        //         domain.fields.em,
+        //         tags));
+        //   } else {
+        //     Kokkos::parallel_for(
+        //       "ConductorFields",
+        //       range,
+        //       kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+        //         domain.fields.em,
+        //         tags));
+        //   }
+        // }
       }
     }
 
