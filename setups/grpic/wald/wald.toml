@@ -68,7 +68,6 @@
 
 [output]
   format = "hdf5"
-   separate_files = false
 
   [output.fields]
     interval_time = 1.0

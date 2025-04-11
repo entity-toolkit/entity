@@ -29,41 +29,53 @@ namespace user {
                        metric.beta1(x_Cd));
     }
 
+    Inline auto A_1(const coord_t<D>& x_Cd) const -> real_t {
+      return HALF * (metric.template h_<1, 3>(x_Cd) 
+             + TWO * metric.spin() * metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd)
+      );
+    }
+
+    Inline auto A_0(const coord_t<D>& x_Cd) const -> real_t {
+      real_t g_00 { -metric.alpha(x_Cd) * metric.alpha(x_Cd) 
+                   + metric.template h_<1, 1>(x_Cd) * metric.beta1(x_Cd) * metric.beta1(x_Cd) 
+                  };
+      return HALF * (metric.template h_<1, 3>(x_Cd) * metric.beta1(x_Cd) 
+             + TWO * metric.spin() * g_00);
+    }
+
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
-      // coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
-      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
-      // x0m[0] = xi[0];
-      // x0m[1] = xi[1] - HALF * m_eps;
-      // x0p[0] = xi[0];
-      // x0p[1] = xi[1] + HALF * m_eps;
+      x0m[0] = xi[0];
+      x0m[1] = xi[1] - HALF * m_eps;
+      x0p[0] = xi[0];
+      x0p[1] = xi[1] + HALF * m_eps;
 
-      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
 
-      // if (cmp::AlmostZero(x_Ph[1])) {
-      //   return ONE;
-      // } else {
-      //   return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
-      // }
-      return ZERO;
+      if (cmp::AlmostZero(x_Ph[1])) {
+        return ONE;
+      } else {
+        return (A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
+      }
     }
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
-      // coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
-      // metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
+      coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
-      // x0m[0] = xi[0] - HALF * m_eps;
-      // x0m[1] = xi[1];
-      // x0p[0] = xi[0] + HALF * m_eps;
-      // x0p[1] = xi[1];
+      x0m[0] = xi[0] - HALF * m_eps;
+      x0m[1] = xi[1];
+      x0p[0] = xi[0] + HALF * m_eps;
+      x0p[1] = xi[1];
 
-      // real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
-      // if (cmp::AlmostZero(x_Ph[1])) {
-      //   return ZERO;
-      // } else {
-      //   return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
-      // }
-      return ZERO;
+      real_t inv_sqrt_detH_ijP { ONE / metric.sqrt_det_h({ xi[0], xi[1] }) };
+      if (cmp::AlmostZero(x_Ph[1])) {
+        return ZERO;
+      } else {
+        return -(A_3(x0p) - A_3(x0m)) * inv_sqrt_detH_ijP / m_eps;
+      }
     }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
@@ -100,6 +112,7 @@ namespace user {
       , EM { domain_ptr->fields.em }
       , density { domain_ptr->fields.buff }
       , sigma_thr { sigma_thr }
+      , inv_n0 { ONE / params.template get<real_t>("scales.n0") }
       , dens_thr { dens_thr } {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
@@ -118,7 +131,6 @@ namespace user {
       const auto use_weights = params.template get<bool>(
         "particles.use_weights");
       const auto ni2    = mesh.n_active(in::x2);
-      const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
 
       for (const auto& sp : specs) {
         auto& prtl_spec = domain_ptr->species[sp - 1];
@@ -156,11 +168,8 @@ namespace user {
         metric.template transform<Idx::U, Idx::D>(xi, B_cntrv, B_cov);
         const auto bsqr =
           DOT(B_cntrv[0], B_cntrv[1], B_cntrv[2], B_cov[0], B_cov[1], B_cov[2]);
-        const auto DdotB =
-          DOT(D_cntrv[0], D_cntrv[1], D_cntrv[2], B_cov[0], B_cov[1], B_cov[2]);
         const auto dens = density(i1, i2, 0);
-        // return (bsqr > sigma_thr * dens) || (dens < dens_thr);
-        return (DdotB / bsqr > 0.001) || (bsqr > sigma_thr * dens);
+        return (bsqr > sigma_thr * dens) || (dens < dens_thr);
       }
       return false;
     }
@@ -178,6 +187,7 @@ namespace user {
     tuple_t<real_t, M::Dim> x_max;
     const real_t            sigma_thr;
     const real_t            dens_thr;
+    const real_t              inv_n0;
     Domain<S, M>*           domain_ptr;
     ndfield_t<M::Dim, 3>    density;
     ndfield_t<M::Dim, 6>    EM;
@@ -219,87 +229,50 @@ namespace user {
       , init_flds { m.mesh().metric, m_eps }
       , metadomain { &m } {}
 
-    inline void InitPrtls(Domain<S, M>& domain) {
-      // arch::InjectGlobally(*metadomain,
-      //                      domain,
-      //                      1,
-      //                      {
-      //                        {  "x1",  { 3.2 } },
-      //                        {  "x2",  { 1.2 } },
-      //                        { "phi",  { 0.0 } },
-      //                        { "ux1",  { 0.0 } },
-      //                        { "ux2", { -1.0 } },
-      //                        { "ux3",  { 0.5 } }
-      // });
-      // arch::InjectGlobally(*metadomain,
-      //                      domain,
-      //                      2,
-      //                      {
-      //                        {  "x1", { 2.05 } },
-      //                        {  "x2",  { 2.3 } },
-      //                        { "phi",  { 0.0 } },
-      //                        { "ux1",  { 0.5 } },
-      //                        { "ux2", { -0.5 } },
-      //                        { "ux3", { -0.5 } }
-      // });
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
+    inline void InitPrtls(Domain<S, M>& local_domain) {
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                      local_domain.random_pool,
                                                       temperature);
-      // const auto npart0      = domain.species[0].npart();
-      // auto&      ux3_0       = domain.species[0].ux3;
-      // auto&      ux3_1       = domain.species[1].ux3;
-      // Kokkos::parallel_for(
-      //   "zero",
-      //   npart0,
-      //   Lambda(index_t p) {
-      //     ux3_0(p) = ZERO;
-      //     ux3_1(p) = ZERO;
-      //   });
-      // const auto spatial_dist = PointDistribution<S, M>(xi_min,
-      //                                                   xi_max,
-      //                                                   sigma_max / sigma0,
-      //                                                   multiplicity * nGJ,
-      //                                                   params,
-      //                                                   &local_domain);
+      const auto spatial_dist = PointDistribution<S, M>(xi_min,
+                                                        xi_max,
+                                                        sigma_max / sigma0,
+                                                        multiplicity * nGJ,
+                                                        params,
+                                                        &local_domain);
 
-      // const auto injector =
-      //   arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-      //     energy_dist,
-      //     spatial_dist,
-      //     { 1, 2 });
-      // arch::InjectNonUniform<S, M, decltype(injector)>(params,
-      //                                                  local_domain,
-      //                                                  injector,
-      //                                                  1.0,
-      //                                                  true);
-      // const auto energy_dist  = arch::Cold<S, M>(local_domain.mesh.metric);
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      arch::InjectUniform<S, M, decltype(injector)>(params, domain, injector, 1.0, true);
+      const auto injector =
+        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
+          energy_dist,
+          spatial_dist,
+          { 1, 2 });
+      arch::InjectNonUniform<S, M, decltype(injector)>(params,
+                                                       local_domain,
+                                                       injector,
+                                                       1.0,
+                                                       true);
     }
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
-      // const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-      //                                                 local_domain.random_pool,
-      //                                                 temperature);
-      // const auto spatial_dist = PointDistribution<S, M>(xi_min,
-      //                                                   xi_max,
-      //                                                   sigma_max / sigma0,
-      //                                                   multiplicity * nGJ,
-      //                                                   params,
-      //                                                   &local_domain);
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                      local_domain.random_pool,
+                                                      temperature);
+      const auto spatial_dist = PointDistribution<S, M>(xi_min,
+                                                        xi_max,
+                                                        sigma_max / sigma0,
+                                                        multiplicity * nGJ,
+                                                        params,
+                                                        &local_domain);
 
-      // const auto injector =
-      //   arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-      //     energy_dist,
-      //     spatial_dist,
-      //     { 1, 2 });
-      // arch::InjectNonUniform<S, M, decltype(injector)>(params,
-      //                                                  local_domain,
-      //                                                  injector,
-      //                                                  1.0,
-      //                                                  true);
+      const auto injector =
+        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
+          energy_dist,
+          spatial_dist,
+          { 1, 2 });
+      arch::InjectNonUniform<S, M, decltype(injector)>(params,
+                                                       local_domain,
+                                                       injector,
+                                                       1.0,
+                                                       true);
     }
   };
 
