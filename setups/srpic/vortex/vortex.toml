@@ -1,0 +1,75 @@
+[simulation]
+  name    = "OT_4096"
+  engine  = "srpic"
+  runtime = 10.0
+
+  [simulation.domain]
+    number = 4
+    decomposition = [2, 2]
+
+[grid]
+  resolution = [4096, 4096]
+  extent     = [[0.0, 1.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.003088
+  skindepth0 = 0.0009765625
+
+[algorithms]
+  current_filters = 8
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+  [algorithms.toggles]
+    deposit = true
+    fieldsolver = true
+
+[particles]
+  ppc0 = 20.0
+  clear_interval = 100
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 6e8
+    pusher = "Boris"
+
+  [[particles.species]]
+    label    = "e+"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 6e8
+    pusher = "Boris"
+
+[setup]
+  temperature = 0.005
+  Bg          = 2.0
+  drift       = 0.3
+
+[output]
+  format        = "hdf5"
+  separate_files = false
+
+  [output.fields]
+    interval_time = 0.1
+    quantities = ["E", "J", "B", "Rho"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[diagnostics]
+  interval = 2
+  colored_stdout = true
+  blocking_timers = true
