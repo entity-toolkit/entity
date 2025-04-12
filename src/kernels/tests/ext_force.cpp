@@ -4,6 +4,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+#include "utils/plog.h"
 
 #include "metrics/minkowski.h"
 
@@ -17,6 +18,7 @@
 #include <plog/Init.h>
 #include <plog/Log.h>
 
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -29,11 +31,7 @@ void check_value(unsigned int       t,
                  real_t             value,
                  real_t             eps,
                  const std::string& msg) {
-  const auto msg_ = fmt::format("%s: %.12e != %.12e @ %u",
-                                msg.c_str(),
-                                target,
-                                value,
-                                t);
+  const auto msg_ = fmt::format("%s: %e != %e @ %u", msg.c_str(), target, value, t);
   const auto diff = math::abs(target - value);
   const auto sum  = HALF * (math::abs(target) + math::abs(value));
   raise::ErrorIf(((sum > eps) and (diff / sum > eps)) or
@@ -49,6 +47,30 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   h(p) = v;
   Kokkos::deep_copy(arr, h);
 }
+
+struct Force {
+  const std::vector<spidx_t> species { 1 };
+
+  Force(real_t force) : force { force } {}
+
+  Inline auto fx1(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
+    -> real_t {
+    return force * math::sin(ONE) * math::sin(ONE);
+  }
+
+  Inline auto fx2(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
+    -> real_t {
+    return force * math::sin(ONE) * math::cos(ONE);
+  }
+
+  Inline auto fx3(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
+    -> real_t {
+    return force * math::cos(ONE);
+  }
+
+private:
+  const real_t force;
+};
 
 template <SimEngine::type S, typename M>
 void testPusher(const std::vector<std::size_t>& res) {
@@ -74,18 +96,12 @@ void testPusher(const std::vector<std::size_t>& res) {
                                           res[1] + 2 * N_GHOSTS,
                                           res[2] + 2 * N_GHOSTS };
 
-  const real_t bx1 = 0.66, bx2 = 0.55, bx3 = 0.44;
   const real_t x1_0 = 1.15, x2_0 = 1.85, x3_0 = 1.25;
-  const real_t ux1_0 = 1.0, ux2_0 = -2.0, ux3_0 = 0.1;
-  const real_t omegaB0 = 0.2;
+  const real_t ux1_0 = 0.02, ux2_0 = -0.2, ux3_0 = 0.1;
+  // const real_t gamma_0 = math::sqrt(ONE + NORM_SQR(ux1_0, ux2_0, ux3_0));
+  const real_t omegaB0 = 1.0;
   const real_t dt      = 0.01;
-
-  const real_t b_mag  = math::sqrt(NORM_SQR(bx1, bx2, bx3));
-  const real_t upar_0 = DOT(ux1_0, ux2_0, ux3_0, bx1, bx2, bx3) / b_mag;
-
-  const real_t ux1_expect = bx1 * upar_0 / (b_mag);
-  const real_t ux2_expect = bx2 * upar_0 / (b_mag);
-  const real_t ux3_expect = bx3 * upar_0 / (b_mag);
+  const real_t f_mag   = 0.01;
 
   Kokkos::parallel_for(
     "init 3D",
@@ -94,9 +110,9 @@ void testPusher(const std::vector<std::size_t>& res) {
       emfield(i1, i2, i3, em::ex1) = ZERO;
       emfield(i1, i2, i3, em::ex2) = ZERO;
       emfield(i1, i2, i3, em::ex3) = ZERO;
-      emfield(i1, i2, i3, em::bx1) = bx1;
-      emfield(i1, i2, i3, em::bx2) = bx2;
-      emfield(i1, i2, i3, em::bx3) = bx3;
+      emfield(i1, i2, i3, em::bx1) = ZERO;
+      emfield(i1, i2, i3, em::bx2) = ZERO;
+      emfield(i1, i2, i3, em::bx3) = ZERO;
     });
 
   array_t<int*>      i1 { "i1", 2 };
@@ -152,15 +168,26 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t coeff = HALF * dt * omegaB0;
 
-  const real_t eps = std::is_same_v<real_t, float> ? 1e-3 : 1e-6;
+  const real_t eps = std::is_same_v<real_t, float> ? 1e-4 : 1e-6;
 
-  for (auto t { 0u }; t < 2000; ++t) {
+  const auto ext_force = Force { f_mag };
+  const auto force =
+    kernel::sr::Force<Dim::_3D, Coord::Cart, decltype(ext_force), false> { ext_force };
+
+  static plog::RollingFileAppender<plog::NttInfoFormatter> file_appender(
+    "pusher_log.csv");
+  plog::init(plog::verbose, &file_appender);
+  PLOGD << "t,i1,i2,i3,dx1,dx2,dx3,ux1,ux2,ux3";
+
+  for (auto t { 0u }; t < 100; ++t) {
+    const real_t time = t * dt;
+
     // clang-format off
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     true, false, kernel::sr::Cooling::None,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(force)>(PrtlPusher::BORIS,
+                                                     false, true, kernel::sr::Cooling::None,
                                                      emfield,
                                                      sp,
                                                      i1, i2, i3,
@@ -169,25 +196,76 @@ void testPusher(const std::vector<std::size_t>& res) {
                                                      dx1_prev, dx2_prev, dx3_prev,
                                                      ux1, ux2, ux3,
                                                      phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
+                                                     metric, force,
+                                                     (simtime_t)time, coeff, dt,
                                                      nx1, nx2, nx3,
                                                      boundaries,
-                                                     (real_t)10000.0, ONE, ZERO));
+                                                     ZERO, ZERO, ZERO));
 
+    auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
+    auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
+    auto i3_prev_ = Kokkos::create_mirror_view(i3_prev);
+    auto i1_      = Kokkos::create_mirror_view(i1);
+    auto i2_      = Kokkos::create_mirror_view(i2);
+    auto i3_      = Kokkos::create_mirror_view(i3);
+    Kokkos::deep_copy(i1_prev_, i1_prev);
+    Kokkos::deep_copy(i2_prev_, i2_prev);
+    Kokkos::deep_copy(i3_prev_, i3_prev);
+    Kokkos::deep_copy(i1_, i1);
+    Kokkos::deep_copy(i2_, i2);
+    Kokkos::deep_copy(i3_, i3);
+
+    auto dx1_prev_ = Kokkos::create_mirror_view(dx1_prev);
+    auto dx2_prev_ = Kokkos::create_mirror_view(dx2_prev);
+    auto dx3_prev_ = Kokkos::create_mirror_view(dx3_prev);
+    auto dx1_      = Kokkos::create_mirror_view(dx1);
+    auto dx2_      = Kokkos::create_mirror_view(dx2);
+    auto dx3_      = Kokkos::create_mirror_view(dx3);
     auto ux1_      = Kokkos::create_mirror_view(ux1);
     auto ux2_      = Kokkos::create_mirror_view(ux2);
     auto ux3_      = Kokkos::create_mirror_view(ux3);
+    Kokkos::deep_copy(dx1_prev_, dx1_prev);
+    Kokkos::deep_copy(dx2_prev_, dx2_prev);
+    Kokkos::deep_copy(dx3_prev_, dx3_prev);
+    Kokkos::deep_copy(dx1_, dx1);
+    Kokkos::deep_copy(dx2_, dx2);
+    Kokkos::deep_copy(dx3_, dx3);
     Kokkos::deep_copy(ux1_, ux1);
     Kokkos::deep_copy(ux2_, ux2);
     Kokkos::deep_copy(ux3_, ux3);
 
-    check_value(t, ux1_(0), ux1_expect, eps, "Particle #1 ux1");
-    check_value(t, ux2_(0), ux2_expect, eps, "Particle #1 ux2");
-    check_value(t, ux3_(0), ux3_expect, eps, "Particle #1 ux3");
-    check_value(t, ux1_(1), -ux1_expect, eps, "Particle #2 ux1");
-    check_value(t, ux2_(1), -ux2_expect, eps, "Particle #2 ux2");
-    check_value(t, ux3_(1), -ux3_expect, eps, "Particle #2 ux3");
+    PLOGD.printf("%e,%d,%d,%d,%e,%e,%e,%e,%e,%e",
+                 time,
+                 i1_(1),
+                 i2_(1),
+                 i3_(1),
+                 dx1_( 1),
+                 dx2_( 1),
+                 dx3_( 1),
+                 ux1_( 1),
+                 ux2_( 1),
+                 ux3_( 1));
+
+    {
+      const real_t ux1_expect = ux1_0 + (time + dt) * f_mag * std::sin(ONE) * std::sin(ONE);
+      const real_t ux2_expect = ux2_0 + (time + dt) * f_mag * std::sin(ONE) * std::cos(ONE);
+      const real_t ux3_expect = ux3_0 + (time + dt) * f_mag * std::cos(ONE);
+
+      check_value(t, ux1_(0), ux1_expect, eps, "Particle #1 ux1");
+      check_value(t, ux2_(0), ux2_expect, eps, "Particle #1 ux2");
+      check_value(t, ux3_(0), ux3_expect, eps, "Particle #1 ux3");
+    }
+
+    {
+      const real_t ux1_expect = -ux1_0 + (time + dt) * f_mag * std::sin(ONE) * std::sin(ONE);
+      const real_t ux2_expect = -ux2_0 + (time + dt) * f_mag * std::sin(ONE) * std::cos(ONE);
+      const real_t ux3_expect = -ux3_0 + (time + dt) * f_mag * std::cos(ONE);
+
+      check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
+      check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
+      check_value(t, ux3_(1), ux3_expect, eps, "Particle #2 ux3");
+    }
+
   }
 }
 

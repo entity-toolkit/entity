@@ -338,7 +338,7 @@ namespace kernel::sr {
                   bool                        ext_force,
                   CoolingTags                 cooling,
                   const ndfield_t<D, 6>&      EB,
-                  unsigned short              sp,
+                  spidx_t                     sp,
                   array_t<int*>&              i1,
                   array_t<int*>&              i2,
                   array_t<int*>&              i3,

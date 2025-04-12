@@ -82,7 +82,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       coord_t<M::Dim> x_Code_2 { ZERO };
       coord_t<M::Dim> x_Phys_1 { ZERO };
       coord_t<M::Dim> x_Sph_1 { ZERO };
-      for (auto d { 0u }; d < D; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
       metric.template convert<Crd::Cd, Crd::Ph>(x_Code_1, x_Phys_1);
