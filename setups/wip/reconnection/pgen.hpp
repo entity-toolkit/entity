@@ -269,7 +269,7 @@ namespace user {
         auto scatter_buff = Kokkos::Experimental::create_scatter_view(
           domain.fields.buff);
         Kokkos::deep_copy(domain.fields.buff, ZERO);
-        for (const auto sp : std::vector<unsigned short> { 1, 2 }) {
+        for (const auto sp : std::vector<spidx_t> { 1, 2 }) {
           const auto& prtl_spec = domain.species[sp - 1];
           // clang-format off
         Kokkos::parallel_for(

@@ -142,9 +142,9 @@ namespace user {
       // define box to inject into
       boundaries_t<real_t> box;
       // loop over all dimensions
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
-        if (d == static_cast<unsigned short>(in::x1)) {
+        if (d == static_cast<decltype(d)>(in::x1)) {
           box.push_back({ xg_min, xg_max });
         } else {
           // inject into full range in other directions
@@ -197,8 +197,7 @@ namespace user {
 
       // compute the beginning of the injected region
       const auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                  injection_frequency * dt;
-
+                        injection_frequency * dt;
 
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
@@ -223,7 +222,6 @@ namespace user {
         x_min[d] = extent[d].first;
         x_max[d] = extent[d].second;
       }
-
 
       Kokkos::parallel_for("ResetFields",
                            CreateRangePolicy<M::Dim>(x_min, x_max),

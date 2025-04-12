@@ -8,20 +8,22 @@
 #ifndef OUTPUT_SPECTRA_H
 #define OUTPUT_SPECTRA_H
 
+#include "global.h"
+
 #include <string>
 
 namespace out {
 
   class OutputSpectra {
-    const unsigned short m_sp;
+    const spidx_t m_sp;
 
   public:
-    OutputSpectra(unsigned short sp) : m_sp { sp } {}
+    OutputSpectra(spidx_t sp) : m_sp { sp } {}
 
     ~OutputSpectra() = default;
 
     [[nodiscard]]
-    auto species() const -> unsigned short {
+    auto species() const -> spidx_t {
       return m_sp;
     }
 

@@ -30,7 +30,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -102,10 +104,10 @@ namespace kernel::sr {
       raise::ErrorIf(ExtForce, "External force not provided", HERE);
     }
 
-    Inline auto fx1(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx1(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x1 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -128,10 +130,10 @@ namespace kernel::sr {
       return f_x1;
     }
 
-    Inline auto fx2(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx2(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x2 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -154,10 +156,10 @@ namespace kernel::sr {
       return f_x2;
     }
 
-    Inline auto fx3(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx3(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x3 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -198,7 +200,7 @@ namespace kernel::sr {
     const CoolingTags      cooling;
 
     const randacc_ndfield_t<D, 6> EB;
-    const unsigned short          sp;
+    const spidx_t                 sp;
     array_t<int*>                 i1, i2, i3;
     array_t<int*>                 i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*>            dx1, dx2, dx3;
@@ -232,7 +234,7 @@ namespace kernel::sr {
                   bool                           ext_force,
                   CoolingTags                    cooling,
                   const randacc_ndfield_t<D, 6>& EB,
-                  unsigned short                 sp,
+                  spidx_t                        sp,
                   array_t<int*>&                 i1,
                   array_t<int*>&                 i2,
                   array_t<int*>&                 i3,
@@ -355,7 +357,7 @@ namespace kernel::sr {
                   array_t<real_t*>&           phi,
                   array_t<short*>&            tag,
                   const M&                    metric,
-                  real_t                      time,
+                  simtime_t                   time,
                   real_t                      coeff,
                   real_t                      dt,
                   int                         ni1,

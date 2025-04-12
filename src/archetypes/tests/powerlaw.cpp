@@ -31,7 +31,7 @@ struct Caller {
   Inline void operator()(index_t) const {
     vec_t<Dim::_3D> vp { ZERO };
     coord_t<D>      xp { ZERO };
-    for (unsigned short d = 0; d < D; ++d) {
+    for (dim_t d { 0u }; d < D; ++d) {
       xp[d] = 2.0;
     }
     dist(xp, vp);
@@ -73,13 +73,13 @@ void testEnergyDist(const std::vector<std::size_t>&      res,
     if constexpr (M::Dim == Dim::_2D) {
       extent = {
         ext[0],
-        {ZERO, constant::PI}
+        { ZERO, constant::PI }
       };
     } else if constexpr (M::Dim == Dim::_3D) {
       extent = {
         ext[0],
-        {ZERO,     constant::PI},
-        {ZERO, constant::TWO_PI}
+        { ZERO,     constant::PI },
+        { ZERO, constant::TWO_PI }
       };
     }
   }

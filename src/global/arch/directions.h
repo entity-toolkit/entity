@@ -50,14 +50,14 @@ namespace dir {
 
     auto operator-() const -> direction_t<D> {
       auto result = direction_t<D> {};
-      for (auto i = 0u; i < (unsigned short)D; ++i) {
+      for (auto i { 0u }; i < D; ++i) {
         result[i] = -(*this)[i];
       }
       return result;
     }
 
     auto operator==(const direction_t<D>& other) const -> bool {
-      for (auto i = 0u; i < (unsigned short)D; ++i) {
+      for (auto i { 0u }; i < D; ++i) {
         if ((*this)[i] != other[i]) {
           return false;
         }
@@ -132,8 +132,8 @@ namespace dir {
   using dirs_t = std::vector<direction_t<D>>;
 
   template <Dimension D>
-  inline auto operator<<(std::ostream&         os,
-                         const direction_t<D>& dir) -> std::ostream& {
+  inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
+    -> std::ostream& {
     for (auto& d : dir) {
       os << std::setw(2) << std::left;
       if (d > 0) {

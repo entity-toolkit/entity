@@ -45,7 +45,7 @@ auto main() -> int {
       raise::ErrorIf(rho.interp_flag != PrepareOutput::None,
                      "Rho should not have any interp flags",
                      HERE);
-      raise::ErrorIf(not(rho.species == std::vector<unsigned short> { 1, 3 }),
+      raise::ErrorIf(not(rho.species == std::vector<spidx_t> { 1, 3 }),
                      "Rho should have species 1 and 3",
                      HERE);
     }

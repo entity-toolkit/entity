@@ -24,7 +24,7 @@ namespace user {
 
     Inline void operator()(const coord_t<M::Dim>& x_Ph,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short         sp) const override {
+                           spidx_t                sp) const override {
       v[0] = v_max;
     }
 

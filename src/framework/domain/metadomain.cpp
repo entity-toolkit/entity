@@ -140,7 +140,7 @@ namespace ntt {
       boundaries_t<real_t> l_extent;
       coord_t<D>           low_corner_Code { ZERO }, up_corner_Code { ZERO };
       coord_t<D>           low_corner_Phys { ZERO }, up_corner_Phys { ZERO };
-      for (unsigned short d { 0 }; d < (unsigned short)D; ++d) {
+      for (auto d { 0u }; d < D; d++) {
         low_corner_Code[d] = (real_t)l_offset_ncells[d];
         up_corner_Code[d]  = (real_t)(l_offset_ncells[d] + l_ncells[d]);
       }
