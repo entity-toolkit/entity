@@ -17,6 +17,8 @@
 
 #if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
+#elif defined(HIP_ENABLED)
+  #include <hip/hip_runtime.h>
 #endif
 
 #if defined(OUTPUT_ENABLED)
@@ -104,8 +106,8 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(std::size_t bytes)
-      -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(
+      std::size_t bytes) -> std::pair<long double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       idx_t                          unit_idx = 0;
       auto                           size     = static_cast<long double>(bytes);
@@ -177,8 +179,16 @@ namespace ntt {
         const auto minor { cuda_v % 1000 / 10 };
         const auto patch { cuda_v % 10 };
         const auto cuda_version = fmt::format("%d.%d.%d", major, minor, patch);
-#else // not CUDA_ENABLED
-        const std::string cuda_version = "OFF";
+#elif defined(HIP_ENABLED)
+        int  hip_v;
+        auto status = hipDriverGetVersion(&hip_v);
+        raise::ErrorIf(status != hipSuccess,
+                       "hipDriverGetVersion failed with error code %d",
+                       HERE);
+        const auto major { hip_v / 10000000 };
+        const auto minor { (hip_v % 10000000) / 100000 };
+        const auto patch { hip_v % 100000 };
+        const auto hip_version = fmt::format("%d.%d.%d", major, minor, patch);
 #endif
 
         const auto kokkos_version = fmt::format("%d.%d.%d",
@@ -207,7 +217,11 @@ namespace ntt {
         add_category(report, 4, "Backend");
         add_param(report, 4, "Build hash", "%s", hash.c_str());
         add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
+#if defined(CUDA_ENABLED)
         add_param(report, 4, "CUDA", "%s", cuda_version.c_str());
+#elif defined(HIP_VERSION)
+        add_param(report, 4, "HIP", "%s", hip_version.c_str());
+#endif
         add_param(report, 4, "MPI", "%s", mpi_version.c_str());
         add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
         add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
@@ -224,7 +238,7 @@ namespace ntt {
         add_param(report, 4, "Engine", "%s", SimEngine(S).to_string());
         add_param(report, 4, "Metric", "%s", Metric(M::MetricType).to_string());
         add_param(report, 4, "Timestep [dt]", "%.3e", dt);
-        add_param(report, 4, "Runtime", "%.3Le [%d steps]", runtime, max_steps);
+        add_param(report, 4, "Runtime", "%.3e [%d steps]", runtime, max_steps);
         report += "\n";
         add_category(report, 4, "Global domain");
         add_param(report,
