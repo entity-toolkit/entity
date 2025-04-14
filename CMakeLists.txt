@@ -88,6 +88,13 @@ include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+if("${Kokkos_DEVICES}" MATCHES "CUDA")
+  add_compile_options("-D CUDA_ENABLED")
+elseif("${Kokkos_DEVICES}" MATCHES "HIP")
+  add_compile_options("-D HIP_ENABLED")
+elseif("${Kokkos_DEVICES}" MATCHES "SYCL")
+  add_compile_options("-D SYCL_ENABLED")
+endif()
 
 # MPI
 if(${mpi})

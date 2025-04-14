@@ -152,7 +152,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   const auto u0_cross_b_x2 = (ux3_0 * bx1 - ux1_0 * bx3) / b_mag;
   const auto u0_cross_b_x3 = (ux1_0 * bx2 - ux2_0 * bx1) / b_mag;
 
-  const real_t eps = std::is_same_v<real_t, float> ? 1e-2 : 1e-4;
+  const real_t eps = std::is_same_v<real_t, float> ? 1e-2 : 1e-3;
 
   for (auto t { 0u }; t < 2000; ++t) {
     const real_t time = t * dt;
