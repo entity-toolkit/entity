@@ -1,5 +1,5 @@
 [simulation]
-  name    = "em_vacuum"
+  name    = "em_wave"
   engine  = "srpic"
   runtime = 2.0
 
@@ -25,6 +25,12 @@
 
 [particles]
   ppc0 = 1.0
+
+  [[particles.species]]
+  label = "e-"
+  mass = 1.0
+  charge = -1.0
+  maxnpart = 1e8
 
 [setup]
   amplitude = 1.0

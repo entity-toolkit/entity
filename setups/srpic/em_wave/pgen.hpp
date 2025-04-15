@@ -140,8 +140,8 @@ namespace user {
       dx1_e(elec_p + offset_e) = dx1_;
       i2_e(elec_p + offset_e) = i2_;
       dx2_e(elec_p + offset_e) = dx2_;
-      ux1_e(elec_p + offset_e) = 0.0;
-      ux2_e(elec_p + offset_e) = 0.0;
+      ux1_e(elec_p + offset_e) = ZERO;
+      ux2_e(elec_p + offset_e) = ZERO;
       ux3_e(elec_p + offset_e) = ZERO;
       weight_e(elec_p + offset_e) = ONE;
       tag_e(elec_p + offset_e) = ParticleTag::alive;
