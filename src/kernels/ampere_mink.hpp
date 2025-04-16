@@ -18,7 +18,9 @@
 
 namespace kernel::mink {
   using namespace ntt;
-
+  struct NoCurrent_t{
+ 	NoCurrent_t(){}
+  };
   /**
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in Minkowski space.
    * @tparam D Dimension.
@@ -88,30 +90,63 @@ namespace kernel::mink {
    * @brief `coeff` includes metric coefficient.
    * @tparam D Dimension.
    */
-  template <Dimension D>
+  template <Dimension D, class C = NoCurrent_t>
   class CurrentsAmpere_kernel {
+    static constexpr auto ExtCurrent = not std::is_same<C, NoCurrent_t>::value; 
     ndfield_t<D, 6> E;
     ndfield_t<D, 3> J;
     // coeff = -dt * q0 * n0 / (B0 * V0)
     const real_t    coeff;
     const real_t    inv_n0;
+    const C ext_current;
+    real_t x1min {ZERO};
+    real_t x2min {ZERO};
+    real_t x3min {ZERO};
+    real_t dx;
 
   public:
     CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
                           const ndfield_t<D, 3>  J,
                           real_t                 coeff,
-                          real_t                 inv_n0)
+                          real_t                 inv_n0,
+			  const C& 	 	 ext_current,
+			  const std::vector<real_t>      xmin,
+			  real_t dx)
       : E { E }
       , J { J }
       , coeff { coeff }
-      , inv_n0 { inv_n0 } {}
+      , inv_n0 { inv_n0 }
+      , ext_current { ext_current }
+      , x1min { xmin.size() > 0 ? xmin[0] : ZERO } 
+      , x2min { xmin.size() > 1 ? xmin[1] : ZERO }
+      , x3min { xmin.size() > 2 ? xmin[2] : ZERO }
+      , dx { dx }{}
+
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
+                          const ndfield_t<D, 3>  J,
+                          real_t                 coeff,
+                          real_t                 inv_n0):
+    CurrentsAmpere_kernel{E,
+                          J,
+                          coeff,
+                          inv_n0,
+			  NoCurrent_t{},
+			  {},
+			  ZERO}{}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
+	if constexpr (ExtCurrent){
+	const auto i1_ = COORD(i1);
+        J(i1, cur::jx1) += ext_current.jx1({(i1_ + HALF) * dx + x1min});
+        J(i1, cur::jx2) += ext_current.jx2({i1_ * dx + x1min});
+        J(i1, cur::jx3) += ext_current.jx3({i1_ * dx + x1min});
+
+	}      
         J(i1, cur::jx1) *= inv_n0;
         J(i1, cur::jx2) *= inv_n0;
         J(i1, cur::jx3) *= inv_n0;
-
+      
         E(i1, em::ex1) += J(i1, cur::jx1) * coeff;
         E(i1, em::ex2) += J(i1, cur::jx2) * coeff;
         E(i1, em::ex3) += J(i1, cur::jx3) * coeff;
@@ -124,6 +159,13 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
+	if constexpr (ExtCurrent){
+	  const auto i1_ = COORD(i1);	
+	  const auto i2_ = COORD(i2);
+           J(i1, i2, cur::jx1) += ext_current.jx1({(i1_ + HALF) * dx + x1min , i2_ * dx + x2min } );
+           J(i1, i2, cur::jx2) += ext_current.jx2({i1_ * dx + x1min, (i2_ + HALF) * dx + x2min});
+           J(i1, i2, cur::jx3) += ext_current.jx3({i1_ * dx + x1min, i2_ * dx + x2min});
+	   }
         J(i1, i2, cur::jx1) *= inv_n0;
         J(i1, i2, cur::jx2) *= inv_n0;
         J(i1, i2, cur::jx3) *= inv_n0;
@@ -141,6 +183,14 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
+	if constexpr (ExtCurrent){
+	  const auto i1_ = COORD(i1);	
+	  const auto i2_ = COORD(i2);
+	  const auto i3_ = COORD(i3);
+           J(i1, i2, i3, cur::jx1) += ext_current.jx1({(i1_ + HALF) * dx + x1min , i2_ * dx + x2min, i3_ * dx + x3min });
+           J(i1, i2, i3, cur::jx2) += ext_current.jx2({i1_ * dx + x1min, (i2_ + HALF) * dx + x2min, i3_ * dx + x3min });
+           J(i1, i2, i3, cur::jx3) += ext_current.jx3({i1_ * dx + x1min, i2_ * dx + x2min, (i3_ + HALF) * dx + x3min });
+	   }
         J(i1, i2, i3, cur::jx1) *= inv_n0;
         J(i1, i2, i3, cur::jx2) *= inv_n0;
         J(i1, i2, i3, cur::jx3) *= inv_n0;

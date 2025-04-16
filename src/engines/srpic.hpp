@@ -529,14 +529,33 @@ namespace ntt {
       if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto V0 = m_params.template get<real_t>("scales.V0");
+        if constexpr(traits::has_member<traits::pgen::ext_current_t, pgen_t>::value){
+		const std::vector<real_t> xmin  {domain.mesh.extent(in::x1).first,
+						   domain.mesh.extent(in::x2).first,
+						   domain.mesh.extent(in::x3).first}; 
+		const auto ext_current = m_pgen.ExternalCurrent;	
+		const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
+		Kokkos::parallel_for(
+		  "Ampere",
+		  domain.mesh.rangeActiveCells(),
+		  kernel::mink::CurrentsAmpere_kernel<M::Dim, decltype(ext_current)>(domain.fields.em,
+							      domain.fields.cur,
+							      coeff / V0,
+							      ONE / n0,
+							      ext_current,
+							      xmin,
+							      dx));
+	}
+	else{
+		Kokkos::parallel_for(
+		  "Ampere",
+		  domain.mesh.rangeActiveCells(),
+		  kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
+							      domain.fields.cur,
+							      coeff / V0,
+							      ONE / n0));
 
-        Kokkos::parallel_for(
-          "Ampere",
-          domain.mesh.rangeActiveCells(),
-          kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
-                                                      domain.fields.cur,
-                                                      coeff / V0,
-                                                      ONE / n0));
+	}
       } else {
         auto       range = range_with_axis_BCs(domain);
         const auto ni2   = domain.mesh.n_active(in::x2);

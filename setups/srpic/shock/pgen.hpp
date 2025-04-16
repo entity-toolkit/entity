@@ -66,6 +66,45 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
+  template <Dimension D>
+  struct BCFields {
+
+    BCFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
+      : Bmag { bmag }
+      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
+      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
+      , Vx { drift_ux } {}
+
+    // magnetic field components
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
+      return Bmag * math::cos(ZERO);
+    }
+
+    Inline auto bx2(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(ZERO) * math::sin(ZERO);
+    }
+
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(ZERO) * math::cos(ZERO);
+    }
+
+    // electric field components
+    Inline auto ex1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
+      return -Vx * Bmag * math::sin(ZERO) * math::cos(ZERO);
+    }
+
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
+      return Vx * Bmag * math::sin(ZERO) * math::sin(ZERO);
+    }
+
+  private:
+    const real_t Btheta, Bphi, Vx, Bmag;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -90,6 +129,7 @@ namespace user {
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
+    BCFields<D>   bc_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -101,6 +141,7 @@ namespace user {
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
+      , bc_flds { Bmag, Btheta, Bphi, drift_ux }
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
@@ -109,8 +150,8 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> InitFields<D> {
-      return init_flds;
+    auto MatchFields(real_t time) const -> BCFields<D> {
+      return bc_flds;
     }
 
     auto FixFieldsConst(const bc_in&, const em& comp) const
@@ -196,13 +237,16 @@ namespace user {
       }
 
       // compute the beginning of the injected region
-      const auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                        injection_frequency * dt;
+      auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
+                  injection_frequency * dt;
+      if (xmin <= global_xmin) {
+        xmin = global_xmin;
+      }
 
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ true, true });
+        incl_ghosts.push_back({ false, false });
       }
 
       // define box to reset fields
@@ -240,6 +284,7 @@ namespace user {
         // get particle properties
         auto& species = domain.species[s];
         auto  i1      = species.i1;
+        auto  dx1     = species.dx1;
         auto  tag     = species.tag;
 
         // tag all particles with x > box[0].first as dead
@@ -252,7 +297,8 @@ namespace user {
               return;
             }
             // select the x-coordinate index
-            auto x_i1 = i1(p);
+            auto x_i1 = static_cast<real_t>(i1(p)) + dx1(p) + N_GHOSTS;
+
             // check if the particle is inside the box of new plasma
             if (x_i1 >= x_min[0]) {
               tag(p) = ParticleTag::dead;
