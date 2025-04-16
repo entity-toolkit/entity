@@ -53,14 +53,14 @@ namespace arch {
   struct Replenish : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, 6> density;
-    const unsigned short       idx;
+    const idx_t                idx;
 
     const T      target_density;
     const real_t target_max_density;
 
     Replenish(const M&                    metric,
               const ndfield_t<M::Dim, 6>& density,
-              unsigned short              idx,
+              idx_t                       idx,
               const T&                    target_density,
               real_t                      target_max_density)
       : SpatialDistribution<S, M> { metric }

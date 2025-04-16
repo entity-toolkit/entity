@@ -21,7 +21,7 @@
 
 namespace ntt {
   template <Dimension D, Coord::type C>
-  Particles<D, C>::Particles(unsigned short     index,
+  Particles<D, C>::Particles(spidx_t            index,
                              const std::string& label,
                              float              m,
                              float              ch,

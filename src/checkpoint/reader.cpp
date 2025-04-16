@@ -42,7 +42,7 @@ namespace checkpoint {
 
   auto ReadParticleCount(adios2::IO&     io,
                          adios2::Engine& reader,
-                         unsigned short  s,
+                         spidx_t         s,
                          std::size_t     local_dom,
                          std::size_t ndomains) -> std::pair<npart_t, npart_t> {
     logger::Checkpoint(fmt::format("Reading particle count for: %d", s + 1), HERE);
@@ -85,7 +85,7 @@ namespace checkpoint {
   void ReadParticleData(adios2::IO&        io,
                         adios2::Engine&    reader,
                         const std::string& quantity,
-                        unsigned short     s,
+                        spidx_t            s,
                         array_t<T*>&       array,
                         npart_t            count,
                         npart_t            offset) {
@@ -110,7 +110,7 @@ namespace checkpoint {
 
   void ReadParticlePayloads(adios2::IO&        io,
                             adios2::Engine&    reader,
-                            unsigned short     s,
+                            spidx_t     s,
                             array_t<real_t**>& array,
                             std::size_t        nplds,
                             npart_t            count,
@@ -164,28 +164,28 @@ namespace checkpoint {
   template void ReadParticleData<int>(adios2::IO&,
                                       adios2::Engine&,
                                       const std::string&,
-                                      unsigned short,
+                                      spidx_t,
                                       array_t<int*>&,
                                       npart_t,
                                       npart_t);
   template void ReadParticleData<float>(adios2::IO&,
                                         adios2::Engine&,
                                         const std::string&,
-                                        unsigned short,
+                                        spidx_t,
                                         array_t<float*>&,
                                         npart_t,
                                         npart_t);
   template void ReadParticleData<double>(adios2::IO&,
                                          adios2::Engine&,
                                          const std::string&,
-                                         unsigned short,
+                                         spidx_t,
                                          array_t<double*>&,
                                          npart_t,
                                          npart_t);
   template void ReadParticleData<short>(adios2::IO&,
                                         adios2::Engine&,
                                         const std::string&,
-                                        unsigned short,
+                                        spidx_t,
                                         array_t<short*>&,
                                         npart_t,
                                         npart_t);

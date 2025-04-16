@@ -24,7 +24,6 @@
 
 namespace kernel {
   using namespace ntt;
-  using spidx_t = unsigned short;
 
   template <SimEngine::type S, class M, class ED>
   struct UniformInjector_kernel {

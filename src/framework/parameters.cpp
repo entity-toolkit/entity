@@ -38,7 +38,7 @@ namespace ntt {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
-    for (unsigned short d { 0 }; d < (unsigned short)(M::Dim); ++d) {
+    for (auto d { 0u }; d < M::Dim; ++d) {
       x_corner[d] = HALF;
     }
     const auto V0 = metric.sqrt_det_h(x_corner);
@@ -184,7 +184,7 @@ namespace ntt {
                                                         toml::array {});
     set("particles.nspec", species_tab.size());
 
-    unsigned short idx = 1;
+    spidx_t idx = 1;
     for (const auto& sp : species_tab) {
       const auto label  = toml::find_or<std::string>(sp,
                                                     "label",
@@ -265,7 +265,7 @@ namespace ntt {
     }
     raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
     boundaries_t<real_t> extent_pairwise;
-    for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+    for (auto d { 0u }; d < (dim_t)dim; ++d) {
       raise::ErrorIf(extent[d].size() != 2,
                      fmt::format("invalid inferred `grid.extent[%d]`", d),
                      HERE);
@@ -504,10 +504,10 @@ namespace ntt {
     set("output.fields.downsampling", field_dwn);
 
     // particles
-    auto       all_specs = std::vector<unsigned short> {};
+    auto       all_specs = std::vector<spidx_t> {};
     const auto nspec     = get<std::size_t>("particles.nspec");
     for (auto i = 0u; i < nspec; ++i) {
-      all_specs.push_back(static_cast<unsigned short>(i + 1));
+      all_specs.push_back(static_cast<spidx_t>(i + 1));
     }
     const auto prtl_out = toml::find_or(toml_data,
                                         "output",
@@ -615,7 +615,7 @@ namespace ntt {
       raise::ErrorIf(prtl_bc.size() != (std::size_t)dim,
                      "invalid `grid.boundaries.particles`",
                      HERE);
-      for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+      for (auto d { 0u }; d < (dim_t)dim; ++d) {
         flds_bc_enum.push_back({});
         prtl_bc_enum.push_back({});
         const auto fbc = flds_bc[d];
@@ -717,7 +717,7 @@ namespace ntt {
                    HERE);
     boundaries_t<FldsBC> flds_bc_pairwise;
     boundaries_t<PrtlBC> prtl_bc_pairwise;
-    for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+    for (auto d { 0u }; d < (dim_t)dim; ++d) {
       raise::ErrorIf(
         flds_bc_enum[d].size() != 2,
         fmt::format("invalid inferred `grid.boundaries.fields[%d]`", d),
@@ -738,13 +738,7 @@ namespace ntt {
         for (const auto& e : extent_pairwise) {
           min_extent = std::min(min_extent, e.second - e.first);
         }
-        const auto  default_ds = min_extent * defaults::bc::match::ds_frac;
-        std::size_t n_match_bcs { 0u };
-        for (const auto& bcs : flds_bc_pairwise) {
-          if (bcs.first == FldsBC::MATCH or bcs.second == FldsBC::MATCH) {
-            n_match_bcs += 1;
-          }
-        }
+        const auto default_ds = min_extent * defaults::bc::match::ds_frac;
         boundaries_t<real_t> ds_array;
         try {
           auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
@@ -847,7 +841,7 @@ namespace ntt {
           toml::find_or(toml_data, "grid", "boundaries", "atmosphere", "ds", ZERO));
       set("grid.boundaries.atmosphere.height", atm_h);
       set("grid.boundaries.atmosphere.g", atm_T / atm_h);
-      const auto atm_species = toml::find<std::pair<unsigned short, unsigned short>>(
+      const auto atm_species = toml::find<std::pair<spidx_t, spidx_t>>(
         toml_data,
         "grid",
         "boundaries",

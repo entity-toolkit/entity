@@ -45,7 +45,7 @@ namespace arch {
     // last argument -- is the species index (1, ..., nspec)
     Inline virtual void operator()(const coord_t<D>&,
                                    vec_t<Dim::_3D>& v,
-                                   unsigned short = 0) const {
+                                   spidx_t = 0) const {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -61,7 +61,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
-                           unsigned short = 0) const override {
+                           spidx_t = 0) const override {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -85,7 +85,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short = 0) const override {
+                           spidx_t = 0) const override {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -210,7 +210,7 @@ namespace arch {
     // Boost a symmetric distribution to a relativistic speed using flipping
     // method https://arxiv.org/pdf/1504.03910.pdf
     Inline void boost(vec_t<Dim::_3D>& v) const {
-      const auto boost_dir = static_cast<unsigned short>(boost_direction);
+      const auto boost_dir = static_cast<dim_t>(boost_direction);
       const auto boost_beta { boost_velocity /
                               math::sqrt(ONE + SQR(boost_velocity)) };
       const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
@@ -225,7 +225,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>& x_Code,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short         sp = 0) const override {
+                           spidx_t                sp = 0) const override {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;

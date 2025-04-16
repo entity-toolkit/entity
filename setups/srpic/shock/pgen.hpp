@@ -66,6 +66,45 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
+  template <Dimension D>
+  struct BCFields {
+
+    BCFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
+      : Bmag { bmag }
+      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
+      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
+      , Vx { drift_ux } {}
+
+    // magnetic field components
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
+      return Bmag * math::cos(ZERO);
+    }
+
+    Inline auto bx2(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(ZERO) * math::sin(ZERO);
+    }
+
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(ZERO) * math::cos(ZERO);
+    }
+
+    // electric field components
+    Inline auto ex1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
+      return -Vx * Bmag * math::sin(ZERO) * math::cos(ZERO);
+    }
+
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
+      return Vx * Bmag * math::sin(ZERO) * math::sin(ZERO);
+    }
+
+  private:
+    const real_t Btheta, Bphi, Vx, Bmag;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -90,6 +129,7 @@ namespace user {
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
+    BCFields<D>   bc_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -101,6 +141,7 @@ namespace user {
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
+      , bc_flds { Bmag, Btheta, Bphi, drift_ux }
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
@@ -109,26 +150,27 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> InitFields<D> {
-      return init_flds;
+    auto MatchFields(real_t time) const -> BCFields<D> {
+      return bc_flds;
     }
 
-    auto ResetFields(const em& comp) const -> real_t {
+    auto FixFieldsConst(const bc_in&, const em& comp) const
+      -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
-        return init_flds.ex1({ ZERO });
+        return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
-        return init_flds.ex2({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::ex3) {
-        return init_flds.ex3({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::bx1) {
-        return init_flds.bx1({ ZERO });
+        return { init_flds.bx1({ ZERO }), true };
       } else if (comp == em::bx2) {
-        return init_flds.bx2({ ZERO });
+        return { init_flds.bx2({ ZERO }), true };
       } else if (comp == em::bx3) {
-        return init_flds.bx3({ ZERO });
+        return { init_flds.bx3({ ZERO }), true };
       } else {
         raise::Error("Invalid component", HERE);
-        return ZERO;
+        return { ZERO, false };
       }
     }
 
@@ -141,9 +183,9 @@ namespace user {
       // define box to inject into
       boundaries_t<real_t> box;
       // loop over all dimensions
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
-        if (d == static_cast<unsigned short>(in::x1)) {
+        if (d == static_cast<decltype(d)>(in::x1)) {
           box.push_back({ xg_min, xg_max });
         } else {
           // inject into full range in other directions
@@ -185,42 +227,40 @@ namespace user {
                           filling_fraction * (global_xmax - global_xmin);
 
       // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? 
-                          time - injection_start : ZERO;
+      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
+                                                        : ZERO;
 
-      // compute the position of the injector
+      // compute the position of the injector after the current timestep
       auto xmax = x_init + injector_velocity * (dt_inj + dt);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
 
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimension
-      for (auto d = 0u; d < M::Dim; ++d) {
-        if (d == 0) {
-          box.push_back({ xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                            injection_frequency * dt,
-                          xmax });
-        } else {
-          box.push_back(Range::All);
-        }
+      // compute the beginning of the injected region
+      auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
+                  injection_frequency * dt;
+      if (xmin <= global_xmin) {
+        xmin = global_xmin;
       }
 
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ true, true });
+        incl_ghosts.push_back({ false, false });
       }
-      auto fields_box = box;
-      // check if the box is still inside the domain
-      if (xmax + injection_frequency * dt < global_xmax) {
-        fields_box[0].second += injection_frequency * dt;
-      } else {
-        // if right side of the box is outside of the domain -> truncate box
-        fields_box[0].second = global_xmax;
+
+      // define box to reset fields
+      boundaries_t<real_t> purge_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          purge_box.push_back({ xmin, global_xmax });
+        } else {
+          purge_box.push_back(Range::All);
+        }
       }
-      const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
+
+      const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
@@ -244,6 +284,7 @@ namespace user {
         // get particle properties
         auto& species = domain.species[s];
         auto  i1      = species.i1;
+        auto  dx1     = species.dx1;
         auto  tag     = species.tag;
 
         // tag all particles with x > box[0].first as dead
@@ -256,7 +297,8 @@ namespace user {
               return;
             }
             // select the x-coordinate index
-            auto x_i1 = i1(p);
+            auto x_i1 = static_cast<real_t>(i1(p)) + dx1(p) + N_GHOSTS;
+
             // check if the particle is inside the box of new plasma
             if (x_i1 >= x_min[0]) {
               tag(p) = ParticleTag::dead;
@@ -268,8 +310,19 @@ namespace user {
           Inject slab of fresh plasma
       */
 
+      // define box to inject into
+      boundaries_t<real_t> inj_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          inj_box.push_back({ xmin, xmax });
+        } else {
+          inj_box.push_back(Range::All);
+        }
+      }
+
       // same maxwell distribution as above
-      const auto energy_dist  = arch::Maxwellian<S, M>(domain.mesh.metric,
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
                                                       domain.random_pool,
                                                       temperature,
                                                       -drift_ux,
@@ -287,11 +340,8 @@ namespace user {
         injector,
         1.0,   // target density
         false, // no weights
-        box);
+        inj_box);
     }
-
   };
-
 } // namespace user
-
 #endif

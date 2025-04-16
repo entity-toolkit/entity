@@ -44,31 +44,31 @@ namespace user {
 
   template <Dimension D>
   struct ExtForce {
-    const std::vector<unsigned short> species { 1, 2 };
+    const std::vector<spidx_t> species { 1, 2 };
 
     ExtForce() = default;
 
-    Inline auto fx1(const unsigned short& sp,
-                    const real_t&         time,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx1(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    const coord_t<D>& x_Ph) const -> real_t {
       (void)sp;
       (void)time;
       (void)x_Ph;
       return ZERO;
     }
 
-    Inline auto fx2(const unsigned short& sp,
-                    const real_t&         time,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx2(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    const coord_t<D>& x_Ph) const -> real_t {
       (void)sp;
       (void)time;
       (void)x_Ph;
       return ZERO;
     }
 
-    Inline auto fx3(const unsigned short& sp,
-                    const real_t&         time,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx3(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    const coord_t<D>& x_Ph) const -> real_t {
       (void)sp;
       (void)time;
       (void)x_Ph;

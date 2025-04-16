@@ -20,10 +20,10 @@ namespace kernel {
   template <Dimension D, unsigned short N>
   class ComputeSum_kernel {
     const ndfield_t<D, N> buff;
-    const unsigned short  buff_idx;
+    const idx_t           buff_idx;
 
   public:
-    ComputeSum_kernel(const ndfield_t<D, N>& buff, unsigned short buff_idx)
+    ComputeSum_kernel(const ndfield_t<D, N>& buff, idx_t buff_idx)
       : buff { buff }
       , buff_idx { buff_idx } {
       raise::ErrorIf(buff_idx >= N, "Invalid component index", HERE);

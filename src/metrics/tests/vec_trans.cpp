@@ -31,7 +31,7 @@ Inline auto equal(const vec_t<D>& a,
                   const char*     msg,
                   real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
       printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
@@ -44,7 +44,7 @@ template <Dimension D>
 Inline void unravel(std::size_t                    idx,
                     tuple_t<std::size_t, D>&       ijk,
                     const tuple_t<std::size_t, D>& res) {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
   }
@@ -79,7 +79,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       tuple_t<std::size_t, M::Dim> idx;
       unravel<M::Dim>(n, idx, res_tup);
       coord_t<M::Dim> x_Code { ZERO };
-      for (unsigned short d = 0; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code[d] = (real_t)(idx[d]) + HALF;
       }
       vec_t<Dim::_3D> v_Hat_1 { ZERO };
@@ -94,7 +94,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       vec_t<Dim::_3D> v_PhysCov_2 { ZERO };
 
       // init
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
+      for (auto d { 0u }; d < 3u; ++d) {
         v_Hat_1[d]       += ONE;
         v_PhysCntrv_1[d] += ONE;
         v_PhysCov_1[d]   += ONE;
@@ -102,12 +102,12 @@ void testMetric(const std::vector<std::size_t>&      res,
 
       // hat <-> cntrv
       metric.template transform<Idx::T, Idx::U>(x_Code, v_Hat_1, v_Cntrv_1);
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
+      for (auto d { 0u }; d < 3u; ++d) {
         vec_t<Dim::_3D> e_d { ZERO };
         vec_t<Dim::_3D> v_Cntrv_temp { ZERO };
         e_d[d] = ONE;
         metric.template transform<Idx::T, Idx::U>(x_Code, e_d, v_Cntrv_temp);
-        for (unsigned short d = 0; d < Dim::_3D; ++d) {
+        for (auto d { 0u }; d < 3u; ++d) {
           v_Cntrv_2[d] += v_Cntrv_temp[d];
         }
       }
@@ -123,15 +123,15 @@ void testMetric(const std::vector<std::size_t>&      res,
                                     v_Cov_2,
                                     "cntrv->cov is equal to hat->cov",
                                     acc);
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
+      for (auto d { 0u }; d < 3u; ++d) {
         v_Cov_2[d] = ZERO;
       }
-      for (unsigned short d = 0; d < Dim::_3D; ++d) {
+      for (auto d { 0u }; d < 3u; ++d) {
         vec_t<Dim::_3D> e_d { ZERO };
         vec_t<Dim::_3D> v_Cov_temp { ZERO };
         e_d[d] = ONE;
         metric.template transform<Idx::T, Idx::D>(x_Code, e_d, v_Cov_temp);
-        for (unsigned short d = 0; d < Dim::_3D; ++d) {
+        for (auto d { 0u }; d < 3u; ++d) {
           v_Cov_2[d] += v_Cov_temp[d];
         }
       }
@@ -179,24 +179,24 @@ auto main(int argc, char* argv[]) -> int {
     const auto res2d     = std::vector<std::size_t> { 64, 32 };
     const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
     const auto ext1dcart = boundaries_t<real_t> {
-      {10.0, 20.0}
+      { 10.0, 20.0 }
     };
     const auto ext2dcart = boundaries_t<real_t> {
-      {0.0, 20.0},
-      {0.0, 10.0}
+      { 0.0, 20.0 },
+      { 0.0, 10.0 }
     };
     const auto ext3dcart = boundaries_t<real_t> {
-      {-2.0, 2.0},
-      {-1.0, 1.0},
-      {-0.5, 0.5}
+      { -2.0, 2.0 },
+      { -1.0, 1.0 },
+      { -0.5, 0.5 }
     };
     const auto extsph = boundaries_t<real_t> {
-      {1.0,         10.0},
-      {0.0, constant::PI}
+      { 1.0,         10.0 },
+      { 0.0, constant::PI }
     };
     const auto params = std::map<std::string, real_t> {
-      {"r0",         -ONE},
-      { "h", (real_t)0.25}
+      { "r0",         -ONE },
+      {  "h", (real_t)0.25 }
     };
 
     // testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
@@ -219,13 +219,13 @@ auto main(int argc, char* argv[]) -> int {
     //
     const auto resqks = std::vector<std::size_t> { 64, 42 };
     const auto extqks = boundaries_t<real_t> {
-      {0.8,         10.0},
-      {0.0, constant::PI}
+      { 0.8,         10.0 },
+      { 0.0, constant::PI }
     };
     const auto paramsqks = std::map<std::string, real_t> {
-      {"r0",        -TWO},
-      { "h",        ZERO},
-      { "a", (real_t)0.8}
+      { "r0",        -TWO },
+      {  "h",        ZERO },
+      {  "a", (real_t)0.8 }
     };
     testMetric<QKerrSchild<Dim::_2D>>(resqks, extqks, 500, paramsqks);
     //
