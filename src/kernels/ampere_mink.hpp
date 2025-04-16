@@ -118,7 +118,6 @@ namespace kernel::mink {
       , J { J }
       , coeff { coeff }
       , ppc0 { ppc0 }
-      , inv_ppc0 { inv_ppc0 }
       , ext_current { ext_current }
       , x1min { xmin.size() > 0 ? xmin[0] : ZERO }
       , x2min { xmin.size() > 1 ? xmin[1] : ZERO }

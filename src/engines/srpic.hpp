@@ -526,10 +526,10 @@ namespace ntt {
       const auto n0 = m_params.template get<real_t>("scales.n0");
       const auto B0 = m_params.template get<real_t>("scales.B0");
       if constexpr (M::CoordType == Coord::Cart) {
-        const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
-        const auto coeff = -dt * q0 / (B0 * V0);
         // minkowski case
         const auto V0    = m_params.template get<real_t>("scales.V0");
+        const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
+        const auto coeff = -dt * q0 / (B0 * V0);
         if constexpr (
           traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
