@@ -14,6 +14,7 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace user {
@@ -176,6 +177,20 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
 
+      /*
+       *  Plasma setup as partially filled box
+       *
+       *  Plasma setup:
+       *
+       * global_xmin                            global_xmax
+       * |                                      |
+       * V                                      V
+       * |:::::::::::|..........................|
+       *             ^
+       *             |
+       *        filling_fraction
+       */
+
       // minimum and maximum position of particles
       real_t xg_min = global_xmin;
       real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
@@ -218,13 +233,18 @@ namespace user {
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
 
       /*
+       *  Replenish plasma in a moving injector
        *
-       * global_xmin                     global_xmax
-       * |                                |
-       * V                                V
-       * |..................|......|......|
-       *             ^     xmin    xmax
-       *           x_init
+       *  Injector setup:
+       *
+       * global_xmin           purge/replenish  global_xmax
+       * |         x_init            |          |
+       * V           v               V          V
+       * |:::::::::::;::::::::::|\\\\\\\\|......|
+       *                       xmin    xmax
+       *                                 ^
+       *                                 |
+       *                           moving injector
        */
 
       // check if the injector should be active
@@ -237,7 +257,8 @@ namespace user {
                           filling_fraction * (global_xmax - global_xmin);
 
       // compute the position of the injector after the current timestep
-      auto xmax = x_init + injector_velocity * (math::max(time - injector_start, ZERO) + dt);
+      auto xmax = x_init + injector_velocity *
+                             (std::max<real_t>(time - injection_start, ZERO) + dt);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
@@ -282,6 +303,7 @@ namespace user {
       /*
         tag particles inside the injection zone as dead
       */
+      const auto& mesh = domain.mesh;
 
       // loop over particle species
       for (auto s { 0u }; s < 2; ++s) {
@@ -299,8 +321,11 @@ namespace user {
             if (tag(p) == ParticleTag::dead) {
               return;
             }
-            const auto x_Cd = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
-            const auto x_Ph = domain.mesh.metric.template convert<in::x1, Crd::Cd, Crd::XYZ>(x_Cd);
+            const auto x_Cd = static_cast<real_t>(i1(p)) +
+                              static_cast<real_t>(dx1(p));
+            const auto x_Ph = mesh.metric.template 
+                            convert<1, Crd::Cd, Crd::XYZ>(x_Cd);
+
             if (x_Ph > xmin) {
               tag(p) = ParticleTag::dead;
             }
