@@ -215,7 +215,17 @@ namespace user {
         box);
     }
 
-    void CustomPostStep(std::size_t step, long double time, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+
+      /*
+       *
+       * global_xmin                     global_xmax
+       * |                                |
+       * V                                V
+       * |..................|......|......|
+       *             ^     xmin    xmax
+       *           x_init
+       */
 
       // check if the injector should be active
       if (step % injection_frequency != 0) {
@@ -226,19 +236,14 @@ namespace user {
       const auto x_init = global_xmin +
                           filling_fraction * (global_xmax - global_xmin);
 
-      // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
-                                                        : ZERO;
-
       // compute the position of the injector after the current timestep
-      auto xmax = x_init + injector_velocity * (dt_inj + dt);
+      auto xmax = x_init + injector_velocity * (math::max(time - injector_start, ZERO) + dt);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
 
       // compute the beginning of the injected region
-      auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                  injection_frequency * dt;
+      auto xmin = xmax - injection_frequency * dt;
       if (xmin <= global_xmin) {
         xmin = global_xmin;
       }
@@ -279,15 +284,13 @@ namespace user {
       */
 
       // loop over particle species
-      for (std::size_t s { 0 }; s < 2; ++s) {
-
+      for (auto s { 0u }; s < 2; ++s) {
         // get particle properties
         auto& species = domain.species[s];
         auto  i1      = species.i1;
         auto  dx1     = species.dx1;
         auto  tag     = species.tag;
 
-        // tag all particles with x > box[0].first as dead
         Kokkos::parallel_for(
           "RemoveParticles",
           species.rangeActiveParticles(),
@@ -296,11 +299,9 @@ namespace user {
             if (tag(p) == ParticleTag::dead) {
               return;
             }
-            // select the x-coordinate index
-            auto x_i1 = static_cast<real_t>(i1(p)) + dx1(p) + N_GHOSTS;
-
-            // check if the particle is inside the box of new plasma
-            if (x_i1 >= x_min[0]) {
+            const auto x_Cd = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+            const auto x_Ph = domain.mesh.metric.template convert<in::x1, Crd::Cd, Crd::XYZ>(x_Cd);
+            if (x_Ph > xmin) {
               tag(p) = ParticleTag::dead;
             }
           });
