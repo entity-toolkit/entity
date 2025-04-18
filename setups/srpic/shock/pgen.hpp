@@ -208,20 +208,27 @@ namespace user {
         }
       }
 
+      // species #1 -> e^-
+      // species #2 -> protons
+
       // energy distribution of the particles
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        local_domain.mesh.metric,
+        local_domain.random_pool,
+        std::pair<real_t, real_t> { temperature * (local_domain.species[2].mass() /
+                                                   local_domain.species[1].mass()),
+                                    temperature },
+        std::pair<spidx_t, spidx_t> { 1, 2 },
+        -drift_ux,
+        in::x1);
 
       // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
         { 1, 2 });
 
       // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
         params,
         local_domain,
         injector,
@@ -323,8 +330,8 @@ namespace user {
             }
             const auto x_Cd = static_cast<real_t>(i1(p)) +
                               static_cast<real_t>(dx1(p));
-            const auto x_Ph = mesh.metric.template 
-                            convert<1, Crd::Cd, Crd::XYZ>(x_Cd);
+            const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+              x_Cd);
 
             if (x_Ph > xmin) {
               tag(p) = ParticleTag::dead;
@@ -348,19 +355,23 @@ namespace user {
       }
 
       // same maxwell distribution as above
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        domain.mesh.metric,
+        domain.random_pool,
+        std::pair<real_t, real_t> {
+          temperature * (domain.species[2].mass() / domain.species[1].mass()),
+          temperature },
+        std::pair<spidx_t, spidx_t> { 1, 2 },
+        -drift_ux,
+        in::x1);
 
       // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
         { 1, 2 });
 
       // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
         params,
         domain,
         injector,
