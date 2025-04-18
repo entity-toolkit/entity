@@ -123,7 +123,7 @@ namespace user {
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
-    const real_t  drift_ux, temperature, filling_fraction;
+    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
     // injector properties
     const real_t  injector_velocity, injection_start, dt;
     const int     injection_frequency;
@@ -138,6 +138,7 @@ namespace user {
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
+      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
@@ -215,10 +216,10 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         local_domain.mesh.metric,
         local_domain.random_pool,
-        std::pair<real_t, real_t> { temperature * (local_domain.species[2].mass() /
-                                                   local_domain.species[1].mass()),
-                                    temperature },
-        std::pair<spidx_t, spidx_t> { 1, 2 },
+        { temperature_ratio * temperature *
+            (local_domain.species[2].mass() / local_domain.species[1].mass()),
+          temperature },
+        { 1, 2 },
         -drift_ux,
         in::x1);
 
@@ -358,10 +359,10 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         domain.mesh.metric,
         domain.random_pool,
-        std::pair<real_t, real_t> {
-          temperature * (domain.species[2].mass() / domain.species[1].mass()),
+        { temperature_ratio * temperature *
+            (domain.species[2].mass() / domain.species[1].mass()),
           temperature },
-        std::pair<spidx_t, spidx_t> { 1, 2 },
+        { 1, 2 },
         -drift_ux,
         in::x1);
 
