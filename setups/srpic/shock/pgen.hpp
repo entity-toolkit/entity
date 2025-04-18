@@ -67,44 +67,6 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-  template <Dimension D>
-  struct BCFields {
-
-    BCFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : Bmag { bmag }
-      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
-      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
-      , Vx { drift_ux } {}
-
-    // magnetic field components
-    Inline auto bx1(const coord_t<D>&) const -> real_t {
-      return Bmag * math::cos(ZERO);
-    }
-
-    Inline auto bx2(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-    Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-  private:
-    const real_t Btheta, Bphi, Vx, Bmag;
-  };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -153,7 +115,7 @@ namespace user {
     inline PGen() {}
 
     auto MatchFields(real_t time) const -> BCFields<D> {
-      return bc_flds;
+      return init_flds;
     }
 
     auto FixFieldsConst(const bc_in&, const em& comp) const
