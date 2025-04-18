@@ -136,8 +136,23 @@ namespace arch {
                in                    boost_direction = in::x1,
                bool                  zero_current    = true)
       : EnergyDistribution<S, M> { metric }
+      , Maxwellian(metric,
+                   pool,
+                   { temperature, temperature },
+                   boost_vel,
+                   boost_direction,
+                   zero_current) {}
+
+    Maxwellian(const M&              metric,
+               random_number_pool_t& pool,
+               std::pair<real_t>     temperatures,
+               real_t                boost_vel       = ZERO,
+               in                    boost_direction = in::x1,
+               bool                  zero_current    = true)
+      : EnergyDistribution<S, M> { metric }
       , pool { pool }
-      , temperature { temperature }
+      , temperature_1 { temperatures.first }
+      , temperature_2 { temperatures.second }
       , boost_velocity { boost_vel }
       , boost_direction { boost_direction }
       , zero_current { zero_current } {
@@ -226,6 +241,7 @@ namespace arch {
     Inline void operator()(const coord_t<M::Dim>& x_Code,
                            vec_t<Dim::_3D>&       v,
                            spidx_t                sp = 0) const override {
+      const auto temperature = (sp % 2 == 0) ? temperature_1 : temperature_2;
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;
@@ -245,7 +261,7 @@ namespace arch {
         // boost only when using cartesian coordinates
         if (not cmp::AlmostZero(boost_velocity)) {
           boost(v);
-          if (not zero_current and sp % 2 == 0) {
+          if (not zero_current and (sp % 2 == 0)) {
             v[0] = -v[0];
             v[1] = -v[1];
             v[2] = -v[2];
@@ -257,7 +273,7 @@ namespace arch {
   private:
     random_number_pool_t pool;
 
-    const real_t temperature;
+    const real_t temperature_1, temperature_2;
     const real_t boost_velocity;
     const in     boost_direction;
     const bool   zero_current;
