@@ -67,44 +67,6 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-  template <Dimension D>
-  struct BCFields {
-
-    BCFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : Bmag { bmag }
-      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
-      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
-      , Vx { drift_ux } {}
-
-    // magnetic field components
-    Inline auto bx1(const coord_t<D>&) const -> real_t {
-      return Bmag * math::cos(ZERO);
-    }
-
-    Inline auto bx2(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-    Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-  private:
-    const real_t Btheta, Bphi, Vx, Bmag;
-  };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -123,7 +85,7 @@ namespace user {
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
-    const real_t  drift_ux, temperature, filling_fraction;
+    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
     // injector properties
     const real_t  injector_velocity, injection_start, dt;
     const int     injection_frequency;
@@ -138,6 +100,7 @@ namespace user {
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
+      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
@@ -152,7 +115,7 @@ namespace user {
     inline PGen() {}
 
     auto MatchFields(real_t time) const -> BCFields<D> {
-      return bc_flds;
+      return init_flds;
     }
 
     auto FixFieldsConst(const bc_in&, const em& comp) const
@@ -215,10 +178,10 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         local_domain.mesh.metric,
         local_domain.random_pool,
-        std::pair<real_t, real_t> { temperature * (local_domain.species[2].mass() /
-                                                   local_domain.species[1].mass()),
-                                    temperature },
-        std::pair<spidx_t, spidx_t> { 1, 2 },
+        { temperature_ratio * temperature *
+            (local_domain.species[2].mass() / local_domain.species[1].mass()),
+          temperature },
+        { 1, 2 },
         -drift_ux,
         in::x1);
 
@@ -358,10 +321,10 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         domain.mesh.metric,
         domain.random_pool,
-        std::pair<real_t, real_t> {
-          temperature * (domain.species[2].mass() / domain.species[1].mass()),
+        { temperature_ratio * temperature *
+            (domain.species[2].mass() / domain.species[1].mass()),
           temperature },
-        std::pair<spidx_t, spidx_t> { 1, 2 },
+        { 1, 2 },
         -drift_ux,
         in::x1);
 
