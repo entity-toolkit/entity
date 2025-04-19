@@ -458,15 +458,18 @@ namespace ntt {
     set("output.separate_files",
         toml::find_or<bool>(toml_data, "output", "separate_files", true));
 
+    promiseToDefine("output.fields.enable");
     promiseToDefine("output.fields.interval");
     promiseToDefine("output.fields.interval_time");
-    promiseToDefine("output.fields.enable");
+    promiseToDefine("output.particles.enable");
     promiseToDefine("output.particles.interval");
     promiseToDefine("output.particles.interval_time");
-    promiseToDefine("output.particles.enable");
+    promiseToDefine("output.spectra.enable");
     promiseToDefine("output.spectra.interval");
     promiseToDefine("output.spectra.interval_time");
-    promiseToDefine("output.spectra.enable");
+    promiseToDefine("output.stats.enable");
+    promiseToDefine("output.stats.interval");
+    promiseToDefine("output.stats.interval_time");
 
     const auto flds_out        = toml::find_or(toml_data,
                                         "output",
@@ -540,8 +543,16 @@ namespace ntt {
                       "n_bins",
                       defaults::output::spec_nbins));
 
+    // stats
+    set("output.stats.quantities",
+        toml::find_or(toml_data,
+                      "output",
+                      "stats",
+                      "quantities",
+                      defaults::output::stats_quantities));
+
     // intervals
-    for (const auto& type : { "fields", "particles", "spectra" }) {
+    for (const auto& type : { "fields", "particles", "spectra", "stats" }) {
       const auto q_int      = toml::find_or<timestep_t>(toml_data,
                                                    "output",
                                                    std::string(type),
@@ -554,7 +565,7 @@ namespace ntt {
                                                        -1.0);
       set("output." + std::string(type) + ".enable",
           toml::find_or(toml_data, "output", std::string(type), "enable", true));
-      if (q_int == 0 && q_int_time == -1.0) {
+      if ((q_int == 0) and (q_int_time == -1.0)) {
         set("output." + std::string(type) + ".interval",
             get<timestep_t>("output.interval"));
         set("output." + std::string(type) + ".interval_time",

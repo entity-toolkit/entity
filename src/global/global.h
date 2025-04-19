@@ -269,6 +269,7 @@ namespace WriteMode {
     Fields    = 1 << 0,
     Particles = 1 << 1,
     Spectra   = 1 << 2,
+    Stats     = 1 << 3,
   };
 } // namespace WriteMode
 
@@ -346,7 +347,7 @@ using duration_t  = double;
 using simtime_t   = double;
 using timestep_t  = std::size_t;
 using ncells_t    = std::size_t;
-using npart_t     = unsigned long long int;
+using npart_t     = unsigned long int;
 
 // index/number
 using index_t = const std::size_t;

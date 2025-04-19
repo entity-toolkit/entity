@@ -3,6 +3,7 @@
  * @brief Commonly used generic kernels
  * @implements
  *   - kernel::ComputeSum_kernel<>
+ *   - kernel::ComputeDivergence_kernel<>
  * @namespaces:
  *   - kernel::
  */

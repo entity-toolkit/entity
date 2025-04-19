@@ -29,7 +29,7 @@ namespace out {
                     const std::string& title,
                     bool               use_separate_files) {
     m_separate_files = use_separate_files;
-    m_engine         = engine;
+    m_engine         = fmt::toLower(engine);
     p_adios          = ptr_adios;
 
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
@@ -424,7 +424,7 @@ namespace out {
     m_active_mode = write_mode;
     try {
       std::string       filename;
-      const std::string ext = m_engine == "hdf5" ? "h5" : "bp";
+      const std::string ext = (m_engine == "hdf5") ? "h5" : "bp";
       if (m_separate_files) {
         std::string mode_str;
         if (m_active_mode == WriteMode::Fields) {

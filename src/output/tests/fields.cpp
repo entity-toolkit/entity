@@ -51,6 +51,25 @@ auto main() -> int {
     }
 
     {
+      const auto dive = OutputField(SimEngine::SRPIC, "divE");
+      raise::ErrorIf(dive.is_moment(), "divE should not be a moment", HERE);
+      raise::ErrorIf(dive.is_field(), "divE should not be a field", HERE);
+      raise::ErrorIf(not dive.is_divergence(), "divE should be a divergence", HERE);
+      raise::ErrorIf(dive.id() != FldsID::divE,
+                     "divE should have ID FldsID::divE",
+                     HERE);
+      raise::ErrorIf(dive.name() != "fDivE", "divE should have name `fDivE`", HERE);
+      raise::ErrorIf(dive.comp.size() != 0, "divE should have 0 components", HERE);
+      raise::ErrorIf(dive.species.size() != 0, "divE should have no species", HERE);
+      raise::ErrorIf(dive.prepare_flag != PrepareOutput::None,
+                     "divE should not have any prepare flags",
+                     HERE);
+      raise::ErrorIf(dive.interp_flag != PrepareOutput::None,
+                     "divE should not have any interp flags",
+                     HERE);
+    }
+
+    {
       const auto t = OutputField(SimEngine::GRPIC, "Tti_2_3");
       raise::ErrorIf(not t.is_moment(), "T should be a moment", HERE);
       raise::ErrorIf(t.is_field(), "T should not be a field", HERE);

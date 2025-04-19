@@ -307,6 +307,32 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
+  struct StatsID : public enums_hidden::BaseEnum<StatsID> {
+    static constexpr const char* label = "out_stats";
+
+    enum type : uint8_t {
+      INVALID = 0,
+      B2      = 1,
+      E2      = 2,
+      ExB     = 3,
+      JdotE   = 4,
+      T       = 5,
+      Rho     = 6,
+      Charge  = 7,
+      N       = 8,
+      Npart   = 9,
+    };
+
+    constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
+
+    static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
+                                                Rho, Charge, N,   Npart };
+    static constexpr const char* lookup[]   = { "b^2",    "e^2", "exb",
+                                                "j.e",    "t",   "rho",
+                                                "charge", "n",   "npart" };
+    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+  };
+
 } // namespace ntt
 
 #endif // GLOBAL_ENUMS_H

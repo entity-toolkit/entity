@@ -21,6 +21,7 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
+      m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
       m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
