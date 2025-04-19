@@ -522,22 +522,41 @@ namespace ntt {
 
     void CurrentsAmpere(domain_t& domain) {
       logger::Checkpoint("Launching Ampere kernel for adding currents", HERE);
-      const auto q0    = m_params.template get<real_t>("scales.q0");
-      const auto n0    = m_params.template get<real_t>("scales.n0");
-      const auto B0    = m_params.template get<real_t>("scales.B0");
-      const auto coeff = -dt * q0 * n0 / B0;
+      const auto q0 = m_params.template get<real_t>("scales.q0");
+      const auto n0 = m_params.template get<real_t>("scales.n0");
+      const auto B0 = m_params.template get<real_t>("scales.B0");
       if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
-        const auto V0 = m_params.template get<real_t>("scales.V0");
-
-        Kokkos::parallel_for(
-          "Ampere",
-          domain.mesh.rangeActiveCells(),
-          kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
-                                                      domain.fields.cur,
-                                                      coeff / V0,
-                                                      ONE / n0));
+        const auto V0    = m_params.template get<real_t>("scales.V0");
+        const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
+        const auto coeff = -dt * q0 / (B0 * V0);
+        if constexpr (
+          traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
+          const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
+                                           domain.mesh.extent(in::x2).first,
+                                           domain.mesh.extent(in::x3).first };
+          const auto                ext_current = m_pgen.ExternalCurrent;
+          const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
+          // clang-format off
+          Kokkos::parallel_for(
+            "Ampere",
+            domain.mesh.rangeActiveCells(),
+            kernel::mink::CurrentsAmpere_kernel<M::Dim, decltype(ext_current)>(
+              domain.fields.em, domain.fields.cur,
+              coeff, ppc0, ext_current, xmin, dx));
+          // clang-format on
+        } else {
+          Kokkos::parallel_for(
+            "Ampere",
+            domain.mesh.rangeActiveCells(),
+            kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
+                                                        domain.fields.cur,
+                                                        coeff,
+                                                        ppc0));
+        }
       } else {
+        // non-minkowski
+        const auto coeff = -dt * q0 * n0 / B0;
         auto       range = range_with_axis_BCs(domain);
         const auto ni2   = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for(
@@ -569,7 +588,7 @@ namespace ntt {
         size[2] = domain.mesh.n_active(in::x3);
       }
       // !TODO: this needs to be done more efficiently
-      for (unsigned short i = 0; i < nfilter; ++i) {
+      for (auto i { 0u }; i < nfilter; ++i) {
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
@@ -635,8 +654,8 @@ namespace ntt {
       }
       boundaries_t<real_t> box;
       boundaries_t<bool>   incl_ghosts;
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
-        if (d == static_cast<unsigned short>(dim)) {
+      for (dim_t d { 0 }; d < M::Dim; ++d) {
+        if (d == static_cast<dim_t>(dim)) {
           box.push_back({ xg_min, xg_max });
           if (sign > 0) {
             incl_ghosts.push_back({ false, true });
@@ -808,7 +827,7 @@ namespace ntt {
       }
       std::vector<ncells_t> xi_min, xi_max;
       const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+      for (dim_t d { 0u }; d < M::Dim; ++d) {
         const auto dd = all_dirs[d];
         if (dim == dd) {
           if (sign > 0) { // + direction
@@ -907,7 +926,7 @@ namespace ntt {
 
         const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
-        for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           const auto dd = all_dirs[d];
           if (dim == dd) {
             xi_min.push_back(0);
@@ -1015,10 +1034,10 @@ namespace ntt {
        */
       if constexpr (traits::has_member<traits::pgen::atm_fields_t, pgen_t>::value) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
-        const auto           dd = static_cast<unsigned short>(dim);
+        const auto           dd                = static_cast<dim_t>(dim);
         boundaries_t<real_t> box;
         boundaries_t<bool>   incl_ghosts;
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           if (d == dd) {
             box.push_back({ xg_min, xg_max });
             if (sign > 0) {
@@ -1038,7 +1057,7 @@ namespace ntt {
         tuple_t<std::size_t, M::Dim> range_min { 0 };
         tuple_t<std::size_t, M::Dim> range_max { 0 };
 
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
@@ -1165,9 +1184,8 @@ namespace ntt {
         "grid.boundaries.atmosphere.temperature");
       const auto height = m_params.template get<real_t>(
         "grid.boundaries.atmosphere.height");
-      const auto species =
-        m_params.template get<std::pair<unsigned short, unsigned short>>(
-          "grid.boundaries.atmosphere.species");
+      const auto species = m_params.template get<std::pair<spidx_t, spidx_t>>(
+        "grid.boundaries.atmosphere.species");
       const auto nmax = m_params.template get<real_t>(
         "grid.boundaries.atmosphere.density");
 
@@ -1200,7 +1218,7 @@ namespace ntt {
         }
       } else {
         for (const auto& sp :
-             std::vector<unsigned short>({ species.first, species.second })) {
+             std::vector<spidx_t> { species.first, species.second }) {
           auto& prtl_spec = domain.species[sp - 1];
           if (prtl_spec.npart() == 0) {
             continue;

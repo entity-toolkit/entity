@@ -37,7 +37,7 @@ namespace user {
 
     Inline void operator()(const coord_t<M::Dim>& x_Ph,
                            vec_t<Dim::_3D>&       v,
-                           unsigned short         sp) const override {
+                           spidx_t                sp) const override {
       if (sp == 1) {
         const auto k = math::sqrt(SQR(kx1) + SQR(kx2) + SQR(kx3));
         if constexpr (M::Dim == Dim::_1D) {

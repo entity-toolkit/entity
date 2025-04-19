@@ -436,6 +436,28 @@
     #   @default: false
     ghosts = ""
 
+  [output.stats]
+    # Toggle for the stats output:
+    #   @type: bool
+    #   @default: true
+    enable = ""
+    # Number of timesteps between stat outputs (overriden if `output.stats.interval_time != -1`):
+    #   @type: unsigned int: > 0
+    #   @default: 100
+    interval = ""
+    # Physical (code) time interval between stat outputs:
+    #   @type: float
+    #   @default: -1.0 (use `output.stats.interval_time`)
+    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    interval_time = ""
+    # Field quantities to output:
+    #   @type: array of strings
+    #   @valid: fields: "B^2", "E^2", "ExB"
+    #   @valid: moments: "N", "Charge", "Rho", "T00", "T0i", "Tij"
+    #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
+    #   @note: Same notation as for `output.fields.quantities`
+    quantities = ""
+
 [checkpoint]
   # Number of timesteps between checkpoints:
   #   @type: unsigned int: > 0

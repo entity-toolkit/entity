@@ -34,7 +34,7 @@ namespace out {
     PrepareOutputFlags interp_flag { PrepareOutput::None };
 
     std::vector<std::vector<unsigned short>> comp {};
-    std::vector<unsigned short>              species {};
+    std::vector<spidx_t>                     species {};
 
     OutputField(const SimEngine& S, const std::string&);
 
@@ -105,6 +105,10 @@ namespace out {
           }
           tmp.pop_back();
         }
+        if (tmp == "dive" || tmp == "divd") {
+          // capitalize E/D
+          tmp[3] = std::toupper(tmp[3]);
+        }
         // capitalize the first letter
         tmp[0] = std::toupper(tmp[0]);
       }
@@ -137,6 +141,10 @@ namespace out {
           tmp += "_";
         }
         tmp.pop_back();
+      }
+      if (tmp == "dive" || tmp == "divd") {
+        // capitalize E/D
+        tmp[3] = std::toupper(tmp[3]);
       }
       // capitalize the first letter
       tmp[0] = std::toupper(tmp[0]);

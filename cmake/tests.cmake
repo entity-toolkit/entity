@@ -8,8 +8,8 @@ add_subdirectory(${SRC_DIR}/metrics ${CMAKE_CURRENT_BINARY_DIR}/metrics)
 add_subdirectory(${SRC_DIR}/kernels ${CMAKE_CURRENT_BINARY_DIR}/kernels)
 add_subdirectory(${SRC_DIR}/archetypes ${CMAKE_CURRENT_BINARY_DIR}/archetypes)
 add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
+add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
 if(${output})
-  add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
   add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
 endif()
 
@@ -25,8 +25,9 @@ elseif(${mpi} AND ${output})
   list(APPEND TEST_DIRECTORIES framework)
 endif()
 
+list(APPEND TEST_DIRECTORIES output)
+
 if(${output})
-  list(APPEND TEST_DIRECTORIES output)
   list(APPEND TEST_DIRECTORIES checkpoint)
 endif()
 

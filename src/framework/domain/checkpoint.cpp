@@ -307,7 +307,7 @@ namespace ntt {
                                           range3,
                                           domain.fields.cur0);
       }
-      for (auto s { 0u }; s < (unsigned short)(domain.species.size()); ++s) {
+      for (auto s { 0u }; s < domain.species.size(); ++s) {
         const auto [loc_npart, offset_npart] =
           checkpoint::ReadParticleCount(io, reader, s, ldidx, ndomains());
         raise::ErrorIf(loc_npart > domain.species[s].maxnpart(),

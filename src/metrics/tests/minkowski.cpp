@@ -21,7 +21,7 @@ inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 template <Dimension D>
 Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE)
   -> bool {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], epsilon * acc)) {
       printf("%d : %.12f != %.12f\n", d, a[d], b[d]);
       return false;

@@ -29,7 +29,7 @@ namespace out {
                     const std::string& title,
                     bool               use_separate_files) {
     m_separate_files = use_separate_files;
-    m_engine         = engine;
+    m_engine         = fmt::toLower(engine);
     p_adios          = ptr_adios;
 
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
@@ -48,9 +48,8 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type,
-                           timestep_t         step,
-                           simtime_t          time) -> bool {
+  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
+    -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -161,8 +160,8 @@ namespace out {
     }
   }
 
-  void Writer::defineParticleOutputs(Dimension                          dim,
-                                     const std::vector<unsigned short>& specs) {
+  void Writer::defineParticleOutputs(Dimension                   dim,
+                                     const std::vector<spidx_t>& specs) {
     m_prtl_writers.clear();
     for (const auto& s : specs) {
       m_prtl_writers.emplace_back(s);
@@ -187,7 +186,7 @@ namespace out {
     }
   }
 
-  void Writer::defineSpectraOutputs(const std::vector<unsigned short>& specs) {
+  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs) {
     m_spectra_writers.clear();
     for (const auto& s : specs) {
       m_spectra_writers.emplace_back(s);
@@ -401,7 +400,7 @@ namespace out {
     m_writer.Put<real_t>(var, e_bins_h);
   }
 
-  void Writer::writeMesh(unsigned short          dim,
+  void Writer::writeMesh(dim_t                   dim,
                          const array_t<real_t*>& xc,
                          const array_t<real_t*>& xe) {
     auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
@@ -425,7 +424,7 @@ namespace out {
     m_active_mode = write_mode;
     try {
       std::string       filename;
-      const std::string ext = m_engine == "hdf5" ? "h5" : "bp";
+      const std::string ext = (m_engine == "hdf5") ? "h5" : "bp";
       if (m_separate_files) {
         std::string mode_str;
         if (m_active_mode == WriteMode::Fields) {

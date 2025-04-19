@@ -28,7 +28,7 @@ Inline auto equal(const coord_t<D>& a,
                   const char*       msg,
                   real_t            acc = ONE) -> bool {
   const auto eps = epsilon * acc;
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
       printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
@@ -41,7 +41,7 @@ template <Dimension D>
 Inline void unravel(std::size_t                    idx,
                     tuple_t<std::size_t, D>&       ijk,
                     const tuple_t<std::size_t, D>& res) {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
   }
@@ -81,7 +81,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       coord_t<M::PrtlDim> x_Code_2 { ZERO };
       coord_t<M::PrtlDim> x_Cart { ZERO };
 
-      for (unsigned short d = 0; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code_1, x_Cart);
@@ -95,7 +95,7 @@ void testMetric(const std::vector<std::size_t>&      res,
         coord_t<M::Dim> x_Code_r1 { ZERO };
         coord_t<M::Dim> x_Code_r2 { ZERO };
         coord_t<M::Dim> x_Sph { ZERO };
-        for (unsigned short d = 0; d < M::Dim; ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           x_Code_r1[d] = x_Code_1[d];
         }
         metric.template convert<Crd::Cd, Crd::Sph>(x_Code_r1, x_Sph);

@@ -131,7 +131,7 @@ namespace comm {
     } else {
       ncells_t nsend { comps.second - comps.first },
         nrecv { comps.second - comps.first };
-      ndarray_t<static_cast<unsigned short>(D) + 1> send_fld, recv_fld;
+      ndarray_t<static_cast<dim_t>(D) + 1> send_fld, recv_fld;
 
       for (short d { 0 }; d < (short)D; ++d) {
         if (send_rank >= 0) {

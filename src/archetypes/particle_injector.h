@@ -44,7 +44,6 @@
 
 namespace arch {
   using namespace ntt;
-  using spidx_t = unsigned short;
 
   template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
   struct UniformInjector {
@@ -141,12 +140,12 @@ namespace arch {
     using UniformInjector<S, M, ED>::D;
     using UniformInjector<S, M, ED>::C;
 
-    const unsigned short density_buff_idx;
+    const idx_t          density_buff_idx;
     boundaries_t<real_t> probe_box;
 
     KeepConstantInjector(const energy_dist_t&               energy_dist,
                          const std::pair<spidx_t, spidx_t>& species,
-                         unsigned short                     density_buff_idx,
+                         idx_t                              density_buff_idx,
                          boundaries_t<real_t>               box = {})
       : UniformInjector<S, M, ED> { energy_dist, species }
       , density_buff_idx { density_buff_idx } {
@@ -296,7 +295,7 @@ namespace arch {
         if constexpr ((O == in::x1) or
                       (O == in::x2 and (M::Dim == Dim::_2D or M::Dim == Dim::_3D)) or
                       (O == in::x3 and M::Dim == Dim::_3D)) {
-          const auto xi = x_Ph[static_cast<unsigned short>(O)];
+          const auto xi = x_Ph[static_cast<dim_t>(O)];
           if constexpr (P) {
             // + direction
             if (xi < xsurf - ds or xi >= xsurf) {
@@ -373,7 +372,7 @@ namespace arch {
         if constexpr ((O == in::x1) or
                       (O == in::x2 and (M::Dim == Dim::_2D or M::Dim == Dim::_3D)) or
                       (O == in::x3 and M::Dim == Dim::_3D)) {
-          const auto xi = x_Ph[static_cast<unsigned short>(O)];
+          const auto xi = x_Ph[static_cast<dim_t>(O)];
           // + direction
           if (xi < xdrift or xi >= xinj) {
             return ZERO;

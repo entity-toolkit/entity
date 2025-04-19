@@ -32,13 +32,12 @@ namespace user {
       , sx2 { SX2 }
       , sx3 { SX3 } {}
 
-    const std::vector<unsigned short> species { 1, 2 };
+    const std::vector<spidx_t> species { 1, 2 };
 
     ExtForce() = default;
 
-    Inline auto fx1(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto fx1(const spidx_t&, const simtime_t&, const coord_t<D>& x_Ph) const
+      -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -64,9 +63,8 @@ namespace user {
                 math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
     }
 
-    Inline auto fx2(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto fx2(const spidx_t&, const simtime_t&, const coord_t<D>& x_Ph) const
+      -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -90,9 +88,8 @@ namespace user {
       // return ZERO;
     }
 
-    Inline auto fx3(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto fx3(const spidx_t&, const simtime_t&, const coord_t<D>& x_Ph) const
+      -> real_t {
       real_t k01 = ONE * constant::TWO_PI / sx1;
       real_t k02 = ZERO * constant::TWO_PI / sx2;
       real_t k03 = ZERO * constant::TWO_PI / sx3;
@@ -148,10 +145,9 @@ namespace user {
       , SX2 { global_domain.mesh().extent(in::x2).second -
               global_domain.mesh().extent(in::x2).first }
       , SX3 { global_domain.mesh().extent(in::x3).second -
-              global_domain.mesh().extent(in::x3).first }
-      // , SX1 { 2.0 }
-      // , SX2 { 2.0 }
-      // , SX3 { 2.0 }
+              global_domain.mesh().extent(in::x3).first } // , SX1 { 2.0 }
+                                                          // , SX2 { 2.0 }
+                                                          // , SX3 { 2.0 }
       , temperature { params.template get<real_t>("problem.temperature", 0.1) }
       , machno { params.template get<real_t>("problem.machno", 0.1) }
       , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
@@ -194,8 +190,10 @@ namespace user {
 
       {
         const auto energy_dist = arch::PowerlawDist<S, M>(local_domain.mesh.metric,
-                                                        local_domain.random_pool,
-                                                        0.1, 100.0, -3.0);
+                                                          local_domain.random_pool,
+                                                          0.1,
+                                                          100.0,
+                                                          -3.0);
         const auto injector = arch::UniformInjector<S, M, arch::PowerlawDist>(
           energy_dist,
           { 1, 2 });
@@ -282,9 +280,9 @@ namespace user {
       // myfile.close();
 
       // if constexpr (D == Dim::_3D) {
-        
+
       //   auto metric = domain.mesh.metric;
-        
+
       //   auto benrg_total = ZERO;
       //   auto EB          = domain.fields.em;
       //   Kokkos::parallel_reduce(
@@ -323,12 +321,11 @@ namespace user {
       //       vec_t<Dim::_3D>   e_XYZ;
       //       metric.template transform<Idx::U, Idx::T>(x_Cd,
       //                                                             e_Cntrv,
-      //                                                             e_XYZ);            
+      //                                                             e_XYZ);
       //       eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
       //     },
       //     eenrg_total);
       //   eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
-  
 
       //   if (time == 0) {
       //     myfile.open("esqenrg.txt");

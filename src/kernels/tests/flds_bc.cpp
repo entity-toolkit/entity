@@ -56,7 +56,7 @@ Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
 
 template <Dimension D>
 void testFldsBCs(const std::vector<std::size_t>& res) {
-  errorIf(res.size() != (unsigned short)D, "res.size() != D");
+  errorIf(res.size() != (dim_t)D, "res.size() != D");
   boundaries_t<real_t> sx;
   for (const auto& r : res) {
     sx.emplace_back(ZERO, r);
