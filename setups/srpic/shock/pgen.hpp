@@ -176,8 +176,7 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         local_domain.mesh.metric,
         local_domain.random_pool,
-        { temperature_ratio * temperature *
-            (local_domain.species[2].mass() / local_domain.species[1].mass()),
+        { temperature_ratio * temperature * local_domain.species[1].mass() ,
           temperature },
         { 1, 2 },
         -drift_ux,
@@ -319,8 +318,7 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         domain.mesh.metric,
         domain.random_pool,
-        { temperature_ratio * temperature *
-            (domain.species[2].mass() / domain.species[1].mass()),
+        { temperature_ratio * temperature * domain.species[1].mass(),
           temperature },
         { 1, 2 },
         -drift_ux,
