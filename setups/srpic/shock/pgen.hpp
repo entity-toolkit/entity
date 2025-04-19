@@ -92,7 +92,6 @@ namespace user {
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
-    BCFields<D>   bc_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -105,7 +104,6 @@ namespace user {
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
-      , bc_flds { Bmag, Btheta, Bphi, drift_ux }
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
@@ -114,7 +112,7 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> BCFields<D> {
+    auto MatchFields(real_t time) const -> InitFields<D> {
       return init_flds;
     }
 
