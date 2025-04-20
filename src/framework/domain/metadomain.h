@@ -142,6 +142,8 @@ namespace ntt {
       -> bool;
 
     /* setters -------------------------------------------------------------- */
+    void setFldsBC(const bc_in&, const FldsBC&);
+    void setPrtlBC(const bc_in&, const PrtlBC&);
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
