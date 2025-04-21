@@ -92,6 +92,7 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#include <chrono>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -111,7 +112,7 @@ namespace files {
 
 namespace ntt {
 
-  inline constexpr unsigned int N_GHOSTS = 2;
+  inline constexpr std::size_t N_GHOSTS = 2;
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
@@ -268,6 +269,7 @@ namespace WriteMode {
     Fields    = 1 << 0,
     Particles = 1 << 1,
     Spectra   = 1 << 2,
+    Stats     = 1 << 3,
   };
 } // namespace WriteMode
 
@@ -339,10 +341,21 @@ using coord_t = tuple_t<real_t, D>;
 template <Dimension D>
 using vec_t = tuple_t<real_t, D>;
 
+// time/duration
+using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
+using duration_t  = double;
+using simtime_t   = double;
+using timestep_t  = std::size_t;
+using ncells_t    = std::size_t;
+using npart_t     = unsigned long int;
+
+// index/number
 using index_t = const std::size_t;
 using idx_t   = unsigned short;
+using spidx_t = unsigned short;
+using dim_t   = unsigned short;
 
-using range_tuple_t = std::pair<std::size_t, std::size_t>;
+using range_tuple_t = std::pair<ncells_t, ncells_t>;
 
 template <typename T>
 using boundaries_t = std::vector<std::pair<T, T>>;

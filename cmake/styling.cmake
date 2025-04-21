@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103,C0301,C0111,E1120,R0913,R0915
+
 if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColorReset "${Esc}[m")
@@ -23,17 +25,147 @@ if(NOT WIN32)
   set(StrikeEnd "${Esc}[0m")
 endif()
 
-# message("This is normal") message("${Red}This is Red${ColorReset}")
-# message("${Green}This is Green${ColorReset}") message("${Yellow}This is
-# Yellow${ColorReset}") message("${Blue}This is Blue${ColorReset}")
-# message("${Magenta}This is Magenta${ColorReset}") message("${Cyan}This is
-# Cyan${ColorReset}") message("${White}This is White${ColorReset}")
-# message("${BoldRed}This is BoldRed${ColorReset}") message("${BoldGreen}This is
-# BoldGreen${ColorReset}") message("${BoldYellow}This is
-# BoldYellow${ColorReset}") message("${BoldBlue}This is BoldBlue${ColorReset}")
-# message("${BoldMagenta}This is BoldMagenta${ColorReset}")
-# message("${BoldCyan}This is BoldCyan${ColorReset}") message("${BoldWhite}This
-# is BoldWhite\n\n${ColorReset}")
+set(DOTTED_LINE_SYMBOL "${ColorReset}. . . . . . . . . . . . . . . .")
+string(APPEND DOTTED_LINE_SYMBOL " . . . . . . . . . . . . . . . . . . . . ")
 
-# message()
+set(DASHED_LINE_SYMBOL "${ColorReset}.................................")
+string(APPEND DASHED_LINE_SYMBOL "...................................... ")
 
+set(ON_OFF_VALUES "ON" "OFF")
+
+function(PureLength Text Result)
+  set(rt ${Text})
+  string(FIND ${rt} "${Magenta}" mg_fnd)
+
+  if(mg_fnd GREATER -1)
+    string(REGEX REPLACE "${Esc}\\[35m" "" rt ${rt})
+  endif()
+
+  string(LENGTH "${rt}" TextLength)
+  set(${Result}
+      "${TextLength}"
+      PARENT_SCOPE)
+endfunction()
+
+function(PadTo Text Padding Target Result)
+  purelength("${Text}" TextLength)
+  math(EXPR PaddingNeeded "${Target} - ${TextLength}")
+  set(rt ${Text})
+
+  if(PaddingNeeded GREATER 0)
+    foreach(i RANGE 0 ${PaddingNeeded})
+      set(rt "${rt}${Padding}")
+    endforeach()
+  else()
+    set(rt "${rt}")
+  endif()
+
+  set(${Result}
+      "${rt}"
+      PARENT_SCOPE)
+endfunction()
+
+function(
+  PrintChoices
+  Label
+  Flag
+  Choices
+  Value
+  Default
+  Color
+  OutputString
+  Padding)
+  set(rstring "- ${Label}")
+
+  if(NOT "${Flag}" STREQUAL "")
+    string(APPEND rstring " [${Magenta}${Flag}${ColorReset}]")
+  endif()
+
+  string(APPEND rstring ":")
+
+  if(${Padding} EQUAL 0)
+    list(LENGTH "${Choices}" nchoices)
+    math(EXPR lastchoice "${nchoices} - 1")
+
+    set(longest 0)
+    foreach(ch IN LISTS Choices)
+      string(LENGTH ${ch} clen)
+      if(clen GREATER longest)
+        set(longest ${clen})
+      endif()
+    endforeach()
+
+    if(longest GREATER 20)
+      set(ncols 3)
+    else()
+      set(ncols 4)
+    endif()
+    math(EXPR lastcol "${ncols} - 1")
+
+    set(counter 0)
+    foreach(ch IN LISTS Choices)
+      if(NOT ${Value} STREQUAL "")
+        if(${ch} STREQUAL ${Value})
+          set(col ${Color})
+        else()
+          set(col ${Dim})
+        endif()
+      else()
+        set(col ${Dim})
+      endif()
+
+      if(NOT ${Default} STREQUAL "")
+        if(${ch} STREQUAL ${Default})
+          set(col ${Underline}${col})
+        endif()
+      endif()
+
+      string(LENGTH "${ch}" clen)
+      math(EXPR PaddingNeeded "${longest} - ${clen} + 4")
+
+      if(counter EQUAL ${lastcol} AND NOT ${counter} EQUAL ${lastchoice})
+        string(APPEND rstring "${col}~ ${ch}${ColorReset}")
+      else()
+        if(counter EQUAL 0)
+          string(APPEND rstring "\n    ")
+        endif()
+        string(APPEND rstring "${col}~ ${ch}${ColorReset}")
+        foreach(i RANGE 0 ${PaddingNeeded})
+          string(APPEND rstring " ")
+        endforeach()
+      endif()
+
+      math(EXPR counter "(${counter} + 1) % ${ncols}")
+    endforeach()
+  else()
+    padto("${rstring}" " " ${Padding} rstring)
+
+    set(new_choices ${Choices})
+    foreach(ch IN LISTS new_choices)
+      string(REPLACE ${ch} "${Dim}${ch}${ColorReset}" new_choices
+                     "${new_choices}")
+    endforeach()
+    set(Choices ${new_choices})
+    if(${Value} STREQUAL "ON")
+      set(col ${Green})
+    elseif(${Value} STREQUAL "OFF")
+      set(col ${Red})
+    else()
+      set(col ${Color})
+    endif()
+    if(NOT "${Value}" STREQUAL "")
+      string(REPLACE ${Value} "${col}${Value}${ColorReset}" Choices
+                     "${Choices}")
+    endif()
+    if(NOT "${Default}" STREQUAL "")
+      string(REPLACE ${Default} "${Underline}${Default}${ColorReset}" Choices
+                     "${Choices}")
+    endif()
+    string(REPLACE ";" "/" Choices "${Choices}")
+    string(APPEND rstring "${Choices}")
+  endif()
+
+  set(${OutputString}
+      "${rstring}"
+      PARENT_SCOPE)
+endfunction()

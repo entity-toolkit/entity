@@ -24,7 +24,6 @@
 
 namespace kernel {
   using namespace ntt;
-  using spidx_t = unsigned short;
 
   template <SimEngine::type S, class M, class ED>
   struct UniformInjector_kernel {
@@ -47,9 +46,9 @@ namespace kernel {
     array_t<real_t*>   weights_2;
     array_t<short*>    tags_2;
 
-    std::size_t            offset1, offset2;
+    npart_t                offset1, offset2;
     const M                metric;
-    const array_t<real_t*> ni;
+    const array_t<real_t*> xi_min, xi_max;
     const ED               energy_dist;
     const real_t           inv_V0;
     random_number_pool_t   random_pool;
@@ -58,10 +57,11 @@ namespace kernel {
                            spidx_t                          spidx2,
                            Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
-                           std::size_t                      offset1,
-                           std::size_t                      offset2,
+                           npart_t                          offset1,
+                           npart_t                          offset2,
                            const M&                         metric,
-                           const array_t<real_t*>&          ni,
+                           const array_t<real_t*>&          xi_min,
+                           const array_t<real_t*>&          xi_max,
                            const ED&                        energy_dist,
                            real_t                           inv_V0,
                            random_number_pool_t&            random_pool)
@@ -94,7 +94,8 @@ namespace kernel {
       , offset1 { offset1 }
       , offset2 { offset2 }
       , metric { metric }
-      , ni { ni }
+      , xi_min { xi_min }
+      , xi_max { xi_max }
       , energy_dist { energy_dist }
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {}
@@ -104,12 +105,12 @@ namespace kernel {
       vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
         auto rand_gen = random_pool.get_state();
-        x_Cd[0]       = Random<real_t>(rand_gen) * ni(0);
+        x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          x_Cd[1] = Random<real_t>(rand_gen) * ni(1);
+          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
         }
         if constexpr (M::Dim == Dim::_3D) {
-          x_Cd[2] = Random<real_t>(rand_gen) * ni(2);
+          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
         }
         random_pool.free_state(rand_gen);
       }
@@ -201,20 +202,20 @@ namespace kernel {
     array_t<real_t*> in_phi;
     array_t<real_t*> in_wei;
 
-    array_t<std::size_t> idx { "idx" };
-    array_t<int*>        i1s, i2s, i3s;
-    array_t<prtldx_t*>   dx1s, dx2s, dx3s;
-    array_t<real_t*>     ux1s, ux2s, ux3s;
-    array_t<real_t*>     phis;
-    array_t<real_t*>     weights;
-    array_t<short*>      tags;
+    array_t<npart_t>   idx { "idx" };
+    array_t<int*>      i1s, i2s, i3s;
+    array_t<prtldx_t*> dx1s, dx2s, dx3s;
+    array_t<real_t*>   ux1s, ux2s, ux3s;
+    array_t<real_t*>   phis;
+    array_t<real_t*>   weights;
+    array_t<short*>    tags;
 
-    const std::size_t offset;
+    const npart_t offset;
 
     M global_metric;
 
-    real_t      x1_min, x1_max, x2_min, x2_max, x3_min, x3_max;
-    std::size_t i1_offset, i2_offset, i3_offset;
+    real_t   x1_min, x1_max, x2_min, x2_max, x3_min, x3_max;
+    ncells_t i1_offset, i2_offset, i3_offset;
 
     GlobalInjector_kernel(Particles<M::Dim, M::CoordType>& species,
                           const M&                         global_metric,
@@ -269,18 +270,18 @@ namespace kernel {
     void copy_from_vector(const std::string& name,
                           array_t<real_t*>&  arr,
                           const std::map<std::string, std::vector<real_t>>& data,
-                          std::size_t n_inject) {
+                          npart_t n_inject) {
       raise::ErrorIf(data.find(name) == data.end(), name + " not found in data", HERE);
       raise::ErrorIf(data.at(name).size() != n_inject, "Inconsistent data size", HERE);
       arr        = array_t<real_t*> { name, n_inject };
       auto arr_h = Kokkos::create_mirror_view(arr);
-      for (std::size_t i = 0; i < data.at(name).size(); ++i) {
+      for (auto i = 0u; i < data.at(name).size(); ++i) {
         arr_h(i) = data.at(name)[i];
       }
       Kokkos::deep_copy(arr, arr_h);
     }
 
-    auto number_injected() const -> std::size_t {
+    auto number_injected() const -> npart_t {
       auto idx_h = Kokkos::create_mirror_view(idx);
       Kokkos::deep_copy(idx_h, idx);
       return idx_h();
@@ -298,7 +299,7 @@ namespace kernel {
           global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_XYZ);
 
           const auto i1 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
           const auto dx1 = static_cast<prtldx_t>(
             x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
 
@@ -322,9 +323,8 @@ namespace kernel {
           vec_t<Dim::_3D>     u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
           coord_t<M::PrtlDim> x_Cd_ { ZERO };
 
-          auto index {
-            offset + Kokkos::atomic_fetch_add(&idx(), static_cast<std::size_t>(1))
-          };
+          auto index { offset +
+                       Kokkos::atomic_fetch_add(&idx(), static_cast<npart_t>(1)) };
           global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p), in_x2(p) },
                                                            x_Cd);
           x_Cd_[0] = x_Cd[0];
@@ -340,11 +340,11 @@ namespace kernel {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
           const auto i1 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
           const auto dx1 = static_cast<prtldx_t>(
             x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
           const auto i2 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[1]) - i2_offset);
+            static_cast<ncells_t>(x_Cd[1]) - i2_offset);
           const auto dx2 = static_cast<prtldx_t>(
             x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
 
@@ -385,15 +385,15 @@ namespace kernel {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
           const auto i1 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[0]) - i1_offset);
+            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
           const auto dx1 = static_cast<prtldx_t>(
             x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
           const auto i2 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[1]) - i2_offset);
+            static_cast<ncells_t>(x_Cd[1]) - i2_offset);
           const auto dx2 = static_cast<prtldx_t>(
             x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
           const auto i3 = static_cast<int>(
-            static_cast<std::size_t>(x_Cd[2]) - i3_offset);
+            static_cast<ncells_t>(x_Cd[2]) - i3_offset);
           const auto dx3 = static_cast<prtldx_t>(
             x_Cd[2] - static_cast<real_t>(i3 + i3_offset));
 
@@ -440,9 +440,9 @@ namespace kernel {
     array_t<real_t*>   weights_2;
     array_t<short*>    tags_2;
 
-    array_t<std::size_t> idx { "idx" };
+    array_t<npart_t> idx { "idx" };
 
-    std::size_t          offset1, offset2;
+    npart_t              offset1, offset2;
     M                    metric;
     const ED             energy_dist;
     const SD             spatial_dist;
@@ -454,8 +454,8 @@ namespace kernel {
                               spidx_t                          spidx2,
                               Particles<M::Dim, M::CoordType>& species1,
                               Particles<M::Dim, M::CoordType>& species2,
-                              std::size_t                      offset1,
-                              std::size_t                      offset2,
+                              npart_t                          offset1,
+                              npart_t                          offset2,
                               const M&                         metric,
                               const ED&                        energy_dist,
                               const SD&                        spatial_dist,
@@ -496,7 +496,7 @@ namespace kernel {
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {}
 
-    auto number_injected() const -> std::size_t {
+    auto number_injected() const -> npart_t {
       auto idx_h = Kokkos::create_mirror_view(idx);
       Kokkos::deep_copy(idx_h, idx);
       return idx_h();
@@ -508,7 +508,7 @@ namespace kernel {
         coord_t<Dim::_1D> x_Cd { i1_ + HALF };
         coord_t<Dim::_1D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
         if (ppc == 0) {
           return;
         }
@@ -564,7 +564,7 @@ namespace kernel {
           x_Cd_[2] = ZERO;
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
         if (ppc == 0) {
           return;
         }
@@ -631,7 +631,7 @@ namespace kernel {
         coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
         coord_t<Dim::_3D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<std::size_t>(ppc0 * spatial_dist(x_Ph));
+        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
         if (ppc == 0) {
           return;
         }

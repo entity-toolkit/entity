@@ -15,7 +15,7 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
 
   try {
-    const std::size_t nx1 = 15, nx2 = 15;
+    const ncells_t nx1 = 15, nx2 = 15;
     ndfield_t<Dim::_2D, 3> fld_b1 { "fld", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
     ndfield_t<Dim::_2D, 3> fld_b2 { "fld", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
 

@@ -21,6 +21,7 @@ namespace ntt {
   template <SimEngine::type S, class M>
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
+      m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
       m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
@@ -53,7 +54,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
         // read simulation data from the checkpoint
         raise::ErrorIf(
-          m_params.template get<std::size_t>("checkpoint.start_step") == 0,
+          m_params.template get<timestep_t>("checkpoint.start_step") == 0,
           "Resuming simulation from a checkpoint requires a valid start_step",
           HERE);
         logger::Checkpoint("Resuming simulation from a checkpoint", HERE);

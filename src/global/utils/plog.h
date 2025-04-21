@@ -13,6 +13,8 @@
 #ifndef GLOBAL_UTILS_PLOG_H
 #define GLOBAL_UTILS_PLOG_H
 
+#include "utils/formatting.h"
+
 #include <plog/Appenders/ColorConsoleAppender.h>
 #include <plog/Appenders/RollingFileAppender.h>
 #include <plog/Formatters/TxtFormatter.h>
@@ -57,7 +59,7 @@ namespace plog {
 namespace logger {
 
   template <int log_tag, int info_tag, int err_tag>
-  inline void initPlog(const std::string& fname) {
+  inline void initPlog(const std::string& fname, const std::string& log_level) {
     // setup logging
     const auto logfile_name  = fname + ".log";
     const auto infofile_name = fname + ".info";
@@ -77,7 +79,13 @@ namespace logger {
       infofile_name.c_str());
     static plog::RollingFileAppender<plog::NttInfoFormatter> errfileAppender(
       errfile_name.c_str());
-    plog::init<log_tag>(plog::verbose, &logfileAppender);
+    auto log_severity = plog::verbose;
+    if (fmt::toLower(log_level) == "WARNING") {
+      log_severity = plog::warning;
+    } else if (fmt::toLower(log_level) == "ERROR") {
+      log_severity = plog::error;
+    }
+    plog::init<log_tag>(log_severity, &logfileAppender);
     plog::init<info_tag>(plog::verbose, &infofileAppender);
     plog::init<err_tag>(plog::verbose, &errfileAppender);
 

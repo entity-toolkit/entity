@@ -1,22 +1,26 @@
 [simulation]
-  name    = "shock"
+  name    = "shock_perp"
   engine  = "srpic"
   runtime = 50.0
 
+  [simulation.domain]
+    decomposition = [1,-1]
+
 [grid]
-  resolution = [2048, 128]
-  extent     = [[0.0, 10.0], [-0.3125, 0.3125]]
+  resolution = [4096, 128]
+  extent     = [[0.0, 4.096], [-0.064, 0.064]]
 
   [grid.metric]
     metric = "minkowski"
 
   [grid.boundaries]
-    fields = [["ABSORB", "FIXED"], ["PERIODIC"]]
+    fields = [["CONDUCTOR", "MATCH"], ["PERIODIC"]]
     particles = [["REFLECT", "ABSORB"], ["PERIODIC"]]
 
+    
 [scales]
-  larmor0    = 1e-2
-  skindepth0 = 1e-2
+  larmor0    = 0.057735
+  skindepth0 = 0.01
 
 [algorithms]
   current_filters = 8
@@ -25,30 +29,42 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 16.0
+  ppc0 = 8.0
 
   [[particles.species]]
     label    = "e-"
     mass     = 1.0
     charge   = -1.0
-    maxnpart = 1e8
+    maxnpart = 8e7
 
   [[particles.species]]
-    label    = "e+"
-    mass     = 1.0
+    label    = "p+"
+    mass     = 100.0
     charge   = 1.0
-    maxnpart = 1e8
+    maxnpart = 8e7
 
 [setup]
-  drift_ux    = 0.1
-  temperature = 1e-3
-  Bmag = 1.0
-  Btheta = 0.0
-  Bphi = 0.0
+  drift_ux    = 0.15            # speed towards the wall [c]
+  temperature = 0.001683        # temperature of maxwell distribution [kB T / (m_i c^2)]
+  temperature_ratio = 1.0       # temperature ratio of electrons to protons
+  Bmag = 1.0                    # magnetic field strength as fraction of magnetisation
+  Btheta = 63.0                 # magnetic field angle in the plane
+  Bphi = 0.0                    # magnetic field angle out of plane
+  filling_fraction = 0.1        # fraction of the shock piston filled with plasma
+  injector_velocity = 0.2       # speed of injector [c]
+  injection_start = 0.0         # start time of moving injector
+  injection_frequency = 100     # inject particles every 100 timesteps
 
 [output]
   interval_time = 0.1
   format        = "hdf5"
-
+  
   [output.fields]
-    quantities = ["N_1", "N_2", "E", "B", "T0i_1", "T0i_2", "J"]
+    quantities = ["N_1", "N_2", "B", "E"]
+
+  [output.particles]
+    enable = true
+    stride = 10 
+
+  [output.spectra]
+    enable = false

@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103
 # ------------------------------
 # @defines: ntt_engines [STATIC/SHARED]
 #
@@ -25,7 +26,6 @@
 #
 # * kokkos [required]
 # * plog [required]
-# * toml11 [required]
 # * adios2 [optional]
 # * hdf5 [optional]
 # * mpi [optional]
@@ -39,7 +39,7 @@ add_library(ntt_engines ${SOURCES})
 set(libs ntt_global ntt_framework ntt_metrics ntt_archetypes ntt_kernels
          ntt_pgen)
 if(${output})
-  list(APPEND libs ntt_output hdf5::hdf5)
+  list(APPEND libs ntt_output)
 endif()
 add_dependencies(ntt_engines ${libs})
 target_link_libraries(ntt_engines PUBLIC ${libs})

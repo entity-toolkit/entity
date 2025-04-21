@@ -522,22 +522,41 @@ namespace ntt {
 
     void CurrentsAmpere(domain_t& domain) {
       logger::Checkpoint("Launching Ampere kernel for adding currents", HERE);
-      const auto q0    = m_params.template get<real_t>("scales.q0");
-      const auto n0    = m_params.template get<real_t>("scales.n0");
-      const auto B0    = m_params.template get<real_t>("scales.B0");
-      const auto coeff = -dt * q0 * n0 / B0;
+      const auto q0 = m_params.template get<real_t>("scales.q0");
+      const auto n0 = m_params.template get<real_t>("scales.n0");
+      const auto B0 = m_params.template get<real_t>("scales.B0");
       if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
-        const auto V0 = m_params.template get<real_t>("scales.V0");
-
-        Kokkos::parallel_for(
-          "Ampere",
-          domain.mesh.rangeActiveCells(),
-          kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
-                                                      domain.fields.cur,
-                                                      coeff / V0,
-                                                      ONE / n0));
+        const auto V0    = m_params.template get<real_t>("scales.V0");
+        const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
+        const auto coeff = -dt * q0 / (B0 * V0);
+        if constexpr (
+          traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
+          const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
+                                           domain.mesh.extent(in::x2).first,
+                                           domain.mesh.extent(in::x3).first };
+          const auto                ext_current = m_pgen.ExternalCurrent;
+          const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
+          // clang-format off
+          Kokkos::parallel_for(
+            "Ampere",
+            domain.mesh.rangeActiveCells(),
+            kernel::mink::CurrentsAmpere_kernel<M::Dim, decltype(ext_current)>(
+              domain.fields.em, domain.fields.cur,
+              coeff, ppc0, ext_current, xmin, dx));
+          // clang-format on
+        } else {
+          Kokkos::parallel_for(
+            "Ampere",
+            domain.mesh.rangeActiveCells(),
+            kernel::mink::CurrentsAmpere_kernel<M::Dim>(domain.fields.em,
+                                                        domain.fields.cur,
+                                                        coeff,
+                                                        ppc0));
+        }
       } else {
+        // non-minkowski
+        const auto coeff = -dt * q0 * n0 / B0;
         auto       range = range_with_axis_BCs(domain);
         const auto ni2   = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for(
@@ -558,7 +577,7 @@ namespace ntt {
       auto       range   = range_with_axis_BCs(domain);
       const auto nfilter = m_params.template get<unsigned short>(
         "algorithms.current_filters");
-      tuple_t<std::size_t, M::Dim> size;
+      tuple_t<ncells_t, M::Dim> size;
       if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
         size[0] = domain.mesh.n_active(in::x1);
       }
@@ -569,7 +588,7 @@ namespace ntt {
         size[2] = domain.mesh.n_active(in::x3);
       }
       // !TODO: this needs to be done more efficiently
-      for (unsigned short i = 0; i < nfilter; ++i) {
+      for (auto i { 0u }; i < nfilter; ++i) {
         Kokkos::deep_copy(domain.fields.buff, domain.fields.cur);
         Kokkos::parallel_for("CurrentsFilter",
                              range,
@@ -596,6 +615,10 @@ namespace ntt {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::FIXED) {
             FixedFieldsIn(direction, domain, tags);
           }
+        } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
+            PerfectConductorFieldsIn(direction, domain, tags);
+          }
         } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
             CustomFieldsIn(direction, domain, tags);
@@ -612,23 +635,27 @@ namespace ntt {
       /**
        * matching boundaries
        */
-      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
+      const auto ds_array = m_params.template get<boundaries_t<real_t>>(
+        "grid.boundaries.match.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
       auto       sign = direction.get_sign();
+      real_t     ds;
       if (sign > 0) { // + direction
+        ds      = ds_array[(short)dim].second;
         xg_max  = m_metadomain.mesh().extent(dim).second;
         xg_min  = xg_max - ds;
         xg_edge = xg_max;
       } else { // - direction
+        ds      = ds_array[(short)dim].first;
         xg_min  = m_metadomain.mesh().extent(dim).first;
         xg_max  = xg_min + ds;
         xg_edge = xg_min;
       }
       boundaries_t<real_t> box;
       boundaries_t<bool>   incl_ghosts;
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
-        if (d == static_cast<unsigned short>(dim)) {
+      for (dim_t d { 0 }; d < M::Dim; ++d) {
+        if (d == static_cast<dim_t>(dim)) {
           box.push_back({ xg_min, xg_max });
           if (sign > 0) {
             incl_ghosts.push_back({ false, true });
@@ -644,57 +671,94 @@ namespace ntt {
         return;
       }
       const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> range_min { 0 };
-      tuple_t<std::size_t, M::Dim> range_max { 0 };
+      tuple_t<ncells_t, M::Dim> range_min { 0 };
+      tuple_t<ncells_t, M::Dim> range_max { 0 };
 
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         range_min[d] = intersect_range[d].first;
         range_max[d] = intersect_range[d].second;
       }
-      if constexpr (traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
-        auto match_fields = m_pgen.MatchFields(time);
-        if (dim == in::x1) {
-          Kokkos::parallel_for(
-            "MatchFields",
-            CreateRangePolicy<M::Dim>(range_min, range_max),
-            kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x1>(
-              domain.fields.em,
-              match_fields,
-              domain.mesh.metric,
-              xg_edge,
-              ds,
-              tags));
-        } else if (dim == in::x2) {
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x2>(
-                domain.fields.em,
-                match_fields,
-                domain.mesh.metric,
-                xg_edge,
-                ds,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
+
+      if (dim == in::x1) {
+        if constexpr (
+          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFields(time);
+          call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        } else if constexpr (
+          traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
+          auto match_fields = m_pgen.MatchFieldsInX1(time);
+          call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            match_fields,
+                                                            domain.mesh.metric,
+                                                            xg_edge,
+                                                            ds,
+                                                            tags,
+                                                            range_min,
+                                                            range_max);
+        }
+      } else if (dim == in::x2) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          if constexpr (
+            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFields(time);
+            call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          } else if constexpr (
+            traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFieldsInX2(time);
+            call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
           }
-        } else if (dim == in::x3) {
-          if constexpr (M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "MatchFields",
-              CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, decltype(match_fields), M, in::x3>(
-                domain.fields.em,
-                match_fields,
-                domain.mesh.metric,
-                xg_edge,
-                ds,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else if (dim == in::x3) {
+        if constexpr (M::Dim == Dim::_3D) {
+          if constexpr (
+            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFields(time);
+            call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
+          } else if constexpr (
+            traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
+            auto match_fields = m_pgen.MatchFieldsInX3(time);
+            call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              match_fields,
+                                                              domain.mesh.metric,
+                                                              xg_edge,
+                                                              ds,
+                                                              tags,
+                                                              range_min,
+                                                              range_max);
           }
         }
+      } else {
+        raise::Error("Invalid dimension", HERE);
       }
     }
 
@@ -704,28 +768,32 @@ namespace ntt {
       /**
        * axis boundaries
        */
-      raise::ErrorIf(M::CoordType == Coord::Cart,
-                     "Invalid coordinate type for axis BCs",
-                     HERE);
-      raise::ErrorIf(direction.get_dim() != in::x2,
-                     "Invalid axis direction, should be x2",
-                     HERE);
-      const auto i2_min = domain.mesh.i_min(in::x2);
-      const auto i2_max = domain.mesh.i_max(in::x2);
-      if (direction.get_sign() < 0) {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
-                                                           i2_min,
-                                                           tags));
+      if constexpr (M::CoordType != Coord::Cart) {
+        raise::ErrorIf(direction.get_dim() != in::x2,
+                       "Invalid axis direction, should be x2",
+                       HERE);
+        const auto i2_min = domain.mesh.i_min(in::x2);
+        const auto i2_max = domain.mesh.i_max(in::x2);
+        if (direction.get_sign() < 0) {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
+                                                             i2_min,
+                                                             tags));
+        } else {
+          Kokkos::parallel_for(
+            "AxisBCFields",
+            domain.mesh.n_all(in::x1),
+            kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
+                                                            i2_max,
+                                                            tags));
+        }
       } else {
-        Kokkos::parallel_for(
-          "AxisBCFields",
-          domain.mesh.n_all(in::x1),
-          kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
-                                                          i2_max,
-                                                          tags));
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error("Invalid coordinate type for axis BCs", HERE);
       }
     }
 
@@ -757,9 +825,9 @@ namespace ntt {
       } else {
         raise::Error("Invalid dimension", HERE);
       }
-      std::vector<std::size_t> xi_min, xi_max;
-      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+      std::vector<ncells_t> xi_min, xi_max;
+      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+      for (dim_t d { 0u }; d < M::Dim; ++d) {
         const auto dd = all_dirs[d];
         if (dim == dd) {
           if (sign > 0) { // + direction
@@ -830,7 +898,131 @@ namespace ntt {
           }
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Fixed fields not present (both const and non-const)", HERE);
+      }
+    }
+
+    void PerfectConductorFieldsIn(dir::direction_t<M::Dim> direction,
+                                  domain_t&                domain,
+                                  BCTags                   tags) {
+      /**
+       * perfect conductor field boundaries
+       */
+      if constexpr (M::CoordType != Coord::Cart) {
+        (void)direction;
+        (void)domain;
+        (void)tags;
+        raise::Error(
+          "Perfect conductor BCs only applicable to cartesian coordinates",
+          HERE);
+      } else {
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+
+        std::vector<std::size_t> xi_min, xi_max;
+
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+
+        for (auto d { 0u }; d < M::Dim; ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
+            xi_min.push_back(0);
+            xi_max.push_back((sign < 0) ? (N_GHOSTS + 1) : N_GHOSTS);
+          } else {
+            xi_min.push_back(0);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          }
+        }
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+
+        range_t<M::Dim> range;
+        if constexpr (M::Dim == Dim::_1D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+        } else if constexpr (M::Dim == Dim::_2D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                            { xi_max[0], xi_max[1] });
+        } else if constexpr (M::Dim == Dim::_3D) {
+          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                            { xi_max[0], xi_max[1], xi_max[2] });
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+        std::size_t i_edge;
+        if (sign > 0) {
+          i_edge = domain.mesh.i_max(dim);
+        } else {
+          i_edge = domain.mesh.i_min(dim);
+        }
+
+        if (dim == in::x1) {
+          if (sign > 0) {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, true>(
+                domain.fields.em,
+                i_edge,
+                tags));
+          } else {
+            Kokkos::parallel_for(
+              "ConductorFields",
+              range,
+              kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x1, false>(
+                domain.fields.em,
+                i_edge,
+                tags));
+          }
+        } else if (dim == in::x2) {
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x2, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        } else {
+          if constexpr (M::Dim == Dim::_3D) {
+            if (sign > 0) {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, true>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            } else {
+              Kokkos::parallel_for(
+                "ConductorFields",
+                range,
+                kernel::bc::ConductorBoundaries_kernel<M::Dim, in::x3, false>(
+                  domain.fields.em,
+                  i_edge,
+                  tags));
+            }
+          } else {
+            raise::Error("Invalid dimension", HERE);
+          }
+        }
       }
     }
 
@@ -842,10 +1034,10 @@ namespace ntt {
        */
       if constexpr (traits::has_member<traits::pgen::atm_fields_t, pgen_t>::value) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
-        const auto           dd = static_cast<unsigned short>(dim);
+        const auto           dd                = static_cast<dim_t>(dim);
         boundaries_t<real_t> box;
         boundaries_t<bool>   incl_ghosts;
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           if (d == dd) {
             box.push_back({ xg_min, xg_max });
             if (sign > 0) {
@@ -865,7 +1057,7 @@ namespace ntt {
         tuple_t<std::size_t, M::Dim> range_min { 0 };
         tuple_t<std::size_t, M::Dim> range_max { 0 };
 
-        for (unsigned short d { 0 }; d < M::Dim; ++d) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
@@ -955,6 +1147,9 @@ namespace ntt {
           raise::Error("Invalid dimension", HERE);
         }
       } else {
+        (void)direction;
+        (void)domain;
+        (void)tags;
         raise::Error("Atm fields not implemented in PGEN for atmosphere BCs", HERE);
       }
     }
@@ -989,9 +1184,8 @@ namespace ntt {
         "grid.boundaries.atmosphere.temperature");
       const auto height = m_params.template get<real_t>(
         "grid.boundaries.atmosphere.height");
-      const auto species =
-        m_params.template get<std::pair<unsigned short, unsigned short>>(
-          "grid.boundaries.atmosphere.species");
+      const auto species = m_params.template get<std::pair<spidx_t, spidx_t>>(
+        "grid.boundaries.atmosphere.species");
       const auto nmax = m_params.template get<real_t>(
         "grid.boundaries.atmosphere.density");
 
@@ -1024,7 +1218,7 @@ namespace ntt {
         }
       } else {
         for (const auto& sp :
-             std::vector<unsigned short>({ species.first, species.second })) {
+             std::vector<spidx_t> { species.first, species.second }) {
           auto& prtl_spec = domain.species[sp - 1];
           if (prtl_spec.npart() == 0) {
             continue;
@@ -1202,8 +1396,8 @@ namespace ntt {
                      "possible only in -x1 (@ rmin)",
                      HERE);
       }
-      real_t      xg_min { ZERO }, xg_max { ZERO };
-      std::size_t ig_min, ig_max;
+      real_t   xg_min { ZERO }, xg_max { ZERO };
+      ncells_t ig_min, ig_max;
       if (sign > 0) { // + direction
         ig_min = m_metadomain.mesh().n_active(dim) - buffer_ncells;
         ig_max = m_metadomain.mesh().n_active(dim);
@@ -1265,6 +1459,26 @@ namespace ntt {
         }
       }
       return range;
+    }
+
+    template <class T, in O>
+    void call_match_fields(ndfield_t<M::Dim, 6>&      fields,
+                           const T&                   match_fields,
+                           const M&                   metric,
+                           real_t                     xg_edge,
+                           real_t                     ds,
+                           BCTags                     tags,
+                           tuple_t<ncells_t, M::Dim>& range_min,
+                           tuple_t<ncells_t, M::Dim>& range_max) {
+      Kokkos::parallel_for(
+        "MatchFields",
+        CreateRangePolicy<M::Dim>(range_min, range_max),
+        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, T, M, O>(fields,
+                                                                      match_fields,
+                                                                      metric,
+                                                                      xg_edge,
+                                                                      ds,
+                                                                      tags));
     }
   };
 

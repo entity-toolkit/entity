@@ -73,8 +73,8 @@ namespace ntt {
     Domain(bool,
            unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<std::size_t>&      offset_ncells,
-           const std::vector<std::size_t>&      ncells,
+           const std::vector<ncells_t>&         offset_ncells,
+           const std::vector<ncells_t>&         ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
            const std::vector<ParticleSpecies>&)
@@ -88,8 +88,8 @@ namespace ntt {
 
     Domain(unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<std::size_t>&      offset_ncells,
-           const std::vector<std::size_t>&      ncells,
+           const std::vector<ncells_t>&         offset_ncells,
+           const std::vector<ncells_t>&         ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
            const std::vector<ParticleSpecies>&  species_params)
@@ -124,7 +124,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto offset_ncells() const -> std::vector<std::size_t> {
+    auto offset_ncells() const -> std::vector<ncells_t> {
       return m_offset_ncells;
     }
 
@@ -156,7 +156,7 @@ namespace ntt {
     // offset of the domain in # of domains
     std::vector<unsigned int>   m_offset_ndomains;
     // offset of the domain in cells (# of cells in each dimension)
-    std::vector<std::size_t>    m_offset_ncells;
+    std::vector<ncells_t>       m_offset_ncells;
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)

@@ -37,8 +37,8 @@ namespace ntt {
   struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles
-    std::size_t m_npart { 0 };
-    bool        m_is_sorted { false };
+    npart_t m_npart { 0 };
+    bool    m_is_sorted { false };
 
 #if !defined(MPI_ENABLED)
     const std::size_t m_ntags { 2 };
@@ -80,11 +80,11 @@ namespace ntt {
      * @param cooling The cooling mechanism assigned for the species
      * @param npld The number of payloads for the species
      */
-    Particles(unsigned short     index,
+    Particles(spidx_t            index,
               const std::string& label,
               float              m,
               float              ch,
-              std::size_t        maxnpart,
+              npart_t            maxnpart,
               const PrtlPusher&  pusher,
               bool               use_gca,
               const Cooling&     cooling,
@@ -116,7 +116,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     inline auto rangeActiveParticles() const -> range_t<Dim::_1D> {
-      return CreateRangePolicy<Dim::_1D>({ 0 }, { npart() });
+      return CreateParticleRangePolicy(0u, npart());
     }
 
     /**
@@ -124,7 +124,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     inline auto rangeAllParticles() const -> range_t<Dim::_1D> {
-      return CreateRangePolicy<Dim::_1D>({ 0 }, { maxnpart() });
+      return CreateParticleRangePolicy(0u, maxnpart());
     }
 
     /* getters -------------------------------------------------------------- */
@@ -132,7 +132,7 @@ namespace ntt {
      * @brief Get the number of active particles
      */
     [[nodiscard]]
-    auto npart() const -> std::size_t {
+    auto npart() const -> npart_t {
       return m_npart;
     }
 
@@ -188,14 +188,14 @@ namespace ntt {
      * ... etc.
      */
     auto NpartsPerTagAndOffsets() const
-      -> std::pair<std::vector<std::size_t>, array_t<std::size_t*>>;
+      -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;
 
     /* setters -------------------------------------------------------------- */
     /**
      * @brief Set the number of particles
-     * @param npart The number of particles as a std::size_t
+     * @param npart The number of particles as a npart_t
      */
-    void set_npart(std::size_t n) {
+    void set_npart(npart_t n) {
       raise::ErrorIf(
         n > maxnpart(),
         fmt::format(

@@ -52,9 +52,9 @@ namespace kernel::sr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
+        constexpr ncells_t i2min { N_GHOSTS };
+        const real_t       i1_ { COORD(i1) };
+        const real_t       i2_ { COORD(i2) };
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };

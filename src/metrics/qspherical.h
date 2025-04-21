@@ -55,7 +55,7 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    QSpherical(std::vector<std::size_t>             res,
+    QSpherical(std::vector<ncells_t>                res,
                boundaries_t<real_t>                 ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
@@ -284,8 +284,7 @@ namespace metric {
      * @note tetrad/sph <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
-      -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr ((in == Idx::T && out == Idx::Sph) ||

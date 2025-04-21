@@ -50,14 +50,14 @@ namespace dir {
 
     auto operator-() const -> direction_t<D> {
       auto result = direction_t<D> {};
-      for (std::size_t i = 0; i < (short)D; ++i) {
+      for (auto i { 0u }; i < D; ++i) {
         result[i] = -(*this)[i];
       }
       return result;
     }
 
     auto operator==(const direction_t<D>& other) const -> bool {
-      for (std::size_t i = 0; i < (short)D; ++i) {
+      for (auto i { 0u }; i < D; ++i) {
         if ((*this)[i] != other[i]) {
           return false;
         }
@@ -79,7 +79,7 @@ namespace dir {
      */
     auto get_assoc_orth() const -> std::vector<direction_t> {
       auto result = std::vector<direction_t> {};
-      for (std::size_t i = 0; i < this->size(); ++i) {
+      for (auto i = 0u; i < this->size(); ++i) {
         if ((*this)[i] != 0) {
           direction_t<D> dir;
           dir[i] = (*this)[i];
@@ -91,7 +91,7 @@ namespace dir {
 
     auto get_sign() const -> short {
       short sign = 0;
-      for (std::size_t i = 0; i < this->size(); ++i) {
+      for (auto i = 0u; i < this->size(); ++i) {
         if ((*this)[i] != 0) {
           raise::ErrorIf(sign != 0,
                          "Undefined signature for non-orth direction",
@@ -105,7 +105,7 @@ namespace dir {
 
     auto get_dim() const -> in {
       short dir = -1;
-      for (std::size_t i = 0; i < this->size(); ++i) {
+      for (auto i = 0u; i < this->size(); ++i) {
         if ((*this)[i] != 0) {
           raise::ErrorIf(dir > 0, "Undefined dim for non-orth direction", HERE);
           dir = i;
@@ -132,8 +132,8 @@ namespace dir {
   using dirs_t = std::vector<direction_t<D>>;
 
   template <Dimension D>
-  inline auto operator<<(std::ostream&         os,
-                         const direction_t<D>& dir) -> std::ostream& {
+  inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
+    -> std::ostream& {
     for (auto& d : dir) {
       os << std::setw(2) << std::left;
       if (d > 0) {

@@ -1,5 +1,7 @@
 #include "utils/progressbar.h"
 
+#include "global.h"
+
 #include "utils/error.h"
 #include "utils/formatting.h"
 
@@ -19,14 +21,15 @@
 
 namespace pbar {
 
-  auto normalize_duration_fmt(long double t, const std::string& u)
-    -> std::pair<long double, std::string> {
-    const std::vector<std::pair<std::string, long double>> units {
-      {"µs",   1e0},
-      { "ms",   1e3},
-      {  "s",   1e6},
-      {"min",   6e7},
-      { "hr", 3.6e9}
+  auto normalize_duration_fmt(
+    duration_t         t,
+    const std::string& u) -> std::pair<duration_t, std::string> {
+    const std::vector<std::pair<std::string, duration_t>> units {
+      { "µs",   1e0 },
+      {  "ms",   1e3 },
+      {   "s",   1e6 },
+      { "min",   6e7 },
+      {  "hr", 3.6e9 }
     };
     auto it    = std::find_if(units.begin(), units.end(), [&u](const auto& pr) {
       return pr.first == u;
@@ -51,17 +54,17 @@ namespace pbar {
              units[newu_idx].first };
   }
 
-  auto to_human_readable(long double t, const std::string& u) -> std::string {
+  auto to_human_readable(duration_t t, const std::string& u) -> std::string {
     const auto [tt, tu]   = normalize_duration_fmt(t, u);
     const auto t1         = static_cast<int>(tt);
-    const auto t2         = tt - static_cast<long double>(t1);
+    const auto t2         = tt - static_cast<duration_t>(t1);
     const auto [tt2, tu2] = normalize_duration_fmt(t2, tu);
     return fmt::format("%d%s %d%s", t1, tu.c_str(), static_cast<int>(tt2), tu2.c_str());
   }
 
   auto ProgressBar(const DurationHistory& history,
-                   std::size_t            step,
-                   std::size_t            max_steps,
+                   timestep_t             step,
+                   timestep_t             max_steps,
                    DiagFlags&             flags) -> std::string {
     auto avg_duration = history.average();
 
@@ -69,13 +72,13 @@ namespace pbar {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    std::vector<long double> mpi_avg_durations(size, 0.0);
+    std::vector<duration_t> mpi_avg_durations(size, 0.0);
     MPI_Gather(&avg_duration,
                1,
-               mpi::get_type<long double>(),
+               mpi::get_type<duration_t>(),
                mpi_avg_durations.data(),
                1,
-               mpi::get_type<long double>(),
+               mpi::get_type<duration_t>(),
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank != MPI_ROOT_RANK) {
@@ -88,11 +91,11 @@ namespace pbar {
     const auto avg     = to_human_readable(avg_duration, "µs");
     const auto elapsed = to_human_readable(history.elapsed(), "µs");
     const auto remain  = to_human_readable(
-      static_cast<long double>(max_steps - step) * avg_duration,
+      static_cast<duration_t>(max_steps - step) * avg_duration,
       "µs");
 
-    const auto pct = static_cast<long double>(step) /
-                     static_cast<long double>(max_steps);
+    const auto pct = static_cast<duration_t>(step) /
+                     static_cast<duration_t>(max_steps);
     const int nfilled = std::min(static_cast<int>(pct * params::width),
                                  params::width);
     const int nempty  = params::width - nfilled;
