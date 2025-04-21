@@ -15,7 +15,50 @@
 
 namespace user {
   using namespace ntt;
-  
+  template <Dimension D>
+  struct InitFields {
+    InitFields(array_t<real_t**>& k, array_t<real_t*>& a_real,  array_t<real_t*>& a_imag,  array_t<real_t*>& a_real_inv, array_t<real_t*>& a_imag_inv )
+    : k { k }
+    , a_real { a_real }
+    , a_imag { a_imag }
+    , a_real_inv { a_real_inv }
+    , a_imag_inv { a_imag_inv }
+    , n_modes {a_real.size() }   {};
+
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+      auto bx1_0 = ZERO;
+      for (auto i = 0; i < n_modes; i++){
+	      auto k_dot_r = k(0,i) * x_Ph[0] + k(1,i) * x_Ph[1];
+	      bx1_0 -= TWO * k(1,i) * (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos( k_dot_r ));
+	      bx1_0 -= TWO * k(1,i) * (a_real_inv(i) * math::sin(k_dot_r) + a_imag_inv(i) * math::cos( k_dot_r ));
+      
+      }
+      return bx1_0;
+    }
+    
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      auto bx2_0 = ZERO;
+      for (auto i = 0; i < n_modes; i++){
+	      auto k_dot_r = k(0,i) * x_Ph[0] + k(1,i) * x_Ph[1];
+              bx2_0 += TWO * k(0,i) * (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos( k_dot_r ));
+              bx2_0 += TWO * k(0,i) * (a_real_inv(i) * math::sin(k_dot_r) + a_imag_inv(i) * math::cos( k_dot_r ));
+
+      }
+      return bx2_0;
+    }
+
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+      return ONE;
+    }
+
+    array_t<real_t**> k;
+    array_t<real_t*> a_real;
+    array_t<real_t*> a_imag;
+    array_t<real_t*> a_real_inv;
+    array_t<real_t*> a_imag_inv;
+    size_t n_modes;
+  };
+ 
   //external current definition
   template <Dimension D>
   struct ExternalCurrent{
@@ -33,8 +76,8 @@ namespace user {
 	, u_real { "u_real", wavenumbers.size() } 
 	, a_real { "a_real", wavenumbers.size() }
 	, a_imag { "a_imag", wavenumbers.size() }
-	, a_real_inv { "a_real", wavenumbers.size() }
-        , a_imag_inv { "a_imag", wavenumbers.size() }
+	, a_real_inv { "a_real_inv", wavenumbers.size() }
+        , a_imag_inv { "a_imag_inv", wavenumbers.size() }
 
 	, A0 {"A0", wavenumbers.size()}
 	{
@@ -50,14 +93,19 @@ namespace user {
 
 		// initializing initial complex amplitudes
 		auto a_real_host = Kokkos::create_mirror_view(a_real);
-	        auto a_imag_host = Kokkos::create_mirror_view(a_imag); 	
+	        auto a_imag_host = Kokkos::create_mirror_view(a_imag); 
+	        auto a_real_inv_host = Kokkos::create_mirror_view(a_real_inv);
+	        auto a_imag_inv_host = Kokkos::create_mirror_view(a_imag_inv);	
 	        auto A0_host = Kokkos::create_mirror_view(A0); 	
 		for (auto i = 0; i < n_modes; i++){
 				auto k_perp = math::sqrt(k_host(0,i) * k_host(0,i) + k_host(1,i) * k_host(1,i));
 				auto phase = constant::TWO_PI / 6.;
-				A0_host(i) =  dB / math::sqrt((real_t) n_modes) / k_perp;
+				A0_host(i) =  dB / math::sqrt((real_t) n_modes) / k_perp * HALF;  //HALF = 1/sqrt(twice modes due to reality condition * twice the frequencies due to sign change)
 				a_real_host(i) = A0_host(i) * math::cos(phase);
 				a_imag_host(i) = A0_host(i) * math::sin(phase);
+				phase = constant::TWO_PI / 3;
+				a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
+				a_real_inv_host(i) = A0_host(i) * math::sin(phase);
 				printf("A0(%d) = %f\n", i,A0_host(i));
 				printf("a_real(%d) = %f\n", i,a_real_host(i));
 				printf("a_imag(%d) = %f\n", i,a_imag_host(i));
@@ -67,20 +115,10 @@ namespace user {
 
 		Kokkos::deep_copy(a_real, a_real_host);
 		Kokkos::deep_copy(a_imag, a_imag_host); 
-		Kokkos::deep_copy(a_real_inv, a_real_host);
-                Kokkos::deep_copy(a_imag_inv, a_imag_host);
-
+		Kokkos::deep_copy(a_real_inv, a_real_inv_host);
+                Kokkos::deep_copy(a_imag_inv, a_imag_inv_host);
 		Kokkos::deep_copy(A0, A0_host);
 		Kokkos::deep_copy(k, k_host);
-	//	Kokkos::parallel_for( "Generate random  ", wavenumbers.size(), Lambda (int const i){
-        //                    auto generator = random_pool.get_state();
-        //                    a_real(i) = generator.frand(0.0, 1.0);
-        //                    a_imag(i) = generator.frand(0.0, 1.0);
-        //                    printf(" Initial amplitudes (%i) a_real= %f, a_imag= %f\n",i
-        //                                    , a_real(i)
-        //                                    , a_imag(i));
-        //                    random_pool.free_state(generator);
-        //                    });
 	};
 
 
@@ -91,9 +129,9 @@ namespace user {
 			         //k(i,0) + k(i,1);
 				auto k_perp_sq = k(0,i) * k(0,i) + k(1,i) * k(1,i);
 				auto k_dot_r = k(0,i) * x_Ph[0] + k(1,i) * x_Ph[1];
-				jx3_ant -= TWO * k_perp_sq * (a_real(i) * math::cos(k_dot_r)
+				jx3_ant += TWO * k_perp_sq * (a_real(i) * math::cos(k_dot_r)
 							    - a_imag(i) * math::sin(k_dot_r));
-				jx3_ant -= TWO * k_perp_sq * (a_real_inv(i) * math::cos(k_dot_r)
+				jx3_ant += TWO * k_perp_sq * (a_real_inv(i) * math::cos(k_dot_r)
                                                             - a_imag_inv(i) * math::sin(k_dot_r));
 
 			}
@@ -108,8 +146,6 @@ namespace user {
 			}
 			return jx3_ant;
 		}
-//		printf("jz_ant = %f\n", jx3_ant);
-	
 	}
 	Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
 		if constexpr(D == Dim::_2D){
@@ -160,8 +196,13 @@ namespace user {
     std::vector< std::vector<real_t> > wavenumbers;
     random_number_pool_t random_pool;
 
-    
+    // debugging, will delete later
+    real_t total_sum = 0.0;
+    real_t total_sum_inv = 0.0;
+    real_t number_of_timesteps = 0.0;
+
     ExternalCurrent<D> ExternalCurrent;
+    InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -178,7 +219,8 @@ namespace user {
       , Ly { global_domain.mesh().extent(in::x2).second - global_domain.mesh().extent(in::x2).first }
       , Lz { global_domain.mesh().extent(in::x3).second - global_domain.mesh().extent(in::x3).first }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
-      , ExternalCurrent { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }{}
+      , ExternalCurrent { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
+      , init_flds(ExternalCurrent.k, ExternalCurrent.a_real, ExternalCurrent.a_imag, ExternalCurrent.a_real_inv, ExternalCurrent.a_imag_inv) {}
 
     inline PGen() {}
 
@@ -196,20 +238,9 @@ namespace user {
         spatial_dist,
         ONE);
   
-    }
+    };
 
     void CustomPostStep(timestep_t, simtime_t time, Domain<S, M>& domain){
-
-	    //generate white noise 
-//	    Kokkos::parallel_for( "Generate random  ", wavenumbers.size(), ClassLambda (int const i){
-//			    auto generator = random_pool.get_state();
-//			    this->ExternalCurrent.u_real(i) = generator.frand(-0.5, 0.5);
-//			    this->ExternalCurrent.u_imag(i) = generator.frand(-0.5, 0.5);
-//			    printf(" %i) u_real= %f, u_imag= %f\n",i
-//					    , this->ExternalCurrent.u_real(i)
-//					    , this->ExternalCurrent.u_imag(i));
-//			    random_pool.free_state(generator);
-//			    });
 
 	    // update amplitudes of antenna
 	    Kokkos::parallel_for( " Antenna amplitudes  ", wavenumbers.size(), Lambda (int const i){
@@ -224,27 +255,53 @@ namespace user {
 					    , u_real_inv
 					    , u_imag_inv);
 			    random_pool.free_state(generator);
-			    random_pool.free_state(generator);
 			    auto a_real_prev = this->ExternalCurrent.a_real(i);
 			    auto a_imag_prev = this->ExternalCurrent.a_imag(i);
 			    auto a_real_inv_prev = this->ExternalCurrent.a_real_inv(i);
                             auto a_imag_inv_prev = this->ExternalCurrent.a_imag_inv(i);
-
-                            printf(" %i) a_real= %f, a_imag= %f\n",i
+			    auto dt = this->dt;
+                            printf(" %i) a_real= %f, a_imag= %f, a_real_inv= %f, a_imag_inv=%f \n",i
                                             , this->ExternalCurrent.a_real(i)
-                                            , this->ExternalCurrent.a_imag(i));
-			    this->ExternalCurrent.a_real(i) = (a_real_prev * math::cos(this->ExternalCurrent.omega_0 * time) - a_imag_prev * math::sin(this->ExternalCurrent.omega_0 * time)) * math::exp(-this->ExternalCurrent.gamma_0 * time) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / this->dt ) * u_real * this->dt;
+                                            , this->ExternalCurrent.a_imag(i)
+					    , this->ExternalCurrent.a_real_inv(i)
+					    , this->ExternalCurrent.a_imag_inv(i));
+			    this->ExternalCurrent.a_real(i) = (a_real_prev * math::cos(this->ExternalCurrent.omega_0 * dt) + a_imag_prev * math::sin(this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_real * dt;
 
-			    this->ExternalCurrent.a_imag(i) = (a_imag_prev * math::cos(this->ExternalCurrent.omega_0 * time) + a_real_prev * math::sin(this->ExternalCurrent.omega_0 * time)) * math::exp(-this->ExternalCurrent.gamma_0 * time) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / this->dt ) * u_imag * this->dt;
+			    this->ExternalCurrent.a_imag(i) = (a_imag_prev * math::cos(this->ExternalCurrent.omega_0 * dt) - a_real_prev * math::sin(this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_imag * dt;
 
-			    this->ExternalCurrent.a_real_inv(i) = (a_real_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * time) - a_imag_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * time)) * math::exp(-this->ExternalCurrent.gamma_0 * time) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / this->dt ) * u_real_inv * this->dt;
+			    this->ExternalCurrent.a_real_inv(i) = (a_real_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * dt) + a_imag_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_real_inv * dt;
 
-                            this->ExternalCurrent.a_imag_inv(i) = (a_imag_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * time) + a_real_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * time)) * math::exp(-this->ExternalCurrent.gamma_0 * time) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / this->dt ) * u_imag_inv * this->dt;
+                            this->ExternalCurrent.a_imag_inv(i) = (a_imag_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * dt) - a_real_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt ) * u_imag_inv * dt;
 			    });
+
+//	real_t sum = 0.0;
+//	// KOKKOS_LAMBDA macro includes capture-by-value specifier [=].
+//	Kokkos::parallel_reduce ("Reduction", wavenumbers.size(), Lambda (const int i, real_t& update) {
+//									auto a_real = this->ExternalCurrent.a_real(i);
+//									auto a_imag = this->ExternalCurrent.a_imag(i);
+//									auto k_perp = this->ExternalCurrent.k(0,i)*this->ExternalCurrent.k(0,i) + this->ExternalCurrent.k(1,i)*this->ExternalCurrent.k(1,i);
+//								  update +=  (a_real * a_real + a_imag * a_imag) ;
+//											}, sum);
+//	total_sum +=sum;
+//	number_of_timesteps +=1.0;
+//	printf("<an^2> = %f, ", sum);
+//        printf("total <a^2> = %f\n", total_sum/number_of_timesteps);
+//
+//	        real_t sum_inv = 0.0;
+//        // KOKKOS_LAMBDA macro includes capture-by-value specifier [=].
+//        Kokkos::parallel_reduce ("Reduction", wavenumbers.size(), Lambda (const int i, real_t& update) {
+//                                                                        auto a_real = this->ExternalCurrent.a_real_inv(i);
+//                                                                        auto a_imag = this->ExternalCurrent.a_imag_inv(i);
+//                                                                        auto k_perp = this->ExternalCurrent.k(0,i)*this->ExternalCurrent.k(0,i) + this->ExternalCurrent.k(1,i)*this->ExternalCurrent.k(1,i);
+//                                                                  update +=  (a_real * a_real + a_imag * a_imag) ;
+//                                                                                        }, sum_inv);
+//        total_sum_inv +=sum_inv;
+//        printf("<an^2> = %f, ", sum_inv);
+//        printf("total <a^2> = %f\n", total_sum_inv/number_of_timesteps);
+
 
     }
   };
-
 } // namespace user
 
 #endif
