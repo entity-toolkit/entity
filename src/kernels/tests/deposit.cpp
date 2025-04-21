@@ -177,7 +177,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 0.0, 55.0 }, { 0.0, 55.0 } },
       {},
-      100);
+      500);
 
     testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(
       {
@@ -186,7 +186,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       {},
-      100);
+      500);
 
     testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(
       {
@@ -195,7 +195,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 } },
-      100);
+      500);
 
     testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -204,7 +204,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } },
-      100);
+      500);
 
     testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -213,7 +213,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } },
-      100);
+      500);
 
     testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -222,7 +222,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } },
-      100);
+      500);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
