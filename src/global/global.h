@@ -269,6 +269,7 @@ namespace WriteMode {
     Fields    = 1 << 0,
     Particles = 1 << 1,
     Spectra   = 1 << 2,
+    Stats     = 1 << 3,
   };
 } // namespace WriteMode
 

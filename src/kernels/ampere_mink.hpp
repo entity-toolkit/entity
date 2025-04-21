@@ -15,6 +15,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 
 namespace kernel::mink {
   using namespace ntt;

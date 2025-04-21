@@ -14,6 +14,7 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace user {
@@ -66,44 +67,6 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-  template <Dimension D>
-  struct BCFields {
-
-    BCFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
-      : Bmag { bmag }
-      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
-      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
-      , Vx { drift_ux } {}
-
-    // magnetic field components
-    Inline auto bx1(const coord_t<D>&) const -> real_t {
-      return Bmag * math::cos(ZERO);
-    }
-
-    Inline auto bx2(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-    Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(ZERO) * math::cos(ZERO);
-    }
-
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(ZERO) * math::sin(ZERO);
-    }
-
-  private:
-    const real_t Btheta, Bphi, Vx, Bmag;
-  };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -122,14 +85,13 @@ namespace user {
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
-    const real_t  drift_ux, temperature, filling_fraction;
+    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
     // injector properties
     const real_t  injector_velocity, injection_start, dt;
     const int     injection_frequency;
     // magnetic field properties
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
-    BCFields<D>   bc_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -137,11 +99,11 @@ namespace user {
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
+      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
-      , bc_flds { Bmag, Btheta, Bphi, drift_ux }
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
@@ -150,8 +112,8 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> BCFields<D> {
-      return bc_flds;
+    auto MatchFields(real_t time) const -> InitFields<D> {
+      return init_flds;
     }
 
     auto FixFieldsConst(const bc_in&, const em& comp) const
@@ -176,6 +138,20 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
 
+      /*
+       *  Plasma setup as partially filled box
+       *
+       *  Plasma setup:
+       *
+       * global_xmin                            global_xmax
+       * |                                      |
+       * V                                      V
+       * |:::::::::::|..........................|
+       *             ^
+       *             |
+       *        filling_fraction
+       */
+
       // minimum and maximum position of particles
       real_t xg_min = global_xmin;
       real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
@@ -193,20 +169,26 @@ namespace user {
         }
       }
 
+      // species #1 -> e^-
+      // species #2 -> protons
+
       // energy distribution of the particles
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        local_domain.mesh.metric,
+        local_domain.random_pool,
+        { temperature_ratio * temperature * local_domain.species[1].mass() ,
+          temperature },
+        { 1, 2 },
+        -drift_ux,
+        in::x1);
 
       // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
         { 1, 2 });
 
       // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
         params,
         local_domain,
         injector,
@@ -215,7 +197,22 @@ namespace user {
         box);
     }
 
-    void CustomPostStep(std::size_t step, long double time, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+
+      /*
+       *  Replenish plasma in a moving injector
+       *
+       *  Injector setup:
+       *
+       * global_xmin           purge/replenish  global_xmax
+       * |         x_init            |          |
+       * V           v               V          V
+       * |:::::::::::;::::::::::|\\\\\\\\|......|
+       *                       xmin    xmax
+       *                                 ^
+       *                                 |
+       *                           moving injector
+       */
 
       // check if the injector should be active
       if (step % injection_frequency != 0) {
@@ -226,19 +223,15 @@ namespace user {
       const auto x_init = global_xmin +
                           filling_fraction * (global_xmax - global_xmin);
 
-      // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
-                                                        : ZERO;
-
       // compute the position of the injector after the current timestep
-      auto xmax = x_init + injector_velocity * (dt_inj + dt);
+      auto xmax = x_init + injector_velocity *
+                             (std::max<real_t>(time - injection_start, ZERO) + dt);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
 
       // compute the beginning of the injected region
-      auto xmin = xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                  injection_frequency * dt;
+      auto xmin = xmax - injection_frequency * dt;
       if (xmin <= global_xmin) {
         xmin = global_xmin;
       }
@@ -277,17 +270,16 @@ namespace user {
       /*
         tag particles inside the injection zone as dead
       */
+      const auto& mesh = domain.mesh;
 
       // loop over particle species
-      for (std::size_t s { 0 }; s < 2; ++s) {
-
+      for (auto s { 0u }; s < 2; ++s) {
         // get particle properties
         auto& species = domain.species[s];
         auto  i1      = species.i1;
         auto  dx1     = species.dx1;
         auto  tag     = species.tag;
 
-        // tag all particles with x > box[0].first as dead
         Kokkos::parallel_for(
           "RemoveParticles",
           species.rangeActiveParticles(),
@@ -296,11 +288,12 @@ namespace user {
             if (tag(p) == ParticleTag::dead) {
               return;
             }
-            // select the x-coordinate index
-            auto x_i1 = static_cast<real_t>(i1(p)) + dx1(p) + N_GHOSTS;
+            const auto x_Cd = static_cast<real_t>(i1(p)) +
+                              static_cast<real_t>(dx1(p));
+            const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+              x_Cd);
 
-            // check if the particle is inside the box of new plasma
-            if (x_i1 >= x_min[0]) {
+            if (x_Ph > xmin) {
               tag(p) = ParticleTag::dead;
             }
           });
@@ -322,19 +315,22 @@ namespace user {
       }
 
       // same maxwell distribution as above
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        domain.mesh.metric,
+        domain.random_pool,
+        { temperature_ratio * temperature * domain.species[1].mass(),
+          temperature },
+        { 1, 2 },
+        -drift_ux,
+        in::x1);
 
       // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
         { 1, 2 });
 
       // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
         params,
         domain,
         injector,

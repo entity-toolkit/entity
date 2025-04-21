@@ -23,7 +23,10 @@ namespace out {
     // determine the field ID
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
-    name_raw       = name_raw.substr(0, name_raw.find_first_of("0123ijxyzt"));
+    if ((fmt::toLower(name_raw) != "dive") and
+        (fmt::toLower(name_raw) != "divd")) {
+      name_raw = name_raw.substr(0, name_raw.find_first_of("0123ijxyzt"));
+    }
     if (FldsID::contains(fmt::toLower(name_raw).c_str())) {
       m_id = FldsID::pick(fmt::toLower(name_raw).c_str());
     } else {
@@ -59,7 +62,7 @@ namespace out {
       comp = {};
     }
     // data preparation flags
-    if (not is_moment() && not is_custom()) {
+    if (not(is_moment() or is_custom() or is_divergence())) {
       if (S == SimEngine::SRPIC) {
         prepare_flag = PrepareOutput::ConvertToHat;
       } else {
