@@ -22,17 +22,19 @@ namespace user {
 
   template <SimEngine::type S, class M>
   struct CurrentLayer : public arch::SpatialDistribution<S, M> {
-    CurrentLayer(const M& metric, real_t cs_width, real_t cs_y)
+    CurrentLayer(const M& metric, real_t cs_width, real_t center_x, real_t cs_y)
       : arch::SpatialDistribution<S, M> { metric }
       , cs_width { cs_width }
+      , center_x { center_x }
       , cs_y { cs_y } {}
 
     Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
-      return ONE / SQR(math::cosh((x_Ph[1] - cs_y) / cs_width));
+      return ONE / SQR(math::cosh((x_Ph[1] - cs_y) / cs_width)) *
+             (ONE - math::exp(-SQR((x_Ph[0] - center_x) / cs_width)));
     }
 
   private:
-    const real_t cs_y, cs_width;
+    const real_t cs_width, center_x, cs_y;
   };
 
   // field initializer
@@ -159,13 +161,17 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t bg_B, bg_Bguide, bg_temperature, inj_ypad;
-    const real_t cs_width, cs_overdensity, cs_x, cs_y;
-    const real_t ymin, ymax;
+    const real_t    bg_B, bg_Bguide, bg_temperature, inj_ypad;
+    const real_t    cs_width, cs_overdensity, cs_x, cs_y;
+    const real_t    ymin, ymax;
+    const simtime_t t_open;
+    bool            bc_opened { false };
+
+    Metadomain<S, M>& metadomain;
 
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , bg_B { p.template get<real_t>("setup.bg_B", 1.0) }
       , bg_Bguide { p.template get<real_t>("setup.bg_Bguide", 0.0) }
@@ -173,14 +179,17 @@ namespace user {
       , inj_ypad { p.template get<real_t>("setup.inj_ypad", (real_t)0.05) }
       , cs_width { p.template get<real_t>("setup.cs_width") }
       , cs_overdensity { p.template get<real_t>("setup.cs_overdensity") }
-      , cs_x { m.mesh().extent(in::x1).first +
-               INV_2 * (m.mesh().extent(in::x1).second -
-                        m.mesh().extent(in::x1).first) }
-      , cs_y { m.mesh().extent(in::x2).first +
-               INV_2 * (m.mesh().extent(in::x2).second -
-                        m.mesh().extent(in::x2).first) }
+      , cs_x { INV_2 *
+               (m.mesh().extent(in::x1).second + m.mesh().extent(in::x1).first) }
+      , cs_y { INV_2 *
+               (m.mesh().extent(in::x2).second + m.mesh().extent(in::x2).first) }
       , ymin { m.mesh().extent(in::x2).first }
       , ymax { m.mesh().extent(in::x2).second }
+      , t_open { p.template get<simtime_t>(
+          "setup.t_open",
+          1.5 * HALF *
+            (m.mesh().extent(in::x1).second - m.mesh().extent(in::x1).first)) }
+      , metadomain { m }
       , init_flds { bg_B, bg_Bguide, cs_width, cs_y } {}
 
     inline PGen() {}
@@ -225,6 +234,7 @@ namespace user {
                                              false);
       const auto sdist_cs = CurrentLayer<S, M>(local_domain.mesh.metric,
                                                cs_width,
+                                               cs_x,
                                                cs_y);
       const auto inj_cs = arch::NonUniformInjector<S, M, arch::Maxwellian, CurrentLayer>(
         edist_cs,
@@ -236,7 +246,16 @@ namespace user {
                                                      cs_overdensity);
     }
 
-    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t, simtime_t time, Domain<S, M>& domain) {
+      // open boundaries if not yet opened at time = t_open
+      if ((t_open > 0.0) and (not bc_opened) and (time > t_open)) {
+        bc_opened = true;
+        metadomain.setFldsBC(bc_in::Mx1, FldsBC::MATCH);
+        metadomain.setPrtlBC(bc_in::Mx1, PrtlBC::ABSORB);
+        metadomain.setFldsBC(bc_in::Px1, FldsBC::MATCH);
+        metadomain.setPrtlBC(bc_in::Px1, PrtlBC::ABSORB);
+      }
+
       const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
                                                       domain.random_pool,
                                                       bg_temperature);
@@ -272,18 +291,18 @@ namespace user {
         for (const auto sp : std::vector<spidx_t> { 1, 2 }) {
           const auto& prtl_spec = domain.species[sp - 1];
           // clang-format off
-        Kokkos::parallel_for(
-          "ComputeMoments",
-          prtl_spec.rangeActiveParticles(),
-          kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0u,
-                                                             prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                             prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                             prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                             prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                             prtl_spec.mass(), prtl_spec.charge(),
-                                                             use_weights,
-                                                             domain.mesh.metric, domain.mesh.flds_bc(),
-                                                             ni2, inv_n0, 0u));
+          Kokkos::parallel_for(
+            "ComputeMoments",
+            prtl_spec.rangeActiveParticles(),
+            kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0u,
+                                                              prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                              prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                              prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                              prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                              prtl_spec.mass(), prtl_spec.charge(),
+                                                              use_weights,
+                                                              domain.mesh.metric, domain.mesh.flds_bc(),
+                                                              ni2, inv_n0, 0u));
           // clang-format on
         }
         Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
