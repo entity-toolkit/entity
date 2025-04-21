@@ -11,8 +11,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -90,21 +88,6 @@ namespace stats {
       m_stat_writers);
   }
 
-  template <typename T>
-  void Writer::write<T>(const T& value) {
-#if defined(MPI_ENABLED)
-    // @TODO: reduce
-#endif
-    CallOnce(
-      [](auto& fname, auto& value) {
-        std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << value << ",";
-        StatsOut.close();
-      },
-      m_fname,
-      value);
-  }
-
   void Writer::endWriting() {
     CallOnce(
       [](auto& fname) {
@@ -114,19 +97,5 @@ namespace stats {
       },
       m_fname);
   }
-
-  template void Writer::write<char>(const char&);
-  template void Writer::write<std::string>(const std::string&);
-  template void Writer::write<float>(const float&);
-  template void Writer::write<double>(const double&);
-  template void Writer::write<int>(const int&);
-  template void Writer::write<unsigned int>(const unsigned int&);
-  template void Writer::write<short>(const short&);
-  template void Writer::write<unsigned short>(const unsigned short&);
-  template void Writer::write<long int>(const long int&);
-  template void Writer::write<unsigned long int>(const unsigned long int&);
-  template void Writer::write<long long int>(const long long int&);
-  template void Writer::write<unsigned long long int>(
-    const unsigned long long int&);
 
 } // namespace stats

@@ -18,6 +18,8 @@
 #include "utils/error.h"
 #include "utils/tools.h"
 
+#include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -141,7 +143,19 @@ namespace stats {
     auto shouldWrite(timestep_t, simtime_t) -> bool;
 
     template <typename T>
-    void write(const T&);
+    inline void write(const T& value) const {
+#if defined(MPI_ENABLED)
+        // @TODO: reduce
+#endif
+      CallOnce(
+        [](auto& fname, auto& value) {
+          std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
+          StatsOut << value << ",";
+          StatsOut.close();
+        },
+        m_fname,
+        value);
+    }
 
     void endWriting();
 
