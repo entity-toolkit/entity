@@ -4,7 +4,7 @@
   runtime = 1200.0
 
 [grid]
-  resolution = [2048, 2048]
+  resolution = [1024, 1024]
   extent     = [[-128.0, 128.0], [-128.0, 128.0]]
 
   [grid.metric]
@@ -31,13 +31,13 @@
     label    = "e-_p"
     mass     = 1.0
     charge   = -1.0
-    maxnpart = 8e7
+    maxnpart = 2e7
 
   [[particles.species]]
     label    = "e+_p"
     mass     = 1.0
     charge   = 1.0
-    maxnpart = 8e7
+    maxnpart = 2e7
 
 [setup]
   temperature = 1e0
@@ -57,6 +57,8 @@
     enable = false
 
   [output.spectra]
+    enable = false
+  [output.stats]
     enable = false
 
 [diagnostics]
