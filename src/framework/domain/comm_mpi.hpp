@@ -213,7 +213,6 @@ namespace comm {
                  MPI_COMM_WORLD);
       } else if (recv_rank >= 0) {
         auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
-        Kokkos::deep_copy(recv_fld_h, recv_fld);
         MPI_Recv(recv_fld_h.data(),
                  nrecv,
                  mpi::get_type<real_t>(),
