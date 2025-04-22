@@ -24,18 +24,21 @@ namespace user {
   // initializing guide field and curl(B) = J_ext at the initial time step
   template <Dimension D>
   struct InitFields {
-    InitFields();
+    InitFields( real_t bbg ) : Bbg { bbg } {}
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { return ONE; }
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { return Bbg; }
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { return ZERO; }
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t { return ZERO; }
+
+    private:
+      const real_t Bbg;
 
   };
 
     // Simplified external current driver: single x1-directional mode with spatial/temporal variation
     template <Dimension D>
     struct ExternalCurrent {
-        ExternalCurrent(real_t amplitude, real_t num_waves_x, real_t num_waves_y, real_t num_waves_z,
+      ExternalCurrent(real_t amplitude, real_t num_waves_x, real_t num_waves_y, real_t num_waves_z,
                         real_t frequency, real_t Lx, real_t Ly, real_t Lz)
             : A(amplitude), omega(frequency), Lx(Lx), Ly(Ly), Lz(Lz) {
 
@@ -89,7 +92,7 @@ namespace user {
     const real_t temp, amplitude;
     const real_t nwave_x, nwave_y, nwave_z, frequency;
 
-    ExternalCurrent<D> ExternalCurrent;
+    ExternalCurrent<D> ext_current;
     InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
@@ -106,9 +109,8 @@ namespace user {
       , nwave_y { p.template get<real_t>("setup.nwave_y") }
       , nwave_z { p.template get<real_t>("setup.nwave_z") }
       , frequency { p.template get<real_t>("setup.frequency") }
-      , init_flds() 
-      , ExternalCurrent {  amplitude, nwave_x, nwave_y, nwave_z, frequency, sx1, sx2, sx3 }
-
+      , init_flds { ONE }
+      , ext_current { amplitude, nwave_x, nwave_y, nwave_z, frequency, sx1, sx2, sx3 }
       {}
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
