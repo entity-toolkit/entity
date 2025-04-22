@@ -235,7 +235,7 @@ namespace user {
     real_t total_sum_inv = 0.0;
     real_t number_of_timesteps = 0.0;
 
-    ExternalCurrent<D> ExternalCurrent;
+    ExternalCurrent<D> ext_current;
     InitFields<D> init_flds;
 
     inline static std::vector<std::vector<real_t>> init_wavenumbers(){
@@ -276,8 +276,8 @@ namespace user {
       , Ly { global_domain.mesh().extent(in::x2).second - global_domain.mesh().extent(in::x2).first }
       , Lz { global_domain.mesh().extent(in::x3).second - global_domain.mesh().extent(in::x3).first }
       , dt { params.template get<real_t>("algorithms.timestep.dt") }
-      , ExternalCurrent {  dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
-      , init_flds(ExternalCurrent.k, ExternalCurrent.a_real, ExternalCurrent.a_imag, ExternalCurrent.a_real_inv, ExternalCurrent.a_imag_inv) {}; 
+      , ext_current {  dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
+      , init_flds(ext_current.k, ext_current.a_real, ext_current.a_imag, ext_current.a_real_inv, ext_current.a_imag_inv) {}; 
 
     inline PGen() {}
 
@@ -312,23 +312,23 @@ namespace user {
 					    , u_real_inv
 					    , u_imag_inv);
 			    random_pool.free_state(generator);
-			    auto a_real_prev = this->ExternalCurrent.a_real(i);
-			    auto a_imag_prev = this->ExternalCurrent.a_imag(i);
-			    auto a_real_inv_prev = this->ExternalCurrent.a_real_inv(i);
-                            auto a_imag_inv_prev = this->ExternalCurrent.a_imag_inv(i);
+			    auto a_real_prev = this->ext_current.a_real(i);
+			    auto a_imag_prev = this->ext_current.a_imag(i);
+			    auto a_real_inv_prev = this->ext_current.a_real_inv(i);
+                            auto a_imag_inv_prev = this->ext_current.a_imag_inv(i);
 			    auto dt = this->dt;
                             printf(" %i) a_real= %f, a_imag= %f, a_real_inv= %f, a_imag_inv=%f \n",i
-                                            , this->ExternalCurrent.a_real(i)
-                                            , this->ExternalCurrent.a_imag(i)
-					    , this->ExternalCurrent.a_real_inv(i)
-					    , this->ExternalCurrent.a_imag_inv(i));
-			    this->ExternalCurrent.a_real(i) = (a_real_prev * math::cos(this->ExternalCurrent.omega_0 * dt) + a_imag_prev * math::sin(this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_real * dt;
+                                            , this->ext_current.a_real(i)
+                                            , this->ext_current.a_imag(i)
+					    , this->ext_current.a_real_inv(i)
+					    , this->ext_current.a_imag_inv(i));
+			    this->ext_current.a_real(i) = (a_real_prev * math::cos(this->ext_current.omega_0 * dt) + a_imag_prev * math::sin(this->ext_current.omega_0 * dt)) * math::exp(-this->ext_current.gamma_0 * dt) + this->ext_current.A0(i) * math::sqrt(12.0 * this->ext_current.gamma_0 / dt) * u_real * dt;
 
-			    this->ExternalCurrent.a_imag(i) = (a_imag_prev * math::cos(this->ExternalCurrent.omega_0 * dt) - a_real_prev * math::sin(this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_imag * dt;
+			    this->ext_current.a_imag(i) = (a_imag_prev * math::cos(this->ext_current.omega_0 * dt) - a_real_prev * math::sin(this->ext_current.omega_0 * dt)) * math::exp(-this->ext_current.gamma_0 * dt) + this->ext_current.A0(i) * math::sqrt(12.0 * this->ext_current.gamma_0 / dt) * u_imag * dt;
 
-			    this->ExternalCurrent.a_real_inv(i) = (a_real_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * dt) + a_imag_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt) * u_real_inv * dt;
+			    this->ext_current.a_real_inv(i) = (a_real_inv_prev * math::cos(-this->ext_current.omega_0 * dt) + a_imag_inv_prev * math::sin(-this->ext_current.omega_0 * dt)) * math::exp(-this->ext_current.gamma_0 * dt) + this->ext_current.A0(i) * math::sqrt(12.0 * this->ext_current.gamma_0 / dt) * u_real_inv * dt;
 
-                            this->ExternalCurrent.a_imag_inv(i) = (a_imag_inv_prev * math::cos(-this->ExternalCurrent.omega_0 * dt) - a_real_inv_prev * math::sin(-this->ExternalCurrent.omega_0 * dt)) * math::exp(-this->ExternalCurrent.gamma_0 * dt) + this->ExternalCurrent.A0(i) * math::sqrt(12.0 * this->ExternalCurrent.gamma_0 / dt ) * u_imag_inv * dt;
+                            this->ext_current.a_imag_inv(i) = (a_imag_inv_prev * math::cos(-this->ext_current.omega_0 * dt) - a_real_inv_prev * math::sin(-this->ext_current.omega_0 * dt)) * math::exp(-this->ext_current.gamma_0 * dt) + this->ext_current.A0(i) * math::sqrt(12.0 * this->ext_current.gamma_0 / dt ) * u_imag_inv * dt;
 			    });
 
 //	real_t sum = 0.0;

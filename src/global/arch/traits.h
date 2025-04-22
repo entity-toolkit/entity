@@ -99,7 +99,7 @@ namespace traits {
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
-    using ext_current_t = decltype(&T::ExternalCurrent);	    
+    using ext_current_t = decltype(&T::ext_current);	    
 
     template <typename T>
     using atm_fields_t = decltype(&T::AtmFields);

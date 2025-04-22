@@ -535,7 +535,7 @@ namespace ntt {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };
-          const auto                ext_current = m_pgen.ExternalCurrent;
+          const auto                ext_current = m_pgen.ext_current;
           const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
           // clang-format off
           Kokkos::parallel_for(
