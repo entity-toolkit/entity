@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_subdirectory(${SRC_DIR}/global ${CMAKE_CURRENT_BINARY_DIR}/global)

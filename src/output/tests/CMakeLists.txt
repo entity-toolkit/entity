@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_output` module
 #
@@ -28,9 +29,13 @@ function(gen_test title is_parallel)
   endif()
 endfunction()
 
-if(NOT ${mpi})
-  gen_test(fields false)
-  gen_test(writer-nompi false)
-else()
-  gen_test(writer-mpi true)
+gen_test(stats false)
+
+if(${output})
+  if(NOT ${mpi})
+    gen_test(fields false)
+    gen_test(writer-nompi false)
+  else()
+    gen_test(writer-mpi true)
+  endif()
 endif()

@@ -181,9 +181,10 @@ auto main(int argc, char* argv[]) -> int {
                                               ZERO,
                                               ZERO,
                                               ZERO);
-      Kokkos::parallel_for("ParticlesPush",
-                           Kokkos::RangePolicy<AccelExeSpace, ntt::Boris_t>(0, 1),
-                           kernel);
+      Kokkos::parallel_for(
+        "ParticlesPush",
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, ntt::Boris_t>(0, 1),
+        kernel);
       auto [xa, ya] = get_cartesian_coord(0, i1, i2, dx1, dx2, phi, metric);
 
       if (!ntt::AlmostEqual(xa,

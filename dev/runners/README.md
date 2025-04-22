@@ -24,4 +24,5 @@ docker run -e TOKEN=<TOKEN> -e LABEL=amd-gpu --device=/dev/kfd --device=/dev/dri
 
 ```sh
 docker build -t ghrunner:cpu -f Dockerfile.runner.cpu .
+docker run -e TOKEN=<TOKEN> -e LABEL=cpu -dt ghrunner:cpu
 ```

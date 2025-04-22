@@ -132,7 +132,7 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
 
   extent = {
     ext[0],
-    {ZERO, constant::PI}
+    { ZERO, constant::PI }
   };
 
   const M metric { res, extent, params };

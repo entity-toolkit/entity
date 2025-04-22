@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 # ----------------------------- Defaults ---------------------------------- #
 if(DEFINED ENV{Entity_ENABLE_DEBUG})
   set(default_debug
@@ -33,7 +35,7 @@ if(DEFINED ENV{Entity_ENABLE_OUTPUT})
       CACHE INTERNAL "Default flag for output")
 else()
   set(default_output
-      OFF
+      ON
       CACHE INTERNAL "Default flag for output")
 endif()
 
@@ -50,42 +52,6 @@ else()
 endif()
 
 set_property(CACHE default_gui PROPERTY TYPE BOOL)
-
-if(DEFINED ENV{Kokkos_ENABLE_CUDA})
-  set(default_KOKKOS_ENABLE_CUDA
-      $ENV{Kokkos_ENABLE_CUDA}
-      CACHE INTERNAL "Default flag for CUDA")
-else()
-  set(default_KOKKOS_ENABLE_CUDA
-      OFF
-      CACHE INTERNAL "Default flag for CUDA")
-endif()
-
-set_property(CACHE default_KOKKOS_ENABLE_CUDA PROPERTY TYPE BOOL)
-
-if(DEFINED ENV{Kokkos_ENABLE_HIP})
-  set(default_KOKKOS_ENABLE_HIP
-      $ENV{Kokkos_ENABLE_HIP}
-      CACHE INTERNAL "Default flag for HIP")
-else()
-  set(default_KOKKOS_ENABLE_HIP
-      OFF
-      CACHE INTERNAL "Default flag for HIP")
-endif()
-
-set_property(CACHE default_KOKKOS_ENABLE_HIP PROPERTY TYPE BOOL)
-
-if(DEFINED ENV{Kokkos_ENABLE_OPENMP})
-  set(default_KOKKOS_ENABLE_OPENMP
-      $ENV{Kokkos_ENABLE_OPENMP}
-      CACHE INTERNAL "Default flag for OpenMP")
-else()
-  set(default_KOKKOS_ENABLE_OPENMP
-      OFF
-      CACHE INTERNAL "Default flag for OpenMP")
-endif()
-
-set_property(CACHE default_KOKKOS_ENABLE_OPENMP PROPERTY TYPE BOOL)
 
 if(DEFINED ENV{Entity_ENABLE_MPI})
   set(default_mpi

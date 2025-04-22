@@ -131,7 +131,7 @@ namespace comm {
     } else {
       ncells_t nsend { comps.second - comps.first },
         nrecv { comps.second - comps.first };
-      ndarray_t<static_cast<unsigned short>(D) + 1> send_fld, recv_fld;
+      ndarray_t<static_cast<dim_t>(D) + 1> send_fld, recv_fld;
 
       for (short d { 0 }; d < (short)D; ++d) {
         if (send_rank >= 0) {
@@ -335,10 +335,8 @@ namespace comm {
     const unsigned short NPLDS   = species.npld();
 
     // buffers to store recv data
-    const auto       npart_alive = npptag_vec[ParticleTag::alive];
-    const auto       npart_dead  = npptag_vec[ParticleTag::dead];
-    const auto       npart_send  = outgoing_indices.extent(0) - npart_dead;
-    const auto       npart_recv  = std::accumulate(npptag_recv_vec.begin(),
+    const auto       npart_dead = npptag_vec[ParticleTag::dead];
+    const auto       npart_recv = std::accumulate(npptag_recv_vec.begin(),
                                             npptag_recv_vec.end(),
                                             static_cast<npart_t>(0));
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };

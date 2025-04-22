@@ -171,7 +171,7 @@ namespace fmt {
     std::size_t cntr { 0 };
     for (auto i { 0u }; i < columns.size(); ++i) {
       const auto  anch { static_cast<std::size_t>(anchors[i] < 0 ? -anchors[i]
-                                                                 : anchors[i]) };
+                                                                : anchors[i]) };
       const auto  leftalign { anchors[i] <= 0 };
       const auto  cmn { columns[i] };
       const auto  cmn_len { strlenUTF8(cmn) };

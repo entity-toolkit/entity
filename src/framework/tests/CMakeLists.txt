@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_framework` module
 #
@@ -5,7 +6,6 @@
 #
 # * kokkos [required]
 # * plog [required]
-# * toml11 [required]
 # * mpi [optional]
 # * adios2 [optional]
 #

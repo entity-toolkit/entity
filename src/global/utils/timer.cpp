@@ -68,7 +68,7 @@ namespace timer {
       return {};
     }
     std::vector<duration_t> all_totals(size, 0.0);
-    for (auto i { 0u }; i < size; ++i) {
+    for (auto i { 0 }; i < size; ++i) {
       for (auto& [name, timer] : m_timers) {
         if (std::find(ignore_in_tot.begin(), ignore_in_tot.end(), name) ==
             ignore_in_tot.end()) {

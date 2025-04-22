@@ -91,10 +91,10 @@ namespace out {
                           Coord);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineParticleOutputs(Dimension, const std::vector<unsigned short>&);
-    void defineSpectraOutputs(const std::vector<unsigned short>&);
+    void defineParticleOutputs(Dimension, const std::vector<spidx_t>&);
+    void defineSpectraOutputs(const std::vector<spidx_t>&);
 
-    void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
+    void writeMesh(dim_t, const array_t<real_t*>&, const array_t<real_t*>&);
 
     template <Dimension D, int N>
     void writeField(const std::vector<std::string>&,

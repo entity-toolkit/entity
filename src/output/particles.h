@@ -8,20 +8,22 @@
 #ifndef OUTPUT_PARTICLES_H
 #define OUTPUT_PARTICLES_H
 
+#include "global.h"
+
 #include <string>
 
 namespace out {
 
   class OutputSpecies {
-    const unsigned short m_sp;
+    const spidx_t m_sp;
 
   public:
-    OutputSpecies(unsigned short sp) : m_sp { sp } {}
+    OutputSpecies(spidx_t sp) : m_sp { sp } {}
 
     ~OutputSpecies() = default;
 
     [[nodiscard]]
-    auto species() const -> unsigned short {
+    auto species() const -> spidx_t {
       return m_sp;
     }
 

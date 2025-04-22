@@ -80,7 +80,7 @@ struct RadialDist : public SpatialDistribution<S, M> {
     coord_t<M::Dim> x_Sph { ZERO };
     metric.template convert<Crd::Cd, Crd::Sph>(x_Code, x_Sph);
     auto r { ZERO };
-    for (unsigned short d = 0; d < M::Dim; ++d) {
+    for (dim_t d { 0u }; d < M::Dim; ++d) {
       r += SQR(x_Sph[d]);
     }
     return math::sqrt(r);
@@ -91,14 +91,14 @@ auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
     Minkowski<Dim::_2D> m1 {
-      {             10,              10},
-      {{ -10.0, 55.0 }, { -10.0, 55.0 }}
+      {              10,              10 },
+      { { -10.0, 55.0 }, { -10.0, 55.0 } }
     };
     RadialDist<SimEngine::SRPIC, Minkowski<Dim::_2D>> r1 { m1 };
 
     Minkowski<Dim::_3D> m2 {
-      {           10,            10,            30},
-      {{ -1.0, 1.0 }, { -1.0, 1.0 }, { -3.0, 3.0 }}
+      {            10,            10,            30 },
+      { { -1.0, 1.0 }, { -1.0, 1.0 }, { -3.0, 3.0 } }
     };
     RadialDist<SimEngine::SRPIC, Minkowski<Dim::_3D>> r2 { m2 };
 

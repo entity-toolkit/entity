@@ -18,8 +18,6 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include <Kokkos_ScatterView.hpp>
-
 #include <vector>
 
 namespace kernel {
@@ -49,7 +47,7 @@ namespace kernel {
 
     const unsigned short     c1, c2;
     scatter_ndfield_t<D, N>  Buff;
-    const unsigned short     buff_idx;
+    const idx_t              buff_idx;
     const array_t<int*>      i1, i2, i3;
     const array_t<prtldx_t*> dx1, dx2, dx3;
     const array_t<real_t*>   ux1, ux2, ux3;
@@ -71,7 +69,7 @@ namespace kernel {
   public:
     ParticleMoments_kernel(const std::vector<unsigned short>& components,
                            const scatter_ndfield_t<D, N>&     scatter_buff,
-                           unsigned short                     buff_idx,
+                           idx_t                              buff_idx,
                            const array_t<int*>&               i1,
                            const array_t<int*>&               i2,
                            const array_t<int*>&               i3,

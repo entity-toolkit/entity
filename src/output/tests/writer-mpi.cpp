@@ -22,7 +22,8 @@ void cleanup() {
 }
 
 #define CEILDIV(a, b)                                                          \
-  (static_cast<int>(math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
+  (static_cast<std::size_t>(                                                   \
+    math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
@@ -115,7 +116,6 @@ auto main(int argc, char* argv[]) -> int {
 
         const auto l_size   = nx1;
         const auto l_offset = nx1 * mpi_rank;
-        const auto g_size   = nx1 * mpi_size;
 
         const double n = l_size;
         const double d = dwn1;

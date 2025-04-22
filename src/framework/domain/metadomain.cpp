@@ -46,7 +46,7 @@ namespace ntt {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
-    raise::ErrorIf(global_ndomains != g_mpi_size,
+    raise::ErrorIf(global_ndomains != (unsigned int)g_mpi_size,
                    "Exactly 1 domain per MPI rank is allowed",
                    HERE);
 #endif
@@ -140,7 +140,7 @@ namespace ntt {
       boundaries_t<real_t> l_extent;
       coord_t<D>           low_corner_Code { ZERO }, up_corner_Code { ZERO };
       coord_t<D>           low_corner_Phys { ZERO }, up_corner_Phys { ZERO };
-      for (unsigned short d { 0 }; d < (unsigned short)D; ++d) {
+      for (auto d { 0u }; d < D; d++) {
         low_corner_Code[d] = (real_t)l_offset_ncells[d];
         up_corner_Code[d]  = (real_t)(l_offset_ncells[d] + l_ncells[d]);
       }
@@ -401,6 +401,142 @@ namespace ntt {
                      HERE);
     }
 #endif
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::setFldsBC(const bc_in& dir, const FldsBC& new_bcs) {
+    if (dir == bc_in::Mx1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_flds_bc({ -1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_flds_bc({ +1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set -x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ 0, 0, -1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set +x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ 0, 0, +1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else {
+      raise::Error("Invalid direction", HERE);
+    }
+    redefineBoundaries();
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::setPrtlBC(const bc_in& dir, const PrtlBC& new_bcs) {
+    if (dir == bc_in::Mx1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_prtl_bc({ -1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_prtl_bc({ +1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set -x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ 0, 0, -1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set +x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ 0, 0, +1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else {
+      raise::Error("Invalid direction", HERE);
+    }
+    redefineBoundaries();
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
