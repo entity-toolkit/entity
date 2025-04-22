@@ -14,16 +14,28 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
+#if defined(MPI_ENABLED)
+#include <stdlib.h>
+#endif //MPI_ENABLED
+
 namespace user {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  // initializing guide field and curl(B) = J_ext at the initial time step
+  template <Dimension D>
+  struct InitFields {
+    InitFields();
+
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { return ONE; }
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { return ZERO; }
+    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t { return ZERO; }
+
+  };
 
     // Simplified external current driver: single x1-directional mode with spatial/temporal variation
     template <Dimension D>
     struct ExternalCurrent {
-        ExternalCurrent(real_t amplitude, int num_waves_x, int num_waves_y, int num_waves_z,
+        ExternalCurrent(real_t amplitude, real_t num_waves_x, real_t num_waves_y, real_t num_waves_z,
                         real_t frequency, real_t Lx, real_t Ly, real_t Lz)
             : A(amplitude), omega(frequency), Lx(Lx), Ly(Ly), Lz(Lz) {
 
@@ -59,6 +71,9 @@ namespace user {
     };
 
 
+  template <SimEngine::type S, class M>
+  struct PGen : public arch::ProblemGenerator<S, M> {
+
     // compatibility traits for the problem generator
     static constexpr auto engines = traits::compatible_with<SimEngine::SRPIC>::value;
     static constexpr auto metrics = traits::compatible_with<Metric::Minkowski>::value;
@@ -75,6 +90,7 @@ namespace user {
     const real_t nwave_x, nwave_y, nwave_z, frequency;
 
     ExternalCurrent<D> ExternalCurrent;
+    InitFields<D> init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -90,6 +106,7 @@ namespace user {
       , nwave_y { p.template get<real_t>("setup.nwave_y") }
       , nwave_z { p.template get<real_t>("setup.nwave_z") }
       , frequency { p.template get<real_t>("setup.frequency") }
+      , init_flds() 
       , ExternalCurrent {  amplitude, nwave_x, nwave_y, nwave_z, frequency, sx1, sx2, sx3 }
 
       {}
