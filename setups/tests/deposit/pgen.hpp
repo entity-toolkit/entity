@@ -93,8 +93,8 @@ namespace user {
         data_2["phi"] = phi2s;
       }
 
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)1, data_1);
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (arch::spidx_t)2, data_2);
+      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)1, data_1);
+      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)2, data_2);
     }
   };
 
