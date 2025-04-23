@@ -17,23 +17,6 @@
 #include "archetypes/problem_generator.h"
 #include "archetypes/field_setter.h"
 
-
-// #include "enums.h"
-// #include "global.h"
-
-// #include "arch/traits.h"
-// #include "utils/error.h"
-// #include "utils/numeric.h"
-
-// #include "archetypes/energy_dist.h"
-// #include "archetypes/particle_injector.h"
-// #include "archetypes/problem_generator.h"
-// #include "framework/domain/metadomain.h"
-
-// #include "archetypes/field_setter.h"
-
-// #include <utility>
-
 namespace user {
   using namespace ntt;
 
@@ -76,7 +59,7 @@ namespace user {
     }
 
     Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return  ZERO; //fb0;
+      return  ZERO;
     }
 
     Inline auto ex1(const coord_t<D>&) const -> real_t {
@@ -84,7 +67,7 @@ namespace user {
     }
 
     Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return ZERO; //fb0 * fu0/math::sqrt(ONE + SQR(fu0));
+      return ZERO;
     }
 
     Inline auto ex3(const coord_t<D>&) const -> real_t {
@@ -94,44 +77,6 @@ namespace user {
   private:
     const real_t fb0, fu0;
   };
-
-  // template <Dimension D>
-  // struct DriveFields : public InitFields<D> {
-  //   DriveFields(real_t t, real_t Bz0, real_t drift_ux, real_t x1max)
-  //     : InitFields<D> { Bz0, drift_ux }
-  //     , fb0 { Bz0 } 
-  //     , fu0 { drift_ux } 
-  //     , xmax { x1max } {}
-
-  //     Inline auto bx1(const coord_t<D>& x1_crd) const -> real_t {
-  //       return ZERO;
-  //     }
-  
-  //     Inline auto bx2(const coord_t<D>& x1_crd) const -> real_t {
-  //       return ZERO;
-  //     }
-  
-  //     Inline auto bx3(const coord_t<D>& x1_crd) const -> real_t {
-  //       return fb0;
-  //     }
-  
-  //     Inline auto ex1(const coord_t<D>& x1_crd) const -> real_t {
-  //       return ZERO;
-  //     }
-  
-  //     Inline auto ex2(const coord_t<D>& x1_crd) const -> real_t {
-  //       return fb0 * fu0/math::sqrt(ONE + SQR(fu0));
-  //     }
-  
-  //     Inline auto ex3(const coord_t<D>& x1_crd) const -> real_t {
-  //       return ZERO;
-  //     }
-  
-  //   private:
-  //     const real_t fb0, fu0, xmax;
-  // };
-
-
 
   template <SimEngine::type S, class M>
   struct Cathode : public arch::SpatialDistribution<S, M> {
@@ -150,20 +95,6 @@ namespace user {
   private:
     const real_t x1c;
   };
-
-
-  // template <SimEngine::type S, class M>
-  // struct PGen : public arch::ProblemGenerator<S, M> {
-  //   ...
-  //   // declare the external fields
-  //   ExternalFields<M::PrtlDim> ext_force; // the name here is important, it has to be `ext_force`; name of the class is not important
-
-  //   inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
-  //     : arch::ProblemGenerator<S, M> { params }
-  //     , ext_force { ... }  // and initialize here
-  //     , ... {}
-  // };
-
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
@@ -228,12 +159,6 @@ namespace user {
         ONE);
     }
 
-    // auto FieldDriver(real_t time) const -> DriveFields<D> {
-    //   // const real_t fb0 = Bz0;
-    //   // const real_t fu0 = drift_ux;
-    //   return DriveFields<D> { time, Bz0, drift_ux, x1max};
-    // }
-
     void CustomPostStep(std::size_t nstep, long double , Domain<S, M>& domain) {
 
       auto EM = domain.fields.em;
@@ -263,18 +188,6 @@ namespace user {
               }
             });
 
-              // use dummy array buffer for offset field src/framework/containers/fields.h/ bckp for fields and buff for current domain.flds.bckp
-              // static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
-              // static constexpr Dimension D { M::Dim };
-
-              // Mesh<M>                                 mesh;
-              // Fields<D, S>                            fields;
-              // std::vector<Particles<D, M::CoordType>> species;
-              // random_number_pool_t random_pool { constant::RandomSeed };
-
-
-              // global_domain.CommunicateFields(domain, Comm::B | Comm::E | Comm::J);
-              // global_domain.CommunicateParticles(domain, &timers);
         }
 
         Kokkos::deep_copy(BCKP,
@@ -292,12 +205,10 @@ namespace user {
               EM(i1, em::bx3) = BCKP(i1 + 1, em::bx3);
               if (i1 >= imax) {
                 EM(i1, em::ex1) = ZERO;
-                // EM(i1, em::ex2) = fb0 * fu0/math::sqrt(ONE + SQR(fu0)) * ZERO;
                 EM(i1, em::ex2) = ZERO;
                 EM(i1, em::ex3) = ZERO;
                 EM(i1, em::bx1) = ZERO;
                 EM(i1, em::bx2) = ZERO;
-                // EM(i1, em::bx3) = fb0 * ZERO;
                 EM(i1, em::bx3) = ZERO;
               }
             });
@@ -306,29 +217,46 @@ namespace user {
           Kokkos::parallel_for("field_loop",
             domain.mesh.rangeActiveCells(),
             Lambda(index_t i1, index_t i2) {
-              // do something with the Ex1 field (just an example)
-              EM(i1, i2, em::ex1) = ZERO;
-              EM(i1, i2, em::ex2) = ZERO;
-              EM(i1, i2, em::ex3) = ZERO;
-              EM(i1, i2, em::bx1) = ZERO;
-              EM(i1, i2, em::bx2) = ZERO;
-              EM(i1, i2, em::bx3) = ZERO;
+              EM(i1, i2, em::ex1) = BCKP(i1 + 1, i2, em::ex1);
+              EM(i1, i2, em::ex2) = BCKP(i1 + 1, i2, em::ex2);
+              EM(i1, i2, em::ex3) = BCKP(i1 + 1, i2, em::ex3);
+              EM(i1, i2, em::bx1) = BCKP(i1 + 1, i2, em::bx1);
+              EM(i1, i2, em::bx2) = BCKP(i1 + 1, i2, em::bx2);
+              EM(i1, i2, em::bx3) = BCKP(i1 + 1, i2, em::bx3);
+              if (i1 >= imax) {
+                EM(i1, i2, em::ex1) = ZERO;
+                EM(i1, i2, em::ex2) = ZERO;
+                EM(i1, i2, em::ex3) = ZERO;
+                EM(i1, i2, em::bx1) = ZERO;
+                EM(i1, i2, em::bx2) = ZERO;
+                EM(i1, i2, em::bx3) = ZERO;
+              }
             });
         }
         else if constexpr (D == Dim::_3D) {
           Kokkos::parallel_for("field_loop",
             domain.mesh.rangeActiveCells(),
             Lambda(index_t i1, index_t i2, index_t i3) {
-              // do something with the Ex1 field (just an example)
-              EM(i1, i2, i3, em::ex1) = ZERO;
-              EM(i1, i2, i3, em::ex2) = ZERO;
-              EM(i1, i2, i3, em::ex3) = ZERO;
-              EM(i1, i2, i3, em::bx1) = ZERO;
-              EM(i1, i2, i3, em::bx2) = ZERO;
-              EM(i1, i2, i3, em::bx3) = ZERO;
+              EM(i1, i2, i3, em::ex1) = BCKP(i1 + 1, i2, i3, em::ex1);
+              EM(i1, i2, i3, em::ex2) = BCKP(i1 + 1, i2, i3, em::ex2);
+              EM(i1, i2, i3, em::ex3) = BCKP(i1 + 1, i2, i3, em::ex3);
+              EM(i1, i2, i3, em::bx1) = BCKP(i1 + 1, i2, i3, em::bx1);
+              EM(i1, i2, i3, em::bx2) = BCKP(i1 + 1, i2, i3, em::bx2);
+              EM(i1, i2, i3, em::bx3) = BCKP(i1 + 1, i2, i3, em::bx3);
+              if (i1 >= imax) {
+                EM(i1, i2, i3, em::ex1) = ZERO;
+                EM(i1, i2, i3, em::ex2) = ZERO;
+                EM(i1, i2, i3, em::ex3) = ZERO;
+                EM(i1, i2, i3, em::bx1) = ZERO;
+                EM(i1, i2, i3, em::bx2) = ZERO;
+                EM(i1, i2, i3, em::bx3) = ZERO;
+              }
             });
         }
+
         global_domain.CommunicateFields(domain, Comm::B | Comm::E | Comm::J);
+
+
 
         const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
                                     domain.random_pool,
@@ -357,38 +285,56 @@ namespace user {
             domain.mesh.rangeActiveCells(),
             Lambda(index_t i1) {
               if (i1 <= iosc - nstep/2  ) {
-                // EM(i1 - 1, em::ex1) = ZERO;
-                EM(i1   , em::ex1) = ZERO;
-                // EM(i1 + 1, em::ex1) = ZERO;
-
-                // EM(i1-1, em::ex2) = fb0 * fu0/math::sqrt(ONE + SQR(fu0)) + amp * fb0 * math::sin(2.0 * constant::PI * (nstep - 1) * om );
-                // EM(i1, em::ex2)   = fb0 * fu0/math::sqrt(ONE + SQR(fu0)) - 0.0* amp * fb0 * math::sin(2.0 * constant::PI * nstep * om );
-                // EM(i1, em::ex2) = fb0 * fu0/math::sqrt(ONE + SQR(fu0)) * ZERO- amp * fb0 * math::sin(2.0 * constant::PI * nstep * om );
+                EM(i1, em::ex1) = ZERO;
                 EM(i1, em::ex2) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
-
-                // EM(i1 - 1, em::ex3) = ZERO;
-                EM(i1    , em::ex3) = ZERO;
-                // EM(i1 + 1, em::ex3) = ZERO;
-                
-                // EM(i1 - 1, em::bx1) = ZERO;
-                EM(i1    , em::bx1) = ZERO;
-                // EM(i1 + 1, em::bx1) = ZERO;
-                
-                // EM(i1 - 1, em::bx2) = ZERO;
-                EM(i1    , em::bx2) = ZERO;
-                // EM(i1 + 1, em::bx2) = ZERO;
-                
-                // EM(i1 - 1, em::bx3) = fb0 - amp * fb0 * math::sin(2.0 * constant::PI * (nstep - 1) * om );
-                // EM(i1    , em::bx3) = fb0  * ZERO - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om );
-                EM(i1    , em::bx3) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
-                // EM(i1 + 1, em::bx3) = fb0 - amp * fb0 * math::sin(2.0 * constant::PI * (nstep - 1) * om );
+                EM(i1, em::ex3) = ZERO;
+                EM(i1, em::bx1) = ZERO;
+                EM(i1, em::bx2) = ZERO;
+                EM(i1, em::bx3) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
+              }
+              // if (i1 < 4) {
+              //   EM(i1, em::ex1) = ZERO;
+              //   EM(i1, em::ex2) = ZERO;
+              //   EM(i1, em::ex3) = ZERO;
+              //   EM(i1, em::bx1) = ZERO;
+              //   EM(i1, em::bx2) = ZERO;
+              //   EM(i1, em::bx3) = ZERO;
+              // }
+          });
+        }
+      }
+      else if constexpr (D == Dim::_2D) {
+        if (iosc > nstep/2) {
+          Kokkos::parallel_for("field_loop",
+            domain.mesh.rangeActiveCells(),
+            Lambda(index_t i1, index_t i2) {
+              if (i1 <= iosc - nstep/2  ) {
+                EM(i1, i2, em::ex1) = ZERO;
+                EM(i1, i2, em::ex2) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
+                EM(i1, i2, em::ex3) = ZERO;
+                EM(i1, i2, em::bx1) = ZERO;
+                EM(i1, i2, em::bx2) = ZERO;
+                EM(i1, i2, em::bx3) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
               }
           });
         }
       }
-
-      // std::cout << "iosc - nstep/2" << iosc - nstep/2 << std::endl;
-      // std::cout << "nstep" << nstep << std::endl;
+      else if constexpr (D == Dim::_3D) {
+        if (iosc > nstep/2) {
+          Kokkos::parallel_for("field_loop",
+            domain.mesh.rangeActiveCells(),
+            Lambda(index_t i1, index_t i2, index_t i3) {
+              if (i1 <= iosc - nstep/2  ) {
+                EM(i1, i2, i3, em::ex1) = ZERO;
+                EM(i1, i2, i3, em::ex2) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
+                EM(i1, i2, i3, em::ex3) = ZERO;
+                EM(i1, i2, i3, em::bx1) = ZERO;
+                EM(i1, i2, i3, em::bx2) = ZERO;
+                EM(i1, i2, i3, em::bx3) = - amp * fb0 * math::sin(2.0 * constant::PI * nstep * om ) * ( ONE - math::exp(- std::pow( nstep/static_cast<real_t>(damp) , 2) ) );
+              }
+          });
+        }
+      }
 
     } // CustomPostStep  
   }; // PGEN

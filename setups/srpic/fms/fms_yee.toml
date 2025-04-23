@@ -27,7 +27,7 @@
   [algorithms.fieldsolver]
     # Yee - all 0.0 - default
     # 1D
-    deltax = 0.0625
+    deltax = 0.0
     # 2D
     deltay = 0.0
     betaxy = 0.0

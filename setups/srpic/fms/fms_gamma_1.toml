@@ -1,11 +1,11 @@
 [simulation]
   name = "fms"
   engine = "srpic"
-  runtime = 4000.0
+  runtime = 400000.0
 
 [grid]
-  resolution = [81920]
-  extent = [[0.0, 200.0]]
+  resolution = [327680]
+  extent = [[0.0, 800.0]]
 
   [grid.metric]
     metric = "minkowski"
@@ -23,6 +23,9 @@
 
   [algorithms.timestep]
     CFL = 0.5
+  
+  [algorithms.synchrotron]
+    gamma_rad = 2.0
 
   [algorithms.fieldsolver]
     # Yee - all 0.0 - default
@@ -46,13 +49,15 @@
     label = "e-"
     mass = 1.0
     charge = -1.0
-    maxnpart = 1e8
+    maxnpart = 2e8
+    cooling = "Synchrotron"
 
   [[particles.species]]
     label = "e+"
     mass = 1.0
     charge = 1.0
-    maxnpart = 1e8
+    maxnpart = 2e8
+    cooling = "Synchrotron"
 
 [setup]
   drift_ux = 0.0
@@ -60,19 +65,19 @@
   Bz0 = 200.0
   amp = 0.1
   damp = 2000.0
-  omega = 6.2e-6
-  imax = 81910 #16370 # 262140
-  iosc = 81800 #16000 # 262130
+  omega = 3.1e-6
+  imax = 327600 #16370 # 262140
+  iosc = 327500 #16000 # 262130
 
-  lgrad = 1000.0
+  lgrad = 4000.0
   pow = -2.0
 
 [output]
-  interval_time = 10.0
+  interval_time = 40.0
   format = "hdf5"
-  
+
   [output.fields]
-    quantities = ["N_1", "N_2", "B", "E", "T0i_1", "T0i_2", "J"]
+    quantities = ["N_1", "N_2", "B", "E", "T0i_1", "T0i_2", "Tij_1", "Tij_2", "J"]
 
   [output.particles]
     enable = false

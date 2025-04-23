@@ -182,6 +182,15 @@
        if constexpr (M::CoordType == Coord::Cart) {
          // minkowski case
          const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
+         const auto deltax = m_params.template get<real_t>("algorithms.fieldsolver.deltax");
+         const auto deltay = m_params.template get<real_t>("algorithms.fieldsolver.deltay");
+         const auto betaxy = m_params.template get<real_t>("algorithms.fieldsolver.betaxy");
+         const auto betayx = m_params.template get<real_t>("algorithms.fieldsolver.betayx");
+         const auto deltaz = m_params.template get<real_t>("algorithms.fieldsolver.deltaz");
+         const auto betaxz = m_params.template get<real_t>("algorithms.fieldsolver.betaxz");
+         const auto betazx = m_params.template get<real_t>("algorithms.fieldsolver.betazx");
+         const auto betayz = m_params.template get<real_t>("algorithms.fieldsolver.betayz");
+         const auto betazy = m_params.template get<real_t>("algorithms.fieldsolver.betazy");
          real_t     coeff1, coeff2;
          if constexpr (M::Dim == Dim::_2D) {
            coeff1 = dT / SQR(dx);
@@ -193,7 +202,10 @@
          Kokkos::parallel_for(
            "Faraday",
            domain.mesh.rangeActiveCells(),
-           kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em, coeff1, coeff2));
+           kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em, coeff1, coeff2
+                                                  , deltax, deltay, betaxy, betayx
+                                                  , deltaz, betaxz, betazx, betayz
+                                                  , betazy));
        } else {
          Kokkos::parallel_for("Faraday",
                               domain.mesh.rangeActiveCells(),
@@ -325,7 +337,10 @@
                                          "scales.omegaB0") /
                                        (SQR(sync_grad) * species.mass())
                                         : ZERO;
- 
+         
+         // Vanthieghem
+         std::cout << "sync_coeff: " << sync_coeff << std::endl;
+
          // toggle to indicate whether pgen defines the external force
          bool has_extforce = false;
          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {

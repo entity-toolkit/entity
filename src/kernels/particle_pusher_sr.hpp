@@ -283,16 +283,58 @@
                                  vec_t<Dim::_3D>&       u_prime,
                                  const vec_t<Dim::_3D>& e0,
                                  const vec_t<Dim::_3D>& b0) const {
-       real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
-                                                                u_prime[1],
-                                                                u_prime[2]));
-       u_prime[0]             *= gamma_prime_sqr;
-       u_prime[1]             *= gamma_prime_sqr;
-       u_prime[2]             *= gamma_prime_sqr;
-       gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
+      //  real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
+      //                                                           u_prime[1],
+      //                                                           u_prime[2]));
+       real_t gamma_prime_sqr = ONE + NORM_SQR(u_prime[0], u_prime[1], u_prime[2]);
+       real_t inv_sqrt_gamma_prime_sqr = ONE / math::sqrt(gamma_prime_sqr);
+       real_t b_norm = NORM(b0[0], b0[1], b0[2]);
+      
+      if (b_norm > 0.00001) {
+      //  vec_t<Dim::_3D> u0 {u_prime[0], u_prime[1], u_prime[2]};
+       u_prime[0]             *= inv_sqrt_gamma_prime_sqr;
+       u_prime[1]             *= inv_sqrt_gamma_prime_sqr;
+       u_prime[2]             *= inv_sqrt_gamma_prime_sqr;
+      //  gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
+
        const real_t beta_dot_e {
          DOT(u_prime[0], u_prime[1], u_prime[2], e0[0], e0[1], e0[2])
        };
+
+
+       vec_t<Dim::_3D> e_cross_b_drift {
+        CROSS_x1(e0[0]/b_norm, e0[1]/b_norm, e0[2]/b_norm, b0[0]/b_norm, b0[1]/b_norm, b0[2]/b_norm),
+        CROSS_x2(e0[0]/b_norm, e0[1]/b_norm, e0[2]/b_norm, b0[0]/b_norm, b0[1]/b_norm, b0[2]/b_norm),
+        CROSS_x3(e0[0]/b_norm, e0[1]/b_norm, e0[2]/b_norm, b0[0]/b_norm, b0[1]/b_norm, b0[2]/b_norm)
+       };
+       vec_t<Dim::_3D> epsilon {
+        u_prime[0] - e_cross_b_drift[0],
+        u_prime[1] - e_cross_b_drift[1],
+        u_prime[2] - e_cross_b_drift[2]
+       };
+
+      if  (NORM(epsilon[0], epsilon[1], epsilon[2]) > 0.1 ) {
+      // vec_t<Dim::_3D> espilon_cross_b {
+      //   CROSS_x1(epsilon[0], epsilon[1], epsilon[2], b0[0], b0[1], b0[2]),
+      //   CROSS_x2(epsilon[0], epsilon[1], epsilon[2], b0[0], b0[1], b0[2]),
+      //   CROSS_x3(epsilon[0], epsilon[1], epsilon[2], b0[0], b0[1], b0[2])
+      // };
+      // const real_t  up_dot_espilon_cross_b {
+      //   DOT(u_prime[0], u_prime[1], u_prime[2], espilon_cross_b[0], espilon_cross_b[1], espilon_cross_b[2])
+      // };
+      //  vec_t<Dim::_3D> kappaR {
+      //   CROSS_x1(espilon_cross_b[0], espilon_cross_b[1], espilon_cross_b[2], b0[0], b0[1], b0[2])
+      //   + up_dot_espilon_cross_b * e0[0],
+      //   CROSS_x2(espilon_cross_b[0], espilon_cross_b[1], espilon_cross_b[2], b0[0], b0[1], b0[2])
+      //   + up_dot_espilon_cross_b * e0[1],
+      //   CROSS_x3(espilon_cross_b[0], espilon_cross_b[1], espilon_cross_b[2], b0[0], b0[1], b0[2])
+      //   + up_dot_espilon_cross_b * e0[2]
+      // };
+      // const real_t chiR_sqr { 
+      //   NORM_SQR(espilon_cross_b[0], espilon_cross_b[1], espilon_cross_b[2]) 
+      //   - SQR( up_dot_espilon_cross_b )
+      // };
+
        vec_t<Dim::_3D> e_plus_beta_cross_b {
          e0[0] + CROSS_x1(u_prime[0], u_prime[1], u_prime[2], b0[0], b0[1], b0[2]),
          e0[1] + CROSS_x2(u_prime[0], u_prime[1], u_prime[2], b0[0], b0[1], b0[2]),
@@ -319,16 +361,72 @@
                   b0[0],
                   b0[1],
                   b0[2]) +
-           beta_dot_e * e0[2],
+           beta_dot_e * e0[2]
        };
        const real_t chiR_sqr { NORM_SQR(e_plus_beta_cross_b[0],
                                         e_plus_beta_cross_b[1],
                                         e_plus_beta_cross_b[2]) -
                                SQR(beta_dot_e) };
-       ux1(p) += coeff_sync * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
-       ux2(p) += coeff_sync * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
-       ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
-     }
+
+       ux1(p) += HALF * coeff_sync * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr) ;
+       ux2(p) += HALF * coeff_sync * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr) ;
+       ux3(p) += HALF * coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr) ;
+      };
+      };
+
+      //  ux1(p) += coeff_sync * (b0[2] * e0[1] - b0[1] * e0[2] - SQR(e0[0]) * u0[0] - SQR(e0[1]) * u0[0] - SQR(e0[2]) * u0[0] 
+      //  - SQR(b0[1]) * u_prime[0] - SQR(b0[2]) * u_prime[0] + SQR(e0[0]) * u_prime[0] 
+      //  + 2 * b0[2] * e0[1] * u0[0] * u_prime[0] - 2 * b0[1] * e0[2] * u0[0] * u_prime[0] 
+      //  - SQR(b0[1]) * u0[0] * SQR(u_prime[0]) - SQR(b0[2]) * u0[0] * SQR(u_prime[0]) 
+      //  + SQR(e0[0]) * u0[0] * SQR(u_prime[0]) + b0[0] * b0[1] * u_prime[1] + e0[0] * e0[1] * u_prime[1] 
+      //  - 2 * b0[2] * e0[0] * u0[0] * u_prime[1] + 2 * b0[0] * e0[2] * u0[0] * u_prime[1] 
+      //  + 2 * b0[0] * b0[1] * u0[0] * u_prime[0] * u_prime[1] + 2 * e0[0] * e0[1] * u0[0] * u_prime[0] * u_prime[1] 
+      //  - SQR(b0[0]) * u0[0] * SQR(u_prime[1]) - SQR(b0[2]) * u0[0] * SQR(u_prime[1]) 
+      //  + SQR(e0[1]) * u0[0] * SQR(u_prime[1]) + b0[0] * b0[2] * u_prime[2] + e0[0] * e0[2] * u_prime[2] 
+      //  + 2 * b0[1] * e0[0] * u0[0] * u_prime[2] - 2 * b0[0] * e0[1] * u0[0] * u_prime[2] 
+      //  + 2 * b0[0] * b0[2] * u0[0] * u_prime[0] * u_prime[2] + 2 * e0[0] * e0[2] * u0[0] * u_prime[0] * u_prime[2] 
+      //  + 2 * b0[1] * b0[2] * u0[0] * u_prime[1] * u_prime[2] + 2 * e0[1] * e0[2] * u0[0] * u_prime[1] * u_prime[2] 
+      //  - SQR(b0[0]) * u0[0] * SQR(u_prime[2]) - SQR(b0[1]) * u0[0] * SQR(u_prime[2]) 
+      //  + SQR(e0[2]) * u0[0] * SQR(u_prime[2]));
+      //  ux2(p) += coeff_sync * (-b0[2] * e0[0] + b0[0] * e0[2] - SQR(e0[0]) * u0[1] - SQR(e0[1]) * u0[1] - SQR(e0[2]) * u0[1] 
+      //  + b0[0] * b0[1] * u_prime[0] + e0[0] * e0[1] * u_prime[0] 
+      //  + 2 * b0[2] * e0[1] * u0[1] * u_prime[0] - 2 * b0[1] * e0[2] * u0[1] * u_prime[0] 
+      //  - SQR(b0[1]) * u0[1] * SQR(u_prime[0]) - SQR(b0[2]) * u0[1] * SQR(u_prime[0]) 
+      //  + SQR(e0[0]) * u0[1] * SQR(u_prime[0]) - SQR(b0[0]) * u_prime[1] - SQR(b0[2]) * u_prime[1] 
+      //  + SQR(e0[1]) * u_prime[1] - 2 * b0[2] * e0[0] * u0[1] * u_prime[1] 
+      //  + 2 * b0[0] * e0[2] * u0[1] * u_prime[1] + 2 * b0[0] * b0[1] * u0[1] * u_prime[0] * u_prime[1] 
+      //  + 2 * e0[0] * e0[1] * u0[1] * u_prime[0] * u_prime[1] - SQR(b0[0]) * u0[1] * SQR(u_prime[1]) 
+      //  - SQR(b0[2]) * u0[1] * SQR(u_prime[1]) + SQR(e0[1]) * u0[1] * SQR(u_prime[1]) 
+      //  + b0[1] * b0[2] * u_prime[2] + e0[1] * e0[2] * u_prime[2] + 2 * b0[1] * e0[0] * u0[1] * u_prime[2] 
+      //  - 2 * b0[0] * e0[1] * u0[1] * u_prime[2] + 2 * b0[0] * b0[2] * u0[1] * u_prime[0] * u_prime[2] 
+      //  + 2 * e0[0] * e0[2] * u0[1] * u_prime[0] * u_prime[2] + 2 * b0[1] * b0[2] * u0[1] * u_prime[1] * u_prime[2] 
+      //  + 2 * e0[1] * e0[2] * u0[1] * u_prime[1] * u_prime[2] - SQR(b0[0]) * u0[1] * SQR(u_prime[2]) 
+      //  - SQR(b0[1]) * u0[1] * SQR(u_prime[2]) + SQR(e0[2]) * u0[1] * SQR(u_prime[2])) ;
+      //  ux3(p) += coeff_sync * (b0[1] * e0[0] - b0[0] * e0[1] - SQR(e0[0]) * u0[2] - SQR(e0[1]) * u0[2] - SQR(e0[2]) * u0[2] 
+      //  + b0[0] * b0[2] * u_prime[0] + e0[0] * e0[2] * u_prime[0] 
+      //  + 2 * b0[2] * e0[1] * u0[2] * u_prime[0] - 2 * b0[1] * e0[2] * u0[2] * u_prime[0] 
+      //  - SQR(b0[1]) * u0[2] * SQR(u_prime[0]) - SQR(b0[2]) * u0[2] * SQR(u_prime[0]) 
+      //  + SQR(e0[0]) * u0[2] * SQR(u_prime[0]) + b0[1] * b0[2] * u_prime[1] + e0[1] * e0[2] * u_prime[1] 
+      //  - 2 * b0[2] * e0[0] * u0[2] * u_prime[1] + 2 * b0[0] * e0[2] * u0[2] * u_prime[1] 
+      //  + 2 * b0[0] * b0[1] * u0[2] * u_prime[0] * u_prime[1] + 2 * e0[0] * e0[1] * u0[2] * u_prime[0] * u_prime[1] 
+      //  - SQR(b0[0]) * u0[2] * SQR(u_prime[1]) - SQR(b0[2]) * u0[2] * SQR(u_prime[1]) 
+      //  + SQR(e0[1]) * u0[2] * SQR(u_prime[1]) - SQR(b0[0]) * u_prime[2] - SQR(b0[1]) * u_prime[2] 
+      //  + SQR(e0[2]) * u_prime[2] + 2 * b0[1] * e0[0] * u0[2] * u_prime[2] 
+      //  - 2 * b0[0] * e0[1] * u0[2] * u_prime[2] + 2 * b0[0] * b0[2] * u0[2] * u_prime[0] * u_prime[2] 
+      //  + 2 * e0[0] * e0[2] * u0[2] * u_prime[0] * u_prime[2] + 2 * b0[1] * b0[2] * u0[2] * u_prime[1] * u_prime[2] 
+      //  + 2 * e0[1] * e0[2] * u0[2] * u_prime[1] * u_prime[2] - SQR(b0[0]) * u0[2] * SQR(u_prime[2]) 
+      //  - SQR(b0[1]) * u0[2] * SQR(u_prime[2]) + SQR(e0[2]) * u0[2] * SQR(u_prime[2])) ;
+
+      //  kappaR_norm = NORM(kappaR[0],kappaR[0],kappaR[0]);
+      //  if (kappaR_norm != ZERO) {
+      //   kappaR[0] /= kappaR_norm;
+      //   kappaR[1] /= kappaR_norm;
+      //   kappaR[2] /= kappaR_norm;
+      //  }
+      //  ux1(p) += coeff_sync * kappaR_norm * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr / kappaR_norm) ;
+      //  ux2(p) += coeff_sync * kappaR_norm * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr / kappaR_norm) ;
+      //  ux3(p) += coeff_sync * kappaR_norm * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr / kappaR_norm) ;     
+      }
  
      Inline void operator()(index_t p) const {
        if (tag(p) != ParticleTag::alive) {
@@ -440,7 +538,17 @@
              ux3(p) += HALF * dt * force_Cart[2];
            }
          }
-       } else {
+       } 
+       else {
+         // cooling
+         if (cooling & Cooling::Synchrotron) {
+           if (!is_gca) {
+             u_prime[0] = ux1(p); //HALF * (u_prime[0] + ux1(p));
+             u_prime[1] = ux2(p); //HALF * (u_prime[1] + ux2(p));
+             u_prime[2] = ux3(p); //HALF * (u_prime[2] + ux3(p));
+             synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
+           }
+         }
          /* conventional pusher mode ------------------------------------- */
          // update with conventional pusher
          if constexpr (ExtForce) {
@@ -458,9 +566,9 @@
        // cooling
        if (cooling & Cooling::Synchrotron) {
          if (!is_gca) {
-           u_prime[0] = HALF * (u_prime[0] + ux1(p));
-           u_prime[1] = HALF * (u_prime[1] + ux2(p));
-           u_prime[2] = HALF * (u_prime[2] + ux3(p));
+           u_prime[0] = ux1(p); //HALF * (u_prime[0] + ux1(p));
+           u_prime[1] = ux2(p); //HALF * (u_prime[1] + ux2(p));
+           u_prime[2] = ux3(p); //HALF * (u_prime[2] + ux3(p));
            synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
          }
        }

@@ -417,6 +417,26 @@ namespace ntt {
     set("algorithms.toggles.deposit",
         toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
 
+    /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.deltax",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "deltax", defaults::fieldsolver::deltax));
+    set("algorithms.fieldsolver.deltay",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "deltay", defaults::fieldsolver::deltay));
+    set("algorithms.fieldsolver.deltaz",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "deltaz", defaults::fieldsolver::deltaz));
+    set("algorithms.fieldsolver.betaxy",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betaxy", defaults::fieldsolver::betaxy));
+    set("algorithms.fieldsolver.betayx",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betayx", defaults::fieldsolver::betayx));
+    set("algorithms.fieldsolver.betaxz",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betaxz", defaults::fieldsolver::betaxz));
+    set("algorithms.fieldsolver.betazx",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betazx", defaults::fieldsolver::betazx));
+    set("algorithms.fieldsolver.betayz",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betayz", defaults::fieldsolver::betayz));
+    set("algorithms.fieldsolver.betazy",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "betazy", defaults::fieldsolver::betazy));
+
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));
