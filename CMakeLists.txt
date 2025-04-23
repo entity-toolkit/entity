@@ -95,6 +95,13 @@ elseif("${Kokkos_DEVICES}" MATCHES "HIP")
 elseif("${Kokkos_DEVICES}" MATCHES "SYCL")
   add_compile_options("-D SYCL_ENABLED")
 endif()
+if((${Kokkos_DEVICES} MATCHES "CUDA")
+   OR (${Kokkos_DEVICES} MATCHES "HIP")
+   OR (${Kokkos_DEVICES} MATCHES "SYCL"))
+  set(DEVICE_ENABLED ON)
+else()
+  set(DEVICE_ENABLED OFF)
+endif()
 
 # MPI
 if(${mpi})
@@ -102,6 +109,17 @@ if(${mpi})
   include_directories(${MPI_CXX_INCLUDE_PATH})
   add_compile_options("-D MPI_ENABLED")
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
+
+  if(${DEVICE_ENABLED})
+    set(mpi_device_copy
+        ${default_mpi_device_copy}
+        CACHE BOOL "Use explicit copy when using MPI + GPU")
+    add_compile_options("-D MPI_DEVICE_COPY")
+  else()
+    set(mpi_device_copy
+        OFF
+        CACHE BOOL "Use explicit copy when using MPI + GPU")
+  endif()
 endif()
 
 # Output
