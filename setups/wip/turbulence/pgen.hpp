@@ -267,8 +267,9 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t temperature, dB, omega_0, gamma_0, Lx, Ly, Lz;
-    const int    random_seed;
+    const real_t                     temperature, dB, omega_0, gamma_0;
+    const real_t                     Lx, Ly, Lz, escape_dist;
+    const int                        random_seed;
     std::vector<std::vector<real_t>> wavenumbers;
     random_number_pool_t             random_pool;
 
@@ -295,6 +296,7 @@ namespace user {
              global_domain.mesh().extent(in::x2).first }
       , Lz { global_domain.mesh().extent(in::x3).second -
              global_domain.mesh().extent(in::x3).first }
+      , escape_dist { p.template get<real_t>("setup.escape_dist", HALF * Lx) }
       , ext_current { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
       , init_flds { ext_current.k,
                     ext_current.a_real,
@@ -305,8 +307,7 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool,
-                                                      temperature,
-                                                      ZERO);
+                                                      temperature);
       const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
         energy_dist,
         { 1, 2 });
@@ -317,7 +318,7 @@ namespace user {
         ONE);
     };
 
-    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>&) {
+    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
       // update amplitudes of antenna
       const auto  dt = params.template get<real_t>("algorithms.timestep.dt");
       const auto& ext_curr = ext_current;
@@ -364,6 +365,44 @@ namespace user {
                  ext_curr.A0(i) * math::sqrt(TWELVE * ext_curr.gamma_0 / dt) *
                    u_imag_inv * dt;
         });
+
+      // particle escape (resample velocities)
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                      domain.random_pool,
+                                                      temperature);
+      for (const auto& sp : { 0, 1 }) {
+        if (domain.species[sp].npld() > 1) {
+          const auto& ux1 = domain.species[sp].ux1;
+          const auto& ux2 = domain.species[sp].ux2;
+          const auto& ux3 = domain.species[sp].ux3;
+          const auto& pld = domain.species[sp].pld;
+          const auto& tag = domain.species[sp].tag;
+          const auto  L   = escape_dist;
+          Kokkos::parallel_for(
+            "UpdatePld",
+            domain.species[sp].npart(),
+            Lambda(index_t p) {
+              if (tag(p) == ParticleTag::dead) {
+                return;
+              }
+              const auto gamma = math::sqrt(
+                ONE + ux1(p) * ux1(p) + ux2(p) * ux2(p) + ux3(p) * ux3(p));
+              pld(p, 0) += ux1(p) * dt / gamma;
+              pld(p, 1) += ux2(p) * dt / gamma;
+
+              if ((pld(p, 0) > L) or (pld(p, 1) > L)) {
+                coord_t<D>      x_Ph { ZERO };
+                vec_t<Dim::_3D> u_Mxw { ZERO };
+                energy_dist(x_Ph, u_Mxw);
+                ux1(p)    = u_Mxw[0];
+                ux2(p)    = u_Mxw[1];
+                ux3(p)    = u_Mxw[2];
+                pld(p, 0) = ZERO;
+                pld(p, 1) = ZERO;
+              }
+            });
+        }
+      }
     }
   };
 } // namespace user
