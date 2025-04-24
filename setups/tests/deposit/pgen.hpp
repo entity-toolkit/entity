@@ -48,53 +48,63 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto empty = std::vector<real_t> {};
-      const auto x1s = params.template get<std::vector<real_t>>("setup.x1s", empty);
-      const auto y1s = params.template get<std::vector<real_t>>("setup.y1s", empty);
-      const auto z1s = params.template get<std::vector<real_t>>("setup.z1s", empty);
-      const auto phi1s = params.template get<std::vector<real_t>>("setup.phi1s",
+      const auto x1_e  = params.template get<std::vector<real_t>>("setup.x1_e",
+                                                                 empty);
+      const auto x2_e  = params.template get<std::vector<real_t>>("setup.x2_e",
+                                                                 empty);
+      const auto x3_e  = params.template get<std::vector<real_t>>("setup.x3_e",
+                                                                 empty);
+      const auto phi_e = params.template get<std::vector<real_t>>("setup.phi_e",
                                                                   empty);
-      const auto ux1s  = params.template get<std::vector<real_t>>("setup.ux1s",
-                                                                 empty);
-      const auto uy1s  = params.template get<std::vector<real_t>>("setup.uy1s",
-                                                                 empty);
-      const auto uz1s  = params.template get<std::vector<real_t>>("setup.uz1s",
-                                                                 empty);
+      const auto ux1_e = params.template get<std::vector<real_t>>("setup.ux1_e",
+                                                                  empty);
+      const auto ux2_e = params.template get<std::vector<real_t>>("setup.ux2_e",
+                                                                  empty);
+      const auto ux3_e = params.template get<std::vector<real_t>>("setup.ux3_e",
+                                                                  empty);
 
-      const auto x2s = params.template get<std::vector<real_t>>("setup.x2s", empty);
-      const auto y2s = params.template get<std::vector<real_t>>("setup.y2s", empty);
-      const auto z2s = params.template get<std::vector<real_t>>("setup.z2s", empty);
-      const auto ux2s  = params.template get<std::vector<real_t>>("setup.ux2s",
+      const auto x1_i  = params.template get<std::vector<real_t>>("setup.x1_i",
                                                                  empty);
-      const auto uy2s  = params.template get<std::vector<real_t>>("setup.uy2s",
+      const auto x2_i  = params.template get<std::vector<real_t>>("setup.x2_i",
                                                                  empty);
-      const auto uz2s  = params.template get<std::vector<real_t>>("setup.uz2s",
+      const auto x3_i  = params.template get<std::vector<real_t>>("setup.x3_i",
                                                                  empty);
-      const auto phi2s = params.template get<std::vector<real_t>>("setup.phi2s",
+      const auto phi_i = params.template get<std::vector<real_t>>("setup.phi_i",
                                                                   empty);
-      std::map<std::string, std::vector<real_t>> data_1 {
-        {  "x1",  x1s },
-        {  "x2",  y1s },
-        { "ux1", ux1s },
-        { "ux2", uy1s },
-        { "ux3", uz1s }
+      const auto ux1_i = params.template get<std::vector<real_t>>("setup.ux1_i",
+                                                                  empty);
+      const auto ux2_i = params.template get<std::vector<real_t>>("setup.ux2_i",
+                                                                  empty);
+      const auto ux3_i = params.template get<std::vector<real_t>>("setup.ux3_i",
+                                                                  empty);
+      std::map<std::string, std::vector<real_t>> data_e {
+        {  "x1",  x1_e },
+        {  "x2",  x2_e },
+        { "ux1", ux1_e },
+        { "ux2", ux2_e },
+        { "ux3", ux3_e }
       };
-      std::map<std::string, std::vector<real_t>> data_2 {
-        {  "x1",  x2s },
-        {  "x2",  y2s },
-        { "ux1", ux2s },
-        { "ux2", uy2s },
-        { "ux3", uz2s }
+      std::map<std::string, std::vector<real_t>> data_i {
+        {  "x1",  x1_i },
+        {  "x2",  x2_i },
+        { "ux1", ux1_i },
+        { "ux2", ux2_i },
+        { "ux3", ux3_i }
       };
       if constexpr (M::CoordType == Coord::Cart or D == Dim::_3D) {
-        data_1["x3"] = z1s;
-        data_2["x3"] = z2s;
+        data_e["x3"] = x3_e;
+        data_i["x3"] = x3_i;
       } else if constexpr (D == Dim::_2D) {
-        data_1["phi"] = phi1s;
-        data_2["phi"] = phi2s;
+        data_e["phi"] = phi_e;
+        data_i["phi"] = phi_i;
       }
 
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)1, data_1);
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)2, data_2);
+      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)1, data_e);
+      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)2, data_i);
+    }
+
+    auto FixFieldsConst(const bc_in&, const em&) const -> std::pair<real_t, bool> {
+      return { ZERO, false };
     }
   };
 

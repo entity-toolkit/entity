@@ -1,10 +1,10 @@
 [simulation]
   name    = "deposit-test-mink"
   engine  = "srpic"
-  runtime = 10.0
+  runtime = 5.0
 
 [grid]
-  resolution = [512, 512]
+  resolution = [32, 32]
   extent     = [[0.0, 1.0], [0.0, 1.0]]
 
   [grid.metric]
@@ -40,30 +40,32 @@
     maxnpart = 1e2
 
 [setup]
-  x1s  = [0.25]
-  y1s  = [0.85]
-  z1s  = [0.33]
-  ux1s = [0.6]
-  uy1s = [-0.3]
-  uz1s = [-0.2]
+  x1_e  = [0.25]
+  x2_e  = [0.85]
+  x3_e  = [0.33]
+  ux1_e = [0.6]
+  ux2_e = [-0.3]
+  ux3_e = [-0.2]
 
-  x2s  = [0.25]
-  y2s  = [0.85]
-  z2s  = [0.33]
-  ux2s = [-0.2]
-  uy2s = [-0.2]
-  uz2s = [0.1]
+  x1_i  = [0.25]
+  x2_i  = [0.85]
+  x3_i  = [0.33]
+  ux1_i = [-0.6]
+  ux2_i = [0.3]
+  ux3_i = [0.2]
 
 [output]
-  format        = "hdf5"
-  interval_time = 0.01
+  format   = "hdf5"
+  interval = 5
 
   [output.fields]
     quantities = ["N_1", "N_2", "E", "B", "J"]
 
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
 [checkpoint]
   keep = 0
-
-[diagnostics]
-  colored_stdout  = true
-  blocking_timers = true

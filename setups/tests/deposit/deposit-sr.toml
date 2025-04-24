@@ -1,18 +1,18 @@
 [simulation]
-  name    = "deposit-test"
+  name    = "deposit-sr"
   engine  = "srpic"
   runtime = 10.0
 
 [grid]
-  resolution = [256, 256]
-  extent     = [[0.0, 1.0], [0.0, 1.0]]
+  resolution = [64, 64]
+  extent     = [[1.0, 5.0]]
 
   [grid.metric]
-    metric = "minkowski"
+    metric = "qspherical"
 
   [grid.boundaries]
-    fields    = [["PERIODIC"], ["PERIODIC"]]
-    particles = [["PERIODIC"], ["PERIODIC"]]
+    fields    = [["FIXED", "FIXED"]]
+    particles = [["REFLECT", "REFLECT"]]
 
 [scales]
   larmor0    = 0.1
@@ -40,14 +40,32 @@
     maxnpart = 1e2
 
 [setup]
+  x1_e  = [2.25]
+  x2_e  = [1.25]
+  phi_e = [0.0]
+  ux1_e = [0.6]
+  ux2_e = [-0.3]
+  ux3_e = [-0.2]
+
+  x1_i  = [2.25]
+  x2_i  = [1.25]
+  phi_i = [0.0]
+  ux1_i = [-0.6]
+  ux2_i = [0.3]
+  ux3_i = [0.2]
 
 [output]
-  format        = "hdf5"
-  interval_time = 0.01
+  format   = "hdf5"
+  interval = 5
 
-  [output.quantities]
+  [output.fields]
     quantities = ["N_1", "N_2", "E", "B", "J"]
 
-[diagnostics]
-  colored_stdout  = true
-  blocking_timers = true
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0
