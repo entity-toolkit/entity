@@ -266,11 +266,75 @@ namespace comm {
       }
 
       if (send_rank >= 0 && recv_rank >= 0) {
-        sendrecv<real_t>(send_fld, recv_fld, nsend, nrecv, send_rank, recv_rank);
+#if defined(MPI_DEVICE_COPY)
+        auto send_fld_h = Kokkos::create_mirror_view(send_fld);
+        auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
+        Kokkos::deep_copy(send_fld_h, send_fld);
+        MPI_Sendrecv(send_fld_h.data(),
+                     nsend,
+                     mpi::get_type<real_t>(),
+                     send_rank,
+                     0,
+                     recv_fld_h.data(),
+                     nrecv,
+                     mpi::get_type<real_t>(),
+                     recv_rank,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+        Kokkos::deep_copy(recv_fld, recv_fld_h);
+#else
+        MPI_Sendrecv(send_fld.data(),
+                     nsend,
+                     mpi::get_type<real_t>(),
+                     send_rank,
+                     0,
+                     recv_fld.data(),
+                     nrecv,
+                     mpi::get_type<real_t>(),
+                     recv_rank,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+#endif
       } else if (send_rank >= 0) {
-        send<real_t>(send_fld, nsend, send_rank);
+#if defined(MPI_DEVICE_COPY)
+        auto send_fld_h = Kokkos::create_mirror_view(send_fld);
+        Kokkos::deep_copy(send_fld_h, send_fld);
+        MPI_Send(send_fld_h.data(),
+                 nsend,
+                 mpi::get_type<real_t>(),
+                 send_rank,
+                 0,
+                 MPI_COMM_WORLD);
+#else
+        MPI_Send(send_fld.data(),
+                 nsend,
+                 mpi::get_type<real_t>(),
+                 send_rank,
+                 0,
+                 MPI_COMM_WORLD);
+#endif
       } else if (recv_rank >= 0) {
-        recv<real_t>(recv_fld, nrecv, recv_rank);
+#if defined(MPI_DEVICE_COPY)
+        auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
+        MPI_Recv(recv_fld_h.data(),
+                 nrecv,
+                 mpi::get_type<real_t>(),
+                 recv_rank,
+                 0,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+        Kokkos::deep_copy(recv_fld, recv_fld_h);
+#else
+        MPI_Recv(recv_fld.data(),
+                 nrecv,
+                 mpi::get_type<real_t>(),
+                 recv_rank,
+                 0,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+#endif
       } else {
         raise::Error("CommunicateField called with negative ranks", HERE);
       }
