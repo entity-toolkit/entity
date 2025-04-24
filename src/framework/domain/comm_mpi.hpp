@@ -33,6 +33,86 @@
 namespace comm {
   using namespace ntt;
 
+  namespace {
+    template <typename T>
+    void send_recv(const array_t<T*>& send_buff,
+                   array_t<T*>&       recv_buff,
+                   npart_t            nsend,
+                   npart_t            nrecv,
+                   int                send_rank,
+                   int                recv_rank,
+                   npart_t            recv_offset = 0u) {
+#if defined(MPI_DEVICE_COPY)
+      auto send_buff_h = Kokkos::create_mirror_view(send_buff);
+      auto recv_buff_h = Kokkos::create_mirror_view(recv_buff);
+      Kokkos::deep_copy(send_buff_h, send_buff);
+      MPI_Sendrecv(send_buff_h.data(),
+                   nsend,
+                   mpi::get_type<T>(),
+                   send_rank,
+                   0,
+                   recv_buff_h.data() + recv_offset,
+                   nrecv,
+                   mpi::get_type<T>(),
+                   recv_rank,
+                   0,
+                   MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE);
+      Kokkos::deep_copy(recv_buff, recv_buff_h);
+#else
+      MPI_Sendrecv(send_buff.data(),
+                   nsend,
+                   mpi::get_type<T>(),
+                   send_rank,
+                   0,
+                   recv_buff.data() + recv_offset,
+                   nrecv,
+                   mpi::get_type<T>(),
+                   recv_rank,
+                   0,
+                   MPI_COMM_WORLD,
+                   MPI_STATUS_IGNORE);
+#endif
+    }
+
+    template <typename T>
+    void send(const array_t<T*>& send_buff, npart_t nsend, int send_rank) {
+#if defined(MPI_DEVICE_COPY)
+      auto send_buff_h = Kokkos::create_mirror_view(send_buff);
+      Kokkos::deep_copy(send_buff_h, send_buff);
+      MPI_Send(send_buff_h.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
+#else
+      MPI_Send(send_buff.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
+#endif
+    }
+
+    template <typename T>
+    void recv(const array_t<T*>& recv_buff,
+              npart_t            nrecv,
+              int                recv_rank,
+              npart_t            recv_offset = 0u) {
+#if defined(MPI_DEVICE_COPY)
+      auto recv_buff_h = Kokkos::create_mirror_view(recv_buff);
+      MPI_Recv(recv_buff_h.data() + recv_offset,
+               nrecv,
+               mpi::get_type<T>(),
+               recv_rank,
+               0,
+               MPI_COMM_WORLD,
+               MPI_STATUS_IGNORE);
+      Kokkos::deep_copy(recv_buff, recv_buff_h);
+#else
+      MPI_Recv(recv_buff.data() + recv_offset,
+               nrecv,
+               mpi::get_type<T>(),
+               recv_rank,
+               0,
+               MPI_COMM_WORLD,
+               MPI_STATUS_IGNORE);
+#endif
+    }
+  } // namespace
+
   template <Dimension D, int N>
   inline void CommunicateField(unsigned int                      idx,
                                ndfield_t<D, N>&                  fld,
@@ -186,75 +266,11 @@ namespace comm {
       }
 
       if (send_rank >= 0 && recv_rank >= 0) {
-#if defined(MPI_DEVICE_COPY)
-        auto send_fld_h = Kokkos::create_mirror_view(send_fld);
-        auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
-        Kokkos::deep_copy(send_fld_h, send_fld);
-        MPI_Sendrecv(send_fld_h.data(),
-                     nsend,
-                     mpi::get_type<real_t>(),
-                     send_rank,
-                     0,
-                     recv_fld_h.data(),
-                     nrecv,
-                     mpi::get_type<real_t>(),
-                     recv_rank,
-                     0,
-                     MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-        Kokkos::deep_copy(recv_fld, recv_fld_h);
-#else
-        MPI_Sendrecv(send_fld.data(),
-                     nsend,
-                     mpi::get_type<real_t>(),
-                     send_rank,
-                     0,
-                     recv_fld.data(),
-                     nrecv,
-                     mpi::get_type<real_t>(),
-                     recv_rank,
-                     0,
-                     MPI_COMM_WORLD,
-                     MPI_STATUS_IGNORE);
-#endif
+        sendrecv<real_t>(send_fld, recv_fld, nsend, nrecv, send_rank, recv_rank);
       } else if (send_rank >= 0) {
-#if defined(MPI_DEVICE_COPY)
-        auto send_fld_h = Kokkos::create_mirror_view(send_fld);
-        Kokkos::deep_copy(send_fld_h, send_fld);
-        MPI_Send(send_fld_h.data(),
-                 nsend,
-                 mpi::get_type<real_t>(),
-                 send_rank,
-                 0,
-                 MPI_COMM_WORLD);
-#else
-        MPI_Send(send_fld.data(),
-                 nsend,
-                 mpi::get_type<real_t>(),
-                 send_rank,
-                 0,
-                 MPI_COMM_WORLD);
-#endif
+        send<real_t>(send_fld, nsend, send_rank);
       } else if (recv_rank >= 0) {
-#if defined(MPI_DEVICE_COPY)
-        auto recv_fld_h = Kokkos::create_mirror_view(recv_fld);
-        MPI_Recv(recv_fld_h.data(),
-                 nrecv,
-                 mpi::get_type<real_t>(),
-                 recv_rank,
-                 0,
-                 MPI_COMM_WORLD,
-                 MPI_STATUS_IGNORE);
-        Kokkos::deep_copy(recv_fld, recv_fld_h);
-#else
-        MPI_Recv(recv_fld.data(),
-                 nrecv,
-                 mpi::get_type<real_t>(),
-                 recv_rank,
-                 0,
-                 MPI_COMM_WORLD,
-                 MPI_STATUS_IGNORE);
-#endif
+        recv<real_t>(recv_fld, nrecv, recv_rank);
       } else {
         raise::Error("CommunicateField called with negative ranks", HERE);
       }
@@ -359,101 +375,6 @@ namespace comm {
     }
   }
 
-  namespace {
-    template <typename T>
-    void send_recv(const array_t<T*>& send_buff,
-                   array_t<T*>&       recv_buff,
-                   unsigned short     Narrs,
-                   npart_t            nsend,
-                   npart_t            nrecv,
-                   int                send_rank,
-                   int                recv_rank,
-                   npart_t            recv_offset) {
-#if defined(MPI_DEVICE_COPY)
-      auto send_buff_h = Kokkos::create_mirror_view(send_buff);
-      auto recv_buff_h = Kokkos::create_mirror_view(recv_buff);
-      Kokkos::deep_copy(send_buff_h, send_buff);
-      MPI_Sendrecv(send_buff_h.data(),
-                   nsend * Narrs,
-                   mpi::get_type<T>(),
-                   send_rank,
-                   0,
-                   recv_buff_h.data() + recv_offset,
-                   nrecv * Narrs,
-                   mpi::get_type<T>(),
-                   recv_rank,
-                   0,
-                   MPI_COMM_WORLD,
-                   MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(recv_buff, recv_buff_h);
-#else
-      MPI_Sendrecv(send_buff.data(),
-                   nsend * Narrs,
-                   mpi::get_type<T>(),
-                   send_rank,
-                   0,
-                   recv_buff.data() + recv_offset,
-                   nrecv * Narrs,
-                   mpi::get_type<T>(),
-                   recv_rank,
-                   0,
-                   MPI_COMM_WORLD,
-                   MPI_STATUS_IGNORE);
-#endif
-    }
-
-    template <typename T>
-    void send(const array_t<T*>& send_buff,
-              unsigned short     Narrs,
-              npart_t            nsend,
-              int                send_rank) {
-#if defined(MPI_DEVICE_COPY)
-      auto send_buff_h = Kokkos::create_mirror_view(send_buff);
-      Kokkos::deep_copy(send_buff_h, send_buff);
-      MPI_Send(send_buff_h.data(),
-               nsend * Narrs,
-               mpi::get_type<T>(),
-               send_rank,
-               0,
-               MPI_COMM_WORLD);
-#else
-      MPI_Send(send_buff.data(),
-               nsend * Narrs,
-               mpi::get_type<T>(),
-               send_rank,
-               0,
-               MPI_COMM_WORLD);
-#endif
-    }
-
-    template <typename T>
-    void recv(const array_t<T*>& recv_buff,
-              unsigned short     Narrs,
-              npart_t            nrecv,
-              int                recv_rank,
-              npart_t            recv_offset) {
-#if defined(MPI_DEVICE_COPY)
-      auto recv_buff_h = Kokkos::create_mirror_view(recv_buff);
-      MPI_Recv(recv_buff_h.data() + recv_offset,
-               nrecv * Narrs,
-               mpi::get_type<T>(),
-               recv_rank,
-               0,
-               MPI_COMM_WORLD,
-               MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(recv_buff, recv_buff_h);
-#else
-      MPI_Recv(recv_buff.data() + recv_offset,
-               nrecv * Narrs,
-               mpi::get_type<T>(),
-               recv_rank,
-               0,
-               MPI_COMM_WORLD,
-               MPI_STATUS_IGNORE);
-#endif
-    }
-  } // namespace
-
   template <Dimension D, Coord::type C>
   void CommunicateParticles(Particles<D, C>&            species,
                             const array_t<npart_t*>&    outgoing_indices,
@@ -542,27 +463,24 @@ namespace comm {
                        HERE);
         send_recv<int>(send_buff_int,
                        recv_buff_int,
-                       NINTS,
-                       npart_send_in,
-                       npart_recv_in,
+                       NINTS * npart_send_in,
+                       NINTS * npart_recv_in,
                        send_rank,
                        recv_rank,
                        recv_offset_int);
 
         send_recv<real_t>(send_buff_real,
                           recv_buff_real,
-                          NREALS,
-                          npart_send_in,
-                          npart_recv_in,
+                          NREALS * npart_send_in,
+                          NREALS * npart_recv_in,
                           send_rank,
                           recv_rank,
                           recv_offset_real);
 
         send_recv<prtldx_t>(send_buff_prtldx,
                             recv_buff_prtldx,
-                            NPRTLDX,
-                            npart_send_in,
-                            npart_recv_in,
+                            NPRTLDX * npart_send_in,
+                            NPRTLDX * npart_recv_in,
                             send_rank,
                             recv_rank,
                             recv_offset_prtldx);
@@ -570,19 +488,18 @@ namespace comm {
         if (NPLDS > 0) {
           send_recv<real_t>(send_buff_pld,
                             recv_buff_pld,
-                            NPLDS,
-                            npart_send_in,
-                            npart_recv_in,
+                            NPLDS * npart_send_in,
+                            NPLDS * npart_recv_in,
                             send_rank,
                             recv_rank,
                             recv_offset_pld);
         }
       } else if ((send_rank >= 0) and (npart_send_in > 0)) {
-        send<int>(send_buff_int, NINTS, npart_send_in, send_rank);
-        send<real_t>(send_buff_real, NREALS, npart_send_in, send_rank);
-        send<prtldx_t>(send_buff_prtldx, NPRTLDX, npart_send_in, send_rank);
+        send<int>(send_buff_int, NINTS * npart_send_in, send_rank);
+        send<real_t>(send_buff_real, NREALS * npart_send_in, send_rank);
+        send<prtldx_t>(send_buff_prtldx, NPRTLDX * npart_send_in, send_rank);
         if (NPLDS > 0) {
-          send<real_t>(send_buff_pld, NPLDS, npart_send_in, send_rank);
+          send<real_t>(send_buff_pld, NPLDS * npart_send_in, send_rank);
         }
       } else if ((recv_rank >= 0) and (npart_recv_in > 0)) {
         raise::ErrorIf(recv_offset_int + npart_recv_in * NINTS >
@@ -590,15 +507,14 @@ namespace comm {
                        "incorrect # of recv particles",
                        HERE);
 
-        recv<int>(recv_buff_int, NINTS, npart_recv_in, recv_rank, recv_offset_int);
-        recv<real_t>(recv_buff_real, NREALS, npart_recv_in, recv_rank, recv_offset_real);
+        recv<int>(recv_buff_int, NINTS * npart_recv_in, recv_rank, recv_offset_int);
+        recv<real_t>(recv_buff_real, NREALS * npart_recv_in, recv_rank, recv_offset_real);
         recv<prtldx_t>(recv_buff_prtldx,
-                       NPRTLDX,
-                       npart_recv_in,
+                       NPRTLDX * npart_recv_in,
                        recv_rank,
                        recv_offset_prtldx);
         if (NPLDS > 0) {
-          recv<real_t>(recv_buff_pld, NPLDS, npart_recv_in, recv_rank, recv_offset_pld);
+          recv<real_t>(recv_buff_pld, NPLDS * npart_recv_in, recv_rank, recv_offset_pld);
         }
       }
       current_received += npart_recv_in;
