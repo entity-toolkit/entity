@@ -26,20 +26,6 @@ namespace ntt::defaults {
   const std::string ph_pusher      = "Photon";
   const timestep_t  clear_interval = 100;
 
-  namespace fieldsolver {
-    const real_t deltax = 0.0;
-
-    const real_t deltay = 0.0;
-    const real_t betaxy = 0.0;
-    const real_t betayx = 0.0;
-
-    const real_t deltaz = 0.0;
-    const real_t betaxz = 0.0;
-    const real_t betazx = 0.0;
-    const real_t betayz = 0.0;
-    const real_t betazy = 0.0;
-  } // namespace fieldsolver
-
   namespace qsph {
     const real_t r0 = 0.0;
     const real_t h  = 0.0;
