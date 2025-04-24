@@ -69,7 +69,7 @@ if(DEFINED ENV{Entity_MPI_DEVICE_COPY})
       CACHE INTERNAL "Default flag for copying from device to host for MPI")
 else()
   set(default_mpi_device_copy
-      ON
+      OFF
       CACHE INTERNAL "Default flag for copying from device to host for MPI")
 endif()
 
