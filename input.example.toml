@@ -115,10 +115,6 @@
       #   @example: ds = [[1.5], [2.0, 1.0], [1.1]] (will duplicate 1.5 for +/- x1 and 1.1 for +/- x3)
       #   @example: ds = [[], [1.5], []] (will only set for x2)
       ds = ""
-      # Absorption coefficient for fields:
-      #   @type: float: -inf < ... < inf, != 0
-      #   @default: 1.0
-      coeff = ""
 
     [grid.boundaries.absorb]
       # Size of the absorption layer for particles in physical (code) units:
