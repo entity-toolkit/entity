@@ -1,0 +1,71 @@
+[simulation]
+  name    = "deposit-test-mink"
+  engine  = "srpic"
+  runtime = 5.0
+
+[grid]
+  resolution = [32, 32]
+  extent     = [[0.0, 1.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.1
+  skindepth0 = 0.1
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 10.0
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e2
+
+  [[particles.species]]
+    label    = "e+"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+
+[setup]
+  x1_e  = [0.25]
+  x2_e  = [0.85]
+  x3_e  = [0.33]
+  ux1_e = [0.6]
+  ux2_e = [-0.3]
+  ux3_e = [-0.2]
+
+  x1_i  = [0.25]
+  x2_i  = [0.85]
+  x3_i  = [0.33]
+  ux1_i = [-0.6]
+  ux2_i = [0.3]
+  ux3_i = [0.2]
+
+[output]
+  format   = "hdf5"
+  interval = 5
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "E", "B", "J"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0
