@@ -65,15 +65,17 @@ printchoices(
   DEBUG_REPORT
   46)
 
-printchoices(
-  "MPI explicit copy"
-  "mpi_device_copy"
-  "${ON_OFF_VALUES}"
-  ${mpi_device_copy}
-  OFF
-  "${Green}"
-  MPI_DEVICE_COPY_REPORT
-  46)
+if(${mpi} AND ${DEVICE_ENABLED})
+  printchoices(
+    "MPI explicit copy"
+    "mpi_device_copy"
+    "${ON_OFF_VALUES}"
+    ${mpi_device_copy}
+    OFF
+    "${Green}"
+    MPI_DEVICE_COPY_REPORT
+    46)
+endif()
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}." "${PROJECT_VERSION_MINOR}.")
@@ -131,7 +133,7 @@ string(
   ${MPI_REPORT}
   "\n")
 
-if(${DEVICE_ENABLED})
+if(${mpi} AND ${DEVICE_ENABLED})
   string(APPEND REPORT_TEXT "  " ${MPI_DEVICE_COPY_REPORT} "\n")
 endif()
 
