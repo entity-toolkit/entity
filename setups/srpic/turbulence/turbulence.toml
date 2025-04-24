@@ -1,22 +1,22 @@
 [simulation]
   name    = "turbulence"
   engine  = "srpic"
-  runtime = 20.0
+  runtime = 1200.0
 
 [grid]
-  resolution = [184, 184, 184]
-  extent     = [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+  resolution = [1024, 1024]
+  extent     = [[-128.0, 128.0], [-128.0, 128.0]]
 
   [grid.metric]
     metric = "minkowski"
 
   [grid.boundaries]
-    fields    = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
-    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
 
 [scales]
-  larmor0    = 0.02
-  skindepth0 = 0.02
+  larmor0    = 1.0
+  skindepth0 = 1.0
 
 [algorithms]
   current_filters = 4
@@ -28,22 +28,38 @@
   ppc0 = 32.0
 
   [[particles.species]]
-    label    = "e-"
+    label    = "e-_p"
     mass     = 1.0
     charge   = -1.0
-    maxnpart = 1e8
+    maxnpart = 2e7
 
   [[particles.species]]
-    label    = "e+"
+    label    = "e+_p"
     mass     = 1.0
     charge   = 1.0
-    maxnpart = 1e8
+    maxnpart = 2e7
 
 [setup]
+  temperature = 1e0
+  dB          = 1.0
+  omega_0 = 0.0156
+  gamma_0 = 0.0078
+     
 
 [output]
   format        = "hdf5"
-  interval_time = 0.1
+  interval_time = 12.0
 
   [output.fields]
-    quantities = ["N_1", "N_2", "E", "B", "J", "T00_1", "T00_2"]
+    quantities = ["N_1_2", "J", "B", "E"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+  [output.stats]
+    enable = false
+
+[diagnostics]
+  colored_stdout = true

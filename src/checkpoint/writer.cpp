@@ -200,7 +200,7 @@ namespace checkpoint {
     m_writer.Put(var, &data);
   }
 
-  void Writer::saveAttrs(const ntt::SimulationParams& params, long double time) {
+  void Writer::saveAttrs(const ntt::SimulationParams& params, simtime_t time) {
     CallOnce([&]() {
       std::ofstream metadata;
       if (m_written.empty()) {

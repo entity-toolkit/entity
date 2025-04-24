@@ -54,7 +54,7 @@ namespace checkpoint {
     void beginSaving(timestep_t, simtime_t);
     void endSaving();
 
-    void saveAttrs(const ntt::SimulationParams&, long double);
+    void saveAttrs(const ntt::SimulationParams&, simtime_t);
 
     template <typename T>
     void savePerDomainVariable(const std::string&, std::size_t, std::size_t, T);
