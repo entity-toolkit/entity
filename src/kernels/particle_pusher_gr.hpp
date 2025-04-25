@@ -81,7 +81,6 @@ namespace kernel::gr {
     const int            ni1, ni2, ni3;
     const real_t         epsilon;
     const unsigned short niter;
-    const int            i1_absorb;
 
     bool is_axis_i2min { false }, is_axis_i2max { false };
     bool is_absorb_i1min { false }, is_absorb_i1max { false };
@@ -141,8 +140,7 @@ namespace kernel::gr {
       , ni2 { ni2 }
       , ni3 { ni3 }
       , epsilon { epsilon }
-      , niter { niter }
-      , i1_absorb {N_GHOSTS} {
+      , niter { niter } {
 
       raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ABSORB) ||
@@ -739,7 +737,7 @@ namespace kernel::gr {
   template <class M>
   Inline void Pusher_kernel<M>::boundaryConditions(index_t& p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-      if (i1(p) < i1_absorb && is_absorb_i1min) {
+      if (i1(p) < 0 && is_absorb_i1min) {
         tag(p) = ParticleTag::dead;
       } else if (i1(p) >= ni1 && is_absorb_i1max) {
         tag(p) = ParticleTag::dead;
