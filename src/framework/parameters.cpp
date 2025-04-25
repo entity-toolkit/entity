@@ -353,7 +353,6 @@ namespace ntt {
         for (const auto& bc : bcs) {
           if (fmt::toLower(bc) == "match") {
             promiseToDefine("grid.boundaries.match.ds");
-            promiseToDefine("grid.boundaries.match.coeff");
           }
           if (fmt::toLower(bc) == "atmosphere") {
             raise::ErrorIf(atm_defined,
@@ -854,14 +853,6 @@ namespace ntt {
         };
         set("grid.boundaries.match.ds", ds_array);
       }
-
-      set("grid.boundaries.match.coeff",
-          toml::find_or(toml_data,
-                        "grid",
-                        "boundaries",
-                        "match",
-                        "coeff",
-                        defaults::bc::match::coeff));
     }
 
     if (isPromised("grid.boundaries.absorb.ds")) {

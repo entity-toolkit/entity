@@ -36,7 +36,7 @@ printchoices(
   ${default_precision}
   "${Blue}"
   PRECISION_REPORT
-  36)
+  46)
 printchoices(
   "Output"
   "output"
@@ -45,7 +45,7 @@ printchoices(
   ${default_output}
   "${Green}"
   OUTPUT_REPORT
-  36)
+  46)
 printchoices(
   "MPI"
   "mpi"
@@ -54,7 +54,7 @@ printchoices(
   OFF
   "${Green}"
   MPI_REPORT
-  36)
+  46)
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -63,7 +63,19 @@ printchoices(
   OFF
   "${Green}"
   DEBUG_REPORT
-  36)
+  46)
+
+if(${mpi} AND ${DEVICE_ENABLED})
+  printchoices(
+    "MPI explicit copy"
+    "mpi_device_copy"
+    "${ON_OFF_VALUES}"
+    ${mpi_device_copy}
+    OFF
+    "${Green}"
+    MPI_DEVICE_COPY_REPORT
+    46)
+endif()
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}." "${PROJECT_VERSION_MINOR}.")
@@ -111,13 +123,23 @@ string(REPLACE ";" "+" Kokkos_DEVICES "${Kokkos_DEVICES}")
 string(
   APPEND
   REPORT_TEXT
-  "  - ARCH [${Magenta}Kokkos_ARCH_***${ColorReset}]:         ${Kokkos_ARCH}"
+  "  - ARCH [${Magenta}Kokkos_ARCH_***${ColorReset}]:                   "
+  "${Kokkos_ARCH}"
   "\n"
-  "  - DEVICES [${Magenta}Kokkos_ENABLE_***${ColorReset}]:    ${Kokkos_DEVICES}"
+  "  - DEVICES [${Magenta}Kokkos_ENABLE_***${ColorReset}]:              "
+  "${Kokkos_DEVICES}"
   "\n"
   "  "
   ${MPI_REPORT}
-  "\n"
+  "\n")
+
+if(${mpi} AND ${DEVICE_ENABLED})
+  string(APPEND REPORT_TEXT "  " ${MPI_DEVICE_COPY_REPORT} "\n")
+endif()
+
+string(
+  APPEND
+  REPORT_TEXT
   "  "
   ${DEBUG_REPORT}
   "\n"
