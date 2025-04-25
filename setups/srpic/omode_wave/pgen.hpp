@@ -35,43 +35,58 @@ namespace user {
 
   };
 
-    // Simplified external current driver: single x1-directional mode with spatial/temporal variation
-    template <Dimension D>
-    struct ExternalCurrent {
-      ExternalCurrent(real_t amplitude, real_t num_waves_x, real_t num_waves_y, real_t num_waves_z,
-                        real_t frequency, real_t Lx, real_t Ly, real_t Lz)
-            : A(amplitude), omega(frequency), Lx(Lx), Ly(Ly), Lz(Lz) {
+template <Dimension D>
+struct ExternalCurrent {
+  ExternalCurrent(real_t amplitude,
+                  real_t num_waves_x,
+                  real_t num_waves_y,
+                  real_t num_waves_z,
+                  real_t frequency,
+                  real_t Lx,
+                  real_t Ly,
+                  real_t Lz)
+    : A0 { amplitude }
+    , frequency { frequency }
+    , Lx { Lx }
+    , Ly { Ly }
+    , Lz { Lz }
+    , time { "time", 1 } // size 1 by default, can be resized
+    , time_index { 0 } {
+    
+    if constexpr (D == Dim::_2D) {
+      kx = constant::TWO_PI * num_waves_x / Lx;
+      ky = constant::TWO_PI * num_waves_y / Ly;
+      kz = ZERO;
+    }
+    if constexpr (D == Dim::_3D) {
+      kx = constant::TWO_PI * num_waves_x / Lx;
+      ky = constant::TWO_PI * num_waves_y / Ly;
+      kz = constant::TWO_PI * num_waves_z / Lz;
+    }
+  }
 
-            // Calculate wavevector components based on number of desired waves
-            if constexpr (D == Dim::_2D) {
-                kx = constant::TWO_PI * num_waves_x / Lx;
-                ky = constant::TWO_PI * num_waves_y / Ly;
-            }
-            if constexpr (D == Dim::_3D) {
-                kx = constant::TWO_PI * num_waves_x / Lx;
-                ky = constant::TWO_PI * num_waves_y / Ly;
-                kz = constant::TWO_PI * num_waves_z / Lz;
-            }
-        }
+  Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
+    real_t phase = kx * x_Ph[0] + ky * x_Ph[1];
+    if constexpr (D == Dim::_3D) {
+      phase += kz * x_Ph[2];
+    }
+    return  math::cos(phase - frequency * time(time_index)) * A0;
+  }
 
-        Inline auto jx1(const coord_t<D>& x_Ph, real_t time) const -> real_t {
-            if constexpr (D == Dim::_2D) {
-                auto phase = kx * x_Ph[0] + ky * x_Ph[1] - omega * time;
-                return A * math::cos(phase);
-            }
-            if constexpr (D == Dim::_3D) {
-                auto phase = kx * x_Ph[0] + ky * x_Ph[1] + kz * x_Ph[2] - omega * time;
-                return A * math::cos(phase);
-            }
-        }
+  Inline auto jx2(const coord_t<D>&) const -> real_t { return ZERO; }
+  Inline auto jx3(const coord_t<D>&) const -> real_t { return ZERO; }
 
-        Inline auto jx2(const coord_t<D>&) const -> real_t { return ZERO; }
-        Inline auto jx3(const coord_t<D>&) const -> real_t { return ZERO; }
 
-    private:
-        real_t A, omega, kx, ky, kz;
-        real_t Lx, Ly, Lz;
-    };
+private:
+  const real_t A0, frequency;
+  const real_t Lx, Ly, Lz;
+  real_t kx, ky, kz;
+  int time_index;
+
+public:
+  Kokkos::View<real_t*> time;
+};
+
 
 
   template <SimEngine::type S, class M>
@@ -93,7 +108,7 @@ namespace user {
     const real_t nwave_x, nwave_y, nwave_z, frequency;
 
     ExternalCurrent<D> ext_current;
-    InitFields<D> init_flds;
+    InitFields<D>      init_flds;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -118,7 +133,23 @@ namespace user {
       const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(energy_dist,{ 1, 2 });
       arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(params,local_domain,injector,HALF);
     }
+
+    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
+        
+        const auto dt = params.template get<real_t>("algorithms.timestep.dt");
+        auto& ext_curr = ext_current;
+
+        Kokkos::parallel_for(
+          "Update time array",
+          1,
+          ClassLambda(index_t) {
+            ext_curr.time(0) += dt;
+          });
+      
+    }
+
   };
+
 
 } // namespace user
 

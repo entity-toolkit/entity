@@ -4,8 +4,8 @@
   runtime = 2.0
 
 [grid]
-  resolution = [256, 512]
-  extent     = [[-1.0, 1.0], [-2.0, 2.0]]
+  resolution = [512, 512]
+  extent     = [[-1.0, 1.0], [-1.0, 1.0]]
 
   [grid.metric]
     metric = "minkowski"
@@ -15,7 +15,7 @@
     particles = [["PERIODIC"], ["PERIODIC"]]
 
 [scales]
-  larmor0    = 0.1
+  larmor0    = 0.0001
   skindepth0 = 0.01
 
 [algorithms]
@@ -26,15 +26,32 @@
 [particles]
   ppc0 = 4.0
 
+  [[particles.species]]
+    label = "e-_p"
+    mass = 1.0
+    charge = -1.0
+    maxnpart = 1e7
+
+  [[particles.species]]
+    label = "e+_p"
+    mass = 1.0
+    charge = 1.0
+    maxnpart = 1e7
+
 [setup]
-  temp = 0.01
+  temp = 0.001
+  amplitude = 1000.0
+  nwave_x = 1.0
+  nwave_y = 1.0
+  nwave_z = 1.0
+  frequency = 1.0
 
 [output]
-  format        = "hdf5"
-  interval_time = 0.1
+  format        = "BP5"
+  interval      = 10
 
   [output.fields]
-    quantities = ["E", "B"]
+    quantities = ["E", "B", "J"]
 
 [diagnostics]
-  colored_stdout = true
+  colored_stdout = false
