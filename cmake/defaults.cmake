@@ -63,4 +63,14 @@ else()
       CACHE INTERNAL "Default flag for MPI")
 endif()
 
+if(DEFINED ENV{Entity_MPI_DEVICE_COPY})
+  set(default_mpi_device_copy
+      $ENV{Entity_MPI_DEVICE_COPY}
+      CACHE INTERNAL "Default flag for copying from device to host for MPI")
+else()
+  set(default_mpi_device_copy
+      OFF
+      CACHE INTERNAL "Default flag for copying from device to host for MPI")
+endif()
+
 set_property(CACHE default_mpi PROPERTY TYPE BOOL)
