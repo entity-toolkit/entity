@@ -8,6 +8,7 @@
 #include "arch/traits.h"
 #include "utils/comparators.h"
 #include "utils/numeric.h"
+#include "archetypes/particle_injector.h"
 
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
@@ -87,6 +88,7 @@ namespace user {
     const int     kx1, kx2, kx3;
     const real_t  sx1, sx2, sx3;
     InitFields<D> init_flds;
+    const Metadomain<S, M>& global_domain;
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -100,57 +102,29 @@ namespace user {
               global_domain.mesh().extent(in::x2).first }
       , sx3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
-      , init_flds { amplitude, sx1, sx2, sx3, kx1, kx2, kx3 } {}
+      , init_flds { amplitude, sx1, sx2, sx3, kx1, kx2, kx3 }
+      , global_domain { global_domain }  {}
 
   inline void InitPrtls(Domain<S, M>& domain) {
 
-    // int              rank;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    // if (rank != 0) {
-    //   return;
-    // }
+      const auto empty = std::vector<real_t> {};
+      const auto x1  = params.template get<std::vector<real_t>>("setup.x1", empty);
+      const auto x2  = params.template get<std::vector<real_t>>("setup.x2", empty);
+      const auto x3  = params.template get<std::vector<real_t>>("setup.x3", empty);
+      const auto ux1 = params.template get<std::vector<real_t>>("setup.ux1", empty);
+      const auto ux2 = params.template get<std::vector<real_t>>("setup.ux2", empty);
+      const auto ux3 = params.template get<std::vector<real_t>>("setup.ux3", empty);
 
-    auto& species_e = domain.species[0];
-    array_t<std::size_t> elec_ind("elec_ind");
-    auto offset_e = species_e.npart();
+      std::map<std::string, std::vector<real_t>> data_p {
+        {  "x1",  x1 },
+        {  "x2",  x2 },
+        {  "x3",  x3 },
+        { "ux1", ux1 },
+        { "ux2", ux2 },
+        { "ux3", ux3 }
+      };
 
-    auto ux1_e    = species_e.ux1;
-    auto ux2_e    = species_e.ux2;
-    auto ux3_e    = species_e.ux3;
-    auto i1_e     = species_e.i1;
-    auto i2_e     = species_e.i2;
-    auto dx1_e    = species_e.dx1;
-    auto dx2_e    = species_e.dx2;
-    auto phi_e    = species_e.phi;
-    auto weight_e = species_e.weight;
-    auto tag_e    = species_e.tag;
-
-    int nseed = 1;
-
-    Kokkos::parallel_for("init_particles", nseed, KOKKOS_LAMBDA(const int& s) {
-
-      auto i1_ = math::floor(10);
-      auto i2_ = math::floor(10);
-      auto dx1_ = HALF;
-      auto dx2_ = HALF;
-
-      auto elec_p = Kokkos::atomic_fetch_add(&elec_ind(), 1);
-
-      i1_e(elec_p + offset_e) = i1_;
-      dx1_e(elec_p + offset_e) = dx1_;
-      i2_e(elec_p + offset_e) = i2_;
-      dx2_e(elec_p + offset_e) = dx2_;
-      ux1_e(elec_p + offset_e) = ZERO;
-      ux2_e(elec_p + offset_e) = ZERO;
-      ux3_e(elec_p + offset_e) = ZERO;
-      weight_e(elec_p + offset_e) = ONE;
-      tag_e(elec_p + offset_e) = ParticleTag::alive;
-
-    });
-
-      auto elec_ind_h = Kokkos::create_mirror(elec_ind);
-      Kokkos::deep_copy(elec_ind_h, elec_ind);
-      species_e.set_npart(offset_e + elec_ind_h());
+      arch::InjectGlobally<S, M>(global_domain, domain, (spidx_t)1, data_p);
 
   }
 };
