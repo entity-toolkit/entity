@@ -926,17 +926,41 @@ namespace kernel::bc {
       if constexpr (M::Dim == Dim::_2D) {
         if constexpr (not IsAux) {
           if (setE) {
-            Fld(i1_min - 1, i2, em::dx1) = Fld(i1_min, i2, em::dx1);
-            Fld(i1_min, i2, em::dx2)     = Fld(i1_min + 1, i2, em::dx2);
-            Fld(i1_min - 1, i2, em::dx2) = Fld(i1_min, i2, em::dx2);
-            Fld(i1_min, i2, em::dx3)     = Fld(i1_min + 1, i2, em::dx3);
-            Fld(i1_min - 1, i2, em::dx3) = Fld(i1_min, i2, em::dx3);
+            // Fld(i1_min - 1, i2, em::dx1) = Fld(i1_min, i2, em::dx1);
+            // Fld(i1_min, i2, em::dx2)     = Fld(i1_min + 1, i2, em::dx2);
+            // Fld(i1_min - 1, i2, em::dx2) = Fld(i1_min, i2, em::dx2);
+            // Fld(i1_min, i2, em::dx3)     = Fld(i1_min + 1, i2, em::dx3);
+            // Fld(i1_min - 1, i2, em::dx3) = Fld(i1_min, i2, em::dx3);
+
+            Fld(i1_min    , i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
+            Fld(i1_min - 1, i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
+            Fld(i1_min - 2, i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
+
+            Fld(i1_min    , i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
+            Fld(i1_min - 1, i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
+            Fld(i1_min - 2, i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
+
+            Fld(i1_min    , i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
+            Fld(i1_min - 1, i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
+            Fld(i1_min - 2, i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
           }
           if (setB) {
-            Fld(i1_min, i2, em::bx1)     = Fld(i1_min + 1, i2, em::bx1);
-            Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min, i2, em::bx1);
-            Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min, i2, em::bx2);
-            Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min, i2, em::bx3);
+            // Fld(i1_min, i2, em::bx1)     = Fld(i1_min + 1, i2, em::bx1);
+            // Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min, i2, em::bx1);
+            // Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min, i2, em::bx2);
+            // Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min, i2, em::bx3);
+
+            Fld(i1_min    , i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
+            Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
+            Fld(i1_min - 2, i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
+
+            Fld(i1_min    , i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
+            Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
+            Fld(i1_min - 2, i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
+
+            Fld(i1_min    , i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
+            Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
+            Fld(i1_min - 2, i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
           }
         } else {
           if (setE) {

@@ -721,14 +721,7 @@ namespace ntt {
           kernel::bc::HorizonBoundaries_kernel<M, false>(domain.fields.em0,
                                                          i1_min,
                                                          tags));
-      } else if (g == gr_bc::aux) {
-        Kokkos::parallel_for(
-          "OpenBCFields",
-          range,
-          kernel::bc::HorizonBoundaries_kernel<M, true>(domain.fields.aux,
-                                                        i1_min,
-                                                        tags));
-      }
+      } 
     }
 
     void AxisFieldsIn(dir::direction_t<M::Dim> direction,
