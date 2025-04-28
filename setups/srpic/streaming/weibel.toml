@@ -52,17 +52,14 @@
     maxnpart = 1e7
 
 [setup]
-  drift_u_1 = 0.2
-  drift_u_2 = 0.2
-  temp_1    = 1e-4
-  temp_2    = 1e-4
+  drifts_in_x  = [0.2, 0.2, -0.2, -0.2]
+  temperatures = [1e-4, 1e-4, 1e-4, 1e-4]
 
 [output]
-  format        = "hdf5"
   interval_time = 0.25
 
   [output.fields]
-    quantities = ["N_1_2", "N_3_4", "B", "E", "T0i_1", "T0i_3"]
+    quantities = ["N_1_2", "N_3_4", "E", "B", "T0i_1", "T0i_3"]
 
   [output.particles]
     enable = false
