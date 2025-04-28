@@ -48,6 +48,10 @@ set(mpi
     ${default_mpi}
     CACHE BOOL "Use MPI")
 
+set(gpu_aware_mpi
+    ${default_gpu_aware_mpi}
+    CACHE BOOL "Enable GPU-aware MPI")
+
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -90,10 +94,18 @@ include_directories(${plog_SRC}/include)
 set_precision(${precision})
 if("${Kokkos_DEVICES}" MATCHES "CUDA")
   add_compile_options("-D CUDA_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
 elseif("${Kokkos_DEVICES}" MATCHES "HIP")
   add_compile_options("-D HIP_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
 elseif("${Kokkos_DEVICES}" MATCHES "SYCL")
   add_compile_options("-D SYCL_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
+else()
+  set(DEVICE_ENABLED OFF)
 endif()
 
 # MPI
@@ -102,6 +114,15 @@ if(${mpi})
   include_directories(${MPI_CXX_INCLUDE_PATH})
   add_compile_options("-D MPI_ENABLED")
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
+  if(${DEVICE_ENABLED})
+    if(${gpu_aware_mpi})
+      add_compile_options("-D GPU_AWARE_MPI")
+    endif()
+  else()
+    set(gpu_aware_mpi
+        OFF
+        CACHE BOOL "Use explicit copy when using MPI + GPU")
+  endif()
 endif()
 
 # Output
