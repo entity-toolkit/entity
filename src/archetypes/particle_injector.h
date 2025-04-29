@@ -514,9 +514,9 @@ namespace arch {
       using energy_dist_2_t = ED2<S, M>;
       static_assert(M::is_metric, "M must be a metric class");
       static_assert(energy_dist_1_t::is_energy_dist,
-                    "E must be an energy distribution class");
+                    "ED1 must be an energy distribution class");
       static_assert(energy_dist_2_t::is_energy_dist,
-                    "E must be an energy distribution class");
+                    "ED2 must be an energy distribution class");
       static constexpr bool      is_uniform_injector { true };
       static constexpr Dimension D { M::Dim };
       static constexpr Coord     C { M::CoordType };

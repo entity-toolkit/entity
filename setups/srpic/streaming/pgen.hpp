@@ -81,14 +81,22 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& domain) {
       const auto nspec = domain.species.size();
       for (auto n = 0u; n < nspec; n += 2) {
-        const auto injector =
-          arch::experimental::UniformInjector<S, M, arch::Maxwellian, arch::Maxwellian>(
-            arch::Maxwellian<S, M>(domain.mesh.metric,
-                                   domain.random_pool,
-                                   temperatures[n]),
-            arch::Maxwellian<S, M>(domain.mesh.metric,
-                                   domain.random_pool,
-                                   temperatures[n + 1]),
+        const auto drift_1  = prmvec_t { drifts_in_x[n],
+                                        drifts_in_y[n],
+                                        drifts_in_z[n] };
+        const auto drift_2  = prmvec_t { drifts_in_x[n + 1],
+                                        drifts_in_y[n + 1],
+                                        drifts_in_z[n + 1] };
+        const auto injector = arch::experimental::
+          UniformInjector<S, M, arch::experimental::Maxwellian, arch::experimental::Maxwellian>(
+            arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
+                                                 domain.random_pool,
+                                                 temperatures[n],
+                                                 drift_1),
+            arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
+                                                 domain.random_pool,
+                                                 temperatures[n + 1],
+                                                 drift_2),
             { n + 1, n + 2 });
         arch::experimental::InjectUniform<S, M, decltype(injector)>(
           params,
