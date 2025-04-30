@@ -4,7 +4,7 @@
   runtime = 100.0
 
 [grid]
-  resolution = [512, 512]
+  resolution = [1024, 1024]
   extent     = [[-10.0, 10.0], [-10.0, 10.0]]
 
   [grid.metric]
@@ -52,23 +52,38 @@
     maxnpart = 1e7
 
 [setup]
-  drift_u_1 = 0.2
-  drift_u_2 = 0.2
-  temp_1    = 1e-4
-  temp_2    = 1e-4
+  # Drift 4-velocities for each species in all 3 directions
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  drifts_in_x = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_y = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_z = [0.3, 0.3, -0.3, -0.3]
+  # Pair-wise species densities in units of n0
+  #   @type: array of floats (length = nspec/2)
+  #   @default: [ 2 / nspec, ... ]
+  densities = [0.5, 0.5]
+  # Species temperatures in units of m0 (c^2)
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  temperatures = [1e-4, 1e-4, 1e-4, 1e-4]
 
 [output]
-  format        = "hdf5"
   interval_time = 0.25
 
   [output.fields]
-    quantities = ["N_1_2", "N_3_4", "B", "E", "T0i_1", "T0i_3"]
+    quantities = [
+      "N_1_2",
+      "N_3_4",
+      "E",
+      "B",
+      "T0i_1",
+      "T0i_2",
+      "T0i_3",
+      "T0i_4",
+    ]
 
   [output.particles]
     enable = false
 
   [output.spectra]
     enable = false
-
-[diagnostics]
-  colored_stdout = true
