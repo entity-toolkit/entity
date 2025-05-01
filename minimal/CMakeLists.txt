@@ -45,4 +45,8 @@ if("MPI" IN_LIST MODES)
   include(mpi.cmake)
 endif()
 
+if("MPI_SIMPLE" IN_LIST MODES)
+  include(mpi-simple.cmake)
+endif()
+
 message(STATUS "Build modes: ${MODES}")

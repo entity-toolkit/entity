@@ -92,17 +92,16 @@ auto main(int argc, char** argv) -> int {
     const std::size_t ox_3d = 0, oy_3d = 0, oz_3d = rank * 10;
 
     CallOnce(
-      [](auto&& size, auto&& bigsize, auto&& smallsize) {
+      [](auto&& size) {
         std::cout << "Running ADIOS2 test" << std::endl;
 #if defined(MPI_ENABLED)
         std::cout << "- Number of MPI ranks: " << size << std::endl;
 #else
+        (void)size;
         std::cout << "- No MPI" << std::endl;
 #endif
       },
-      size,
-      bigsize,
-      smallsize);
+      size);
 
     std::vector<std::string> vars;
 
