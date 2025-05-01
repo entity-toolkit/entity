@@ -86,6 +86,7 @@ void send_recv(int                             send_to,
     throw std::invalid_argument(
       "Both nsend and nrecv are zero, no communication to perform.");
   } else if (nrecv > 0 and nsend > 0) {
+#if defined(GPU_AWARE_MPI) || !defined(DEVICE_ENABLED)
     MPI_Sendrecv(send_buffer.data(),
                  nsend,
                  mpi_type,
@@ -98,7 +99,26 @@ void send_recv(int                             send_to,
                  0,
                  MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
+#else
+    auto send_buffer_h = Kokkos::create_mirror_view(send_buffer);
+    auto recv_buffer_h = Kokkos::create_mirror_view(recv_buffer);
+    Kokkos::deep_copy(send_buffer_h, send_buffer);
+    MPI_Sendrecv(send_buffer_h.data(),
+                 nsend,
+                 mpi_type,
+                 send_to,
+                 0,
+                 recv_buffer_h.data(),
+                 nrecv,
+                 mpi_type,
+                 recv_from,
+                 0,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+    Kokkos::deep_copy(recv_buffer, recv_buffer_h);
+#endif
   } else if (nrecv > 0) {
+#if defined(GPU_AWARE_MPI) || !defined(DEVICE_ENABLED)
     MPI_Recv(recv_buffer.data(),
              nrecv,
              mpi_type,
@@ -106,8 +126,25 @@ void send_recv(int                             send_to,
              0,
              MPI_COMM_WORLD,
              MPI_STATUS_IGNORE);
+#else
+    auto recv_buffer_h = Kokkos::create_mirror_view(recv_buffer);
+    MPI_Recv(recv_buffer_h.data(),
+             nrecv,
+             mpi_type,
+             recv_from,
+             0,
+             MPI_COMM_WORLD,
+             MPI_STATUS_IGNORE);
+    Kokkos::deep_copy(recv_buffer, recv_buffer_h);
+#endif
   } else if (nsend > 0) {
+#if defined(GPU_AWARE_MPI) || !defined(DEVICE_ENABLED)
     MPI_Send(send_buffer.data(), nsend, mpi_type, send_to, 0, MPI_COMM_WORLD);
+#else
+    auto send_buffer_h = Kokkos::create_mirror_view(send_buffer);
+    Kokkos::deep_copy(send_buffer_h, send_buffer);
+    MPI_Send(send_buffer_h.data(), nsend, mpi_type, send_to, 0, MPI_COMM_WORLD);
+#endif
   }
 
   if (nrecv > 0) {
@@ -200,6 +237,22 @@ auto main(int argc, char** argv) -> int {
 
     const std::size_t bigsize   = (std::sin((rank + 1) * 0.25) + 2) * 1e3;
     const std::size_t smallsize = 123;
+
+    CallOnce(
+      [](auto&& size, auto&& bigsize, auto&& smallsize) {
+        std::cout << "Running the MPI communication test" << std::endl;
+        std::cout << "- Number of MPI ranks: " << size << std::endl;
+        std::cout << "- Big size: " << bigsize << std::endl;
+        std::cout << "- Small size: " << smallsize << std::endl;
+#if defined(GPU_AWARE_MPI) && defined(DEVICE_ENABLED)
+        std::cout << "- GPU-aware MPI is enabled" << std::endl;
+#else
+        std::cout << "- GPU-aware MPI is disabled" << std::endl;
+#endif
+      },
+      size,
+      bigsize,
+      smallsize);
 
     comm<float, 1, 3>(rank, size, bigsize, smallsize);
     comm<float, 2, 3>(rank, size, bigsize, smallsize);
