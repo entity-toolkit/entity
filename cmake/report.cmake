@@ -55,6 +55,17 @@ printchoices(
   "${Green}"
   MPI_REPORT
   46)
+if(${mpi} AND ${DEVICE_ENABLED})
+  printchoices(
+    "GPU-aware MPI"
+    "gpu_aware_mpi"
+    "${ON_OFF_VALUES}"
+    ${gpu_aware_mpi}
+    OFF
+    "${Green}"
+    GPU_AWARE_MPI_REPORT
+    46)
+endif()
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -64,18 +75,6 @@ printchoices(
   "${Green}"
   DEBUG_REPORT
   46)
-
-if(${mpi} AND ${DEVICE_ENABLED})
-  printchoices(
-    "MPI explicit copy"
-    "mpi_device_copy"
-    "${ON_OFF_VALUES}"
-    ${mpi_device_copy}
-    OFF
-    "${Green}"
-    MPI_DEVICE_COPY_REPORT
-    46)
-endif()
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
   set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}." "${PROJECT_VERSION_MINOR}.")
@@ -134,7 +133,7 @@ string(
   "\n")
 
 if(${mpi} AND ${DEVICE_ENABLED})
-  string(APPEND REPORT_TEXT "  " ${MPI_DEVICE_COPY_REPORT} "\n")
+  string(APPEND REPORT_TEXT "  " ${GPU_AWARE_MPI_REPORT} "\n")
 endif()
 
 string(

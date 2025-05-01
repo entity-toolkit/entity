@@ -74,3 +74,15 @@ else()
 endif()
 
 set_property(CACHE default_mpi PROPERTY TYPE BOOL)
+
+if(DEFINED ENV{Entity_ENABLE_GPU_AWARE_MPI})
+  set(default_gpu_aware_mpi
+      $ENV{Entity_ENABLE_GPU_AWARE_MPI}
+      CACHE INTERNAL "Default flag for GPU-aware MPI")
+else()
+  set(default_gpu_aware_mpi
+      ON
+      CACHE INTERNAL "Default flag for GPU-aware MPI")
+endif()
+
+set_property(CACHE default_gpu_aware_mpi PROPERTY TYPE BOOL)
