@@ -200,7 +200,7 @@ namespace checkpoint {
     m_writer.Put(var, &data);
   }
 
-  void Writer::saveAttrs(const ntt::SimulationParams& params, long double time) {
+  void Writer::saveAttrs(const ntt::SimulationParams& params, simtime_t time) {
     CallOnce([&]() {
       std::ofstream metadata;
       if (m_written.empty()) {
@@ -274,9 +274,9 @@ namespace checkpoint {
                                                       std::size_t,
                                                       double);
   template void Writer::savePerDomainVariable<npart_t>(const std::string&,
-                                                           std::size_t,
-                                                           std::size_t,
-                                                           npart_t);
+                                                       std::size_t,
+                                                       std::size_t,
+                                                       npart_t);
 
   template void Writer::saveField<Dim::_1D, 3>(const std::string&,
                                                const ndfield_t<Dim::_1D, 3>&);

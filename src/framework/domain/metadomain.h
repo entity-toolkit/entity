@@ -25,6 +25,7 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
 #include "framework/parameters.h"
+#include "output/stats.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -116,7 +117,7 @@ namespace ntt {
     ~Metadomain() = default;
 
 #if defined(OUTPUT_ENABLED)
-    void InitWriter(adios2::ADIOS*, const SimulationParams&, bool is_resuming);
+    void InitWriter(adios2::ADIOS*, const SimulationParams&, bool);
     auto Write(const SimulationParams&,
                timestep_t,
                timestep_t,
@@ -136,7 +137,13 @@ namespace ntt {
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
 #endif
 
+    void InitStatsWriter(const SimulationParams&, bool);
+    auto WriteStats(const SimulationParams&, timestep_t, timestep_t, simtime_t, simtime_t)
+      -> bool;
+
     /* setters -------------------------------------------------------------- */
+    void setFldsBC(const bc_in&, const FldsBC&);
+    void setPrtlBC(const bc_in&, const PrtlBC&);
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
@@ -241,6 +248,8 @@ namespace ntt {
     Mesh<M>                             g_mesh;
     const std::map<std::string, real_t> g_metric_params;
     const std::vector<ParticleSpecies>  g_species_params;
+
+    stats::Writer g_stats_writer;
 
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;

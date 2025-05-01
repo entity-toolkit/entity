@@ -23,7 +23,8 @@ void cleanup() {
 }
 
 #define CEILDIV(a, b)                                                          \
-  (static_cast<int>(math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
+  (static_cast<ncells_t>(                                                      \
+    math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
@@ -74,6 +75,7 @@ auto main(int argc, char* argv[]) -> int {
       writer.defineMeshLayout({ nx1, nx2, nx3 },
                               { 0, 0, 0 },
                               { nx1, nx2, nx3 },
+                              { 0, 1 },
                               { dwn1, dwn2, dwn3 },
                               false,
                               Coord::Cart);

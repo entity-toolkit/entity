@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103
+
 # ----------------------------- Kokkos settings ---------------------------- #
 if(${DEBUG} STREQUAL "OFF")
   set(Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION
@@ -26,16 +28,6 @@ else()
       ON
       CACHE BOOL "Kokkos debug bounds check")
 endif()
-
-set(Kokkos_ENABLE_HIP
-    ${default_KOKKOS_ENABLE_HIP}
-    CACHE BOOL "Enable HIP")
-set(Kokkos_ENABLE_CUDA
-    ${default_KOKKOS_ENABLE_CUDA}
-    CACHE BOOL "Enable CUDA")
-set(Kokkos_ENABLE_OPENMP
-    ${default_KOKKOS_ENABLE_OPENMP}
-    CACHE BOOL "Enable OpenMP")
 
 if(${BUILD_TESTING} STREQUAL "OFF")
   set(Kokkos_ENABLE_TESTS

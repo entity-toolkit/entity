@@ -71,6 +71,9 @@ auto main() -> int {
                               "h",      "j",    "a",    "t",    "rho",
                               "charge", "n",    "nppc", "v",    "custom" };
 
+  enum_str_t all_out_stats = { "b^2", "e^2",    "exb", "j.e",  "t",
+                               "rho", "charge", "n",   "npart" };
+
   checkEnum<Coord>(all_coords);
   checkEnum<Metric>(all_metrics);
   checkEnum<SimEngine>(all_simulation_engines);
@@ -79,6 +82,7 @@ auto main() -> int {
   checkEnum<PrtlPusher>(all_particle_pushers);
   checkEnum<Cooling>(all_coolings);
   checkEnum<FldsID>(all_out_flds);
+  checkEnum<StatsID>(all_out_stats);
 
   return 0;
 }

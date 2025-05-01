@@ -32,7 +32,7 @@ namespace checkpoint {
 
   auto ReadParticleCount(adios2::IO&,
                          adios2::Engine&,
-                         unsigned short,
+                         spidx_t,
                          std::size_t,
                          std::size_t) -> std::pair<npart_t, npart_t>;
 
@@ -40,14 +40,14 @@ namespace checkpoint {
   void ReadParticleData(adios2::IO&,
                         adios2::Engine&,
                         const std::string&,
-                        unsigned short,
+                        spidx_t,
                         array_t<T*>&,
                         npart_t,
                         npart_t);
 
   void ReadParticlePayloads(adios2::IO&,
                             adios2::Engine&,
-                            unsigned short,
+                            spidx_t,
                             array_t<real_t**>&,
                             std::size_t,
                             npart_t,

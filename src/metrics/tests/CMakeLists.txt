@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_metrics` module
 #
@@ -28,4 +29,3 @@ gen_test(coord_trans)
 gen_test(sph-qsph)
 gen_test(ks-qks)
 gen_test(sr-cart-sph)
-

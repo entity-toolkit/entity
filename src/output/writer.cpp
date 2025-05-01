@@ -29,7 +29,7 @@ namespace out {
                     const std::string& title,
                     bool               use_separate_files) {
     m_separate_files = use_separate_files;
-    m_engine         = engine;
+    m_engine         = fmt::toLower(engine);
     p_adios          = ptr_adios;
 
     raise::ErrorIf(p_adios == nullptr, "ADIOS pointer is null", HERE);
@@ -48,9 +48,8 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type,
-                           timestep_t         step,
-                           simtime_t          time) -> bool {
+  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
+    -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -63,12 +62,14 @@ namespace out {
     m_mode = mode;
   }
 
-  void Writer::defineMeshLayout(const std::vector<ncells_t>&     glob_shape,
-                                const std::vector<ncells_t>&     loc_corner,
-                                const std::vector<ncells_t>&     loc_shape,
-                                const std::vector<unsigned int>& dwn,
-                                bool                             incl_ghosts,
-                                Coord                            coords) {
+  void Writer::defineMeshLayout(
+    const std::vector<std::size_t>&              glob_shape,
+    const std::vector<std::size_t>&              loc_corner,
+    const std::vector<std::size_t>&              loc_shape,
+    const std::pair<unsigned int, unsigned int>& domain_idx,
+    const std::vector<unsigned int>&             dwn,
+    bool                                         incl_ghosts,
+    Coord                                        coords) {
     m_flds_ghosts = incl_ghosts;
     m_dwn         = dwn;
 
@@ -98,24 +99,24 @@ namespace out {
 
     for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
       // cell-centers
-      adios2::Dims g_shape  = { m_flds_g_shape_dwn[i] };
-      adios2::Dims l_corner = { m_flds_l_corner_dwn[i] };
-      adios2::Dims l_shape  = { m_flds_l_shape_dwn[i] };
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1),
-                                  g_shape,
-                                  l_corner,
-                                  l_shape,
+                                  { m_flds_g_shape_dwn[i] },
+                                  { m_flds_l_corner_dwn[i] },
+                                  { m_flds_l_shape_dwn[i] },
                                   adios2::ConstantDims);
       // cell-edges
-      const auto   is_last  = (m_flds_l_corner[i] + m_flds_l_shape[i] ==
+      const auto is_last = (m_flds_l_corner[i] + m_flds_l_shape[i] ==
                             m_flds_g_shape[i]);
-      adios2::Dims g_shape1 = { m_flds_g_shape_dwn[i] + 1 };
-      adios2::Dims l_shape1 = { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) };
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1) + "e",
-                                  g_shape1,
-                                  l_corner,
-                                  l_shape1,
+                                  { m_flds_g_shape_dwn[i] + 1 },
+                                  { m_flds_l_corner_dwn[i] },
+                                  { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) },
                                   adios2::ConstantDims);
+      m_io.DefineVariable<std::size_t>("N" + std::to_string(i + 1) + "l",
+                                       { 2 * domain_idx.second },
+                                       { 2 * domain_idx.first },
+                                       { 2 },
+                                       adios2::ConstantDims);
     }
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
@@ -161,8 +162,8 @@ namespace out {
     }
   }
 
-  void Writer::defineParticleOutputs(Dimension                          dim,
-                                     const std::vector<unsigned short>& specs) {
+  void Writer::defineParticleOutputs(Dimension                   dim,
+                                     const std::vector<spidx_t>& specs) {
     m_prtl_writers.clear();
     for (const auto& s : specs) {
       m_prtl_writers.emplace_back(s);
@@ -187,7 +188,7 @@ namespace out {
     }
   }
 
-  void Writer::defineSpectraOutputs(const std::vector<unsigned short>& specs) {
+  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs) {
     m_spectra_writers.clear();
     for (const auto& s : specs) {
       m_spectra_writers.emplace_back(s);
@@ -401,9 +402,10 @@ namespace out {
     m_writer.Put<real_t>(var, e_bins_h);
   }
 
-  void Writer::writeMesh(unsigned short          dim,
-                         const array_t<real_t*>& xc,
-                         const array_t<real_t*>& xe) {
+  void Writer::writeMesh(unsigned short                  dim,
+                         const array_t<real_t*>&         xc,
+                         const array_t<real_t*>&         xe,
+                         const std::vector<std::size_t>& loc_off_sz) {
     auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
     auto vare = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1) + "e");
     auto xc_h = Kokkos::create_mirror_view(xc);
@@ -412,6 +414,9 @@ namespace out {
     Kokkos::deep_copy(xe_h, xe);
     m_writer.Put(varc, xc_h);
     m_writer.Put(vare, xe_h);
+    auto vard = m_io.InquireVariable<std::size_t>(
+      "N" + std::to_string(dim + 1) + "l");
+    m_writer.Put(vard, loc_off_sz.data());
   }
 
   void Writer::beginWriting(WriteModeTags write_mode,
@@ -425,7 +430,7 @@ namespace out {
     m_active_mode = write_mode;
     try {
       std::string       filename;
-      const std::string ext = m_engine == "hdf5" ? "h5" : "bp";
+      const std::string ext = (m_engine == "hdf5") ? "h5" : "bp";
       if (m_separate_files) {
         std::string mode_str;
         if (m_active_mode == WriteMode::Fields) {

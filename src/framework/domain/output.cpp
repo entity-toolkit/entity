@@ -18,6 +18,7 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
+#include "kernels/divergences.hpp"
 #include "kernels/fields_to_phys.hpp"
 #include "kernels/particle_moments.hpp"
 #include "kernels/prtls_to_phys.hpp"
@@ -70,6 +71,7 @@ namespace ntt {
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
+                              { local_domain->index(), ndomains() },
                               params.template get<std::vector<unsigned int>>(
                                 "output.fields.downsampling"),
                               incl_ghosts,
@@ -84,12 +86,12 @@ namespace ntt {
                custom_fields_to_write.begin(),
                custom_fields_to_write.end(),
                std::back_inserter(all_fields_to_write));
-    const auto species_to_write = params.template get<std::vector<unsigned short>>(
+    const auto species_to_write = params.template get<std::vector<spidx_t>>(
       "output.particles.species");
     g_writer.defineFieldOutputs(S, all_fields_to_write);
     g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
     // spectra write all particle species
-    std::vector<unsigned short> spectra_species {};
+    std::vector<spidx_t> spectra_species {};
     for (const auto& sp : species_params()) {
       spectra_species.push_back(sp.index());
     }
@@ -112,11 +114,11 @@ namespace ntt {
   void ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
-                      const std::vector<unsigned short>& species,
+                      const std::vector<spidx_t>&        species,
                       const std::vector<unsigned short>& components,
                       ndfield_t<M::Dim, 6>&              buffer,
-                      unsigned short                     buff_idx) {
-    std::vector<unsigned short> specs = species;
+                      idx_t                              buff_idx) {
+    std::vector<spidx_t> specs = species;
     if (specs.size() == 0) {
       // if no species specified, take all massive species
       for (auto& sp : prtl_species) {
@@ -164,7 +166,7 @@ namespace ntt {
                       ndfield_t<D, M>&     fld_to,
                       const range_tuple_t& from,
                       const range_tuple_t& to) {
-    for (unsigned short d = 0; d < D; ++d) {
+    for (auto d { 0u }; d < D; ++d) {
       raise::ErrorIf(fld_from.extent(d) != fld_to.extent(d),
                      "Fields have different sizes " +
                        std::to_string(fld_from.extent(d)) +
@@ -213,7 +215,9 @@ namespace ntt {
                                g_writer.shouldWrite("spectra",
                                                     finished_step,
                                                     finished_time);
-    if (not(write_fields or write_particles or write_spectra)) {
+    const auto extension = params.template get<std::string>("output.format");
+    if (not(write_fields or write_particles or write_spectra) and
+        extension != "disabled") {
       return false;
     }
     auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -227,7 +231,18 @@ namespace ntt {
       const auto dwn         = params.template get<std::vector<unsigned int>>(
         "output.fields.downsampling");
 
-      for (unsigned short dim = 0; dim < M::Dim; ++dim) {
+      auto off_ncells_with_ghosts = local_domain->offset_ncells();
+      auto loc_shape_with_ghosts  = local_domain->mesh.n_active();
+      { // compute positions/sizes of meshblocks in cells in all dimensions
+        const auto off_ndomains = local_domain->offset_ndomains();
+        if (incl_ghosts) {
+          for (auto d { 0 }; d <= M::Dim; ++d) {
+            off_ncells_with_ghosts[d] += 2 * N_GHOSTS * off_ndomains[d];
+            loc_shape_with_ghosts[d]  += 2 * N_GHOSTS;
+          }
+        }
+      }
+      for (auto dim { 0u }; dim < M::Dim; ++dim) {
         const auto l_size   = local_domain->mesh.n_active()[dim];
         const auto l_offset = local_domain->offset_ncells()[dim];
         const auto g_size   = mesh().n_active()[dim];
@@ -275,7 +290,11 @@ namespace ntt {
               xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
-        g_writer.writeMesh(dim, xc, xe);
+        g_writer.writeMesh(
+          dim,
+          xc,
+          xe,
+          { off_ncells_with_ghosts[dim], loc_shape_with_ghosts[dim] });
       }
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
@@ -289,7 +308,7 @@ namespace ntt {
           if (fld.is_moment()) {
             // output a particle distribution moment (single component)
             // this includes T, Rho, Charge, N, Nppc
-            const auto c = static_cast<unsigned short>(addresses.back());
+            const auto c = static_cast<idx_t>(addresses.back());
             if (fld.id() == FldsID::T) {
               raise::ErrorIf(fld.comp.size() != 1,
                              "Wrong # of components requested for T output",
@@ -348,6 +367,16 @@ namespace ntt {
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
+          } else if (fld.is_divergence()) {
+            // @TODO: is this correct for GR too? not em0?
+            const auto c = static_cast<idx_t>(addresses.back());
+            Kokkos::parallel_for(
+              "ComputeDivergence",
+              local_domain->mesh.rangeActiveCells(),
+              kernel::ComputeDivergence_kernel<M, 6>(local_domain->mesh.metric,
+                                                     local_domain->fields.em,
+                                                     local_domain->fields.bckp,
+                                                     c));
           } else if (fld.is_custom()) {
             if (CustomFieldOutput) {
               CustomFieldOutput(fld.name().substr(1),
@@ -373,7 +402,7 @@ namespace ntt {
           }
           if (fld.is_moment()) {
             for (auto i = 0; i < 3; ++i) {
-              const auto c = static_cast<unsigned short>(addresses[i]);
+              const auto c = static_cast<idx_t>(addresses[i]);
               if (fld.id() == FldsID::T) {
                 raise::ErrorIf(fld.comp[i].size() != 2,
                                "Wrong # of components requested for moment",
@@ -481,8 +510,8 @@ namespace ntt {
             if (not output_asis) {
               // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
               // converting to proper basis and properly interpolating
-              list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
-              list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
+              list_t<idx_t, 3> comp_from = { 0, 1, 2 };
+              list_t<idx_t, 3> comp_to   = { 3, 4, 5 };
               DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
                                            local_domain->fields.bckp,
                                            { 0, 3 },
@@ -505,7 +534,7 @@ namespace ntt {
           for (auto i = 0; i < 6; ++i) {
             names.push_back(fld.name(i));
             addresses.push_back(i);
-            const auto c = static_cast<unsigned short>(addresses.back());
+            const auto c = static_cast<idx_t>(addresses.back());
             raise::ErrorIf(fld.comp[i].size() != 2,
                            "Wrong # of components requested for moment",
                            HERE);

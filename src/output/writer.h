@@ -83,18 +83,22 @@ namespace out {
 
     void writeAttrs(const prm::Parameters&);
 
-    void defineMeshLayout(const std::vector<ncells_t>&,
-                          const std::vector<ncells_t>&,
-                          const std::vector<ncells_t>&,
+    void defineMeshLayout(const std::vector<std::size_t>&,
+                          const std::vector<std::size_t>&,
+                          const std::vector<std::size_t>&,
+                          const std::pair<unsigned int, unsigned int>&,
                           const std::vector<unsigned int>&,
                           bool,
                           Coord);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineParticleOutputs(Dimension, const std::vector<unsigned short>&);
-    void defineSpectraOutputs(const std::vector<unsigned short>&);
+    void defineParticleOutputs(Dimension, const std::vector<spidx_t>&);
+    void defineSpectraOutputs(const std::vector<spidx_t>&);
 
-    void writeMesh(unsigned short, const array_t<real_t*>&, const array_t<real_t*>&);
+    void writeMesh(unsigned short,
+                   const array_t<real_t*>&,
+                   const array_t<real_t*>&,
+                   const std::vector<std::size_t>&);
 
     template <Dimension D, int N>
     void writeField(const std::vector<std::string>&,

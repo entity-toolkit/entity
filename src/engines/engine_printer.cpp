@@ -17,10 +17,11 @@
 
 #if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
+#elif defined(HIP_ENABLED)
+  #include <hip/hip_runtime.h>
 #endif
 
 #if defined(OUTPUT_ENABLED)
-  #include <H5public.h>
   #include <adios2.h>
 #endif
 
@@ -178,8 +179,16 @@ namespace ntt {
         const auto minor { cuda_v % 1000 / 10 };
         const auto patch { cuda_v % 10 };
         const auto cuda_version = fmt::format("%d.%d.%d", major, minor, patch);
-#else // not CUDA_ENABLED
-        const std::string cuda_version = "OFF";
+#elif defined(HIP_ENABLED)
+        int  hip_v;
+        auto status = hipDriverGetVersion(&hip_v);
+        raise::ErrorIf(status != hipSuccess,
+                       "hipDriverGetVersion failed with error code %d",
+                       HERE);
+        const auto major { hip_v / 10000000 };
+        const auto minor { (hip_v % 10000000) / 100000 };
+        const auto patch { hip_v % 100000 };
+        const auto hip_version = fmt::format("%d.%d.%d", major, minor, patch);
 #endif
 
         const auto kokkos_version = fmt::format("%d.%d.%d",
@@ -188,18 +197,11 @@ namespace ntt {
                                                 KOKKOS_VERSION % 100);
 
 #if defined(OUTPUT_ENABLED)
-        unsigned h5_major, h5_minor, h5_release;
-        H5get_libversion(&h5_major, &h5_minor, &h5_release);
-        const std::string hdf5_version   = fmt::format("%d.%d.%d",
-                                                     h5_major,
-                                                     h5_minor,
-                                                     h5_release);
         const std::string adios2_version = fmt::format("%d.%d.%d",
                                                        ADIOS2_VERSION / 10000,
                                                        ADIOS2_VERSION / 100 % 100,
                                                        ADIOS2_VERSION % 100);
 #else // not OUTPUT_ENABLED
-        const std::string hdf5_version   = "OFF";
         const std::string adios2_version = "OFF";
 #endif
 
@@ -212,17 +214,89 @@ namespace ntt {
         report += "\n\n";
         add_header(report, { entity_version }, { color::BRIGHT_GREEN });
         report += "\n";
+
+        /*
+         * Backend
+         */
         add_category(report, 4, "Backend");
         add_param(report, 4, "Build hash", "%s", hash.c_str());
         add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
+#if defined(CUDA_ENABLED)
         add_param(report, 4, "CUDA", "%s", cuda_version.c_str());
+#elif defined(HIP_VERSION)
+        add_param(report, 4, "HIP", "%s", hip_version.c_str());
+#endif
         add_param(report, 4, "MPI", "%s", mpi_version.c_str());
-        add_param(report, 4, "HDF5", "%s", hdf5_version.c_str());
+#if defined(MPI_ENABLED) && defined(DEVICE_ENABLED)
+  #if defined(GPU_AWARE_MPI)
+        const std::string gpu_aware_mpi = "ON";
+  #else
+        const std::string gpu_aware_mpi = "OFF";
+  #endif
+        add_param(report, 4, "GPU-aware MPI", "%s", gpu_aware_mpi.c_str());
+#endif
         add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
         add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
         add_param(report, 4, "Precision", "%s", precision);
         add_param(report, 4, "Debug", "%s", dbg.c_str());
         report += "\n";
+
+        /*
+         * Compilation flags
+         */
+        add_category(report, 4, "Compilation flags");
+#if defined(SINGLE_PRECISION)
+        add_param(report, 4, "SINGLE_PRECISION", "%s", "ON");
+#else
+        add_param(report, 4, "SINGLE_PRECISION", "%s", "OFF");
+#endif
+
+#if defined(OUTPUT_ENABLED)
+        add_param(report, 4, "OUTPUT_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "OUTPUT_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(DEBUG)
+        add_param(report, 4, "DEBUG", "%s", "ON");
+#else
+        add_param(report, 4, "DEBUG", "%s", "OFF");
+#endif
+
+#if defined(CUDA_ENABLED)
+        add_param(report, 4, "CUDA_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "CUDA_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(HIP_ENABLED)
+        add_param(report, 4, "HIP_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "HIP_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(DEVICE_ENABLED)
+        add_param(report, 4, "DEVICE_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "DEVICE_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(MPI_ENABLED)
+        add_param(report, 4, "MPI_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "MPI_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(GPU_AWARE_MPI)
+        add_param(report, 4, "GPU_AWARE_MPI", "%s", "ON");
+#else
+        add_param(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
+#endif
+        report += "\n";
+
+        /*
+         * Simulation configs
+         */
         add_category(report, 4, "Configuration");
         add_param(report,
                   4,
@@ -233,7 +307,7 @@ namespace ntt {
         add_param(report, 4, "Engine", "%s", SimEngine(S).to_string());
         add_param(report, 4, "Metric", "%s", Metric(M::MetricType).to_string());
         add_param(report, 4, "Timestep [dt]", "%.3e", dt);
-        add_param(report, 4, "Runtime", "%.3Le [%d steps]", runtime, max_steps);
+        add_param(report, 4, "Runtime", "%.3e [%d steps]", runtime, max_steps);
         report += "\n";
         add_category(report, 4, "Global domain");
         add_param(report,

@@ -30,7 +30,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -102,10 +104,10 @@ namespace kernel::sr {
       raise::ErrorIf(ExtForce, "External force not provided", HERE);
     }
 
-    Inline auto fx1(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx1(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x1 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -128,10 +130,10 @@ namespace kernel::sr {
       return f_x1;
     }
 
-    Inline auto fx2(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx2(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x2 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -154,10 +156,10 @@ namespace kernel::sr {
       return f_x2;
     }
 
-    Inline auto fx3(const unsigned short& sp,
-                    const real_t&         time,
-                    bool                  ext_force,
-                    const coord_t<D>&     x_Ph) const -> real_t {
+    Inline auto fx3(const spidx_t&    sp,
+                    const simtime_t&  time,
+                    bool              ext_force,
+                    const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x3 = ZERO;
       if constexpr (ExtForce) {
         if (ext_force) {
@@ -198,7 +200,7 @@ namespace kernel::sr {
     const CoolingTags      cooling;
 
     const randacc_ndfield_t<D, 6> EB;
-    const unsigned short          sp;
+    const spidx_t                 sp;
     array_t<int*>                 i1, i2, i3;
     array_t<int*>                 i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*>            dx1, dx2, dx3;
@@ -232,7 +234,7 @@ namespace kernel::sr {
                   bool                           ext_force,
                   CoolingTags                    cooling,
                   const randacc_ndfield_t<D, 6>& EB,
-                  unsigned short                 sp,
+                  spidx_t                        sp,
                   array_t<int*>&                 i1,
                   array_t<int*>&                 i2,
                   array_t<int*>&                 i3,
@@ -336,7 +338,7 @@ namespace kernel::sr {
                   bool                        ext_force,
                   CoolingTags                 cooling,
                   const ndfield_t<D, 6>&      EB,
-                  unsigned short              sp,
+                  spidx_t                     sp,
                   array_t<int*>&              i1,
                   array_t<int*>&              i2,
                   array_t<int*>&              i3,
@@ -355,7 +357,7 @@ namespace kernel::sr {
                   array_t<real_t*>&           phi,
                   array_t<short*>&            tag,
                   const M&                    metric,
-                  real_t                      time,
+                  simtime_t                   time,
                   real_t                      coeff,
                   real_t                      dt,
                   int                         ni1,
@@ -562,45 +564,85 @@ namespace kernel::sr {
 
     Inline void posUpd(bool massive, index_t& p, coord_t<M::PrtlDim>& xp) const {
       // get cartesian velocity
-      const real_t inv_energy {
-        massive ? ONE / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
-                : ONE / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
-      };
-      vec_t<Dim::_3D>     vp_Cart { ux1(p) * inv_energy,
-                                ux2(p) * inv_energy,
-                                ux3(p) * inv_energy };
-      // get cartesian position
-      coord_t<M::PrtlDim> xp_Cart { ZERO };
-      metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
-      // update cartesian position
-      for (auto d = 0u; d < M::PrtlDim; ++d) {
-        xp_Cart[d] += vp_Cart[d] * dt;
-      }
-      // transform back to code
-      metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xp_Cart, xp);
-
-      // update x1
-      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-        i1_prev(p)  = i1(p);
-        dx1_prev(p) = dx1(p);
-        from_Xi_to_i_di(xp[0], i1(p), dx1(p));
-      }
-
-      // update x2 & phi
-      if constexpr (D == Dim::_2D || D == Dim::_3D) {
-        i2_prev(p)  = i2(p);
-        dx2_prev(p) = dx2(p);
-        from_Xi_to_i_di(xp[1], i2(p), dx2(p));
-        if constexpr (D == Dim::_2D && M::PrtlDim == Dim::_3D) {
-          phi(p) = xp[2];
+      if constexpr (M::CoordType == Coord::Cart) {
+        // i+di push for Cartesian basis
+        const real_t dt_inv_energy {
+          massive
+            ? (dt / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+            : (dt / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+        };
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+          i1_prev(p)  = i1(p);
+          dx1_prev(p) = dx1(p);
+          dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux1(p)) *
+                    dt_inv_energy;
+          i1(p) += static_cast<int>(dx1(p) >= ONE) -
+                   static_cast<int>(dx1(p) < ZERO);
+          dx1(p) -= (dx1(p) >= ONE);
+          dx1(p) += (dx1(p) < ZERO);
         }
-      }
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
+          i2_prev(p)  = i2(p);
+          dx2_prev(p) = dx2(p);
+          dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux2(p)) *
+                    dt_inv_energy;
+          i2(p) += static_cast<int>(dx2(p) >= ONE) -
+                   static_cast<int>(dx2(p) < ZERO);
+          dx2(p) -= (dx2(p) >= ONE);
+          dx2(p) += (dx2(p) < ZERO);
+        }
+        if constexpr (D == Dim::_3D) {
+          i3_prev(p)  = i3(p);
+          dx3_prev(p) = dx3(p);
+          dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux3(p)) *
+                    dt_inv_energy;
+          i3(p) += static_cast<int>(dx3(p) >= ONE) -
+                   static_cast<int>(dx3(p) < ZERO);
+          dx3(p) -= (dx3(p) >= ONE);
+          dx3(p) += (dx3(p) < ZERO);
+        }
+      } else {
+        // full Cartesian coordinate push in non-Cartesian basis
+        const real_t inv_energy {
+          massive ? ONE / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
+                  : ONE / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
+        };
+        vec_t<Dim::_3D>     vp_Cart { ux1(p) * inv_energy,
+                                  ux2(p) * inv_energy,
+                                  ux3(p) * inv_energy };
+        // get cartesian position
+        coord_t<M::PrtlDim> xp_Cart { ZERO };
+        metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
+        // update cartesian position
+        for (auto d = 0u; d < M::PrtlDim; ++d) {
+          xp_Cart[d] += vp_Cart[d] * dt;
+        }
+        // transform back to code
+        metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xp_Cart, xp);
 
-      // update x3
-      if constexpr (D == Dim::_3D) {
-        i3_prev(p)  = i3(p);
-        dx3_prev(p) = dx3(p);
-        from_Xi_to_i_di(xp[2], i3(p), dx3(p));
+        // update x1
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+          i1_prev(p)  = i1(p);
+          dx1_prev(p) = dx1(p);
+          from_Xi_to_i_di(xp[0], i1(p), dx1(p));
+        }
+
+        // update x2 & phi
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
+          i2_prev(p)  = i2(p);
+          dx2_prev(p) = dx2(p);
+          from_Xi_to_i_di(xp[1], i2(p), dx2(p));
+          if constexpr (D == Dim::_2D && M::PrtlDim == Dim::_3D) {
+            phi(p) = xp[2];
+          }
+        }
+
+        // update x3
+        if constexpr (D == Dim::_3D) {
+          i3_prev(p)  = i3(p);
+          dx3_prev(p) = dx3(p);
+          from_Xi_to_i_di(xp[2], i3(p), dx3(p));
+        }
       }
       boundaryConditions(p, xp);
     }

@@ -4,7 +4,7 @@
  * Defines the function that interprets ...
  * ... the user-defined species, e.g. when computing moments
  * @implements
- *   - out::InterpretSpecies -> std::vector<unsigned short>
+ *   - out::InterpretSpecies -> std::vector<spidx_t>
  *   - out::InterpretComponents -> std::vector<std::vector<unsigned short>>
  * @cpp:
  *   - interpret_prompt.cpp
@@ -17,12 +17,14 @@
 #ifndef OUTPUT_UTILS_INTERPRET_PROMPT_H
 #define OUTPUT_UTILS_INTERPRET_PROMPT_H
 
+#include "global.h"
+
 #include <string>
 #include <vector>
 
 namespace out {
 
-  auto InterpretSpecies(const std::string&) -> std::vector<unsigned short>;
+  auto InterpretSpecies(const std::string&) -> std::vector<spidx_t>;
 
   auto InterpretComponents(const std::vector<std::string>&)
     -> std::vector<std::vector<unsigned short>>;

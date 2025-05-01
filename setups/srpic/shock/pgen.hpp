@@ -14,6 +14,7 @@
 #include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace user {
@@ -66,6 +67,7 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -80,8 +82,10 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
+    // domain properties
+    const real_t  global_xmin, global_xmax;
     // gas properties
-    const real_t  drift_ux, temperature, filling_fraction;
+    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
     // injector properties
     const real_t  injector_velocity, injection_start, dt;
     const int     injection_frequency;
@@ -89,10 +93,13 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
+      , global_xmin { global_domain.mesh().extent(in::x1).first }
+      , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
+      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
@@ -109,39 +116,52 @@ namespace user {
       return init_flds;
     }
 
-    auto ResetFields(const em& comp) const -> real_t {
+    auto FixFieldsConst(const bc_in&, const em& comp) const
+      -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
-        return init_flds.ex1({ ZERO });
+        return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
-        return init_flds.ex2({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::ex3) {
-        return init_flds.ex3({ ZERO });
+        return { ZERO, true };
       } else if (comp == em::bx1) {
-        return init_flds.bx1({ ZERO });
+        return { init_flds.bx1({ ZERO }), true };
       } else if (comp == em::bx2) {
-        return init_flds.bx2({ ZERO });
+        return { init_flds.bx2({ ZERO }), true };
       } else if (comp == em::bx3) {
-        return init_flds.bx3({ ZERO });
+        return { init_flds.bx3({ ZERO }), true };
       } else {
         raise::Error("Invalid component", HERE);
-        return ZERO;
+        return { ZERO, false };
       }
     }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
 
+      /*
+       *  Plasma setup as partially filled box
+       *
+       *  Plasma setup:
+       *
+       * global_xmin                            global_xmax
+       * |                                      |
+       * V                                      V
+       * |:::::::::::|..........................|
+       *             ^
+       *             |
+       *        filling_fraction
+       */
+
       // minimum and maximum position of particles
-      real_t xg_min = local_domain.mesh.extent(in::x1).first;
-      real_t xg_max = local_domain.mesh.extent(in::x1).first +
-                      filling_fraction * (local_domain.mesh.extent(in::x1).second -
-                                          local_domain.mesh.extent(in::x1).first);
+      real_t xg_min = global_xmin;
+      real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
 
       // define box to inject into
       boundaries_t<real_t> box;
       // loop over all dimensions
-      for (unsigned short d { 0 }; d < static_cast<unsigned short>(M::Dim); ++d) {
+      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
-        if (d == static_cast<unsigned short>(in::x1)) {
+        if (d == static_cast<decltype(d)>(in::x1)) {
           box.push_back({ xg_min, xg_max });
         } else {
           // inject into full range in other directions
@@ -149,26 +169,26 @@ namespace user {
         }
       }
 
-      // spatial distribution of the particles
-      // -> hack to use the uniform distribution in NonUniformInjector
-      const auto spatial_dist = arch::Piston<S, M>(local_domain.mesh.metric,
-                                                   xg_min,
-                                                   xg_max,
-                                                   in::x1);
+      // species #1 -> e^-
+      // species #2 -> protons
 
       // energy distribution of the particles
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        local_domain.mesh.metric,
+        local_domain.random_pool,
+        { temperature_ratio * temperature * local_domain.species[1].mass() ,
+          temperature },
+        { 1, 2 },
+        -drift_ux,
+        in::x1);
 
-      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
+      // we want to set up a uniform density distribution
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
-        spatial_dist,
         { 1, 2 });
 
-      arch::InjectNonUniform<S, M, arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>>(
+      // inject uniformly within the defined box
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
         params,
         local_domain,
         injector,
@@ -177,7 +197,22 @@ namespace user {
         box);
     }
 
-    void CustomPostStep(std::size_t step, long double time, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+
+      /*
+       *  Replenish plasma in a moving injector
+       *
+       *  Injector setup:
+       *
+       * global_xmin           purge/replenish  global_xmax
+       * |         x_init            |          |
+       * V           v               V          V
+       * |:::::::::::;::::::::::|\\\\\\\\|......|
+       *                       xmin    xmax
+       *                                 ^
+       *                                 |
+       *                           moving injector
+       */
 
       // check if the injector should be active
       if (step % injection_frequency != 0) {
@@ -185,47 +220,40 @@ namespace user {
       }
 
       // initial position of injector
-      const auto x_init = domain.mesh.extent(in::x1).first +
-                          filling_fraction * (domain.mesh.extent(in::x1).second -
-                                              domain.mesh.extent(in::x1).first);
+      const auto x_init = global_xmin +
+                          filling_fraction * (global_xmax - global_xmin);
 
-      // check if injector is supposed to start moving already
-      const auto dt_inj = time - injection_start > ZERO ? time - injection_start
-                                                        : ZERO;
-
-      // compute the position of the injector
-      auto xmax = x_init + injector_velocity * (dt_inj + dt);
-      if (xmax >= domain.mesh.extent(in::x1).second) {
-        xmax = domain.mesh.extent(in::x1).second;
+      // compute the position of the injector after the current timestep
+      auto xmax = x_init + injector_velocity *
+                             (std::max<real_t>(time - injection_start, ZERO) + dt);
+      if (xmax >= global_xmax) {
+        xmax = global_xmax;
       }
 
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimension
-      for (auto d = 0u; d < M::Dim; ++d) {
-        if (d == 0) {
-          box.push_back({ xmax - drift_ux / math::sqrt(1 + SQR(drift_ux)) * dt -
-                            injection_frequency * dt,
-                          xmax });
-        } else {
-          box.push_back(Range::All);
-        }
+      // compute the beginning of the injected region
+      auto xmin = xmax - injection_frequency * dt;
+      if (xmin <= global_xmin) {
+        xmin = global_xmin;
       }
 
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ true, true });
+        incl_ghosts.push_back({ false, false });
       }
-      auto fields_box = box;
-      // check if the box is still inside the domain
-      if (xmax + injection_frequency * dt < domain.mesh.extent(in::x1).second) {
-        fields_box[0].second += injection_frequency * dt;
-      } else { 
-        // if right side of the box is outside of the domain -> truncate box
-        fields_box[0].second = domain.mesh.extent(in::x1).second;
+
+      // define box to reset fields
+      boundaries_t<real_t> purge_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          purge_box.push_back({ xmin, global_xmax });
+        } else {
+          purge_box.push_back(Range::All);
+        }
       }
-      const auto extent = domain.mesh.ExtentToRange(fields_box, incl_ghosts);
+
+      const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
       tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
@@ -239,20 +267,19 @@ namespace user {
                              init_flds,
                              domain.mesh.metric });
 
-
       /*
         tag particles inside the injection zone as dead
       */
+      const auto& mesh = domain.mesh;
 
       // loop over particle species
-      for (std::size_t s { 0 }; s < 2; ++s) {
-
+      for (auto s { 0u }; s < 2; ++s) {
         // get particle properties
         auto& species = domain.species[s];
         auto  i1      = species.i1;
+        auto  dx1     = species.dx1;
         auto  tag     = species.tag;
 
-        // tag all particles with x > box[0].first as dead
         Kokkos::parallel_for(
           "RemoveParticles",
           species.rangeActiveParticles(),
@@ -261,74 +288,56 @@ namespace user {
             if (tag(p) == ParticleTag::dead) {
               return;
             }
-            // select the x-coordinate index
-            auto x_i1 = i1(p);
-            // check if the particle is inside the box of new plasma
-            if (x_i1 >= x_min[0]) {
+            const auto x_Cd = static_cast<real_t>(i1(p)) +
+                              static_cast<real_t>(dx1(p));
+            const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+              x_Cd);
+
+            if (x_Ph > xmin) {
               tag(p) = ParticleTag::dead;
             }
           });
       }
 
       /*
-          Inject piston of fresh plasma
+          Inject slab of fresh plasma
       */
+
+      // define box to inject into
+      boundaries_t<real_t> inj_box;
+      // loop over all dimension
+      for (auto d = 0u; d < M::Dim; ++d) {
+        if (d == 0) {
+          inj_box.push_back({ xmin, xmax });
+        } else {
+          inj_box.push_back(Range::All);
+        }
+      }
 
       // same maxwell distribution as above
-      const auto energy_dist  = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
-                                                      temperature,
-                                                      -drift_ux,
-                                                      in::x1);
-      // spatial distribution of the particles
-      // -> hack to use the uniform distribution in NonUniformInjector
-      const auto spatial_dist = arch::Piston<S, M>(domain.mesh.metric,
-                                                   box[0].first,
-                                                   box[0].second,
-                                                   in::x1);
+      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
+        domain.mesh.metric,
+        domain.random_pool,
+        { temperature_ratio * temperature * domain.species[1].mass(),
+          temperature },
+        { 1, 2 },
+        -drift_ux,
+        in::x1);
 
-      // inject piston of fresh plasma
-      const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Piston>(
+      // we want to set up a uniform density distribution
+      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
         energy_dist,
-        spatial_dist,
         { 1, 2 });
 
-      // inject non-uniformly within the defined box
-      arch::InjectNonUniform<S, M, decltype(injector)>(params,
-                                                       domain,
-                                                       injector,
-                                                       ONE,
-                                                       false,
-                                                       box);
-
-      /*
-          I thought this option would be better, but I can't get it to work
-      */
-
-      //   const auto spatial_dist = arch::Replenish<S, M,
-      //   decltype(TargetDensityProfile)>(domain.mesh.metric,
-      //                                                   domain.fields.bckp,
-      //                                                   box,
-      //                                                   TargetDensity,
-      //                                                   1.0);
-
-      //   const auto injector = arch::NonUniformInjector<S, M, arch::Maxwellian, arch::Replenish>(
-      //       energy_dist,
-      //       spatial_dist,
-      //       {1, 2});
-
-      // const auto injector = arch::MovingInjector<S, M, in::x1> {
-      //   domain.mesh.metric,
-      //   domain.fields.bckp,
-      //   energy_dist,
-      //   box[0].first,
-      //   box[0].second,
-      //   1.0,
-      //   { 1, 2 }
-      // };
+      // inject uniformly within the defined box
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
+        params,
+        domain,
+        injector,
+        1.0,   // target density
+        false, // no weights
+        inj_box);
     }
   };
-
 } // namespace user
-
 #endif
