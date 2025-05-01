@@ -225,6 +225,17 @@ void comm(int rank, int size, std::size_t bigsize, std::size_t smallsize) {
 
   send_recv<T, D, N>(r_neighbor, l_neighbor, false, view, smallsize);
   send_recv<T, D, N>(l_neighbor, r_neighbor, true, view, smallsize);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  CallOnce([]() {
+    std::cout << "Finished " << D << "D ";
+    if constexpr (std::is_same_v<T, float>) {
+      std::cout << "float";
+    } else {
+      std::cout << "double";
+    }
+    std::cout << " communication test" << std::endl;
+  });
 }
 
 auto main(int argc, char** argv) -> int {
