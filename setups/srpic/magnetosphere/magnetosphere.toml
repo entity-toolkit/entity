@@ -11,7 +11,7 @@
     metric = "qspherical"
 
   [grid.boundaries]
-    fields    = [["ATMOSPHERE", "ABSORB"]]
+    fields    = [["ATMOSPHERE", "MATCH"]]
     particles = [["ATMOSPHERE", "ABSORB"]]
 
     [grid.boundaries.absorb]
@@ -39,7 +39,7 @@
     larmor_max  = 1.0
 
 [particles]
-  ppc0           = 5.0
+  ppc0           = 10.0
   use_weights    = true
   clear_interval = 100
 
@@ -75,5 +75,4 @@
     enable = false
 
 [diagnostics]
-  interval       = 50
-  colored_stdout = true
+  interval = 50
