@@ -41,4 +41,8 @@ if("ADIOS2_MPI" IN_LIST MODES)
   include(adios2-mpi.cmake)
 endif()
 
+if("MPI" IN_LIST MODES)
+  include(mpi.cmake)
+endif()
+
 message(STATUS "Build modes: ${MODES}")
