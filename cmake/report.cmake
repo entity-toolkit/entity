@@ -55,7 +55,6 @@ printchoices(
   "${Green}"
   MPI_REPORT
   46)
-
 if(${mpi} AND ${DEVICE_ENABLED})
   printchoices(
     "GPU-aware MPI"
@@ -67,7 +66,6 @@ if(${mpi} AND ${DEVICE_ENABLED})
     GPU_AWARE_MPI_REPORT
     46)
 endif()
-
 printchoices(
   "Debug mode"
   "DEBUG"

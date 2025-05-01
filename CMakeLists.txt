@@ -108,6 +108,14 @@ else()
   set(DEVICE_ENABLED OFF)
 endif()
 
+if(("${Kokkos_DEVICES}" MATCHES "CUDA")
+   OR ("${Kokkos_DEVICES}" MATCHES "HIP")
+   OR ("${Kokkos_DEVICES}" MATCHES "SYCL"))
+  set(DEVICE_ENABLED ON)
+else()
+  set(DEVICE_ENABLED OFF)
+endif()
+
 # MPI
 if(${mpi})
   find_or_fetch_dependency(MPI FALSE REQUIRED)
