@@ -168,6 +168,14 @@ namespace ntt {
 
     // @TODO: not going to work for arbitrary metric
     return buffer / static_cast<real_t>(domain->mesh.num_active());
+    // Kokkos::parallel_reduce(
+    //   "ComputeMoments",
+    //   prtl_spec.rangeActiveParticles(),
+    //   kernel::ReducedFields_kernel<S, M, F>(components,
+    //                                         domain->fields.em,
+    //                                         domain->fields.cur,
+    //                                         domain->mesh.metric),
+    //   buffer);
   }
 
   template <SimEngine::type S, class M>
