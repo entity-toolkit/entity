@@ -474,13 +474,103 @@ namespace ntt {
       HERE);
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::InitCheckpointWriter(
+    adios2::ADIOS*,
+    const SimulationParams&);
+
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::WriteCheckpoint(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::ContinueFromCheckpoint(
+    adios2::ADIOS*,
+    const SimulationParams&);
 
 } // namespace ntt
