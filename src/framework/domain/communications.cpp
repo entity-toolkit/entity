@@ -641,13 +641,95 @@ namespace ntt {
     }
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::CommunicateFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::CommunicateFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>&,
+    CommTags);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::CommunicateFields(
+    Domain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>&,
+    CommTags);
 
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::SynchronizeFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::SynchronizeFields(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::SynchronizeFields(
+    Domain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>&,
+    CommTags,
+    const range_tuple_t&);
+
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::CommunicateParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::CommunicateParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::CommunicateParticles(
+    Domain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>&);
+
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::RemoveDeadParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::RemoveDeadParticles(
+    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>&);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>&);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::RemoveDeadParticles(
+    Domain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>&);
 } // namespace ntt

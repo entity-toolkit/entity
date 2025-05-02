@@ -86,8 +86,8 @@ namespace ntt {
   }
 
   template <Dimension D>
-  auto Grid<D>::rangeCellsOnHost(const box_region_t<D>& region) const
-    -> range_h_t<D> {
+  auto Grid<D>::rangeCellsOnHost(
+    const box_region_t<D>& region) const -> range_h_t<D> {
     tuple_t<ncells_t, D> imin, imax;
     for (auto i { 0u }; i < D; i++) {
       switch (region[i]) {
@@ -163,8 +163,8 @@ namespace ntt {
   }
 
   template <Dimension D>
-  auto Grid<D>::rangeCells(const tuple_t<list_t<int, 2>, D>& ranges) const
-    -> range_t<D> {
+  auto Grid<D>::rangeCells(
+    const tuple_t<list_t<int, 2>, D>& ranges) const -> range_t<D> {
     tuple_t<ncells_t, D> imin, imax;
     for (auto i { 0u }; i < D; i++) {
       raise::ErrorIf((ranges[i][0] < -(int)N_GHOSTS) ||

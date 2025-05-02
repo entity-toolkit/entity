@@ -18,6 +18,8 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
+#include "kernels/reduced_stats.hpp"
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
@@ -107,17 +109,63 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M, StatsID::type F>
-  auto ComputeFields(Domain<S, M>*                      domain,
-                     const std::vector<unsigned short>& components) -> real_t {
+  auto ReduceFields(Domain<S, M>*                      domain,
+                    const std::vector<unsigned short>& components) -> real_t {
     auto buffer { ZERO };
-    // Kokkos::parallel_reduce(
-    //   "ComputeMoments",
-    //   prtl_spec.rangeActiveParticles(),
-    //   kernel::ReducedFields_kernel<S, M, F>(components,
-    //                                         domain->fields.em,
-    //                                         domain->fields.cur,
-    //                                         domain->mesh.metric),
-    //   buffer);
+    if constexpr (F == StatsID::JdotE) {
+      if (components.size() == 0) {
+        Kokkos::parallel_reduce(
+          "ReduceFields",
+          domain->mesh.rangeActiveCells(),
+          kernel::ReducedFields_kernel<S, M, F, 0>(domain->fields.em,
+                                                   domain->fields.cur,
+                                                   domain->mesh.metric),
+          buffer);
+      } else {
+        raise::Error("Components not supported for JdotE", HERE);
+      }
+    } else if constexpr (
+      (S == SimEngine::SRPIC) and
+      (F == StatsID::B2 or F == StatsID::E2 or F == StatsID::ExB)) {
+      raise::ErrorIf(components.size() != 1,
+                     "Components must be of size 1 for B2, E2 or ExB stats",
+                     HERE);
+      const auto comp = components[0];
+      if (comp == 1) {
+        Kokkos::parallel_reduce(
+          "ReduceFields",
+          domain->mesh.rangeActiveCells(),
+          kernel::ReducedFields_kernel<S, M, F, 1>(domain->fields.em,
+                                                   domain->fields.cur,
+                                                   domain->mesh.metric),
+          buffer);
+      } else if (comp == 2) {
+        Kokkos::parallel_reduce(
+          "ReduceFields",
+          domain->mesh.rangeActiveCells(),
+          kernel::ReducedFields_kernel<S, M, F, 2>(domain->fields.em,
+                                                   domain->fields.cur,
+                                                   domain->mesh.metric),
+          buffer);
+      } else if (comp == 3) {
+        Kokkos::parallel_reduce(
+          "ReduceFields",
+          domain->mesh.rangeActiveCells(),
+          kernel::ReducedFields_kernel<S, M, F, 3>(domain->fields.em,
+                                                   domain->fields.cur,
+                                                   domain->mesh.metric),
+          buffer);
+      } else {
+        raise::Error(
+          "Invalid component for B2, E2 or ExB stats: " + std::to_string(comp),
+          HERE);
+      }
+    } else {
+      raise::Error("ReduceFields not implemented for this stats ID + SimEngine "
+                   "combination",
+                   HERE);
+    }
+
     return buffer;
   }
 
@@ -174,31 +222,108 @@ namespace ntt {
                                                      comp));
         }
       } else if (stat.id() == StatsID::JdotE) {
-        g_stats_writer.write(ComputeFields<S, M, StatsID::JdotE>(local_domain, {}));
-      } else if (stat.id() == StatsID::E2) {
-        g_stats_writer.write(ComputeFields<S, M, StatsID::E2>(local_domain, {}));
-      } else if (stat.id() == StatsID::B2) {
-        g_stats_writer.write(ComputeFields<S, M, StatsID::B2>(local_domain, {}));
-      } else if (stat.id() == StatsID::ExB) {
-        for (const auto& comp : stat.comp) {
-          g_stats_writer.write(
-            ComputeFields<S, M, StatsID::ExB>(local_domain, comp));
+        g_stats_writer.write(ReduceFields<S, M, StatsID::JdotE>(local_domain, {}));
+      } else if (S == SimEngine::SRPIC) {
+        if (stat.id() == StatsID::E2) {
+          for (const auto& comp : stat.comp) {
+            g_stats_writer.write(
+              ReduceFields<S, M, StatsID::E2>(local_domain, comp));
+          }
+        } else if (stat.id() == StatsID::B2) {
+          for (const auto& comp : stat.comp) {
+            g_stats_writer.write(
+              ReduceFields<S, M, StatsID::B2>(local_domain, comp));
+          }
+        } else if (stat.id() == StatsID::ExB) {
+          for (const auto& comp : stat.comp) {
+            g_stats_writer.write(
+              ReduceFields<S, M, StatsID::ExB>(local_domain, comp));
+          }
+        } else {
+          raise::Error("Unrecognized stats ID " + stat.name(), HERE);
         }
       } else {
-        raise::Error("Unrecognized stats ID " + stat.name(), HERE);
+        raise::Error("StatsID not implemented for particular SimEngine: " +
+                       std::to_string(static_cast<int>(S)),
+                     HERE);
       }
     }
     g_stats_writer.endWriting();
     return true;
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::InitStatsWriter(
+    const SimulationParams&,
+    bool);
+
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::WriteStats(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t) -> bool;
 
 } // namespace ntt

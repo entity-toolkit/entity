@@ -708,13 +708,125 @@ namespace ntt {
     return true;
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
+  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::InitWriter(
+    adios2::ADIOS*,
+    const SimulationParams&,
+    bool);
 
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_1D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_3D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>&)>)
+    -> bool;
+  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::Write(
+    const SimulationParams&,
+    timestep_t,
+    timestep_t,
+    simtime_t,
+    simtime_t,
+    std::function<void(const std::string&,
+                       ndfield_t<Dim::_2D, 6>&,
+                       std::size_t,
+                       const Domain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>&)>)
+    -> bool;
 } // namespace ntt
