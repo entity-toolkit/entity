@@ -19,7 +19,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/timer.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
@@ -138,8 +137,11 @@ namespace ntt {
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);
-    auto WriteStats(const SimulationParams&, timestep_t, timestep_t, simtime_t, simtime_t)
-      -> bool;
+    auto WriteStats(const SimulationParams&,
+                    timestep_t,
+                    timestep_t,
+                    simtime_t,
+                    simtime_t) -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);

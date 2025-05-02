@@ -38,13 +38,13 @@ namespace stats {
       species = {};
     }
     if (is_vector()) {
-      // always write all the ExB and V components
+      // always write all the E^2, B^2, ExB components
       comp = { { 1 }, { 2 }, { 3 } };
     } else if (id() == StatsID::T) {
       // energy-momentum tensor
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
     } else {
-      // scalar (e.g., Rho, E^2, etc.)
+      // scalar (e.g., Rho, Npart, etc.)
       comp = {};
     }
   }

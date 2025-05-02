@@ -3,10 +3,11 @@
  * @brief Class defining the metadata necessary to prepare the stats for output
  * @implements
  *   - out::OutputStats
+ *   - out::Writer
  * @cpp:
  *   - stats.cpp
  * @namespaces:
- *   - out::
+ *   - stats::
  */
 
 #ifndef OUTPUT_STATS_H
@@ -16,10 +17,16 @@
 #include "global.h"
 
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/tools.h"
 
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
+  #include <mpi.h>
+#endif
+
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -47,7 +54,7 @@ namespace stats {
 
     [[nodiscard]]
     auto is_vector() const -> bool {
-      return id() == StatsID::ExB;
+      return id() == StatsID::ExB || id() == StatsID::E2 || id() == StatsID::B2;
     }
 
     [[nodiscard]]
@@ -65,7 +72,11 @@ namespace stats {
       if (id() == StatsID::T) {
         tmp += m_name.substr(1, 2);
       } else if (is_vector()) {
-        tmp += "i";
+        if (id() == StatsID::E2 || id() == StatsID::B2) {
+          tmp = fmt::format("%ci^2", tmp[0]);
+        } else {
+          tmp += "i";
+        }
       }
       if (species.size() > 0) {
         tmp += "_";
@@ -101,16 +112,20 @@ namespace stats {
         // capitalize the first letter
         tmp[0] = std::toupper(tmp[0]);
       }
-      for (auto& c : comp[ci]) {
-        tmp += std::to_string(c);
-      }
-      if (species.size() > 0) {
-        tmp += "_";
-        for (auto& s : species) {
-          tmp += std::to_string(s);
-          tmp += "_";
+      if (tmp == "E^2" or tmp == "B^2") {
+        tmp = fmt::format("%c%d^2", tmp[0], comp[ci][0]);
+      } else {
+        for (auto& c : comp[ci]) {
+          tmp += std::to_string(c);
         }
-        tmp.pop_back();
+        if (species.size() > 0) {
+          tmp += "_";
+          for (auto& s : species) {
+            tmp += std::to_string(s);
+            tmp += "_";
+          }
+          tmp.pop_back();
+        }
       }
       return tmp;
     }
@@ -145,16 +160,25 @@ namespace stats {
     template <typename T>
     inline void write(const T& value) const {
 #if defined(MPI_ENABLED)
-        // @TODO: reduce
+      T tot_value = static_cast<T>(0);
+      MPI_Reduce(&value,
+                 &tot_value,
+                 1,
+                 mpi::get_type<T>(),
+                 MPI_SUM,
+                 MPI_ROOT_RANK,
+                 MPI_COMM_WORLD);
+#else
+      tot_value = value;
 #endif
       CallOnce(
-        [](auto& fname, auto& value) {
+        [](auto&& fname, auto&& value) {
           std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
           StatsOut << value << ",";
           StatsOut.close();
         },
         m_fname,
-        value);
+        tot_value);
     }
 
     void endWriting();

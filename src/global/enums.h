@@ -14,6 +14,8 @@
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
+ *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
+ *                                    charge, n, npart
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
