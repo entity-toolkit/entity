@@ -1,5 +1,8 @@
 {
-  pkgs ? import <nixpkgs> { },
+  pkgs ? import <nixpkgs> {
+    config.allowUnfree = true;
+    config.cudaSupport = gpu == "CUDA";
+  },
   gpu ? "NONE",
   arch ? "NATIVE",
   hdf5 ? true,
@@ -14,12 +17,13 @@ let
   kokkosPkg = (
     pkgs.callPackage ./kokkos.nix {
       inherit pkgs;
+      stdenv = pkgs.stdenv;
       arch = archUpper;
       gpu = gpuUpper;
     }
   );
   envVars = {
-    compiler = rec {
+    compiler = {
       NONE = {
         CXX = "g++";
         CC = "gcc";
@@ -28,16 +32,7 @@ let
         CXX = "hipcc";
         CC = "hipcc";
       };
-      CUDA = NONE;
-    };
-    kokkos = {
-      HIP = {
-        Kokkos_ENABLE_HIP = "ON";
-      };
-      CUDA = {
-        Kokkos_ENABLE_CUDA = "ON";
-      };
-      NONE = { };
+      CUDA = { };
     };
   };
 in
