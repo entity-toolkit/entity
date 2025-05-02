@@ -159,8 +159,8 @@ namespace stats {
 
     template <typename T>
     inline void write(const T& value) const {
-#if defined(MPI_ENABLED)
       T tot_value = static_cast<T>(0);
+#if defined(MPI_ENABLED)
       MPI_Reduce(&value,
                  &tot_value,
                  1,
@@ -169,7 +169,7 @@ namespace stats {
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
 #else
-      T tot_value = value;
+      tot_value = value;
 #endif
       CallOnce(
         [](auto&& fname, auto&& value) {
