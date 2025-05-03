@@ -615,7 +615,7 @@ namespace kernel {
                               ( S0x[i] * S0z[k] + S1x[i] * S1z[k] +
                                HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
 
-                Wz[i][j][k] = THIRD * (S1z[k] - S0[k]) *
+                Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
                               (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
                                HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
               }
