@@ -44,32 +44,32 @@ namespace user {
       }
     }
 
-    Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      // E_x = E0 * (k_y / |k|) * sin(k · x - ωt)
-      return amplitude * ky / kmag * math::sin(arg(x_Ph));
-    }
+Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
+  // E_x = E0 * (kx2 / |k|) * sin(k · x)
+  return amplitude * kx2 / kmag * math::sin(arg(x_Ph));
+}
 
-    Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      // E_y = -E0 * (k_x / |k|) * sin(k · x - ωt)
-      return -amplitude * kx / kmag * math::sin(arg(x_Ph));
-    }
+Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
+  // E_y = -E0 * (kx1 / |k|) * sin(k · x)
+  return -amplitude * kx1 / kmag * math::sin(arg(x_Ph));
+}
 
-    Inline auto ex3(const coord_t<D>& /*x_Ph*/) const -> real_t {
-      return 0.0;
-    }
+Inline auto ex3(const coord_t<D>& /*x_Ph*/) const -> real_t {
+  return 0.0;
+}
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return 0.0;
-    }
+Inline auto bx1(const coord_t<D>& /*x_Ph*/) const -> real_t {
+  return 0.0;
+}
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
-      return 0.0;
-    }
+Inline auto bx2(const coord_t<D>& /*x_Ph*/) const -> real_t {
+  return 0.0;
+}
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      // B_z = background + perturbation
-      return b_bg + amplitude * math::sin(arg(x_Ph));
-    }
+Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+  // B_z = background + perturbation
+  return b_bg + amplitude * math::sin(arg(x_Ph));
+}
 
   private:
     const real_t amplitude;
