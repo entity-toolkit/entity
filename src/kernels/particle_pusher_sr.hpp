@@ -189,6 +189,8 @@ namespace kernel::sr {
    */
   template <class M, class F = NoForce_t>
   struct Pusher_kernel {
+using team_policy = Kokkos::TeamPolicy<>;
+using member_type = team_policy::member_type;
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D        = M::Dim;
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
@@ -454,7 +456,11 @@ namespace kernel::sr {
       ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(const member_type& team_member) const {
+      const auto i { team_member.league_rank() };
+      const auto p { i * team_member.team_size() + team_member.team_rank() };
+
+
       if (tag(p) != ParticleTag::alive) {
         if (tag(p) != ParticleTag::dead) {
           raise::KernelError(HERE, "Invalid particle tag in pusher");

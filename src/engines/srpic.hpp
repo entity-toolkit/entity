@@ -348,9 +348,15 @@ namespace ntt {
         }
         // clang-format off
         if (not has_atmosphere and not has_extforce) {
+
+        auto range = species.rangeActiveParticles();
+        int num_particles = range.end() - range.begin(); 
+        int team_size = 64;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
           Kokkos::parallel_for(
             "ParticlePusher",
-            species.rangeActiveParticles(),
+            Kokkos::TeamPolicy<>(league_size, team_size),
             kernel::sr::Pusher_kernel<M>(
                 pusher, has_gca, false,
                 cooling_tags,
@@ -377,9 +383,15 @@ namespace ntt {
               x_surf,
               ds
             };
+
+        auto range = species.rangeActiveParticles();
+        int num_particles = range.end() - range.begin(); 
+        int team_size = 64;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
           Kokkos::parallel_for(
             "ParticlePusher",
-            species.rangeActiveParticles(),
+            Kokkos::TeamPolicy<>(league_size, team_size),
             kernel::sr::Pusher_kernel<M, decltype(force)>(
                 pusher, has_gca, false,
                 cooling_tags,
@@ -406,9 +418,15 @@ namespace ntt {
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
                 m_pgen.ext_force
               };
+
+        auto range = species.rangeActiveParticles();
+        int num_particles = range.end() - range.begin(); 
+        int team_size = 64;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
             Kokkos::parallel_for(
               "ParticlePusher",
-              species.rangeActiveParticles(),
+              Kokkos::TeamPolicy<>(league_size, team_size),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
                   pusher, has_gca, true,
                   cooling_tags,
@@ -438,9 +456,15 @@ namespace ntt {
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
                 m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
               };
+
+        auto range = species.rangeActiveParticles();
+        int num_particles = range.end() - range.begin(); 
+        int team_size = 64;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
             Kokkos::parallel_for(
               "ParticlePusher",
-              species.rangeActiveParticles(),
+              Kokkos::TeamPolicy<>(league_size, team_size),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
                   pusher, has_gca, true,
                   cooling_tags,
@@ -492,8 +516,14 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
+
+        auto range = species.rangeActiveParticles();
+        int num_particles = range.end() - range.begin(); 
+        int team_size = 32;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
         Kokkos::parallel_for("CurrentsDeposit",
-                             species.rangeActiveParticles(),
+                             Kokkos::TeamPolicy<>(league_size, team_size),
                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
                                scatter_cur,
                                species.i1,

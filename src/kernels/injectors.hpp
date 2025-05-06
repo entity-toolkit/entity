@@ -27,6 +27,8 @@ namespace kernel {
 
   template <SimEngine::type S, class M, class ED>
   struct UniformInjector_kernel {
+    using team_policy = Kokkos::TeamPolicy<>;
+    using member_type = team_policy::member_type;
     static_assert(ED::is_energy_dist, "ED must be an energy distribution class");
     static_assert(M::is_metric, "M must be a metric class");
 
@@ -100,7 +102,9 @@ namespace kernel {
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {}
 
-    Inline void operator()(index_t p) const {
+    Inline auto operator()(const member_type& team_member) const -> void {
+      const auto i { team_member.league_rank() };
+      const auto p { i * team_member.team_size() + team_member.team_rank() };      
       coord_t<M::Dim> x_Cd { ZERO };
       vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
@@ -190,6 +194,8 @@ namespace kernel {
 
     template <SimEngine::type S, class M, class ED1, class ED2>
     struct UniformInjector_kernel {
+  using team_policy = Kokkos::TeamPolicy<>;
+using member_type = team_policy::member_type;
       static_assert(ED1::is_energy_dist,
                     "ED1 must be an energy distribution class");
       static_assert(ED2::is_energy_dist,
@@ -269,8 +275,10 @@ namespace kernel {
         , inv_V0 { inv_V0 }
         , random_pool { random_pool } {}
 
-      Inline void operator()(index_t p) const {
-        coord_t<M::Dim> x_Cd { ZERO };
+    Inline auto operator()(const member_type& team_member) const -> void {
+      const auto i { team_member.league_rank() };
+      const auto p { i * team_member.team_size() + team_member.team_rank() };      
+              coord_t<M::Dim> x_Cd { ZERO };
         vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
         { // generate a random coordinate
           auto rand_gen = random_pool.get_state();

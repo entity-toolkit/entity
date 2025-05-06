@@ -28,6 +28,8 @@ namespace kernel {
    */
   template <SimEngine::type S, class M>
   class DepositCurrents_kernel {
+using team_policy = Kokkos::TeamPolicy<>;
+using member_type = team_policy::member_type;
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
@@ -96,7 +98,11 @@ namespace kernel {
      * @brief Iteration of the loop over particles.
      * @param p index.
      */
-    Inline auto operator()(index_t p) const -> void {
+    Inline auto operator()(const member_type& team_member) const -> void {
+//     Inline auto operator()(index_t p) const -> void {
+      const auto i { team_member.league_rank() };
+      const auto p { i * team_member.team_size() + team_member.team_rank() };
+
       if (tag(p) == ParticleTag::dead) {
         return;
       }

@@ -480,9 +480,13 @@ namespace arch {
       const auto xi_min     = std::get<2>(result);
       const auto xi_max     = std::get<3>(result);
 
-      Kokkos::parallel_for(
-        "InjectUniform",
-        nparticles,
+        int num_particles = nparticles; 
+        int team_size = 32;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
+        Kokkos::parallel_for(
+          "InjectUniform",
+          Kokkos::TeamPolicy<>(league_size, team_size),
         kernel::UniformInjector_kernel<S, M, typename I::energy_dist_t>(
           injector.species.first,
           injector.species.second,
@@ -592,9 +596,13 @@ namespace arch {
         const auto xi_min     = std::get<2>(result);
         const auto xi_max     = std::get<3>(result);
 
+        int num_particles = nparticles; 
+        int team_size = 32;
+        int league_size = (num_particles + team_size - 1) / team_size;
+
         Kokkos::parallel_for(
           "InjectUniform",
-          nparticles,
+          Kokkos::TeamPolicy<>(league_size, team_size),
           kernel::experimental::
             UniformInjector_kernel<S, M, typename I::energy_dist_1_t, typename I::energy_dist_2_t>(
               injector.species.first,
