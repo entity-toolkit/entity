@@ -163,7 +163,6 @@ public:
           pnt_quantity = EB(NGHOST + 1, NGHOST + 1, em::ex1);
 
         }
-      #endif
 
       #else
 
