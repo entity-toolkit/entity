@@ -146,6 +146,59 @@ public:
             ext_curr.time(0) += dt;
           });
       
+#if defined(MPI_ENABLED)
+        int              rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+      auto EB          = domain.fields.em;
+      auto pnt_quantity = ZERO;
+
+      if constexpr (D == Dim::_2D) {
+
+      #if defined(MPI_ENABLED)
+
+        if(rank == MPI_ROOT_RANK) {
+
+          pnt_quantity = EB(NGHOST + 1, NGHOST + 1, em::ex1);
+
+        }
+      #endif
+
+      #else
+
+      pnt_quantity = EB(NGHOST + 1, NGHOST + 1, em::ex1);
+
+      #endif
+
+       }
+
+      std::ofstream myfile1;
+
+      #if defined(MPI_ENABLED)
+
+        if(rank == MPI_ROOT_RANK) {
+
+          if (time == 0) {
+            myfile1.open("HF_out.txt");
+          } else {
+            myfile1.open("HF_out.txt", std::ios_base::app);
+          }
+          myfile1 << pnt_quantity << std::endl;
+
+        }
+
+      #else
+
+          if (time == 0) {
+            myfile1.open("HF_out.txt");
+          } else {
+            myfile1.open("HF_out.txt", std::ios_base::app);
+          }
+          myfile1 << pnt_quantity << std::endl;
+
+      #endif
+
     }
 
   };
