@@ -18,11 +18,12 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-    InitFields(real_t a, real_t sx1, real_t sx2, real_t sx3, int k1, int k2, int k3)
+    InitFields(real_t a, real_t sx1, real_t sx2, real_t sx3, int k1, int k2, int k3, real_t b_bg)
       : amplitude { a }
       , kx1 { (sx1 > ZERO) ? (real_t)(constant::TWO_PI) * (real_t)k1 / sx1 : ZERO }
       , kx2 { (sx2 > ZERO) ? (real_t)(constant::TWO_PI) * (real_t)k2 / sx2 : ZERO }
       , kx3 { (sx3 > ZERO) ? (real_t)(constant::TWO_PI) * (real_t)k3 / sx3 : ZERO }
+      , b_bg { b_bg }
       , kmag13 { math::sqrt(SQR(kx1) + SQR(kx3)) }
       , kmag { math::sqrt(SQR(kx1) + SQR(kx2) + SQR(kx3)) } {
       raise::ErrorIf(cmp::AlmostZero_host(kx1) and cmp::AlmostZero_host(kx3),
@@ -44,31 +45,35 @@ namespace user {
     }
 
     Inline auto ex1(const coord_t<D>& x_Ph) const -> real_t {
-      return -amplitude * kx1 * kx2 / (kmag13 * kmag) * math::sin(arg(x_Ph));
+      // E_x = E0 * (k_y / |k|) * sin(k · x - ωt)
+      return amplitude * ky / kmag * math::sin(arg(x_Ph));
     }
 
     Inline auto ex2(const coord_t<D>& x_Ph) const -> real_t {
-      return amplitude * (SQR(kx1) + SQR(kx3)) / (kmag13 * kmag) *
-             math::sin(arg(x_Ph));
+      // E_y = -E0 * (k_x / |k|) * sin(k · x - ωt)
+      return -amplitude * kx / kmag * math::sin(arg(x_Ph));
     }
 
-    Inline auto ex3(const coord_t<D>& x_Ph) const -> real_t {
-      return -amplitude * kx3 * kx2 / (kmag13 * kmag) * math::sin(arg(x_Ph));
+    Inline auto ex3(const coord_t<D>& /*x_Ph*/) const -> real_t {
+      return 0.0;
     }
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
-      return -amplitude * (kx3 / kmag13) * math::sin(arg(x_Ph));
+      return 0.0;
     }
 
-    // skipping bx2
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      return 0.0;
+    }
 
     Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
-      return amplitude * (kx1 / kmag13) * math::sin(arg(x_Ph));
+      // B_z = background + perturbation
+      return b_bg + amplitude * math::sin(arg(x_Ph));
     }
 
   private:
     const real_t amplitude;
-    const real_t kx1, kx2, kx3, kmag13, kmag;
+    const real_t kx1, kx2, kx3, kmag13, kmag, b_bg;
   };
 
   template <SimEngine::type S, class M>
@@ -84,7 +89,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t  amplitude;
+    const real_t  amplitude, bbg;
     const int     kx1, kx2, kx3;
     const real_t  sx1, sx2, sx3;
     InitFields<D> init_flds;
@@ -96,13 +101,14 @@ namespace user {
       , kx1 { params.template get<int>("setup.kx1", 1) }
       , kx2 { params.template get<int>("setup.kx2", 0) }
       , kx3 { params.template get<int>("setup.kx3", 0) }
+      , bbg { params.template get<real_t>("setup.bbg", 0.0) }
       , sx1 { global_domain.mesh().extent(in::x1).second -
               global_domain.mesh().extent(in::x1).first }
       , sx2 { global_domain.mesh().extent(in::x2).second -
               global_domain.mesh().extent(in::x2).first }
       , sx3 { global_domain.mesh().extent(in::x3).second -
               global_domain.mesh().extent(in::x3).first }
-      , init_flds { amplitude, sx1, sx2, sx3, kx1, kx2, kx3 }
+      , init_flds { amplitude, sx1, sx2, sx3, kx1, kx2, kx3, bbg }
       , global_domain { global_domain }  {}
 
   inline void InitPrtls(Domain<S, M>& domain) {
