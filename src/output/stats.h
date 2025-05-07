@@ -169,7 +169,7 @@ namespace stats {
                  MPI_ROOT_RANK,
                  MPI_COMM_WORLD);
 #else
-      tot_value = value;
+      T tot_value = value;
 #endif
       CallOnce(
         [](auto&& fname, auto&& value) {

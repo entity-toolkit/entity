@@ -14,12 +14,12 @@ auto main() -> int {
   try {
     {
       const auto e = OutputStats("E^2");
-      raise::ErrorIf(e.is_vector(), "E^2 should not be a vector quantity", HERE);
+      raise::ErrorIf(not e.is_vector(), "E^2 should be a vector quantity", HERE);
       raise::ErrorIf(e.is_moment(), "E^2 should not be a moment", HERE);
       raise::ErrorIf(e.id() != StatsID::E2, "E^2 should have ID StatsID::E2", HERE);
       raise::ErrorIf(e.species.size() != 0, "E^2 should have no species", HERE);
-      raise::ErrorIf(e.comp.size() != 0, "E^2 should have no components", HERE);
-      raise::ErrorIf(e.name() != "E^2", "E^2 should have name `E^2`", HERE);
+      raise::ErrorIf(e.comp.size() != 3, "E^2 should have 3 components", HERE);
+      raise::ErrorIf(e.name() != "Ei^2", "E^2 should have name `Ei^2`", HERE);
     }
 
     {
