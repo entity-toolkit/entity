@@ -166,7 +166,8 @@ namespace ntt {
                    HERE);
     }
 
-    return buffer;
+    // @TODO: not going to work for arbitrary metric
+    return buffer / static_cast<real_t>(domain->mesh.num_active());
   }
 
   template <SimEngine::type S, class M>
@@ -175,6 +176,11 @@ namespace ntt {
                                     timestep_t              finished_step,
                                     simtime_t               current_time,
                                     simtime_t finished_time) -> bool {
+    // @TODO: remove when stats are supported for all coordinate systems
+    raise::ErrorIf(
+      M::CoordType != Coord::Cart,
+      "Stats writing is only supported for Cartesian coordinates for now",
+      HERE);
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
