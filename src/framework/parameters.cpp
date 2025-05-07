@@ -873,6 +873,11 @@ namespace ntt {
                         "gamma_rad",
                         defaults::synchrotron::gamma_rad));
     }
+
+    // @TODO: disabling stats for non-Cartesian
+    if (coord_enum != Coord::Cart) {
+      set("output.stats.enable", false);
+    }
   }
 
   void SimulationParams::setSetupParams(const toml::value& toml_data) {
