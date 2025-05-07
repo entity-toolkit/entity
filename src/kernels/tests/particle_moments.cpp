@@ -20,7 +20,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace ntt;
@@ -56,7 +55,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   } else {
     extent = {
       ext[0],
-      {ZERO, constant::PI}
+      { ZERO, constant::PI }
     };
   }
 
@@ -106,8 +105,8 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cart) {
     boundaries = {
-      {FldsBC::CUSTOM, FldsBC::CUSTOM},
-      {  FldsBC::AXIS,   FldsBC::AXIS}
+      { FldsBC::CUSTOM, FldsBC::CUSTOM },
+      {   FldsBC::AXIS,   FldsBC::AXIS }
     };
   }
 
