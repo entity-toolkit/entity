@@ -351,7 +351,7 @@ namespace ntt {
 
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
-        int team_size = 64;
+        int team_size = 32;
         int league_size = (num_particles + team_size - 1) / team_size;
 
           Kokkos::parallel_for(
@@ -386,7 +386,7 @@ namespace ntt {
 
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
-        int team_size = 64;
+        int team_size = 32;
         int league_size = (num_particles + team_size - 1) / team_size;
 
           Kokkos::parallel_for(
@@ -421,7 +421,7 @@ namespace ntt {
 
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
-        int team_size = 64;
+        int team_size = 32;
         int league_size = (num_particles + team_size - 1) / team_size;
 
             Kokkos::parallel_for(
@@ -459,7 +459,7 @@ namespace ntt {
 
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
-        int team_size = 64;
+        int team_size = 32;
         int league_size = (num_particles + team_size - 1) / team_size;
 
             Kokkos::parallel_for(
