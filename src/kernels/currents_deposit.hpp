@@ -45,70 +45,101 @@ namespace kernel {
     const int                interpolation_order;
 
   private:
-    Inline void find_indices_and_S(const int         i_pos,
-                                   array_t<int*>&    indices,
-                                   array_t<real_t*>& S) {
 
-      // find contributing indices
-      // ToDo: check if this is correct
-      const auto i_min = floor(
-        i_pos - (static_cast<real_t>(interpolation_order) - ONE) * HALF);
+    Inline void shape_function(real_t*                S0_0,
+                                     real_t*                S0_1,
+                                     real_t*                S0_2,
+                                     real_t*                S0_3,
+                                     real_t*                S1_0,
+                                     real_t*                S1_1,
+                                     real_t*                S1_2,
+                                     real_t*                S1_3,
+                                     int*                   i_min,
+                                     int* const i_max int_t i,
+                                     const real_t           dx,
+                                     const int_t            i_prev,
+                                     const real_t           dx_prev) {
 
-      for (int i = 0; i <= interpolation_order; i++) {
-        indices[i] = i_min + i;
-      }
+      /*
+        Shape function per particle is a 4 element array.
+        We need to find which indices are contributing to the shape function
+        For this we first compute the indices of the particle position
 
-      if constexpr (interpolation_order == 1) {
-        const auto dx = static_cast<real_t>(x - indices[0]);
-        S[0]          = ONE - dx;
-        S[1]          = dx;
-      } else if constexpr (interpolation_order == 2) {
-        // Esirkepov 2001, Eq. 24
-        const auto dx = static_cast<real_t>(indices[1] - x);
-        S[0]          = HALF * SQR(HALF + dx);
-        S[1]          = static_cast<real_t>(0.75) - SQR(dx);
-        S[2]          = HALF * SQR(HALF - dx);
+        Let x be the particle position at the current timestep
+        Let * be the particle position at the previous timestep
+
+
+          (-1)    0      1      2      3
+        ___________________________________
+        |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
+        |______|______|______|______|______|
+        |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
+        |______|______|______|______|______|
+        |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
+        |______|______|______|______|______|
+      */
+
+      // find shift in indices
+      const auto shift_x { i_prev - i - (dx_prev - dx) };
+
+      // find indices and define shape function
+      if (shift_x > 0) {
+        /*
+            (-1)    0      1      2      3
+          ___________________________________
+          |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
+          |______|______|______|______|______|
+        */
+        ix_min = i_prev - 2;
+        ix_max = i + 2;
+        // shape function, ToDo: fix
+        S0_0   = HALF * SQR(HALF + dx_prev);
+        S0_1   = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_2   = HALF * SQR(HALF - dx_prev);
+        S0_3   = ZERO;
+
+        S1_0 = ZERO;
+        S1_1 = HALF * SQR(HALF + dx);
+        S1_2 = static_cast<real_t>(0.75) - SQR(dx);
+        S1_3 = HALF * SQR(HALF - dx);
+      } else if (shift_x < 0) {
+        /*
+            (-1)    0      1      2      3
+          ___________________________________
+          |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
+          |______|______|______|______|______|
+        */
+        ix_min = i - 2;
+        ix_max = i_prev + 2;
+        // shape function, ToDo: fix
+        S0_0   = ZERO;
+        S0_1   = HALF * SQR(HALF + dx_prev);
+        S0_2   = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_3   = HALF * SQR(HALF - dx_prev);
+
+        S1_0 = HALF * SQR(HALF + dx);
+        S1_1 = static_cast<real_t>(0.75) - SQR(dx);
+        S1_2 = HALF * SQR(HALF - dx);
+        S1_3 = ZERO;
       } else {
-        // throw error
-      }
-    }
+        /*
+            (-1)    0      1      2      3
+          ___________________________________
+          |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
+          |______|______|______|______|______|
+        */
+        ix_min = i - 2;
+        ix_max = i + 2;
+        // shape function, ToDo: fix
+        S0_0   = HALF * SQR(HALF + dx_prev);
+        S0_1   = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_2   = HALF * SQR(HALF - dx_prev);
+        S0_3   = ZERO;
 
-    Inline void apply_shape_function(array_t<real_t*>& S0,
-                                     array_t<real_t*>& S1,
-                                     array_t<real_t*>& PS0,
-                                     array_t<real_t*>& PS1,
-                                     array_t<int*>&    IS0,
-                                     array_t<int*>&    IS1,
-                                     int*              i_min,
-                                     int*              i_max) {
-
-      // check displacement
-      const auto shift_I = IS0[0] - IS1[0];
-
-      if (shift_I > 0) {
-        // positive shift in x1 direction
-        for (int i = 0; i <= interpolation_order; i++) {
-          S0[i]     = PS0[i];
-          S1[i + 1] = PS1[i];
-        }
-        i_min = IS0[0];
-        i_max = IS1[interpolation_order];
-      } else if (shift_I < 0) {
-        // negative shift in x1 direction
-        for (int i = 0; i <= interpolation_order; i++) {
-          S0[i + 1] = PS0[i];
-          S1[i]     = PS1[i];
-        }
-        i_min = IS1[0];
-        i_max = IS0[interpolation_order];
-      } else {
-        // no shift
-        for (int i = 0; i <= interpolation_order; i++) {
-          S0[i] = PS0[i];
-          S1[i] = PS1[i];
-        }
-        i_min = IS1[0];
-        i_max = IS1[interpolation_order];
+        S1_0 = HALF * SQR(HALF + dx);
+        S1_1 = static_cast<real_t>(0.75) - SQR(dx);
+        S1_2 = HALF * SQR(HALF - dx);
+        S1_3 = ZERO;
       }
     }
 
@@ -457,32 +488,132 @@ namespace kernel {
           Higher order charge conserving current deposition based on
           Esirkepov (2001) https://ui.adsabs.harvard.edu/abs/2001CoPhC.135..144E/abstract
 
-          We need to define the follwowing arrays:
+          We need to define the follwowing variable:
           - Shape functions in spatial directions for the particle position
             before and after the current timestep.
-            S0x, S1x, S0y, S1y, S0z, S1z
-          - Indices this shape function contributes to
-            IS0, IS1
-          - Value of the shape function at the cell positions
-            PS0, PS1
+            S0_*, S1_*
           - Density composition matrix
-            Wx, Wy, Wz
+            Wx_*, Wy_*, Wz_*
         */
 
-        // shape function arrays at time 0 and 1
-        vec_t<interpolation_order + 1> PS0 { ZERO };
-        vec_t<interpolation_order + 1> PS1 { ZERO };
-        // indices the shape function contributes to
-        vec_t<interpolation_order + 1> IS0 { ZERO }; // ToDo: integer
-        vec_t<interpolation_order + 1> IS1 { ZERO }; // ToDo: integer
+        /*
+            x - direction
+        */
 
-        // minimum and maximum contributing indices
-        vec_t<D> i_min { ZERO }; // ToDo: integer
-        vec_t<D> i_max { ZERO }; // ToDo: integer
+        // shape function at previous timestep
+        real_t S0x_0, S0x_1, S0x_2, S0x_3;
+        // shape function at current timestep
+        real_t S1x_0, S1x_1, S1x_2, S1x_3;
+        // indices of the shape function
+        uint ix_min, ix_max;
+        // find indices and define shape function
+        shape_function(&Sx0_0, &Sx0_1, &Sx0_2, &Sx0_3,
+                       &Sx1_0, &Sx1_1, &Sx1_2, &Sx1_3,
+                       &ix_min, &ix_max,
+                       i1(p), dx1(p),
+                       i1_prev(p), dx1_prev(p));
 
         if constexpr (D == Dim::_1D) {
-          // throw error
-        } else if constexpr (D == Dim::_2D) {
+          // ToDo
+        }
+        else if constexpr (D == Dim::_2D) {
+
+          /*
+            y - direction
+          */
+
+          // shape function at previous timestep
+          real_t S0y_0, S0y_1, S0y_2, S0y_3;
+          // shape function at current timestep
+          real_t S1y_0, S1y_1, S1y_2, S1y_3;
+          // indices of the shape function
+          uint   iy_min, iy_max;
+          // find indices and define shape function
+          shape_function(&Sy0_0, &Sy0_1, &Sy0_2, &Sy0_3,
+                         &Sy1_0, &Sy1_1, &Sy1_2, &Sy1_3,
+                         &iy_min, &iy_max,
+                         i2(p), dx2(p),
+                         i2_prev(p), dx2_prev(p));
+
+          // Calculate weight function
+          // Unrolled calculations for Wx
+          const auto Wx_0_0 = HALF * (S1x_0 - S0x_0) * (S0y_0 + S1y_0);
+          const auto Wx_0_1 = HALF * (S1x_0 - S0x_0) * (S0y_1 + S1y_1);
+          const auto Wx_0_2 = HALF * (S1x_0 - S0x_0) * (S0y_2 + S1y_2);
+          const auto Wx_0_3 = HALF * (S1x_0 - S0x_0) * (S0y_3 + S1y_3);
+
+          const auto Wx_1_0 = HALF * (S1x_1 - S0x_1) * (S0y_0 + S1y_0);
+          const auto Wx_1_1 = HALF * (S1x_1 - S0x_1) * (S0y_1 + S1y_1);
+          const auto Wx_1_2 = HALF * (S1x_1 - S0x_1) * (S0y_2 + S1y_2);
+          const auto Wx_1_3 = HALF * (S1x_1 - S0x_1) * (S0y_3 + S1y_3);
+
+          const auto Wx_2_0 = HALF * (S1x_2 - S0x_2) * (S0y_0 + S1y_0);
+          const auto Wx_2_1 = HALF * (S1x_2 - S0x_2) * (S0y_1 + S1y_1);
+          const auto Wx_2_2 = HALF * (S1x_2 - S0x_2) * (S0y_2 + S1y_2);
+          const auto Wx_2_3 = HALF * (S1x_2 - S0x_2) * (S0y_3 + S1y_3);
+
+          const auto Wx_3_0 = HALF * (S1x_3 - S0x_3) * (S0y_0 + S1y_0);
+          const auto Wx_3_1 = HALF * (S1x_3 - S0x_3) * (S0y_1 + S1y_1);
+          const auto Wx_3_2 = HALF * (S1x_3 - S0x_3) * (S0y_2 + S1y_2);
+          const auto Wx_3_3 = HALF * (S1x_3 - S0x_3) * (S0y_3 + S1y_3);
+
+          // Unrolled calculations for Wy
+          const auto Wy_0_0 = HALF * (S1x_0 + S0x_0) * (S0y_0 - S1y_0);
+          const auto Wy_0_1 = HALF * (S1x_0 + S0x_0) * (S0y_1 - S1y_1);
+          const auto Wy_0_2 = HALF * (S1x_0 + S0x_0) * (S0y_2 - S1y_2);
+          const auto Wy_0_3 = HALF * (S1x_0 + S0x_0) * (S0y_3 - S1y_3);
+
+          const auto Wy_1_0 = HALF * (S1x_1 + S0x_1) * (S0y_0 - S1y_0);
+          const auto Wy_1_1 = HALF * (S1x_1 + S0x_1) * (S0y_1 - S1y_1);
+          const auto Wy_1_2 = HALF * (S1x_1 + S0x_1) * (S0y_2 - S1y_2);
+          const auto Wy_1_3 = HALF * (S1x_1 + S0x_1) * (S0y_3 - S1y_3);
+
+          const auto Wy_2_0 = HALF * (S1x_2 + S0x_2) * (S0y_0 - S1y_0);
+          const auto Wy_2_1 = HALF * (S1x_2 + S0x_2) * (S0y_1 - S1y_1);
+          const auto Wy_2_2 = HALF * (S1x_2 + S0x_2) * (S0y_2 - S1y_2);
+          const auto Wy_2_3 = HALF * (S1x_2 + S0x_2) * (S0y_3 - S1y_3);
+
+          const auto Wy_3_0 = HALF * (S1x_3 + S0x_3) * (S0y_0 - S1y_0);
+          const auto Wy_3_1 = HALF * (S1x_3 + S0x_3) * (S0y_1 - S1y_1);
+          const auto Wy_3_2 = HALF * (S1x_3 + S0x_3) * (S0y_2 - S1y_2);
+          const auto Wy_3_3 = HALF * (S1x_3 + S0x_3) * (S0y_3 - S1y_3);
+
+          // Unrolled calculations for Wz
+          const auto Wz_0_0 = THIRD * (S1y_0 * (HALF * S0x_0 + S1x_0) +
+                                       S0y_0 * (HALF * S1x_0 + S0x_0));
+          const auto Wz_0_1 = THIRD * (S1y_1 * (HALF * S0x_0 + S1x_0) +
+                                       S0y_1 * (HALF * S1x_0 + S0x_0));
+          const auto Wz_0_2 = THIRD * (S1y_2 * (HALF * S0x_0 + S1x_0) +
+                                       S0y_2 * (HALF * S1x_0 + S0x_0));
+          const auto Wz_0_3 = THIRD * (S1y_3 * (HALF * S0x_0 + S1x_0) +
+                                       S0y_3 * (HALF * S1x_0 + S0x_0));
+
+          const auto Wz_1_0 = THIRD * (S1y_0 * (HALF * S0x_1 + S1x_1) +
+                                       S0y_0 * (HALF * S1x_1 + S0x_1));
+          const auto Wz_1_1 = THIRD * (S1y_1 * (HALF * S0x_1 + S1x_1) +
+                                       S0y_1 * (HALF * S1x_1 + S0x_1));
+          const auto Wz_1_2 = THIRD * (S1y_2 * (HALF * S0x_1 + S1x_1) +
+                                       S0y_2 * (HALF * S1x_1 + S0x_1));
+          const auto Wz_1_3 = THIRD * (S1y_3 * (HALF * S0x_1 + S1x_1) +
+                                       S0y_3 * (HALF * S1x_1 + S0x_1));
+
+          const auto Wz_2_0 = THIRD * (S1y_0 * (HALF * S0x_2 + S1x_2) +
+                                       S0y_0 * (HALF * S1x_2 + S0x_2));
+          const auto Wz_2_1 = THIRD * (S1y_1 * (HALF * S0x_2 + S1x_2) +
+                                       S0y_1 * (HALF * S1x_2 + S0x_2));
+          const auto Wz_2_2 = THIRD * (S1y_2 * (HALF * S0x_2 + S1x_2) +
+                                       S0y_2 * (HALF * S1x_2 + S0x_2));
+          const auto Wz_2_3 = THIRD * (S1y_3 * (HALF * S0x_2 + S1x_2) +
+                                       S0y_3 * (HALF * S1x_2 + S0x_2));
+
+          const auto Wz_3_0 = THIRD * (S1y_0 * (HALF * S0x_3 + S1x_3) +
+                                       S0y_0 * (HALF * S1x_3 + S0x_3));
+          const auto Wz_3_1 = THIRD * (S1y_1 * (HALF * S0x_3 + S1x_3) +
+                                       S0y_1 * (HALF * S1x_3 + S0x_3));
+          const auto Wz_3_2 = THIRD * (S1y_2 * (HALF * S0x_3 + S1x_3) +
+                                       S0y_2 * (HALF * S1x_3 + S0x_3));
+          const auto Wz_3_3 = THIRD * (S1y_3 * (HALF * S0x_3 + S1x_3) +
+                                       S0y_3 * (HALF * S1x_3 + S0x_3));
 
           // ToDo: check if this is what I need
           const auto dxp_r_1 { static_cast<prtldx_t>(i1(p) == i1_prev(p)) *
@@ -493,134 +624,282 @@ namespace kernel {
                                (dx2(p) + dx2_prev(p)) *
                                static_cast<prtldx_t>(INV_2) };
 
-          // define weight functions
-          vec_t<interpolation_order + 2, interpolation_order + 2> Wx { ZERO };
-          vec_t<interpolation_order + 2, interpolation_order + 2> Wy { ZERO };
-          vec_t<interpolation_order + 2, interpolation_order + 2> Wz { ZERO };
-
-          /*
-            x - direction
-          */
-          // shape function in x direction
-          vec_t<interpolation_order + 2> S0x { ZERO };
-          vec_t<interpolation_order + 2> S1x { ZERO };
-
-          // find indices and define shape function
-          find_indices_and_PS(i1(p), IS0, PS0);
-          find_indices_and_PS(i1_prev(p), IS1, PS1);
-
-          // apply shape function
-          apply_shape_function(S0x, S1x, PS0, PS1, IS0, IS1, &i_min[0], &i_max[0]);
-
-          /*
-            y - direction
-          */
-          // shape function in x direction
-          vec_t<interpolation_order + 2> S0y { ZERO };
-          vec_t<interpolation_order + 2> S1y { ZERO };
-
-          // find indices and define shape function
-          find_indices_and_PS(i2(p), IS0, PS0);
-          find_indices_and_PS(i2_prev(p), IS1, PS1);
-
-          // apply shape function
-          apply_shape_function(S0y, S1y, PS0, PS1, IS0, IS1, &i_min[1], &i_max[1]);
+          // ToDo: actual J update
+          auto J_acc = J.access();
 
           // Calculate weight function
           for (int i = 0; i < interp_order + 2; ++i) {
             for (int j = 0; j < interp_order + 2; ++j) {
-              // Esirkepov 2001, Eq. 38
-              Wx[i][j] = HALF * (S1x[i] - S0x[i]) * (S0y[j] + S1y[j]);
-              Wy[i][j] = HALF * (S1x[i] + S0x[i]) * (S0y[j] - S1y[j]);
-              Wz[i][j] = THIRD * (S1y[j] * (HALF * S0x[i] + S1x[i]) +
-                                  S0y[j] * (HALF * S1x[i] + S0x[i]));
+              // Esirkepov 2001, Eq. 39
+              J_acc(N_GHOSTS + i_min[0] + i,
+                    N_GHOSTS + i_min[1] + j,
+                    cur::jx1) += coeff * inv_dt * Wx[i][j] * dxp_r_1;
             }
           }
-          // ToDo: actual J update
-
-        } else if constexpr (D == Dim::_3D) {
-
-          const auto dxp_r_1 { static_cast<prtldx_t>(i1(p) == i1_prev(p)) *
-                               (dx1(p) + dx1_prev(p)) *
-                               static_cast<prtldx_t>(INV_2) };
-
-          const auto dxp_r_2 { static_cast<prtldx_t>(i2(p) == i2_prev(p)) *
-                               (dx2(p) + dx2_prev(p)) *
-                               static_cast<prtldx_t>(INV_2) };
-
-          const auto dxp_r_3 { static_cast<prtldx_t>(i3(p) == i3_prev(p)) *
-                               (dx3(p) + dx3_prev(p)) *
-                               static_cast<prtldx_t>(INV_2) };
-
-          // define weight functions
-          vec_t<interpolation_order + 2, interpolation_order + 2, interpolation_order + 2>
-            Wx { ZERO };
-          vec_t<interpolation_order + 2, interpolation_order + 2, interpolation_order + 2>
-            Wy { ZERO };
-          vec_t<interpolation_order + 2, interpolation_order + 2, interpolation_order + 2>
-            Wz { ZERO };
-
-          /*
-            x - direction
-          */
-          // shape function in x direction
-          vec_t<interpolation_order + 2> S0x { ZERO };
-          vec_t<interpolation_order + 2> S1x { ZERO };
-
-          // find indices and define shape function
-          find_indices_and_PS(i1(p), IS0, PS0);
-          find_indices_and_PS(i1_prev(p), IS1, PS1);
-
-          // apply shape function
-          apply_shape_function(S0x, S1x, PS0, PS1, IS0, IS1, &i_min[0], &i_max[0]);
-
+        }
+        else if constexpr (D == Dim::_3D) {
           /*
             y - direction
           */
-          // shape function in y direction
-          vec_t<interpolation_order + 2> S0y { ZERO };
-          vec_t<interpolation_order + 2> S1y { ZERO };
 
+          // shape function at previous timestep
+          real_t S0y_0, S0y_1, S0y_2, S0y_3;
+          // shape function at current timestep
+          real_t S1y_0, S1y_1, S1y_2, S1y_3;
+          // indices of the shape function
+          uint   iy_min, iy_max;
           // find indices and define shape function
-          find_indices_and_PS(i2(p), IS0, PS0);
-          find_indices_and_PS(i2_prev(p), IS1, PS1);
-
-          // apply shape function
-          apply_shape_function(S0y, S1y, PS0, PS1, IS0, IS1, &i_min[1], &i_max[1]);
+          shape_function(&Sy0_0, &Sy0_1, &Sy0_2, &Sy0_3,
+                         &Sy1_0, &Sy1_1, &Sy1_2, &Sy1_3,
+                         &iy_min, &iy_max,
+                         i2(p), dx2(p),
+                         i2_prev(p), dx2_prev(p));
 
           /*
             z - direction
           */
-          // shape function in z direction
-          vec_t<interpolation_order + 2> S0z { ZERO };
-          vec_t<interpolation_order + 2> S1z { ZERO };
 
+          // shape function at previous timestep
+          real_t S0z_0, S0z_1, S0z_2, S0z_3;
+          // shape function at current timestep
+          real_t S1z_0, S1z_1, S1z_2, S1z_3;
+          // indices of the shape function
+          uint   iz_min, iz_max;
           // find indices and define shape function
-          find_indices_and_PS(i3(p), IS0, PS0);
-          find_indices_and_PS(i3_prev(p), IS1, PS1);
+          shape_function(&Sz0_0, &Sz0_1, &Sz0_2, &Sz0_3,
+                         &Sz1_0, &Sz1_1, &Sz1_2, &Sz1_3,
+                         &iz_min, &iz_max,
+                         i3(p), dx3(p),
+                         i3_prev(p), dx3_prev(p));
 
-          // apply shape function
-          apply_shape_function(S0z, S1z, PS0, PS1, IS0, IS1, &i_min[2], &i_max[2]);
+          // // Calculate weight function
+          // for (int i = 0; i < interp_order + 2; ++i) {
+          //   for (int j = 0; j < interp_order + 2; ++j) {
+          //     for (int k = 0; k < interp_order + 2; ++k) {
+          //       // Esirkepov 2001, Eq. 31
+          //       Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
+          //                     ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
+          //                      HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
 
-          // Calculate weight function
-          for (int i = 0; i < interp_order + 2; ++i) {
-            for (int j = 0; j < interp_order + 2; ++j) {
-              for (int k = 0; k < interp_order + 2; ++k) {
-                // Esirkepov 2001, Eq. 31
-                Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
-                              ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
-                               HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
+          //       Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
+          //                     (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
+          //                      HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
 
-                Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
-                              ( S0x[i] * S0z[k] + S1x[i] * S1z[k] +
-                               HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
+          //       Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
+          //                     (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
+          //                      HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
+          //     }
+          //   }
+          // }
 
-                Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
-                              (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
-                               HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
-              }
-            }
-          }
+          // Unrolled calculations for Wx, Wy, and Wz
+          const auto Wx_0_0_0 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          const auto Wx_0_0_1 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          const auto Wx_0_0_2 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          const auto Wx_0_0_3 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+
+          const auto Wx_0_1_0 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          const auto Wx_0_1_1 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          const auto Wx_0_1_2 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          const auto Wx_0_1_3 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+
+          const auto Wx_0_2_0 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          const auto Wx_0_2_1 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          const auto Wx_0_2_2 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          const auto Wx_0_2_3 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+
+          const auto Wx_0_3_0 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          const auto Wx_0_3_1 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          const auto Wx_0_3_2 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          const auto Wx_0_3_3 = THIRD * (S1x_0 - S0x_0) *
+                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+
+          const auto Wx_1_0_0 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          const auto Wx_1_0_1 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          const auto Wx_1_0_2 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          const auto Wx_1_0_3 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+
+          const auto Wx_1_1_0 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          const auto Wx_1_1_1 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          const auto Wx_1_1_2 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          const auto Wx_1_1_3 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+
+          const auto Wx_1_2_0 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          const auto Wx_1_2_1 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          const auto Wx_1_2_2 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          const auto Wx_1_2_3 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+
+          const auto Wx_1_3_0 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          const auto Wx_1_3_1 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          const auto Wx_1_3_2 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          const auto Wx_1_3_3 = THIRD * (S1x_1 - S0x_1) *
+                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+
+          const auto Wx_2_0_0 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          const auto Wx_2_0_1 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          const auto Wx_2_0_2 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          const auto Wx_2_0_3 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+
+          const auto Wx_2_1_0 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          const auto Wx_2_1_1 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          const auto Wx_2_1_2 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          const auto Wx_2_1_3 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+
+          const auto Wx_2_2_0 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          const auto Wx_2_2_1 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          const auto Wx_2_2_2 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          const auto Wx_2_2_3 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+
+          const auto Wx_2_3_0 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          const auto Wx_2_3_1 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          const auto Wx_2_3_2 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          const auto Wx_2_3_3 = THIRD * (S1x_2 - S0x_2) *
+                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+
+          const auto Wx_3_0_0 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          const auto Wx_3_0_1 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          const auto Wx_3_0_2 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          const auto Wx_3_0_3 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+
+          const auto Wx_3_1_0 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          const auto Wx_3_1_1 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          const auto Wx_3_1_2 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          const auto Wx_3_1_3 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+
+          const auto Wx_3_2_0 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          const auto Wx_3_2_1 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          const auto Wx_3_2_2 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          const auto Wx_3_2_3 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+
+          const auto Wx_3_3_0 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          const auto Wx_3_3_1 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          const auto Wx_3_3_2 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          const auto Wx_3_3_3 = THIRD * (S1x_3 - S0x_3) *
+                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
 
           // ToDo: actual J update
         }
