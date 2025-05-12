@@ -10,6 +10,7 @@
  *   - traits::run_t, traits::to_string_t
  *   - traits::pgen::init_flds_t
  *   - traits::pgen::ext_force_t
+ *   - traits::pgen::ext_current_t
  *   - traits::pgen::atm_fields_t
  *   - traits::pgen::match_fields_const_t
  *   - traits::pgen::match_fields_t
@@ -98,10 +99,22 @@ namespace traits {
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
+    using ext_current_t = decltype(&T::ext_current);	    
+
+    template <typename T>
     using atm_fields_t = decltype(&T::AtmFields);
 
     template <typename T>
     using match_fields_t = decltype(&T::MatchFields);
+
+    template <typename T>
+    using match_fields_in_x1_t = decltype(&T::MatchFieldsInX1);
+
+    template <typename T>
+    using match_fields_in_x2_t = decltype(&T::MatchFieldsInX2);
+
+    template <typename T>
+    using match_fields_in_x3_t = decltype(&T::MatchFieldsInX3);
 
     template <typename T>
     using match_fields_const_t = decltype(&T::MatchFieldsConst);

@@ -86,8 +86,6 @@ function(
   if(${Padding} EQUAL 0)
     list(LENGTH "${Choices}" nchoices)
     math(EXPR lastchoice "${nchoices} - 1")
-    set(ncols 4)
-    math(EXPR lastcol "${ncols} - 1")
 
     set(longest 0)
     foreach(ch IN LISTS Choices)
@@ -96,6 +94,13 @@ function(
         set(longest ${clen})
       endif()
     endforeach()
+
+    if(longest GREATER 20)
+      set(ncols 3)
+    else()
+      set(ncols 4)
+    endif()
+    math(EXPR lastcol "${ncols} - 1")
 
     set(counter 0)
     foreach(ch IN LISTS Choices)

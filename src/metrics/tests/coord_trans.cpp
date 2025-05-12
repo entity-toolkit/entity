@@ -31,7 +31,7 @@ Inline auto equal(const coord_t<D>& a,
                   const char*       msg,
                   real_t            acc = ONE) -> bool {
   const auto eps = epsilon * acc;
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
       printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
@@ -44,7 +44,7 @@ template <Dimension D>
 Inline void unravel(std::size_t                    idx,
                     tuple_t<std::size_t, D>&       ijk,
                     const tuple_t<std::size_t, D>& res) {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
   }
@@ -82,7 +82,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       coord_t<M::Dim> x_Code_2 { ZERO };
       coord_t<M::Dim> x_Phys_1 { ZERO };
       coord_t<M::Dim> x_Sph_1 { ZERO };
-      for (unsigned short d = 0; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code_1[d] = (real_t)(idx[d]) + HALF;
       }
       metric.template convert<Crd::Cd, Crd::Ph>(x_Code_1, x_Phys_1);
@@ -127,24 +127,24 @@ auto main(int argc, char* argv[]) -> int {
     const auto res2d     = std::vector<std::size_t> { 64, 32 };
     const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
     const auto ext1dcart = boundaries_t<real_t> {
-      {10.0, 20.0}
+      { 10.0, 20.0 }
     };
     const auto ext2dcart = boundaries_t<real_t> {
-      {0.0, 20.0},
-      {0.0, 10.0}
+      { 0.0, 20.0 },
+      { 0.0, 10.0 }
     };
     const auto ext3dcart = boundaries_t<real_t> {
-      {-2.0, 2.0},
-      {-1.0, 1.0},
-      {-0.5, 0.5}
+      { -2.0, 2.0 },
+      { -1.0, 1.0 },
+      { -0.5, 0.5 }
     };
     const auto extsph = boundaries_t<real_t> {
-      {1.0,         10.0},
-      {0.0, constant::PI}
+      { 1.0,         10.0 },
+      { 0.0, constant::PI }
     };
     const auto params = std::map<std::string, real_t> {
-      {"r0",         -ONE},
-      { "h", (real_t)0.25}
+      { "r0",         -ONE },
+      {  "h", (real_t)0.25 }
     };
 
     testMetric<Minkowski<Dim::_1D>>({ 128 }, ext1dcart);
@@ -155,30 +155,30 @@ auto main(int argc, char* argv[]) -> int {
 
     const auto resks  = std::vector<std::size_t> { 64, 54 };
     const auto extsks = boundaries_t<real_t> {
-      {0.8,         50.0},
-      {0.0, constant::PI}
+      { 0.8,         50.0 },
+      { 0.0, constant::PI }
     };
     const auto paramsks = std::map<std::string, real_t> {
-      {"a", (real_t)0.95}
+      { "a", (real_t)0.95 }
     };
     testMetric<KerrSchild<Dim::_2D>>(resks, extsks, 150, paramsks);
 
     const auto resqks = std::vector<std::size_t> { 64, 42 };
     const auto extqks = boundaries_t<real_t> {
-      {0.8,         10.0},
-      {0.0, constant::PI}
+      { 0.8,         10.0 },
+      { 0.0, constant::PI }
     };
     const auto paramsqks = std::map<std::string, real_t> {
-      {"r0",        -TWO},
-      { "h",        ZERO},
-      { "a", (real_t)0.8}
+      { "r0",        -TWO },
+      {  "h",        ZERO },
+      {  "a", (real_t)0.8 }
     };
     testMetric<QKerrSchild<Dim::_2D>>(resqks, extqks, 500, paramsqks);
 
     const auto resks0 = std::vector<std::size_t> { 64, 54 };
     const auto extks0 = boundaries_t<real_t> {
-      {0.5,         20.0},
-      {0.0, constant::PI}
+      { 0.5,         20.0 },
+      { 0.0, constant::PI }
     };
     testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 150);
 

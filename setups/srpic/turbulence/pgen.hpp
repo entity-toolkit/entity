@@ -5,124 +5,258 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
+#include "utils/error.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
-#include <fstream>
-#include <iostream>
-
-enum {
-  REAL = 0,
-  IMAG = 1
-};
+#if defined(MPI_ENABLED)
+  #include <stdlib.h>
+#endif // MPI_ENABLED
 
 namespace user {
   using namespace ntt;
 
+  // initializing guide field and curl(B) = J_ext at the initial time step
   template <Dimension D>
-  struct ExtForce {
-    ExtForce(array_t<real_t* [2]> amplitudes, real_t SX1, real_t SX2, real_t SX3)
-      : amps { amplitudes }
-      , sx1 { SX1 }
-      , sx2 { SX2 }
-      , sx3 { SX3 } {}
+  struct InitFields {
+    InitFields(array_t<real_t**>& k,
+               array_t<real_t*>&  a_real,
+               array_t<real_t*>&  a_imag,
+               array_t<real_t*>&  a_real_inv,
+               array_t<real_t*>&  a_imag_inv)
+      : k { k }
+      , a_real { a_real }
+      , a_imag { a_imag }
+      , a_real_inv { a_real_inv }
+      , a_imag_inv { a_imag_inv }
+      , n_modes { a_real.size() } {};
 
-    const std::vector<unsigned short> species { 1, 2 };
-
-    ExtForce() = default;
-
-    Inline auto fx1(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-
-      // return 0.1 * cos(2.0 * constant::TWO_PI * x_Ph[1]);
-
-      return (k14 * amps(0, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-              k14 * amps(0, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2])) +
-             (k24 * amps(1, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-              k24 * amps(1, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
+      auto bx1_0 = ZERO;
+      for (auto i = 0; i < n_modes; i++) {
+        auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1];
+        bx1_0        -= TWO * k(1, i) *
+                 (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+        bx1_0 -= TWO * k(1, i) *
+                 (a_real_inv(i) * math::sin(k_dot_r) +
+                  a_imag_inv(i) * math::cos(k_dot_r));
+      }
+      return bx1_0;
     }
 
-    Inline auto fx2(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-      return (k04 * amps(2, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-              k04 * amps(2, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-             (k24 * amps(3, REAL) *
-                math::cos(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]) +
-              k24 * amps(3, IMAG) *
-                math::sin(k21 * x_Ph[0] + k22 * x_Ph[1] + k23 * x_Ph[2]));
-      // return ZERO;
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
+      auto bx2_0 = ZERO;
+      for (auto i = 0; i < n_modes; i++) {
+        auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1];
+        bx2_0        += TWO * k(0, i) *
+                 (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+        bx2_0 += TWO * k(0, i) *
+                 (a_real_inv(i) * math::sin(k_dot_r) +
+                  a_imag_inv(i) * math::cos(k_dot_r));
+      }
+      return bx2_0;
     }
 
-    Inline auto fx3(const unsigned short&,
-                    const real_t&,
-                    const coord_t<D>& x_Ph) const -> real_t {
-      real_t k01 = ONE * constant::TWO_PI / sx1;
-      real_t k02 = ZERO * constant::TWO_PI / sx2;
-      real_t k03 = ZERO * constant::TWO_PI / sx3;
-      real_t k04 = ONE;
-      real_t k11 = ZERO * constant::TWO_PI / sx1;
-      real_t k12 = ONE * constant::TWO_PI / sx2;
-      real_t k13 = ZERO * constant::TWO_PI / sx3;
-      real_t k14 = ONE;
-      real_t k21 = ZERO * constant::TWO_PI / sx1;
-      real_t k22 = ZERO * constant::TWO_PI / sx2;
-      real_t k23 = ONE * constant::TWO_PI / sx3;
-      real_t k24 = ONE;
-      return (k04 * amps(4, REAL) *
-                math::cos(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2]) +
-              k04 * amps(4, IMAG) *
-                math::sin(k01 * x_Ph[0] + k02 * x_Ph[1] + k03 * x_Ph[2])) +
-             (k14 * amps(5, REAL) *
-                math::cos(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]) +
-              k14 * amps(5, IMAG) *
-                math::sin(k11 * x_Ph[0] + k12 * x_Ph[1] + k13 * x_Ph[2]));
-      // return ZERO;
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
+      return ONE;
+    }
+
+    array_t<real_t**> k;
+    array_t<real_t*>  a_real;
+    array_t<real_t*>  a_imag;
+    array_t<real_t*>  a_real_inv;
+    array_t<real_t*>  a_imag_inv;
+    std::size_t       n_modes;
+  };
+
+  inline auto init_pool(int seed) -> unsigned int {
+    if (seed < 0) {
+      unsigned int new_seed = static_cast<unsigned int>(rand());
+#if defined(MPI_ENABLED)
+      MPI_Bcast(&new_seed, 1, MPI_UNSIGNED, MPI_ROOT_RANK, MPI_COMM_WORLD);
+#endif // MPI_ENABLED
+      return new_seed;
+    } else {
+      return static_cast<unsigned int>(seed);
+    }
+  }
+
+  template <Dimension D>
+  inline auto init_wavenumbers() -> std::vector<std::vector<real_t>> {
+    if constexpr (D == Dim::_2D) {
+      return {
+        {  1, 0 },
+        {  0, 1 },
+        {  1, 1 },
+        { -1, 1 }
+      };
+    } else if constexpr (D == Dim::_3D) {
+      return {
+        {  1,  0, 1 },
+        {  0,  1, 1 },
+        { -1,  0, 1 },
+        {  0, -1, 1 }
+      };
+    } else {
+      raise::Error("Invalid dimension", HERE);
+      return {};
+    }
+  }
+
+  // external current definition
+  template <Dimension D>
+  struct ExternalCurrent {
+    ExternalCurrent(real_t                            dB,
+                    real_t                            om0,
+                    real_t                            g0,
+                    std::vector<std::vector<real_t>>& wavenumbers,
+                    random_number_pool_t&             random_pool,
+                    real_t                            Lx,
+                    real_t                            Ly,
+                    real_t                            Lz)
+      : wavenumbers { wavenumbers }
+      , n_modes { wavenumbers.size() }
+      , dB { dB }
+      , Lx { Lx }
+      , Ly { Ly }
+      , Lz { Lz }
+      , omega_0 { om0 }
+      , gamma_0 { g0 }
+      , k { "wavevector", D, n_modes }
+      , a_real { "a_real", n_modes }
+      , a_imag { "a_imag", n_modes }
+      , a_real_inv { "a_real_inv", n_modes }
+      , a_imag_inv { "a_imag_inv", n_modes }
+      , A0 { "A0", n_modes } {
+      // initializing wavevectors
+      auto k_host = Kokkos::create_mirror_view(k);
+      if constexpr (D == Dim::_2D) {
+        for (auto i = 0u; i < n_modes; i++) {
+          k_host(0, i) = constant::TWO_PI * wavenumbers[i][0] / Lx;
+          k_host(1, i) = constant::TWO_PI * wavenumbers[i][1] / Ly;
+        }
+      }
+      if constexpr (D == Dim::_3D) {
+        for (auto i = 0u; i < n_modes; i++) {
+          k_host(0, i) = constant::TWO_PI * wavenumbers[i][0] / Lx;
+          k_host(1, i) = constant::TWO_PI * wavenumbers[i][1] / Ly;
+          k_host(2, i) = constant::TWO_PI * wavenumbers[i][2] / Lz;
+        }
+      }
+      // initializing initial complex amplitudes
+      auto a_real_host     = Kokkos::create_mirror_view(a_real);
+      auto a_imag_host     = Kokkos::create_mirror_view(a_imag);
+      auto a_real_inv_host = Kokkos::create_mirror_view(a_real_inv);
+      auto a_imag_inv_host = Kokkos::create_mirror_view(a_imag_inv);
+      auto A0_host         = Kokkos::create_mirror_view(A0);
+
+      real_t prefac { ZERO };
+      if constexpr (D == Dim::_2D) {
+        prefac = HALF; // HALF = 1/sqrt(twice modes due to reality condition * twice the frequencies due to sign change)
+      } else if constexpr (D == Dim::_3D) {
+        prefac = constant::SQRT2; // 1/sqrt(2) = 1/sqrt(twice modes due to reality condition)
+      }
+      for (auto i = 0u; i < n_modes; i++) {
+        auto k_perp = math::sqrt(
+          k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
+        auto phase         = constant::TWO_PI / 6.;
+        A0_host(i)         = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
+        a_real_host(i)     = A0_host(i) * math::cos(phase);
+        a_imag_host(i)     = A0_host(i) * math::sin(phase);
+        phase              = constant::TWO_PI / 3;
+        a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
+        a_real_inv_host(i) = A0_host(i) * math::sin(phase);
+      }
+
+      Kokkos::deep_copy(a_real, a_real_host);
+      Kokkos::deep_copy(a_imag, a_imag_host);
+      Kokkos::deep_copy(a_real_inv, a_real_inv_host);
+      Kokkos::deep_copy(a_imag_inv, a_imag_inv_host);
+      Kokkos::deep_copy(A0, A0_host);
+      Kokkos::deep_copy(k, k_host);
+    };
+
+    Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
+      if constexpr (D == Dim::_2D) {
+        return ZERO;
+      }
+      if constexpr (D == Dim::_3D) {
+        real_t jx1_ant = ZERO;
+        for (auto i = 0u; i < n_modes; i++) {
+          auto k_dot_r = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
+          jx1_ant -= TWO * k(0, i) * k(2, i) *
+                     (a_real_inv(i) * math::cos(k_dot_r) -
+                      a_imag_inv(i) * math::sin(k_dot_r));
+        }
+        return jx1_ant;
+      }
+    }
+
+    Inline auto jx2(const coord_t<D>& x_Ph) const -> real_t {
+      if constexpr (D == Dim::_2D) {
+        return ZERO;
+      } else if constexpr (D == Dim::_3D) {
+        real_t jx2_ant = ZERO;
+        for (auto i = 0u; i < n_modes; i++) {
+          auto k_dot_r = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
+          jx2_ant -= TWO * k(1, i) * k(2, i) *
+                     (a_real_inv(i) * math::cos(k_dot_r) -
+                      a_imag_inv(i) * math::sin(k_dot_r));
+        }
+        return jx2_ant;
+      }
+    }
+
+    Inline auto jx3(const coord_t<D>& x_Ph) const -> real_t {
+      if constexpr (D == Dim::_2D) {
+        real_t jx3_ant = ZERO;
+        for (auto i = 0u; i < n_modes; i++) {
+          auto k_perp_sq  = k(0, i) * k(0, i) + k(1, i) * k(1, i);
+          auto k_dot_r    = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1];
+          jx3_ant        += TWO * k_perp_sq *
+                     (a_real(i) * math::cos(k_dot_r) -
+                      a_imag(i) * math::sin(k_dot_r));
+          jx3_ant += TWO * k_perp_sq *
+                     (a_real_inv(i) * math::cos(k_dot_r) -
+                      a_imag_inv(i) * math::sin(k_dot_r));
+        }
+        return jx3_ant;
+      } else if constexpr (D == Dim::_3D) {
+        real_t jx3_ant = ZERO;
+        for (auto i = 0u; i < n_modes; i++) {
+          auto k_perp_sq = k(0, i) * k(0, i) + k(1, i) * k(1, i);
+          auto k_dot_r = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
+          jx3_ant += TWO * k_perp_sq *
+                     (a_real_inv(i) * math::cos(k_dot_r) -
+                      a_imag_inv(i) * math::sin(k_dot_r));
+        }
+        return jx3_ant;
+      }
     }
 
   private:
-    array_t<real_t* [2]> amps;
-    const real_t         sx1, sx2, sx3;
+    const std::vector<std::vector<real_t>> wavenumbers;
+    const std::size_t                      n_modes;
+    const real_t                           dB, Lx, Ly, Lz;
+
+  public:
+    const real_t      omega_0, gamma_0;
+    array_t<real_t**> k;
+    array_t<real_t*>  a_real;
+    array_t<real_t*>  a_imag;
+    array_t<real_t*>  a_real_inv;
+    array_t<real_t*>  a_imag_inv;
+    array_t<real_t*>  A0;
   };
 
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
+
     // compatibility traits for the problem generator
     static constexpr auto engines = traits::compatible_with<SimEngine::SRPIC>::value;
     static constexpr auto metrics = traits::compatible_with<Metric::Minkowski>::value;
@@ -133,214 +267,145 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const real_t         SX1, SX2, SX3;
-    const real_t         temperature, machno;
-    const unsigned int   nmodes;
-    const real_t         amp0, phi0;
-    array_t<real_t* [2]> amplitudes;
-    ExtForce<M::PrtlDim> ext_force;
-    const real_t         dt;
+    const real_t                     temperature, dB, omega_0, gamma_0;
+    const real_t                     Lx, Ly, Lz, escape_dist;
+    const int                        random_seed;
+    std::vector<std::vector<real_t>> wavenumbers;
+    random_number_pool_t             random_pool;
 
-    inline PGen(const SimulationParams& params, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { params }
-      , SX1 { global_domain.mesh().extent(in::x1).second -
-              global_domain.mesh().extent(in::x1).first }
-      , SX2 { global_domain.mesh().extent(in::x2).second -
-              global_domain.mesh().extent(in::x2).first }
-      , SX3 { global_domain.mesh().extent(in::x3).second -
-              global_domain.mesh().extent(in::x3).first }
-      // , SX1 { 2.0 }
-      // , SX2 { 2.0 }
-      // , SX3 { 2.0 }
-      , temperature { params.template get<real_t>("problem.temperature", 0.1) }
-      , machno { params.template get<real_t>("problem.machno", 0.1) }
-      , nmodes { params.template get<unsigned int>("setup.nmodes", 6) }
-      , amp0 { machno * temperature / static_cast<real_t>(nmodes) }
-      , phi0 { INV_4 } // !TODO: randomize
-      , amplitudes { "DrivingModes", nmodes }
-      , ext_force { amplitudes, SX1, SX2, SX3 }
-      , dt { params.template get<real_t>("algorithms.timestep.dt") } {
-      Init();
-    }
+    // debugging, will delete later
+    real_t total_sum           = ZERO;
+    real_t total_sum_inv       = ZERO;
+    real_t number_of_timesteps = ZERO;
 
-    void Init() {
-      // initializing amplitudes
-      auto       amplitudes_ = amplitudes;
-      const auto amp0_       = amp0;
-      const auto phi0_       = phi0;
-      Kokkos::parallel_for(
-        "RandomAmplitudes",
-        amplitudes.extent(0),
-        Lambda(index_t i) {
-          amplitudes_(i, REAL) = amp0_ * math::cos(phi0_);
-          amplitudes_(i, IMAG) = amp0_ * math::sin(phi0_);
-        });
-    }
+    ExternalCurrent<D> ext_current;
+    InitFields<D>      init_flds;
+
+    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+      : arch::ProblemGenerator<S, M> { p }
+      , temperature { p.template get<real_t>("setup.temperature") }
+      , dB { p.template get<real_t>("setup.dB", ONE) }
+      , omega_0 { p.template get<real_t>("setup.omega_0") }
+      , gamma_0 { p.template get<real_t>("setup.gamma_0") }
+      , wavenumbers { init_wavenumbers<D>() }
+      , random_seed { p.template get<int>("setup.seed", -1) }
+      , random_pool { init_pool(random_seed) }
+      , Lx { global_domain.mesh().extent(in::x1).second -
+             global_domain.mesh().extent(in::x1).first }
+      , Ly { global_domain.mesh().extent(in::x2).second -
+             global_domain.mesh().extent(in::x2).first }
+      , Lz { global_domain.mesh().extent(in::x3).second -
+             global_domain.mesh().extent(in::x3).first }
+      , escape_dist { p.template get<real_t>("setup.escape_dist", HALF * Lx) }
+      , ext_current { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
+      , init_flds { ext_current.k,
+                    ext_current.a_real,
+                    ext_current.a_imag,
+                    ext_current.a_real_inv,
+                    ext_current.a_imag_inv } {}
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      {
-        const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                        local_domain.random_pool,
-                                                        temperature);
-        const auto injector = arch::UniformInjector<S, M, arch::Maxwellian>(
-          energy_dist,
-          { 1, 2 });
-        const real_t ndens = 0.9;
-        arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                      local_domain,
-                                                      injector,
-                                                      ndens);
-      }
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                      local_domain.random_pool,
+                                                      temperature);
+      const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
+        energy_dist,
+        { 1, 2 });
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+        params,
+        local_domain,
+        spatial_dist,
+        ONE);
+    };
 
-      {
-        const auto energy_dist = arch::PowerlawDist<S, M>(local_domain.mesh.metric,
-                                                        local_domain.random_pool,
-                                                        0.1, 100.0, -3.0);
-        const auto injector = arch::UniformInjector<S, M, arch::PowerlawDist>(
-          energy_dist,
-          { 1, 2 });
-        const real_t ndens = 0.1;
-        arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                      local_domain,
-                                                      injector,
-                                                      ndens);
-      }
-    }
-
-    void CustomPostStep(std::size_t time, long double, Domain<S, M>& domain) {
-      auto omega0 = 0.6 * math::sqrt(temperature * machno * constant::TWO_PI / SX1);
-      auto gamma0 = 0.5 * math::sqrt(temperature * machno * constant::TWO_PI / SX2);
-      auto sigma0 = amp0 * math::sqrt(static_cast<real_t>(nmodes) * gamma0);
-      auto pool   = domain.random_pool;
+    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
+      // update amplitudes of antenna
+      const auto  dt = params.template get<real_t>("algorithms.timestep.dt");
+      const auto& ext_curr = ext_current;
       Kokkos::parallel_for(
-        "RandomAmplitudes",
-        amplitudes.extent(0),
+        "Antenna amplitudes",
+        wavenumbers.size(),
         ClassLambda(index_t i) {
-          auto       rand_gen = pool.get_state();
-          const auto unr      = Random<real_t>(rand_gen) - HALF;
-          const auto uni      = Random<real_t>(rand_gen) - HALF;
-          pool.free_state(rand_gen);
-          const auto ampr_prev = amplitudes(i, REAL);
-          const auto ampi_prev = amplitudes(i, IMAG);
-          amplitudes(i, REAL)  = (ampr_prev * math::cos(omega0 * dt) +
-                                 ampi_prev * math::sin(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                unr * sigma0;
-          amplitudes(i, IMAG) = (-ampr_prev * math::sin(omega0 * dt) +
-                                 ampi_prev * math::cos(omega0 * dt)) *
-                                  math::exp(-gamma0 * dt) +
-                                uni * sigma0;
+          auto       generator  = random_pool.get_state();
+          const auto u_imag     = Random<real_t>(generator) - HALF;
+          const auto u_real     = Random<real_t>(generator) - HALF;
+          const auto u_real_inv = Random<real_t>(generator) - HALF;
+          const auto u_imag_inv = Random<real_t>(generator) - HALF;
+          random_pool.free_state(generator);
+
+          auto a_real_prev     = ext_curr.a_real(i);
+          auto a_imag_prev     = ext_curr.a_imag(i);
+          auto a_real_inv_prev = ext_curr.a_real_inv(i);
+          auto a_imag_inv_prev = ext_curr.a_imag_inv(i);
+          ext_curr.a_real(i) = (a_real_prev * math::cos(ext_curr.omega_0 * dt) +
+                                a_imag_prev * math::sin(ext_curr.omega_0 * dt)) *
+                                 math::exp(-ext_curr.gamma_0 * dt) +
+                               ext_curr.A0(i) *
+                                 math::sqrt(TWELVE * ext_curr.gamma_0 / dt) *
+                                 u_real * dt;
+
+          ext_curr.a_imag(i) = (a_imag_prev * math::cos(ext_curr.omega_0 * dt) -
+                                a_real_prev * math::sin(ext_curr.omega_0 * dt)) *
+                                 math::exp(-ext_curr.gamma_0 * dt) +
+                               ext_curr.A0(i) *
+                                 math::sqrt(TWELVE * ext_curr.gamma_0 / dt) *
+                                 u_imag * dt;
+
+          ext_curr.a_real_inv(
+            i) = (a_real_inv_prev * math::cos(-ext_curr.omega_0 * dt) +
+                  a_imag_inv_prev * math::sin(-ext_curr.omega_0 * dt)) *
+                   math::exp(-ext_curr.gamma_0 * dt) +
+                 ext_curr.A0(i) * math::sqrt(TWELVE * ext_curr.gamma_0 / dt) *
+                   u_real_inv * dt;
+
+          ext_curr.a_imag_inv(
+            i) = (a_imag_inv_prev * math::cos(-ext_curr.omega_0 * dt) -
+                  a_real_inv_prev * math::sin(-ext_curr.omega_0 * dt)) *
+                   math::exp(-ext_curr.gamma_0 * dt) +
+                 ext_curr.A0(i) * math::sqrt(TWELVE * ext_curr.gamma_0 / dt) *
+                   u_imag_inv * dt;
         });
 
-      // auto fext_en_total = ZERO;
-      // for (auto& species : domain.species) {
-      //   auto pld    = species.pld[0];
-      //   auto weight = species.weight;
-      //   Kokkos::parallel_reduce(
-      //     "ExtForceEnrg",
-      //     species.rangeActiveParticles(),
-      //     ClassLambda(index_t p, real_t & fext_en) {
-      //       fext_en += pld(p) * weight(p);
-      //     },
-      //     fext_en_total);
-      // }
+      // particle escape (resample velocities)
+      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
+                                                      domain.random_pool,
+                                                      temperature);
+      for (const auto& sp : { 0, 1 }) {
+        if (domain.species[sp].npld() > 1) {
+          const auto& ux1 = domain.species[sp].ux1;
+          const auto& ux2 = domain.species[sp].ux2;
+          const auto& ux3 = domain.species[sp].ux3;
+          const auto& pld = domain.species[sp].pld;
+          const auto& tag = domain.species[sp].tag;
+          const auto  L   = escape_dist;
+	  printf("Entering the escape loop %d, L = %f\n", sp, L);
+          Kokkos::parallel_for(
+            "UpdatePld",
+            domain.species[sp].npart(),
+            Lambda(index_t p) {
+              if (tag(p) == ParticleTag::dead) {
+                return;
+              }
+              const auto gamma = math::sqrt(
+                ONE + ux1(p) * ux1(p) + ux2(p) * ux2(p) + ux3(p) * ux3(p));
+              pld(p, 0) += ux1(p) * dt / gamma;
+              pld(p, 1) += ux2(p) * dt / gamma;
 
-      // auto pkin_en_total = ZERO;
-      // for (auto& species : domain.species) {
-      //   auto ux1    = species.ux1;
-      //   auto ux2    = species.ux2;
-      //   auto ux3    = species.ux3;
-      //   auto weight = species.weight;
-      //   Kokkos::parallel_reduce(
-      //     "KinEnrg",
-      //     species.rangeActiveParticles(),
-      //     ClassLambda(index_t p, real_t & pkin_en) {
-      //       pkin_en += (math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))) -
-      //                   ONE) *
-      //                  weight(p);
-      //     },
-      //     pkin_en_total);
-      // }
-      // // Weight the macroparticle integral by sim parameters
-      // pkin_en_total /= params.template get<real_t>("scales.n0");
-
-      // std::ofstream myfile;
-      // if (time == 0) {
-      //   myfile.open("fextenrg.txt");
-      // } else {
-      //   myfile.open("fextenrg.txt", std::ios_base::app);
-      // }
-      // myfile << fext_en_total << std::endl;
-      // myfile.close();
-
-      // if (time == 0) {
-      //   myfile.open("kenrg.txt");
-      // } else {
-      //   myfile.open("kenrg.txt", std::ios_base::app);
-      // }
-      // myfile << pkin_en_total << std::endl;
-      // myfile.close();
-
-      // if constexpr (D == Dim::_3D) {
-        
-      //   auto metric = domain.mesh.metric;
-        
-      //   auto benrg_total = ZERO;
-      //   auto EB          = domain.fields.em;
-      //   Kokkos::parallel_reduce(
-      //     "BEnrg",
-      //     domain.mesh.rangeActiveCells(),
-      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & benrg) {
-      //       coord_t<Dim::_3D> x_Cd { ZERO };
-      //       vec_t<Dim::_3D>   b_Cntrv { EB(i1, i2, i3, em::bx1),
-      //                                 EB(i1, i2, i3, em::bx2),
-      //                                 EB(i1, i2, i3, em::bx3) };
-      //       vec_t<Dim::_3D>   b_XYZ;
-      //       metric.template transform<Idx::U, Idx::T>(x_Cd,
-      //                                                             b_Cntrv,
-      //                                                             b_XYZ);
-      //       benrg += (SQR(b_XYZ[0]) + SQR(b_XYZ[1]) + SQR(b_XYZ[2]));
-      //     },
-      //     benrg_total);
-      //   benrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
-
-      //   if (time == 0) {
-      //     myfile.open("bsqenrg.txt");
-      //   } else {
-      //     myfile.open("bsqenrg.txt", std::ios_base::app);
-      //   }
-      //   myfile << benrg_total << std::endl;
-      //   myfile.close();
-      //   auto eenrg_total = ZERO;
-      //   Kokkos::parallel_reduce(
-      //     "BEnrg",
-      //     domain.mesh.rangeActiveCells(),
-      //     Lambda(index_t i1, index_t i2, index_t i3, real_t & eenrg) {
-      //       coord_t<Dim::_3D> x_Cd { ZERO };
-      //       vec_t<Dim::_3D>   e_Cntrv { EB(i1, i2, i3, em::ex1),
-      //                                 EB(i1, i2, i3, em::ex2),
-      //                                 EB(i1, i2, i3, em::ex3) };
-      //       vec_t<Dim::_3D>   e_XYZ;
-      //       metric.template transform<Idx::U, Idx::T>(x_Cd,
-      //                                                             e_Cntrv,
-      //                                                             e_XYZ);            
-      //       eenrg += (SQR(e_XYZ[0]) + SQR(e_XYZ[1]) + SQR(e_XYZ[2]));
-      //     },
-      //     eenrg_total);
-      //   eenrg_total *= params.template get<real_t>("scales.sigma0") * HALF;
-  
-
-      //   if (time == 0) {
-      //     myfile.open("esqenrg.txt");
-      //   } else {
-      //     myfile.open("esqenrg.txt", std::ios_base::app);
-      //   }
-      //   myfile << eenrg_total << std::endl;
-      //   myfile.close();
-      // }
+              if (math::abs(pld(p, 0) > L) or (math::abs(pld(p,1)) > L)) {
+                coord_t<D>      x_Ph { ZERO };
+                vec_t<Dim::_3D> u_Mxw { ZERO };
+                energy_dist(x_Ph, u_Mxw);
+                ux1(p)    = u_Mxw[0];
+                ux2(p)    = u_Mxw[1];
+                ux3(p)    = u_Mxw[2];
+                pld(p, 0) = ZERO;
+                pld(p, 1) = ZERO;
+              }
+            });
+        }
+      }
     }
   };
-
 } // namespace user
 
 #endif

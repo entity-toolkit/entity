@@ -80,7 +80,7 @@ namespace ntt {
      * @param cooling The cooling mechanism assigned for the species
      * @param npld The number of payloads for the species
      */
-    Particles(unsigned short     index,
+    Particles(spidx_t            index,
               const std::string& label,
               float              m,
               float              ch,

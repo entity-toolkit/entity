@@ -31,14 +31,14 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
-    for (unsigned short d { 0 }; d < (unsigned short)(M::Dim); ++d) {
+    for (auto d { 0u }; d < M::Dim; ++d) {
       x_corner[d] = HALF;
     }
     const auto V0 = metric.sqrt_det_h(x_corner);
@@ -184,7 +184,7 @@ namespace ntt {
                                                         toml::array {});
     set("particles.nspec", species_tab.size());
 
-    unsigned short idx = 1;
+    spidx_t idx = 1;
     for (const auto& sp : species_tab) {
       const auto label  = toml::find_or<std::string>(sp,
                                                     "label",
@@ -265,7 +265,7 @@ namespace ntt {
     }
     raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
     boundaries_t<real_t> extent_pairwise;
-    for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+    for (auto d { 0u }; d < (dim_t)dim; ++d) {
       raise::ErrorIf(extent[d].size() != 2,
                      fmt::format("invalid inferred `grid.extent[%d]`", d),
                      HERE);
@@ -353,7 +353,6 @@ namespace ntt {
         for (const auto& bc : bcs) {
           if (fmt::toLower(bc) == "match") {
             promiseToDefine("grid.boundaries.match.ds");
-            promiseToDefine("grid.boundaries.match.coeff");
           }
           if (fmt::toLower(bc) == "atmosphere") {
             raise::ErrorIf(atm_defined,
@@ -458,15 +457,18 @@ namespace ntt {
     set("output.separate_files",
         toml::find_or<bool>(toml_data, "output", "separate_files", true));
 
+    promiseToDefine("output.fields.enable");
     promiseToDefine("output.fields.interval");
     promiseToDefine("output.fields.interval_time");
-    promiseToDefine("output.fields.enable");
+    promiseToDefine("output.particles.enable");
     promiseToDefine("output.particles.interval");
     promiseToDefine("output.particles.interval_time");
-    promiseToDefine("output.particles.enable");
+    promiseToDefine("output.spectra.enable");
     promiseToDefine("output.spectra.interval");
     promiseToDefine("output.spectra.interval_time");
-    promiseToDefine("output.spectra.enable");
+    promiseToDefine("output.stats.enable");
+    promiseToDefine("output.stats.interval");
+    promiseToDefine("output.stats.interval_time");
 
     const auto flds_out        = toml::find_or(toml_data,
                                         "output",
@@ -504,10 +506,10 @@ namespace ntt {
     set("output.fields.downsampling", field_dwn);
 
     // particles
-    auto       all_specs = std::vector<unsigned short> {};
+    auto       all_specs = std::vector<spidx_t> {};
     const auto nspec     = get<std::size_t>("particles.nspec");
     for (auto i = 0u; i < nspec; ++i) {
-      all_specs.push_back(static_cast<unsigned short>(i + 1));
+      all_specs.push_back(static_cast<spidx_t>(i + 1));
     }
     const auto prtl_out = toml::find_or(toml_data,
                                         "output",
@@ -540,8 +542,16 @@ namespace ntt {
                       "n_bins",
                       defaults::output::spec_nbins));
 
+    // stats
+    set("output.stats.quantities",
+        toml::find_or(toml_data,
+                      "output",
+                      "stats",
+                      "quantities",
+                      defaults::output::stats_quantities));
+
     // intervals
-    for (const auto& type : { "fields", "particles", "spectra" }) {
+    for (const auto& type : { "fields", "particles", "spectra", "stats" }) {
       const auto q_int      = toml::find_or<timestep_t>(toml_data,
                                                    "output",
                                                    std::string(type),
@@ -554,7 +564,7 @@ namespace ntt {
                                                        -1.0);
       set("output." + std::string(type) + ".enable",
           toml::find_or(toml_data, "output", std::string(type), "enable", true));
-      if (q_int == 0 && q_int_time == -1.0) {
+      if ((q_int == 0) and (q_int_time == -1.0)) {
         set("output." + std::string(type) + ".interval",
             get<timestep_t>("output.interval"));
         set("output." + std::string(type) + ".interval_time",
@@ -615,7 +625,7 @@ namespace ntt {
       raise::ErrorIf(prtl_bc.size() != (std::size_t)dim,
                      "invalid `grid.boundaries.particles`",
                      HERE);
-      for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+      for (auto d { 0u }; d < (dim_t)dim; ++d) {
         flds_bc_enum.push_back({});
         prtl_bc_enum.push_back({});
         const auto fbc = flds_bc[d];
@@ -717,7 +727,7 @@ namespace ntt {
                    HERE);
     boundaries_t<FldsBC> flds_bc_pairwise;
     boundaries_t<PrtlBC> prtl_bc_pairwise;
-    for (unsigned short d = 0; d < (unsigned short)dim; ++d) {
+    for (auto d { 0u }; d < (dim_t)dim; ++d) {
       raise::ErrorIf(
         flds_bc_enum[d].size() != 2,
         fmt::format("invalid inferred `grid.boundaries.fields[%d]`", d),
@@ -738,30 +748,56 @@ namespace ntt {
         for (const auto& e : extent_pairwise) {
           min_extent = std::min(min_extent, e.second - e.first);
         }
-        set("grid.boundaries.match.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "match",
-                          "ds",
-                          min_extent * defaults::bc::match::ds_frac));
+        const auto default_ds = min_extent * defaults::bc::match::ds_frac;
+        boundaries_t<real_t> ds_array;
+        try {
+          auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
+          for (auto d = 0u; d < dim; ++d) {
+            ds_array.push_back({ ds, ds });
+          }
+        } catch (...) {
+          try {
+            const auto ds = toml::find<std::vector<std::vector<real_t>>>(
+              toml_data,
+              "grid",
+              "boundaries",
+              "match",
+              "ds");
+            raise::ErrorIf(ds.size() != dim,
+                           "invalid # in `grid.boundaries.match.ds`",
+                           HERE);
+            for (auto d = 0u; d < dim; ++d) {
+              if (ds[d].size() == 1) {
+                ds_array.push_back({ ds[d][0], ds[d][0] });
+              } else if (ds[d].size() == 2) {
+                ds_array.push_back({ ds[d][0], ds[d][1] });
+              } else if (ds[d].size() == 0) {
+                ds_array.push_back({});
+              } else {
+                raise::Error("invalid `grid.boundaries.match.ds`", HERE);
+              }
+            }
+          } catch (...) {
+            for (auto d = 0u; d < dim; ++d) {
+              ds_array.push_back({ default_ds, default_ds });
+            }
+          }
+        }
+        set("grid.boundaries.match.ds", ds_array);
       } else {
         auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
-        set("grid.boundaries.match.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "match",
-                          "ds",
-                          r_extent * defaults::bc::match::ds_frac));
+        const auto ds = toml::find_or<real_t>(
+          toml_data,
+          "grid",
+          "boundaries",
+          "match",
+          "ds",
+          r_extent * defaults::bc::match::ds_frac);
+        boundaries_t<real_t> ds_array {
+          { ds, ds }
+        };
+        set("grid.boundaries.match.ds", ds_array);
       }
-      set("grid.boundaries.match.coeff",
-          toml::find_or(toml_data,
-                        "grid",
-                        "boundaries",
-                        "match",
-                        "coeff",
-                        defaults::bc::match::coeff));
     }
 
     if (isPromised("grid.boundaries.absorb.ds")) {
@@ -807,7 +843,7 @@ namespace ntt {
           toml::find_or(toml_data, "grid", "boundaries", "atmosphere", "ds", ZERO));
       set("grid.boundaries.atmosphere.height", atm_h);
       set("grid.boundaries.atmosphere.g", atm_T / atm_h);
-      const auto atm_species = toml::find<std::pair<unsigned short, unsigned short>>(
+      const auto atm_species = toml::find<std::pair<spidx_t, spidx_t>>(
         toml_data,
         "grid",
         "boundaries",

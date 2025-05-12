@@ -68,7 +68,7 @@ namespace user {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v_Ph,
-                           unsigned short) const override {
+                           spidx_t) const override {
       v_Ph[0] = -vin;
     }
 

@@ -84,6 +84,11 @@ namespace ntt {
         } else {
           print_output = m_metadomain.Write(m_params, step, step - 1, time, time - dt);
         }
+        print_output &= m_metadomain.WriteStats(m_params,
+                                                step,
+                                                step - 1,
+                                                time,
+                                                time - dt);
         timers.stop("Output");
 
         timers.start("Checkpoint");

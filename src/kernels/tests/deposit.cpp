@@ -29,7 +29,8 @@ void errorIf(bool condition, const std::string& message) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE) -> bool {
+Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE)
+  -> bool {
   const auto eps = epsilon * acc;
   if (not cmp::AlmostEqual(a, b, eps)) {
     printf("%.12e != %.12e %s\n", a, b, msg);
@@ -176,7 +177,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 0.0, 55.0 }, { 0.0, 55.0 } },
       {},
-      30);
+      500);
 
     testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(
       {
@@ -185,7 +186,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       {},
-      30);
+      500);
 
     testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(
       {
@@ -194,7 +195,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 } },
-      30);
+      500);
 
     testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -203,7 +204,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } },
-      30);
+      500);
 
     testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -212,7 +213,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } },
-      30);
+      500);
 
     testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(
       {
@@ -221,7 +222,7 @@ auto main(int argc, char* argv[]) -> int {
     },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } },
-      30);
+      500);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

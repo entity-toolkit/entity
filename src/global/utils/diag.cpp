@@ -120,16 +120,16 @@ namespace diag {
       ss << fmt::alignedTable(
         { "Step:", fmt::format("%lu", step), fmt::format("[of %lu]", tot_steps) },
         { c_reset, c_bgreen, c_bblack },
-        { 0, -6, -15 },
-        { ' ', ' ', ' ' },
+        { 0, -6, -32 },
+        { ' ', ' ', '.' },
         c_bblack,
         c_reset);
 
       ss << fmt::alignedTable(
         { "Time:", fmt::format("%.4f", time), fmt::format("[Δt = %.4f]", dt) },
         { c_reset, c_bgreen, c_bblack },
-        { 0, -6, -15 },
-        { ' ', ' ', ' ' },
+        { 0, -6, -32 },
+        { ' ', ' ', '.' },
         c_bblack,
         c_reset);
     });

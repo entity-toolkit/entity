@@ -4,7 +4,6 @@
  * @implements
  *   - arch::SpatialDistribution<>
  *   - arch::Uniform<> : arch::SpatialDistribution<>
- *   - arch::Piston<> : arch::SpatialDistribution<>
  *   - arch::Replenish<> : arch::SpatialDistribution<>
  * @namespace
  *   - arch::
@@ -50,42 +49,18 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, class M>
-  struct Piston : public arch::SpatialDistribution<S, M> {
-    Piston(const M& metric, real_t xmin, real_t xmax, in piston_direction = in::x1)
-      : arch::SpatialDistribution<S, M> { metric }
-      , xmin { xmin }
-      , xmax { xmax }
-      , piston_direction { piston_direction } {}
-
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
-      // dimentsion to fill
-      const auto fill_dim = static_cast<int>(piston_direction);
-
-      if (x_Ph[fill_dim] < xmin || x_Ph[fill_dim] > xmax) {
-        return ZERO;
-      } else {
-        return ONE;
-      }
-    }
-
-  private:
-    real_t xmin, xmax;
-    in     piston_direction;
-  };
-
   template <SimEngine::type S, class M, class T>
   struct Replenish : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, 6> density;
-    const unsigned short       idx;
+    const idx_t                idx;
 
     const T      target_density;
     const real_t target_max_density;
 
     Replenish(const M&                    metric,
               const ndfield_t<M::Dim, 6>& density,
-              unsigned short              idx,
+              idx_t                       idx,
               const T&                    target_density,
               real_t                      target_max_density)
       : SpatialDistribution<S, M> { metric }

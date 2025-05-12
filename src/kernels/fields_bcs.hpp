@@ -36,8 +36,7 @@ namespace kernel::bc {
   template <SimEngine::type S, class I, class M, in o>
   struct MatchBoundaries_kernel {
     static_assert(M::is_metric, "M must be a metric class");
-    static_assert(static_cast<unsigned short>(o) <
-                    static_cast<unsigned short>(M::Dim),
+    static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
     static constexpr bool defines_dx1 = traits::has_method<traits::dx1_t, I>::value;
@@ -488,7 +487,7 @@ namespace kernel::bc {
 
   template <Dimension D, in o, bool P>
   struct ConductorBoundaries_kernel {
-    static_assert(static_cast<unsigned short>(o) < static_cast<unsigned short>(D),
+    static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(D),
                   "Invalid component index");
 
     ndfield_t<D, 6>   Fld;
@@ -850,8 +849,7 @@ namespace kernel::bc {
                     defines_bx2 or defines_bx3,
                   "none of the components of E or B are specified in PGEN");
     static_assert(M::is_metric, "M must be a metric class");
-    static_assert(static_cast<unsigned short>(O) <
-                    static_cast<unsigned short>(M::Dim),
+    static_assert(static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim),
                   "Invalid Orientation");
 
     ndfield_t<D, 6> Fld;
