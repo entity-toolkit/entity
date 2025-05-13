@@ -37,8 +37,6 @@ if(${output})
   add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
 endif()
 
-add_subdirectory(${SRC_DIR}/../setups ${CMAKE_CURRENT_BINARY_DIR}/setups)
-
 set(ENTITY ${PROJECT_NAME}.xc)
 set(SOURCES ${SRC_DIR}/entity.cpp)
 
