@@ -45,19 +45,19 @@ namespace kernel {
     const int                interpolation_order;
 
   private:
-    Inline void shape_function(real_t*                S0_0,
-                               real_t*                S0_1,
-                               real_t*                S0_2,
-                               real_t*                S0_3,
-                               real_t*                S1_0,
-                               real_t*                S1_1,
-                               real_t*                S1_2,
-                               real_t*                S1_3,
-                               int*                   i_min,
-                               int* const i_max int_t i,
-                               const real_t           dx,
-                               const int_t            i_prev,
-                               const real_t           dx_prev) {
+    Inline void shape_function(real_t*       S0_0,
+                               real_t*       S0_1,
+                               real_t*       S0_2,
+                               real_t*       S0_3,
+                               real_t*       S1_0,
+                               real_t*       S1_1,
+                               real_t*       S1_2,
+                               real_t*       S1_3,
+                               int*          i_min,
+                               const index_t i,
+                               const real_t  dx,
+                               const index_t i_prev,
+                               const real_t  dx_prev) {
 
       /*
         Shape function per particle is a 4 element array.
@@ -89,13 +89,12 @@ namespace kernel {
           |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
           |______|______|______|______|______|
         */
-        ix_min = i_prev - 2;
-        ix_max = i + 2;
+        i_min = i_prev - 2 + N_GHOSTS;
         // shape function, ToDo: fix
-        S0_0   = HALF * SQR(HALF + dx_prev);
-        S0_1   = static_cast<real_t>(0.75) - SQR(dx_prev);
-        S0_2   = HALF * SQR(HALF - dx_prev);
-        S0_3   = ZERO;
+        S0_0  = HALF * SQR(HALF + dx_prev);
+        S0_1  = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_2  = HALF * SQR(HALF - dx_prev);
+        S0_3  = ZERO;
 
         S1_0 = ZERO;
         S1_1 = HALF * SQR(HALF + dx);
@@ -108,13 +107,12 @@ namespace kernel {
           |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
           |______|______|______|______|______|
         */
-        ix_min = i - 2;
-        ix_max = i_prev + 2;
+        i_min = i - 2 + N_GHOSTS;
         // shape function, ToDo: fix
-        S0_0   = ZERO;
-        S0_1   = HALF * SQR(HALF + dx_prev);
-        S0_2   = static_cast<real_t>(0.75) - SQR(dx_prev);
-        S0_3   = HALF * SQR(HALF - dx_prev);
+        S0_0  = ZERO;
+        S0_1  = HALF * SQR(HALF + dx_prev);
+        S0_2  = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_3  = HALF * SQR(HALF - dx_prev);
 
         S1_0 = HALF * SQR(HALF + dx);
         S1_1 = static_cast<real_t>(0.75) - SQR(dx);
@@ -127,13 +125,12 @@ namespace kernel {
           |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
           |______|______|______|______|______|
         */
-        ix_min = i - 2;
-        ix_max = i + 2;
+        i_min = i - 2 + N_GHOSTS;
         // shape function, ToDo: fix
-        S0_0   = HALF * SQR(HALF + dx_prev);
-        S0_1   = static_cast<real_t>(0.75) - SQR(dx_prev);
-        S0_2   = HALF * SQR(HALF - dx_prev);
-        S0_3   = ZERO;
+        S0_0  = HALF * SQR(HALF + dx_prev);
+        S0_1  = static_cast<real_t>(0.75) - SQR(dx_prev);
+        S0_2  = HALF * SQR(HALF - dx_prev);
+        S0_3  = ZERO;
 
         S1_0 = HALF * SQR(HALF + dx);
         S1_1 = static_cast<real_t>(0.75) - SQR(dx);
@@ -497,17 +494,25 @@ namespace kernel {
       */
 
       // shape function at previous timestep
-      real_t S0x_0, S0x_1, S0x_2, S0x_3;
+      real_t   S0x_0, S0x_1, S0x_2, S0x_3;
       // shape function at current timestep
-      real_t S1x_0, S1x_1, S1x_2, S1x_3;
+      real_t   S1x_0, S1x_1, S1x_2, S1x_3;
       // indices of the shape function
-      uint   ix_min, ix_max;
+      ncells_t ix_min;
       // find indices and define shape function
-      shape_function(&Sx0_0, &Sx0_1, &Sx0_2, &Sx0_3,
-                     &Sx1_0, &Sx1_1, &Sx1_2, &Sx1_3,
-                     &ix_min, &ix_max,
-                     i1(p), dx1(p),
-                     i1_prev(p), dx1_prev(p));
+      shape_function(&Sx0_0,
+                     &Sx0_1,
+                     &Sx0_2,
+                     &Sx0_3,
+                     &Sx1_0,
+                     &Sx1_1,
+                     &Sx1_2,
+                     &Sx1_3,
+                     &ix_min,
+                     i1(p),
+                     dx1(p),
+                     i1_prev(p),
+                     dx1_prev(p));
 
       if constexpr (D == Dim::_1D) {
         // ToDo
@@ -518,17 +523,25 @@ namespace kernel {
         */
 
         // shape function at previous timestep
-        real_t S0y_0, S0y_1, S0y_2, S0y_3;
+        real_t   S0y_0, S0y_1, S0y_2, S0y_3;
         // shape function at current timestep
-        real_t S1y_0, S1y_1, S1y_2, S1y_3;
+        real_t   S1y_0, S1y_1, S1y_2, S1y_3;
         // indices of the shape function
-        uint   iy_min, iy_max;
+        ncells_t iy_min;
         // find indices and define shape function
-        shape_function(&Sy0_0, &Sy0_1, &Sy0_2, &Sy0_3,
-                       &Sy1_0, &Sy1_1, &Sy1_2, &Sy1_3,
-                       &iy_min, &iy_max,
-                       i2(p), dx2(p),
-                       i2_prev(p), dx2_prev(p));
+        shape_function(&Sy0_0,
+                       &Sy0_1,
+                       &Sy0_2,
+                       &Sy0_3,
+                       &Sy1_0,
+                       &Sy1_1,
+                       &Sy1_2,
+                       &Sy1_3,
+                       &iy_min,
+                       i2(p),
+                       dx2(p),
+                       i2_prev(p),
+                       dx2_prev(p));
 
         // Calculate weight function
         // Unrolled calculations for Wx
@@ -622,15 +635,80 @@ namespace kernel {
         // ToDo: actual J update
         auto J_acc = J.access();
 
-        // Calculate weight function
-        for (int i = 0; i < interp_order + 2; ++i) {
-          for (int j = 0; j < interp_order + 2; ++j) {
-            // Esirkepov 2001, Eq. 39
-            J_acc(N_GHOSTS + i_min[0] + i,
-                  N_GHOSTS + i_min[1] + j,
-                  cur::jx1) += coeff * inv_dt * Wx[i][j] * dxp_r_1;
-          }
-        }
+        // Esirkepov 2001, Eq. 39
+        /*
+            x - component
+        */
+        const real_t Qdxdt                   = coeff * inv_dt * dxp_r_1;
+        J_acc(ix_min, iy_min, cur::jx1)     += Qdxdt * Wx_0_0;
+        J_acc(ix_min, iy_min + 1, cur::jx1) += Qdxdt * Wx_0_1;
+        J_acc(ix_min, iy_min + 2, cur::jx1) += Qdxdt * Wx_0_2;
+        J_acc(ix_min, iy_min + 3, cur::jx1) += Qdxdt * Wx_0_3;
+
+        J_acc(ix_min + 1, iy_min, cur::jx1)     += Qdxdt * Wx_1_0;
+        J_acc(ix_min + 1, iy_min + 1, cur::jx1) += Qdxdt * Wx_1_1;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx1) += Qdxdt * Wx_1_2;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx1) += Qdxdt * Wx_1_3;
+
+        J_acc(ix_min + 2, iy_min, cur::jx1)     += Qdxdt * Wx_2_0;
+        J_acc(ix_min + 2, iy_min + 1, cur::jx1) += Qdxdt * Wx_2_1;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx1) += Qdxdt * Wx_2_2;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx1) += Qdxdt * Wx_2_3;
+
+        J_acc(ix_min + 3, iy_min, cur::jx1)     += Qdxdt * Wx_3_0;
+        J_acc(ix_min + 3, iy_min + 1, cur::jx1) += Qdxdt * Wx_3_1;
+        J_acc(ix_min + 3, iy_min + 2, cur::jx1) += Qdxdt * Wx_3_2;
+        J_acc(ix_min + 3, iy_min + 3, cur::jx1) += Qdxdt * Wx_3_3;
+
+        /*
+            y - component
+        */
+        const real_t Qdydt                   = coeff * inv_dt * dyp_r_1;
+        J_acc(ix_min, iy_min, cur::jx2)     += Qdydt * Wy_0_0;
+        J_acc(ix_min, iy_min + 1, cur::jx2) += Qdydt * Wy_0_1;
+        J_acc(ix_min, iy_min + 2, cur::jx2) += Qdydt * Wy_0_2;
+        J_acc(ix_min, iy_min + 3, cur::jx2) += Qdydt * Wy_0_3;
+
+        J_acc(ix_min + 1, iy_min, cur::jx2)     += Qdydt * Wy_1_0;
+        J_acc(ix_min + 1, iy_min + 1, cur::jx2) += Qdydt * Wy_1_1;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx2) += Qdydt * Wy_1_2;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx2) += Qdydt * Wy_1_3;
+
+        J_acc(ix_min + 2, iy_min, cur::jx2)     += Qdydt * Wy_2_0;
+        J_acc(ix_min + 2, iy_min + 1, cur::jx2) += Qdydt * Wy_2_1;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx2) += Qdydt * Wy_2_2;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx2) += Qdydt * Wy_2_3;
+
+        J_acc(ix_min + 3, iy_min, cur::jx2)     += Qdydt * Wy_3_0;
+        J_acc(ix_min + 3, iy_min + 1, cur::jx2) += Qdydt * Wy_3_1;
+        J_acc(ix_min + 3, iy_min + 2, cur::jx2) += Qdydt * Wy_3_2;
+        J_acc(ix_min + 3, iy_min + 3, cur::jx2) += Qdydt * Wy_3_3;
+
+
+        /*
+            z - component, simulated direction
+        */
+        const real_t QVz                     = vp[2] * coeff;
+        J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
+        J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
+        J_acc(ix_min, iy_min + 2, cur::jx3) += QVz * Wz_0_2;
+        J_acc(ix_min, iy_min + 3, cur::jx3) += QVz * Wz_0_3;
+
+        J_acc(ix_min + 1, iy_min, cur::jx3)     += QVz * Wz_1_0;
+        J_acc(ix_min + 1, iy_min + 1, cur::jx3) += QVz * Wz_1_1;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
+
+        J_acc(ix_min + 2, iy_min, cur::jx3)     += QVz * Wz_2_0;
+        J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
+
+        J_acc(ix_min + 3, iy_min, cur::jx3)     += QVz * Wz_3_0;
+        J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
+        J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
+        J_acc(ix_min + 3, iy_min + 3, cur::jx3) += QVz * Wz_3_3;
+
       } else if constexpr (D == Dim::_3D) {
         /*
           y - direction
@@ -643,11 +721,20 @@ namespace kernel {
         // indices of the shape function
         uint   iy_min, iy_max;
         // find indices and define shape function
-        shape_function(&Sy0_0, &Sy0_1, &Sy0_2, &Sy0_3,
-                       &Sy1_0, &Sy1_1, &Sy1_2, &Sy1_3,
-                       &iy_min, &iy_max,
-                       i2(p), dx2(p),
-                       i2_prev(p), dx2_prev(p));
+        shape_function(&Sy0_0,
+                       &Sy0_1,
+                       &Sy0_2,
+                       &Sy0_3,
+                       &Sy1_0,
+                       &Sy1_1,
+                       &Sy1_2,
+                       &Sy1_3,
+                       &iy_min,
+                       &iy_max,
+                       i2(p),
+                       dx2(p),
+                       i2_prev(p),
+                       dx2_prev(p));
 
         /*
           z - direction
@@ -660,31 +747,40 @@ namespace kernel {
         // indices of the shape function
         uint   iz_min, iz_max;
         // find indices and define shape function
-        shape_function(&Sz0_0, &Sz0_1, &Sz0_2, &Sz0_3,
-                       &Sz1_0, &Sz1_1, &Sz1_2, &Sz1_3,
-                       &iz_min, &iz_max,
-                       i3(p), dx3(p),
-                       i3_prev(p), dx3_prev(p));
+        shape_function(&Sz0_0,
+                       &Sz0_1,
+                       &Sz0_2,
+                       &Sz0_3,
+                       &Sz1_0,
+                       &Sz1_1,
+                       &Sz1_2,
+                       &Sz1_3,
+                       &iz_min,
+                       &iz_max,
+                       i3(p),
+                       dx3(p),
+                       i3_prev(p),
+                       dx3_prev(p));
 
-        // // Calculate weight function
-        // for (int i = 0; i < interp_order + 2; ++i) {
-        //   for (int j = 0; j < interp_order + 2; ++j) {
-        //     for (int k = 0; k < interp_order + 2; ++k) {
-        //       // Esirkepov 2001, Eq. 31
-        //       Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
-        //                     ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
-        //                      HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
+        // Calculate weight function
+        for (int i = 0; i < interp_order + 2; ++i) {
+          for (int j = 0; j < interp_order + 2; ++j) {
+            for (int k = 0; k < interp_order + 2; ++k) {
+              // Esirkepov 2001, Eq. 31
+              Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
+                            ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
+                             HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
 
-        //       Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
-        //                     (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
-        //                      HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
+              Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
+                            (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
+                             HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
 
-        //       Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
-        //                     (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
-        //                      HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
-        //     }
-        //   }
-        // }
+              Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
+                            (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
+                             HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
+            }
+          }
+        }
 
         // Unrolled calculations for Wx, Wy, and Wz
         const auto Wx_0_0_0 = THIRD * (S1x_0 - S0x_0) *
