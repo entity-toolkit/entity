@@ -22,25 +22,38 @@ function(set_problem_generator pgen_name)
     message(FATAL_ERROR "Problem generator not specified")
   endif()
 
-  file(GLOB_RECURSE PGENS "${CMAKE_CURRENT_SOURCE_DIR}/pgens/**/pgen.hpp"
-       "${CMAKE_CURRENT_SOURCE_DIR}/pgens/pgen.hpp")
+  file(GLOB_RECURSE PGENS "${CMAKE_CURRENT_SOURCE_DIR}/pgens/**/pgen.hpp")
 
   foreach(PGEN ${PGENS})
     get_filename_component(PGEN_NAME ${PGEN} DIRECTORY)
     string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/pgens/" "" PGEN_NAME
-                   ${PGEN_NAME})
-    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/pgens" "" PGEN_NAME
                    ${PGEN_NAME})
     list(APPEND PGEN_NAMES ${PGEN_NAME})
   endforeach()
 
   list(FIND PGEN_NAMES ${pgen_name} PGEN_FOUND)
 
+  file(GLOB_RECURSE EXTRA_PGENS
+       "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/**/pgen.hpp")
+  foreach(EXTRA_PGEN ${EXTRA_PGENS})
+    get_filename_component(EXTRA_PGEN_NAME ${EXTRA_PGEN} DIRECTORY)
+    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/" ""
+                   EXTRA_PGEN_NAME ${EXTRA_PGEN_NAME})
+    list(APPEND PGEN_NAMES "pgens/${EXTRA_PGEN_NAME}")
+  endforeach()
+
   if(${PGEN_FOUND} EQUAL -1)
-    set(pgen_path ${pgen_name})
-    get_filename_component(pgen_path ${pgen_path} ABSOLUTE)
-    string(REGEX REPLACE ".*/" "" pgen_name ${pgen_name})
-    list(APPEND PGEN_NAMES ${pgen_name})
+    if(${pgen_name} MATCHES "^pgens/")
+      get_filename_component(pgen_name ${pgen_name} NAME)
+      set(pgen_path
+          "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/${pgen_name}")
+      set(pgen_name "pgens/${pgen_name}")
+    else()
+      set(pgen_path ${pgen_name})
+      get_filename_component(pgen_path ${pgen_path} ABSOLUTE)
+      string(REGEX REPLACE ".*/" "" pgen_name ${pgen_name})
+      list(APPEND PGEN_NAMES ${pgen_name})
+    endif()
   else()
     set(pgen_path ${CMAKE_CURRENT_SOURCE_DIR}/pgens/${pgen_name})
   endif()
