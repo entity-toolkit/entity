@@ -543,8 +543,6 @@ namespace kernel {
                        i2_prev(p),
                        dx2_prev(p));
 
-        
-
         // ToDo: check if this is what I need
         const auto dxp_r_1 { static_cast<prtldx_t>(i1(p) == i1_prev(p)) *
                              (dx1(p) + dx1_prev(p)) *
@@ -582,26 +580,26 @@ namespace kernel {
         const auto Wx_3_2 = HALF * (S1x_3 - S0x_3) * (S0y_2 + S1y_2);
         const auto Wx_3_3 = HALF * (S1x_3 - S0x_3) * (S0y_3 + S1y_3);
 
-        const real_t Qdxdt                   = coeff * inv_dt * dxp_r_1;
-        
+        const real_t Qdxdt = coeff * inv_dt * dxp_r_1;
+
         J_acc(ix_min, iy_min, cur::jx1)     += Qdxdt * Wx_0_0;
-        J_acc(ix_min, iy_min + 1, cur::jx1) += Qdxdt * Wx_0_1;
-        J_acc(ix_min, iy_min + 2, cur::jx1) += Qdxdt * Wx_0_2;
-        J_acc(ix_min, iy_min + 3, cur::jx1) += Qdxdt * Wx_0_3;
+        J_acc(ix_min + 1, iy_min, cur::jx1) += Qdxdt * Wx_1_0;
+        J_acc(ix_min + 2, iy_min, cur::jx1) += Qdxdt * Wx_2_0;
+        J_acc(ix_min + 3, iy_min, cur::jx1) += Qdxdt * Wx_3_0;
 
-        J_acc(ix_min + 1, iy_min, cur::jx1)     += Qdxdt * Wx_1_0;
+        J_acc(ix_min, iy_min + 1, cur::jx1)     += Qdxdt * Wx_0_1;
         J_acc(ix_min + 1, iy_min + 1, cur::jx1) += Qdxdt * Wx_1_1;
-        J_acc(ix_min + 1, iy_min + 2, cur::jx1) += Qdxdt * Wx_1_2;
-        J_acc(ix_min + 1, iy_min + 3, cur::jx1) += Qdxdt * Wx_1_3;
-
-        J_acc(ix_min + 2, iy_min, cur::jx1)     += Qdxdt * Wx_2_0;
         J_acc(ix_min + 2, iy_min + 1, cur::jx1) += Qdxdt * Wx_2_1;
-        J_acc(ix_min + 2, iy_min + 2, cur::jx1) += Qdxdt * Wx_2_2;
-        J_acc(ix_min + 2, iy_min + 3, cur::jx1) += Qdxdt * Wx_2_3;
-
-        J_acc(ix_min + 3, iy_min, cur::jx1)     += Qdxdt * Wx_3_0;
         J_acc(ix_min + 3, iy_min + 1, cur::jx1) += Qdxdt * Wx_3_1;
+
+        J_acc(ix_min, iy_min + 2, cur::jx1)     += Qdxdt * Wx_0_2;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx1) += Qdxdt * Wx_1_2;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx1) += Qdxdt * Wx_2_2;
         J_acc(ix_min + 3, iy_min + 2, cur::jx1) += Qdxdt * Wx_3_2;
+
+        J_acc(ix_min, iy_min + 3, cur::jx1)     += Qdxdt * Wx_0_3;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx1) += Qdxdt * Wx_1_3;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx1) += Qdxdt * Wx_2_3;
         J_acc(ix_min + 3, iy_min + 3, cur::jx1) += Qdxdt * Wx_3_3;
 
         /*
@@ -628,28 +626,27 @@ namespace kernel {
         const auto Wy_3_2 = HALF * (S1x_3 + S0x_3) * (S0y_2 - S1y_2);
         const auto Wy_3_3 = HALF * (S1x_3 + S0x_3) * (S0y_3 - S1y_3);
 
-        const real_t Qdydt                   = coeff * inv_dt * dyp_r_1;
-        
+        const real_t Qdydt = coeff * inv_dt * dyp_r_1;
+
         J_acc(ix_min, iy_min, cur::jx2)     += Qdydt * Wy_0_0;
-        J_acc(ix_min, iy_min + 1, cur::jx2) += Qdydt * Wy_0_1;
-        J_acc(ix_min, iy_min + 2, cur::jx2) += Qdydt * Wy_0_2;
-        J_acc(ix_min, iy_min + 3, cur::jx2) += Qdydt * Wy_0_3;
+        J_acc(ix_min + 1, iy_min, cur::jx2) += Qdydt * Wy_1_0;
+        J_acc(ix_min + 2, iy_min, cur::jx2) += Qdydt * Wy_2_0;
+        J_acc(ix_min + 3, iy_min, cur::jx2) += Qdydt * Wy_3_0;
 
-        J_acc(ix_min + 1, iy_min, cur::jx2)     += Qdydt * Wy_1_0;
+        J_acc(ix_min, iy_min + 1, cur::jx2)     += Qdydt * Wy_0_1;
         J_acc(ix_min + 1, iy_min + 1, cur::jx2) += Qdydt * Wy_1_1;
-        J_acc(ix_min + 1, iy_min + 2, cur::jx2) += Qdydt * Wy_1_2;
-        J_acc(ix_min + 1, iy_min + 3, cur::jx2) += Qdydt * Wy_1_3;
-
-        J_acc(ix_min + 2, iy_min, cur::jx2)     += Qdydt * Wy_2_0;
         J_acc(ix_min + 2, iy_min + 1, cur::jx2) += Qdydt * Wy_2_1;
-        J_acc(ix_min + 2, iy_min + 2, cur::jx2) += Qdydt * Wy_2_2;
-        J_acc(ix_min + 2, iy_min + 3, cur::jx2) += Qdydt * Wy_2_3;
-
-        J_acc(ix_min + 3, iy_min, cur::jx2)     += Qdydt * Wy_3_0;
         J_acc(ix_min + 3, iy_min + 1, cur::jx2) += Qdydt * Wy_3_1;
-        J_acc(ix_min + 3, iy_min + 2, cur::jx2) += Qdydt * Wy_3_2;
-        J_acc(ix_min + 3, iy_min + 3, cur::jx2) += Qdydt * Wy_3_3;
 
+        J_acc(ix_min, iy_min + 2, cur::jx2)     += Qdydt * Wy_0_2;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx2) += Qdydt * Wy_1_2;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx2) += Qdydt * Wy_2_2;
+        J_acc(ix_min + 3, iy_min + 2, cur::jx2) += Qdydt * Wy_3_2;
+
+        J_acc(ix_min, iy_min + 3, cur::jx2)     += Qdydt * Wy_0_3;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx2) += Qdydt * Wy_1_3;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx2) += Qdydt * Wy_2_3;
+        J_acc(ix_min + 3, iy_min + 3, cur::jx2) += Qdydt * Wy_3_3;
 
         /*
             z - component, simulated direction
@@ -691,25 +688,26 @@ namespace kernel {
         const auto Wz_3_3 = THIRD * (S1y_3 * (HALF * S0x_3 + S1x_3) +
                                      S0y_3 * (HALF * S1x_3 + S0x_3));
 
-        const real_t QVz                     = vp[2] * coeff;
+        const real_t QVz = vp[2] * coeff;
+
         J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
-        J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
-        J_acc(ix_min, iy_min + 2, cur::jx3) += QVz * Wz_0_2;
-        J_acc(ix_min, iy_min + 3, cur::jx3) += QVz * Wz_0_3;
+        J_acc(ix_min + 1, iy_min, cur::jx3) += QVz * Wz_1_0;
+        J_acc(ix_min + 2, iy_min, cur::jx3) += QVz * Wz_2_0;
+        J_acc(ix_min + 3, iy_min, cur::jx3) += QVz * Wz_3_0;
 
-        J_acc(ix_min + 1, iy_min, cur::jx3)     += QVz * Wz_1_0;
+        J_acc(ix_min, iy_min + 1, cur::jx3)     += QVz * Wz_0_1;
         J_acc(ix_min + 1, iy_min + 1, cur::jx3) += QVz * Wz_1_1;
-        J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
-        J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
-
-        J_acc(ix_min + 2, iy_min, cur::jx3)     += QVz * Wz_2_0;
         J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
-        J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
-        J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
-
-        J_acc(ix_min + 3, iy_min, cur::jx3)     += QVz * Wz_3_0;
         J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
+
+        J_acc(ix_min, iy_min + 2, cur::jx3)     += QVz * Wz_0_2;
+        J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
         J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
+
+        J_acc(ix_min, iy_min + 3, cur::jx3)     += QVz * Wz_0_3;
+        J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
+        J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
         J_acc(ix_min + 3, iy_min + 3, cur::jx3) += QVz * Wz_3_3;
 
       } else if constexpr (D == Dim::_3D) {
