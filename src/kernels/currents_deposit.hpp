@@ -691,23 +691,23 @@ namespace kernel {
         const real_t QVz = vp[2] * coeff;
 
         J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
+        J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
+        J_acc(ix_min, iy_min + 2, cur::jx3) += QVz * Wz_0_2;
+        J_acc(ix_min, iy_min + 3, cur::jx3) += QVz * Wz_0_3;
+
         J_acc(ix_min + 1, iy_min, cur::jx3) += QVz * Wz_1_0;
-        J_acc(ix_min + 2, iy_min, cur::jx3) += QVz * Wz_2_0;
-        J_acc(ix_min + 3, iy_min, cur::jx3) += QVz * Wz_3_0;
-
-        J_acc(ix_min, iy_min + 1, cur::jx3)     += QVz * Wz_0_1;
         J_acc(ix_min + 1, iy_min + 1, cur::jx3) += QVz * Wz_1_1;
-        J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
-        J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
-
-        J_acc(ix_min, iy_min + 2, cur::jx3)     += QVz * Wz_0_2;
         J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
-        J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
-        J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
-
-        J_acc(ix_min, iy_min + 3, cur::jx3)     += QVz * Wz_0_3;
         J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
+
+        J_acc(ix_min + 2, iy_min, cur::jx3)     += QVz * Wz_2_0;
+        J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
+        J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
         J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
+
+        J_acc(ix_min + 3, iy_min, cur::jx3)     += QVz * Wz_3_0;
+        J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
+        J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
         J_acc(ix_min + 3, iy_min + 3, cur::jx3) += QVz * Wz_3_3;
 
       } else if constexpr (D == Dim::_3D) {
@@ -993,86 +993,86 @@ namespace kernel {
         const real_t Qdxdt = coeff * inv_dt * dxp_r_1;
 
         J_acc(ix_min, iy_min, iz_min, cur::jx1)     += Qdxdt * Wx_0_0_0;
-        J_acc(ix_min + 1, iy_min, iz_min, cur::jx1) += Qdxdt * Wx_1_0_0;
-        J_acc(ix_min + 2, iy_min, iz_min, cur::jx1) += Qdxdt * Wx_2_0_0;
-        J_acc(ix_min + 3, iy_min, iz_min, cur::jx1) += Qdxdt * Wx_3_0_0;
+        J_acc(ix_min, iy_min, iz_min + 1, cur::jx1) += Qdxdt * Wx_0_0_1;
+        J_acc(ix_min, iy_min, iz_min + 2, cur::jx1) += Qdxdt * Wx_0_0_2;
+        J_acc(ix_min, iy_min, iz_min + 3, cur::jx1) += Qdxdt * Wx_0_0_3;
         //
-        J_acc(ix_min, iy_min + 1, iz_min, cur::jx1)     += Qdxdt * Wx_0_1_0;
-        J_acc(ix_min + 1, iy_min + 1, iz_min, cur::jx1) += Qdxdt * Wx_1_1_0;
-        J_acc(ix_min + 2, iy_min + 1, iz_min, cur::jx1) += Qdxdt * Wx_2_1_0;
-        J_acc(ix_min + 3, iy_min + 1, iz_min, cur::jx1) += Qdxdt * Wx_3_1_0;
+        J_acc(ix_min, iy_min + 1, iz_min, cur::jx1) += Qdxdt * Wx_0_1_0;
+        J_acc(ix_min, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_0_1_1;
+        J_acc(ix_min, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_0_1_2;
+        J_acc(ix_min, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_0_1_3;
         //
         J_acc(ix_min, iy_min + 2, iz_min, cur::jx1)     += Qdxdt * Wx_0_2_0;
-        J_acc(ix_min + 1, iy_min + 2, iz_min, cur::jx1) += Qdxdt * Wx_1_2_0;
-        J_acc(ix_min + 2, iy_min + 2, iz_min, cur::jx1) += Qdxdt * Wx_2_2_0;
-        J_acc(ix_min + 3, iy_min + 2, iz_min, cur::jx1) += Qdxdt * Wx_3_2_0;
+        J_acc(ix_min, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_0_2_1;
+        J_acc(ix_min, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_0_2_2;
+        J_acc(ix_min, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_0_2_3;
         //
         J_acc(ix_min, iy_min + 3, iz_min, cur::jx1)     += Qdxdt * Wx_0_3_0;
-        J_acc(ix_min + 1, iy_min + 3, iz_min, cur::jx1) += Qdxdt * Wx_1_3_0;
-        J_acc(ix_min + 2, iy_min + 3, iz_min, cur::jx1) += Qdxdt * Wx_2_3_0;
-        J_acc(ix_min + 3, iy_min + 3, iz_min, cur::jx1) += Qdxdt * Wx_3_3_0;
+        J_acc(ix_min, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_0_3_1;
+        J_acc(ix_min, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_0_3_2;
+        J_acc(ix_min, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_0_3_3;
         //
         //
-        J_acc(ix_min, iy_min, iz_min + 1, cur::jx1)     += Qdxdt * Wx_0_0_1;
+        J_acc(ix_min + 1, iy_min, iz_min, cur::jx1)     += Qdxdt * Wx_1_0_0;
         J_acc(ix_min + 1, iy_min, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_0_1;
-        J_acc(ix_min + 2, iy_min, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_0_1;
-        J_acc(ix_min + 3, iy_min, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_0_1;
+        J_acc(ix_min + 1, iy_min, iz_min + 2, cur::jx1) += Qdxdt * Wx_1_0_2;
+        J_acc(ix_min + 1, iy_min, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_0_3;
         //
-        J_acc(ix_min, iy_min + 1, iz_min + 1, cur::jx1)     += Qdxdt * Wx_0_1_1;
+        J_acc(ix_min + 1, iy_min + 1, iz_min, cur::jx1) += Qdxdt * Wx_1_1_0;
         J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_1_1;
-        J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_1_1;
-        J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_1_1;
-        //
-        J_acc(ix_min, iy_min + 2, iz_min + 1, cur::jx1)     += Qdxdt * Wx_0_2_1;
-        J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_2_1;
-        J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_2_1;
-        J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_2_1;
-        //
-        J_acc(ix_min, iy_min + 3, iz_min + 1, cur::jx1)     += Qdxdt * Wx_0_3_1;
-        J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_3_1;
-        J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_3_1;
-        J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_3_1;
-        //
-        //
-        J_acc(ix_min, iy_min, iz_min + 2, cur::jx1)         += Qdxdt * Wx_0_0_2;
-        J_acc(ix_min + 1, iy_min, iz_min + 2, cur::jx1)     += Qdxdt * Wx_1_0_2;
-        J_acc(ix_min + 2, iy_min, iz_min + 2, cur::jx1)     += Qdxdt * Wx_2_0_2;
-        J_acc(ix_min + 3, iy_min, iz_min + 2, cur::jx1)     += Qdxdt * Wx_3_0_2;
-        //
-        J_acc(ix_min, iy_min + 1, iz_min + 2, cur::jx1)     += Qdxdt * Wx_0_1_2;
         J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_1_1_2;
-        J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_1_2;
-        J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_1_2;
+        J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_1_3;
         //
-        J_acc(ix_min, iy_min + 2, iz_min + 2, cur::jx1)     += Qdxdt * Wx_0_2_2;
+        J_acc(ix_min + 1, iy_min + 2, iz_min, cur::jx1)     += Qdxdt * Wx_1_2_0;
+        J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_2_1;
         J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_1_2_2;
-        J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_2_2;
-        J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_2_2;
+        J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_2_3;
         //
-        J_acc(ix_min, iy_min + 3, iz_min + 2, cur::jx1)     += Qdxdt * Wx_0_3_2;
+        J_acc(ix_min + 1, iy_min + 3, iz_min, cur::jx1) += Qdxdt* Wx_1_3_0;
+        J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_1_3_1;
         J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_1_3_2;
-        J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_3_2;
-        J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_3_2;
+        J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_3_3;
         //
         //
-        J_acc(ix_min, iy_min, iz_min + 3, cur::jx1)         += Qdxdt * Wx_0_0_3;
-        J_acc(ix_min + 1, iy_min, iz_min + 3, cur::jx1)     += Qdxdt * Wx_1_0_3;
+        J_acc(ix_min + 2, iy_min, iz_min, cur::jx1) += Qdxdt * Wx_2_0_0;
+        J_acc(ix_min + 2, iy_min, iz_min + 1, cur::jx1)     += Qdxdt * Wx_2_0_1;
+        J_acc(ix_min + 2, iy_min, iz_min + 2, cur::jx1)     += Qdxdt * Wx_2_0_2;
         J_acc(ix_min + 2, iy_min, iz_min + 3, cur::jx1)     += Qdxdt * Wx_2_0_3;
+        //
+        J_acc(ix_min + 2, iy_min + 1, iz_min, cur::jx1)     += Qdxdt * Wx_2_1_0;
+        J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_1_1;
+        J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_1_2;
+        J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_1_3;
+        //
+        J_acc(ix_min + 2, iy_min + 2, iz_min, cur::jx1)     += Qdxdt * Wx_2_2_0;
+        J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_2_1;
+        J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_2_2;
+        J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_2_3;
+        //
+        J_acc(ix_min + 2, iy_min + 3, iz_min, cur::jx1)     += Qdxdt * Wx_2_3_0;
+        J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_2_3_1;
+        J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_2_3_2;
+        J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_3_3;
+        //
+        //
+        J_acc(ix_min + 3, iy_min, iz_min, cur::jx1) += Qdxdt * Wx_3_0_0;
+        J_acc(ix_min + 3, iy_min, iz_min + 1, cur::jx1)     += Qdxdt * Wx_3_0_1;
+        J_acc(ix_min + 3, iy_min, iz_min + 2, cur::jx1)     += Qdxdt * Wx_3_0_2;
         J_acc(ix_min + 3, iy_min, iz_min + 3, cur::jx1)     += Qdxdt * Wx_3_0_3;
         //
-        J_acc(ix_min, iy_min + 1, iz_min + 3, cur::jx1)     += Qdxdt * Wx_0_1_3;
-        J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_1_3;
-        J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_1_3;
+        J_acc(ix_min + 3, iy_min + 1, iz_min, cur::jx1)     += Qdxdt * Wx_3_1_0;
+        J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_1_1;
+        J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_1_2;
         J_acc(ix_min + 3, iy_min + 1, iz_min + 3, cur::jx1) += Qdxdt * Wx_3_1_3;
         //
-        J_acc(ix_min, iy_min + 2, iz_min + 3, cur::jx1)     += Qdxdt * Wx_0_2_3;
-        J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_2_3;
-        J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_2_3;
+        J_acc(ix_min + 3, iy_min + 2, iz_min, cur::jx1)     += Qdxdt * Wx_3_2_0;
+        J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_2_1;
+        J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_2_2;
         J_acc(ix_min + 3, iy_min + 2, iz_min + 3, cur::jx1) += Qdxdt * Wx_3_2_3;
         //
-        J_acc(ix_min, iy_min + 3, iz_min + 3, cur::jx1)     += Qdxdt * Wx_0_3_3;
-        J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_1_3_3;
-        J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_2_3_3;
+        J_acc(ix_min + 3, iy_min + 3, iz_min, cur::jx1) += Qdxdt * Wx_3_3_0;
+        J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx1) += Qdxdt * Wx_3_3_1;
+        J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx1) += Qdxdt * Wx_3_3_2;
         J_acc(ix_min + 3, iy_min + 3, iz_min + 3, cur::jx1) += Qdxdt * Wx_3_3_3;
 
         // ToDo: actual J update
