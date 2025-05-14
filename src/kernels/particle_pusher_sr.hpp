@@ -833,100 +833,126 @@ namespace kernel::sr {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
         const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
+        // direct interpolation - Arno
+        int indx = static_cast<int>(dx1_ + HALF);
+
         // first order
         real_t c0, c1;
 
+        real_t ponpmx = ONE - dx1_;
+        real_t ponppx = dx1_;
+
+        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+        real_t pondpx = ONE - pondmx;
+
         // Ex1
-        // interpolate to nodes
-        c0    = HALF * (EB(i, em::ex1) + EB(i - 1, em::ex1));
-        c1    = HALF * (EB(i, em::ex1) + EB(i + 1, em::ex1));
-        // interpolate from nodes to the particle position
-        e0[0] = c0 * (ONE - dx1_) + c1 * dx1_;
+        // Interpolate --- (dual)
+        c0    = EB(i - 1 + indx, em::ex1);
+        c1    = EB(i + indx, em::ex1);
+        e0[0] = c0 * pondmx + c1 * pondpx;
         // Ex2
+        // Interpolate --- (primal)
         c0    = EB(i, em::ex2);
         c1    = EB(i + 1, em::ex2);
-        e0[1] = c0 * (ONE - dx1_) + c1 * dx1_;
+        e0[1] = c0 * ponpmx + c1 * ponppx;
         // Ex3
+        // Interpolate --- (primal)
         c0    = EB(i, em::ex3);
         c1    = EB(i + 1, em::ex3);
-        e0[2] = c0 * (ONE - dx1_) + c1 * dx1_;
-
+        e0[2] = c0 * ponpmx + c1 * ponppx;
         // Bx1
+        // Interpolate --- (primal)
         c0    = EB(i, em::bx1);
         c1    = EB(i + 1, em::bx1);
-        b0[0] = c0 * (ONE - dx1_) + c1 * dx1_;
+        b0[0] = c0 * ponpmx + c1 * ponppx;
         // Bx2
-        c0    = HALF * (EB(i - 1, em::bx2) + EB(i, em::bx2));
-        c1    = HALF * (EB(i, em::bx2) + EB(i + 1, em::bx2));
-        b0[1] = c0 * (ONE - dx1_) + c1 * dx1_;
+        // Interpolate --- (dual)
+        c0    = EB(i - 1 + indx, em::bx2);
+        c1    = EB(i + indx, em::bx2);
+        b0[1] = c0 * pondmx + c1 * pondpx;
         // Bx3
-        c0    = HALF * (EB(i - 1, em::bx3) + EB(i, em::bx3));
-        c1    = HALF * (EB(i, em::bx3) + EB(i + 1, em::bx3));
-        b0[2] = c0 * (ONE - dx1_) + c1 * dx1_;
+        // Interpolate --- (dual)
+        c0    = EB(i - 1 + indx, em::bx3);
+        c1    = EB(i + indx, em::bx3);
+        b0[2] = c0 * pondmx + c1 * pondpx;
       } else if constexpr (D == Dim::_2D) {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
         const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
         const auto dx1_ { static_cast<real_t>(dx1(p)) };
         const auto dx2_ { static_cast<real_t>(dx2(p)) };
 
+        // direct interpolation - Arno
+        int indx = static_cast<int>(dx1_ + HALF);
+        int indy = static_cast<int>(dx2_ + HALF);
+
         // first order
         real_t c000, c100, c010, c110, c00, c10;
 
+        real_t ponpmx = ONE - dx1_;
+        real_t ponppx = dx1_;
+        real_t ponpmy = ONE - dx2_;
+        real_t ponppy = dx2_;
+
+        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+        real_t pondpx = ONE - pondmx;
+        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+        real_t pondpy = ONE - pondmy;
+
         // Ex1
-        // interpolate to nodes
-        c000  = HALF * (EB(i, j, em::ex1) + EB(i - 1, j, em::ex1));
-        c100  = HALF * (EB(i, j, em::ex1) + EB(i + 1, j, em::ex1));
-        c010  = HALF * (EB(i, j + 1, em::ex1) + EB(i - 1, j + 1, em::ex1));
-        c110  = HALF * (EB(i, j + 1, em::ex1) + EB(i + 1, j + 1, em::ex1));
-        // interpolate from nodes to the particle position
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        e0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
+        // Interpolate --- (dual, primal)
+        c000  = EB(i - 1 + indx, j, em::ex1);
+        c100  = EB(i + indx, j, em::ex1);
+        c010  = EB(i - 1 + indx, j + 1, em::ex1);
+        c110  = EB(i + indx, j + 1, em::ex1);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        e0[0] = c00 * ponpmy + c10 * ponppy;
         // Ex2
-        c000  = HALF * (EB(i, j, em::ex2) + EB(i, j - 1, em::ex2));
-        c100  = HALF * (EB(i + 1, j, em::ex2) + EB(i + 1, j - 1, em::ex2));
-        c010  = HALF * (EB(i, j, em::ex2) + EB(i, j + 1, em::ex2));
-        c110  = HALF * (EB(i + 1, j, em::ex2) + EB(i + 1, j + 1, em::ex2));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        e0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
+        // Interpolate -- (primal, dual)
+        c000  = EB(i, j - 1 + indy, em::ex2);
+        c100  = EB(i + 1, j - 1 + indy, em::ex2);
+        c010  = EB(i, j + indy, em::ex2);
+        c110  = EB(i + 1, j + indy, em::ex2);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        e0[1] = c00 * pondmy + c10 * pondpy;
         // Ex3
+        // Interpolate -- (primal, primal)
         c000  = EB(i, j, em::ex3);
         c100  = EB(i + 1, j, em::ex3);
         c010  = EB(i, j + 1, em::ex3);
         c110  = EB(i + 1, j + 1, em::ex3);
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        e0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        e0[2] = c00 * ponpmy + c10 * ponppy;
 
         // Bx1
-        c000  = HALF * (EB(i, j, em::bx1) + EB(i, j - 1, em::bx1));
-        c100  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j - 1, em::bx1));
-        c010  = HALF * (EB(i, j, em::bx1) + EB(i, j + 1, em::bx1));
-        c110  = HALF * (EB(i + 1, j, em::bx1) + EB(i + 1, j + 1, em::bx1));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        b0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
+        // Interpolate -- (primal, dual)
+        c000  = EB(i, j - 1 + indy, em::bx1);
+        c100  = EB(i + 1, j - 1 + indy, em::bx1);
+        c010  = EB(i, j + indy, em::bx1);
+        c110  = EB(i + 1, j + indy, em::bx1);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        b0[0] = c00 * pondmy + c10 * pondpy;
         // Bx2
-        c000  = HALF * (EB(i - 1, j, em::bx2) + EB(i, j, em::bx2));
-        c100  = HALF * (EB(i, j, em::bx2) + EB(i + 1, j, em::bx2));
-        c010  = HALF * (EB(i - 1, j + 1, em::bx2) + EB(i, j + 1, em::bx2));
-        c110  = HALF * (EB(i, j + 1, em::bx2) + EB(i + 1, j + 1, em::bx2));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        b0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
+        // Interpolate -- (dual, primal)
+        c000  = EB(i - 1 + indx, j, em::bx2);
+        c100  = EB(i + indx, j, em::bx2);
+        c010  = EB(i - 1 + indx, j + 1, em::bx2);
+        c110  = EB(i + indx, j + 1, em::bx2);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        b0[1] = c00 * ponpmy + c10 * ponppy;
         // Bx3
-        c000  = INV_4 * (EB(i - 1, j - 1, em::bx3) + EB(i - 1, j, em::bx3) +
-                        EB(i, j - 1, em::bx3) + EB(i, j, em::bx3));
-        c100  = INV_4 * (EB(i, j - 1, em::bx3) + EB(i, j, em::bx3) +
-                        EB(i + 1, j - 1, em::bx3) + EB(i + 1, j, em::bx3));
-        c010  = INV_4 * (EB(i - 1, j, em::bx3) + EB(i - 1, j + 1, em::bx3) +
-                        EB(i, j, em::bx3) + EB(i, j + 1, em::bx3));
-        c110  = INV_4 * (EB(i, j, em::bx3) + EB(i, j + 1, em::bx3) +
-                        EB(i + 1, j, em::bx3) + EB(i + 1, j + 1, em::bx3));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        b0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
+        // Interpolate -- (dual, dual)
+        c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
+        c100  = EB(i + indx, j - 1 + indy, em::bx3);
+        c010  = EB(i - 1 + indx, j + indy, em::bx3);
+        c110  = EB(i + indx, j + indy, em::bx3);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        b0[2] = c00 * pondmy + c10 * pondpy;
       } else if constexpr (D == Dim::_3D) {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
         const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
@@ -935,157 +961,132 @@ namespace kernel::sr {
         const auto dx2_ { static_cast<real_t>(dx2(p)) };
         const auto dx3_ { static_cast<real_t>(dx3(p)) };
 
+        // direct interpolation - Arno
+        int indx = static_cast<int>(dx1_ + HALF);
+        int indy = static_cast<int>(dx2_ + HALF);
+        int indz = static_cast<int>(dx3_ + HALF);
+
         // first order
         real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
           c11, c0, c1;
 
+        real_t ponpmx = ONE - dx1_;
+        real_t ponppx = dx1_;
+        real_t ponpmy = ONE - dx2_;
+        real_t ponppy = dx2_;
+        real_t ponpmz = ONE - dx3_;
+        real_t ponppz = dx3_;
+
+        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+        real_t pondpx = ONE - pondmx;
+        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+        real_t pondpy = ONE - pondmy;
+        real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+        real_t pondpz = ONE - pondmz;
+
         // Ex1
-        // interpolate to nodes
-        c000 = HALF * (EB(i, j, k, em::ex1) + EB(i - 1, j, k, em::ex1));
-        c100 = HALF * (EB(i, j, k, em::ex1) + EB(i + 1, j, k, em::ex1));
-        c010 = HALF * (EB(i, j + 1, k, em::ex1) + EB(i - 1, j + 1, k, em::ex1));
-        c110 = HALF * (EB(i, j + 1, k, em::ex1) + EB(i + 1, j + 1, k, em::ex1));
-        // interpolate from nodes to the particle position
-        c00  = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10  = c010 * (ONE - dx1_) + c110 * dx1_;
-        c0   = c00 * (ONE - dx2_) + c10 * dx2_;
-        // interpolate to nodes
-        c001 = HALF * (EB(i, j, k + 1, em::ex1) + EB(i - 1, j, k + 1, em::ex1));
-        c101 = HALF * (EB(i, j, k + 1, em::ex1) + EB(i + 1, j, k + 1, em::ex1));
-        c011 = HALF *
-               (EB(i, j + 1, k + 1, em::ex1) + EB(i - 1, j + 1, k + 1, em::ex1));
-        c111 = HALF *
-               (EB(i, j + 1, k + 1, em::ex1) + EB(i + 1, j + 1, k + 1, em::ex1));
-        // interpolate from nodes to the particle position
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        e0[0] = c0 * (ONE - dx3_) + c1 * dx3_;
-
+        // Interpolate --- (dual, primal, primal)
+        c000  = EB(i - 1 + indx, j, k, em::ex1);
+        c100  = EB(i + indx, j, k, em::ex1);
+        c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
+        c110  = EB(i + indx, j + 1, k, em::ex1);
+        c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
+        c101  = EB(i + indx, j, k + 1, em::ex1);
+        c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
+        c111  = EB(i + indx, j + 1, k + 1, em::ex1);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
+        e0[0] = c0 * ponpmz + c1 * ponppz;
         // Ex2
-        c000 = HALF * (EB(i, j, k, em::ex2) + EB(i, j - 1, k, em::ex2));
-        c100 = HALF * (EB(i + 1, j, k, em::ex2) + EB(i + 1, j - 1, k, em::ex2));
-        c010 = HALF * (EB(i, j, k, em::ex2) + EB(i, j + 1, k, em::ex2));
-        c110 = HALF * (EB(i + 1, j, k, em::ex2) + EB(i + 1, j + 1, k, em::ex2));
-        c00  = c000 * (ONE - dx1_) + c100 * dx1_;
-        c10  = c010 * (ONE - dx1_) + c110 * dx1_;
-        c0   = c00 * (ONE - dx2_) + c10 * dx2_;
-        c001 = HALF * (EB(i, j, k + 1, em::ex2) + EB(i, j - 1, k + 1, em::ex2));
-        c101 = HALF *
-               (EB(i + 1, j, k + 1, em::ex2) + EB(i + 1, j - 1, k + 1, em::ex2));
-        c011 = HALF * (EB(i, j, k + 1, em::ex2) + EB(i, j + 1, k + 1, em::ex2));
-        c111 = HALF *
-               (EB(i + 1, j, k + 1, em::ex2) + EB(i + 1, j + 1, k + 1, em::ex2));
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        e0[1] = c0 * (ONE - dx3_) + c1 * dx3_;
-
+        // Interpolate -- (primal, dual, primal)
+        c000  = EB(i, j - 1 + indy, k, em::ex2);
+        c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
+        c010  = EB(i, j + indy, k, em::ex2);
+        c110  = EB(i + 1, j + indy, k, em::ex2);
+        c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
+        c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
+        c011  = EB(i, j + indy, k + 1, em::ex2);
+        c111  = EB(i + 1, j + indy, k + 1, em::ex2);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * pondmy + c10 * pondpy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * pondmy + c11 * pondpy;
+        e0[1] = c0 * ponpmz + c1 * ponppz;
         // Ex3
-        c000 = HALF * (EB(i, j, k, em::ex3) + EB(i, j, k - 1, em::ex3));
-        c100 = HALF * (EB(i + 1, j, k, em::ex3) + EB(i + 1, j, k - 1, em::ex3));
-        c010 = HALF * (EB(i, j + 1, k, em::ex3) + EB(i, j + 1, k - 1, em::ex3));
-        c110 = HALF *
-               (EB(i + 1, j + 1, k, em::ex3) + EB(i + 1, j + 1, k - 1, em::ex3));
-        c001 = HALF * (EB(i, j, k, em::ex3) + EB(i, j, k + 1, em::ex3));
-        c101 = HALF * (EB(i + 1, j, k, em::ex3) + EB(i + 1, j, k + 1, em::ex3));
-        c011 = HALF * (EB(i, j + 1, k, em::ex3) + EB(i, j + 1, k + 1, em::ex3));
-        c111 = HALF *
-               (EB(i + 1, j + 1, k, em::ex3) + EB(i + 1, j + 1, k + 1, em::ex3));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c0    = c00 * (ONE - dx2_) + c10 * dx2_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        e0[2] = c0 * (ONE - dx3_) + c1 * dx3_;
+        // Interpolate -- (primal, primal, dual)
+        c000  = EB(i, j, k - 1 + indz, em::ex3);
+        c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
+        c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
+        c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
+        c001  = EB(i, j, k + indz, em::ex3);
+        c101  = EB(i + 1, j, k + indz, em::ex3);
+        c011  = EB(i, j + 1, k + indz, em::ex3);
+        c111  = EB(i + 1, j + 1, k + indz, em::ex3);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * ponpmy + c11 * ponppy;
+        e0[2] = c0 * pondmz + c1 * pondpz;
 
         // Bx1
-        c000 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j - 1, k, em::bx1) +
-                        EB(i, j, k - 1, em::bx1) + EB(i, j - 1, k - 1, em::bx1));
-        c100 = INV_4 *
-               (EB(i + 1, j, k, em::bx1) + EB(i + 1, j - 1, k, em::bx1) +
-                EB(i + 1, j, k - 1, em::bx1) + EB(i + 1, j - 1, k - 1, em::bx1));
-        c001 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j, k + 1, em::bx1) +
-                        EB(i, j - 1, k, em::bx1) + EB(i, j - 1, k + 1, em::bx1));
-        c101 = INV_4 *
-               (EB(i + 1, j, k, em::bx1) + EB(i + 1, j, k + 1, em::bx1) +
-                EB(i + 1, j - 1, k, em::bx1) + EB(i + 1, j - 1, k + 1, em::bx1));
-        c010 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j + 1, k, em::bx1) +
-                        EB(i, j, k - 1, em::bx1) + EB(i, j + 1, k - 1, em::bx1));
-        c110 = INV_4 *
-               (EB(i + 1, j, k, em::bx1) + EB(i + 1, j, k - 1, em::bx1) +
-                EB(i + 1, j + 1, k - 1, em::bx1) + EB(i + 1, j + 1, k, em::bx1));
-        c011 = INV_4 * (EB(i, j, k, em::bx1) + EB(i, j + 1, k, em::bx1) +
-                        EB(i, j + 1, k + 1, em::bx1) + EB(i, j, k + 1, em::bx1));
-        c111 = INV_4 *
-               (EB(i + 1, j, k, em::bx1) + EB(i + 1, j + 1, k, em::bx1) +
-                EB(i + 1, j + 1, k + 1, em::bx1) + EB(i + 1, j, k + 1, em::bx1));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c0    = c00 * (ONE - dx2_) + c10 * dx2_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        b0[0] = c0 * (ONE - dx3_) + c1 * dx3_;
-
+        // Interpolate -- (primal, dual, dual)
+        c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
+        c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
+        c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
+        c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
+        c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
+        c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
+        c011  = EB(i, j + indy, k + indz, em::bx1);
+        c111  = EB(i + 1, j + indy, k + indz, em::bx1);
+        c00   = c000 * ponpmx + c100 * ponppx;
+        c10   = c010 * ponpmx + c110 * ponppx;
+        c0    = c00 * pondmy + c10 * pondpy;
+        c01   = c001 * ponpmx + c101 * ponppx;
+        c11   = c011 * ponpmx + c111 * ponppx;
+        c1    = c01 * pondmy + c11 * pondpy;
+        b0[0] = c0 * pondmz + c1 * pondpz;
         // Bx2
-        c000 = INV_4 * (EB(i - 1, j, k - 1, em::bx2) + EB(i - 1, j, k, em::bx2) +
-                        EB(i, j, k - 1, em::bx2) + EB(i, j, k, em::bx2));
-        c100 = INV_4 * (EB(i, j, k - 1, em::bx2) + EB(i, j, k, em::bx2) +
-                        EB(i + 1, j, k - 1, em::bx2) + EB(i + 1, j, k, em::bx2));
-        c001 = INV_4 * (EB(i - 1, j, k, em::bx2) + EB(i - 1, j, k + 1, em::bx2) +
-                        EB(i, j, k, em::bx2) + EB(i, j, k + 1, em::bx2));
-        c101 = INV_4 * (EB(i, j, k, em::bx2) + EB(i, j, k + 1, em::bx2) +
-                        EB(i + 1, j, k, em::bx2) + EB(i + 1, j, k + 1, em::bx2));
-        c010 = INV_4 *
-               (EB(i - 1, j + 1, k - 1, em::bx2) + EB(i - 1, j + 1, k, em::bx2) +
-                EB(i, j + 1, k - 1, em::bx2) + EB(i, j + 1, k, em::bx2));
-        c110 = INV_4 *
-               (EB(i, j + 1, k - 1, em::bx2) + EB(i, j + 1, k, em::bx2) +
-                EB(i + 1, j + 1, k - 1, em::bx2) + EB(i + 1, j + 1, k, em::bx2));
-        c011 = INV_4 *
-               (EB(i - 1, j + 1, k, em::bx2) + EB(i - 1, j + 1, k + 1, em::bx2) +
-                EB(i, j + 1, k, em::bx2) + EB(i, j + 1, k + 1, em::bx2));
-        c111 = INV_4 *
-               (EB(i, j + 1, k, em::bx2) + EB(i, j + 1, k + 1, em::bx2) +
-                EB(i + 1, j + 1, k, em::bx2) + EB(i + 1, j + 1, k + 1, em::bx2));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c0    = c00 * (ONE - dx2_) + c10 * dx2_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        b0[1] = c0 * (ONE - dx3_) + c1 * dx3_;
-
+        // Interpolate -- (dual, primal, dual)
+        c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
+        c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
+        c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
+        c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
+        c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
+        c101  = EB(i + indx, j, k + indz, em::bx2);
+        c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
+        c111  = EB(i + indx, j + 1, k + indz, em::bx2);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
+        b0[1] = c0 * pondmz + c1 * pondpz;
         // Bx3
-        c000 = INV_4 * (EB(i - 1, j - 1, k, em::bx3) + EB(i - 1, j, k, em::bx3) +
-                        EB(i, j - 1, k, em::bx3) + EB(i, j, k, em::bx3));
-        c100 = INV_4 * (EB(i, j - 1, k, em::bx3) + EB(i, j, k, em::bx3) +
-                        EB(i + 1, j - 1, k, em::bx3) + EB(i + 1, j, k, em::bx3));
-        c001 = INV_4 *
-               (EB(i - 1, j - 1, k + 1, em::bx3) + EB(i - 1, j, k + 1, em::bx3) +
-                EB(i, j - 1, k + 1, em::bx3) + EB(i, j, k + 1, em::bx3));
-        c101 = INV_4 *
-               (EB(i, j - 1, k + 1, em::bx3) + EB(i, j, k + 1, em::bx3) +
-                EB(i + 1, j - 1, k + 1, em::bx3) + EB(i + 1, j, k + 1, em::bx3));
-        c010 = INV_4 * (EB(i - 1, j, k, em::bx3) + EB(i - 1, j + 1, k, em::bx3) +
-                        EB(i, j, k, em::bx3) + EB(i, j + 1, k, em::bx3));
-        c110 = INV_4 * (EB(i, j, k, em::bx3) + EB(i, j + 1, k, em::bx3) +
-                        EB(i + 1, j, k, em::bx3) + EB(i + 1, j + 1, k, em::bx3));
-        c011 = INV_4 *
-               (EB(i - 1, j, k + 1, em::bx3) + EB(i - 1, j + 1, k + 1, em::bx3) +
-                EB(i, j, k + 1, em::bx3) + EB(i, j + 1, k + 1, em::bx3));
-        c111 = INV_4 *
-               (EB(i, j, k + 1, em::bx3) + EB(i, j + 1, k + 1, em::bx3) +
-                EB(i + 1, j, k + 1, em::bx3) + EB(i + 1, j + 1, k + 1, em::bx3));
-        c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-        c01   = c001 * (ONE - dx1_) + c101 * dx1_;
-        c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-        c11   = c011 * (ONE - dx1_) + c111 * dx1_;
-        c0    = c00 * (ONE - dx2_) + c10 * dx2_;
-        c1    = c01 * (ONE - dx2_) + c11 * dx2_;
-        b0[2] = c0 * (ONE - dx3_) + c1 * dx3_;
+        // Interpolate -- (dual, dual, primal)
+        c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
+        c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
+        c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
+        c110  = EB(i + indx, j + indy, k, em::bx3);
+        c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
+        c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
+        c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
+        c111  = EB(i + indx, j + indy, k + 1, em::bx3);
+        c00   = c000 * pondmx + c100 * pondpx;
+        c10   = c010 * pondmx + c110 * pondpx;
+        c0    = c00 * ponpmy + c10 * ponppy;
+        c01   = c001 * pondmx + c101 * pondpx;
+        c11   = c011 * pondmx + c111 * pondpx;
+        c1    = c01 * ponpmy + c11 * ponppy;
+        b0[2] = c0 * ponpmz + c1 * ponppz;
       }
     }
 
