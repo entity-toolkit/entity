@@ -36,6 +36,7 @@ namespace out {
 
     m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
+    m_io.SetParameter("AggregatorRatio", "1");
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
@@ -318,9 +319,9 @@ namespace out {
           });
       }
     }
-    auto output_field_h = Kokkos::create_mirror_view(output_field);
-    Kokkos::deep_copy(output_field_h, output_field);
-    writer.Put(var, output_field_h);
+    // auto output_field_h = Kokkos::create_mirror_view(output_field);
+    // Kokkos::deep_copy(output_field_h, output_field);
+    writer.Put(var, output_field, adios2::Mode::Sync);
   }
 
   template <Dimension D, int N>
@@ -353,9 +354,9 @@ namespace out {
     var.SetShape({ glob_total });
     var.SetSelection(
       adios2::Box<adios2::Dims>({ loc_offset }, { array.extent(0) }));
-    auto array_h = Kokkos::create_mirror_view(array);
-    Kokkos::deep_copy(array_h, array);
-    m_writer.Put<real_t>(var, array_h);
+    // auto array_h = Kokkos::create_mirror_view(array);
+    // Kokkos::deep_copy(array_h, array);
+    m_writer.Put<real_t>(var, array, adios2::Mode::Sync);
   }
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,

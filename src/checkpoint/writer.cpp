@@ -35,7 +35,8 @@ namespace checkpoint {
 
     m_io = p_adios->DeclareIO("Entity::Checkpoint");
     m_io.SetEngine("BPFile");
-
+    m_io.SetParameter("AggregatorRatio", "1");
+    
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
     m_io.DefineAttribute("NGhosts", ntt::N_GHOSTS);
@@ -217,11 +218,12 @@ namespace checkpoint {
   template <Dimension D, int N>
   void Writer::saveField(const std::string&     fieldname,
                          const ndfield_t<D, N>& field) {
-    auto field_h = Kokkos::create_mirror_view(field);
-    Kokkos::deep_copy(field_h, field);
+    // auto field_h = Kokkos::create_mirror_view(field);
+    // Kokkos::deep_copy(field_h, field);
     m_writer.Put(m_io.InquireVariable<real_t>(fieldname),
-                 field_h.data(),
-                 adios2::Mode::Sync);
+                 field.data(), adios2::Mode::Sync);
+                //  ,
+                //  adios2::Mode::Sync);
   }
 
   template <typename T>
@@ -236,10 +238,11 @@ namespace checkpoint {
     var.SetShape({ glob_total });
     var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
 
-    auto data_h = Kokkos::create_mirror_view(data);
-    Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice);
+    // auto data_h = Kokkos::create_mirror_view(data);
+    // Kokkos::deep_copy(data_h, data);
+    auto data_sub = Kokkos::subview(data, slice);
     m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+    // , adios2::Mode::Sync);
   }
 
   void Writer::saveParticlePayloads(const std::string&       quantity,
@@ -255,10 +258,11 @@ namespace checkpoint {
     var.SetSelection(
       adios2::Box<adios2::Dims>({ loc_offset, 0 }, { loc_size, nplds }));
 
-    auto data_h = Kokkos::create_mirror_view(data);
-    Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, nplds));
-    m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+    // auto data_h = Kokkos::create_mirror_view(data);
+    // Kokkos::deep_copy(data_h, data);
+    auto data_sub = Kokkos::subview(data, slice, range_tuple_t(0, nplds));
+    m_writer.Put(var, data_sub.data());
+    // , adios2::Mode::Sync);
   }
 
   template void Writer::savePerDomainVariable<int>(const std::string&,
