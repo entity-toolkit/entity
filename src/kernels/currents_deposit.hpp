@@ -61,8 +61,8 @@ namespace kernel {
         We need to find which indices are contributing to the shape function
         For this we first compute the indices of the particle position
 
-        Let x be the particle position at the current timestep
-        Let * be the particle position at the previous timestep
+        Let * be the particle position at the current timestep
+        Let x be the particle position at the previous timestep
 
 
           (-1)    0      1      2      3
