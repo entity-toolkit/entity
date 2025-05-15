@@ -654,59 +654,101 @@ namespace kernel {
 
           const real_t Qdxdt = -coeff * inv_dt * delta_x;
           const real_t Qdydt = -coeff * inv_dt * delta_y;
-          const real_t QVz   = vp[2] * coeff;
+          const real_t QVz   = -coeff * vp[2];
 
-          // @TODO
-          jx_local_0_0 = Qdxdt * Wx_0_0;
-          jx_local_1_0 = jx_local_0_0 - Qdxdt * Wx_1_0;
+          // Esirkepov - Eq. 32
+          // x-component
+          const auto jx_local_0_0 = -Qdxdt * Wx_0_0;
+          const auto jx_local_1_0 = jx_local_0_0 - Qdxdt * Wx_1_0;
+          const auto jx_local_2_0 = jx_local_1_0 - Qdxdt * Wx_2_0;
+          const auto jx_local_3_0 = jx_local_2_0 - Qdxdt * Wx_3_0;
 
+          const auto jx_local_0_1 = -Qdxdt * Wx_0_1;
+          const auto jx_local_1_1 = jx_local_0_1 - Qdxdt * Wx_1_1;
+          const auto jx_local_2_1 = jx_local_1_1 - Qdxdt * Wx_2_1;
+          const auto jx_local_3_1 = jx_local_2_1 - Qdxdt * Wx_3_1;
+
+          const auto jx_local_0_2 = -Qdxdt * Wx_0_2;
+          const auto jx_local_1_2 = jx_local_0_2 - Qdxdt * Wx_1_2;
+          const auto jx_local_2_2 = jx_local_1_2 - Qdxdt * Wx_2_2;
+          const auto jx_local_3_2 = jx_local_2_2 - Qdxdt * Wx_3_2;
+
+          const auto jx_local_0_3 = -Qdxdt * Wx_0_3;
+          const auto jx_local_1_3 = jx_local_0_3 - Qdxdt * Wx_1_3;
+          const auto jx_local_2_3 = jx_local_1_3 - Qdxdt * Wx_2_3;
+          const auto jx_local_3_3 = jx_local_2_3 - Qdxdt * Wx_3_3;
+
+          // y-component
+          const auto jy_local_0_0 = -Qdydt * Wy_0_0;
+          const auto jy_local_1_0 = jy_local_0_0 - Qdydt * Wy_1_0;
+          const auto jy_local_2_0 = jy_local_1_0 - Qdydt * Wy_2_0;
+          const auto jy_local_3_0 = jy_local_2_0 - Qdydt * Wy_3_0;
+
+          const auto jy_local_0_1 = -Qdydt * Wy_0_1;
+          const auto jy_local_1_1 = jy_local_0_1 - Qdydt * Wy_1_1;
+          const auto jy_local_2_1 = jy_local_1_1 - Qdydt * Wy_2_1;
+          const auto jy_local_3_1 = jy_local_2_1 - Qdydt * Wy_3_1;
+
+          const auto jy_local_0_2 = -Qdydt * Wy_0_2;
+          const auto jy_local_1_2 = jy_local_0_2 - Qdydt * Wy_1_2;
+          const auto jy_local_2_2 = jy_local_1_2 - Qdydt * Wy_2_2;
+          const auto jy_local_3_2 = jy_local_2_2 - Qdydt * Wy_3_2;
+
+          const auto jy_local_0_3 = -Qdydt * Wy_0_3;
+          const auto jy_local_1_3 = jy_local_0_3 - Qdydt * Wy_1_3;
+          const auto jy_local_2_3 = jy_local_1_3 - Qdydt * Wy_2_3;
+          const auto jy_local_3_3 = jy_local_2_3 - Qdydt * Wy_3_3;
+
+          /*
+            Current update
+          */
           auto J_acc = J.access();
 
+          /*
+              x - component
+          */
           J_acc(ix_min, iy_min, cur::jx1)     += jx_local_0_0;
-          J_acc(ix_min + 1, iy_min, cur::jx1) += jx_local_1_0;
-
-          // J_acc(ix_min, iy_min, cur::jx1)     += Qdxdt * Wx_0_0;
-          // J_acc(ix_min, iy_min + 1, cur::jx1) += Qdxdt * Wx_0_1;
-          // J_acc(ix_min, iy_min + 2, cur::jx1) += Qdxdt * Wx_0_2;
-          // J_acc(ix_min, iy_min + 3, cur::jx1) += Qdxdt * Wx_0_3;
-          //
-          // J_acc(ix_min + 1, iy_min, cur::jx1)     += Qdxdt * Wx_1_0;
-          // J_acc(ix_min + 1, iy_min + 1, cur::jx1) += Qdxdt * Wx_1_1;
-          // J_acc(ix_min + 1, iy_min + 2, cur::jx1) += Qdxdt * Wx_1_2;
-          // J_acc(ix_min + 1, iy_min + 3, cur::jx1) += Qdxdt * Wx_1_3;
-          //
-          // J_acc(ix_min + 2, iy_min, cur::jx1)     += Qdxdt * Wx_2_0;
-          // J_acc(ix_min + 2, iy_min + 1, cur::jx1) += Qdxdt * Wx_2_1;
-          // J_acc(ix_min + 2, iy_min + 2, cur::jx1) += Qdxdt * Wx_2_2;
-          // J_acc(ix_min + 2, iy_min + 3, cur::jx1) += Qdxdt * Wx_2_3;
-          //
-          // J_acc(ix_min + 3, iy_min, cur::jx1)     += Qdxdt * Wx_3_0;
-          // J_acc(ix_min + 3, iy_min + 1, cur::jx1) += Qdxdt * Wx_3_1;
-          // J_acc(ix_min + 3, iy_min + 2, cur::jx1) += Qdxdt * Wx_3_2;
-          // J_acc(ix_min + 3, iy_min + 3, cur::jx1) += Qdxdt * Wx_3_3;
+          J_acc(ix_min, iy_min + 1, cur::jx1) += jx_local_0_1;
+          J_acc(ix_min, iy_min + 2, cur::jx1) += jx_local_0_2;
+          J_acc(ix_min, iy_min + 3, cur::jx1) += jx_local_0_3;
+          
+          J_acc(ix_min + 1, iy_min, cur::jx1)     += jx_local_1_0;
+          J_acc(ix_min + 1, iy_min + 1, cur::jx1) += jx_local_1_1;
+          J_acc(ix_min + 1, iy_min + 2, cur::jx1) += jx_local_1_2;
+          J_acc(ix_min + 1, iy_min + 3, cur::jx1) += jx_local_1_3;
+          
+          J_acc(ix_min + 2, iy_min, cur::jx1)     += jx_local_2_0;
+          J_acc(ix_min + 2, iy_min + 1, cur::jx1) += jx_local_2_1;
+          J_acc(ix_min + 2, iy_min + 2, cur::jx1) += jx_local_2_2;
+          J_acc(ix_min + 2, iy_min + 3, cur::jx1) += jx_local_2_3;
+          
+          J_acc(ix_min + 3, iy_min, cur::jx1)     += jx_local_3_0;
+          J_acc(ix_min + 3, iy_min + 1, cur::jx1) += jx_local_3_1;
+          J_acc(ix_min + 3, iy_min + 2, cur::jx1) += jx_local_3_2;
+          J_acc(ix_min + 3, iy_min + 3, cur::jx1) += jx_local_3_3;
 
           /*
               y - component
           */
-          J_acc(ix_min, iy_min, cur::jx2)     += Qdydt * Wy_0_0;
-          J_acc(ix_min, iy_min + 1, cur::jx2) += Qdydt * Wy_0_1;
-          J_acc(ix_min, iy_min + 2, cur::jx2) += Qdydt * Wy_0_2;
-          J_acc(ix_min, iy_min + 3, cur::jx2) += Qdydt * Wy_0_3;
+          J_acc(ix_min, iy_min, cur::jx2)     += jy_local_0_0;
+          J_acc(ix_min, iy_min + 1, cur::jx2) += jy_local_0_1;
+          J_acc(ix_min, iy_min + 2, cur::jx2) += jy_local_0_2;
+          J_acc(ix_min, iy_min + 3, cur::jx2) += jy_local_0_3;
 
-          J_acc(ix_min + 1, iy_min, cur::jx2)     += Qdydt * Wy_1_0;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx2) += Qdydt * Wy_1_1;
-          J_acc(ix_min + 1, iy_min + 2, cur::jx2) += Qdydt * Wy_1_2;
-          J_acc(ix_min + 1, iy_min + 3, cur::jx2) += Qdydt * Wy_1_3;
+          J_acc(ix_min + 1, iy_min, cur::jx2)     += jy_local_1_0;
+          J_acc(ix_min + 1, iy_min + 1, cur::jx2) += jy_local_1_1;
+          J_acc(ix_min + 1, iy_min + 2, cur::jx2) += jy_local_1_2;
+          J_acc(ix_min + 1, iy_min + 3, cur::jx2) += jy_local_1_3;
 
-          J_acc(ix_min + 2, iy_min, cur::jx2)     += Qdydt * Wy_2_0;
-          J_acc(ix_min + 2, iy_min + 1, cur::jx2) += Qdydt * Wy_2_1;
-          J_acc(ix_min + 2, iy_min + 2, cur::jx2) += Qdydt * Wy_2_2;
-          J_acc(ix_min + 2, iy_min + 3, cur::jx2) += Qdydt * Wy_2_3;
+          J_acc(ix_min + 2, iy_min, cur::jx2)     += jy_local_2_0;
+          J_acc(ix_min + 2, iy_min + 1, cur::jx2) += jy_local_2_1;
+          J_acc(ix_min + 2, iy_min + 2, cur::jx2) += jy_local_2_2;
+          J_acc(ix_min + 2, iy_min + 3, cur::jx2) += jy_local_2_3;
 
-          J_acc(ix_min + 3, iy_min, cur::jx2)     += Qdydt * Wy_3_0;
-          J_acc(ix_min + 3, iy_min + 1, cur::jx2) += Qdydt * Wy_3_1;
-          J_acc(ix_min + 3, iy_min + 2, cur::jx2) += Qdydt * Wy_3_2;
-          J_acc(ix_min + 3, iy_min + 3, cur::jx2) += Qdydt * Wy_3_3;
+          J_acc(ix_min + 3, iy_min, cur::jx2)     += jy_local_3_0;
+          J_acc(ix_min + 3, iy_min + 1, cur::jx2) += jy_local_3_1;
+          J_acc(ix_min + 3, iy_min + 2, cur::jx2) += jy_local_3_2;
+          J_acc(ix_min + 3, iy_min + 3, cur::jx2) += jy_local_3_3;
 
           /*
               z - component, simulated direction
@@ -1233,471 +1275,4 @@ namespace kernel {
           // const auto Wy_2_2_0 = THIRD * (S1y_2 - S0y_2) *
           //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
           //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_2_1 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_2_2 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_2_3 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // const auto Wy_2_3_0 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_3_1 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_3_2 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_3_3 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // const auto Wy_3_0_0 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          // const auto Wy_3_0_1 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          // const auto Wy_3_0_2 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          // const auto Wy_3_0_3 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          //
-          // const auto Wy_3_1_0 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          // const auto Wy_3_1_1 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          // const auto Wy_3_1_2 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          // const auto Wy_3_1_3 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          //
-          // const auto Wy_3_2_0 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          // const auto Wy_3_2_1 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          // const auto Wy_3_2_2 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          // const auto Wy_3_2_3 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          //
-          // const auto Wy_3_3_0 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          // const auto Wy_3_3_1 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          // const auto Wy_3_3_2 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          // const auto Wy_3_3_3 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          //
-          // const real_t Qdydt = coeff * inv_dt * dxp_r_2;
-          //
-          // J_acc(ix_min, iy_min, iz_min, cur::jx2)         += Qdydt * Wy_0_0_0;
-          // J_acc(ix_min, iy_min, iz_min + 1, cur::jx2)     += Qdydt * Wy_0_0_1;
-          // J_acc(ix_min, iy_min, iz_min + 2, cur::jx2)     += Qdydt * Wy_0_0_2;
-          // J_acc(ix_min, iy_min, iz_min + 3, cur::jx2)     += Qdydt * Wy_0_0_3;
-          // //
-          // J_acc(ix_min, iy_min + 1, iz_min, cur::jx2)     += Qdydt * Wy_0_1_0;
-          // J_acc(ix_min, iy_min + 1, iz_min + 1, cur::jx2) += Qdydt * Wy_0_1_1;
-          // J_acc(ix_min, iy_min + 1, iz_min + 2, cur::jx2) += Qdydt * Wy_0_1_2;
-          // J_acc(ix_min, iy_min + 1, iz_min + 3, cur::jx2) += Qdydt * Wy_0_1_3;
-          // //
-          // J_acc(ix_min, iy_min + 2, iz_min, cur::jx2)     += Qdydt * Wy_0_2_0;
-          // J_acc(ix_min, iy_min + 2, iz_min + 1, cur::jx2) += Qdydt * Wy_0_2_1;
-          // J_acc(ix_min, iy_min + 2, iz_min + 2, cur::jx2) += Qdydt * Wy_0_2_2;
-          // J_acc(ix_min, iy_min + 2, iz_min + 3, cur::jx2) += Qdydt * Wy_0_2_3;
-          // //
-          // J_acc(ix_min, iy_min + 3, iz_min, cur::jx2)     += Qdydt * Wy_0_3_0;
-          // J_acc(ix_min, iy_min + 3, iz_min + 1, cur::jx2) += Qdydt * Wy_0_3_1;
-          // J_acc(ix_min, iy_min + 3, iz_min + 2, cur::jx2) += Qdydt * Wy_0_3_2;
-          // J_acc(ix_min, iy_min + 3, iz_min + 3, cur::jx2) += Qdydt * Wy_0_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 1, iy_min, iz_min, cur::jx2)     += Qdydt * Wy_1_0_0;
-          // J_acc(ix_min + 1, iy_min, iz_min + 1, cur::jx2) += Qdydt * Wy_1_0_1;
-          // J_acc(ix_min + 1, iy_min, iz_min + 2, cur::jx2) += Qdydt * Wy_1_0_2;
-          // J_acc(ix_min + 1, iy_min, iz_min + 3, cur::jx2) += Qdydt * Wy_1_0_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 1, iz_min, cur::jx2) += Qdydt * Wy_1_1_0;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx2) += Qdydt * Wy_1_1_1;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx2) += Qdydt * Wy_1_1_2;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx2) += Qdydt * Wy_1_1_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 2, iz_min, cur::jx2) += Qdydt * Wy_1_2_0;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx2) += Qdydt * Wy_1_2_1;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx2) += Qdydt * Wy_1_2_2;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx2) += Qdydt * Wy_1_2_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 3, iz_min, cur::jx2) += Qdydt * Wy_1_3_0;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx2) += Qdydt * Wy_1_3_1;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx2) += Qdydt * Wy_1_3_2;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx2) += Qdydt * Wy_1_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 2, iy_min, iz_min, cur::jx2)     += Qdydt * Wy_2_0_0;
-          // J_acc(ix_min + 2, iy_min, iz_min + 1, cur::jx2) += Qdydt * Wy_2_0_1;
-          // J_acc(ix_min + 2, iy_min, iz_min + 2, cur::jx2) += Qdydt * Wy_2_0_2;
-          // J_acc(ix_min + 2, iy_min, iz_min + 3, cur::jx2) += Qdydt * Wy_2_0_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 1, iz_min, cur::jx2) += Qdydt * Wy_2_1_0;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx2) += Qdydt * Wy_2_1_1;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx2) += Qdydt * Wy_2_1_2;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx2) += Qdydt * Wy_2_1_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 2, iz_min, cur::jx2) += Qdydt * Wy_2_2_0;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx2) += Qdydt * Wy_2_2_1;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx2) += Qdydt * Wy_2_2_2;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx2) += Qdydt * Wy_2_2_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 3, iz_min, cur::jx2) += Qdydt * Wy_2_3_0;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx2) += Qdydt * Wy_2_3_1;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx2) += Qdydt * Wy_2_3_2;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx2) += Qdydt * Wy_2_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 3, iy_min, iz_min, cur::jx2)     += Qdydt * Wy_3_0_0;
-          // J_acc(ix_min + 3, iy_min, iz_min + 1, cur::jx2) += Qdydt * Wy_3_0_1;
-          // J_acc(ix_min + 3, iy_min, iz_min + 2, cur::jx2) += Qdydt * Wy_3_0_2;
-          // J_acc(ix_min + 3, iy_min, iz_min + 3, cur::jx2) += Qdydt * Wy_3_0_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 1, iz_min, cur::jx2) += Qdydt * Wy_3_1_0;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx2) += Qdydt * Wy_3_1_1;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx2) += Qdydt * Wy_3_1_2;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 3, cur::jx2) += Qdydt * Wy_3_1_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 2, iz_min, cur::jx2) += Qdydt * Wy_3_2_0;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx2) += Qdydt * Wy_3_2_1;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx2) += Qdydt * Wy_3_2_2;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 3, cur::jx2) += Qdydt * Wy_3_2_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 3, iz_min, cur::jx2) += Qdydt * Wy_3_3_0;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx2) += Qdydt * Wy_3_3_1;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx2) += Qdydt * Wy_3_3_2;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 3, cur::jx2) += Qdydt * Wy_3_3_3;
-          //
-          // /*
-          //   z - component
-          // */
-          // const auto Wz_0_0_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-          //                        HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          // const auto Wz_0_0_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-          //                        HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          // const auto Wz_0_0_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-          //                        HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          // const auto Wz_0_0_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-          //                        HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          //
-          // const auto Wz_0_1_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-          //                        HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          // const auto Wz_0_1_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-          //                        HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          // const auto Wz_0_1_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-          //                        HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          // const auto Wz_0_1_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-          //                        HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          //
-          // const auto Wz_0_2_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-          //                        HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          // const auto Wz_0_2_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-          //                        HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          // const auto Wz_0_2_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-          //                        HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          // const auto Wz_0_2_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-          //                        HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          //
-          // const auto Wz_0_3_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-          //                        HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          // const auto Wz_0_3_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-          //                        HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          // const auto Wz_0_3_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-          //                        HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          // const auto Wz_0_3_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-          //                        HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          //
-          // // Unrolled loop for Wz[i][j][k] with i = 1 and interp_order + 2 = 4
-          // const auto Wz_1_0_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-          //                        HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          // const auto Wz_1_0_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-          //                        HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          // const auto Wz_1_0_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-          //                        HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          // const auto Wz_1_0_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-          //                        HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          //
-          // const auto Wz_1_1_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-          //                        HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          // const auto Wz_1_1_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-          //                        HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          // const auto Wz_1_1_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-          //                        HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          // const auto Wz_1_1_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-          //                        HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          //
-          // const auto Wz_1_2_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-          //                        HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          // const auto Wz_1_2_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-          //                        HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          // const auto Wz_1_2_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-          //                        HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          // const auto Wz_1_2_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-          //                        HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          //
-          // const auto Wz_1_3_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-          //                        HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          // const auto Wz_1_3_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-          //                        HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          // const auto Wz_1_3_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-          //                        HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          // const auto Wz_1_3_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-          //                        HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          //
-          // const auto Wy_2_0_0 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_0_1 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_0_2 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_0_3 = THIRD * (S1y_0 - S0y_0) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // const auto Wy_2_1_0 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_1_1 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_1_2 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_1_3 = THIRD * (S1y_1 - S0y_1) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // const auto Wy_2_2_0 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_2_1 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_2_2 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_2_3 = THIRD * (S1y_2 - S0y_2) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // const auto Wy_2_3_0 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-          //                        HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          // const auto Wy_2_3_1 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-          //                        HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          // const auto Wy_2_3_2 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-          //                        HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          // const auto Wy_2_3_3 = THIRD * (S1y_3 - S0y_3) *
-          //                       (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-          //                        HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          //
-          // // Unrolled loop for Wz[i][j][k] with i = 3 and interp_order + 2 = 4
-          // const auto Wz_3_0_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-          //                        HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          // const auto Wz_3_0_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-          //                        HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          // const auto Wz_3_0_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-          //                        HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          // const auto Wz_3_0_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-          //                        HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          //
-          // const auto Wz_3_1_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-          //                        HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          // const auto Wz_3_1_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-          //                        HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          // const auto Wz_3_1_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-          //                        HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          // const auto Wz_3_1_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-          //                        HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          //
-          // const auto Wz_3_2_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-          //                        HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          // const auto Wz_3_2_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-          //                        HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          // const auto Wz_3_2_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-          //                        HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          // const auto Wz_3_2_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-          //                        HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          //
-          // const auto Wz_3_3_0 = THIRD * (S1z_0 - S0z_0) *
-          //                       (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-          //                        HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          // const auto Wz_3_3_1 = THIRD * (S1z_1 - S0z_1) *
-          //                       (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-          //                        HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          // const auto Wz_3_3_2 = THIRD * (S1z_2 - S0z_2) *
-          //                       (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-          //                        HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          // const auto Wz_3_3_3 = THIRD * (S1z_3 - S0z_3) *
-          //                       (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-          //                        HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          //
-          // const real_t Qdzdt = coeff * inv_dt * dxp_r_3;
-          //
-          // J_acc(ix_min, iy_min, iz_min, cur::jx3)         += Qdzdt * Wz_0_0_0;
-          // J_acc(ix_min, iy_min, iz_min + 1, cur::jx3)     += Qdzdt * Wz_0_0_1;
-          // J_acc(ix_min, iy_min, iz_min + 2, cur::jx3)     += Qdzdt * Wz_0_0_2;
-          // J_acc(ix_min, iy_min, iz_min + 3, cur::jx3)     += Qdzdt * Wz_0_0_3;
-          // //
-          // J_acc(ix_min, iy_min + 1, iz_min, cur::jx3)     += Qdzdt * Wz_0_1_0;
-          // J_acc(ix_min, iy_min + 1, iz_min + 1, cur::jx3) += Qdzdt * Wz_0_1_1;
-          // J_acc(ix_min, iy_min + 1, iz_min + 2, cur::jx3) += Qdzdt * Wz_0_1_2;
-          // J_acc(ix_min, iy_min + 1, iz_min + 3, cur::jx3) += Qdzdt * Wz_0_1_3;
-          // //
-          // J_acc(ix_min, iy_min + 2, iz_min, cur::jx3)     += Qdzdt * Wz_0_2_0;
-          // J_acc(ix_min, iy_min + 2, iz_min + 1, cur::jx3) += Qdzdt * Wz_0_2_1;
-          // J_acc(ix_min, iy_min + 2, iz_min + 2, cur::jx3) += Qdzdt * Wz_0_2_2;
-          // J_acc(ix_min, iy_min + 2, iz_min + 3, cur::jx3) += Qdzdt * Wz_0_2_3;
-          // //
-          // J_acc(ix_min, iy_min + 3, iz_min, cur::jx3)     += Qdzdt * Wz_0_3_0;
-          // J_acc(ix_min, iy_min + 3, iz_min + 1, cur::jx3) += Qdzdt * Wz_0_3_1;
-          // J_acc(ix_min, iy_min + 3, iz_min + 2, cur::jx3) += Qdzdt * Wz_0_3_2;
-          // J_acc(ix_min, iy_min + 3, iz_min + 3, cur::jx3) += Qdzdt * Wz_0_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 1, iy_min, iz_min, cur::jx3)     += Qdzdt * Wz_1_0_0;
-          // J_acc(ix_min + 1, iy_min, iz_min + 1, cur::jx3) += Qdzdt * Wz_1_0_1;
-          // J_acc(ix_min + 1, iy_min, iz_min + 2, cur::jx3) += Qdzdt * Wz_1_0_2;
-          // J_acc(ix_min + 1, iy_min, iz_min + 3, cur::jx3) += Qdzdt * Wz_1_0_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 1, iz_min, cur::jx3) += Qdzdt * Wz_1_1_0;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx3) += Qdzdt * Wz_1_1_1;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx3) += Qdzdt * Wz_1_1_2;
-          // J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx3) += Qdzdt * Wz_1_1_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 2, iz_min, cur::jx3) += Qdzdt * Wz_1_2_0;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx3) += Qdzdt * Wz_1_2_1;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx3) += Qdzdt * Wz_1_2_2;
-          // J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx3) += Qdzdt * Wz_1_2_3;
-          // //
-          // J_acc(ix_min + 1, iy_min + 3, iz_min, cur::jx3) += Qdzdt * Wz_1_3_0;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx3) += Qdzdt * Wz_1_3_1;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx3) += Qdzdt * Wz_1_3_2;
-          // J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx3) += Qdzdt * Wz_1_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 2, iy_min, iz_min, cur::jx3)     += Qdzdt * Wz_2_0_0;
-          // J_acc(ix_min + 2, iy_min, iz_min + 1, cur::jx3) += Qdzdt * Wz_2_0_1;
-          // J_acc(ix_min + 2, iy_min, iz_min + 2, cur::jx3) += Qdzdt * Wz_2_0_2;
-          // J_acc(ix_min + 2, iy_min, iz_min + 3, cur::jx3) += Qdzdt * Wz_2_0_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 1, iz_min, cur::jx3) += Qdzdt * Wz_2_1_0;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx3) += Qdzdt * Wz_2_1_1;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx3) += Qdzdt * Wz_2_1_2;
-          // J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx3) += Qdzdt * Wz_2_1_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 2, iz_min, cur::jx3) += Qdzdt * Wz_2_2_0;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx3) += Qdzdt * Wz_2_2_1;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx3) += Qdzdt * Wz_2_2_2;
-          // J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx3) += Qdzdt * Wz_2_2_3;
-          // //
-          // J_acc(ix_min + 2, iy_min + 3, iz_min, cur::jx3) += Qdzdt * Wz_2_3_0;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx3) += Qdzdt * Wz_2_3_1;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx3) += Qdzdt * Wz_2_3_2;
-          // J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx3) += Qdzdt * Wz_2_3_3;
-          // //
-          // //
-          // J_acc(ix_min + 3, iy_min, iz_min, cur::jx3)     += Qdzdt * Wz_3_0_0;
-          // J_acc(ix_min + 3, iy_min, iz_min + 1, cur::jx3) += Qdzdt * Wz_3_0_1;
-          // J_acc(ix_min + 3, iy_min, iz_min + 2, cur::jx3) += Qdzdt * Wz_3_0_2;
-          // J_acc(ix_min + 3, iy_min, iz_min + 3, cur::jx3) += Qdzdt * Wz_3_0_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 1, iz_min, cur::jx3) += Qdzdt * Wz_3_1_0;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx3) += Qdzdt * Wz_3_1_1;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx3) += Qdzdt * Wz_3_1_2;
-          // J_acc(ix_min + 3, iy_min + 1, iz_min + 3, cur::jx3) += Qdzdt * Wz_3_1_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 2, iz_min, cur::jx3) += Qdzdt * Wz_3_2_0;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx3) += Qdzdt * Wz_3_2_1;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx3) += Qdzdt * Wz_3_2_2;
-          // J_acc(ix_min + 3, iy_min + 2, iz_min + 3, cur::jx3) += Qdzdt * Wz_3_2_3;
-          // //
-          // J_acc(ix_min + 3, iy_min + 3, iz_min, cur::jx3) += Qdzdt * Wz_3_3_0;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx3) += Qdzdt * Wz_3_3_1;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx3) += Qdzdt * Wz_3_3_2;
-          // J_acc(ix_min + 3, iy_min + 3, iz_min + 3, cur::jx3) += Qdzdt * Wz_3_3_3;
-        } // dimension
-      } else { // order
-        raise::KernelError(HERE, "Unsupported interpolation order");
-      }
-    }
-  };
-} // namespace kernel
-
-#undef i_di_to_Xi
-
-#endif // KERNELS_CURRENTS_DEPOSIT_HPP
+        
