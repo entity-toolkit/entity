@@ -76,9 +76,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.toggles.fieldsolver");
+        "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.toggles.deposit");
+        "algorithms.deposit.enable");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
@@ -203,7 +203,7 @@ namespace ntt {
           "algorithms.fieldsolver.betayz");
         const auto betazy = m_params.template get<real_t>(
           "algorithms.fieldsolver.betazy");
-        real_t     coeff1, coeff2;
+        real_t coeff1, coeff2;
         if constexpr (M::Dim == Dim::_2D) {
           coeff1 = dT / SQR(dx);
           coeff2 = dT;
@@ -508,6 +508,7 @@ namespace ntt {
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
+      auto shape_order = params.template get<int>("algorithms.deposit.order");
       for (auto& species : domain.species) {
         if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
             cmp::AlmostZero_host(species.charge())) {
@@ -520,31 +521,37 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        Kokkos::parallel_for("CurrentsDeposit",
-                             species.rangeActiveParticles(),
-                             kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
-                               scatter_cur,
-                               species.i1,
-                               species.i2,
-                               species.i3,
-                               species.i1_prev,
-                               species.i2_prev,
-                               species.i3_prev,
-                               species.dx1,
-                               species.dx2,
-                               species.dx3,
-                               species.dx1_prev,
-                               species.dx2_prev,
-                               species.dx3_prev,
-                               species.ux1,
-                               species.ux2,
-                               species.ux3,
-                               species.phi,
-                               species.weight,
-                               species.tag,
-                               domain.mesh.metric,
-                               (real_t)(species.charge()),
-                               dt));
+        if (shape_order == 1) {
+          // clang-format off
+          Kokkos::parallel_for("CurrentsDeposit",
+                              species.rangeActiveParticles(),
+                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, 1u>(
+                                scatter_cur,
+                                species.i1, species.i2, species.i3,
+                                species.i1_prev, species.i2_prev, species.i3_prev,
+                                species.dx1, species.dx2, species.dx3,
+                                species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                                species.ux1, species.ux2, species.ux3,
+                                species.phi, species.weight, species.tag,
+                                domain.mesh.metric, (real_t)(species.charge()), dt));
+          // clang-format on
+        } else if (shape_order == 2) {
+          // clang-format off
+          Kokkos::parallel_for("CurrentsDeposit",
+                              species.rangeActiveParticles(),
+                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, 2u>(
+                                scatter_cur,
+                                species.i1, species.i2, species.i3,
+                                species.i1_prev, species.i2_prev, species.i3_prev,
+                                species.dx1, species.dx2, species.dx3,
+                                species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                                species.ux1, species.ux2, species.ux3,
+                                species.phi, species.weight, species.tag,
+                                domain.mesh.metric, (real_t)(species.charge()), dt));
+          // clang-format on
+        } else {
+          raise::Error("Invalid shape order for current deposition", HERE);
+        }
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
