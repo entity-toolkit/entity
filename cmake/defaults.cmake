@@ -63,4 +63,26 @@ else()
       CACHE INTERNAL "Default flag for MPI")
 endif()
 
+if(DEFINED ENV{Entity_MPI_DEVICE_COPY})
+  set(default_mpi_device_copy
+      $ENV{Entity_MPI_DEVICE_COPY}
+      CACHE INTERNAL "Default flag for copying from device to host for MPI")
+else()
+  set(default_mpi_device_copy
+      OFF
+      CACHE INTERNAL "Default flag for copying from device to host for MPI")
+endif()
+
 set_property(CACHE default_mpi PROPERTY TYPE BOOL)
+
+if(DEFINED ENV{Entity_ENABLE_GPU_AWARE_MPI})
+  set(default_gpu_aware_mpi
+      $ENV{Entity_ENABLE_GPU_AWARE_MPI}
+      CACHE INTERNAL "Default flag for GPU-aware MPI")
+else()
+  set(default_gpu_aware_mpi
+      ON
+      CACHE INTERNAL "Default flag for GPU-aware MPI")
+endif()
+
+set_property(CACHE default_gpu_aware_mpi PROPERTY TYPE BOOL)

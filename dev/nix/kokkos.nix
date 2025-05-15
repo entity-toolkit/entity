@@ -1,12 +1,13 @@
 {
   pkgs ? import <nixpkgs> { },
+  stdenv,
   arch,
   gpu,
 }:
 
 let
   name = "kokkos";
-  version = "4.5.01";
+  pversion = "4.6.01";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       rocm-core
@@ -16,14 +17,25 @@ let
       rocminfo
       rocm-smi
     ];
+    "CUDA" = with pkgs.cudaPackages; [
+      cudatoolkit
+      cuda_cudart
+    ];
     "NONE" = [
       pkgs.gcc13
     ];
   };
-  cmakeFlags = {
+  cmakeExtraFlags = {
     "HIP" = [
+      "-D Kokkos_ENABLE_HIP=ON"
+      "-D Kokkos_ARCH_${getArch { }}=ON"
       "-D CMAKE_C_COMPILER=hipcc"
       "-D CMAKE_CXX_COMPILER=hipcc"
+    ];
+    "CUDA" = [
+      "-D Kokkos_ENABLE_CUDA=ON"
+      "-D Kokkos_ARCH_${getArch { }}=ON"
+      "-D CMAKE_CXX_COMPILER=$WRAPPER_PATH"
     ];
     "NONE" = [ ];
   };
@@ -35,13 +47,13 @@ let
       arch;
 
 in
-pkgs.stdenv.mkDerivation {
+pkgs.stdenv.mkDerivation rec {
   pname = "${name}";
-  version = "${version}";
+  version = "${pversion}";
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
-    rev = "${version}";
-    sha256 = "sha256-cI2p+6J+8BRV5fXTDxxHTfh6P5PeeLUiF73o5zVysHQ=";
+    rev = "${pversion}";
+    sha256 = "sha256-+yszUbdHqhIkJZiGLZ9Ln4DYUosuJWKhO8FkbrY0/tY=";
   };
 
   nativeBuildInputs = with pkgs; [
@@ -50,14 +62,42 @@ pkgs.stdenv.mkDerivation {
 
   propagatedBuildInputs = compilerPkgs.${gpu};
 
-  cmakeFlags = [
-    "-D CMAKE_CXX_STANDARD=17"
-    "-D CMAKE_CXX_EXTENSIONS=OFF"
-    "-D CMAKE_POSITION_INDEPENDENT_CODE=TRUE"
-    "-D Kokkos_ARCH_${getArch { }}=ON"
-    (if gpu != "none" then "-D Kokkos_ENABLE_${gpu}=ON" else "")
-    "-D CMAKE_BUILD_TYPE=Release"
-  ] ++ cmakeFlags.${gpu};
+  patchPhase =
+    if gpu == "CUDA" then
+      ''
+        export WRAPPER_PATH="$(mktemp -d)/nvcc_wrapper"
+        cp ${src}/bin/nvcc_wrapper $WRAPPER_PATH
+        substituteInPlace $WRAPPER_PATH --replace-fail "#!/usr/bin/env bash" "#!${stdenv.shell}"
+        chmod +x "$WRAPPER_PATH"
+      ''
+    else
+      "";
 
-  enableParallelBuilding = true;
+  configurePhase = ''
+    cmake -B build -D CMAKE_BUILD_TYPE=Release \
+      -D CMAKE_CXX_STANDARD=17 \
+      -D CMAKE_CXX_EXTENSIONS=OFF \
+      -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+      ${pkgs.lib.concatStringsSep " " cmakeExtraFlags.${gpu}} \
+      -D CMAKE_INSTALL_PREFIX=$out
+  '';
+
+  buildPhase = ''
+    cmake --build build -j
+  '';
+
+  installPhase = ''
+    cmake --install build
+  '';
+
+  # cmakeFlags = [
+  #   "-D CMAKE_CXX_STANDARD=17"
+  #   "-D CMAKE_CXX_EXTENSIONS=OFF"
+  #   "-D CMAKE_POSITION_INDEPENDENT_CODE=TRUE"
+  #   "-D Kokkos_ARCH_${getArch { }}=ON"
+  #   (if gpu != "none" then "-D Kokkos_ENABLE_${gpu}=ON" else "")
+  #   "-D CMAKE_BUILD_TYPE=Release"
+  # ] ++ (cmakeExtraFlags.${gpu} src);
+
+  # enableParallelBuilding = true;
 }

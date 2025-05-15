@@ -106,8 +106,8 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(
-      std::size_t bytes) -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(std::size_t bytes)
+      -> std::pair<long double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       idx_t                          unit_idx = 0;
       auto                           size     = static_cast<long double>(bytes);
@@ -214,6 +214,10 @@ namespace ntt {
         report += "\n\n";
         add_header(report, { entity_version }, { color::BRIGHT_GREEN });
         report += "\n";
+
+        /*
+         * Backend
+         */
         add_category(report, 4, "Backend");
         add_param(report, 4, "Build hash", "%s", hash.c_str());
         add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
@@ -223,11 +227,76 @@ namespace ntt {
         add_param(report, 4, "HIP", "%s", hip_version.c_str());
 #endif
         add_param(report, 4, "MPI", "%s", mpi_version.c_str());
+#if defined(MPI_ENABLED) && defined(DEVICE_ENABLED)
+  #if defined(GPU_AWARE_MPI)
+        const std::string gpu_aware_mpi = "ON";
+  #else
+        const std::string gpu_aware_mpi = "OFF";
+  #endif
+        add_param(report, 4, "GPU-aware MPI", "%s", gpu_aware_mpi.c_str());
+#endif
         add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
         add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
         add_param(report, 4, "Precision", "%s", precision);
         add_param(report, 4, "Debug", "%s", dbg.c_str());
         report += "\n";
+
+        /*
+         * Compilation flags
+         */
+        add_category(report, 4, "Compilation flags");
+#if defined(SINGLE_PRECISION)
+        add_param(report, 4, "SINGLE_PRECISION", "%s", "ON");
+#else
+        add_param(report, 4, "SINGLE_PRECISION", "%s", "OFF");
+#endif
+
+#if defined(OUTPUT_ENABLED)
+        add_param(report, 4, "OUTPUT_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "OUTPUT_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(DEBUG)
+        add_param(report, 4, "DEBUG", "%s", "ON");
+#else
+        add_param(report, 4, "DEBUG", "%s", "OFF");
+#endif
+
+#if defined(CUDA_ENABLED)
+        add_param(report, 4, "CUDA_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "CUDA_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(HIP_ENABLED)
+        add_param(report, 4, "HIP_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "HIP_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(DEVICE_ENABLED)
+        add_param(report, 4, "DEVICE_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "DEVICE_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(MPI_ENABLED)
+        add_param(report, 4, "MPI_ENABLED", "%s", "ON");
+#else
+        add_param(report, 4, "MPI_ENABLED", "%s", "OFF");
+#endif
+
+#if defined(GPU_AWARE_MPI)
+        add_param(report, 4, "GPU_AWARE_MPI", "%s", "ON");
+#else
+        add_param(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
+#endif
+        report += "\n";
+
+        /*
+         * Simulation configs
+         */
         add_category(report, 4, "Configuration");
         add_param(report,
                   4,

@@ -45,27 +45,10 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
-  struct UniformInjector {
-    using energy_dist_t = ED<S, M>;
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(energy_dist_t::is_energy_dist,
-                  "E must be an energy distribution class");
-    static constexpr bool      is_uniform_injector { true };
-    static constexpr Dimension D { M::Dim };
-    static constexpr Coord     C { M::CoordType };
-
-    const energy_dist_t               energy_dist;
-    const std::pair<spidx_t, spidx_t> species;
-
-    UniformInjector(const energy_dist_t&               energy_dist,
-                    const std::pair<spidx_t, spidx_t>& species)
-      : energy_dist { energy_dist }
-      , species { species } {}
-
-    ~UniformInjector() = default;
-
-    auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box) const
+  template <SimEngine::type S, class M>
+  struct BaseInjector {
+    virtual auto DeduceRegion(const Domain<S, M>&         domain,
+                              const boundaries_t<real_t>& box) const
       -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
       if (not domain.mesh.Intersects(box)) {
         return { false, array_t<real_t*> {}, array_t<real_t*> {} };
@@ -104,10 +87,10 @@ namespace arch {
       return { true, xi_min, xi_max };
     }
 
-    auto ComputeNumInject(const SimulationParams&     params,
-                          const Domain<S, M>&         domain,
-                          real_t                      number_density,
-                          const boundaries_t<real_t>& box) const
+    virtual auto ComputeNumInject(const SimulationParams&     params,
+                                  const Domain<S, M>&         domain,
+                                  real_t                      number_density,
+                                  const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
       const auto result = DeduceRegion(domain, box);
       if (not std::get<0>(result)) {
@@ -132,6 +115,27 @@ namespace arch {
 
       return { true, nparticles, xi_min, xi_max };
     }
+  };
+
+  template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
+  struct UniformInjector : BaseInjector<S, M> {
+    using energy_dist_t = ED<S, M>;
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(energy_dist_t::is_energy_dist,
+                  "E must be an energy distribution class");
+    static constexpr bool      is_uniform_injector { true };
+    static constexpr Dimension D { M::Dim };
+    static constexpr Coord     C { M::CoordType };
+
+    const energy_dist_t               energy_dist;
+    const std::pair<spidx_t, spidx_t> species;
+
+    UniformInjector(const energy_dist_t&               energy_dist,
+                    const std::pair<spidx_t, spidx_t>& species)
+      : energy_dist { energy_dist }
+      , species { species } {}
+
+    ~UniformInjector() = default;
   };
 
   template <SimEngine::type S, class M, template <SimEngine::type, class> class ED>
@@ -161,7 +165,7 @@ namespace arch {
     ~KeepConstantInjector() = default;
 
     auto ComputeAvgDensity(const SimulationParams& params,
-                           Domain<S, M>&           domain) const -> real_t {
+                           const Domain<S, M>&     domain) const -> real_t {
       const auto result       = this->DeduceRegion(domain, probe_box);
       const auto should_probe = std::get<0>(result);
       if (not should_probe) {
@@ -214,10 +218,10 @@ namespace arch {
     }
 
     auto ComputeNumInject(const SimulationParams&     params,
-                          Domain<S, M>&               domain,
+                          const Domain<S, M>&         domain,
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
-      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> {
+      -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> override {
       const auto computed_avg_density = ComputeAvgDensity(params, domain);
 
       const auto result = this->DeduceRegion(domain, box);
@@ -498,6 +502,122 @@ namespace arch {
         domain.species[injector.species.second - 1].npart() + nparticles);
     }
   }
+
+  namespace experimental {
+
+    template <SimEngine::type S,
+              class M,
+              template <SimEngine::type, class> class ED1,
+              template <SimEngine::type, class> class ED2>
+    struct UniformInjector : BaseInjector<S, M> {
+      using energy_dist_1_t = ED1<S, M>;
+      using energy_dist_2_t = ED2<S, M>;
+      static_assert(M::is_metric, "M must be a metric class");
+      static_assert(energy_dist_1_t::is_energy_dist,
+                    "ED1 must be an energy distribution class");
+      static_assert(energy_dist_2_t::is_energy_dist,
+                    "ED2 must be an energy distribution class");
+      static constexpr bool      is_uniform_injector { true };
+      static constexpr Dimension D { M::Dim };
+      static constexpr Coord     C { M::CoordType };
+
+      const energy_dist_1_t             energy_dist_1;
+      const energy_dist_2_t             energy_dist_2;
+      const std::pair<spidx_t, spidx_t> species;
+
+      UniformInjector(const energy_dist_1_t&             energy_dist_1,
+                      const energy_dist_2_t&             energy_dist_2,
+                      const std::pair<spidx_t, spidx_t>& species)
+        : energy_dist_1 { energy_dist_1 }
+        , energy_dist_2 { energy_dist_2 }
+        , species { species } {}
+
+      ~UniformInjector() = default;
+    };
+
+    /**
+     * @brief Injects uniform number density of particles everywhere in the domain
+     * @param domain Domain object
+     * @param injector Uniform injector object
+     * @param number_density Total number density (in units of n0)
+     * @param use_weights Use weights
+     * @param box Region to inject the particles in global coords
+     * @tparam S Simulation engine type
+     * @tparam M Metric type
+     * @tparam I Injector type
+     */
+    template <SimEngine::type S, class M, class I>
+    inline void InjectUniform(const SimulationParams&     params,
+                              Domain<S, M>&               domain,
+                              const I&                    injector,
+                              real_t                      number_density,
+                              bool                        use_weights = false,
+                              const boundaries_t<real_t>& box         = {}) {
+      static_assert(M::is_metric, "M must be a metric class");
+      static_assert(I::is_uniform_injector, "I must be a uniform injector class");
+      raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
+                     "Weights must be used for non-Cartesian coordinates",
+                     HERE);
+      raise::ErrorIf((M::CoordType == Coord::Cart) && use_weights,
+                     "Weights should not be used for Cartesian coordinates",
+                     HERE);
+      raise::ErrorIf(
+        params.template get<bool>("particles.use_weights") != use_weights,
+        "Weights must be enabled from the input file to use them in "
+        "the injector",
+        HERE);
+      if (domain.species[injector.species.first - 1].charge() +
+            domain.species[injector.species.second - 1].charge() !=
+          0.0f) {
+        raise::Warning("Total charge of the injected species is non-zero", HERE);
+      }
+
+      {
+        boundaries_t<real_t> nonempty_box;
+        for (auto d { 0u }; d < M::Dim; ++d) {
+          if (d < box.size()) {
+            nonempty_box.push_back({ box[d].first, box[d].second });
+          } else {
+            nonempty_box.push_back(Range::All);
+          }
+        }
+        const auto result = injector.ComputeNumInject(params,
+                                                      domain,
+                                                      number_density,
+                                                      nonempty_box);
+        if (not std::get<0>(result)) {
+          return;
+        }
+        const auto nparticles = std::get<1>(result);
+        const auto xi_min     = std::get<2>(result);
+        const auto xi_max     = std::get<3>(result);
+
+        Kokkos::parallel_for(
+          "InjectUniform",
+          nparticles,
+          kernel::experimental::
+            UniformInjector_kernel<S, M, typename I::energy_dist_1_t, typename I::energy_dist_2_t>(
+              injector.species.first,
+              injector.species.second,
+              domain.species[injector.species.first - 1],
+              domain.species[injector.species.second - 1],
+              domain.species[injector.species.first - 1].npart(),
+              domain.species[injector.species.second - 1].npart(),
+              domain.mesh.metric,
+              xi_min,
+              xi_max,
+              injector.energy_dist_1,
+              injector.energy_dist_2,
+              ONE / params.template get<real_t>("scales.V0"),
+              domain.random_pool));
+        domain.species[injector.species.first - 1].set_npart(
+          domain.species[injector.species.first - 1].npart() + nparticles);
+        domain.species[injector.species.second - 1].set_npart(
+          domain.species[injector.species.second - 1].npart() + nparticles);
+      }
+    }
+
+  } // namespace experimental
 
   /**
    * @brief Injects particles from a globally-defined map
