@@ -305,17 +305,27 @@ namespace user {
                     ext_current.a_imag_inv } {}
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature);
-      const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
+      // const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+      //                                                 local_domain.random_pool,
+      //                                                 temperature);
+      // const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
+      //   energy_dist,
+      //   { 1, 2 });
+      // arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      //   params,
+      //   local_domain,
+      //   spatial_dist,
+      //   ONE);
+
+      const auto injector = arch::UniformInjector<S, M, arch::Cold>(
+        arch::Cold<S, M>(local_domain.mesh.metric),
         { 1, 2 });
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
+      arch::InjectUniform<S, M, decltype(injector)>(
         params,
         local_domain,
-        spatial_dist,
+        injector,
         ONE);
+
     };
 
     void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
@@ -326,12 +336,29 @@ namespace user {
         "Antenna amplitudes",
         wavenumbers.size(),
         ClassLambda(index_t i) {
-          auto       generator  = random_pool.get_state();
-          const auto u_imag     = Random<real_t>(generator) - HALF;
-          const auto u_real     = Random<real_t>(generator) - HALF;
-          const auto u_real_inv = Random<real_t>(generator) - HALF;
-          const auto u_imag_inv = Random<real_t>(generator) - HALF;
-          random_pool.free_state(generator);
+          // auto       generator  = random_pool.get_state();
+          // const auto u_imag     = Random<real_t>(generator) - HALF;
+          // const auto u_real     = Random<real_t>(generator) - HALF;
+          // const auto u_real_inv = Random<real_t>(generator) - HALF;
+          // const auto u_imag_inv = Random<real_t>(generator) - HALF;
+          // random_pool.free_state(generator);
+
+          index_t n1 = (1664525 * i + 1013904223);
+          const auto rnd1 = (n1 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+
+          index_t n2 = (1664525 * (i + 1) + 1013904223);
+          const auto rnd2 = (n2 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+
+          index_t n3 = (1664525 * (i + 2) + 1013904223);
+          const auto rnd3 = (n3 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+
+          index_t n4 = (1664525 * (i + 3) + 1013904223);
+          const auto rnd4 = (n4 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+
+          const auto u_imag     = rnd1 - HALF;
+          const auto u_real     = rnd2 - HALF;
+          const auto u_real_inv = rnd3 - HALF;
+          const auto u_imag_inv = rnd4 - HALF;
 
           auto a_real_prev     = ext_curr.a_real(i);
           auto a_imag_prev     = ext_curr.a_imag(i);

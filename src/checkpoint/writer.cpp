@@ -261,7 +261,7 @@ namespace checkpoint {
     // auto data_h = Kokkos::create_mirror_view(data);
     // Kokkos::deep_copy(data_h, data);
     auto data_sub = Kokkos::subview(data, slice, range_tuple_t(0, nplds));
-    m_writer.Put(var, data_sub.data());
+    m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
     // , adios2::Mode::Sync);
   }
 

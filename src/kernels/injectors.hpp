@@ -107,17 +107,34 @@ namespace kernel {
       const auto p { i * team_member.team_size() + team_member.team_rank() };      
       coord_t<M::Dim> x_Cd { ZERO };
       vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
-      { // generate a random coordinate
-        auto rand_gen = random_pool.get_state();
-        x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
-        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
-        }
-        if constexpr (M::Dim == Dim::_3D) {
-          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
-        }
-        random_pool.free_state(rand_gen);
-      }
+      // { // generate a random coordinate
+      //   auto rand_gen = random_pool.get_state();
+      //   x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+      //   if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+      //     x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+      //   }
+      //   if constexpr (M::Dim == Dim::_3D) {
+      //     x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+      //   }
+      //   random_pool.free_state(rand_gen);
+      // }
+
+          {
+            index_t n = (1664525 * p + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[0] = xi_min(0) + rnd * (xi_max(0) - xi_min(0));
+          }
+          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+            index_t n = (1664525 * (p + 1) + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[1] = xi_min(1) + rnd * (xi_max(1) - xi_min(1));
+          }
+          if constexpr (M::Dim == Dim::_3D) {
+            index_t n = (1664525 * (p + 2) + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[2] = xi_min(2) + rnd * (xi_max(2) - xi_min(2));
+          }
+
       { // generate the velocity
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
@@ -280,19 +297,36 @@ using member_type = team_policy::member_type;
       const auto p { i * team_member.team_size() + team_member.team_rank() };      
               coord_t<M::Dim> x_Cd { ZERO };
         vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
-        { // generate a random coordinate
-          auto rand_gen = random_pool.get_state();
-          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+        // { // generate a random coordinate
+        //   auto rand_gen = random_pool.get_state();
+        //   x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+        //   if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+        //     x_Cd[1] = xi_min(1) +
+        //               Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+        //   }
+        //   if constexpr (M::Dim == Dim::_3D) {
+        //     x_Cd[2] = xi_min(2) +
+        //               Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+        //   }
+        //   random_pool.free_state(rand_gen);
+        // }
+
+          {
+            index_t n = (1664525 * p + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[0] = xi_min(0) + rnd * (xi_max(0) - xi_min(0));
+          }
           if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            x_Cd[1] = xi_min(1) +
-                      Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+            index_t n = (1664525 * (p + 1) + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[1] = xi_min(1) + rnd * (xi_max(1) - xi_min(1));
           }
           if constexpr (M::Dim == Dim::_3D) {
-            x_Cd[2] = xi_min(2) +
-                      Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+            index_t n = (1664525 * (p + 2) + 1013904223);
+            const auto rnd = (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+            x_Cd[2] = xi_min(2) + rnd * (xi_max(2) - xi_min(2));
           }
-          random_pool.free_state(rand_gen);
-        }
+
         { // generate the velocity
           coord_t<M::Dim> x_Ph { ZERO };
           metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
