@@ -124,7 +124,7 @@ namespace kernel {
         S1_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_diff);
         S1_2 = HALF * SQR(HALF - dx_diff);
         S1_3 = ZERO;
-      } else {
+      } else if (shift_x == 0) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -142,6 +142,8 @@ namespace kernel {
         S1_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_diff);
         S1_2 = HALF * SQR(HALF - dx_diff);
         S1_3 = ZERO;
+      } else {
+        raise::Error("Invalid shift in indices", HERE);
       }
     }
 
@@ -652,11 +654,11 @@ namespace kernel {
                                static_cast<real_t>(i2(p) == i2_prev(p) - 1) *
                                  static_cast<real_t>((1 - dx2(p)) + dx2_prev(p));
 
-          const real_t Qdxdt = -coeff * inv_dt * delta_x;
-          const real_t Qdydt = -coeff * inv_dt * delta_y;
-          const real_t QVz   = -coeff * vp[2];
+          const real_t Qdxdt = coeff * inv_dt * delta_x;
+          const real_t Qdydt = coeff * inv_dt * delta_y;
+          const real_t QVz   = coeff * vp[2];
 
-          // Esirkepov - Eq. 32
+          // Esirkepov - Eq. 39
           // x-component
           const auto jx_local_0_0 = -Qdxdt * Wx_0_0;
           const auto jx_local_1_0 = jx_local_0_0 - Qdxdt * Wx_1_0;
@@ -680,24 +682,24 @@ namespace kernel {
 
           // y-component
           const auto jy_local_0_0 = -Qdydt * Wy_0_0;
-          const auto jy_local_1_0 = jy_local_0_0 - Qdydt * Wy_1_0;
-          const auto jy_local_2_0 = jy_local_1_0 - Qdydt * Wy_2_0;
-          const auto jy_local_3_0 = jy_local_2_0 - Qdydt * Wy_3_0;
+          const auto jy_local_0_1 = jy_local_0_0 - Qdydt * Wy_0_1;
+          const auto jy_local_0_2 = jy_local_0_1 - Qdydt * Wy_0_2;
+          const auto jy_local_0_3 = jy_local_0_2 - Qdydt * Wy_0_3;
 
-          const auto jy_local_0_1 = -Qdydt * Wy_0_1;
-          const auto jy_local_1_1 = jy_local_0_1 - Qdydt * Wy_1_1;
-          const auto jy_local_2_1 = jy_local_1_1 - Qdydt * Wy_2_1;
-          const auto jy_local_3_1 = jy_local_2_1 - Qdydt * Wy_3_1;
+          const auto jy_local_1_0 = -Qdydt * Wy_1_0;
+          const auto jy_local_1_1 = jy_local_1_0 - Qdydt * Wy_1_1;
+          const auto jy_local_1_2 = jy_local_1_1 - Qdydt * Wy_1_2;
+          const auto jy_local_1_3 = jy_local_1_2 - Qdydt * Wy_1_3;
 
-          const auto jy_local_0_2 = -Qdydt * Wy_0_2;
-          const auto jy_local_1_2 = jy_local_0_2 - Qdydt * Wy_1_2;
-          const auto jy_local_2_2 = jy_local_1_2 - Qdydt * Wy_2_2;
-          const auto jy_local_3_2 = jy_local_2_2 - Qdydt * Wy_3_2;
+          const auto jy_local_2_0 = -Qdydt * Wy_2_0;
+          const auto jy_local_2_1 = jy_local_2_0 - Qdydt * Wy_2_1;
+          const auto jy_local_2_2 = jy_local_2_1 - Qdydt * Wy_2_2;
+          const auto jy_local_2_3 = jy_local_2_2 - Qdydt * Wy_2_3;
 
-          const auto jy_local_0_3 = -Qdydt * Wy_0_3;
-          const auto jy_local_1_3 = jy_local_0_3 - Qdydt * Wy_1_3;
-          const auto jy_local_2_3 = jy_local_1_3 - Qdydt * Wy_2_3;
-          const auto jy_local_3_3 = jy_local_2_3 - Qdydt * Wy_3_3;
+          const auto jy_local_3_0 = -Qdydt * Wy_3_0;
+          const auto jy_local_3_1 = jy_local_3_0 - Qdydt * Wy_3_1;
+          const auto jy_local_3_2 = jy_local_3_1 - Qdydt * Wy_3_2;
+          const auto jy_local_3_3 = jy_local_3_2 - Qdydt * Wy_3_3;
 
           /*
             Current update
