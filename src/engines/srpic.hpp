@@ -508,7 +508,7 @@ namespace ntt {
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
-      auto shape_order = params.template get<int>("algorithms.deposit.order");
+      auto shape_order = m_params.template get<int>("algorithms.deposit.order");
       for (auto& species : domain.species) {
         if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
             cmp::AlmostZero_host(species.charge())) {
