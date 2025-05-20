@@ -7,3 +7,6 @@
 [submodule "extern/Kokkos"]
 	path = extern/Kokkos
 	url = https://github.com/kokkos/kokkos.git
+[submodule "extern/entity-pgens"]
+	path = extern/entity-pgens
+	url = https://github.com/entity-toolkit/entity-pgens.git
