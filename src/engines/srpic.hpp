@@ -307,6 +307,9 @@ namespace ntt {
         }
       }
       for (auto& species : domain.species) {
+        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0)) {
+          continue;
+        }
         species.set_unsorted();
         logger::Checkpoint(
           fmt::format("Launching particle pusher kernel for %d [%s] : %lu",
@@ -314,9 +317,6 @@ namespace ntt {
                       species.label().c_str(),
                       species.npart()),
           HERE);
-        if (species.npart() == 0) {
-          continue;
-        }
         const auto q_ovr_m = species.mass() > ZERO
                                ? species.charge() / species.mass()
                                : ZERO;
@@ -509,6 +509,10 @@ namespace ntt {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
       for (auto& species : domain.species) {
+        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
+            cmp::AlmostZero_host(species.charge())) {
+          continue;
+        }
         logger::Checkpoint(
           fmt::format("Launching currents deposit kernel for %d [%s] : %lu %f",
                       species.index(),
@@ -516,9 +520,6 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        if (species.npart() == 0 || cmp::AlmostZero(species.charge())) {
-          continue;
-        }
         Kokkos::parallel_for("CurrentsDeposit",
                              species.rangeActiveParticles(),
                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(

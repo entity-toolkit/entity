@@ -378,6 +378,7 @@ namespace user {
           const auto& pld = domain.species[sp].pld;
           const auto& tag = domain.species[sp].tag;
           const auto  L   = escape_dist;
+	  printf("Entering the escape loop %d, L = %f\n", sp, L);
           Kokkos::parallel_for(
             "UpdatePld",
             domain.species[sp].npart(),
@@ -390,7 +391,7 @@ namespace user {
               pld(p, 0) += ux1(p) * dt / gamma;
               pld(p, 1) += ux2(p) * dt / gamma;
 
-              if ((pld(p, 0) > L) or (pld(p, 1) > L)) {
+              if (math::abs(pld(p, 0) > L) or (math::abs(pld(p,1)) > L)) {
                 coord_t<D>      x_Ph { ZERO };
                 vec_t<Dim::_3D> u_Mxw { ZERO };
                 energy_dist(x_Ph, u_Mxw);

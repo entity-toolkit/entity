@@ -7,8 +7,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
 
-#include "framework/domain/comm_mpi.hpp"
-
 #include <iostream>
 #include <stdexcept>
 

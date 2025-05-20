@@ -337,6 +337,141 @@ namespace arch {
     const bool    zero_current;
   };
 
+  namespace experimental {
+
+    template <SimEngine::type S, class M>
+    struct Maxwellian : public EnergyDistribution<S, M> {
+      using EnergyDistribution<S, M>::metric;
+
+      Maxwellian(const M&              metric,
+                 random_number_pool_t& pool,
+                 real_t                temperature,
+                 const std::vector<real_t>& drift_four_vel = { ZERO, ZERO, ZERO })
+        : EnergyDistribution<S, M> { metric }
+        , pool { pool }
+        , temperature { temperature } {
+        raise::ErrorIf(drift_four_vel.size() != 3,
+                       "Maxwellian: Drift velocity must be a 3D vector",
+                       HERE);
+        raise::ErrorIf(temperature < ZERO,
+                       "Maxwellian: Temperature must be non-negative",
+                       HERE);
+        if constexpr (M::CoordType == Coord::Cart) {
+          drift_4vel = NORM(drift_four_vel[0], drift_four_vel[1], drift_four_vel[2]);
+          if (cmp::AlmostZero_host(drift_4vel)) {
+            drift_dir = 0;
+          } else {
+            drift_3vel   = drift_4vel / math::sqrt(ONE + SQR(drift_4vel));
+            drift_dir_x1 = drift_four_vel[0] / drift_4vel;
+            drift_dir_x2 = drift_four_vel[1] / drift_4vel;
+            drift_dir_x3 = drift_four_vel[2] / drift_4vel;
+
+            // assume drift is in an arbitrary direction
+            drift_dir = 4;
+            // check whether drift is in one of principal directions
+            for (auto d { 0u }; d < 3u; ++d) {
+              const auto dprev = (d + 2) % 3;
+              const auto dnext = (d + 1) % 3;
+              if (cmp::AlmostZero_host(drift_four_vel[dprev]) and
+                  cmp::AlmostZero_host(drift_four_vel[dnext])) {
+                drift_dir = SIGN(drift_four_vel[d]) * (d + 1);
+                break;
+              }
+            }
+          }
+          raise::ErrorIf(drift_dir > 3 and drift_dir != 4,
+                         "Maxwellian: Incorrect drift direction",
+                         HERE);
+          raise::ErrorIf(
+            drift_dir != 0 and (M::CoordType != Coord::Cart),
+            "Maxwellian: Boosting is only supported in Cartesian coordinates",
+            HERE);
+        }
+      }
+
+      Inline void operator()(const coord_t<M::Dim>& x_Code,
+                             vec_t<Dim::_3D>&       v,
+                             spidx_t                sp = 0) const override {
+        if (cmp::AlmostZero(temperature)) {
+          v[0] = ZERO;
+          v[1] = ZERO;
+          v[2] = ZERO;
+        } else {
+          JuttnerSinge(v, temperature, pool);
+        }
+        // @note: boost only when using cartesian coordinates
+        if constexpr (M::CoordType == Coord::Cart) {
+          if (drift_dir != 0) {
+            // Boost an isotropic Maxwellian with a drift velocity using
+            // flipping method https://arxiv.org/pdf/1504.03910.pdf
+            // 1. apply drift in X1 direction
+            const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
+            auto       rand_gen = pool.get_state();
+            if (-drift_3vel * v[0] > gamma * Random<real_t>(rand_gen)) {
+              v[0] = -v[0];
+            }
+            pool.free_state(rand_gen);
+            v[0] = math::sqrt(ONE + SQR(drift_4vel)) * (v[0] + drift_3vel * gamma);
+            // 2. rotate to desired orientation
+            if (drift_dir == -1) {
+              v[0] = -v[0];
+            } else if (drift_dir == 2 || drift_dir == -2) {
+              const auto tmp = v[1];
+              v[1]           = drift_dir > 0 ? v[0] : -v[0];
+              v[0]           = tmp;
+            } else if (drift_dir == 3 || drift_dir == -3) {
+              const auto tmp = v[2];
+              v[2]           = drift_dir > 0 ? v[0] : -v[0];
+              v[0]           = tmp;
+            } else if (drift_dir == 4) {
+              vec_t<Dim::_3D> v_old;
+              v_old[0] = v[0];
+              v_old[1] = v[1];
+              v_old[2] = v[2];
+
+              v[0] = v_old[0] * drift_dir_x1 - v_old[1] * drift_dir_x2 -
+                     v_old[2] * drift_dir_x3;
+              v[1] = (v_old[0] * drift_dir_x2 * (drift_dir_x1 + ONE) +
+                      v_old[1] *
+                        (SQR(drift_dir_x1) + drift_dir_x1 + SQR(drift_dir_x3)) -
+                      v_old[2] * drift_dir_x2 * drift_dir_x3) /
+                     (drift_dir_x1 + ONE);
+              v[2] = (v_old[0] * drift_dir_x3 * (drift_dir_x1 + ONE) -
+                      v_old[1] * drift_dir_x2 * drift_dir_x3 -
+                      v_old[2] * (-drift_dir_x1 + SQR(drift_dir_x3) - ONE)) /
+                     (drift_dir_x1 + ONE);
+            }
+          }
+        } else if constexpr (S == SimEngine::GRPIC) {
+          // convert from the tetrad basis to covariant
+          vec_t<Dim::_3D> v_Hat;
+          v_Hat[0] = v[0];
+          v_Hat[1] = v[1];
+          v_Hat[2] = v[2];
+          metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
+        }
+      }
+
+    private:
+      random_number_pool_t pool;
+
+      const real_t temperature;
+
+      real_t drift_3vel { ZERO }, drift_4vel { ZERO };
+      // components of the unit vector in the direction of the drift
+      real_t drift_dir_x1 { ZERO }, drift_dir_x2 { ZERO }, drift_dir_x3 { ZERO };
+
+      // values of boost_dir:
+      // 4 -> arbitrary direction
+      // 0 -> no drift
+      // +/- 1 -> +/- x1
+      // +/- 2 -> +/- x2
+      // +/- 3 -> +/- x3
+      short drift_dir { 0 };
+    };
+
+  } // namespace experimental
+
 } // namespace arch
 
 #endif // ARCHETYPES_ENERGY_DIST_HPP
