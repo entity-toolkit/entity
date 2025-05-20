@@ -908,70 +908,36 @@ namespace kernel::bc {
     }
   };
 
-  template <class M, bool IsAux>
+  template <class M>
   struct HorizonBoundaries_kernel {
     ndfield_t<M::Dim, 6> Fld;
     const std::size_t    i1_min;
     const bool           setE, setB;
+    const std::size_t    nfilter;
 
-    HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, std::size_t i1_min, BCTags tags)
+    HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, std::size_t i1_min, BCTags tags, std::size_t nfilter)
       : Fld { Fld }
       , i1_min { i1_min }
       , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
                (tags & BC::Dx1 or tags & BC::Dx2 or tags & BC::Dx3) }
       , setB { (tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3) or
-               (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) } {}
+               (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) } 
+      , nfilter { nfilter } {}
 
     Inline void operator()(index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
-        if constexpr (not IsAux) {
-          if (setE) {
-            // Fld(i1_min - 1, i2, em::dx1) = Fld(i1_min, i2, em::dx1);
-            // Fld(i1_min, i2, em::dx2)     = Fld(i1_min + 1, i2, em::dx2);
-            // Fld(i1_min - 1, i2, em::dx2) = Fld(i1_min, i2, em::dx2);
-            // Fld(i1_min, i2, em::dx3)     = Fld(i1_min + 1, i2, em::dx3);
-            // Fld(i1_min - 1, i2, em::dx3) = Fld(i1_min, i2, em::dx3);
-
-            Fld(i1_min    , i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
-            Fld(i1_min - 1, i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
-            Fld(i1_min - 2, i2, em::dx1) = Fld(i1_min + 1, i2, em::dx1);
-
-            Fld(i1_min    , i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
-            Fld(i1_min - 1, i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
-            Fld(i1_min - 2, i2, em::dx2) = Fld(i1_min + 1, i2, em::dx2);
-
-            Fld(i1_min    , i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
-            Fld(i1_min - 1, i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
-            Fld(i1_min - 2, i2, em::dx3) = Fld(i1_min + 1, i2, em::dx3);
+        if (setE) {
+          for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx1) = Fld(i1_min + 1 + nfilter, i2, em::dx1);
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx2) = Fld(i1_min + 1 + nfilter, i2, em::dx2);
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx3) = Fld(i1_min + 1 + nfilter, i2, em::dx3);
           }
-          if (setB) {
-            // Fld(i1_min, i2, em::bx1)     = Fld(i1_min + 1, i2, em::bx1);
-            // Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min, i2, em::bx1);
-            // Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min, i2, em::bx2);
-            // Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min, i2, em::bx3);
-
-            Fld(i1_min    , i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
-            Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
-            Fld(i1_min - 2, i2, em::bx1) = Fld(i1_min + 1, i2, em::bx1);
-
-            Fld(i1_min    , i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
-            Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
-            Fld(i1_min - 2, i2, em::bx2) = Fld(i1_min + 1, i2, em::bx2);
-
-            Fld(i1_min    , i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
-            Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
-            Fld(i1_min - 2, i2, em::bx3) = Fld(i1_min + 1, i2, em::bx3);
-          }
-        } else {
-          if (setE) {
-            Fld(i1_min - 1, i2, em::ex1) = Fld(i1_min, i2, em::ex1);
-            Fld(i1_min - 1, i2, em::ex2) = Fld(i1_min, i2, em::ex2);
-            Fld(i1_min - 1, i2, em::ex3) = Fld(i1_min, i2, em::ex3);
-          }
-          if (setB) {
-            Fld(i1_min - 1, i2, em::hx1) = Fld(i1_min, i2, em::hx1);
-            Fld(i1_min - 1, i2, em::hx2) = Fld(i1_min, i2, em::hx2);
-            Fld(i1_min - 1, i2, em::hx3) = Fld(i1_min, i2, em::hx3);
+        }
+        if (setB) {
+          for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx1) = Fld(i1_min + 1 + nfilter, i2, em::bx1);
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx2) = Fld(i1_min + 1 + nfilter, i2, em::bx2);
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx3) = Fld(i1_min + 1 + nfilter, i2, em::bx3);
           }
         }
       } else {
