@@ -165,7 +165,7 @@ namespace arch {
     ~KeepConstantInjector() = default;
 
     auto ComputeAvgDensity(const SimulationParams& params,
-                           Domain<S, M>&           domain) const -> real_t {
+                           const Domain<S, M>&     domain) const -> real_t {
       const auto result       = this->DeduceRegion(domain, probe_box);
       const auto should_probe = std::get<0>(result);
       if (not should_probe) {
@@ -218,7 +218,7 @@ namespace arch {
     }
 
     auto ComputeNumInject(const SimulationParams&     params,
-                          Domain<S, M>&               domain,
+                          const Domain<S, M>&         domain,
                           real_t                      number_density,
                           const boundaries_t<real_t>& box) const
       -> std::tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>> override {

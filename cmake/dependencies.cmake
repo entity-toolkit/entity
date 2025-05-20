@@ -58,7 +58,7 @@ function(find_or_fetch_dependency package_name header_only mode)
         FetchContent_Declare(
           ${package_name}
           GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG 4.5.01)
+          GIT_TAG 4.6.01)
       else()
         FetchContent_Declare(${package_name}
                              GIT_REPOSITORY ${${package_name}_REPOSITORY})
