@@ -708,19 +708,23 @@ namespace ntt {
       const auto i1_min = domain.mesh.i_min(in::x1);
       auto range = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x2) },
                                                { domain.mesh.i_max(in::x2) + 1 });
+      const auto nfilter = m_params.template get<unsigned short>(
+        "algorithms.current_filters");
       if (g == gr_bc::main) {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::HorizonBoundaries_kernel<M, false>(domain.fields.em,
+          kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em,
                                                          i1_min,
-                                                         tags));
+                                                         tags,
+                                                         nfilter));
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::HorizonBoundaries_kernel<M, false>(domain.fields.em0,
+          kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em0,
                                                          i1_min,
-                                                         tags));
+                                                         tags,
+                                                         nfilter));
       } 
     }
 
