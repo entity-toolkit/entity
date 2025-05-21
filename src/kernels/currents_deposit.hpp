@@ -52,11 +52,11 @@ namespace kernel {
                                    real_t&        S1_2,
                                    real_t&        S1_3,
                                    ncells_t&      i_min,
-                                   real_t&        update_x2,
+                                   real_t&        update_i2,
                                    const index_t& i,
-                                   const real_t&  dx,
+                                   const real_t&  di,
                                    const index_t& i_prev,
-                                   const real_t&  dx_prev) const {
+                                   const real_t&  di_prev) const {
       /*
         Shape function per particle is a 4 element array.
         We need to find which indices are contributing to the shape function
@@ -77,17 +77,18 @@ namespace kernel {
       */
 
       // find shift in indices
-      const auto dx_less_half = static_cast<int>(dx < static_cast<prtldx_t>(0.5));
-      const auto dx_prev_less_half = static_cast<int>(
-        dx_prev < static_cast<prtldx_t>(0.5));
+      const int di_less_half = static_cast<int>(di < static_cast<prtldx_t>(0.5));
+      const int di_prev_less_half = static_cast<int>(
+        di_prev < static_cast<prtldx_t>(0.5));
 
-      const auto shift_x { (i - i_prev) - (dx_less_half - dx_prev_less_half) };
+      const auto shift_x = (i - di_less_half) - (i_prev - di_prev_less_half);
 
-      const real_t dx_prev_diff = static_cast<real_t>(dx_prev) +
-                                  static_cast<real_t>(
-                                    dx_prev < static_cast<prtldx_t>(0.5));
-      const real_t dx_diff = static_cast<real_t>(dx) +
-                             static_cast<real_t>(dx < static_cast<prtldx_t>(0.5));
+      // find the minimum index of the shape function
+      i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
+
+      // center index of the shape function
+      const auto i_center_prev = static_cast<real_t>(i_min + 1 - i_prev);
+      const auto i_center      = static_cast<real_t>(i_min + 1 - i);
 
       // find indices and define shape function
       if (shift_x > 0) {
@@ -97,18 +98,17 @@ namespace kernel {
           |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
           |______|______|______|______|______|
         */
-        i_min     = i_prev - dx_prev_less_half + N_GHOSTS;
-        update_x2 = ONE;
+        update_i2 = ONE;
 
-        S0_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
-        S0_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_prev_diff);
-        S0_2 = HALF * SQR(HALF - dx_prev_diff);
+        S0_0 = HALF * SQR(HALF + (i_center_prev - di_prev));
+        S0_1 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
+        S0_2 = HALF * SQR(HALF - (i_center_prev - di_prev));
         S0_3 = ZERO;
 
         S1_0 = ZERO;
-        S1_1 = HALF * SQR(static_cast<real_t>(1.5) - dx_diff);
-        S1_2 = static_cast<real_t>(0.75) - SQR(ONE - dx_diff);
-        S1_3 = HALF * SQR(HALF - dx_diff);
+        S1_1 = HALF * SQR(HALF + (i_center - di));
+        S1_2 = static_cast<real_t>(0.75) - SQR(i_center - di);
+        S1_3 = HALF * SQR(HALF - (i_center - di));
       } else if (shift_x < 0) {
         /*
             (-1)    0      1      2      3
@@ -116,17 +116,16 @@ namespace kernel {
           |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
           |______|______|______|______|______|
         */
-        i_min     = i - dx_less_half + N_GHOSTS;
-        update_x2 = ONE;
+        update_i2 = ONE;
 
         S0_0 = ZERO;
-        S0_1 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
-        S0_2 = static_cast<real_t>(0.75) - SQR(ONE - dx_prev_diff);
-        S0_3 = HALF * SQR(HALF - dx_prev_diff);
+        S0_1 = HALF * SQR(HALF + (i_center_prev - di_prev));
+        S0_2 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
+        S0_3 = HALF * SQR(HALF - (i_center_prev - di_prev));
 
-        S1_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_diff);
-        S1_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_diff);
-        S1_2 = HALF * SQR(HALF - dx_diff);
+        S1_0 = HALF * SQR(HALF + (i_center - di));
+        S1_1 = static_cast<real_t>(0.75) - SQR(i_center - di);
+        S1_2 = HALF * SQR(HALF - (i_center - di));
         S1_3 = ZERO;
       } else if (shift_x == 0) {
         /*
@@ -135,21 +134,23 @@ namespace kernel {
           |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
           |______|______|______|______|______|
         */
-        i_min     = i - dx_less_half + N_GHOSTS;
-        update_x2 = ZERO;
+        update_i2 = ZERO;
 
-        S0_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
-        S0_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_prev_diff);
-        S0_2 = HALF * SQR(HALF - dx_prev_diff);
+        S0_0 = HALF * SQR(HALF + (i_center_prev - di_prev));
+        S0_1 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
+        S0_2 = HALF * SQR(HALF - (i_center_prev - di_prev));
         S0_3 = ZERO;
 
-        S1_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_diff);
-        S1_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_diff);
-        S1_2 = HALF * SQR(HALF - dx_diff);
+        S1_0 = HALF * SQR(HALF + (i_center - di));
+        S1_1 = static_cast<real_t>(0.75) - SQR(i_center - di);
+        S1_2 = HALF * SQR(HALF - (i_center - di));
         S1_3 = ZERO;
       } else {
         raise::Error("Invalid shift in indices", HERE);
       }
+
+      // account for ghost cells here to shorten J update expression
+      i_min += N_GHOSTS;
     }
 
   public:
@@ -551,7 +552,7 @@ namespace kernel {
                              i2(p), dx2(p),
                              i2_prev(p), dx2_prev(p));
           // clang-format on
-          
+
           // Esirkepov 2001, Eq. 39
           /*
               x - component
@@ -649,8 +650,8 @@ namespace kernel {
                                static_cast<real_t>(i2(p) == i2_prev(p) - 1) *
                                  static_cast<real_t>((1 - dx2(p)) + dx2_prev(p));
 
-          const real_t Qdxdt = -coeff; // * inv_dt * delta_x;
-          const real_t Qdydt = -coeff; // * inv_dt * delta_y;
+          const real_t Qdxdt = -coeff;
+          const real_t Qdydt = -coeff;
           const real_t QVz   = -coeff * vp[2];
 
           // Esirkepov - Eq. 39
@@ -719,10 +720,10 @@ namespace kernel {
           J_acc(ix_min + 2, iy_min + 2, cur::jx1) += update_x2 * jx_2_2;
           J_acc(ix_min + 2, iy_min + 3, cur::jx1) += update_x2 * update_y2 * jx_2_3;
 
-          // J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x3 * jx_3_0;
-          // J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x3 * jx_3_1;
-          // J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x3 * jx_3_2;
-          // J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x3 * jx_3_3;
+        //   J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x2 * jx_3_0;
+        //   J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x2 * jx_3_1;
+        //   J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x2 * jx_3_2;
+        //   J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x2 * jx_3_3;
 
           /*
               y - component
@@ -768,7 +769,8 @@ namespace kernel {
           J_acc(ix_min + 3, iy_min, cur::jx3)     += update_x2 * QVz * Wz_3_0;
           J_acc(ix_min + 3, iy_min + 1, cur::jx3) += update_x2 * QVz * Wz_3_1;
           J_acc(ix_min + 3, iy_min + 2, cur::jx3) += update_x2 * QVz * Wz_3_2;
-          J_acc(ix_min + 3, iy_min + 3, cur::jx3) += update_x2 * update_y2 * QVz * Wz_3_3;
+          J_acc(ix_min + 3, iy_min + 3, cur::jx3) += update_x2 * update_y2 *
+                                                     QVz * Wz_3_3;
 
         } else if constexpr (D == Dim::_3D) {
           // /*
