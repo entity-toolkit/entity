@@ -81,17 +81,17 @@ namespace kernel {
       const int di_prev_less_half = static_cast<int>(
         di_prev < static_cast<prtldx_t>(0.5));
 
-      const auto shift_x = (i - di_less_half) - (i_prev - di_prev_less_half);
+      const auto shift_i = (i - di_less_half) - (i_prev - di_prev_less_half);
 
       // find the minimum index of the shape function
       i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
 
       // center index of the shape function
-      const auto i_center_prev = static_cast<real_t>(i_min + 1 - i_prev);
-      const auto i_center      = static_cast<real_t>(i_min + 1 - i);
+      const auto i_center_prev = static_cast<real_t>(1 - di_prev_less_half);
+      const auto i_center      = static_cast<real_t>(1 - di_less_half);
 
       // find indices and define shape function
-      if (shift_x > 0) {
+      if (shift_i > 0) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -109,7 +109,7 @@ namespace kernel {
         S1_1 = HALF * SQR(HALF + (i_center - di));
         S1_2 = static_cast<real_t>(0.75) - SQR(i_center - di);
         S1_3 = HALF * SQR(HALF - (i_center - di));
-      } else if (shift_x < 0) {
+      } else if (shift_i < 0) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -127,7 +127,7 @@ namespace kernel {
         S1_1 = static_cast<real_t>(0.75) - SQR(i_center - di);
         S1_2 = HALF * SQR(HALF - (i_center - di));
         S1_3 = ZERO;
-      } else if (shift_x == 0) {
+      } else if (shift_i == 0) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -553,7 +553,7 @@ namespace kernel {
                              i2_prev(p), dx2_prev(p));
           // clang-format on
 
-          // Esirkepov 2001, Eq. 39
+          // Esirkepov 2001, Eq. 38
           /*
               x - component
           */
@@ -636,23 +636,9 @@ namespace kernel {
           const auto Wz_3_3 = THIRD * (S1y_3 * (HALF * S0x_3 + S1x_3) +
                                        S0y_3 * (HALF * S1x_3 + S0x_3));
 
-          const auto delta_x = static_cast<real_t>(i1(p) == i1_prev(p)) *
-                                 static_cast<real_t>(dx1(p) - dx1_prev(p)) +
-                               static_cast<real_t>(i1(p) == i1_prev(p) + 1) *
-                                 static_cast<real_t>(dx1(p) + (1 - dx1_prev(p))) +
-                               static_cast<real_t>(i1(p) == i1_prev(p) - 1) *
-                                 static_cast<real_t>((1 - dx1(p)) + dx1_prev(p));
-
-          const auto delta_y = static_cast<real_t>(i2(p) == i2_prev(p)) *
-                                 static_cast<real_t>(dx2(p) - dx2_prev(p)) +
-                               static_cast<real_t>(i2(p) == i2_prev(p) + 1) *
-                                 static_cast<real_t>(dx2(p) + (1 - dx2_prev(p))) +
-                               static_cast<real_t>(i2(p) == i2_prev(p) - 1) *
-                                 static_cast<real_t>((1 - dx2(p)) + dx2_prev(p));
-
-          const real_t Qdxdt = -coeff;
-          const real_t Qdydt = -coeff;
-          const real_t QVz   = -coeff * vp[2];
+          const real_t Qdxdt = -coeff * inv_dt;
+          const real_t Qdydt = -coeff * inv_dt;
+          const real_t QVz   = -coeff * inv_dt * vp[2];
 
           // Esirkepov - Eq. 39
           // x-component
@@ -720,10 +706,10 @@ namespace kernel {
           J_acc(ix_min + 2, iy_min + 2, cur::jx1) += update_x2 * jx_2_2;
           J_acc(ix_min + 2, iy_min + 3, cur::jx1) += update_x2 * update_y2 * jx_2_3;
 
-        //   J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x2 * jx_3_0;
-        //   J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x2 * jx_3_1;
-        //   J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x2 * jx_3_2;
-        //   J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x2 * jx_3_3;
+          //   J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x2 * jx_3_0;
+          //   J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x2 * jx_3_1;
+          //   J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x2 * jx_3_2;
+          //   J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x2 * jx_3_3;
 
           /*
               y - component
