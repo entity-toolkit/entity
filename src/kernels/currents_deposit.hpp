@@ -52,6 +52,7 @@ namespace kernel {
                                    real_t&        S1_2,
                                    real_t&        S1_3,
                                    ncells_t&      i_min,
+                                   real_t&        update_x2,
                                    const index_t& i,
                                    const real_t&  dx,
                                    const index_t& i_prev,
@@ -79,6 +80,7 @@ namespace kernel {
       const auto dx_less_half = static_cast<int>(dx < static_cast<prtldx_t>(0.5));
       const auto dx_prev_less_half = static_cast<int>(
         dx_prev < static_cast<prtldx_t>(0.5));
+
       const auto shift_x { (i - i_prev) - (dx_less_half - dx_prev_less_half) };
 
       const real_t dx_prev_diff = static_cast<real_t>(dx_prev) +
@@ -95,7 +97,8 @@ namespace kernel {
           |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
           |______|______|______|______|______|
         */
-        i_min = i_prev - dx_prev_less_half + N_GHOSTS;
+        i_min     = i_prev - dx_prev_less_half + N_GHOSTS;
+        update_x2 = ONE;
 
         S0_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
         S0_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_prev_diff);
@@ -113,7 +116,8 @@ namespace kernel {
           |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
           |______|______|______|______|______|
         */
-        i_min = i - dx_less_half + N_GHOSTS;
+        i_min     = i - dx_less_half + N_GHOSTS;
+        update_x2 = ONE;
 
         S0_0 = ZERO;
         S0_1 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
@@ -131,7 +135,8 @@ namespace kernel {
           |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
           |______|______|______|______|______|
         */
-        i_min = i - dx_less_half + N_GHOSTS;
+        i_min     = i - dx_less_half + N_GHOSTS;
+        update_x2 = ZERO;
 
         S0_0 = HALF * SQR(static_cast<real_t>(1.5) - dx_prev_diff);
         S0_1 = static_cast<real_t>(0.75) - SQR(ONE - dx_prev_diff);
@@ -513,20 +518,15 @@ namespace kernel {
         real_t   S1x_0, S1x_1, S1x_2, S1x_3;
         // indices of the shape function
         ncells_t ix_min;
+        real_t   update_x2;
         // find indices and define shape function
-        shape_function_2nd(S0x_0,
-                           S0x_1,
-                           S0x_2,
-                           S0x_3,
-                           S1x_0,
-                           S1x_1,
-                           S1x_2,
-                           S1x_3,
-                           ix_min,
-                           i1(p),
-                           dx1(p),
-                           i1_prev(p),
-                           dx1_prev(p));
+        // clang-format off
+        shape_function_2nd(S0x_0, S0x_1, S0x_2, S0x_3,
+                           S1x_0, S1x_1, S1x_2, S1x_3,
+                           ix_min, update_x2,
+                           i1(p), dx1(p),
+                           i1_prev(p), dx1_prev(p));
+        // clang-format on
 
         if constexpr (D == Dim::_1D) {
           // ToDo
@@ -542,21 +542,16 @@ namespace kernel {
           real_t   S1y_0, S1y_1, S1y_2, S1y_3;
           // indices of the shape function
           ncells_t iy_min;
+          real_t   update_y2;
           // find indices and define shape function
-          shape_function_2nd(S0y_0,
-                             S0y_1,
-                             S0y_2,
-                             S0y_3,
-                             S1y_0,
-                             S1y_1,
-                             S1y_2,
-                             S1y_3,
-                             iy_min,
-                             i2(p),
-                             dx2(p),
-                             i2_prev(p),
-                             dx2_prev(p));
-
+          // clang-format off
+          shape_function_2nd(S0y_0, S0y_1, S0y_2, S0y_3,
+                             S1y_0, S1y_1, S1y_2, S1y_3,
+                             iy_min, update_y2,
+                             i2(p), dx2(p),
+                             i2_prev(p), dx2_prev(p));
+          // clang-format on
+          
           // Esirkepov 2001, Eq. 39
           /*
               x - component
@@ -654,52 +649,52 @@ namespace kernel {
                                static_cast<real_t>(i2(p) == i2_prev(p) - 1) *
                                  static_cast<real_t>((1 - dx2(p)) + dx2_prev(p));
 
-          const real_t Qdxdt = coeff * inv_dt * delta_x;
-          const real_t Qdydt = coeff * inv_dt * delta_y;
-          const real_t QVz   = coeff * vp[2];
+          const real_t Qdxdt = -coeff; // * inv_dt * delta_x;
+          const real_t Qdydt = -coeff; // * inv_dt * delta_y;
+          const real_t QVz   = -coeff * vp[2];
 
           // Esirkepov - Eq. 39
           // x-component
-          const auto jx_local_0_0 = -Qdxdt * Wx_0_0;
-          const auto jx_local_1_0 = jx_local_0_0 - Qdxdt * Wx_1_0;
-          const auto jx_local_2_0 = jx_local_1_0 - Qdxdt * Wx_2_0;
-          const auto jx_local_3_0 = jx_local_2_0 - Qdxdt * Wx_3_0;
+          const auto jx_0_0 = -Qdxdt * Wx_0_0;
+          const auto jx_1_0 = jx_0_0 - Qdxdt * Wx_1_0;
+          const auto jx_2_0 = jx_1_0 - Qdxdt * Wx_2_0;
+          const auto jx_3_0 = jx_2_0 - Qdxdt * Wx_3_0;
 
-          const auto jx_local_0_1 = -Qdxdt * Wx_0_1;
-          const auto jx_local_1_1 = jx_local_0_1 - Qdxdt * Wx_1_1;
-          const auto jx_local_2_1 = jx_local_1_1 - Qdxdt * Wx_2_1;
-          const auto jx_local_3_1 = jx_local_2_1 - Qdxdt * Wx_3_1;
+          const auto jx_0_1 = -Qdxdt * Wx_0_1;
+          const auto jx_1_1 = jx_0_1 - Qdxdt * Wx_1_1;
+          const auto jx_2_1 = jx_1_1 - Qdxdt * Wx_2_1;
+          const auto jx_3_1 = jx_2_1 - Qdxdt * Wx_3_1;
 
-          const auto jx_local_0_2 = -Qdxdt * Wx_0_2;
-          const auto jx_local_1_2 = jx_local_0_2 - Qdxdt * Wx_1_2;
-          const auto jx_local_2_2 = jx_local_1_2 - Qdxdt * Wx_2_2;
-          const auto jx_local_3_2 = jx_local_2_2 - Qdxdt * Wx_3_2;
+          const auto jx_0_2 = -Qdxdt * Wx_0_2;
+          const auto jx_1_2 = jx_0_2 - Qdxdt * Wx_1_2;
+          const auto jx_2_2 = jx_1_2 - Qdxdt * Wx_2_2;
+          const auto jx_3_2 = jx_2_2 - Qdxdt * Wx_3_2;
 
-          const auto jx_local_0_3 = -Qdxdt * Wx_0_3;
-          const auto jx_local_1_3 = jx_local_0_3 - Qdxdt * Wx_1_3;
-          const auto jx_local_2_3 = jx_local_1_3 - Qdxdt * Wx_2_3;
-          const auto jx_local_3_3 = jx_local_2_3 - Qdxdt * Wx_3_3;
+          const auto jx_0_3 = -Qdxdt * Wx_0_3;
+          const auto jx_1_3 = jx_0_3 - Qdxdt * Wx_1_3;
+          const auto jx_2_3 = jx_1_3 - Qdxdt * Wx_2_3;
+          const auto jx_3_3 = jx_2_3 - Qdxdt * Wx_3_3;
 
           // y-component
-          const auto jy_local_0_0 = -Qdydt * Wy_0_0;
-          const auto jy_local_0_1 = jy_local_0_0 - Qdydt * Wy_0_1;
-          const auto jy_local_0_2 = jy_local_0_1 - Qdydt * Wy_0_2;
-          const auto jy_local_0_3 = jy_local_0_2 - Qdydt * Wy_0_3;
+          const auto jy_0_0 = -Qdydt * Wy_0_0;
+          const auto jy_0_1 = jy_0_0 - Qdydt * Wy_0_1;
+          const auto jy_0_2 = jy_0_1 - Qdydt * Wy_0_2;
+          const auto jy_0_3 = jy_0_2 - Qdydt * Wy_0_3;
 
-          const auto jy_local_1_0 = -Qdydt * Wy_1_0;
-          const auto jy_local_1_1 = jy_local_1_0 - Qdydt * Wy_1_1;
-          const auto jy_local_1_2 = jy_local_1_1 - Qdydt * Wy_1_2;
-          const auto jy_local_1_3 = jy_local_1_2 - Qdydt * Wy_1_3;
+          const auto jy_1_0 = -Qdydt * Wy_1_0;
+          const auto jy_1_1 = jy_1_0 - Qdydt * Wy_1_1;
+          const auto jy_1_2 = jy_1_1 - Qdydt * Wy_1_2;
+          const auto jy_1_3 = jy_1_2 - Qdydt * Wy_1_3;
 
-          const auto jy_local_2_0 = -Qdydt * Wy_2_0;
-          const auto jy_local_2_1 = jy_local_2_0 - Qdydt * Wy_2_1;
-          const auto jy_local_2_2 = jy_local_2_1 - Qdydt * Wy_2_2;
-          const auto jy_local_2_3 = jy_local_2_2 - Qdydt * Wy_2_3;
+          const auto jy_2_0 = -Qdydt * Wy_2_0;
+          const auto jy_2_1 = jy_2_0 - Qdydt * Wy_2_1;
+          const auto jy_2_2 = jy_2_1 - Qdydt * Wy_2_2;
+          const auto jy_2_3 = jy_2_2 - Qdydt * Wy_2_3;
 
-          const auto jy_local_3_0 = -Qdydt * Wy_3_0;
-          const auto jy_local_3_1 = jy_local_3_0 - Qdydt * Wy_3_1;
-          const auto jy_local_3_2 = jy_local_3_1 - Qdydt * Wy_3_2;
-          const auto jy_local_3_3 = jy_local_3_2 - Qdydt * Wy_3_3;
+          const auto jy_3_0 = -Qdydt * Wy_3_0;
+          const auto jy_3_1 = jy_3_0 - Qdydt * Wy_3_1;
+          const auto jy_3_2 = jy_3_1 - Qdydt * Wy_3_2;
+          const auto jy_3_3 = jy_3_2 - Qdydt * Wy_3_3;
 
           /*
             Current update
@@ -709,48 +704,48 @@ namespace kernel {
           /*
               x - component
           */
-          J_acc(ix_min, iy_min, cur::jx1)     += jx_local_0_0;
-          J_acc(ix_min, iy_min + 1, cur::jx1) += jx_local_0_1;
-          J_acc(ix_min, iy_min + 2, cur::jx1) += jx_local_0_2;
-          J_acc(ix_min, iy_min + 3, cur::jx1) += jx_local_0_3;
-          
-          J_acc(ix_min + 1, iy_min, cur::jx1)     += jx_local_1_0;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx1) += jx_local_1_1;
-          J_acc(ix_min + 1, iy_min + 2, cur::jx1) += jx_local_1_2;
-          J_acc(ix_min + 1, iy_min + 3, cur::jx1) += jx_local_1_3;
-          
-          J_acc(ix_min + 2, iy_min, cur::jx1)     += jx_local_2_0;
-          J_acc(ix_min + 2, iy_min + 1, cur::jx1) += jx_local_2_1;
-          J_acc(ix_min + 2, iy_min + 2, cur::jx1) += jx_local_2_2;
-          J_acc(ix_min + 2, iy_min + 3, cur::jx1) += jx_local_2_3;
-          
-          J_acc(ix_min + 3, iy_min, cur::jx1)     += jx_local_3_0;
-          J_acc(ix_min + 3, iy_min + 1, cur::jx1) += jx_local_3_1;
-          J_acc(ix_min + 3, iy_min + 2, cur::jx1) += jx_local_3_2;
-          J_acc(ix_min + 3, iy_min + 3, cur::jx1) += jx_local_3_3;
+          J_acc(ix_min, iy_min, cur::jx1)     += jx_0_0;
+          J_acc(ix_min, iy_min + 1, cur::jx1) += jx_0_1;
+          J_acc(ix_min, iy_min + 2, cur::jx1) += jx_0_2;
+          J_acc(ix_min, iy_min + 3, cur::jx1) += update_y2 * jx_0_3;
+
+          J_acc(ix_min + 1, iy_min, cur::jx1)     += jx_1_0;
+          J_acc(ix_min + 1, iy_min + 1, cur::jx1) += jx_1_1;
+          J_acc(ix_min + 1, iy_min + 2, cur::jx1) += jx_1_2;
+          J_acc(ix_min + 1, iy_min + 3, cur::jx1) += update_y2 * jx_1_3;
+
+          J_acc(ix_min + 2, iy_min, cur::jx1)     += update_x2 * jx_2_0;
+          J_acc(ix_min + 2, iy_min + 1, cur::jx1) += update_x2 * jx_2_1;
+          J_acc(ix_min + 2, iy_min + 2, cur::jx1) += update_x2 * jx_2_2;
+          J_acc(ix_min + 2, iy_min + 3, cur::jx1) += update_x2 * update_y2 * jx_2_3;
+
+          // J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x3 * jx_3_0;
+          // J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x3 * jx_3_1;
+          // J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x3 * jx_3_2;
+          // J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x3 * jx_3_3;
 
           /*
               y - component
           */
-          J_acc(ix_min, iy_min, cur::jx2)     += jy_local_0_0;
-          J_acc(ix_min, iy_min + 1, cur::jx2) += jy_local_0_1;
-          J_acc(ix_min, iy_min + 2, cur::jx2) += jy_local_0_2;
-          J_acc(ix_min, iy_min + 3, cur::jx2) += jy_local_0_3;
+          J_acc(ix_min, iy_min, cur::jx2)     += jy_0_0;
+          J_acc(ix_min + 1, iy_min, cur::jx2) += jy_1_0;
+          J_acc(ix_min + 2, iy_min, cur::jx2) += jy_2_0;
+          J_acc(ix_min + 3, iy_min, cur::jx2) += update_x2 * jy_3_0;
 
-          J_acc(ix_min + 1, iy_min, cur::jx2)     += jy_local_1_0;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx2) += jy_local_1_1;
-          J_acc(ix_min + 1, iy_min + 2, cur::jx2) += jy_local_1_2;
-          J_acc(ix_min + 1, iy_min + 3, cur::jx2) += jy_local_1_3;
+          J_acc(ix_min, iy_min + 1, cur::jx2)     += jy_0_1;
+          J_acc(ix_min + 1, iy_min + 1, cur::jx2) += jy_1_1;
+          J_acc(ix_min + 2, iy_min + 1, cur::jx2) += jy_2_1;
+          J_acc(ix_min + 3, iy_min + 1, cur::jx2) += update_x2 * jy_3_1;
 
-          J_acc(ix_min + 2, iy_min, cur::jx2)     += jy_local_2_0;
-          J_acc(ix_min + 2, iy_min + 1, cur::jx2) += jy_local_2_1;
-          J_acc(ix_min + 2, iy_min + 2, cur::jx2) += jy_local_2_2;
-          J_acc(ix_min + 2, iy_min + 3, cur::jx2) += jy_local_2_3;
+          J_acc(ix_min, iy_min + 2, cur::jx2)     += update_y2 * jy_0_2;
+          J_acc(ix_min + 1, iy_min + 2, cur::jx2) += update_y2 * jy_1_2;
+          J_acc(ix_min + 2, iy_min + 2, cur::jx2) += update_y2 * jy_2_2;
+          J_acc(ix_min + 3, iy_min + 2, cur::jx2) += update_y2 * update_x2 * jy_3_2;
 
-          J_acc(ix_min + 3, iy_min, cur::jx2)     += jy_local_3_0;
-          J_acc(ix_min + 3, iy_min + 1, cur::jx2) += jy_local_3_1;
-          J_acc(ix_min + 3, iy_min + 2, cur::jx2) += jy_local_3_2;
-          J_acc(ix_min + 3, iy_min + 3, cur::jx2) += jy_local_3_3;
+          // J_acc(ix_min, iy_min + 3, cur::jx2)     += update_y3 * jy_0_3;
+          // J_acc(ix_min + 1, iy_min + 3, cur::jx2) += update_y3 * jy_1_3;
+          // J_acc(ix_min + 2, iy_min + 3, cur::jx2) += update_y3 * jy_2_3;
+          // J_acc(ix_min + 3, iy_min + 3, cur::jx2) += update_x3 * jy_3_3;
 
           /*
               z - component, simulated direction
@@ -758,22 +753,22 @@ namespace kernel {
           J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
           J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
           J_acc(ix_min, iy_min + 2, cur::jx3) += QVz * Wz_0_2;
-          J_acc(ix_min, iy_min + 3, cur::jx3) += QVz * Wz_0_3;
+          J_acc(ix_min, iy_min + 3, cur::jx3) += update_y2 * QVz * Wz_0_3;
 
           J_acc(ix_min + 1, iy_min, cur::jx3)     += QVz * Wz_1_0;
           J_acc(ix_min + 1, iy_min + 1, cur::jx3) += QVz * Wz_1_1;
           J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
-          J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
+          J_acc(ix_min + 1, iy_min + 3, cur::jx3) += update_y2 * QVz * Wz_1_3;
 
           J_acc(ix_min + 2, iy_min, cur::jx3)     += QVz * Wz_2_0;
           J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
           J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
-          J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
+          J_acc(ix_min + 2, iy_min + 3, cur::jx3) += update_y2 * QVz * Wz_2_3;
 
-          J_acc(ix_min + 3, iy_min, cur::jx3)     += QVz * Wz_3_0;
-          J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
-          J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
-          J_acc(ix_min + 3, iy_min + 3, cur::jx3) += QVz * Wz_3_3;
+          J_acc(ix_min + 3, iy_min, cur::jx3)     += update_x2 * QVz * Wz_3_0;
+          J_acc(ix_min + 3, iy_min + 1, cur::jx3) += update_x2 * QVz * Wz_3_1;
+          J_acc(ix_min + 3, iy_min + 2, cur::jx3) += update_x2 * QVz * Wz_3_2;
+          J_acc(ix_min + 3, iy_min + 3, cur::jx3) += update_x2 * update_y2 * QVz * Wz_3_3;
 
         } else if constexpr (D == Dim::_3D) {
           // /*
