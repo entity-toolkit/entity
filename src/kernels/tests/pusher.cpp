@@ -158,43 +158,36 @@ void testPusher(const std::vector<std::size_t>& res) {
     const real_t time = t * dt;
 
     // clang-format off
-    Kokkos::parallel_for(
-      "pusher",
-      CreateRangePolicy<Dim::_1D>({0}, {1}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     false, false, kernel::sr::Cooling::None,
-                                                     emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     ZERO, ZERO, ZERO));
+    auto pusher_params = kernel::sr::PusherParams<Minkowski<Dim::_3D>>(
+                                                  PrtlPusher::BORIS,
+                                                  kernel::sr::DisableGCA, kernel::sr::DisableExtForce, 
+                                                  kernel::sr::Cooling::None,
+                                                  emfield,
+                                                  sp,
+                                                  i1, i2, i3,
+                                                  i1_prev, i2_prev, i3_prev,
+                                                  dx1, dx2, dx3,
+                                                  dx1_prev, dx2_prev, dx3_prev,
+                                                  ux1, ux2, ux3,
+                                                  phi, tag,
+                                                  metric,
+                                                  ZERO, coeff, dt,
+                                                  nx1, nx2, nx3,
+                                                  boundaries,
+                                                  ZERO, ZERO, ZERO);
+    // clang-format on
 
     Kokkos::parallel_for(
       "pusher",
-      CreateRangePolicy<Dim::_1D>({1}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::VAY,
-                                                     false, false, kernel::sr::Cooling::None,
-                                                     emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     ZERO, ZERO, ZERO));
+      CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params));
+
+    pusher_params.pusher = PrtlPusher::VAY;
+
+    Kokkos::parallel_for(
+      "pusher",
+      CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
@@ -252,7 +245,6 @@ void testPusher(const std::vector<std::size_t>& res) {
     check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
     check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
     check_value(t, ux3_(1), ux3_expect, eps, "Particle #2 ux3");
-
   }
 }
 

@@ -49,9 +49,6 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
                     const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   errorIf(M::CoordType != Coord::Cart, "M::CoordType != Coord::Cart");
-  // aliases
-  const auto NoGCA      = false;
-  const auto NoExtForce = false;
 
   boundaries_t<real_t> extent;
   extent        = ext;
@@ -211,10 +208,10 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
 
   for (auto n { 0 }; n < n_iter; ++n) {
     // clang-format off
-    Kokkos::parallel_for(
-      "pusher", CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M>(PrtlPusher::BORIS,
-                                   NoGCA, NoExtForce, kernel::sr::Cooling::None,
+    const auto pusher_params = kernel::sr::PusherParams<M>(
+                                   PrtlPusher::BORIS,
+                                   kernel::sr::DisableGCA, kernel::sr::DisableExtForce, 
+                                   kernel::sr::Cooling::None,
                                    emfield,
                                    sp_idx,
                                    i1, i2, i3,
@@ -227,8 +224,11 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
                                    time, coeff, dt,
                                    nx1, nx2, nx3,
                                    boundaries,
-                                   ZERO, ZERO, ZERO));
+                                   ZERO, ZERO, ZERO);
     // clang-format on
+    Kokkos::parallel_for("pusher",
+                         CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
+                         kernel::sr::Pusher_kernel<M>(pusher_params));
     auto i1_  = Kokkos::create_mirror_view(i1);
     auto i2_  = Kokkos::create_mirror_view(i2);
     auto i3_  = Kokkos::create_mirror_view(i3);
