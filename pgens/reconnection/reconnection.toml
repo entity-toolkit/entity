@@ -11,8 +11,8 @@
     metric = "minkowski"
 
   [grid.boundaries]
-    fields    = [["MATCH", "MATCH"], ["MATCH", "MATCH"], ["PERIODIC"]]
-    particles = [["ABSORB", "ABSORB"], ["ABSORB", "ABSORB"], ["PERIODIC"]]
+    fields    = [["PERIODIC"], ["MATCH", "MATCH"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["ABSORB", "ABSORB"], ["PERIODIC"]]
 
 [scales]
   larmor0    = 2e-4
