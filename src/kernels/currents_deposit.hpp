@@ -92,7 +92,7 @@ namespace kernel {
       const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
 
       // find indices and define shape function
-      if (shift_i > 0) {
+      if (shift_i == 1) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -110,7 +110,7 @@ namespace kernel {
         S1_1 = HALF * SQR(HALF + di_center);
         S1_2 = static_cast<real_t>(0.75) - SQR(di_center);
         S1_3 = HALF * SQR(HALF - di_center);
-      } else if (shift_i < 0) {
+      } else if (shift_i == -1) {
         /*
             (-1)    0      1      2      3
           ___________________________________
@@ -128,6 +128,7 @@ namespace kernel {
         S1_1 = static_cast<real_t>(0.75) - SQR(di_center);
         S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
+
       } else if (shift_i == 0) {
         /*
             (-1)    0      1      2      3
