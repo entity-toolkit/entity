@@ -189,8 +189,8 @@ namespace kernel::sr {
    */
   template <class M, class F = NoForce_t>
   struct Pusher_kernel {
-using team_policy = Kokkos::TeamPolicy<>;
-using member_type = team_policy::member_type;
+    using team_policy = Kokkos::TeamPolicy<>;
+    using member_type = team_policy::member_type;
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D        = M::Dim;
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
@@ -201,6 +201,7 @@ using member_type = team_policy::member_type;
     const bool             ext_force;
     const CoolingTags      cooling;
 
+    int   num_particles;
     const randacc_ndfield_t<D, 6> EB;
     const spidx_t                 sp;
     array_t<int*>                 i1, i2, i3;
@@ -236,6 +237,7 @@ using member_type = team_policy::member_type;
                   bool                           ext_force,
                   CoolingTags                    cooling,
                   const randacc_ndfield_t<D, 6>& EB,
+                  int                            num_particles,
                   spidx_t                        sp,
                   array_t<int*>&                 i1,
                   array_t<int*>&                 i2,
@@ -270,6 +272,7 @@ using member_type = team_policy::member_type;
       , GCA { GCA }
       , ext_force { ext_force }
       , cooling { cooling }
+      , num_particles { num_particles }
       , EB { EB }
       , sp { sp }
       , i1 { i1 }
@@ -340,6 +343,7 @@ using member_type = team_policy::member_type;
                   bool                        ext_force,
                   CoolingTags                 cooling,
                   const ndfield_t<D, 6>&      EB,
+                  int                        num_particles,
                   spidx_t                     sp,
                   array_t<int*>&              i1,
                   array_t<int*>&              i2,
@@ -374,6 +378,7 @@ using member_type = team_policy::member_type;
                       ext_force,
                       cooling,
                       EB,
+                      num_particles,
                       sp,
                       i1,
                       i2,
@@ -460,6 +465,9 @@ using member_type = team_policy::member_type;
       const auto i { team_member.league_rank() };
       const auto p { i * team_member.team_size() + team_member.team_rank() };
 
+      if (p >= num_particles) {
+        return;
+      }
 
       if (tag(p) != ParticleTag::alive) {
         if (tag(p) != ParticleTag::dead) {
@@ -577,36 +585,88 @@ using member_type = team_policy::member_type;
             ? (dt / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
             : (dt / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
         };
-        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-          i1_prev(p)  = i1(p);
-          dx1_prev(p) = dx1(p);
-          dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux1(p)) *
-                    dt_inv_energy;
-          i1(p) += static_cast<int>(dx1(p) >= ONE) -
-                   static_cast<int>(dx1(p) < ZERO);
-          dx1(p) -= (dx1(p) >= ONE);
-          dx1(p) += (dx1(p) < ZERO);
-        }
-        if constexpr (D == Dim::_2D || D == Dim::_3D) {
-          i2_prev(p)  = i2(p);
-          dx2_prev(p) = dx2(p);
-          dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux2(p)) *
-                    dt_inv_energy;
-          i2(p) += static_cast<int>(dx2(p) >= ONE) -
-                   static_cast<int>(dx2(p) < ZERO);
-          dx2(p) -= (dx2(p) >= ONE);
-          dx2(p) += (dx2(p) < ZERO);
-        }
-        if constexpr (D == Dim::_3D) {
-          i3_prev(p)  = i3(p);
-          dx3_prev(p) = dx3(p);
-          dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux3(p)) *
-                    dt_inv_energy;
-          i3(p) += static_cast<int>(dx3(p) >= ONE) -
-                   static_cast<int>(dx3(p) < ZERO);
-          dx3(p) -= (dx3(p) >= ONE);
-          dx3(p) += (dx3(p) < ZERO);
-        }
+
+if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+  const auto ux = ux1(p);
+  auto dx = dx1(p);
+  const auto i = i1(p);
+
+  i1_prev(p) = i;
+  dx1_prev(p) = dx;
+
+  dx += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux) * dt_inv_energy;
+
+  const bool over = dx >= ONE;
+  const bool under = dx < ZERO;
+
+  i1(p) = i + static_cast<int>(over) - static_cast<int>(under);
+  dx1(p) = dx + static_cast<real_t>(under) - static_cast<real_t>(over);
+}
+
+if constexpr (D == Dim::_2D || D == Dim::_3D) {
+  const auto ux = ux2(p);
+  auto dx = dx2(p);
+  const auto i = i2(p);
+
+  i2_prev(p) = i;
+  dx2_prev(p) = dx;
+
+  dx += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux) * dt_inv_energy;
+
+  const bool over = dx >= ONE;
+  const bool under = dx < ZERO;
+
+  i2(p) = i + static_cast<int>(over) - static_cast<int>(under);
+  dx2(p) = dx + static_cast<real_t>(under) - static_cast<real_t>(over);
+}
+
+if constexpr (D == Dim::_3D) {
+  const auto ux = ux3(p);
+  auto dx = dx3(p);
+  const auto i = i3(p);
+
+  i3_prev(p) = i;
+  dx3_prev(p) = dx;
+
+  dx += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux) * dt_inv_energy;
+
+  const bool over = dx >= ONE;
+  const bool under = dx < ZERO;
+
+  i3(p) = i + static_cast<int>(over) - static_cast<int>(under);
+  dx3(p) = dx + static_cast<real_t>(under) - static_cast<real_t>(over);
+}
+
+        // if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+        //   i1_prev(p)  = i1(p);
+        //   dx1_prev(p) = dx1(p);
+        //   dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux1(p)) *
+        //             dt_inv_energy;
+        //   i1(p) += static_cast<int>(dx1(p) >= ONE) -
+        //            static_cast<int>(dx1(p) < ZERO);
+        //   dx1(p) -= (dx1(p) >= ONE);
+        //   dx1(p) += (dx1(p) < ZERO);
+        // }
+        // if constexpr (D == Dim::_2D || D == Dim::_3D) {
+        //   i2_prev(p)  = i2(p);
+        //   dx2_prev(p) = dx2(p);
+        //   dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux2(p)) *
+        //             dt_inv_energy;
+        //   i2(p) += static_cast<int>(dx2(p) >= ONE) -
+        //            static_cast<int>(dx2(p) < ZERO);
+        //   dx2(p) -= (dx2(p) >= ONE);
+        //   dx2(p) += (dx2(p) < ZERO);
+        // }
+        // if constexpr (D == Dim::_3D) {
+        //   i3_prev(p)  = i3(p);
+        //   dx3_prev(p) = dx3(p);
+        //   dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux3(p)) *
+        //             dt_inv_energy;
+        //   i3(p) += static_cast<int>(dx3(p) >= ONE) -
+        //            static_cast<int>(dx3(p) < ZERO);
+        //   dx3(p) -= (dx3(p) >= ONE);
+        //   dx3(p) += (dx3(p) < ZERO);
+        // }
       } else {
         // full Cartesian coordinate push in non-Cartesian basis
         const real_t inv_energy {

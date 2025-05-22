@@ -124,9 +124,10 @@ namespace out {
                                Kokkos::LayoutRight>::value) {
       m_io.DefineAttribute("LayoutRight", 1);
     } else {
-      std::reverse(m_flds_g_shape_dwn.begin(), m_flds_g_shape_dwn.end());
-      std::reverse(m_flds_l_corner_dwn.begin(), m_flds_l_corner_dwn.end());
-      std::reverse(m_flds_l_shape_dwn.begin(), m_flds_l_shape_dwn.end());
+      // Todo: For GPU-buffer write this needs to be avoided, otherwise output not correct (#FRONTIER)
+      // std::reverse(m_flds_g_shape_dwn.begin(), m_flds_g_shape_dwn.end());
+      // std::reverse(m_flds_l_corner_dwn.begin(), m_flds_l_corner_dwn.end());
+      // std::reverse(m_flds_l_shape_dwn.begin(), m_flds_l_shape_dwn.end());
       m_io.DefineAttribute("LayoutRight", 0);
     }
   }
@@ -319,6 +320,7 @@ namespace out {
           });
       }
     }
+    // Todo: Remove CPU staging for direct device access (#FRONTIER)
     // auto output_field_h = Kokkos::create_mirror_view(output_field);
     // Kokkos::deep_copy(output_field_h, output_field);
     writer.Put(var, output_field, adios2::Mode::Sync);
@@ -354,6 +356,7 @@ namespace out {
     var.SetShape({ glob_total });
     var.SetSelection(
       adios2::Box<adios2::Dims>({ loc_offset }, { array.extent(0) }));
+    // Todo: Remove CPU staging for direct device access (#FRONTIER)
     // auto array_h = Kokkos::create_mirror_view(array);
     // Kokkos::deep_copy(array_h, array);
     m_writer.Put<real_t>(var, array, adios2::Mode::Sync);

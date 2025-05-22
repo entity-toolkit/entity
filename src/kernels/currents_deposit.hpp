@@ -44,12 +44,14 @@ using member_type = team_policy::member_type;
     const array_t<short*>    tag;
     const M                  metric;
     const real_t             charge, inv_dt;
+    int               num_particles;
 
   public:
     /**
      * @brief explicit constructor.
      */
-    DepositCurrents_kernel(const scatter_ndfield_t<D, 3>& scatter_cur,
+    DepositCurrents_kernel(int num_particles,
+      const scatter_ndfield_t<D, 3>& scatter_cur,
                            const array_t<int*>&           i1,
                            const array_t<int*>&           i2,
                            const array_t<int*>&           i3,
@@ -72,6 +74,7 @@ using member_type = team_policy::member_type;
                            real_t                         charge,
                            real_t                         dt)
       : J { scatter_cur }
+      , num_particles { num_particles }
       , i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
@@ -103,10 +106,12 @@ using member_type = team_policy::member_type;
       const auto i { team_member.league_rank() };
       const auto p { i * team_member.team_size() + team_member.team_rank() };
 
-      if (tag(p) == ParticleTag::dead) {
+      // Todo: Essential to avoid runtime errors with teams (#FRONTIER)
+      if (p >= num_particles) {
         return;
       }
 
+      // Todo: Load particle data to cache to decrease memory bandwidth (#FRONTIER)
       const auto i1_val { i1(p) };
       const auto i1_prev_val { i1_prev(p) };
       const auto dx1_val { dx1(p) };
@@ -122,6 +127,11 @@ using member_type = team_policy::member_type;
       const auto dx3_val { dx3(p) };
       const auto dx3_prev_val { dx3_prev(p) };
       const auto ux3_val { ux3(p) };
+      const auto tag_val { tag(p) };
+
+      if (tag_val == ParticleTag::dead) {
+        return;
+      }
 
       // recover particle velocity to deposit in unsimulated direction
       vec_t<Dim::_3D> vp { ZERO };
@@ -164,6 +174,7 @@ using member_type = team_policy::member_type;
         vp[2] *= inv_energy;
       }
 
+      // Todo: Co-pilot re-wrote this (also scatter access), might need triple check for correctness (#FRONTIER)
       const real_t coeff { weight(p) * charge };
 
       const auto dxp_r_1 { static_cast<prtldx_t>(i1_val == i1_prev_val) *

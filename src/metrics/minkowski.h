@@ -54,6 +54,7 @@ namespace metric {
       , dx { (x1_max - x1_min) / nx1 }
       , dx_inv { ONE / dx } {
       set_dxMin(find_dxMin());
+      // Todo: This check can error out for high resolutions, adapted according to Sasha C suggestion (#FRONTIER)
  const auto epsilon = std::numeric_limits<real_t>::epsilon() *
                          static_cast<real_t>(100.0);
       

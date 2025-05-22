@@ -55,6 +55,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace ntt {
   template <SimEngine::type S, class M>
@@ -65,41 +66,44 @@ namespace ntt {
     Mesh<M>                                 mesh;
     Fields<D, S>                            fields;
     std::vector<Particles<D, M::CoordType>> species;
-    random_number_pool_t                    random_pool;
+    // Todo: This is new to avoid random number generation on each meshblock (#FRONTIER)
+    std::optional<random_number_pool_t> random_pool;
 
-    /**
-     * @brief constructor for "empty" allocation of non-local domain placeholders
-     */
-    Domain(bool,
-           unsigned int                         index,
-           const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<ncells_t>&         offset_ncells,
-           const std::vector<ncells_t>&         ncells,
-           const boundaries_t<real_t>&          extent,
-           const std::map<std::string, real_t>& metric_params,
-           const std::vector<ParticleSpecies>&)
-      : mesh { ncells, extent, metric_params }
-      , fields {}
-      , species {}
-      , random_pool { constant::RandomSeed }
-      , m_index { index }
-      , m_offset_ndomains { offset_ndomains }
-      , m_offset_ncells { offset_ncells } {}
+// "Placeholder" constructor — does not initialize the pool
+Domain(bool,
+       unsigned int                         index,
+       const std::vector<unsigned int>&     offset_ndomains,
+       const std::vector<ncells_t>&         offset_ncells,
+       const std::vector<ncells_t>&         ncells,
+       const boundaries_t<real_t>&          extent,
+       const std::map<std::string, real_t>& metric_params,
+       const std::vector<ParticleSpecies>&)
+  : mesh { ncells, extent, metric_params }
+  , fields {}
+  , species {}
+  , m_index { index }
+  , m_offset_ndomains { offset_ndomains }
+  , m_offset_ncells { offset_ncells } {
+    // random_pool remains uninitialized (std::nullopt)
+}
 
-    Domain(unsigned int                         index,
-           const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<ncells_t>&         offset_ncells,
-           const std::vector<ncells_t>&         ncells,
-           const boundaries_t<real_t>&          extent,
-           const std::map<std::string, real_t>& metric_params,
-           const std::vector<ParticleSpecies>&  species_params)
-      : mesh { ncells, extent, metric_params }
-      , fields { ncells }
-      , species { species_params.begin(), species_params.end() }
-      , random_pool { constant::RandomSeed + static_cast<std::uint64_t>(index) }
-      , m_index { index }
-      , m_offset_ndomains { offset_ndomains }
-      , m_offset_ncells { offset_ncells } {}
+// "Alive" constructor — initializes the pool
+Domain(unsigned int                         index,
+       const std::vector<unsigned int>&     offset_ndomains,
+       const std::vector<ncells_t>&         offset_ncells,
+       const std::vector<ncells_t>&         ncells,
+       const boundaries_t<real_t>&          extent,
+       const std::map<std::string, real_t>& metric_params,
+       const std::vector<ParticleSpecies>&  species_params)
+  : mesh { ncells, extent, metric_params }
+  , fields { ncells }
+  , species { species_params.begin(), species_params.end() }
+  , m_index { index }
+  , m_offset_ndomains { offset_ndomains }
+  , m_offset_ncells { offset_ncells } {
+    // Todo: Random number initialization went here (#FRONTIER)
+    random_pool.emplace(constant::RandomSeed + static_cast<std::uint64_t>(index));
+}
 
 #if defined(MPI_ENABLED)
     [[nodiscard]]

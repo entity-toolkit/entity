@@ -269,12 +269,14 @@ namespace ntt {
 
     adios2::IO io = ptr_adios->DeclareIO("Entity::CheckpointRead");
     io.SetEngine("BPFile");
+    // Todo: Make sure each GPU reads its individual sub-file in BP5 (#FRONTIER)
+    io.SetParameter("AggregatorRatio", "1");
+
 #if !defined(MPI_ENABLED)
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
 #else
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
-#endif
-
+#endif    
     reader.BeginStep();
     for (auto& ldidx : l_subdomain_indices()) {
       auto&                     domain = g_subdomains[ldidx];

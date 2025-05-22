@@ -349,6 +349,7 @@ namespace ntt {
         // clang-format off
         if (not has_atmosphere and not has_extforce) {
 
+        // Todo: Frontier-specific team policies -- need checking and optimization (#FRONTIER)
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
         int team_size = 32;
@@ -361,6 +362,7 @@ namespace ntt {
                 pusher, has_gca, false,
                 cooling_tags,
                 domain.fields.em,
+                num_particles,
                 species.index(),
                 species.i1,        species.i2,       species.i3,
                 species.i1_prev,   species.i2_prev,  species.i3_prev,
@@ -384,6 +386,7 @@ namespace ntt {
               ds
             };
 
+        // Todo: Frontier-specific team policies -- need checking and optimization (#FRONTIER)
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
         int team_size = 32;
@@ -396,6 +399,7 @@ namespace ntt {
                 pusher, has_gca, false,
                 cooling_tags,
                 domain.fields.em,
+                num_particles,
                 species.index(),
                 species.i1,        species.i2,       species.i3,
                 species.i1_prev,   species.i2_prev,  species.i3_prev,
@@ -419,6 +423,7 @@ namespace ntt {
                 m_pgen.ext_force
               };
 
+        // Todo: Frontier-specific team policies -- need checking and optimization (#FRONTIER)
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
         int team_size = 32;
@@ -431,6 +436,7 @@ namespace ntt {
                   pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
+                  num_particles,
                   species.index(),
                   species.i1,        species.i2,       species.i3,
                   species.i1_prev,   species.i2_prev,  species.i3_prev,
@@ -457,6 +463,7 @@ namespace ntt {
                 m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
               };
 
+        // Todo: Frontier-specific team policies -- need checking and optimization (#FRONTIER)
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
         int team_size = 32;
@@ -469,6 +476,7 @@ namespace ntt {
                   pusher, has_gca, true,
                   cooling_tags,
                   domain.fields.em,
+                  num_particles,
                   species.index(),
                   species.i1,        species.i2,       species.i3,
                   species.i1_prev,   species.i2_prev,  species.i3_prev,
@@ -517,6 +525,7 @@ namespace ntt {
                       (double)species.charge()),
           HERE);
 
+        // Todo: Frontier-specific team policies -- need checking and optimization (#FRONTIER)
         auto range = species.rangeActiveParticles();
         int num_particles = range.end() - range.begin(); 
         int team_size = 32;
@@ -525,6 +534,7 @@ namespace ntt {
         Kokkos::parallel_for("CurrentsDeposit",
                              Kokkos::TeamPolicy<>(league_size, team_size),
                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
+                               num_particles,
                                scatter_cur,
                                species.i1,
                                species.i2,
@@ -1286,7 +1296,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
@@ -1304,7 +1314,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
@@ -1324,7 +1334,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
@@ -1342,7 +1352,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
@@ -1362,7 +1372,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,
@@ -1380,7 +1390,7 @@ namespace ntt {
               x_surf,
               ds,
               temp,
-              domain.random_pool,
+              *domain.random_pool,
               species
             };
           arch::InjectNonUniform<S, M, decltype(atm_injector)>(m_params,

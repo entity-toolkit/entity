@@ -31,9 +31,10 @@ namespace checkpoint {
     if (field_var) {
       field_var.SetSelection(range);
 
-      auto array_h = Kokkos::create_mirror_view(array);
-      reader.Get(field_var, array_h.data(), adios2::Mode::Sync);
-      Kokkos::deep_copy(array, array_h);
+      // Todo: Remove CPU staging for direct device access (#FRONTIER)
+      // auto array_h = Kokkos::create_mirror_view(array);
+      reader.Get(field_var, array.data(), adios2::Mode::Sync);
+      // Kokkos::deep_copy(array, array_h);
     } else {
       raise::Error(fmt::format("Field variable: %s not found", field.c_str()),
                    HERE);
@@ -97,10 +98,11 @@ namespace checkpoint {
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { count }));
       const auto slice   = range_tuple_t(0, count);
-      auto       array_h = Kokkos::create_mirror_view(array);
-      reader.Get(var, Kokkos::subview(array_h, slice).data(), adios2::Mode::Sync);
-      Kokkos::deep_copy(Kokkos::subview(array, slice),
-                        Kokkos::subview(array_h, slice));
+      // Todo: Remove CPU staging for direct device access (#FRONTIER)
+      // auto       array_h = Kokkos::create_mirror_view(array);
+      reader.Get(var, Kokkos::subview(array, slice).data(), adios2::Mode::Sync);
+      // Kokkos::deep_copy(Kokkos::subview(array, slice),
+                        // Kokkos::subview(array_h, slice));
     } else {
       raise::Error(
         fmt::format("Variable: s%d_%s not found", s + 1, quantity.c_str()),
@@ -120,11 +122,12 @@ namespace checkpoint {
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ offset, 0 }, { count, nplds }));
       const auto slice   = range_tuple_t(0, count);
-      auto       array_h = Kokkos::create_mirror_view(array);
+      // Todo: Remove CPU staging for direct device access (#FRONTIER)
+      // auto       array_h = Kokkos::create_mirror_view(array);
       reader.Get(var,
-                 Kokkos::subview(array_h, slice, range_tuple_t(0, nplds)).data(),
+                 Kokkos::subview(array, slice, range_tuple_t(0, nplds)).data(),
                  adios2::Mode::Sync);
-      Kokkos::deep_copy(array, array_h);
+      // Kokkos::deep_copy(array, array_h);
     } else {
       raise::Error(fmt::format("Variable: s%d_plds not found", s + 1), HERE);
     }
