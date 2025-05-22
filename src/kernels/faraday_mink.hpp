@@ -70,13 +70,15 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
-        const auto alphax = ONE - THREE * deltax;  
+        const auto alphax = ONE - THREE * deltax;
+        // clang-format off
         EB(i1, em::bx2) += coeff1 * (
-                        + alphax * (EB(i1 + 1, em::ex3)     - EB(i1    , em::ex3))
-                        + deltax * (EB(i1 + 2, em::ex3)     - EB(i1 - 1, em::ex3)));
+                        + alphax * (EB(i1 + 1, em::ex3) - EB(i1    , em::ex3))
+                        + deltax * (EB(i1 + 2, em::ex3) - EB(i1 - 1, em::ex3)));
         EB(i1, em::bx3) += coeff1 * (
-                        - alphax * (EB(i1 + 1, em::ex2)     - EB(i1    , em::ex2))
-                        - deltax * (EB(i1 + 2, em::ex2)     - EB(i1 - 1, em::ex2)));
+                        - alphax * (EB(i1 + 1, em::ex2) - EB(i1    , em::ex2))
+                        - deltax * (EB(i1 + 2, em::ex2) - EB(i1 - 1, em::ex2)));
+        // clang-format on
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 1D implementation called for D != 1");
       }
@@ -86,7 +88,7 @@ namespace kernel::mink {
       if constexpr (D == Dim::_2D) {
         const auto alphax = ONE - TWO * betaxy - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - THREE * deltay;
-
+        // clang-format off
         EB(i1, i2, em::bx1) += coeff1 * (
                             - alphay * (EB(i1    , i2 + 1, em::ex3) - EB(i1    , i2    , em::ex3))
                             - deltay * (EB(i1    , i2 + 2, em::ex3) - EB(i1    , i2 - 1, em::ex3))
@@ -106,7 +108,7 @@ namespace kernel::mink {
                             - deltax * (EB(i1 + 2, i2    , em::ex2) - EB(i1 - 1, i2    , em::ex2))
                             - betaxy * (EB(i1 + 1, i2 + 1, em::ex2) - EB(i1    , i2 + 1, em::ex2))
                             - betaxy * (EB(i1 + 1, i2 - 1, em::ex2) - EB(i1    , i2 - 1, em::ex2)));
-
+        // clang-format on
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }
@@ -117,7 +119,7 @@ namespace kernel::mink {
         const auto alphax = ONE - TWO * betaxy - TWO * betaxz - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - TWO * betayz - THREE * deltay;
         const auto alphaz = ONE - TWO * betazx - TWO * betazy - THREE * deltaz;
-
+        // clang-format off
         EB(i1, i2, i3, em::bx1) += coeff1 * (
                         + alphaz * (EB(i1    , i2    , i3 + 1, em::ex2) - EB(i1    , i2    , i3    , em::ex2))
                         + deltaz * (EB(i1    , i2    , i3 + 2, em::ex2) - EB(i1    , i2    , i3 - 1, em::ex2))
@@ -157,6 +159,7 @@ namespace kernel::mink {
                         - betaxy * (EB(i1 + 1, i2 - 1, i3    , em::ex2) - EB(i1    , i2 - 1, i3    , em::ex2))
                         - betaxz * (EB(i1 + 1, i2    , i3 + 1, em::ex2) - EB(i1    , i2    , i3 + 1, em::ex2))
                         - betaxz * (EB(i1 + 1, i2    , i3 - 1, em::ex2) - EB(i1    , i2    , i3 - 1, em::ex2)));
+        // clang-format on
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 3D implementation called for D != 3");
       }
