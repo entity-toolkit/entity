@@ -418,6 +418,7 @@ namespace ntt {
     /* [algorithms.fieldsolver] --------------------------------------------- */
     set("algorithms.fieldsolver.enable",
         toml::find_or(toml_data, "algorithms", "fieldsolver", "enable", true));
+
     set("algorithms.fieldsolver.deltax",
         toml::find_or(toml_data,
                       "algorithms",

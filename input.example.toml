@@ -269,6 +269,21 @@
     #   @type: float: > 0
     gamma_rad = ""
 
+  [algorithms.fieldsolver]
+    # Yee - all 0.0 - default
+    # 1D
+    deltax = -0.065
+    # 2D
+    deltay = -0.065
+    betaxy = -0.065
+    betayx = -0.065
+    # 3D - not yet tested
+    deltaz = 0.0
+    betaxz = 0.0
+    betazx = 0.0
+    betayz = 0.0
+    betazy = 0.0
+
 [particles]
   # Fiducial number of particles per cell:
   #   @required

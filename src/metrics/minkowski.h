@@ -54,13 +54,15 @@ namespace metric {
       , dx { (x1_max - x1_min) / nx1 }
       , dx_inv { ONE / dx } {
       set_dxMin(find_dxMin());
+      const auto epsilon = std::numeric_limits<real_t>::epsilon() *
+                         static_cast<real_t>(100.0);
       if constexpr (D != Dim::_1D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx),
+        raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx, epsilon),
                        "dx2 must be equal to dx1 in 2D",
                        HERE);
       }
       if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx),
+        raise::ErrorIf(not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx, epsilon),
                        "dx3 must be equal to dx1 in 3D",
                        HERE);
       }

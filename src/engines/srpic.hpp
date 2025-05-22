@@ -203,7 +203,9 @@ namespace ntt {
           "algorithms.fieldsolver.betayz");
         const auto betazy = m_params.template get<real_t>(
           "algorithms.fieldsolver.betazy");
+
         real_t coeff1, coeff2;
+
         if constexpr (M::Dim == Dim::_2D) {
           coeff1 = dT / SQR(dx);
           coeff2 = dT;
