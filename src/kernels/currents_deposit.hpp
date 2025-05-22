@@ -87,8 +87,9 @@ namespace kernel {
       i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
 
       // center index of the shape function
-      const auto i_center_prev = static_cast<real_t>(1 - di_prev_less_half);
-      const auto i_center      = static_cast<real_t>(1 - di_less_half);
+      const auto di_center_prev = static_cast<real_t>(1 - di_prev_less_half) -
+                                  di_prev;
+      const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
 
       // find indices and define shape function
       if (shift_i > 0) {
@@ -100,15 +101,15 @@ namespace kernel {
         */
         update_i2 = ONE;
 
-        S0_0 = HALF * SQR(HALF + (i_center_prev - di_prev));
-        S0_1 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
-        S0_2 = HALF * SQR(HALF - (i_center_prev - di_prev));
+        S0_0 = HALF * SQR(HALF + di_center_prev);
+        S0_1 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_2 = HALF * SQR(HALF - di_center_prev);
         S0_3 = ZERO;
 
         S1_0 = ZERO;
-        S1_1 = HALF * SQR(HALF + (i_center - di));
-        S1_2 = static_cast<real_t>(0.75) - SQR(i_center - di);
-        S1_3 = HALF * SQR(HALF - (i_center - di));
+        S1_1 = HALF * SQR(HALF + di_center);
+        S1_2 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_3 = HALF * SQR(HALF - di_center);
       } else if (shift_i < 0) {
         /*
             (-1)    0      1      2      3
@@ -119,13 +120,13 @@ namespace kernel {
         update_i2 = ONE;
 
         S0_0 = ZERO;
-        S0_1 = HALF * SQR(HALF + (i_center_prev - di_prev));
-        S0_2 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
-        S0_3 = HALF * SQR(HALF - (i_center_prev - di_prev));
+        S0_1 = HALF * SQR(HALF + di_center_prev);
+        S0_2 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_3 = HALF * SQR(HALF - di_center_prev);
 
-        S1_0 = HALF * SQR(HALF + (i_center - di));
-        S1_1 = static_cast<real_t>(0.75) - SQR(i_center - di);
-        S1_2 = HALF * SQR(HALF - (i_center - di));
+        S1_0 = HALF * SQR(HALF + di_center);
+        S1_1 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
       } else if (shift_i == 0) {
         /*
@@ -136,14 +137,14 @@ namespace kernel {
         */
         update_i2 = ZERO;
 
-        S0_0 = HALF * SQR(HALF + (i_center_prev - di_prev));
-        S0_1 = static_cast<real_t>(0.75) - SQR(i_center_prev - di_prev);
-        S0_2 = HALF * SQR(HALF - (i_center_prev - di_prev));
+        S0_0 = HALF * SQR(HALF + di_center_prev);
+        S0_1 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_2 = HALF * SQR(HALF - di_center_prev);
         S0_3 = ZERO;
 
-        S1_0 = HALF * SQR(HALF + (i_center - di));
-        S1_1 = static_cast<real_t>(0.75) - SQR(i_center - di);
-        S1_2 = HALF * SQR(HALF - (i_center - di));
+        S1_0 = HALF * SQR(HALF + di_center);
+        S1_1 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
       } else {
         raise::Error("Invalid shift in indices", HERE);
@@ -579,25 +580,25 @@ namespace kernel {
           const auto Wx_3_3 = HALF * (S1x_3 - S0x_3) * (S0y_3 + S1y_3);
 
           // Unrolled calculations for Wy
-          const auto Wy_0_0 = HALF * (S1x_0 + S0x_0) * (S0y_0 - S1y_0);
-          const auto Wy_0_1 = HALF * (S1x_0 + S0x_0) * (S0y_1 - S1y_1);
-          const auto Wy_0_2 = HALF * (S1x_0 + S0x_0) * (S0y_2 - S1y_2);
-          const auto Wy_0_3 = HALF * (S1x_0 + S0x_0) * (S0y_3 - S1y_3);
+          const auto Wy_0_0 = HALF * (S1x_0 + S0x_0) * (S1y_0 - S0y_0);
+          const auto Wy_0_1 = HALF * (S1x_0 + S0x_0) * (S1y_1 - S0y_1);
+          const auto Wy_0_2 = HALF * (S1x_0 + S0x_0) * (S1y_2 - S0y_2);
+          const auto Wy_0_3 = HALF * (S1x_0 + S0x_0) * (S1y_3 - S0y_3);
 
-          const auto Wy_1_0 = HALF * (S1x_1 + S0x_1) * (S0y_0 - S1y_0);
-          const auto Wy_1_1 = HALF * (S1x_1 + S0x_1) * (S0y_1 - S1y_1);
-          const auto Wy_1_2 = HALF * (S1x_1 + S0x_1) * (S0y_2 - S1y_2);
-          const auto Wy_1_3 = HALF * (S1x_1 + S0x_1) * (S0y_3 - S1y_3);
+          const auto Wy_1_0 = HALF * (S1x_1 + S0x_1) * (S1y_0 - S0y_0);
+          const auto Wy_1_1 = HALF * (S1x_1 + S0x_1) * (S1y_1 - S0y_1);
+          const auto Wy_1_2 = HALF * (S1x_1 + S0x_1) * (S1y_2 - S0y_2);
+          const auto Wy_1_3 = HALF * (S1x_1 + S0x_1) * (S1y_3 - S0y_3);
 
-          const auto Wy_2_0 = HALF * (S1x_2 + S0x_2) * (S0y_0 - S1y_0);
-          const auto Wy_2_1 = HALF * (S1x_2 + S0x_2) * (S0y_1 - S1y_1);
-          const auto Wy_2_2 = HALF * (S1x_2 + S0x_2) * (S0y_2 - S1y_2);
-          const auto Wy_2_3 = HALF * (S1x_2 + S0x_2) * (S0y_3 - S1y_3);
+          const auto Wy_2_0 = HALF * (S1x_2 + S0x_2) * (S1y_0 - S0y_0);
+          const auto Wy_2_1 = HALF * (S1x_2 + S0x_2) * (S1y_1 - S0y_1);
+          const auto Wy_2_2 = HALF * (S1x_2 + S0x_2) * (S1y_2 - S0y_2);
+          const auto Wy_2_3 = HALF * (S1x_2 + S0x_2) * (S1y_3 - S0y_3);
 
-          const auto Wy_3_0 = HALF * (S1x_3 + S0x_3) * (S0y_0 - S1y_0);
-          const auto Wy_3_1 = HALF * (S1x_3 + S0x_3) * (S0y_1 - S1y_1);
-          const auto Wy_3_2 = HALF * (S1x_3 + S0x_3) * (S0y_2 - S1y_2);
-          const auto Wy_3_3 = HALF * (S1x_3 + S0x_3) * (S0y_3 - S1y_3);
+          const auto Wy_3_0 = HALF * (S1x_3 + S0x_3) * (S1y_0 - S0y_0);
+          const auto Wy_3_1 = HALF * (S1x_3 + S0x_3) * (S1y_1 - S0y_1);
+          const auto Wy_3_2 = HALF * (S1x_3 + S0x_3) * (S1y_2 - S0y_2);
+          const auto Wy_3_3 = HALF * (S1x_3 + S0x_3) * (S1y_3 - S0y_3);
 
           // Unrolled calculations for Wz
           const auto Wz_0_0 = THIRD * (S1y_0 * (HALF * S0x_0 + S1x_0) +
@@ -636,9 +637,9 @@ namespace kernel {
           const auto Wz_3_3 = THIRD * (S1y_3 * (HALF * S0x_3 + S1x_3) +
                                        S0y_3 * (HALF * S1x_3 + S0x_3));
 
-          const real_t Qdxdt = -coeff * inv_dt;
-          const real_t Qdydt = -coeff * inv_dt;
-          const real_t QVz   = -coeff * inv_dt * vp[2];
+          const real_t Qdxdt = coeff * inv_dt;
+          const real_t Qdydt = coeff * inv_dt;
+          const real_t QVz   = coeff * inv_dt * vp[2];
 
           // Esirkepov - Eq. 39
           // x-component
@@ -706,10 +707,10 @@ namespace kernel {
           J_acc(ix_min + 2, iy_min + 2, cur::jx1) += update_x2 * jx_2_2;
           J_acc(ix_min + 2, iy_min + 3, cur::jx1) += update_x2 * update_y2 * jx_2_3;
 
-          //   J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x2 * jx_3_0;
-          //   J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x2 * jx_3_1;
-          //   J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x2 * jx_3_2;
-          //   J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x2 * jx_3_3;
+            // J_acc(ix_min + 3, iy_min, cur::jx1)     += update_x2 * jx_3_0;
+            // J_acc(ix_min + 3, iy_min + 1, cur::jx1) += update_x2 * jx_3_1;
+            // J_acc(ix_min + 3, iy_min + 2, cur::jx1) += update_x2 * jx_3_2;
+            // J_acc(ix_min + 3, iy_min + 3, cur::jx1) += update_x2 * jx_3_3;
 
           /*
               y - component
