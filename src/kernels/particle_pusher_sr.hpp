@@ -476,6 +476,9 @@ namespace kernel::sr {
       bool            is_gca { false };
 
       getInterpFlds(p, ei, bi);
+      // ToDo: Better way to call this
+      //getInterpFlds2nd(p, ei, bi);
+
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
       if (cooling != 0) {
@@ -1087,6 +1090,488 @@ namespace kernel::sr {
         c11   = c011 * pondmx + c111 * pondpx;
         c1    = c01 * ponpmy + c11 * ponppy;
         b0[2] = c0 * ponpmz + c1 * ponppz;
+      }
+    }
+
+    Inline void getInterpFlds2nd(index_t&         p,
+                                 vec_t<Dim::_3D>& e0,
+                                 vec_t<Dim::_3D>& b0) const {
+      if constexpr (D == Dim::_1D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+
+        // Compute weights for second-order interpolation
+        real_t w0 = HALF * SQR(HALF - dx1_);
+        real_t w1 = static_cast<real_t>(0.75) - SQR(dx1_);
+        real_t w2 = HALF * SQR(HALF + dx1_);
+
+        // Ex1 (dual grid)
+        real_t c0 = EB(i - 1, em::ex1); // First grid point
+        real_t c1 = EB(i, em::ex1);     // Second grid point
+        real_t c2 = EB(i + 1, em::ex1); // Third grid point
+        e0[0]     = c0 * w0 + c1 * w1 + c2 * w2;
+
+        // Ex2 (primal grid)
+        c0    = EB(i - 1, em::ex2); // First grid point
+        c1    = EB(i, em::ex2);     // Second grid point
+        c2    = EB(i + 1, em::ex2); // Third grid point
+        e0[1] = c0 * w0 + c1 * w1 + c2 * w2;
+
+        // Ex3 (primal grid)
+        c0    = EB(i - 1, em::ex3); // First grid point
+        c1    = EB(i, em::ex3);     // Second grid point
+        c2    = EB(i + 1, em::ex3); // Third grid point
+        e0[2] = c0 * w0 + c1 * w1 + c2 * w2;
+
+        // Bx1 (primal grid)
+        c0    = EB(i - 1, em::bx1); // First grid point
+        c1    = EB(i, em::bx1);     // Second grid point
+        c2    = EB(i + 1, em::bx1); // Third grid point
+        b0[0] = c0 * w0 + c1 * w1 + c2 * w2;
+
+        // Bx2 (dual grid)
+        c0    = EB(i - 2, em::bx2); // First grid point
+        c1    = EB(i - 1, em::bx2); // Second grid point
+        c2    = EB(i, em::bx2);     // Third grid point
+        b0[1] = c0 * w0 + c1 * w1 + c2 * w2;
+
+        // Bx3 (dual grid)
+        c0    = EB(i - 2, em::bx3); // First grid point
+        c1    = EB(i - 1, em::bx3); // Second grid point
+        c2    = EB(i, em::bx3);     // Third grid point
+        b0[2] = c0 * w0 + c1 * w1 + c2 * w2;
+
+      } else if constexpr (D == Dim::_2D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+        const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+        // Compute weights for second-order interpolation
+        real_t w0x = HALF * SQR(HALF - dx1_);
+        real_t w1x = static_cast<real_t>(0.75) - SQR(dx1_);
+        real_t w2x = HALF * SQR(HALF + dx1_);
+
+        real_t w0y = HALF * SQR(HALF - dx2_);
+        real_t w1y = static_cast<real_t>(0.75) - SQR(dx2_);
+        real_t w2y = HALF * SQR(HALF + dx2_);
+
+        // Ex1
+        // Interpolate --- (dual, primal)
+        real_t c000 = EB(i - 1, j - 1, em::ex1);
+        real_t c100 = EB(i, j - 1, em::ex1);
+        real_t c200 = EB(i + 1, j - 1, em::ex1);
+        real_t c010 = EB(i - 1, j, em::ex1);
+        real_t c110 = EB(i, j, em::ex1);
+        real_t c210 = EB(i + 1, j, em::ex1);
+        real_t c020 = EB(i - 1, j + 1, em::ex1);
+        real_t c120 = EB(i, j + 1, em::ex1);
+        real_t c220 = EB(i + 1, j + 1, em::ex1);
+
+        real_t c0 = c000 * w0x + c100 * w1x + c200 * w2x;
+        real_t c1 = c010 * w0x + c110 * w1x + c210 * w2x;
+        real_t c2 = c020 * w0x + c120 * w1x + c220 * w2x;
+        e0[0]     = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        // Ex2
+        // Interpolate --- (primal, dual)
+        c000 = EB(i - 1, j - 1, em::ex2);
+        c100 = EB(i, j - 1, em::ex2);
+        c200 = EB(i + 1, j - 1, em::ex2);
+        c010 = EB(i - 1, j, em::ex2);
+        c110 = EB(i, j, em::ex2);
+        c210 = EB(i + 1, j, em::ex2);
+        c020 = EB(i - 1, j + 1, em::ex2);
+        c120 = EB(i, j + 1, em::ex2);
+        c220 = EB(i + 1, j + 1, em::ex2);
+
+        c0    = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1    = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2    = c020 * w0x + c120 * w1x + c220 * w2x;
+        e0[1] = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        // Ex3
+        // Interpolate --- (primal, primal)
+        c000 = EB(i - 1, j - 1, em::ex3);
+        c100 = EB(i, j - 1, em::ex3);
+        c200 = EB(i + 1, j - 1, em::ex3);
+        c010 = EB(i - 1, j, em::ex3);
+        c110 = EB(i, j, em::ex3);
+        c210 = EB(i + 1, j, em::ex3);
+        c020 = EB(i - 1, j + 1, em::ex3);
+        c120 = EB(i, j + 1, em::ex3);
+        c220 = EB(i + 1, j + 1, em::ex3);
+
+        c0    = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1    = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2    = c020 * w0x + c120 * w1x + c220 * w2x;
+        e0[2] = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        // Bx1
+        // Interpolate --- (primal, dual)
+        c000 = EB(i - 1, j - 1, em::bx1);
+        c100 = EB(i, j - 1, em::bx1);
+        c200 = EB(i + 1, j - 1, em::bx1);
+        c010 = EB(i - 1, j, em::bx1);
+        c110 = EB(i, j, em::bx1);
+        c210 = EB(i + 1, j, em::bx1);
+        c020 = EB(i - 1, j + 1, em::bx1);
+        c120 = EB(i, j + 1, em::bx1);
+        c220 = EB(i + 1, j + 1, em::bx1);
+
+        c0    = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1    = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2    = c020 * w0x + c120 * w1x + c220 * w2x;
+        b0[0] = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        // Bx2
+        // Interpolate --- (dual, primal)
+        c000 = EB(i - 1, j - 1, em::bx2);
+        c100 = EB(i, j - 1, em::bx2);
+        c200 = EB(i + 1, j - 1, em::bx2);
+        c010 = EB(i - 1, j, em::bx2);
+        c110 = EB(i, j, em::bx2);
+        c210 = EB(i + 1, j, em::bx2);
+        c020 = EB(i - 1, j + 1, em::bx2);
+        c120 = EB(i, j + 1, em::bx2);
+        c220 = EB(i + 1, j + 1, em::bx2);
+
+        c0    = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1    = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2    = c020 * w0x + c120 * w1x + c220 * w2x;
+        b0[1] = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        // Bx3
+        // Interpolate --- (dual, dual)
+        c000 = EB(i - 1, j - 1, em::bx3);
+        c100 = EB(i, j - 1, em::bx3);
+        c200 = EB(i + 1, j - 1, em::bx3);
+        c010 = EB(i - 1, j, em::bx3);
+        c110 = EB(i, j, em::bx3);
+        c210 = EB(i + 1, j, em::bx3);
+        c020 = EB(i - 1, j + 1, em::bx3);
+        c120 = EB(i, j + 1, em::bx3);
+        c220 = EB(i + 1, j + 1, em::bx3);
+
+        c0    = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1    = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2    = c020 * w0x + c120 * w1x + c220 * w2x;
+        b0[2] = c0 * w0y + c1 * w1y + c2 * w2y;
+
+      } else if constexpr (D == Dim::_3D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+        const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+        const auto dx2_ { static_cast<real_t>(dx2(p)) };
+        const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+        // Compute weights for second-order interpolation
+        real_t w0x = HALF * SQR(HALF - dx1_);
+        real_t w1x = static_cast<real_t>(0.75) - SQR(dx1_);
+        real_t w2x = HALF * SQR(HALF + dx1_);
+
+        real_t w0y = HALF * SQR(HALF - dx2_);
+        real_t w1y = static_cast<real_t>(0.75) - SQR(dx2_);
+        real_t w2y = HALF * SQR(HALF + dx2_);
+
+        real_t w0z = HALF * SQR(HALF - dx3_);
+        real_t w1z = static_cast<real_t>(0.75) - SQR(dx3_);
+        real_t w2z = HALF * SQR(HALF + dx3_);
+
+        // Ex1
+        // Interpolate --- (dual, primal, primal)
+        real_t c000 = EB(i - 1, j - 1, k - 1, em::ex1);
+        real_t c100 = EB(i, j - 1, k - 1, em::ex1);
+        real_t c200 = EB(i + 1, j - 1, k - 1, em::ex1);
+        real_t c010 = EB(i - 1, j, k - 1, em::ex1);
+        real_t c110 = EB(i, j, k - 1, em::ex1);
+        real_t c210 = EB(i + 1, j, k - 1, em::ex1);
+        real_t c020 = EB(i - 1, j + 1, k - 1, em::ex1);
+        real_t c120 = EB(i, j + 1, k - 1, em::ex1);
+        real_t c220 = EB(i + 1, j + 1, k - 1, em::ex1);
+
+        real_t c001 = EB(i - 1, j - 1, k, em::ex1);
+        real_t c101 = EB(i, j - 1, k, em::ex1);
+        real_t c201 = EB(i + 1, j - 1, k, em::ex1);
+        real_t c011 = EB(i - 1, j, k, em::ex1);
+        real_t c111 = EB(i, j, k, em::ex1);
+        real_t c211 = EB(i + 1, j, k, em::ex1);
+        real_t c021 = EB(i - 1, j + 1, k, em::ex1);
+        real_t c121 = EB(i, j + 1, k, em::ex1);
+        real_t c221 = EB(i + 1, j + 1, k, em::ex1);
+
+        real_t c002 = EB(i - 1, j - 1, k + 1, em::ex1);
+        real_t c102 = EB(i, j - 1, k + 1, em::ex1);
+        real_t c202 = EB(i + 1, j - 1, k + 1, em::ex1);
+        real_t c012 = EB(i - 1, j, k + 1, em::ex1);
+        real_t c112 = EB(i, j, k + 1, em::ex1);
+        real_t c212 = EB(i + 1, j, k + 1, em::ex1);
+        real_t c022 = EB(i - 1, j + 1, k + 1, em::ex1);
+        real_t c122 = EB(i, j + 1, k + 1, em::ex1);
+        real_t c222 = EB(i + 1, j + 1, k + 1, em::ex1);
+
+        real_t c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        real_t c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        real_t c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        real_t c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1         = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2         = c021 * w0x + c121 * w1x + c221 * w2x;
+        real_t c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1         = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2         = c022 * w0x + c122 * w1x + c222 * w2x;
+        real_t c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        e0[0] = c00 * w0z + c01 * w1z + c02 * w2z;
+
+        // Ex2
+        // Interpolate -- (primal, dual, primal)
+        c000 = EB(i - 1, j - 1, k - 1, em::ex2);
+        c100 = EB(i, j - 1, k - 1, em::ex2);
+        c200 = EB(i + 1, j - 1, k - 1, em::ex2);
+        c010 = EB(i - 1, j, k - 1, em::ex2);
+        c110 = EB(i, j, k - 1, em::ex2);
+        c210 = EB(i + 1, j, k - 1, em::ex2);
+        c020 = EB(i - 1, j + 1, k - 1, em::ex2);
+        c120 = EB(i, j + 1, k - 1, em::ex2);
+        c220 = EB(i + 1, j + 1, k - 1, em::ex2);
+
+        c001 = EB(i - 1, j - 1, k, em::ex2);
+        c101 = EB(i, j - 1, k, em::ex2);
+        c201 = EB(i + 1, j - 1, k, em::ex2);
+        c011 = EB(i - 1, j, k, em::ex2);
+        c111 = EB(i, j, k, em::ex2);
+        c211 = EB(i + 1, j, k, em::ex2);
+        c021 = EB(i - 1, j + 1, k, em::ex2);
+        c121 = EB(i, j + 1, k, em::ex2);
+        c221 = EB(i + 1, j + 1, k, em::ex2);
+
+        c002 = EB(i - 1, j - 1, k + 1, em::ex2);
+        c102 = EB(i, j - 1, k + 1, em::ex2);
+        c202 = EB(i + 1, j - 1, k + 1, em::ex2);
+        c012 = EB(i - 1, j, k + 1, em::ex2);
+        c112 = EB(i, j, k + 1, em::ex2);
+        c212 = EB(i + 1, j, k + 1, em::ex2);
+        c022 = EB(i - 1, j + 1, k + 1, em::ex2);
+        c122 = EB(i, j + 1, k + 1, em::ex2);
+        c222 = EB(i + 1, j + 1, k + 1, em::ex2);
+
+        c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0  = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1  = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2  = c021 * w0x + c121 * w1x + c221 * w2x;
+        c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0  = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1  = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2  = c022 * w0x + c122 * w1x + c222 * w2x;
+        c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        e0[1] = c00 * w0z + c01 * w1z + c02 * w2z;
+
+        // Ex3
+        // Interpolate -- (primal, primal, dual)
+        c000 = EB(i - 1, j - 1, k - 1, em::ex3);
+        c100 = EB(i, j - 1, k - 1, em::ex3);
+        c200 = EB(i + 1, j - 1, k - 1, em::ex3);
+        c010 = EB(i - 1, j, k - 1, em::ex3);
+        c110 = EB(i, j, k - 1, em::ex3);
+        c210 = EB(i + 1, j, k - 1, em::ex3);
+        c020 = EB(i - 1, j + 1, k - 1, em::ex3);
+        c120 = EB(i, j + 1, k - 1, em::ex3);
+        c220 = EB(i + 1, j + 1, k - 1, em::ex3);
+
+        c001 = EB(i - 1, j - 1, k, em::ex3);
+        c101 = EB(i, j - 1, k, em::ex3);
+        c201 = EB(i + 1, j - 1, k, em::ex3);
+        c011 = EB(i - 1, j, k, em::ex3);
+        c111 = EB(i, j, k, em::ex3);
+        c211 = EB(i + 1, j, k, em::ex3);
+        c021 = EB(i - 1, j + 1, k, em::ex3);
+        c121 = EB(i, j + 1, k, em::ex3);
+        c221 = EB(i + 1, j + 1, k, em::ex3);
+
+        c002 = EB(i - 1, j - 1, k + 1, em::ex3);
+        c102 = EB(i, j - 1, k + 1, em::ex3);
+        c202 = EB(i + 1, j - 1, k + 1, em::ex3);
+        c012 = EB(i - 1, j, k + 1, em::ex3);
+        c112 = EB(i, j, k + 1, em::ex3);
+        c212 = EB(i + 1, j, k + 1, em::ex3);
+        c022 = EB(i - 1, j + 1, k + 1, em::ex3);
+        c122 = EB(i, j + 1, k + 1, em::ex3);
+        c222 = EB(i + 1, j + 1, k + 1, em::ex3);
+
+        c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1         = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2         = c021 * w0x + c121 * w1x + c221 * w2x;
+        c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1         = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2         = c022 * w0x + c122 * w1x + c222 * w2x;
+        c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        e0[2] = c00 * w0z + c01 * w1z + c02 * w2z;
+
+        // Bx1
+        // Interpolate -- (primal, dual, dual)
+        c000 = EB(i - 1, j - 1, k - 1, em::bx1);
+        c100 = EB(i, j - 1, k - 1, em::bx1);
+        c200 = EB(i + 1, j - 1, k - 1, em::bx1);
+        c010 = EB(i - 1, j, k - 1, em::bx1);
+        c110 = EB(i, j, k - 1, em::bx1);
+        c210 = EB(i + 1, j, k - 1, em::bx1);
+        c020 = EB(i - 1, j + 1, k - 1, em::bx1);
+        c120 = EB(i, j + 1, k - 1, em::bx1);
+        c220 = EB(i + 1, j + 1, k - 1, em::bx1);
+
+        c001 = EB(i - 1, j - 1, k, em::bx1);
+        c101 = EB(i, j - 1, k, em::bx1);
+        c201 = EB(i + 1, j - 1, k, em::bx1);
+        c011 = EB(i - 1, j, k, em::bx1);
+        c111 = EB(i, j, k, em::bx1);
+        c211 = EB(i + 1, j, k, em::bx1);
+        c021 = EB(i - 1, j + 1, k, em::bx1);
+        c121 = EB(i, j + 1, k, em::bx1);
+        c221 = EB(i + 1, j + 1, k, em::bx1);
+
+        c002 = EB(i - 1, j - 1, k + 1, em::bx1);
+        c102 = EB(i, j - 1, k + 1, em::bx1);
+        c202 = EB(i + 1, j - 1, k + 1, em::bx1);
+        c012 = EB(i - 1, j, k + 1, em::bx1);
+        c112 = EB(i, j, k + 1, em::bx1);
+        c212 = EB(i + 1, j, k + 1, em::bx1);
+        c022 = EB(i - 1, j + 1, k + 1, em::bx1);
+        c122 = EB(i, j + 1, k + 1, em::bx1);
+        c222 = EB(i + 1, j + 1, k + 1, em::bx1);
+
+        c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1         = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2         = c021 * w0x + c121 * w1x + c221 * w2x;
+        c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1         = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2         = c022 * w0x + c122 * w1x + c222 * w2x;
+        c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        b0[0] = c00 * w0z + c01 * w1z + c02 * w2z;
+
+        // Bx2
+        // Interpolate -- (dual, primal, dual)
+        c000 = EB(i - 1, j - 1, k - 1, em::bx2);
+        c100 = EB(i, j - 1, k - 1, em::bx2);
+        c200 = EB(i + 1, j - 1, k - 1, em::bx2);
+        c010 = EB(i - 1, j, k - 1, em::bx2);
+        c110 = EB(i, j, k - 1, em::bx2);
+        c210 = EB(i + 1, j, k - 1, em::bx2);
+        c020 = EB(i - 1, j + 1, k - 1, em::bx2);
+        c120 = EB(i, j + 1, k - 1, em::bx2);
+        c220 = EB(i + 1, j + 1, k - 1, em::bx2);
+
+        c001 = EB(i - 1, j - 1, k, em::bx2);
+        c101 = EB(i, j - 1, k, em::bx2);
+        c201 = EB(i + 1, j - 1, k, em::bx2);
+        c011 = EB(i - 1, j, k, em::bx2);
+        c111 = EB(i, j, k, em::bx2);
+        c211 = EB(i + 1, j, k, em::bx2);
+        c021 = EB(i - 1, j + 1, k, em::bx2);
+        c121 = EB(i, j + 1, k, em::bx2);
+        c221 = EB(i + 1, j + 1, k, em::bx2);
+
+        c002 = EB(i - 1, j - 1, k + 1, em::bx2);
+        c102 = EB(i, j - 1, k + 1, em::bx2);
+        c202 = EB(i + 1, j - 1, k + 1, em::bx2);
+        c012 = EB(i - 1, j, k + 1, em::bx2);
+        c112 = EB(i, j, k + 1, em::bx2);
+        c212 = EB(i + 1, j, k + 1, em::bx2);
+        c022 = EB(i - 1, j + 1, k + 1, em::bx2);
+        c122 = EB(i, j + 1, k + 1, em::bx2);
+        c222 = EB(i + 1, j + 1, k + 1, em::bx2);
+
+        c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1         = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2         = c021 * w0x + c121 * w1x + c221 * w2x;
+        c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1         = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2         = c022 * w0x + c122 * w1x + c222 * w2x;
+        c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        b0[1] = c00 * w0z + c01 * w1z + c02 * w2z;
+
+        // Bx3
+        // Interpolate -- (dual, dual, primal)
+        c000 = EB(i - 1, j - 1, k - 1, em::bx3);
+        c100 = EB(i, j - 1, k - 1, em::bx3);
+        c200 = EB(i + 1, j - 1, k - 1, em::bx3);
+        c010 = EB(i - 1, j, k - 1, em::bx3);
+        c110 = EB(i, j, k - 1, em::bx3);
+        c210 = EB(i + 1, j, k - 1, em::bx3);
+        c020 = EB(i - 1, j + 1, k - 1, em::bx3);
+        c120 = EB(i, j + 1, k - 1, em::bx3);
+        c220 = EB(i + 1, j + 1, k - 1, em::bx3);
+
+        c001 = EB(i - 1, j - 1, k, em::bx3);
+        c101 = EB(i, j - 1, k, em::bx3);
+        c201 = EB(i + 1, j - 1, k, em::bx3);
+        c011 = EB(i - 1, j, k, em::bx3);
+        c111 = EB(i, j, k, em::bx3);
+        c211 = EB(i + 1, j, k, em::bx3);
+        c021 = EB(i - 1, j + 1, k, em::bx3);
+        c121 = EB(i, j + 1, k, em::bx3);
+        c221 = EB(i + 1, j + 1, k, em::bx3);
+
+        c002 = EB(i - 1, j - 1, k + 1, em::bx3);
+        c102 = EB(i, j - 1, k + 1, em::bx3);
+        c202 = EB(i + 1, j - 1, k + 1, em::bx3);
+        c012 = EB(i - 1, j, k + 1, em::bx3);
+        c112 = EB(i, j, k + 1, em::bx3);
+        c212 = EB(i + 1, j, k + 1, em::bx3);
+        c022 = EB(i - 1, j + 1, k + 1, em::bx3);
+        c122 = EB(i, j + 1, k + 1, em::bx3);
+        c222 = EB(i + 1, j + 1, k + 1, em::bx3);
+
+        c0  = c000 * w0x + c100 * w1x + c200 * w2x;
+        c1  = c010 * w0x + c110 * w1x + c210 * w2x;
+        c2  = c020 * w0x + c120 * w1x + c220 * w2x;
+        c00 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c001 * w0x + c101 * w1x + c201 * w2x;
+        c1         = c011 * w0x + c111 * w1x + c211 * w2x;
+        c2         = c021 * w0x + c121 * w1x + c221 * w2x;
+        c01 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        c0         = c002 * w0x + c102 * w1x + c202 * w2x;
+        c1         = c012 * w0x + c112 * w1x + c212 * w2x;
+        c2         = c022 * w0x + c122 * w1x + c222 * w2x;
+        c02 = c0 * w0y + c1 * w1y + c2 * w2y;
+
+        b0[2] = c00 * w0z + c01 * w1z + c02 * w2z;
       }
     }
 
