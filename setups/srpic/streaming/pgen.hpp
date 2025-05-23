@@ -90,11 +90,11 @@ namespace user {
         const auto injector = arch::experimental::
           UniformInjector<S, M, arch::experimental::Maxwellian, arch::experimental::Maxwellian>(
             arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
-                                                 domain.random_pool,
+                                                 *domain.random_pool,
                                                  temperatures[n],
                                                  drift_1),
             arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
-                                                 domain.random_pool,
+                                                 *domain.random_pool,
                                                  temperatures[n + 1],
                                                  drift_2),
             { n + 1, n + 2 });

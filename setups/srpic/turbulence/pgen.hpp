@@ -118,7 +118,8 @@ namespace user {
                     random_number_pool_t&             random_pool,
                     real_t                            Lx,
                     real_t                            Ly,
-                    real_t                            Lz)
+                    real_t                            Lz,
+                    bool                              restart)
       : wavenumbers { wavenumbers }
       , n_modes { wavenumbers.size() }
       , dB { dB }
@@ -132,7 +133,8 @@ namespace user {
       , a_imag { "a_imag", n_modes }
       , a_real_inv { "a_real_inv", n_modes }
       , a_imag_inv { "a_imag_inv", n_modes }
-      , A0 { "A0", n_modes } {
+      , A0 { "A0", n_modes }
+      , restart { restart } {
       // initializing wavevectors
       auto k_host = Kokkos::create_mirror_view(k);
       if constexpr (D == Dim::_2D) {
@@ -148,37 +150,128 @@ namespace user {
           k_host(2, i) = constant::TWO_PI * wavenumbers[i][2] / Lz;
         }
       }
-      // initializing initial complex amplitudes
-      auto a_real_host     = Kokkos::create_mirror_view(a_real);
-      auto a_imag_host     = Kokkos::create_mirror_view(a_imag);
-      auto a_real_inv_host = Kokkos::create_mirror_view(a_real_inv);
-      auto a_imag_inv_host = Kokkos::create_mirror_view(a_imag_inv);
-      auto A0_host         = Kokkos::create_mirror_view(A0);
 
-      real_t prefac { ZERO };
-      if constexpr (D == Dim::_2D) {
-        prefac = HALF; // HALF = 1/sqrt(twice modes due to reality condition * twice the frequencies due to sign change)
-      } else if constexpr (D == Dim::_3D) {
-        prefac = constant::SQRT2; // 1/sqrt(2) = 1/sqrt(twice modes due to reality condition)
-      }
-      for (auto i = 0u; i < n_modes; i++) {
-        auto k_perp = math::sqrt(
-          k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
-        auto phase         = constant::TWO_PI / 6.;
-        A0_host(i)         = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
-        a_real_host(i)     = A0_host(i) * math::cos(phase);
-        a_imag_host(i)     = A0_host(i) * math::sin(phase);
-        phase              = constant::TWO_PI / 3;
-        a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
-        a_real_inv_host(i) = A0_host(i) * math::sin(phase);
-      }
 
-      Kokkos::deep_copy(a_real, a_real_host);
-      Kokkos::deep_copy(a_imag, a_imag_host);
-      Kokkos::deep_copy(a_real_inv, a_real_inv_host);
-      Kokkos::deep_copy(a_imag_inv, a_imag_inv_host);
-      Kokkos::deep_copy(A0, A0_host);
-      Kokkos::deep_copy(k, k_host);
+auto a_real_host     = Kokkos::create_mirror_view(a_real);
+auto a_imag_host     = Kokkos::create_mirror_view(a_imag);
+auto a_real_inv_host = Kokkos::create_mirror_view(a_real_inv);
+auto a_imag_inv_host = Kokkos::create_mirror_view(a_imag_inv);
+auto A0_host         = Kokkos::create_mirror_view(A0);
+
+if (!restart) {
+  real_t prefac { ZERO };
+  if constexpr (D == Dim::_2D) {
+    prefac = HALF;
+  } else if constexpr (D == Dim::_3D) {
+    prefac = constant::SQRT2;
+  }
+  for (auto i = 0u; i < n_modes; i++) {
+    auto k_perp = math::sqrt(
+      k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
+    auto phase         = constant::TWO_PI / 6.;
+    A0_host(i)         = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
+    a_real_host(i)     = A0_host(i) * math::cos(phase);
+    a_imag_host(i)     = A0_host(i) * math::sin(phase);
+    phase              = constant::TWO_PI / 3;
+    a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
+    a_real_inv_host(i) = A0_host(i) * math::sin(phase);
+  }
+} else {
+
+  // Todo: Reading the (last) checkpoint file for amplitudes (#FRONTIER) 
+  real_t prefac { ZERO };
+  if constexpr (D == Dim::_2D) {
+    prefac = HALF;
+  } else if constexpr (D == Dim::_3D) {
+    prefac = constant::SQRT2;
+  }
+  for (auto i = 0u; i < n_modes; i++) {
+    auto k_perp = math::sqrt(
+    k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
+    A0_host(i)         = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
+  }
+
+
+const std::string prefix = "antenna_amplitudes_step";
+int max_step = -1;
+std::string latest_file;
+
+for (const auto& entry : std::filesystem::directory_iterator(".")) {
+  auto fname = entry.path().filename().string();
+
+  if (fname.rfind(prefix, 0) == 0 &&  // starts with prefix
+      fname.size() > prefix.size() + 10 &&  // ensure room for "_stepX.csv"
+      fname.substr(fname.size() - 4) == ".csv") {
+
+    std::string suffix = fname.substr(prefix.size()); // what follows the prefix
+    if (suffix.rfind("_step", 0) == 0) {
+      // Extract the number between "_step" and ".csv"
+      std::string step_str = suffix.substr(5, suffix.size() - 9); // 5 = len("_step"), 9 = 5 + 4 for ".csv"
+
+      try {
+        int step = std::stoi(step_str);
+        if (step > max_step) {
+          max_step = step;
+          latest_file = entry.path().string();
+        }
+      } catch (const std::exception& e) {
+        std::cerr << "Failed to parse step number from filename: " << fname
+                  << " (" << e.what() << ")" << std::endl;
+      }
+    }
+  }
+}
+
+if (latest_file.empty()) {
+  throw std::runtime_error("No checkpoint file found to restore antenna amplitudes.");
+}
+
+int rank;
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+if (rank == 0) {
+  std::cout << "Rank 0 reading file: " << latest_file << std::endl;
+
+  std::ifstream infile(latest_file);
+  if (!infile) throw std::runtime_error("Failed to open file: " + latest_file);
+
+  std::string line;
+  std::getline(infile, line); // skip header
+
+  size_t i = 0;
+  while (std::getline(infile, line) && i < a_real_host.extent(0)) {
+    std::istringstream ss(line);
+    std::string token;
+    std::getline(ss, token, ','); // skip index
+    std::getline(ss, token, ','); a_real_host(i)     = std::stod(token);
+    std::getline(ss, token, ','); a_imag_host(i)     = std::stod(token);
+    std::getline(ss, token, ','); a_real_inv_host(i) = std::stod(token);
+    std::getline(ss, token, ','); a_imag_inv_host(i) = std::stod(token);
+    ++i;
+  }
+
+  if (i != a_real_host.extent(0)) {
+    throw std::runtime_error("Mismatch in number of antenna modes read from checkpoint.");
+  }
+}
+
+// Then broadcast the arrays to other ranks
+MPI_Bcast(a_real_host.data(),     a_real_host.extent(0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(a_imag_host.data(),     a_imag_host.extent(0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(a_real_inv_host.data(), a_real_inv_host.extent(0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+MPI_Bcast(a_imag_inv_host.data(), a_imag_inv_host.extent(0), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+}
+
+// Copy back to device
+Kokkos::deep_copy(a_real,     a_real_host);
+Kokkos::deep_copy(a_imag,     a_imag_host);
+Kokkos::deep_copy(a_real_inv, a_real_inv_host);
+Kokkos::deep_copy(a_imag_inv, a_imag_inv_host);
+Kokkos::deep_copy(A0,         A0_host);
+Kokkos::deep_copy(k,          k_host);
+
+      
     };
 
     Inline auto jx1(const coord_t<D>& x_Ph) const -> real_t {
@@ -243,6 +336,7 @@ namespace user {
     const std::vector<std::vector<real_t>> wavenumbers;
     const std::size_t                      n_modes;
     const real_t                           dB, Lx, Ly, Lz;
+    const bool                             restart;
 
   public:
     const real_t      omega_0, gamma_0;
@@ -272,6 +366,12 @@ namespace user {
     const int                        random_seed;
     std::vector<std::vector<real_t>> wavenumbers;
     random_number_pool_t             random_pool;
+    int checkpoint_keep;
+    simtime_t checkpoint_interval_time;
+    timestep_t checkpoint_interval;
+    tools::Tracker           m_tracker;
+    bool m_enabled;
+    bool restart; 
 
     // debugging, will delete later
     real_t total_sum           = ZERO;
@@ -290,75 +390,57 @@ namespace user {
       , wavenumbers { init_wavenumbers<D>() }
       , random_seed { p.template get<int>("setup.seed", -1) }
       , random_pool { init_pool(random_seed) }
+      , checkpoint_interval { params.template get<timestep_t>("checkpoint.interval") }
+      , checkpoint_interval_time { params.template get<simtime_t>("checkpoint.interval_time") }
+      , checkpoint_keep { params.template get<int>("checkpoint.keep") }
       , Lx { global_domain.mesh().extent(in::x1).second -
              global_domain.mesh().extent(in::x1).first }
       , Ly { global_domain.mesh().extent(in::x2).second -
              global_domain.mesh().extent(in::x2).first }
       , Lz { global_domain.mesh().extent(in::x3).second -
              global_domain.mesh().extent(in::x3).first }
+      , restart { p.template get<bool>("setup.restart_modes", false) }
       , escape_dist { p.template get<real_t>("setup.escape_dist", HALF * Lx) }
-      , ext_current { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz }
+      , ext_current { dB, omega_0, gamma_0, wavenumbers, random_pool, Lx, Ly, Lz, restart }
       , init_flds { ext_current.k,
                     ext_current.a_real,
                     ext_current.a_imag,
                     ext_current.a_real_inv,
-                    ext_current.a_imag_inv } {}
+                    ext_current.a_imag_inv } {
+                      m_tracker.init("checkpoint", checkpoint_interval, checkpoint_interval_time);
+                      m_enabled = checkpoint_keep != 0;
+                    }
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      // const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-      //                                                 local_domain.random_pool,
-      //                                                 temperature);
-      // const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
-      //   energy_dist,
-      //   { 1, 2 });
-      // arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
-      //   params,
-      //   local_domain,
-      //   spatial_dist,
-      //   ONE);
-
-      const auto injector = arch::UniformInjector<S, M, arch::Cold>(
-        arch::Cold<S, M>(local_domain.mesh.metric),
+      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
+                                                      *local_domain.random_pool,
+                                                      temperature);
+      const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
+        energy_dist,
         { 1, 2 });
-      arch::InjectUniform<S, M, decltype(injector)>(
+      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
         params,
         local_domain,
-        injector,
+        spatial_dist,
         ONE);
 
     };
 
-    void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
       // update amplitudes of antenna
       const auto  dt = params.template get<real_t>("algorithms.timestep.dt");
       const auto& ext_curr = ext_current;
+      
       Kokkos::parallel_for(
         "Antenna amplitudes",
         wavenumbers.size(),
         ClassLambda(index_t i) {
-          // auto       generator  = random_pool.get_state();
-          // const auto u_imag     = Random<real_t>(generator) - HALF;
-          // const auto u_real     = Random<real_t>(generator) - HALF;
-          // const auto u_real_inv = Random<real_t>(generator) - HALF;
-          // const auto u_imag_inv = Random<real_t>(generator) - HALF;
-          // random_pool.free_state(generator);
-
-          index_t n1 = (1664525 * i + 1013904223);
-          const auto rnd1 = (n1 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
-
-          index_t n2 = (1664525 * (i + 1) + 1013904223);
-          const auto rnd2 = (n2 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
-
-          index_t n3 = (1664525 * (i + 2) + 1013904223);
-          const auto rnd3 = (n3 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
-
-          index_t n4 = (1664525 * (i + 3) + 1013904223);
-          const auto rnd4 = (n4 & 0xFFFFFF) / static_cast<real_t>(0x1000000);
-
-          const auto u_imag     = rnd1 - HALF;
-          const auto u_real     = rnd2 - HALF;
-          const auto u_real_inv = rnd3 - HALF;
-          const auto u_imag_inv = rnd4 - HALF;
+          auto       generator  = random_pool.get_state();
+          const auto u_imag     = Random<real_t>(generator) - HALF;
+          const auto u_real     = Random<real_t>(generator) - HALF;
+          const auto u_real_inv = Random<real_t>(generator) - HALF;
+          const auto u_imag_inv = Random<real_t>(generator) - HALF;
+          random_pool.free_state(generator);
 
           auto a_real_prev     = ext_curr.a_real(i);
           auto a_imag_prev     = ext_curr.a_imag(i);
@@ -395,7 +477,7 @@ namespace user {
 
       // particle escape (resample velocities)
       const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
+                                                      *domain.random_pool,
                                                       temperature);
       for (const auto& sp : { 0, 1 }) {
         if (domain.species[sp].npld() > 1) {
@@ -405,7 +487,7 @@ namespace user {
           const auto& pld = domain.species[sp].pld;
           const auto& tag = domain.species[sp].tag;
           const auto  L   = escape_dist;
-	  printf("Entering the escape loop %d, L = %f\n", sp, L);
+	  // printf("Entering the escape loop %d, L = %f\n", sp, L);
           Kokkos::parallel_for(
             "UpdatePld",
             domain.species[sp].npart(),
@@ -431,6 +513,69 @@ namespace user {
             });
         }
       }
+
+// Todo: Write checkpoint file for amplitudes (#FRONTIER) 
+if (m_enabled && m_tracker.shouldWrite(step, time)) {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0) {
+    // Create mirror views and copy from device to host
+    auto a_real_h       = Kokkos::create_mirror_view(ext_curr.a_real);
+    auto a_imag_h       = Kokkos::create_mirror_view(ext_curr.a_imag);
+    auto a_real_inv_h   = Kokkos::create_mirror_view(ext_curr.a_real_inv);
+    auto a_imag_inv_h   = Kokkos::create_mirror_view(ext_curr.a_imag_inv);
+
+    Kokkos::deep_copy(a_real_h, ext_curr.a_real);
+    Kokkos::deep_copy(a_imag_h, ext_curr.a_imag);
+    Kokkos::deep_copy(a_real_inv_h, ext_curr.a_real_inv);
+    Kokkos::deep_copy(a_imag_inv_h, ext_curr.a_imag_inv);
+
+    std::string prefix = "antenna_amplitudes";
+    std::string filename = prefix + "_step" + std::to_string(step+1) + ".csv";
+
+    // Write CSV
+    std::ofstream outfile(filename);
+    outfile << "k_index,a_real,a_imag,a_real_inv,a_imag_inv\n";
+    for (std::size_t i = 0; i < a_real_h.extent(0); ++i) {
+      outfile << i << ","
+              << a_real_h(i)     << ","
+              << a_imag_h(i)     << ","
+              << a_real_inv_h(i) << ","
+              << a_imag_inv_h(i) << "\n";
+    }
+    outfile.close();
+
+    // Todo: Prune (all) old checkpoint files for amplitudes, have to keep previous checkpoints still (#FRONTIER) 
+    namespace fs = std::filesystem;
+    std::vector<std::pair<int, fs::path>> files;
+
+    for (const auto& entry : fs::directory_iterator(".")) {
+      const auto& path = entry.path();
+      std::string fname = path.filename().string();
+      if (fname.find(prefix + "_step") == 0 && fname.size() > prefix.size() + 5) {
+        std::size_t pos1 = prefix.size() + 5;
+        std::size_t pos2 = fname.find(".csv");
+        if (pos2 != std::string::npos) {
+          std::string num_str = fname.substr(pos1, pos2 - pos1);
+          try {
+            int s = std::stoi(num_str);
+            files.emplace_back(s, path);
+          } catch (...) {
+            // Ignore malformed filenames
+          }
+        }
+      }
+    }
+
+    std::sort(files.begin(), files.end());
+
+    while (files.size() > static_cast<std::size_t>(checkpoint_keep)) {
+      fs::remove(files.front().second);
+      files.erase(files.begin());
+    }
+  }
+}
+
     }
   };
 } // namespace user
