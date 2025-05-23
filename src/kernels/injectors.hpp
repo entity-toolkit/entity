@@ -47,6 +47,7 @@ namespace kernel {
     array_t<real_t*>   phis_2;
     array_t<real_t*>   weights_2;
     array_t<short*>    tags_2;
+    int   num_particles;
 
     npart_t                offset1, offset2;
     const M                metric;
@@ -55,7 +56,8 @@ namespace kernel {
     const real_t           inv_V0;
     random_number_pool_t   random_pool;
 
-    UniformInjector_kernel(spidx_t                          spidx1,
+    UniformInjector_kernel(int   num_particles,
+                           spidx_t                          spidx1,
                            spidx_t                          spidx2,
                            Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
@@ -67,7 +69,8 @@ namespace kernel {
                            const ED&                        energy_dist,
                            real_t                           inv_V0,
                            random_number_pool_t&            random_pool)
-      : spidx1 { spidx1 }
+      : num_particles { num_particles }
+      , spidx1 { spidx1 }
       , spidx2 { spidx2 }
       , i1s_1 { species1.i1 }
       , i2s_1 { species1.i2 }
@@ -104,7 +107,13 @@ namespace kernel {
 
     Inline auto operator()(const member_type& team_member) const -> void {
       const auto i { team_member.league_rank() };
-      const auto p { i * team_member.team_size() + team_member.team_rank() };      
+      const auto p { i * team_member.team_size() + team_member.team_rank() };  
+      
+      // Todo: Important check to use with team policies (#FRONTIER)
+      if (p >= num_particles) {
+        return;
+      }
+
       coord_t<M::Dim> x_Cd { ZERO };
       vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
@@ -203,6 +212,7 @@ using member_type = team_policy::member_type;
       static_assert(M::is_metric, "M must be a metric class");
 
       const spidx_t spidx1, spidx2;
+      int  num_particles;
 
       array_t<int*>      i1s_1, i2s_1, i3s_1;
       array_t<prtldx_t*> dx1s_1, dx2s_1, dx3s_1;
@@ -226,7 +236,8 @@ using member_type = team_policy::member_type;
       const real_t           inv_V0;
       random_number_pool_t   random_pool;
 
-      UniformInjector_kernel(spidx_t                          spidx1,
+      UniformInjector_kernel(int   num_particles,
+                              spidx_t                          spidx1,
                              spidx_t                          spidx2,
                              Particles<M::Dim, M::CoordType>& species1,
                              Particles<M::Dim, M::CoordType>& species2,
@@ -239,7 +250,8 @@ using member_type = team_policy::member_type;
                              const ED2&                       energy_dist_2,
                              real_t                           inv_V0,
                              random_number_pool_t&            random_pool)
-        : spidx1 { spidx1 }
+        : num_particles { num_particles }
+        , spidx1 { spidx1 }
         , spidx2 { spidx2 }
         , i1s_1 { species1.i1 }
         , i2s_1 { species1.i2 }
@@ -277,7 +289,13 @@ using member_type = team_policy::member_type;
 
     Inline auto operator()(const member_type& team_member) const -> void {
       const auto i { team_member.league_rank() };
-      const auto p { i * team_member.team_size() + team_member.team_rank() };      
+      const auto p { i * team_member.team_size() + team_member.team_rank() };  
+      
+      // Todo: Important check to use with team policies (#FRONTIER)
+      if (p >= num_particles) {
+        return;
+      }
+
               coord_t<M::Dim> x_Cd { ZERO };
         vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
         { // generate a random coordinate

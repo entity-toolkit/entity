@@ -488,6 +488,7 @@ namespace arch {
           "InjectUniform",
           Kokkos::TeamPolicy<>(league_size, team_size),
         kernel::UniformInjector_kernel<S, M, typename I::energy_dist_t>(
+          num_particles,
           injector.species.first,
           injector.species.second,
           domain.species[injector.species.first - 1],
@@ -605,6 +606,7 @@ namespace arch {
           Kokkos::TeamPolicy<>(league_size, team_size),
           kernel::experimental::
             UniformInjector_kernel<S, M, typename I::energy_dist_1_t, typename I::energy_dist_2_t>(
+              num_particles,
               injector.species.first,
               injector.species.second,
               domain.species[injector.species.first - 1],

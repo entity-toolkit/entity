@@ -465,6 +465,7 @@ namespace kernel::sr {
       const auto i { team_member.league_rank() };
       const auto p { i * team_member.team_size() + team_member.team_rank() };
 
+      // Todo: Important check to use with team policies (#FRONTIER)
       if (p >= num_particles) {
         return;
       }

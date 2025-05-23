@@ -362,49 +362,95 @@ namespace out {
     m_writer.Put<real_t>(var, array, adios2::Mode::Sync);
   }
 
-  void Writer::writeSpectrum(const array_t<real_t*>& counts,
-                             const std::string&      varname) {
-    auto counts_h = Kokkos::create_mirror_view(counts);
-    Kokkos::deep_copy(counts_h, counts);
-#if defined(MPI_ENABLED)
-    array_t<real_t*> counts_all { "counts_all", counts.extent(0) };
-    auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
-    int              rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Reduce(counts_h.data(),
-               counts_h_all.data(),
-               counts_h.extent(0),
-               mpi::get_type<real_t>(),
-               MPI_SUM,
-               MPI_ROOT_RANK,
-               MPI_COMM_WORLD);
-    if (rank == MPI_ROOT_RANK) {
-      auto var = m_io.InquireVariable<real_t>(varname);
-      var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
-      m_writer.Put<real_t>(var, counts_h_all);
-    }
-#else
-    auto var = m_io.InquireVariable<real_t>(varname);
-    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
-    m_writer.Put<real_t>(var, counts_h);
-#endif
-  }
+// Todo: Remove CPU staging for direct device access (#FRONTIER)
+void Writer::writeSpectrum(const array_t<real_t*>& counts, const std::string& varname) {
+    // auto counts_h = Kokkos::create_mirror_view(counts);
+    // Kokkos::deep_copy(counts_h, counts);
 
-  void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
-                                 const std::string&      varname) {
 #if defined(MPI_ENABLED)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank != MPI_ROOT_RANK) {
-      return;
+
+    // Prepare a container to hold reduced results on the root rank
+    array_t<real_t*> counts_all("counts_all", counts.extent(0));
+    // auto counts_h_all = Kokkos::create_mirror_view(counts_all);
+
+    // Reduce to root rank
+    MPI_Reduce(counts.data(), counts_all.data(), counts.extent(0),
+               mpi::get_type<real_t>(), MPI_SUM, MPI_ROOT_RANK, MPI_COMM_WORLD);
+
+    // Inquire variable and set selection
+    auto var = m_io.InquireVariable<real_t>(varname);
+    adios2::Dims shape{counts.extent(0)};
+    adios2::Dims start, count;
+
+    // Todo: All ranks participate but only root rank writes data (#FRONTIER)
+    if (rank == MPI_ROOT_RANK) {
+        start = {0};
+        count = {counts.extent(0)};
+    } else {
+        // All other ranks must participate with dummy zero-length data
+        start = {0};
+        count = {0};
     }
+
+    var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+
+    if (rank == MPI_ROOT_RANK) {
+        m_writer.Put<real_t>(var, counts_all.data());
+    } else {
+        real_t dummy = 0;
+        m_writer.Put<real_t>(var, &dummy);
+    }
+
+#else
+    // Serial version (no MPI)
+    auto var = m_io.InquireVariable<real_t>(varname);
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+    m_writer.Put<real_t>(var, counts.data(), adios2::Mode::Sync);
 #endif
+}
+
+
+// Todo: Remove CPU staging for direct device access (#FRONTIER)
+void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
+                               const std::string&      varname) {
+    // auto e_bins_h = Kokkos::create_mirror_view(e_bins);
+    // Kokkos::deep_copy(e_bins_h, e_bins);
+
+#if defined(MPI_ENABLED)
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    auto var = m_io.InquireVariable<real_t>(varname);
+    adios2::Dims shape{e_bins.extent(0)};
+    adios2::Dims start, count;
+
+    // Todo: All ranks participate but only root rank writes data (#FRONTIER)
+    if (rank == MPI_ROOT_RANK) {
+        start = {0};
+        count = {e_bins.extent(0)};
+    } else {
+        start = {0};
+        count = {0};
+    }
+
+    var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+
+    if (rank == MPI_ROOT_RANK) {
+        m_writer.Put<real_t>(var, e_bins.data());
+    } else {
+        real_t dummy = 0;
+        m_writer.Put<real_t>(var, &dummy);
+    }
+
+#else
+    // Serial case (no MPI)
     auto var = m_io.InquireVariable<real_t>(varname);
     var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
-    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
-    Kokkos::deep_copy(e_bins_h, e_bins);
-    m_writer.Put<real_t>(var, e_bins_h);
-  }
+    m_writer.Put<real_t>(var, e_bins.data());
+#endif
+}
 
   void Writer::writeMesh(unsigned short                  dim,
                          const array_t<real_t*>&         xc,
