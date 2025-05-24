@@ -2,6 +2,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
@@ -64,12 +65,12 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, typename T, StatsID::type F>
+  template <SimEngine::type S, class M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
                       const std::vector<spidx_t>&        species,
-                      const std::vector<unsigned short>& components) -> T {
+                      const std::vector<unsigned short>& components) -> real_t {
     std::vector<spidx_t> specs = species;
     if (specs.size() == 0) {
       // if no species specified, take all massive species
@@ -88,28 +89,35 @@ namespace ntt {
     const auto use_weights = params.template get<bool>("particles.use_weights");
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
 
-    T buffer = static_cast<T>(0);
+    real_t buffer = static_cast<real_t>(0);
     for (const auto& sp : specs) {
       auto& prtl_spec = prtl_species[sp - 1];
-      // Kokkos::parallel_reduce(
-      //   "ComputeMoments",
-      //   prtl_spec.rangeActiveParticles(),
-      //   // clang-format off
-      //   kernel::ReducedParticleMoments_kernel<S, M, T, F>(components,
-      //                                                     prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-      //                                                     prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-      //                                                     prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-      //                                                     prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-      //                                                     prtl_spec.mass(), prtl_spec.charge(),
-      //                                                     use_weights, mesh.metric, mesh.flds_bc(), inv_n0),
-      //   // clang-format on
-      //   buffer);
+      if (P == StatsID::Charge and cmp::AlmostZero_host(prtl_spec.charge())) {
+        continue;
+      }
+      if (P == StatsID::Rho and cmp::AlmostZero_host(prtl_spec.mass())) {
+        continue;
+      }
+      Kokkos::parallel_reduce(
+        "ComputeMoments",
+        prtl_spec.rangeActiveParticles(),
+        // clang-format off
+        kernel::ReducedParticleMoments_kernel<S, M, P>(components,
+                                                       prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                       prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                       prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                       prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                       prtl_spec.mass(), prtl_spec.charge(),
+                                                       use_weights, mesh.metric),
+        // clang-format on
+        buffer);
     }
     return buffer;
   }
 
   template <SimEngine::type S, class M, StatsID::type F>
   auto ReduceFields(Domain<S, M>*                      domain,
+                    const M&                           global_metric,
                     const std::vector<unsigned short>& components) -> real_t {
     auto buffer { ZERO };
     if constexpr (F == StatsID::JdotE) {
@@ -166,16 +174,7 @@ namespace ntt {
                    HERE);
     }
 
-    // @TODO: not going to work for arbitrary metric
-    return buffer / static_cast<real_t>(domain->mesh.num_active());
-    // Kokkos::parallel_reduce(
-    //   "ComputeMoments",
-    //   prtl_spec.rangeActiveParticles(),
-    //   kernel::ReducedFields_kernel<S, M, F>(components,
-    //                                         domain->fields.em,
-    //                                         domain->fields.cur,
-    //                                         domain->mesh.metric),
-    //   buffer);
+    return buffer / global_metric.totVolume();
   }
 
   template <SimEngine::type S, class M>
@@ -184,11 +183,6 @@ namespace ntt {
                                     timestep_t              finished_step,
                                     simtime_t               current_time,
                                     simtime_t finished_time) -> bool {
-    // @TODO: remove when stats are supported for all coordinate systems
-    raise::ErrorIf(
-      M::CoordType != Coord::Cart,
-      "Stats writing is only supported for Cartesian coordinates for now",
-      HERE);
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
@@ -199,59 +193,59 @@ namespace ntt {
     g_stats_writer.write(current_time);
     for (const auto& stat : g_stats_writer.statsWriters()) {
       if (stat.id() == StatsID::N) {
-        g_stats_writer.write(
-          ComputeMoments<S, M, real_t, StatsID::N>(params,
-                                                   local_domain->mesh,
-                                                   local_domain->species,
-                                                   stat.species,
-                                                   {}));
+        g_stats_writer.write(ComputeMoments<S, M, StatsID::N>(params,
+                                                              local_domain->mesh,
+                                                              local_domain->species,
+                                                              stat.species,
+                                                              {}));
       } else if (stat.id() == StatsID::Npart) {
         g_stats_writer.write(
-          ComputeMoments<S, M, npart_t, StatsID::Npart>(params,
-                                                        local_domain->mesh,
-                                                        local_domain->species,
-                                                        stat.species,
-                                                        {}));
+          ComputeMoments<S, M, StatsID::Npart>(params,
+                                               local_domain->mesh,
+                                               local_domain->species,
+                                               stat.species,
+                                               {}));
       } else if (stat.id() == StatsID::Rho) {
         g_stats_writer.write(
-          ComputeMoments<S, M, real_t, StatsID::Rho>(params,
-                                                     local_domain->mesh,
-                                                     local_domain->species,
-                                                     stat.species,
-                                                     {}));
+          ComputeMoments<S, M, StatsID::Rho>(params,
+                                             local_domain->mesh,
+                                             local_domain->species,
+                                             stat.species,
+                                             {}));
       } else if (stat.id() == StatsID::Charge) {
         g_stats_writer.write(
-          ComputeMoments<S, M, real_t, StatsID::Charge>(params,
-                                                        local_domain->mesh,
-                                                        local_domain->species,
-                                                        stat.species,
-                                                        {}));
+          ComputeMoments<S, M, StatsID::Charge>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                stat.species,
+                                                {}));
       } else if (stat.id() == StatsID::T) {
         for (const auto& comp : stat.comp) {
           g_stats_writer.write(
-            ComputeMoments<S, M, real_t, StatsID::T>(params,
-                                                     local_domain->mesh,
-                                                     local_domain->species,
-                                                     stat.species,
-                                                     comp));
+            ComputeMoments<S, M, StatsID::T>(params,
+                                             local_domain->mesh,
+                                             local_domain->species,
+                                             stat.species,
+                                             comp));
         }
       } else if (stat.id() == StatsID::JdotE) {
-        g_stats_writer.write(ReduceFields<S, M, StatsID::JdotE>(local_domain, {}));
+        g_stats_writer.write(
+          ReduceFields<S, M, StatsID::JdotE>(local_domain, g_mesh.metric, {}));
       } else if (S == SimEngine::SRPIC) {
         if (stat.id() == StatsID::E2) {
           for (const auto& comp : stat.comp) {
             g_stats_writer.write(
-              ReduceFields<S, M, StatsID::E2>(local_domain, comp));
+              ReduceFields<S, M, StatsID::E2>(local_domain, g_mesh.metric, comp));
           }
         } else if (stat.id() == StatsID::B2) {
           for (const auto& comp : stat.comp) {
             g_stats_writer.write(
-              ReduceFields<S, M, StatsID::B2>(local_domain, comp));
+              ReduceFields<S, M, StatsID::B2>(local_domain, g_mesh.metric, comp));
           }
         } else if (stat.id() == StatsID::ExB) {
           for (const auto& comp : stat.comp) {
             g_stats_writer.write(
-              ReduceFields<S, M, StatsID::ExB>(local_domain, comp));
+              ReduceFields<S, M, StatsID::ExB>(local_domain, g_mesh.metric, comp));
           }
         } else {
           raise::Error("Unrecognized stats ID " + stat.name(), HERE);
