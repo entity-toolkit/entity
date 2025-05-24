@@ -1,7 +1,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -54,11 +53,14 @@ namespace ntt {
     }
     const auto stats_to_write = params.template get<std::vector<std::string>>(
       "output.stats.quantities");
+    const auto custom_stats_to_write = params.template get<std::vector<std::string>>(
+      "output.stats.custom");
     g_stats_writer.init(
       params.template get<timestep_t>("output.stats.interval"),
       params.template get<simtime_t>("output.stats.interval_time"));
     g_stats_writer.defineStatsFilename(filename);
-    g_stats_writer.defineStatsOutputs(stats_to_write);
+    g_stats_writer.defineStatsOutputs(stats_to_write, false);
+    g_stats_writer.defineStatsOutputs(custom_stats_to_write, true);
 
     if (not std::filesystem::exists(filename)) {
       g_stats_writer.writeHeader();
@@ -178,11 +180,14 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto Metadomain<S, M>::WriteStats(const SimulationParams& params,
-                                    timestep_t              current_step,
-                                    timestep_t              finished_step,
-                                    simtime_t               current_time,
-                                    simtime_t finished_time) -> bool {
+  auto Metadomain<S, M>::WriteStats(
+    const SimulationParams& params,
+    timestep_t              current_step,
+    timestep_t              finished_step,
+    simtime_t               current_time,
+    simtime_t               finished_time,
+    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> CustomStat)
+    -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
@@ -192,7 +197,14 @@ namespace ntt {
     g_stats_writer.write(current_step);
     g_stats_writer.write(current_time);
     for (const auto& stat : g_stats_writer.statsWriters()) {
-      if (stat.id() == StatsID::N) {
+      if (stat.id() == StatsID::Custom) {
+        if (CustomStat != nullptr) {
+          g_stats_writer.write(
+            CustomStat(stat.name(), finished_step, finished_time, *local_domain));
+        } else {
+          raise::Error("Custom output requested but no function provided", HERE);
+        }
+      } else if (stat.id() == StatsID::N) {
         g_stats_writer.write(ComputeMoments<S, M, StatsID::N>(params,
                                                               local_domain->mesh,
                                                               local_domain->species,
@@ -260,78 +272,26 @@ namespace ntt {
     return true;
   }
 
-  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
-  template void Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::InitStatsWriter(
-    const SimulationParams&,
-    bool);
+#define METADOMAIN_STATS(S, M)                                                             \
+  template void Metadomain<S, M>::InitStatsWriter(const SimulationParams&, bool);          \
+  template auto Metadomain<S, M>::WriteStats(                                              \
+    const SimulationParams&,                                                               \
+    timestep_t,                                                                            \
+    timestep_t,                                                                            \
+    simtime_t,                                                                             \
+    simtime_t,                                                                             \
+    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>) \
+    -> bool;
 
-  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
-  template auto Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::WriteStats(
-    const SimulationParams&,
-    timestep_t,
-    timestep_t,
-    simtime_t,
-    simtime_t) -> bool;
+  METADOMAIN_STATS(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_STATS(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_STATS(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_STATS(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_STATS(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_STATS(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_STATS(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_STATS(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+#undef METADOMAIN_STATS
 
 } // namespace ntt

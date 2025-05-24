@@ -323,15 +323,16 @@ namespace ntt {
       Charge  = 7,
       N       = 8,
       Npart   = 9,
+      Custom  = 10,
     };
 
     constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
 
     static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
-                                                Rho, Charge, N,   Npart };
-    static constexpr const char* lookup[]   = { "b^2",    "e^2", "exb",
-                                                "j.e",    "t",   "rho",
-                                                "charge", "n",   "npart" };
+                                                Rho, Charge, N,   Npart, Custom };
+    static constexpr const char* lookup[] = { "b^2",   "e^2",   "exb",    "j.e",
+                                              "t",     "rho",   "charge", "n",
+                                              "npart", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

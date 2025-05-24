@@ -71,8 +71,8 @@ auto main() -> int {
                               "h",      "j",    "a",    "t",    "rho",
                               "charge", "n",    "nppc", "v",    "custom" };
 
-  enum_str_t all_out_stats = { "b^2", "e^2",    "exb", "j.e",  "t",
-                               "rho", "charge", "n",   "npart" };
+  enum_str_t all_out_stats = { "b^2", "e^2",    "exb", "j.e",   "t",
+                               "rho", "charge", "n",   "npart", "custom" };
 
   checkEnum<Coord>(all_coords);
   checkEnum<Metric>(all_metrics);

@@ -20,7 +20,14 @@ using namespace out;
 
 namespace stats {
 
-  OutputStats::OutputStats(const std::string& name) : m_name { name } {
+  OutputStats::OutputStats(const std::string& name, bool is_custom)
+    : m_name { name } {
+    if (is_custom) {
+      m_id    = StatsID::Custom;
+      comp    = {};
+      species = {};
+      return;
+    }
     // determine the stats ID
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
@@ -30,7 +37,7 @@ namespace stats {
     if (StatsID::contains(fmt::toLower(name_raw).c_str())) {
       m_id = StatsID::pick(fmt::toLower(name_raw).c_str());
     } else {
-      raise::Error("Unrecognized stats ID " + fmt::toLower(name_raw), HERE);
+      raise::Error("Unrecognized stats name: " + name, HERE);
     }
     // determine the species and components to output
     if (is_moment()) {
@@ -62,9 +69,10 @@ namespace stats {
     m_fname = filename;
   }
 
-  void Writer::defineStatsOutputs(const std::vector<std::string>& stats_to_write) {
+  void Writer::defineStatsOutputs(const std::vector<std::string>& stats_to_write,
+                                  bool is_custom) {
     for (const auto& stat : stats_to_write) {
-      m_stat_writers.emplace_back(stat);
+      m_stat_writers.emplace_back(stat, is_custom);
     }
   }
 

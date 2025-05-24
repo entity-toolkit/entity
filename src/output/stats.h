@@ -43,7 +43,7 @@ namespace stats {
     std::vector<std::vector<unsigned short>> comp {};
     std::vector<spidx_t>                     species {};
 
-    OutputStats(const std::string&);
+    OutputStats(const std::string&, bool);
 
     ~OutputStats() = default;
 
@@ -59,7 +59,15 @@ namespace stats {
     }
 
     [[nodiscard]]
+    auto is_custom() const -> bool {
+      return id() == StatsID::Custom;
+    }
+
+    [[nodiscard]]
     inline auto name() const -> std::string {
+      if (id() == StatsID::Custom) {
+        return m_name;
+      }
       // generate the name
       std::string tmp = std::string(id().to_string());
       if (tmp == "exb") {
@@ -151,7 +159,7 @@ namespace stats {
 
     void init(timestep_t, simtime_t);
     void defineStatsFilename(const std::string&);
-    void defineStatsOutputs(const std::vector<std::string>&);
+    void defineStatsOutputs(const std::vector<std::string>&, bool);
 
     void writeHeader();
 

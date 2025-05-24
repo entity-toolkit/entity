@@ -124,8 +124,10 @@ namespace ntt {
                simtime_t,
                std::function<void(const std::string&,
                                   ndfield_t<M::Dim, 6>&,
-                                  std::size_t,
-                                  const Domain<S, M>&)> = {}) -> bool;
+                                  index_t,
+                                  timestep_t,
+                                  simtime_t,
+                                  const Domain<S, M>&)> = nullptr) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -137,11 +139,14 @@ namespace ntt {
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);
-    auto WriteStats(const SimulationParams&,
-                    timestep_t,
-                    timestep_t,
-                    simtime_t,
-                    simtime_t) -> bool;
+    auto WriteStats(
+      const SimulationParams&,
+      timestep_t,
+      timestep_t,
+      simtime_t,
+      simtime_t,
+      std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> =
+        nullptr) -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);
