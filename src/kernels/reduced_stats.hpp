@@ -45,19 +45,19 @@ namespace kernel {
           const auto b1_u = EM(i1, em::bx1);
           const auto b1_d = metric.template transform<1, Idx::U, Idx::D>({ i1_ },
                                                                          b1_u);
-          buff += b1_u * b1_d;
+          buff += b1_u * b1_d * metric.sqrt_det_h({ i1_ });
         } else if constexpr (I == 2) {
           const auto b2_u = EM(i1, em::bx2);
           const auto b2_d = metric.template transform<2, Idx::U, Idx::D>(
             { i1_ + HALF },
             b2_u);
-          buff += b2_u * b2_d;
+          buff += b2_u * b2_d * metric.sqrt_det_h({ i1_ + HALF });
         } else {
           const auto b3_u = EM(i1, em::bx3);
           const auto b3_d = metric.template transform<3, Idx::U, Idx::D>(
             { i1_ + HALF },
             b3_u);
-          buff += b3_u * b3_d;
+          buff += b3_u * b3_d * metric.sqrt_det_h({ i1_ + HALF });
         }
       } else if constexpr (F == StatsID::E2) {
         if constexpr (I == 1) {
@@ -65,17 +65,17 @@ namespace kernel {
           const auto e1_d = metric.template transform<1, Idx::U, Idx::D>(
             { i1_ + HALF },
             e1_u);
-          buff += e1_u * e1_d;
+          buff += e1_u * e1_d * metric.sqrt_det_h({ i1_ + HALF });
         } else if constexpr (I == 2) {
           const auto e2_u = EM(i1, em::ex2);
           const auto e2_d = metric.template transform<2, Idx::U, Idx::D>({ i1_ },
                                                                          e2_u);
-          buff += e2_u * e2_d;
+          buff += e2_u * e2_d * metric.sqrt_det_h({ i1_ });
         } else {
           const auto e3_u = EM(i1, em::ex3);
           const auto e3_d = metric.template transform<3, Idx::U, Idx::D>({ i1_ },
                                                                          e3_u);
-          buff += e3_u * e3_d;
+          buff += e3_u * e3_d * metric.sqrt_det_h({ i1_ });
         }
       } else if constexpr (F == StatsID::ExB) {
         if constexpr (I == 1) {
@@ -91,7 +91,7 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF },
             EM(i1, em::bx3));
-          buff += e2_t * b3_t - e3_t * b2_t;
+          buff += (e2_t * b3_t - e3_t * b2_t) * metric.sqrt_det_h({ i1_ + HALF });
         } else if constexpr (I == 2) {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF },
@@ -105,7 +105,7 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF },
             EM(i1, em::bx3));
-          buff += e3_t * b1_t - e1_t * b3_t;
+          buff += (e3_t * b1_t - e1_t * b3_t) * metric.sqrt_det_h({ i1_ + HALF });
         } else {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF },
@@ -119,7 +119,7 @@ namespace kernel {
           const auto b2_t = metric.template transform<2, Idx::U, Idx::T>(
             { i1_ + HALF },
             EM(i1, em::bx2));
-          buff += e1_t * b2_t - e2_t * b1_t;
+          buff += (e1_t * b2_t - e2_t * b1_t) * metric.sqrt_det_h({ i1_ + HALF });
         }
       } else if constexpr (F == StatsID::JdotE) {
         vec_t<Dim::_3D> e_t { ZERO };
@@ -136,7 +136,8 @@ namespace kernel {
             HALF * (J(i1, cur::jx2) + J(i1 + 1, cur::jx2)),
             HALF * (J(i1, cur::jx3) + J(i1 + 1, cur::jx3)) },
           j_t);
-        buff += e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2];
+        buff += (e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2]) *
+                metric.sqrt_det_h({ i1_ + HALF });
       }
     }
 
@@ -149,19 +150,19 @@ namespace kernel {
           const auto b1_d = metric.template transform<1, Idx::U, Idx::D>(
             { i1_, i2_ + HALF },
             b1_u);
-          buff += b1_u * b1_d;
+          buff += b1_u * b1_d * metric.sqrt_det_h({ i1_, i2_ + HALF });
         } else if constexpr (I == 2) {
           const auto b2_u = EM(i1, i2, em::bx2);
           const auto b2_d = metric.template transform<2, Idx::U, Idx::D>(
             { i1_ + HALF, i2_ },
             b2_u);
-          buff += b2_u * b2_d;
+          buff += b2_u * b2_d * metric.sqrt_det_h({ i1_ + HALF, i2_ });
         } else {
           const auto b3_u = EM(i1, i2, em::bx3);
           const auto b3_d = metric.template transform<3, Idx::U, Idx::D>(
             { i1_ + HALF, i2_ + HALF },
             b3_u);
-          buff += b3_u * b3_d;
+          buff += b3_u * b3_d * metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF });
         }
       } else if constexpr (F == StatsID::E2) {
         if constexpr (I == 1) {
@@ -169,19 +170,19 @@ namespace kernel {
           const auto e1_d = metric.template transform<1, Idx::U, Idx::D>(
             { i1_ + HALF, i2_ },
             e1_u);
-          buff += e1_u * e1_d;
+          buff += e1_u * e1_d * metric.sqrt_det_h({ i1_ + HALF, i2_ });
         } else if constexpr (I == 2) {
           const auto e2_u = EM(i1, i2, em::ex2);
           const auto e2_d = metric.template transform<2, Idx::U, Idx::D>(
             { i1_, i2_ + HALF },
             e2_u);
-          buff += e2_u * e2_d;
+          buff += e2_u * e2_d * metric.sqrt_det_h({ i1_, i2_ + HALF });
         } else {
           const auto e3_u = EM(i1, i2, em::ex3);
           const auto e3_d = metric.template transform<3, Idx::U, Idx::D>(
             { i1_, i2_ },
             e3_u);
-          buff += e3_u * e3_d;
+          buff += e3_u * e3_d * metric.sqrt_det_h({ i1_, i2_ });
         }
       } else if constexpr (F == StatsID::ExB) {
         if constexpr (I == 1) {
@@ -198,7 +199,8 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF },
             EM(i1, i2, em::bx3));
-          buff += e2_t * b3_t - e3_t * b2_t;
+          buff += (e2_t * b3_t - e3_t * b2_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF });
         } else if constexpr (I == 2) {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF },
@@ -213,7 +215,8 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF },
             EM(i1, i2, em::bx3));
-          buff += e3_t * b1_t - e1_t * b3_t;
+          buff += (e3_t * b1_t - e1_t * b3_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF });
         } else {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF },
@@ -227,7 +230,8 @@ namespace kernel {
           const auto b2_t = metric.template transform<2, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF },
             HALF * (EM(i1, i2, em::bx2) + EM(i1, i2 + 1, em::bx2)));
-          buff += e1_t * b2_t - e2_t * b1_t;
+          buff += (e1_t * b2_t - e2_t * b1_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF });
         }
       } else if constexpr (F == StatsID::JdotE) {
         vec_t<Dim::_3D> e_t { ZERO };
@@ -246,7 +250,8 @@ namespace kernel {
             INV_4 * (J(i1, i2, cur::jx3) + J(i1 + 1, i2, cur::jx3) +
                      J(i1, i2 + 1, cur::jx3) + J(i1 + 1, i2 + 1, cur::jx3)) },
           j_t);
-        buff += e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2];
+        buff += (e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2]) *
+                metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF });
       }
     }
 
@@ -260,19 +265,19 @@ namespace kernel {
           const auto b1_d = metric.template transform<1, Idx::U, Idx::D>(
             { i1_, i2_ + HALF, i3_ + HALF },
             b1_u);
-          buff += b1_u * b1_d;
+          buff += b1_u * b1_d * metric.sqrt_det_h({ i1_, i2_ + HALF, i3_ + HALF });
         } else if constexpr (I == 2) {
           const auto b2_u = EM(i1, i2, i3, em::bx2);
           const auto b2_d = metric.template transform<2, Idx::U, Idx::D>(
             { i1_ + HALF, i2_, i3_ + HALF },
             b2_u);
-          buff += b2_u * b2_d;
+          buff += b2_u * b2_d * metric.sqrt_det_h({ i1_ + HALF, i2_, i3_ + HALF });
         } else {
           const auto b3_u = EM(i1, i2, i3, em::bx3);
           const auto b3_d = metric.template transform<3, Idx::U, Idx::D>(
             { i1_ + HALF, i2_ + HALF, i3_ },
             b3_u);
-          buff += b3_u * b3_d;
+          buff += b3_u * b3_d * metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ });
         }
       } else if constexpr (F == StatsID::E2) {
         if constexpr (I == 1) {
@@ -280,19 +285,19 @@ namespace kernel {
           const auto e1_d = metric.template transform<1, Idx::U, Idx::D>(
             { i1_ + HALF, i2_, i3_ },
             e1_u);
-          buff += e1_u * e1_d;
+          buff += e1_u * e1_d * metric.sqrt_det_h({ i1_ + HALF, i2_, i3_ });
         } else if constexpr (I == 2) {
           const auto e2_u = EM(i1, i2, i3, em::ex2);
           const auto e2_d = metric.template transform<2, Idx::U, Idx::D>(
             { i1_, i2_ + HALF, i3_ },
             e2_u);
-          buff += e2_u * e2_d;
+          buff += e2_u * e2_d * metric.sqrt_det_h({ i1_, i2_ + HALF, i3_ });
         } else {
           const auto e3_u = EM(i1, i2, i3, em::ex3);
           const auto e3_d = metric.template transform<3, Idx::U, Idx::D>(
             { i1_, i2_, i3_ + HALF },
             e3_u);
-          buff += e3_u * e3_d;
+          buff += e3_u * e3_d * metric.sqrt_det_h({ i1_, i2_, i3_ + HALF });
         }
       } else if constexpr (F == StatsID::ExB) {
         if constexpr (I == 1) {
@@ -312,7 +317,8 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF, i3_ + HALF },
             HALF * (EM(i1, i2, i3, em::bx3) + EM(i1, i2, i3 + 1, em::bx3)));
-          buff += e2_t * b3_t - e3_t * b2_t;
+          buff += (e2_t * b3_t - e3_t * b2_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF });
         } else if constexpr (I == 2) {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF, i3_ + HALF },
@@ -330,7 +336,8 @@ namespace kernel {
           const auto b3_t = metric.template transform<3, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF, i3_ + HALF },
             HALF * (EM(i1, i2, i3, em::bx3) + EM(i1, i2, i3 + 1, em::bx3)));
-          buff += e3_t * b1_t - e1_t * b3_t;
+          buff += (e3_t * b1_t - e1_t * b3_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF });
         } else {
           const auto e1_t = metric.template transform<1, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF, i3_ + HALF },
@@ -348,7 +355,8 @@ namespace kernel {
           const auto b2_t = metric.template transform<2, Idx::U, Idx::T>(
             { i1_ + HALF, i2_ + HALF, i3_ + HALF },
             HALF * (EM(i1, i2, i3, em::bx2) + EM(i1, i2 + 1, i3, em::bx2)));
-          buff += e1_t * b2_t - e2_t * b1_t;
+          buff += (e1_t * b2_t - e2_t * b1_t) *
+                  metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF });
         }
       } else if constexpr (F == StatsID::JdotE) {
         vec_t<Dim::_3D> e_t { ZERO };
@@ -371,7 +379,8 @@ namespace kernel {
             INV_4 * (J(i1, i2, i3, cur::jx3) + J(i1 + 1, i2, i3, cur::jx3) +
                      J(i1, i2 + 1, i3, cur::jx3) + J(i1 + 1, i2 + 1, i3, cur::jx3)) },
           j_t);
-        buff += e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2];
+        buff += (e_t[0] * j_t[0] + e_t[1] * j_t[1] + e_t[2] * j_t[2]) *
+                metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF });
       }
     }
   };

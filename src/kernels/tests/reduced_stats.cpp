@@ -62,8 +62,6 @@ void put_value(ndfield_t<D, N>& arr, real_t v, unsigned short c) {
   Kokkos::parallel_for("Fill", range, Fill_kernel<D, N>(arr, v, c));
 }
 
-inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
-
 template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
 auto compute_field_stat(const M&                    metric,
                         const ndfield_t<M::Dim, 6>& em,
@@ -75,13 +73,18 @@ auto compute_field_stat(const M&                    metric,
                           range,
                           kernel::ReducedFields_kernel<S, M, F, I>(em, j, metric),
                           buff);
-  return buff / static_cast<real_t>(num_cells);
+  return buff / metric.totVolume();
+}
+
+auto almost_equal(real_t a, real_t b, real_t acc) -> bool {
+  return (math::fabs(a - b) < acc * math::max(math::fabs(a), math::fabs(b))) +
+         (real_t)1e-10;
 }
 
 template <SimEngine::type S, class M>
 void testReducedStats(const std::vector<std::size_t>& res,
                       const boundaries_t<real_t>&     ext,
-                      const real_t                    acc = ONE) {
+                      const real_t                    acc) {
   raise::ErrorIf(res.size() != M::Dim, "Invalid resolution size", HERE);
 
   M metric { res, ext, {} };
@@ -185,8 +188,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    printf("Ex_Sq: %.12e\n", Ex_Sq);
-    raise::ErrorIf(not cmp::AlmostEqual_host(Ex_Sq, (real_t)(1), acc * epsilon),
+    raise::ErrorIf(not almost_equal(Ex_Sq, (real_t)(1), acc),
                    "Ex_Sq does not match expected value",
                    HERE);
   }
@@ -197,7 +199,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(Ey_Sq, (real_t)(4), acc * epsilon),
+    raise::ErrorIf(not almost_equal(Ey_Sq, (real_t)(4), acc),
                    "Ey_Sq does not match expected value",
                    HERE);
   }
@@ -208,7 +210,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(Ez_Sq, (real_t)(9), acc * epsilon),
+    raise::ErrorIf(not almost_equal(Ez_Sq, (real_t)(9), acc),
                    "Ez_Sq does not match expected value",
                    HERE);
   }
@@ -219,7 +221,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(Bx_Sq, (real_t)(1), acc * epsilon),
+    raise::ErrorIf(not almost_equal(Bx_Sq, (real_t)(1), acc),
                    "Bx_Sq does not match expected value",
                    HERE);
   }
@@ -230,7 +232,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(By_Sq, (real_t)(4), acc * epsilon),
+    raise::ErrorIf(not almost_equal(By_Sq, (real_t)(4), acc),
                    "By_Sq does not match expected value",
                    HERE);
   }
@@ -241,7 +243,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(Bz_Sq, (real_t)(9), acc * epsilon),
+    raise::ErrorIf(not almost_equal(Bz_Sq, (real_t)(9), acc),
                    "Bz_Sq does not match expected value",
                    HERE);
   }
@@ -252,7 +254,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                  J,
                                                                  cell_range,
                                                                  num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(ExB_x, (real_t)(12), acc * epsilon),
+    raise::ErrorIf(not almost_equal(ExB_x, (real_t)(12), acc),
                    "ExB_x does not match expected value",
                    HERE);
   }
@@ -263,7 +265,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                  J,
                                                                  cell_range,
                                                                  num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(ExB_y, (real_t)(-6), acc * epsilon),
+    raise::ErrorIf(not almost_equal(ExB_y, (real_t)(-6), acc),
                    "ExB_y does not match expected value",
                    HERE);
   }
@@ -274,7 +276,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                  J,
                                                                  cell_range,
                                                                  num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(ExB_z, (real_t)(0), acc * epsilon),
+    raise::ErrorIf(not almost_equal(ExB_z, (real_t)(0), acc),
                    "ExB_z does not match expected value",
                    HERE);
   }
@@ -285,7 +287,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
                                                                 J,
                                                                 cell_range,
                                                                 num_cells);
-    raise::ErrorIf(not cmp::AlmostEqual_host(JdotE, (real_t)(11), acc * epsilon),
+    raise::ErrorIf(not almost_equal(JdotE, (real_t)(11), acc),
                    "JdotE does not match expected value",
                    HERE);
   }
@@ -302,13 +304,13 @@ auto main(int argc, char* argv[]) -> int {
     std::pair<real_t, real_t> y_ext { 0.0, 4.92 };
     std::pair<real_t, real_t> z_ext { 0.0, 2.08 };
 
-    testReducedStats<SimEngine::SRPIC, Minkowski<Dim::_1D>>({ nx }, { x_ext }, 10);
+    testReducedStats<SimEngine::SRPIC, Minkowski<Dim::_1D>>({ nx }, { x_ext }, 1e-6);
     testReducedStats<SimEngine::SRPIC, Minkowski<Dim::_2D>>({ nx, ny },
                                                             { x_ext, y_ext },
-                                                            10);
+                                                            1e-6);
     testReducedStats<SimEngine::SRPIC, Minkowski<Dim::_3D>>({ nx, ny, nz },
                                                             { x_ext, y_ext, z_ext },
-                                                            10);
+                                                            1e-6);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
