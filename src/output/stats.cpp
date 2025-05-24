@@ -11,6 +11,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -71,14 +72,15 @@ namespace stats {
     CallOnce(
       [](auto& fname, auto& stat_writers) {
         std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << "step,time,";
+        StatsOut << std::setw(14) << "step" << "," << std::setw(14) << "time"
+                 << ",";
         for (const auto& stat : stat_writers) {
           if (stat.is_vector()) {
             for (auto i { 0u }; i < stat.comp.size(); ++i) {
-              StatsOut << stat.name(i) << ",";
+              StatsOut << std::setw(14) << stat.name(i) << ",";
             }
           } else {
-            StatsOut << stat.name() << ",";
+            StatsOut << std::setw(14) << stat.name() << ",";
           }
         }
         StatsOut << std::endl;

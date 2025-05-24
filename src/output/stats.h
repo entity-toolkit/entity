@@ -27,6 +27,7 @@
 #endif
 
 #include <fstream>
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -174,7 +175,7 @@ namespace stats {
       CallOnce(
         [](auto&& fname, auto&& value) {
           std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-          StatsOut << value << ",";
+          StatsOut << std::setw(14) << value << ",";
           StatsOut.close();
         },
         m_fname,
