@@ -768,7 +768,7 @@ namespace kernel {
 
           const real_t Qdxdt = coeff * inv_dt;
           const real_t Qdydt = coeff * inv_dt;
-          const real_t QVz   = coeff * inv_dt * vp[2];
+          const real_t QVz   = coeff * vp[2];
 
           // Esirkepov - Eq. 39
           // x-component
