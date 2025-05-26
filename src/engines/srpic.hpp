@@ -92,6 +92,9 @@ namespace ntt {
       if (fieldsolver_enabled) {
         timers.start("FieldSolver");
         Faraday(dom, HALF);
+	if constexpr (traits::has_method<traits::pgen::custom_fieldevolution_t, decltype(m_pgen)>::value) {
+            m_pgen.CustomFieldEvolution(step, time, dom, false, true);
+        }	
         timers.stop("FieldSolver");
 
         timers.start("Communications");
@@ -133,6 +136,9 @@ namespace ntt {
       if (fieldsolver_enabled) {
         timers.start("FieldSolver");
         Faraday(dom, HALF);
+	if constexpr (traits::has_method<traits::pgen::custom_fieldevolution_t, decltype(m_pgen)>::value) {
+            m_pgen.CustomFieldEvolution(step, time, dom, false, true);
+        }		
         timers.stop("FieldSolver");
 
         timers.start("Communications");
@@ -145,6 +151,9 @@ namespace ntt {
 
         timers.start("FieldSolver");
         Ampere(dom, ONE);
+	if constexpr (traits::has_method<traits::pgen::custom_fieldevolution_t, decltype(m_pgen)>::value) {
+            m_pgen.CustomFieldEvolution(step, time, dom, true, false);
+        }		
         timers.stop("FieldSolver");
 
         if (deposit_enabled) {
@@ -165,6 +174,9 @@ namespace ntt {
       {
         timers.start("Injector");
         ParticleInjector(dom);
+	if constexpr (traits::has_method<traits::pgen::custom_partevolution_t, decltype(m_pgen)>::value) {
+            m_pgen.CustomPartEvolution(step, time, dom);
+        }		
         timers.stop("Injector");
       }
 

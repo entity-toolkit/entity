@@ -1,4 +1,4 @@
-/**
+ /**
  * @file kernels/fields_bcs.hpp
  * @brief Kernels used for field boundary conditions
  * @implements
@@ -213,7 +213,7 @@ namespace kernel::bc {
                 const auto bx2_U = metric.template transform<2, Idx::T, Idx::U>(
                   { i1_ + HALF, i2_ },
                   fset.bx2(x_Ph_H0));
-                Fld(i1, i2, em::bx2) = s * Fld(i1, i2, em::bx2) + (ONE - s) * bx2_U;
+                Fld(i1, i2, em::bx2) = s * Fld(i1, i2, em::bx2);// + (ONE - s) * bx2_U;
               }
             }
           }
@@ -238,7 +238,7 @@ namespace kernel::bc {
                 ex2_U = metric.template transform<2, Idx::T, Idx::U>(
                   { i1_, i2_ + HALF },
                   fset.ex2(x_Ph_0H));
-                Fld(i1, i2, em::ex2) = s * Fld(i1, i2, em::ex2) + (ONE - s) * ex2_U;
+                Fld(i1, i2, em::ex2) = s * Fld(i1, i2, em::ex2);// + (ONE - s) * ex2_U;
               }
             }
             if constexpr (defines_bx1) {
@@ -270,7 +270,7 @@ namespace kernel::bc {
               const auto dx = math::abs(
                 metric.template convert<i, Crd::Cd, Crd::Ph>(xi_Cd) - xg_edge);
               const auto s = shape(dx);
-              Fld(i1, i2, em::ex3) = s * Fld(i1, i2, em::ex3) + (ONE - s) * ex3_U;
+              Fld(i1, i2, em::ex3) = s * Fld(i1, i2, em::ex3);// + (ONE - s) * ex3_U;
             }
           }
 
@@ -294,7 +294,7 @@ namespace kernel::bc {
                 metric.template convert<i, Crd::Cd, Crd::Ph>(xi_Cd) - xg_edge);
               const auto s = shape(dx);
               // bx3
-              Fld(i1, i2, em::bx3) = s * Fld(i1, i2, em::bx3) + (ONE - s) * bx3_U;
+              Fld(i1, i2, em::bx3) = s * Fld(i1, i2, em::bx3);// + (ONE - s) * bx3_U;
             }
           }
         } else {
