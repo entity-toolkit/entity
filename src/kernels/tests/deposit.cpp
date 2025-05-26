@@ -81,14 +81,14 @@ void testDeposit(const std::vector<std::size_t>&      res,
   array_t<short*>      tag { "tag", 10 };
   const real_t         charge { 1.0 }, inv_dt { 1.0 };
 
-  const int i0 = 3, j0 = 3;
-  const int i0f = 3, j0f = 3;
-  const real_t uz = 0.5;
+  const int    i0 = 4, j0 = 4;
+  const int    i0f = 3, j0f = 3;
+  const real_t uz = 2.5;
 
-  //   const prtldx_t dxi = 0.53, dxf = 0.47;
-  //   const prtldx_t dyi = 0.34, dyf = 0.52;
-  const prtldx_t dxi = 0.65, dxf = 0.65;
-  const prtldx_t dyi = 0.65, dyf = 0.65;
+  // const prtldx_t dxi = 0.53, dxf = 0.47;
+  // const prtldx_t dyi = 0.34, dyf = 0.52;
+  const prtldx_t dxi = 0.65, dxf = 0.99;
+  const prtldx_t dyi = 0.65, dyf = 0.80;
   const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0f + (real_t)dxf;
   const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0f + (real_t)dyf;
 
@@ -116,14 +116,10 @@ void testDeposit(const std::vector<std::size_t>&      res,
   const real_t Jy1 = Fy1 * (1 - Wx1) + Fy2 * (1 - Wx2);
   const real_t Jy2 = Fy1 * Wx1 + Fy2 * Wx2;
 
-  const real_t Jz = Fz1 * (1 - Wx1) + Fz2 * (1 - Wy1) +
-                    Fz1 * Wx1 * (1 - Wy1) +
-                    Fz1 * (1 - Wx1) * Wy1 +
-                    Fz1 * Wx1 * Wy1 +
-                    Fz2 * (1 - Wx2) * (1 - Wy2) +
-                    Fz2 * Wx2 * (1 - Wy2) +
-                    Fz2 * (1 - Wx2) * Wy2 +
-                    Fz2 * Wx2 * Wy2;
+  const real_t Jz = Fz1 * (1 - Wx1) * (1 - Wy1) + Fz1 * Wx1 * (1 - Wy1) +
+                    Fz1 * (1 - Wx1) * Wy1 + Fz1 * Wx1 * Wy1 +
+                    Fz2 * (1 - Wx2) * (1 - Wy2) + Fz2 * Wx2 * (1 - Wy2) +
+                    Fz2 * (1 - Wx2) * Wy2 + Fz2 * Wx2 * Wy2;
 
   put_value<int>(i1, i0f, 0);
   put_value<int>(i2, j0f, 0);
@@ -141,7 +137,7 @@ void testDeposit(const std::vector<std::size_t>&      res,
 
   // clang-format off
   Kokkos::parallel_for("CurrentsDeposit", 10,
-                       kernel::DepositCurrents_kernel<S, M, 1u>(J_scat,
+                       kernel::DepositCurrents_kernel<S, M, 2u>(J_scat,
                                                             i1, i2, i3,
                                                             i1_prev, i2_prev, i3_prev,
                                                             dx1, dx2, dx3,
@@ -453,14 +449,14 @@ void testDeposit(const std::vector<std::size_t>&      res,
 //   Kokkos::parallel_reduce(
 //     "SumJx",
 //     range,
-//     Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx1); },
-//     SumJx);
+//     Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx1);
+//     }, SumJx);
 
 //   Kokkos::parallel_reduce(
 //     "SumJy",
 //     range,
-//     Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx2); },
-//     SumJy);
+//     Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx2);
+//     }, SumJy);
 
 //   auto J_h = Kokkos::create_mirror_view(J);
 //   Kokkos::deep_copy(J_h, J);
