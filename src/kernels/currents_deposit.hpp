@@ -148,7 +148,7 @@ namespace kernel {
         S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
       } else {
-        raise::Error("Invalid shift in indices", HERE);
+        raise::KernelError(HERE, "Invalid shift in indices");
       }
 
       // account for ghost cells here to shorten J update expression
@@ -285,7 +285,7 @@ namespace kernel {
         S1_3 = static_cast<real_t>(1 / 6) * di_center3;
         S1_4 = ZERO;
       } else {
-        raise::Error("Invalid shift in indices", HERE);
+        raise::KernelError(HERE, "Invalid shift in indices");
       }
 
       // account for ghost cells here to shorten J update expression
@@ -862,7 +862,7 @@ namespace kernel {
             J_acc(ix_min + 3, iy_min + 2, cur::jx2) += jy_3_2;
           }
           /*
-              z - component, simulated direction
+              z - component, unsimulated direction
           */
           J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
           J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
@@ -931,7 +931,7 @@ namespace kernel {
                              i3(p), dx3(p),
                              i3_prev(p), dx3_prev(p));
           // clang-format on
-          
+
           // Calculate weight function
           // for (int i = 0; i < interp_order + 2; ++i) {
           //   for (int j = 0; j < interp_order + 2; ++j) {
