@@ -1110,50 +1110,50 @@ namespace kernel::sr {
 
         // Compute weights for second-order interpolation
         // primal
-        const auto w0px = HALF * SQR(HALF + dx1_center);
-        const auto w1px = static_cast<real_t>(0.75) - SQR(dx1_center);
-        const auto w2px = HALF * SQR(HALF - dx1_center);
+        const auto w0p = HALF * SQR(HALF + dx1_center);
+        const auto w1p = static_cast<real_t>(0.75) - SQR(dx1_center);
+        const auto w2p = HALF * SQR(HALF - dx1_center);
 
         // dual
-        const auto w0dx = HALF * SQR(ONE - dx1_);
-        const auto w2dx = HALF * SQR(dx1_);
-        const auto w1dx = ONE - w0dx - w2dx;
+        const auto w0d = HALF * SQR(ONE - dx1_);
+        const auto w2d = HALF * SQR(dx1_);
+        const auto w1d = ONE - w0d - w2d;
 
         // Ex1 (dual grid)
         const auto ex1_0 = EB(i - 1, em::ex1);
         const auto ex1_1 = EB(i, em::ex1);
         const auto ex1_2 = EB(i + 1, em::ex1);
-        e0[0]            = ex1_0 * wd0 + ex1_1 * wd0 + ex1_2 * wd0;
+        e0[0]            = ex1_0 * w0d + ex1_1 * w1d + ex1_2 * w2d;
 
         // Ex2 (primal grid)
         const auto ex2_0 = EB(indx + i - 1, em::ex2);
         const auto ex2_1 = EB(indx + i, em::ex2);
         const auto ex2_2 = EB(indx + i + 1, em::ex2);
-        e0[1]            = ex2_0 * wp0 + ex2_1 * wp1 + ex2_2 * wp2;
+        e0[1]            = ex2_0 * w0p + ex2_1 * w1p + ex2_2 * w2p;
 
         // Ex3 (primal grid)
         const auto ex3_0 = EB(indx + i - 1, em::ex3);
         const auto ex3_1 = EB(indx + i, em::ex3);
         const auto ex3_2 = EB(indx + i + 1, em::ex3);
-        e0[2]            = ex3_0 * wp0 + ex3_1 * wp1 + ex3_2 * wp2;
+        e0[2]            = ex3_0 * w0p + ex3_1 * w1p + ex3_2 * w2p;
 
         // Bx1 (primal grid)
         const auto bx1_0 = EB(indx + i - 1, em::bx1);
         const auto bx1_1 = EB(indx + i, em::bx1);
         const auto bx1_2 = EB(indx + i + 1, em::bx1);
-        b0[0]            = bx1_0 * wp0 + bx1_1 * wp1 + bx1_2 * wp2;
+        b0[0]            = bx1_0 * w0p + bx1_1 * w1p + bx1_2 * w2p;
 
         // Bx2 (dual grid)
         const auto bx2_0 = EB(i - 1, em::bx2);
         const auto bx2_1 = EB(i, em::bx2);
         const auto bx2_2 = EB(i + 1, em::bx2);
-        b0[1]            = bx2_0 * wd0 + bx2_1 * wd1 + bx2_2 * wd2;
+        b0[1]            = bx2_0 * w0d + bx2_1 * w1d + bx2_2 * w2d;
 
         // Bx3 (dual grid)
         const auto bx3_0 = EB(i - 1, em::bx3);
         const auto bx3_1 = EB(i, em::bx3);
         const auto bx3_2 = EB(i + 1, em::bx3);
-        b0[2]            = bx3_0 * wd0 + bx3_1 * wd1 + bx3_2 * wd2;
+        b0[2]            = bx3_0 * w0d + bx3_1 * w1d + bx3_2 * w2d;
 
       } else if constexpr (D == Dim::_2D) {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
