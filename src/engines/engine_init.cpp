@@ -16,6 +16,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <string>
+
 namespace ntt {
 
   template <SimEngine::type S, class M>
@@ -25,6 +27,20 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
       m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
+
+      const auto checkpoint_walltime = m_params.template get<std::string>(
+        "checkpoint.walltime");
+      if (not checkpoint_walltime.empty()) {
+        walltime_checkpoint_pending = true;
+        raise::ErrorIf(checkpoint_walltime.size() != 8,
+                       "invalid checkpoint walltime format, expected HH:MM:SS",
+                       HERE);
+        end_walltime =
+          start_walltime +
+          std::chrono::hours(std::stoi(checkpoint_walltime.substr(0, 2))) +
+          std::chrono::minutes(std::stoi(checkpoint_walltime.substr(3, 2))) +
+          std::chrono::seconds(std::stoi(checkpoint_walltime.substr(6, 2)));
+      }
 #endif
       logger::Checkpoint("Initializing Engine", HERE);
       if (not is_resuming) {

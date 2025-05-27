@@ -23,7 +23,6 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
-#include "utils/progressbar.h"
 #include "utils/timer.h"
 #include "utils/toml.h"
 
@@ -44,6 +43,7 @@
   #include <mpi.h>
 #endif // MPI_ENABLED
 
+#include <chrono>
 #include <map>
 #include <vector>
 
@@ -61,6 +61,9 @@ namespace ntt {
   #else
     adios2::ADIOS m_adios;
   #endif
+    const timestamp_t start_walltime { std::chrono::system_clock::now() };
+    timestamp_t       end_walltime {};
+    bool              walltime_checkpoint_pending { false };
 #endif
 
     SimulationParams m_params;

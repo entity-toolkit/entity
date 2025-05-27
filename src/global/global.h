@@ -342,12 +342,14 @@ template <Dimension D>
 using vec_t = tuple_t<real_t, D>;
 
 // time/duration
+using duration_t = double;
+using simtime_t  = double;
+using timestep_t = std::size_t;
+using ncells_t   = std::size_t;
+using npart_t    = unsigned long int;
+
+// walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
-using duration_t  = double;
-using simtime_t   = double;
-using timestep_t  = std::size_t;
-using ncells_t    = std::size_t;
-using npart_t     = unsigned long int;
 
 // index/number
 using index_t = const std::size_t;

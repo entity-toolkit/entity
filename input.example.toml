@@ -470,6 +470,15 @@
   #   @note: 0 = disable checkpointing
   #   @note: -1 = keep all checkpoints
   keep = ""
+  # Write a checkpoint once after a fixed walltime 
+  #   @type: string
+  #   @default: "" (disabled)
+  #   @note: The format is "HH:MM:SS"
+  #   @note: Useful for long-running simulations to ensure that ...
+  #   @note: ... the simulation can be resumed after allocation expires
+  #   @note: Empty string means disables this (still writes checkpoints on interval)
+  #   @note: This does not exit the simulation
+  walltime = ""
 
   # @inferred:
   # - is_resuming

@@ -97,6 +97,15 @@ namespace ntt {
                                                         step - 1,
                                                         time,
                                                         time - dt);
+        if ((not print_checkpoint) and (walltime_checkpoint_pending) and
+            (std::chrono::system_clock::now() >= end_walltime)) {
+          print_checkpoint            = m_metadomain.WriteCheckpoint(m_params,
+                                                          step,
+                                                          step - 1,
+                                                          time,
+                                                          time - dt);
+          walltime_checkpoint_pending = false;
+        }
         timers.stop("Checkpoint");
 #endif
 
@@ -133,4 +142,5 @@ namespace ntt {
   template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::run();
+
 } // namespace ntt
