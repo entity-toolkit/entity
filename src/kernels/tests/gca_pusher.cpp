@@ -156,24 +156,28 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   for (auto t { 0u }; t < 2000; ++t) {
     // clang-format off
+    const auto pusher_params = kernel::sr::PusherParams<Minkowski<Dim::_3D>>(
+                                                        PrtlPusher::BORIS,
+                                                        kernel::sr::EnableGCA, kernel::sr::DisableExtForce, 
+                                                        kernel::sr::Cooling::None,
+                                                        emfield,
+                                                        sp,
+                                                        i1, i2, i3,
+                                                        i1_prev, i2_prev, i3_prev,
+                                                        dx1, dx2, dx3,
+                                                        dx1_prev, dx2_prev, dx3_prev,
+                                                        ux1, ux2, ux3,
+                                                        phi, tag,
+                                                        metric,
+                                                        ZERO, coeff, dt,
+                                                        nx1, nx2, nx3,
+                                                        boundaries,
+                                                        (real_t)10000.0, ONE, ZERO);
+    // clang-format on 
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     true, false, kernel::sr::Cooling::None,
-                                                     emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     (real_t)10000.0, ONE, ZERO));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params));
 
     auto ux1_      = Kokkos::create_mirror_view(ux1);
     auto ux2_      = Kokkos::create_mirror_view(ux2);

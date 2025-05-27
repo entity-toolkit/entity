@@ -4,7 +4,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-#include "utils/plog.h"
 
 #include "metrics/minkowski.h"
 
@@ -12,11 +11,6 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
-#include <plog/Appenders/ColorConsoleAppender.h>
-#include <plog/Appenders/RollingFileAppender.h>
-#include <plog/Formatters/TxtFormatter.h>
-#include <plog/Init.h>
-#include <plog/Log.h>
 
 #include <cmath>
 #include <iostream>
@@ -48,34 +42,29 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
-struct Force {
-  const std::vector<spidx_t> species { 1 };
+struct QED {
+  array_t<int> cntr { "cntr" };
 
-  Force() {}
+  QED() {}
 
-  Force(real_t force) : force { force } {}
-
-  Inline auto fx1(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
-    return force * math::sin(ONE) * math::sin(ONE);
+  Inline void operator()(const vec_t<Dim::_3D>& u_xyz,
+                         const vec_t<Dim::_3D>& e_xyz,
+                         const vec_t<Dim::_3D>& b_xyz) const {
+    const auto gamma = math::sqrt(ONE + NORM_SQR(u_xyz[0], u_xyz[1], u_xyz[2]));
+    if (gamma > 1.5) {
+      Kokkos::atomic_fetch_add(&cntr(), 1);
+    }
   }
 
-  Inline auto fx2(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
-    return force * math::sin(ONE) * math::cos(ONE);
+  auto get_cntr() const -> int {
+    auto cntr_h = Kokkos::create_mirror_view(cntr);
+    Kokkos::deep_copy(cntr_h, cntr);
+    return cntr_h();
   }
-
-  Inline auto fx3(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
-    return force * math::cos(ONE);
-  }
-
-private:
-  const real_t force { ZERO };
 };
 
 template <SimEngine::type S, typename M>
-void testPusher(const std::vector<std::size_t>& res) {
+void testQED(const std::vector<std::size_t>& res) {
   static_assert(M::Dim == 3);
   raise::ErrorIf(res.size() != M::Dim, "res.size() != M::Dim", HERE);
 
@@ -99,11 +88,10 @@ void testPusher(const std::vector<std::size_t>& res) {
                                           res[2] + 2 * N_GHOSTS };
 
   const real_t x1_0 = 1.15, x2_0 = 1.85, x3_0 = 1.25;
-  const real_t ux1_0 = 0.02, ux2_0 = -0.2, ux3_0 = 0.1;
+  const real_t ux1_0 = 3.02, ux2_0 = -6.2, ux3_0 = 3.1;
   // const real_t gamma_0 = math::sqrt(ONE + NORM_SQR(ux1_0, ux2_0, ux3_0));
   const real_t omegaB0 = 1.0;
   const real_t dt      = 0.01;
-  const real_t f_mag   = 0.01;
 
   Kokkos::parallel_for(
     "init 3D",
@@ -153,9 +141,9 @@ void testPusher(const std::vector<std::size_t>& res) {
   put_value<prtldx_t>(dx1, (prtldx_t)(x1_0 - (int)(x1_0)), 1);
   put_value<prtldx_t>(dx2, (prtldx_t)(x2_0 - (int)(x2_0)), 1);
   put_value<prtldx_t>(dx3, (prtldx_t)(x3_0 - (int)(x3_0)), 1);
-  put_value<real_t>(ux1, -ux1_0, 1);
-  put_value<real_t>(ux2, -ux2_0, 1);
-  put_value<real_t>(ux3, -ux3_0, 1);
+  put_value<real_t>(ux1, -ux1_0 / 100.0, 1);
+  put_value<real_t>(ux2, -ux2_0 / 100.0, 1);
+  put_value<real_t>(ux3, -ux3_0 / 100.0, 1);
   put_value<short>(tag, ParticleTag::alive, 1);
 
   // Particle boundaries
@@ -172,23 +160,15 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-4 : 1e-6;
 
-  const auto ext_force = Force { f_mag };
-  auto force = kernel::sr::Force<Dim::_3D, Coord::Cart, decltype(ext_force), false> {
-    ext_force
-  };
-
-  static plog::RollingFileAppender<plog::NttInfoFormatter> file_appender(
-    "pusher_log.csv");
-  plog::init(plog::verbose, &file_appender);
-  PLOGD << "t,i1,i2,i3,dx1,dx2,dx3,ux1,ux2,ux3";
+  const auto qed_process = QED {};
 
   for (auto t { 0u }; t < 100; ++t) {
     const real_t time = t * dt;
 
     // clang-format off
-    auto pusher_params = kernel::sr::PusherParams<Minkowski<Dim::_3D>, decltype(force)>(
+    auto pusher_params = kernel::sr::PusherParams<Minkowski<Dim::_3D>, kernel::sr::NoForce_t, decltype(qed_process)>(
                                                         PrtlPusher::BORIS,
-                                                        kernel::sr::DisableGCA, kernel::sr::EnableExtForce, 
+                                                        kernel::sr::DisableGCA, kernel::sr::DisableExtForce, 
                                                         kernel::sr::Cooling::None,
                                                         emfield,
                                                         sp,
@@ -203,82 +183,15 @@ void testPusher(const std::vector<std::size_t>& res) {
                                                         nx1, nx2, nx3,
                                                         boundaries,
                                                         ZERO, ZERO, ZERO);
-    pusher_params.force = &force;
+    pusher_params.qed = &qed_process;
     // clang-format on
     Kokkos::parallel_for(
       "pusher",
-      CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(force)>(
+      2,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, kernel::sr::NoForce_t, decltype(qed_process)>(
         pusher_params));
-
-    auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
-    auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
-    auto i3_prev_ = Kokkos::create_mirror_view(i3_prev);
-    auto i1_      = Kokkos::create_mirror_view(i1);
-    auto i2_      = Kokkos::create_mirror_view(i2);
-    auto i3_      = Kokkos::create_mirror_view(i3);
-    Kokkos::deep_copy(i1_prev_, i1_prev);
-    Kokkos::deep_copy(i2_prev_, i2_prev);
-    Kokkos::deep_copy(i3_prev_, i3_prev);
-    Kokkos::deep_copy(i1_, i1);
-    Kokkos::deep_copy(i2_, i2);
-    Kokkos::deep_copy(i3_, i3);
-
-    auto dx1_prev_ = Kokkos::create_mirror_view(dx1_prev);
-    auto dx2_prev_ = Kokkos::create_mirror_view(dx2_prev);
-    auto dx3_prev_ = Kokkos::create_mirror_view(dx3_prev);
-    auto dx1_      = Kokkos::create_mirror_view(dx1);
-    auto dx2_      = Kokkos::create_mirror_view(dx2);
-    auto dx3_      = Kokkos::create_mirror_view(dx3);
-    auto ux1_      = Kokkos::create_mirror_view(ux1);
-    auto ux2_      = Kokkos::create_mirror_view(ux2);
-    auto ux3_      = Kokkos::create_mirror_view(ux3);
-    Kokkos::deep_copy(dx1_prev_, dx1_prev);
-    Kokkos::deep_copy(dx2_prev_, dx2_prev);
-    Kokkos::deep_copy(dx3_prev_, dx3_prev);
-    Kokkos::deep_copy(dx1_, dx1);
-    Kokkos::deep_copy(dx2_, dx2);
-    Kokkos::deep_copy(dx3_, dx3);
-    Kokkos::deep_copy(ux1_, ux1);
-    Kokkos::deep_copy(ux2_, ux2);
-    Kokkos::deep_copy(ux3_, ux3);
-
-    PLOGD.printf("%e,%d,%d,%d,%e,%e,%e,%e,%e,%e",
-                 time,
-                 i1_(1),
-                 i2_(1),
-                 i3_(1),
-                 dx1_(1),
-                 dx2_(1),
-                 dx3_(1),
-                 ux1_(1),
-                 ux2_(1),
-                 ux3_(1));
-
-    {
-      const real_t ux1_expect = ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                          std::sin(ONE);
-      const real_t ux2_expect = ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                          std::cos(ONE);
-      const real_t ux3_expect = ux3_0 + (time + dt) * f_mag * std::cos(ONE);
-
-      check_value(t, ux1_(0), ux1_expect, eps, "Particle #1 ux1");
-      check_value(t, ux2_(0), ux2_expect, eps, "Particle #1 ux2");
-      check_value(t, ux3_(0), ux3_expect, eps, "Particle #1 ux3");
-    }
-
-    {
-      const real_t ux1_expect = -ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                           std::sin(ONE);
-      const real_t ux2_expect = -ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                           std::cos(ONE);
-      const real_t ux3_expect = -ux3_0 + (time + dt) * f_mag * std::cos(ONE);
-
-      check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
-      check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
-      check_value(t, ux3_(1), ux3_expect, eps, "Particle #2 ux3");
-    }
   }
+  raise::ErrorIf(qed_process.get_cntr() != 100, "Wrong # of particles created", HERE);
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -287,7 +200,7 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    testPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>>({ 10, 10, 10 });
+    testQED<SimEngine::SRPIC, Minkowski<Dim::_3D>>({ 10, 10, 10 });
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
