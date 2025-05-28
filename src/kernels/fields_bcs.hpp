@@ -205,7 +205,7 @@ namespace kernel::bc {
                 const auto ex1_U = metric.template transform<1, Idx::T, Idx::U>(
                   { i1_ + HALF, i2_ },
                   fset.ex1(x_Ph_H0));
-                Fld(i1, i2, em::ex1) = s * Fld(i1, i2, em::ex1) + (ONE - s) * ex1_U;
+                Fld(i1, i2, em::ex1) = s * Fld(i1, i2, em::ex1);// + (ONE - s) * ex1_U;
               }
             }
             if constexpr (defines_bx2) {
@@ -247,7 +247,7 @@ namespace kernel::bc {
                 bx1_U = metric.template transform<1, Idx::T, Idx::U>(
                   { i1_, i2_ + HALF },
                   fset.bx1(x_Ph_0H));
-                Fld(i1, i2, em::bx1) = s * Fld(i1, i2, em::bx1) + (ONE - s) * bx1_U;
+                Fld(i1, i2, em::bx1) = s * Fld(i1, i2, em::bx1);// + (ONE - s) * bx1_U;
               }
             }
           }
