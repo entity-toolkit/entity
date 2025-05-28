@@ -90,7 +90,7 @@
     # Boundary conditions for fields:
     #   @required
     #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
-    #   @valid: "PERIODIC", "MATCH", "FIXED", "ATMOSPHERE", "CUSTOM", "HORIZON"
+    #   @valid: "PERIODIC", "MATCH", "FIXED", "ATMOSPHERE", "CUSTOM", "HORIZON", "CONDUCTOR"
     #   @example: [["CUSTOM", "MATCH"]] (for 2D spherical [[rmin, rmax]])
     #   @note: When periodic in any of the directions, you should only set one value: [..., ["PERIODIC"], ...]
     #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]): [["ATMOSPHERE", "MATCH"]]
@@ -107,16 +107,14 @@
     particles = ""
 
     [grid.boundaries.match]
-      # Size of the matching layer for fields in physical (code) units:
-      #   @type: float
+      # Size of the matching layer in each direction for fields in physical (code) units:
+      #   @type: float or array of tuples
       #   @default: 1% of the domain size (in shortest dimension)
       #   @note: In spherical, this is the size of the layer in r from the outer wall
-      #   @note: In cartesian, this is the same for all dimensions where applicable
+      #   @example: ds = 1.5 (will set the same for all directions)
+      #   @example: ds = [[1.5], [2.0, 1.0], [1.1]] (will duplicate 1.5 for +/- x1 and 1.1 for +/- x3)
+      #   @example: ds = [[], [1.5], []] (will only set for x2)
       ds = ""
-      # Absorption coefficient for fields:
-      #   @type: float: -inf < ... < inf, != 0
-      #   @default: 1.0
-      coeff = ""
 
     [grid.boundaries.absorb]
       # Size of the absorption layer for particles in physical (code) units:
@@ -340,7 +338,7 @@
     # Field quantities to output:
     #   @type: array of strings
     #   @valid: fields: "E", "B", "J", "divE"
-    #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij"
+    #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij", "Vi"
     #   @valid: for GR: "D", "H", "divD", "A"
     #   @default: []
     #   @note: For T, you can use unspecified indices, e.g., Tij, T0i, or specific ones, e.g., Ttt, T00, T02, T23
@@ -434,6 +432,28 @@
     #   @default: false
     ghosts = ""
 
+  [output.stats]
+    # Toggle for the stats output:
+    #   @type: bool
+    #   @default: true
+    enable = ""
+    # Number of timesteps between stat outputs (overriden if `output.stats.interval_time != -1`):
+    #   @type: unsigned int: > 0
+    #   @default: 100
+    interval = ""
+    # Physical (code) time interval between stat outputs:
+    #   @type: float
+    #   @default: -1.0 (use `output.stats.interval_time`)
+    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    interval_time = ""
+    # Field quantities to output:
+    #   @type: array of strings
+    #   @valid: fields: "B^2", "E^2", "ExB"
+    #   @valid: moments: "N", "Charge", "Rho", "T00", "T0i", "Tij"
+    #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
+    #   @note: Same notation as for `output.fields.quantities`
+    quantities = ""
+
 [checkpoint]
   # Number of timesteps between checkpoints:
   #   @type: unsigned int: > 0
@@ -478,3 +498,9 @@
   #   @type: bool
   #   @default: true
   colored_stdout = ""
+  # Specify the log level:
+  #   @type: string
+  #   @valid: "VERBOSE", "WARNING", "ERROR"
+  #   @default: "VERBOSE"
+  #   @note: VERBOSE prints all messages, WARNING prints only warnings and errors, ERROR prints only errors
+  log_level = ""

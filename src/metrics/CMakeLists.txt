@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103
 # ------------------------------
 # @defines: ntt_metrics [INTERFACE]
 #
@@ -22,4 +23,3 @@ target_link_libraries(ntt_metrics INTERFACE ${libs})
 
 target_include_directories(ntt_metrics
                            INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../)
-

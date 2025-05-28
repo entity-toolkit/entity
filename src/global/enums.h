@@ -9,11 +9,11 @@
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
- *                                    custom, horizon, axis, sync
+ *                                    custom, horizon, axis, conductor, sync
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
- *                                    a, t, rho, charge, n, nppc, custom
+ *                                    a, t, rho, charge, n, nppc, v, custom
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -56,7 +56,7 @@ namespace ntt {
                             const char* const* arr_c,
                             const std::size_t  n,
                             const char*        elem) -> T {
-      for (std::size_t i = 0; i < n; ++i) {
+      for (auto i = 0u; i < n; ++i) {
         if (strcmp(arr_c[i], elem) == 0) {
           return (T)(arr[i]);
         }
@@ -70,7 +70,7 @@ namespace ntt {
     constexpr auto baseContains(const char* const* arr_c,
                                 const std::size_t  n,
                                 const char*        elem) -> bool {
-      for (std::size_t i = 0; i < n; ++i) {
+      for (auto i = 0u; i < n; ++i) {
         if (strcmp(arr_c[i], elem) == 0) {
           return true;
         }
@@ -221,16 +221,20 @@ namespace ntt {
       CUSTOM     = 5,
       HORIZON    = 6,
       AXIS       = 7,
-      SYNC       = 8, // <- SYNC means synchronization with other domains
+      CONDUCTOR  = 8,
+      SYNC       = 9 // <- SYNC means synchronization with other domains
     };
 
     constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
 
-    static constexpr type variants[] = { PERIODIC, MATCH,   FIXED, ATMOSPHERE,
-                                         CUSTOM,   HORIZON, AXIS,  SYNC };
-    static constexpr const char* lookup[] = { "periodic",   "match",  "fixed",
-                                              "atmosphere", "custom", "horizon",
-                                              "axis",       "sync" };
+    static constexpr type variants[] = {
+      PERIODIC, MATCH, FIXED,     ATMOSPHERE, CUSTOM,
+      HORIZON,  AXIS,  CONDUCTOR, SYNC,
+    };
+    static constexpr const char* lookup[] = {
+      "periodic", "match", "fixed",     "atmosphere", "custom",
+      "horizon",  "axis",  "conductor", "sync"
+    };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
@@ -287,17 +291,45 @@ namespace ntt {
       Charge  = 11,
       N       = 12,
       Nppc    = 13,
-      Custom  = 14,
+      V       = 14,
+      Custom  = 15,
     };
 
     constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
 
-    static constexpr type variants[]      = { E, divE, D,   divD,   B, H,    J,
-                                              A, T,    Rho, Charge, N, Nppc, Custom };
-    static constexpr const char* lookup[] = { "e",    "dive",  "d",      "divd",
-                                              "b",    "h",     "j",      "a",
-                                              "t",    "rho",   "charge", "n",
-                                              "nppc", "custom" };
+    static constexpr type        variants[] = { E,      divE, D,    divD, B,
+                                                H,      J,    A,    T,    Rho,
+                                                Charge, N,    Nppc, V,    Custom };
+    static constexpr const char* lookup[] = { "e",    "dive", "d",      "divd",
+                                              "b",    "h",    "j",      "a",
+                                              "t",    "rho",  "charge", "n",
+                                              "nppc", "v",    "custom" };
+    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+  };
+
+  struct StatsID : public enums_hidden::BaseEnum<StatsID> {
+    static constexpr const char* label = "out_stats";
+
+    enum type : uint8_t {
+      INVALID = 0,
+      B2      = 1,
+      E2      = 2,
+      ExB     = 3,
+      JdotE   = 4,
+      T       = 5,
+      Rho     = 6,
+      Charge  = 7,
+      N       = 8,
+      Npart   = 9,
+    };
+
+    constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
+
+    static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
+                                                Rho, Charge, N,   Npart };
+    static constexpr const char* lookup[]   = { "b^2",    "e^2", "exb",
+                                                "j.e",    "t",   "rho",
+                                                "charge", "n",   "npart" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

@@ -53,14 +53,14 @@ namespace arch {
   struct Replenish : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, 6> density;
-    const unsigned short       idx;
+    const idx_t                idx;
 
     const T      target_density;
     const real_t target_max_density;
 
     Replenish(const M&                    metric,
               const ndfield_t<M::Dim, 6>& density,
-              unsigned short              idx,
+              idx_t                       idx,
               const T&                    target_density,
               real_t                      target_max_density)
       : SpatialDistribution<S, M> { metric }
@@ -74,15 +74,15 @@ namespace arch {
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd);
       real_t dens { ZERO };
       if constexpr (M::Dim == Dim::_1D) {
-        dens = density(static_cast<std::size_t>(x_Cd[0]) + N_GHOSTS, idx);
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS, idx);
       } else if constexpr (M::Dim == Dim::_2D) {
-        dens = density(static_cast<std::size_t>(x_Cd[0]) + N_GHOSTS,
-                       static_cast<std::size_t>(x_Cd[1]) + N_GHOSTS,
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[1]) + N_GHOSTS,
                        idx);
       } else if constexpr (M::Dim == Dim::_3D) {
-        dens = density(static_cast<std::size_t>(x_Cd[0]) + N_GHOSTS,
-                       static_cast<std::size_t>(x_Cd[1]) + N_GHOSTS,
-                       static_cast<std::size_t>(x_Cd[2]) + N_GHOSTS,
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[1]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[2]) + N_GHOSTS,
                        idx);
       } else {
         raise::KernelError(HERE, "Invalid dimension");

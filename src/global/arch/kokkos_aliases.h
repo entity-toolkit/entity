@@ -34,7 +34,7 @@
 namespace math = Kokkos;
 
 template <typename T>
-using array_t = Kokkos::View<T, AccelMemSpace>;
+using array_t = Kokkos::View<T>;
 
 // Array mirror alias of arbitrary type
 template <typename T>
@@ -174,17 +174,17 @@ namespace kokkos_aliases_hidden {
 
   template <>
   struct range_impl<Dim::_1D> {
-    using type = Kokkos::RangePolicy<AccelExeSpace>;
+    using type = Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>;
   };
 
   template <>
   struct range_impl<Dim::_2D> {
-    using type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, AccelExeSpace>;
+    using type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, Kokkos::DefaultExecutionSpace>;
   };
 
   template <>
   struct range_impl<Dim::_3D> {
-    using type = Kokkos::MDRangePolicy<Kokkos::Rank<3>, AccelExeSpace>;
+    using type = Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultExecutionSpace>;
   };
 } // namespace kokkos_aliases_hidden
 
@@ -201,17 +201,17 @@ namespace kokkos_aliases_hidden {
 
   template <>
   struct range_h_impl<Dim::_1D> {
-    using type = Kokkos::RangePolicy<HostExeSpace>;
+    using type = Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>;
   };
 
   template <>
   struct range_h_impl<Dim::_2D> {
-    using type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, HostExeSpace>;
+    using type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, Kokkos::DefaultHostExecutionSpace>;
   };
 
   template <>
   struct range_h_impl<Dim::_3D> {
-    using type = Kokkos::MDRangePolicy<Kokkos::Rank<3>, HostExeSpace>;
+    using type = Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>;
   };
 
 } // namespace kokkos_aliases_hidden
@@ -220,30 +220,37 @@ template <Dimension D>
 using range_h_t = typename kokkos_aliases_hidden::range_h_impl<D>::type;
 
 /**
+ * @brief Function template for generating 1D Kokkos range policy for particles.
+ * @param p1 `npart_t`: min.
+ * @param p2 `npart_t`: max.
+ */
+auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
+
+/**
  * @brief Function template for generating ND Kokkos range policy.
  * @tparam D Dimension
- * @param i1 array of size D `std::size_t`: { min }.
- * @param i2 array of size D `std::size_t`: { max }.
+ * @param i1 array of size D `ncells_t`: { min }.
+ * @param i2 array of size D `ncells_t`: { max }.
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
 template <Dimension D>
-auto CreateRangePolicy(const tuple_t<std::size_t, D>&,
-                       const tuple_t<std::size_t, D>&) -> range_t<D>;
+auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
+  -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy on the host.
  * @tparam D Dimension
- * @param i1 array of size D `std::size_t`: { min }.
- * @param i2 array of size D `std::size_t`: { max }.
+ * @param i1 array of size D `ncells_t`: { min }.
+ * @param i2 array of size D `ncells_t`: { max }.
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the host execution space.
  */
 template <Dimension D>
-auto CreateRangePolicyOnHost(const tuple_t<std::size_t, D>&,
-                             const tuple_t<std::size_t, D>&) -> range_h_t<D>;
+auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
+                             const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
 // Random number pool/generator type alias
-using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<AccelExeSpace>;
-using random_generator_t   = typename random_number_pool_t::generator_type;
+using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<Kokkos::DefaultExecutionSpace>;
+using random_generator_t = typename random_number_pool_t::generator_type;
 
 // Random number generator functions
 template <typename T>

@@ -34,7 +34,7 @@ namespace out {
     PrepareOutputFlags interp_flag { PrepareOutput::None };
 
     std::vector<std::vector<unsigned short>> comp {};
-    std::vector<unsigned short>              species {};
+    std::vector<spidx_t>                     species {};
 
     OutputField(const SimEngine& S, const std::string&);
 
@@ -43,7 +43,7 @@ namespace out {
     [[nodiscard]]
     auto is_moment() const -> bool {
       return (id() == FldsID::T || id() == FldsID::Rho || id() == FldsID::Nppc ||
-              id() == FldsID::N || id() == FldsID::Charge);
+              id() == FldsID::N || id() == FldsID::Charge || id() == FldsID::V);
     }
 
     [[nodiscard]]
@@ -94,7 +94,7 @@ namespace out {
           tmp += m_name.substr(1, 2);
         } else if (id() == FldsID::A) {
           tmp += "3";
-        } else if (is_field()) {
+        } else if (is_field() || id() == FldsID::V) {
           tmp += "i";
         }
         if (species.size() > 0) {
@@ -105,6 +105,10 @@ namespace out {
           }
           tmp.pop_back();
         }
+        if (tmp == "dive" || tmp == "divd") {
+          // capitalize E/D
+          tmp[3] = std::toupper(tmp[3]);
+        }
         // capitalize the first letter
         tmp[0] = std::toupper(tmp[0]);
       }
@@ -112,7 +116,7 @@ namespace out {
     }
 
     [[nodiscard]]
-    inline auto name(const std::size_t& ci) const -> std::string {
+    inline auto name(std::size_t ci) const -> std::string {
       raise::ErrorIf(
         comp.size() == 0,
         "OutputField::name(ci) called but no components were available",
@@ -137,6 +141,10 @@ namespace out {
           tmp += "_";
         }
         tmp.pop_back();
+      }
+      if (tmp == "dive" || tmp == "divd") {
+        // capitalize E/D
+        tmp[3] = std::toupper(tmp[3]);
       }
       // capitalize the first letter
       tmp[0] = std::toupper(tmp[0]);

@@ -50,8 +50,8 @@ namespace ntt {
 
   template <Dimension D>
   auto Grid<D>::rangeCells(const box_region_t<D>& region) const -> range_t<D> {
-    tuple_t<std::size_t, D> imin, imax;
-    for (unsigned short i = 0; i < (unsigned short)D; i++) {
+    tuple_t<ncells_t, D> imin, imax;
+    for (auto i { 0u }; i < D; i++) {
       switch (region[i]) {
         case CellLayer::allLayer:
           imin[i] = 0;
@@ -85,12 +85,11 @@ namespace ntt {
     return CreateRangePolicy<D>(imin, imax);
   }
 
-  // !TODO: too ugly, implement a better solution (combine with device)
   template <Dimension D>
   auto Grid<D>::rangeCellsOnHost(const box_region_t<D>& region) const
     -> range_h_t<D> {
-    tuple_t<std::size_t, D> imin, imax;
-    for (unsigned short i = 0; i < (unsigned short)D; i++) {
+    tuple_t<ncells_t, D> imin, imax;
+    for (auto i { 0u }; i < D; i++) {
       switch (region[i]) {
         case CellLayer::allLayer:
           imin[i] = 0;
@@ -166,8 +165,8 @@ namespace ntt {
   template <Dimension D>
   auto Grid<D>::rangeCells(const tuple_t<list_t<int, 2>, D>& ranges) const
     -> range_t<D> {
-    tuple_t<std::size_t, D> imin, imax;
-    for (unsigned short i = 0; i < (unsigned short)D; i++) {
+    tuple_t<ncells_t, D> imin, imax;
+    for (auto i { 0u }; i < D; i++) {
       raise::ErrorIf((ranges[i][0] < -(int)N_GHOSTS) ||
                        (ranges[i][1] > (int)N_GHOSTS),
                      "Invalid cell layer picked",

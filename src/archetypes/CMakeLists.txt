@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103
 # ------------------------------
 # @defines: ntt_archetypes [INTERFACE]
 #
@@ -24,4 +25,3 @@ target_link_libraries(ntt_archetypes INTERFACE ${libs})
 
 target_include_directories(ntt_archetypes
                            INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../)
-

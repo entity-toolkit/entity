@@ -32,7 +32,7 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
 
-    std::vector<std::size_t> glob_shape_with_ghosts, off_ncells_with_ghosts;
+    std::vector<ncells_t> glob_shape_with_ghosts, off_ncells_with_ghosts;
     for (auto d { 0u }; d < M::Dim; ++d) {
       off_ncells_with_ghosts.push_back(
         local_domain->offset_ncells()[d] +
@@ -49,8 +49,8 @@ namespace ntt {
 
     g_checkpoint_writer.init(
       ptr_adios,
-      params.template get<std::size_t>("checkpoint.interval"),
-      params.template get<long double>("checkpoint.interval_time"),
+      params.template get<timestep_t>("checkpoint.interval"),
+      params.template get<simtime_t>("checkpoint.interval_time"),
       params.template get<int>("checkpoint.keep"));
     if (g_checkpoint_writer.enabled()) {
       g_checkpoint_writer.defineFieldVariables(S,
@@ -66,10 +66,10 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
-                                         std::size_t             current_step,
-                                         std::size_t             finished_step,
-                                         long double             current_time,
-                                         long double finished_time) -> bool {
+                                         timestep_t              current_step,
+                                         timestep_t              finished_step,
+                                         simtime_t               current_time,
+                                         simtime_t finished_time) -> bool {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Checkpointing for now is only supported for one subdomain per rank",
@@ -98,17 +98,17 @@ namespace ntt {
 #endif // MPI_ENABLED
 
       for (auto s { 0u }; s < local_domain->species.size(); ++s) {
-        auto        npart    = local_domain->species[s].npart();
-        std::size_t offset   = 0;
-        auto        glob_tot = npart;
+        auto    npart    = local_domain->species[s].npart();
+        npart_t offset   = 0;
+        auto    glob_tot = npart;
 #if defined(MPI_ENABLED)
-        auto glob_npart = std::vector<std::size_t>(g_ndomains);
+        auto glob_npart = std::vector<npart_t>(g_ndomains);
         MPI_Allgather(&npart,
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       glob_npart.data(),
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       MPI_COMM_WORLD);
         glob_tot = 0;
         for (auto r = 0; r < g_mpi_size; ++r) {
@@ -118,7 +118,7 @@ namespace ntt {
           glob_tot += glob_npart[r];
         }
 #endif // MPI_ENABLED
-        g_checkpoint_writer.savePerDomainVariable<std::size_t>(
+        g_checkpoint_writer.savePerDomainVariable<npart_t>(
           fmt::format("s%d_npart", s + 1),
           dom_tot,
           dom_offset,
@@ -263,7 +263,7 @@ namespace ntt {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
     auto fname = fmt::format(
       "checkpoints/step-%08lu.bp",
-      params.template get<std::size_t>("checkpoint.start_step"));
+      params.template get<timestep_t>("checkpoint.start_step"));
     logger::Checkpoint(fmt::format("Reading checkpoint from %s", fname.c_str()),
                        HERE);
 
@@ -307,7 +307,7 @@ namespace ntt {
                                           range3,
                                           domain.fields.cur0);
       }
-      for (auto s { 0u }; s < (unsigned short)(domain.species.size()); ++s) {
+      for (auto s { 0u }; s < domain.species.size(); ++s) {
         const auto [loc_npart, offset_npart] =
           checkpoint::ReadParticleCount(io, reader, s, ldidx, ndomains());
         raise::ErrorIf(loc_npart > domain.species[s].maxnpart(),

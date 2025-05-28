@@ -36,7 +36,7 @@ namespace kernel::gr {
     ndfield_t<D, 6>       Bout;
     const ndfield_t<D, 6> E;
     const M               metric;
-    const std::size_t     i2max;
+    const ncells_t        i2max;
     const real_t          coeff;
     bool                  is_axis_i2min { false };
 

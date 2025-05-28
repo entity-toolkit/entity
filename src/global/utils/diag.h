@@ -39,16 +39,16 @@ namespace diag {
    * @param checkpoint (if true, checkpoint was written)
    * @param colorful_print (if true, print with colors)
    */
-  void printDiagnostics(std::size_t,
-                        std::size_t,
-                        long double,
-                        long double,
+  void printDiagnostics(timestep_t,
+                        timestep_t,
+                        simtime_t,
+                        simtime_t,
                         timer::Timers&,
                         pbar::DurationHistory&,
-                        std::size_t,
+                        ncells_t,
                         const std::vector<std::string>&,
-                        const std::vector<std::size_t>&,
-                        const std::vector<std::size_t>&,
+                        const std::vector<npart_t>&,
+                        const std::vector<npart_t>&,
                         bool,
                         bool,
                         bool,

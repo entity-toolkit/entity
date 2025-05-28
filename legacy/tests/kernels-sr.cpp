@@ -1,16 +1,16 @@
-#include "wrapper.h"
-
 #include <Kokkos_Core.hpp>
 
 #include <iostream>
 #include <stdexcept>
 
+#include "wrapper.h"
+
 #include METRIC_HEADER
 #include PGEN_HEADER
 
-#include "particle_macros.h"
-
 #include "kernels/particle_pusher_sr.hpp"
+
+#include "particle_macros.h"
 
 template <typename T>
 void put_value(ntt::array_t<T*>& arr, T value, int i) {
@@ -181,9 +181,10 @@ auto main(int argc, char* argv[]) -> int {
                                               ZERO,
                                               ZERO,
                                               ZERO);
-      Kokkos::parallel_for("ParticlesPush",
-                           Kokkos::RangePolicy<AccelExeSpace, ntt::Boris_t>(0, 1),
-                           kernel);
+      Kokkos::parallel_for(
+        "ParticlesPush",
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, ntt::Boris_t>(0, 1),
+        kernel);
       auto [xa, ya] = get_cartesian_coord(0, i1, i2, dx1, dx2, phi, metric);
 
       if (!ntt::AlmostEqual(xa,

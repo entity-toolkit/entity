@@ -23,7 +23,8 @@ void cleanup() {
 }
 
 #define CEILDIV(a, b)                                                          \
-  (static_cast<int>(math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
+  (static_cast<ncells_t>(                                                      \
+    math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
@@ -74,6 +75,7 @@ auto main(int argc, char* argv[]) -> int {
       writer.defineMeshLayout({ nx1, nx2, nx3 },
                               { 0, 0, 0 },
                               { nx1, nx2, nx3 },
+                              { 0, 1 },
                               { dwn1, dwn2, dwn3 },
                               false,
                               Coord::Cart);
@@ -103,22 +105,21 @@ auto main(int argc, char* argv[]) -> int {
       const auto layoutRight = io.InquireAttribute<int>("LayoutRight").Data()[0] ==
                                1;
 
-      raise::ErrorIf(io.InquireAttribute<unsigned int>("NGhosts").Data()[0] != 0,
+      raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
                      "NGhosts is not correct",
                      HERE);
       raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 3,
                      "Dimension is not correct",
                      HERE);
 
-      for (std::size_t step = 0; reader.BeginStep() == adios2::StepStatus::OK;
-           ++step) {
-        std::size_t step_read;
-        long double time_read;
+      for (auto step = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++step) {
+        timestep_t step_read;
+        simtime_t  time_read;
 
-        reader.Get(io.InquireVariable<std::size_t>("Step"),
+        reader.Get(io.InquireVariable<timestep_t>("Step"),
                    &step_read,
                    adios2::Mode::Sync);
-        reader.Get(io.InquireVariable<long double>("Time"),
+        reader.Get(io.InquireVariable<simtime_t>("Time"),
                    &time_read,
                    adios2::Mode::Sync);
         raise::ErrorIf(step_read != (step + 1) * 10, "Step is not correct", HERE);
@@ -136,10 +137,10 @@ auto main(int argc, char* argv[]) -> int {
                            fmt::format("%s is not 3D", name.c_str()),
                            HERE);
 
-            auto        dims  = fieldVar.Shape();
-            std::size_t nx1_r = dims[0];
-            std::size_t nx2_r = dims[1];
-            std::size_t nx3_r = dims[2];
+            auto     dims  = fieldVar.Shape();
+            ncells_t nx1_r = dims[0];
+            ncells_t nx2_r = dims[1];
+            ncells_t nx3_r = dims[2];
             if (!layoutRight) {
               std::swap(nx1_r, nx3_r);
             }

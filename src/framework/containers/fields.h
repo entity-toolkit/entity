@@ -109,7 +109,7 @@ namespace ntt {
      */
     Fields() {}
 
-    Fields(const std::vector<std::size_t>& res);
+    Fields(const std::vector<ncells_t>& res);
 
     Fields(Fields&& other) noexcept
       : em { std::move(other.em) }

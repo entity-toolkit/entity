@@ -8,6 +8,7 @@
  *   - kernel::bc::AbsorbCurrentsGR_kernel<>
  *   - kernel::bc::EnforcedBoundaries_kernel<>
  *   - kernel::bc::HorizonBoundaries_kernel<>
+ *   - kernel::bc::ConductorBoundaries_kernel<>
  * @namespaces:
  *   - kernel::bc::
  */
@@ -38,8 +39,7 @@ namespace kernel::bc {
   template <SimEngine::type S, class I, class M, in o>
   struct MatchBoundaries_kernel {
     static_assert(M::is_metric, "M must be a metric class");
-    static_assert(static_cast<unsigned short>(o) <
-                    static_cast<unsigned short>(M::Dim),
+    static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
     static constexpr bool defines_dx1 = traits::has_method<traits::dx1_t, I>::value;
@@ -502,6 +502,301 @@ namespace kernel::bc {
     }
   };
 
+  template <Dimension D, in o, bool P>
+  struct ConductorBoundaries_kernel {
+    static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(D),
+                  "Invalid component index");
+
+    ndfield_t<D, 6>   Fld;
+    const BCTags      tags;
+    const std::size_t i_edge;
+
+    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+      : Fld { Fld }
+      , i_edge { i_edge }
+      , tags { tags } {}
+
+    Inline void operator()(index_t i1) const {
+      if constexpr (D == Dim::_1D) {
+        if (tags & BC::E) {
+          if (i1 == 0) {
+            Fld(i_edge, em::ex2) = ZERO;
+            Fld(i_edge, em::ex3) = ZERO;
+          } else {
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::ex1) = Fld(i_edge + i1 - 1, em::ex1);
+              Fld(i_edge - i1, em::ex2) = -Fld(i_edge + i1, em::ex2);
+              Fld(i_edge - i1, em::ex3) = -Fld(i_edge + i1, em::ex3);
+            } else {
+              Fld(i_edge + i1 - 1, em::ex1) = Fld(i_edge - i1, em::ex1);
+              Fld(i_edge + i1, em::ex2)     = -Fld(i_edge - i1, em::ex2);
+              Fld(i_edge + i1, em::ex3)     = -Fld(i_edge - i1, em::ex3);
+            }
+          }
+        }
+
+        if (tags & BC::B) {
+          if (i1 == 0) {
+            Fld(i_edge, em::bx1) = ZERO;
+          } else {
+            if constexpr (not P) {
+              Fld(i_edge - i1, em::bx1) = -Fld(i_edge + i1, em::bx1);
+              Fld(i_edge - i1, em::bx2) = Fld(i_edge + i1 - 1, em::bx2);
+              Fld(i_edge - i1, em::bx3) = Fld(i_edge + i1 - 1, em::bx3);
+            } else {
+              Fld(i_edge + i1, em::bx1)     = -Fld(i_edge - i1, em::bx1);
+              Fld(i_edge + i1 - 1, em::bx2) = Fld(i_edge - i1, em::bx2);
+              Fld(i_edge + i1 - 1, em::bx3) = Fld(i_edge - i1, em::bx3);
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 1D implementation called for D != 1");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::ex2) = ZERO;
+              Fld(i_edge, i2, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::ex1) = Fld(i_edge + i1 - 1, i2, em::ex1);
+                Fld(i_edge - i1, i2, em::ex2) = -Fld(i_edge + i1, i2, em::ex2);
+                Fld(i_edge - i1, i2, em::ex3) = -Fld(i_edge + i1, i2, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, em::ex1) = Fld(i_edge - i1, i2, em::ex1);
+                Fld(i_edge + i1, i2, em::ex2) = -Fld(i_edge - i1, i2, em::ex2);
+                Fld(i_edge + i1, i2, em::ex3) = -Fld(i_edge - i1, i2, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, em::bx1) = -Fld(i_edge + i1, i2, em::bx1);
+                Fld(i_edge - i1, i2, em::bx2) = Fld(i_edge + i1 - 1, i2, em::bx2);
+                Fld(i_edge - i1, i2, em::bx3) = Fld(i_edge + i1 - 1, i2, em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, em::bx1) = -Fld(i_edge - i1, i2, em::bx1);
+                Fld(i_edge + i1 - 1, i2, em::bx2) = Fld(i_edge - i1, i2, em::bx2);
+                Fld(i_edge + i1 - 1, i2, em::bx3) = Fld(i_edge - i1, i2, em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::ex1) = ZERO;
+              Fld(i1, i_edge, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::ex1) = -Fld(i1, i_edge + i2, em::ex1);
+                Fld(i1, i_edge - i2, em::ex2) = Fld(i1, i_edge + i2 - 1, em::ex2);
+                Fld(i1, i_edge - i2, em::ex3) = -Fld(i1, i_edge + i2, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, em::ex1) = -Fld(i1, i_edge - i2, em::ex1);
+                Fld(i1, i_edge + i2 - 1, em::ex2) = Fld(i1, i_edge - i2, em::ex2);
+                Fld(i1, i_edge + i2, em::ex3) = -Fld(i1, i_edge - i2, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, em::bx1) = Fld(i1, i_edge + i2 - 1, em::bx1);
+                Fld(i1, i_edge - i2, em::bx2) = -Fld(i1, i_edge + i2, em::bx2);
+                Fld(i1, i_edge - i2, em::bx3) = Fld(i1, i_edge + i2 - 1, em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, em::bx1) = Fld(i1, i_edge - i2, em::bx1);
+                Fld(i1, i_edge + i2, em::bx2) = -Fld(i1, i_edge - i2, em::bx2);
+                Fld(i1, i_edge + i2 - 1, em::bx3) = Fld(i1, i_edge - i2, em::bx3);
+              }
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 2D implementation called for D != 2");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        if constexpr (o == in::x1) {
+          if (tags & BC::E) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::ex2) = ZERO;
+              Fld(i_edge, i2, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::ex1) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::ex1);
+                Fld(i_edge - i1, i2, i3, em::ex2) = -Fld(i_edge + i1, i2, i3, em::ex2);
+                Fld(i_edge - i1, i2, i3, em::ex3) = -Fld(i_edge + i1, i2, i3, em::ex3);
+              } else {
+                Fld(i_edge + i1 - 1, i2, i3, em::ex1) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::ex1);
+                Fld(i_edge + i1, i2, i3, em::ex2) = -Fld(i_edge - i1, i2, i3, em::ex2);
+                Fld(i_edge + i1, i2, i3, em::ex3) = -Fld(i_edge - i1, i2, i3, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i1 == 0) {
+              Fld(i_edge, i2, i3, em::bx1) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i_edge - i1, i2, i3, em::bx1) = -Fld(i_edge + i1, i2, i3, em::bx1);
+                Fld(i_edge - i1, i2, i3, em::bx2) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx2);
+                Fld(i_edge - i1, i2, i3, em::bx3) = Fld(i_edge + i1 - 1,
+                                                        i2,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i_edge + i1, i2, i3, em::bx1) = -Fld(i_edge - i1, i2, i3, em::bx1);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx2) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx2);
+                Fld(i_edge + i1 - 1, i2, i3, em::bx3) = Fld(i_edge - i1,
+                                                            i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else if (o == in::x2) {
+          if (tags & BC::E) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::ex1) = ZERO;
+              Fld(i1, i_edge, i3, em::ex3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::ex1) = -Fld(i1, i_edge + i2, i3, em::ex1);
+                Fld(i1, i_edge - i2, i3, em::ex2) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::ex2);
+                Fld(i1, i_edge - i2, i3, em::ex3) = -Fld(i1, i_edge + i2, i3, em::ex3);
+              } else {
+                Fld(i1, i_edge + i2, i3, em::ex1) = -Fld(i1, i_edge - i2, i3, em::ex1);
+                Fld(i1, i_edge + i2 - 1, i3, em::ex2) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::ex2);
+                Fld(i1, i_edge + i2, i3, em::ex3) = -Fld(i1, i_edge - i2, i3, em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i2 == 0) {
+              Fld(i1, i_edge, i3, em::bx2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i_edge - i2, i3, em::bx1) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx1);
+                Fld(i1, i_edge - i2, i3, em::bx2) = -Fld(i1, i_edge + i2, i3, em::bx2);
+                Fld(i1, i_edge - i2, i3, em::bx3) = Fld(i1,
+                                                        i_edge + i2 - 1,
+                                                        i3,
+                                                        em::bx3);
+              } else {
+                Fld(i1, i_edge + i2 - 1, i3, em::bx1) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx1);
+                Fld(i1, i_edge + i2, i3, em::bx2) = -Fld(i1, i_edge - i2, i3, em::bx2);
+                Fld(i1, i_edge + i2 - 1, i3, em::bx3) = Fld(i1,
+                                                            i_edge - i2,
+                                                            i3,
+                                                            em::bx3);
+              }
+            }
+          }
+        } else {
+          if (tags & BC::E) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::ex1) = ZERO;
+              Fld(i1, i2, i_edge, em::ex2) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::ex1) = -Fld(i1, i2, i_edge + i3, em::ex1);
+                Fld(i1, i2, i_edge - i3, em::ex2) = -Fld(i1, i2, i_edge + i3, em::ex2);
+                Fld(i1, i2, i_edge - i3, em::ex3) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::ex3);
+              } else {
+                Fld(i1, i2, i_edge + i3, em::ex1) = -Fld(i1, i2, i_edge - i3, em::ex1);
+                Fld(i1, i2, i_edge + i3, em::ex2) = -Fld(i1, i2, i_edge - i3, em::ex2);
+                Fld(i1, i2, i_edge + i3 - 1, em::ex3) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::ex3);
+              }
+            }
+          }
+
+          if (tags & BC::B) {
+            if (i3 == 0) {
+              Fld(i1, i2, i_edge, em::bx3) = ZERO;
+            } else {
+              if constexpr (not P) {
+                Fld(i1, i2, i_edge - i3, em::bx1) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx1);
+                Fld(i1, i2, i_edge - i3, em::bx2) = Fld(i1,
+                                                        i2,
+                                                        i_edge + i3 - 1,
+                                                        em::bx2);
+                Fld(i1, i2, i_edge - i3, em::bx3) = -Fld(i1, i2, i_edge + i3, em::bx3);
+              } else {
+                Fld(i1, i2, i_edge + i3 - 1, em::bx1) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx1);
+                Fld(i1, i2, i_edge + i3 - 1, em::bx2) = Fld(i1,
+                                                            i2,
+                                                            i_edge - i3,
+                                                            em::bx2);
+                Fld(i1, i2, i_edge + i3, em::bx3) = -Fld(i1, i2, i_edge - i3, em::bx3);
+              }
+            }
+          }
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "ConductorBoundaries_kernel: 3D implementation called for D != 3");
+      }
+    }
+  };
+
   /*
    * @tparam D: Dimension
    * @tparam P: Positive/Negative direction
@@ -510,11 +805,11 @@ namespace kernel::bc {
    */
   template <Dimension D, bool P>
   struct AxisBoundaries_kernel {
-    ndfield_t<D, 6>   Fld;
-    const std::size_t i_edge;
-    const bool        setE, setB;
+    ndfield_t<D, 6> Fld;
+    const ncells_t  i_edge;
+    const bool      setE, setB;
 
-    AxisBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+    AxisBoundaries_kernel(ndfield_t<D, 6> Fld, ncells_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
@@ -564,8 +859,7 @@ namespace kernel::bc {
     const bool        setE, setB;
 
     AxisBoundariesGR_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
-      : Fld { Fld }
-      // , i_edge { i_edge }
+      : Fld { Fld } // , i_edge { i_edge }
       , i_edge { P ? (i_edge + 1) : i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
       , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
@@ -616,24 +910,25 @@ namespace kernel::bc {
                     defines_bx2 or defines_bx3,
                   "none of the components of E or B are specified in PGEN");
     static_assert(M::is_metric, "M must be a metric class");
-    static_assert(static_cast<unsigned short>(O) <
-                    static_cast<unsigned short>(M::Dim),
+    static_assert(static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim),
                   "Invalid Orientation");
 
-    ndfield_t<D, 6>   Fld;
-    const I           fset;
-    const M           metric;
-    const std::size_t i_edge;
+    ndfield_t<D, 6> Fld;
+    const I         fset;
+    const M         metric;
+    const ncells_t  i_edge;
+    const BCTags    tags;
 
     EnforcedBoundaries_kernel(ndfield_t<M::Dim, 6>& Fld,
                               const I&              fset,
                               const M&              metric,
-                              std::size_t           i_edge,
+                              ncells_t              i_edge,
                               BCTags                tags)
       : Fld { Fld }
       , fset { fset }
       , metric { metric }
-      , i_edge { i_edge + N_GHOSTS } {}
+      , i_edge { i_edge + N_GHOSTS }
+      , tags { tags } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -642,8 +937,12 @@ namespace kernel::bc {
         coord_t<Dim::_1D> x_Ph_H { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ }, x_Ph_0);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF }, x_Ph_H);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
@@ -719,8 +1018,12 @@ namespace kernel::bc {
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ }, x_Ph_H0);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ + HALF },
                                                   x_Ph_HH);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
@@ -819,8 +1122,12 @@ namespace kernel::bc {
                                                   x_Ph_H0H);
         metric.template convert<Crd::Cd, Crd::Ph>({ i1_, i2_ + HALF, i3_ + HALF },
                                                   x_Ph_0HH);
-        bool setEx1 = defines_ex1, setEx2 = defines_ex2, setEx3 = defines_ex3,
-             setBx1 = defines_bx1, setBx2 = defines_bx2, setBx3 = defines_bx3;
+        bool setEx1 = defines_ex1 and (tags & BC::E),
+             setEx2 = defines_ex2 and (tags & BC::E),
+             setEx3 = defines_ex3 and (tags & BC::E),
+             setBx1 = defines_bx1 and (tags & BC::B),
+             setBx2 = defines_bx2 and (tags & BC::B),
+             setBx3 = defines_bx3 and (tags & BC::B);
         if constexpr (O == in::x1) {
           // x1 -- normal
           // x2,x3 -- tangential
@@ -915,29 +1222,44 @@ namespace kernel::bc {
     const bool           setE, setB;
     const std::size_t    nfilter;
 
-    HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld, std::size_t i1_min, BCTags tags, std::size_t nfilter)
+    HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
+                             std::size_t          i1_min,
+                             BCTags               tags,
+                             std::size_t          nfilter)
       : Fld { Fld }
       , i1_min { i1_min }
       , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
                (tags & BC::Dx1 or tags & BC::Dx2 or tags & BC::Dx3) }
       , setB { (tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3) or
-               (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) } 
+               (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) }
       , nfilter { nfilter } {}
 
     Inline void operator()(index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
         if (setE) {
           for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx1) = Fld(i1_min + 1 + nfilter, i2, em::dx1);
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx2) = Fld(i1_min + 1 + nfilter, i2, em::dx2);
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx3) = Fld(i1_min + 1 + nfilter, i2, em::dx3);
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx1) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::dx1);
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx2) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::dx2);
+            Fld(i1_min - N_GHOSTS + i, i2, em::dx3) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::dx3);
           }
         }
         if (setB) {
           for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx1) = Fld(i1_min + 1 + nfilter, i2, em::bx1);
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx2) = Fld(i1_min + 1 + nfilter, i2, em::bx2);
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx3) = Fld(i1_min + 1 + nfilter, i2, em::bx3);
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx1) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::bx1);
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx2) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::bx2);
+            Fld(i1_min - N_GHOSTS + i, i2, em::bx3) = Fld(i1_min + 1 + nfilter,
+                                                          i2,
+                                                          em::bx3);
           }
         }
       } else {
@@ -947,77 +1269,6 @@ namespace kernel::bc {
       }
     }
   };
-
-  // template <class M>
-  // struct OpenBoundariesAux_kernel {
-  //   ndfield_t<M::Dim, 6> Fld;
-  //   const std::size_t    i1_min;
-  //   const bool           setE, setB;
-  //
-  //   OpenBoundariesAux_kernel(ndfield_t<M::Dim, 6> Fld, std::size_t i1_min, BCTags tags)
-  //     : Fld { Fld }
-  //     , i1_min { i1_min }
-  //     , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
-  //     , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
-  //
-  //   Inline void operator()(index_t i2) const {
-  //     if constexpr (M::Dim == Dim::_2D) {
-  //       if (setE) {
-  //         Fld(i1_min - 1, i2, em::ex1) = Fld(i1_min, i2, em::ex1);
-  //         Fld(i1_min - 1, i2, em::ex2) = Fld(i1_min, i2, em::ex2);
-  //         Fld(i1_min - 1, i2, em::ex3) = Fld(i1_min, i2, em::ex3);
-  //       }
-  //       if (setB) {
-  //         Fld(i1_min - 1, i2, em::bx1) = Fld(i1_min, i2, em::bx1);
-  //         Fld(i1_min - 1, i2, em::bx2) = Fld(i1_min, i2, em::bx2);
-  //         Fld(i1_min - 1, i2, em::bx3) = Fld(i1_min, i2, em::bx3);
-  //       }
-  //     } else {
-  //       raise::KernelError(
-  //         HERE,
-  //         "AbsorbFields_kernel: 2D implementation called for D != 2");
-  //     }
-  //   }
-  // };
-  //
-  // template <class I, class M, idx_t i>
-  // struct AbsorbBoundariesGR_kernel {
-  //   static_assert(M::is_metric, "M must be a metric class");
-  //   static_assert(i <= static_cast<unsigned short>(M::Dim),
-  //                 "Invalid component index");
-  //
-  //   ndfield_t<M::Dim, 6> Fld;
-  //   const I              finit;
-  //   const M              metric;
-  //   const real_t         xg_edge;
-  //   const real_t         dx_abs;
-  //   const BCTags         tags;
-  //
-  //   AbsorbBoundariesGR_kernel(ndfield_t<M::Dim, 6> Fld,
-  //                             const I&             finit,
-  //                             const M&             metric,
-  //                             real_t               xg_edge,
-  //                             real_t               dx_abs,
-  //                             BCTags               tags)
-  //     : Fld { Fld }
-  //     , finit { finit }
-  //     , metric { metric }
-  //     , xg_edge { xg_edge }
-  //     , dx_abs { dx_abs }
-  //     , tags { tags } {}
-  //
-  //   Inline void operator()(index_t i1, index_t i2) const {
-  //     if constexpr (M::Dim == Dim::_2D) {
-  //     }
-  //   }
-  //
-  //   else {
-  //     raise::KernelError(
-  //       HERE,
-  //       "AbsorbFields_kernel: 2D implementation called for D != 2");
-  //   }
-  // }
-  // };
 
   template <class M, idx_t i>
   struct AbsorbCurrentsGR_kernel {

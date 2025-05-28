@@ -18,6 +18,7 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
+#include "kernels/divergences.hpp"
 #include "kernels/fields_to_phys.hpp"
 #include "kernels/particle_moments.hpp"
 #include "kernels/prtls_to_phys.hpp"
@@ -70,6 +71,7 @@ namespace ntt {
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
+                              { local_domain->index(), ndomains() },
                               params.template get<std::vector<unsigned int>>(
                                 "output.fields.downsampling"),
                               incl_ghosts,
@@ -84,7 +86,7 @@ namespace ntt {
                custom_fields_to_write.begin(),
                custom_fields_to_write.end(),
                std::back_inserter(all_fields_to_write));
-    const auto species_to_write = params.template get<std::vector<unsigned short>>(
+    const auto species_to_write = params.template get<std::vector<spidx_t>>(
       "output.particles.species");
     g_writer.defineFieldOutputs(S, all_fields_to_write);
 
@@ -95,16 +97,16 @@ namespace ntt {
     g_writer.defineParticleOutputs(dim, species_to_write);
 
     // spectra write all particle species
-    std::vector<unsigned short> spectra_species {};
+    std::vector<spidx_t> spectra_species {};
     for (const auto& sp : species_params()) {
       spectra_species.push_back(sp.index());
     }
     g_writer.defineSpectraOutputs(spectra_species);
     for (const auto& type : { "fields", "particles", "spectra" }) {
       g_writer.addTracker(type,
-                          params.template get<std::size_t>(
+                          params.template get<timestep_t>(
                             "output." + std::string(type) + ".interval"),
-                          params.template get<long double>(
+                          params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
     if (is_resuming and std::filesystem::exists(g_writer.fname())) {
@@ -118,11 +120,11 @@ namespace ntt {
   void ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
-                      const std::vector<unsigned short>& species,
+                      const std::vector<spidx_t>&        species,
                       const std::vector<unsigned short>& components,
                       ndfield_t<M::Dim, 6>&              buffer,
-                      unsigned short                     buff_idx) {
-    std::vector<unsigned short> specs = species;
+                      idx_t                              buff_idx) {
+    std::vector<spidx_t> specs = species;
     if (specs.size() == 0) {
       // if no species specified, take all massive species
       for (auto& sp : prtl_species) {
@@ -130,6 +132,11 @@ namespace ntt {
           specs.push_back(sp.index());
         }
       }
+    }
+    for (const auto& sp : specs) {
+      raise::ErrorIf((sp > prtl_species.size()) or (sp == 0),
+                     "Invalid species index " + std::to_string(sp),
+                     HERE);
     }
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
 
@@ -165,7 +172,7 @@ namespace ntt {
                       ndfield_t<D, M>&     fld_to,
                       const range_tuple_t& from,
                       const range_tuple_t& to) {
-    for (unsigned short d = 0; d < D; ++d) {
+    for (auto d { 0u }; d < D; ++d) {
       raise::ErrorIf(fld_from.extent(d) != fld_to.extent(d),
                      "Fields have different sizes " +
                        std::to_string(fld_from.extent(d)) +
@@ -221,10 +228,10 @@ namespace ntt {
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
     const SimulationParams& params,
-    std::size_t             current_step,
-    std::size_t             finished_step,
-    long double             current_time,
-    long double             finished_time,
+    timestep_t              current_step,
+    timestep_t              finished_step,
+    simtime_t               current_time,
+    simtime_t               finished_time,
     std::function<
       void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
       CustomFieldOutput) -> bool {
@@ -247,7 +254,9 @@ namespace ntt {
                                g_writer.shouldWrite("spectra",
                                                     finished_step,
                                                     finished_time);
-    if (not(write_fields or write_particles or write_spectra)) {
+    const auto extension = params.template get<std::string>("output.format");
+    if (not(write_fields or write_particles or write_spectra) and
+        extension != "disabled") {
       return false;
     }
     auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -261,7 +270,18 @@ namespace ntt {
       const auto dwn         = params.template get<std::vector<unsigned int>>(
         "output.fields.downsampling");
 
-      for (unsigned short dim = 0; dim < M::Dim; ++dim) {
+      auto off_ncells_with_ghosts = local_domain->offset_ncells();
+      auto loc_shape_with_ghosts  = local_domain->mesh.n_active();
+      { // compute positions/sizes of meshblocks in cells in all dimensions
+        const auto off_ndomains = local_domain->offset_ndomains();
+        if (incl_ghosts) {
+          for (auto d { 0 }; d <= M::Dim; ++d) {
+            off_ncells_with_ghosts[d] += 2 * N_GHOSTS * off_ndomains[d];
+            loc_shape_with_ghosts[d]  += 2 * N_GHOSTS;
+          }
+        }
+      }
+      for (auto dim { 0u }; dim < M::Dim; ++dim) {
         const auto l_size   = local_domain->mesh.n_active()[dim];
         const auto l_offset = local_domain->offset_ncells()[dim];
         const auto g_size   = mesh().n_active()[dim];
@@ -273,8 +293,8 @@ namespace ntt {
         const double l = l_offset;
         const double f = math::ceil(l / d) * d - l;
 
-        const auto first_cell = static_cast<std::size_t>(f);
-        const auto l_size_dwn = static_cast<std::size_t>(math::ceil((n - f) / d));
+        const auto first_cell = static_cast<ncells_t>(f);
+        const auto l_size_dwn = static_cast<ncells_t>(math::ceil((n - f) / d));
 
         const auto is_last = l_offset + l_size == g_size;
 
@@ -309,7 +329,11 @@ namespace ntt {
               xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
-        g_writer.writeMesh(dim, xc, xe);
+        g_writer.writeMesh(
+          dim,
+          xc,
+          xe,
+          { off_ncells_with_ghosts[dim], loc_shape_with_ghosts[dim] });
       }
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
@@ -323,7 +347,7 @@ namespace ntt {
           if (fld.is_moment()) {
             // output a particle distribution moment (single component)
             // this includes T, Rho, Charge, N, Nppc
-            const auto c = static_cast<unsigned short>(addresses.back());
+            const auto c = static_cast<idx_t>(addresses.back());
             if (fld.id() == FldsID::T) {
               raise::ErrorIf(fld.comp.size() != 1,
                              "Wrong # of components requested for T output",
@@ -367,9 +391,31 @@ namespace ntt {
                                                  {},
                                                  local_domain->fields.bckp,
                                                  c);
+            } else if (fld.id() == FldsID::V) {
+              if constexpr (S != SimEngine::GRPIC) {
+                ComputeMoments<S, M, FldsID::V>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                fld.comp[0],
+                                                local_domain->fields.bckp,
+                                                c);
+              } else {
+                raise::Error("Bulk velocity not supported for GRPIC", HERE);
+              }
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
+          } else if (fld.is_divergence()) {
+            // @TODO: is this correct for GR too? not em0?
+            const auto c = static_cast<idx_t>(addresses.back());
+            Kokkos::parallel_for(
+              "ComputeDivergence",
+              local_domain->mesh.rangeActiveCells(),
+              kernel::ComputeDivergence_kernel<M, 6>(local_domain->mesh.metric,
+                                                     local_domain->fields.em,
+                                                     local_domain->fields.bckp,
+                                                     c));
           } else if (fld.is_custom()) {
             if (CustomFieldOutput) {
               CustomFieldOutput(fld.name().substr(1),
@@ -406,17 +452,36 @@ namespace ntt {
           }
           if (fld.is_moment()) {
             for (auto i = 0; i < 3; ++i) {
-              const auto c = static_cast<unsigned short>(addresses[i]);
-              raise::ErrorIf(fld.comp[i].size() != 2,
-                             "Wrong # of components requested for moment",
-                             HERE);
-              ComputeMoments<S, M, FldsID::T>(params,
-                                              local_domain->mesh,
-                                              local_domain->species,
-                                              fld.species,
-                                              fld.comp[i],
-                                              local_domain->fields.bckp,
-                                              c);
+              const auto c = static_cast<idx_t>(addresses[i]);
+              if (fld.id() == FldsID::T) {
+                raise::ErrorIf(fld.comp[i].size() != 2,
+                               "Wrong # of components requested for moment",
+                               HERE);
+                ComputeMoments<S, M, FldsID::T>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                fld.comp[i],
+                                                local_domain->fields.bckp,
+                                                c);
+              } else if (fld.id() == FldsID::V) {
+                raise::ErrorIf(fld.comp[i].size() != 1,
+                               "Wrong # of components requested for 3vel",
+                               HERE);
+                if constexpr (S == SimEngine::SRPIC) {
+                  ComputeMoments<S, M, FldsID::V>(params,
+                                                  local_domain->mesh,
+                                                  local_domain->species,
+                                                  fld.species,
+                                                  fld.comp[i],
+                                                  local_domain->fields.bckp,
+                                                  c);
+                } else {
+                  raise::Error("Bulk velocity not supported for GRPIC", HERE);
+                }
+              } else {
+                raise::Error("Wrong moment requested for output", HERE);
+              }
             }
             raise::ErrorIf(addresses[1] - addresses[0] !=
                              addresses[2] - addresses[1],
@@ -425,6 +490,28 @@ namespace ntt {
             SynchronizeFields(*local_domain,
                               Comm::Bckp,
                               { addresses[0], addresses[2] + 1 });
+            if constexpr (S == SimEngine::SRPIC) {
+              if (fld.id() == FldsID::V) {
+                // normalize 3vel * rho (combuted above) by rho
+                ComputeMoments<S, M, FldsID::Rho>(params,
+                                                  local_domain->mesh,
+                                                  local_domain->species,
+                                                  fld.species,
+                                                  {},
+                                                  local_domain->fields.bckp,
+                                                  0u);
+                SynchronizeFields(*local_domain, Comm::Bckp, { 0, 1 });
+                Kokkos::parallel_for("NormalizeVectorByRho",
+                                     local_domain->mesh.rangeActiveCells(),
+                                     kernel::NormalizeVectorByRho_kernel<M::Dim, 6>(
+                                       local_domain->fields.bckp,
+                                       local_domain->fields.bckp,
+                                       0,
+                                       addresses[0],
+                                       addresses[1],
+                                       addresses[2]));
+              }
+            }
           } else {
             // copy fields to bckp (:, 0, 1, 2)
             // if as-is specified ==> copy directly to 3, 4, 5
@@ -473,8 +560,8 @@ namespace ntt {
             if (not output_asis) {
               // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
               // converting to proper basis and properly interpolating
-              list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
-              list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
+              list_t<idx_t, 3> comp_from = { 0, 1, 2 };
+              list_t<idx_t, 3> comp_to   = { 3, 4, 5 };
               DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
                                            local_domain->fields.bckp,
                                            { 0, 3 },
@@ -497,7 +584,7 @@ namespace ntt {
           for (auto i = 0; i < 6; ++i) {
             names.push_back(fld.name(i));
             addresses.push_back(i);
-            const auto c = static_cast<unsigned short>(addresses.back());
+            const auto c = static_cast<idx_t>(addresses.back());
             raise::ErrorIf(fld.comp[i].size() != 2,
                            "Wrong # of components requested for moment",
                            HERE);
@@ -522,19 +609,19 @@ namespace ntt {
 
     if (write_particles) {
       g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
-      const auto prtl_stride = params.template get<std::size_t>(
+      const auto prtl_stride = params.template get<npart_t>(
         "output.particles.stride");
       for (const auto& prtl : g_writer.speciesWriters()) {
         auto& species = local_domain->species[prtl.species() - 1];
         if (not species.is_sorted()) {
           species.RemoveDead();
         }
-        const std::size_t nout = species.npart() / prtl_stride;
-        array_t<real_t*>  buff_x1, buff_x2, buff_x3;
-        array_t<real_t*>  buff_ux1 { "u1", nout };
-        array_t<real_t*>  buff_ux2 { "ux2", nout };
-        array_t<real_t*>  buff_ux3 { "ux3", nout };
-        array_t<real_t*>  buff_wei { "w", nout };
+        const npart_t    nout = species.npart() / prtl_stride;
+        array_t<real_t*> buff_x1, buff_x2, buff_x3;
+        array_t<real_t*> buff_ux1 { "u1", nout };
+        array_t<real_t*> buff_ux2 { "ux2", nout };
+        array_t<real_t*> buff_ux3 { "ux3", nout };
+        array_t<real_t*> buff_wei { "w", nout };
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
           buff_x1 = array_t<real_t*> { "x1", nout };
@@ -562,16 +649,16 @@ namespace ntt {
                                             local_domain->mesh.metric));
           // clang-format on
         }
-        std::size_t offset   = 0;
-        std::size_t glob_tot = nout;
+        npart_t offset   = 0;
+        npart_t glob_tot = nout;
 #if defined(MPI_ENABLED)
-        auto glob_nout = std::vector<std::size_t>(g_ndomains);
+        auto glob_nout = std::vector<npart_t>(g_ndomains);
         MPI_Allgather(&nout,
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       glob_nout.data(),
                       1,
-                      mpi::get_type<std::size_t>(),
+                      mpi::get_type<npart_t>(),
                       MPI_COMM_WORLD);
         glob_tot = 0;
         for (auto r = 0; r < g_mpi_size; ++r) {

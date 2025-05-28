@@ -1,3 +1,5 @@
+# cmake-lint: disable=C0103,C0111,E1120,R0913,R0915
+
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0110 NEW)
 
@@ -8,10 +10,10 @@ project(
   VERSION 1.2.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
+set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
+string(APPEND hash_cmd "|| echo $(git rev-parse HEAD)-mod")
 execute_process(
-  COMMAND
-    bash -c
-    "git diff --quiet src/ && echo $(git rev-parse HEAD) || echo $(git rev-parse HEAD)-mod"
+  COMMAND bash -c ${hash_cmd}
   WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   OUTPUT_VARIABLE GIT_HASH
   ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -46,6 +48,10 @@ set(mpi
     ${default_mpi}
     CACHE BOOL "Use MPI")
 
+set(gpu_aware_mpi
+    ${default_gpu_aware_mpi}
+    CACHE BOOL "Enable GPU-aware MPI")
+
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -55,9 +61,7 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -DNDEBUG -Wno-unused-local-typedefs -Wno-unknown-cuda-version"
-  )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
 else()
   set(CMAKE_BUILD_TYPE
       Debug
@@ -79,38 +83,60 @@ set(BUILD_TESTING
     CACHE BOOL "Build tests")
 
 # ------------------------ Third-party dependencies ------------------------ #
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
-find_or_fetch_dependency(Kokkos FALSE)
-find_or_fetch_dependency(plog TRUE)
+find_or_fetch_dependency(Kokkos FALSE QUIET)
+find_or_fetch_dependency(plog TRUE QUIET)
 set(DEPENDENCIES Kokkos::kokkos)
 include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+if("${Kokkos_DEVICES}" MATCHES "CUDA")
+  add_compile_options("-D CUDA_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
+elseif("${Kokkos_DEVICES}" MATCHES "HIP")
+  add_compile_options("-D HIP_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
+elseif("${Kokkos_DEVICES}" MATCHES "SYCL")
+  add_compile_options("-D SYCL_ENABLED")
+  set(DEVICE_ENABLED ON)
+  add_compile_options("-D DEVICE_ENABLED")
+else()
+  set(DEVICE_ENABLED OFF)
+endif()
+
+if(("${Kokkos_DEVICES}" MATCHES "CUDA")
+   OR ("${Kokkos_DEVICES}" MATCHES "HIP")
+   OR ("${Kokkos_DEVICES}" MATCHES "SYCL"))
+  set(DEVICE_ENABLED ON)
+else()
+  set(DEVICE_ENABLED OFF)
+endif()
 
 # MPI
 if(${mpi})
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIConfig.cmake)
+  find_or_fetch_dependency(MPI FALSE REQUIRED)
+  include_directories(${MPI_CXX_INCLUDE_PATH})
+  add_compile_options("-D MPI_ENABLED")
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
+  if(${DEVICE_ENABLED})
+    if(${gpu_aware_mpi})
+      add_compile_options("-D GPU_AWARE_MPI")
+    endif()
+  else()
+    set(gpu_aware_mpi
+        OFF
+        CACHE BOOL "Use explicit copy when using MPI + GPU")
+  endif()
 endif()
 
 # Output
 if(${output})
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/adios2Config.cmake)
-  find_or_fetch_dependency(adios2 FALSE)
-  if(NOT DEFINED ENV{HDF5_ROOT})
-    if(DEFINED ENV{CONDA_PREFIX})
-      execute_process(COMMAND bash -c "conda list | grep \"hdf5\" -q"
-                      RESULT_VARIABLE HDF5_INSTALLED)
-      if(HDF5_INSTALLED EQUAL 0)
-        set(HDF5_ROOT $ENV{CONDA_PREFIX})
-      endif()
-    endif()
-  endif()
-  find_package(HDF5 REQUIRED)
-
+  find_or_fetch_dependency(adios2 FALSE QUIET)
+  add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
   else()
@@ -129,11 +155,12 @@ elseif(BENCHMARK)
 else()
   # ----------------------------------- GUI ---------------------------------- #
   if(${gui})
-    find_or_fetch_dependency(nttiny FALSE)
+    find_or_fetch_dependency(nttiny FALSE QUIET)
   endif()
 
   # ------------------------------- Main source ------------------------------ #
   set_problem_generator(${pgen})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)
 endif()
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)

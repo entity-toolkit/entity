@@ -27,9 +27,14 @@ jobs:
       matrix:
         device: [cpu, amd-gpu, nvidia-gpu]
         precision: [double, single]
+        mpi: [serial, parallel]
         exclude: # my AMD GPU doesn't support fp64 atomics : (
         - device: amd-gpu 
           precision: double
+        - device: amd-gpu
+          mpi: parallel
+        - device: nvidia-gpu
+          mpi: parallel
     runs-on: [self-hosted, "${{ matrix.device }}"]
     steps:
       - name: Checkout
@@ -47,7 +52,7 @@ jobs:
             fi
           elif [ "${{ matrix.device }}" = "amd-gpu" ]; then
             FLAGS="-D Kokkos_ENABLE_HIP=ON -D Kokkos_ARCH_AMD_GFX1100=ON"
-          elif [ "${{ matrix.device }}" = "cpu" ]; then
+          elif [ "${{ matrix.mpi }}" = "parallel" ]; then
             FLAGS="-D mpi=ON"
           fi
           cmake -B build -D TESTS=ON -D output=ON -D precision=${{ matrix.precision }} $FLAGS

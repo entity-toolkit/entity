@@ -1,3 +1,4 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_kernels` module
 #
@@ -32,3 +33,5 @@ gen_test(prtls_to_phys)
 gen_test(gca_pusher)
 gen_test(prtl_bc)
 gen_test(flds_bc)
+gen_test(pusher)
+gen_test(ext_force)

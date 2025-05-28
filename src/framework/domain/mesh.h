@@ -38,14 +38,14 @@ namespace ntt {
 
     M metric;
 
-    Mesh(const std::vector<std::size_t>&      res,
+    Mesh(const std::vector<ncells_t>&         res,
          const boundaries_t<real_t>&          ext,
          const std::map<std::string, real_t>& metric_params)
       : Grid<D> { res }
       , metric { res, ext, metric_params }
       , m_extent { ext } {}
 
-    Mesh(const std::vector<std::size_t>&      res,
+    Mesh(const std::vector<ncells_t>&         res,
          const boundaries_t<real_t>&          ext,
          const std::map<std::string, real_t>& metric_params,
          const boundaries_t<FldsBC>&          flds_bc,
@@ -74,7 +74,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersection(boundaries_t<real_t> box) -> boundaries_t<real_t> {
+    auto Intersection(boundaries_t<real_t> box) const -> boundaries_t<real_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       boundaries_t<real_t> intersection;
       auto                 d = 0;
@@ -109,7 +109,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersects(boundaries_t<real_t> box) -> bool {
+    auto Intersects(boundaries_t<real_t> box) const -> bool {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       const auto intersection = Intersection(box);
       for (const auto& i : intersection) {
@@ -131,15 +131,15 @@ namespace ntt {
      * @note indices are already shifted by N_GHOSTS (i.e. they start at N_GHOSTS not 0)
      */
     [[nodiscard]]
-    auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts)
-      -> boundaries_t<std::size_t> {
+    auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts) const
+      -> boundaries_t<ncells_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       raise::ErrorIf(incl_ghosts.size() != M::Dim,
                      "Invalid incl_ghosts dimension",
                      HERE);
-      boundaries_t<std::size_t> range;
+      boundaries_t<ncells_t> range;
       if (not Intersects(box)) {
-        for (std::size_t i { 0 }; i < box.size(); ++i) {
+        for (auto i { 0u }; i < box.size(); ++i) {
           range.push_back({ 0, 0 });
         }
         return range;
@@ -184,9 +184,9 @@ namespace ntt {
             raise::Error("invalid dimension", HERE);
             throw;
           }
-          range.push_back({ static_cast<std::size_t>(xi_min_Cd) +
+          range.push_back({ static_cast<ncells_t>(xi_min_Cd) +
                               (incl_ghosts[d].first ? 0 : N_GHOSTS),
-                            static_cast<std::size_t>(xi_max_Cd) +
+                            static_cast<ncells_t>(xi_max_Cd) +
                               (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
         }
         ++d;
@@ -222,18 +222,18 @@ namespace ntt {
     auto flds_bc() const -> boundaries_t<FldsBC> {
       if constexpr (D == Dim::_1D) {
         return {
-          {flds_bc_in({ -1 }), flds_bc_in({ -1 })}
+          { flds_bc_in({ -1 }), flds_bc_in({ -1 }) }
         };
       } else if constexpr (D == Dim::_2D) {
         return {
-          {flds_bc_in({ -1, 0 }), flds_bc_in({ 1, 0 })},
-          {flds_bc_in({ 0, -1 }), flds_bc_in({ 0, 1 })}
+          { flds_bc_in({ -1, 0 }), flds_bc_in({ 1, 0 }) },
+          { flds_bc_in({ 0, -1 }), flds_bc_in({ 0, 1 }) }
         };
       } else if constexpr (D == Dim::_3D) {
         return {
-          {flds_bc_in({ -1, 0, 0 }), flds_bc_in({ 1, 0, 0 })},
-          {flds_bc_in({ 0, -1, 0 }), flds_bc_in({ 0, 1, 0 })},
-          {flds_bc_in({ 0, 0, -1 }), flds_bc_in({ 0, 0, 1 })}
+          { flds_bc_in({ -1, 0, 0 }), flds_bc_in({ 1, 0, 0 }) },
+          { flds_bc_in({ 0, -1, 0 }), flds_bc_in({ 0, 1, 0 }) },
+          { flds_bc_in({ 0, 0, -1 }), flds_bc_in({ 0, 0, 1 }) }
         };
       } else {
         raise::Error("invalid dimension", HERE);
@@ -245,18 +245,18 @@ namespace ntt {
     auto prtl_bc() const -> boundaries_t<PrtlBC> {
       if constexpr (D == Dim::_1D) {
         return {
-          {prtl_bc_in({ -1 }), prtl_bc_in({ -1 })}
+          { prtl_bc_in({ -1 }), prtl_bc_in({ -1 }) }
         };
       } else if constexpr (D == Dim::_2D) {
         return {
-          {prtl_bc_in({ -1, 0 }), prtl_bc_in({ 1, 0 })},
-          {prtl_bc_in({ 0, -1 }), prtl_bc_in({ 0, 1 })}
+          { prtl_bc_in({ -1, 0 }), prtl_bc_in({ 1, 0 }) },
+          { prtl_bc_in({ 0, -1 }), prtl_bc_in({ 0, 1 }) }
         };
       } else if constexpr (D == Dim::_3D) {
         return {
-          {prtl_bc_in({ -1, 0, 0 }), prtl_bc_in({ 1, 0, 0 })},
-          {prtl_bc_in({ 0, -1, 0 }), prtl_bc_in({ 0, 1, 0 })},
-          {prtl_bc_in({ 0, 0, -1 }), prtl_bc_in({ 0, 0, 1 })}
+          { prtl_bc_in({ -1, 0, 0 }), prtl_bc_in({ 1, 0, 0 }) },
+          { prtl_bc_in({ 0, -1, 0 }), prtl_bc_in({ 0, 1, 0 }) },
+          { prtl_bc_in({ 0, 0, -1 }), prtl_bc_in({ 0, 0, 1 }) }
         };
       } else {
         raise::Error("invalid dimension", HERE);

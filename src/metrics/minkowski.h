@@ -47,20 +47,22 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Minkowski(std::vector<std::size_t> res,
-              boundaries_t<real_t>     ext,
+    Minkowski(std::vector<ncells_t> res,
+              boundaries_t<real_t>  ext,
               const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dx { (x1_max - x1_min) / nx1 }
       , dx_inv { ONE / dx } {
       set_dxMin(find_dxMin());
+      const auto epsilon = std::numeric_limits<real_t>::epsilon() *
+                         static_cast<real_t>(100.0);
       if constexpr (D != Dim::_1D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx),
+        raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx, epsilon),
                        "dx2 must be equal to dx1 in 2D",
                        HERE);
       }
       if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx),
+        raise::ErrorIf(not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx, epsilon),
                        "dx3 must be equal to dx1 in 3D",
                        HERE);
       }
@@ -240,8 +242,7 @@ namespace metric {
      * @note tetrad/cart <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
-      -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {

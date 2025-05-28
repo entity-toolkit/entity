@@ -24,35 +24,36 @@ namespace kernel::comm {
 
   template <Dimension D>
   class PrepareOutgoingPrtls_kernel {
-    const array_t<int*>   shifts_in_x1, shifts_in_x2, shifts_in_x3;
-    array_t<std::size_t*> outgoing_indices;
+    const array_t<int*> shifts_in_x1, shifts_in_x2, shifts_in_x3;
+    array_t<npart_t*>   outgoing_indices;
 
-    const std::size_t npart, npart_alive, npart_dead, ntags;
+    const npart_t     npart, npart_alive, npart_dead;
+    const std::size_t ntags;
 
     array_t<int*>         i1, i1_prev, i2, i2_prev, i3, i3_prev;
     const array_t<short*> tag;
 
-    const array_t<std::size_t*> tag_offsets;
+    const array_t<npart_t*> tag_offsets;
 
-    array_t<std::size_t*> current_offset;
+    array_t<npart_t*> current_offset;
 
   public:
-    PrepareOutgoingPrtls_kernel(const array_t<int*>&         shifts_in_x1,
-                                const array_t<int*>&         shifts_in_x2,
-                                const array_t<int*>&         shifts_in_x3,
-                                array_t<std::size_t*>&       outgoing_indices,
-                                std::size_t                  npart,
-                                std::size_t                  npart_alive,
-                                std::size_t                  npart_dead,
-                                std::size_t                  ntags,
-                                array_t<int*>&               i1,
-                                array_t<int*>&               i1_prev,
-                                array_t<int*>&               i2,
-                                array_t<int*>&               i2_prev,
-                                array_t<int*>&               i3,
-                                array_t<int*>&               i3_prev,
-                                const array_t<short*>&       tag,
-                                const array_t<std::size_t*>& tag_offsets)
+    PrepareOutgoingPrtls_kernel(const array_t<int*>&     shifts_in_x1,
+                                const array_t<int*>&     shifts_in_x2,
+                                const array_t<int*>&     shifts_in_x3,
+                                array_t<npart_t*>&       outgoing_indices,
+                                npart_t                  npart,
+                                npart_t                  npart_alive,
+                                npart_t                  npart_dead,
+                                std::size_t              ntags,
+                                array_t<int*>&           i1,
+                                array_t<int*>&           i1_prev,
+                                array_t<int*>&           i2,
+                                array_t<int*>&           i2_prev,
+                                array_t<int*>&           i3,
+                                array_t<int*>&           i3_prev,
+                                const array_t<short*>&   tag,
+                                const array_t<npart_t*>& tag_offsets)
       : shifts_in_x1 { shifts_in_x1 }
       , shifts_in_x2 { shifts_in_x2 }
       , shifts_in_x3 { shifts_in_x3 }
@@ -112,14 +113,14 @@ namespace kernel::comm {
     array_t<real_t*>   send_buff_pld;
 
     const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
-    const std::size_t    idx_offset;
+    const npart_t    idx_offset;
 
     const array_t<int*>         i1, i1_prev, i2, i2_prev, i3, i3_prev;
     const array_t<prtldx_t*>    dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
     const array_t<real_t*>      ux1, ux2, ux3, weight, phi;
     const array_t<real_t**>     pld;
     array_t<short*>             tag;
-    const array_t<std::size_t*> outgoing_indices;
+    const array_t<npart_t*> outgoing_indices;
 
   public:
     PopulatePrtlSendBuffer_kernel(array_t<int*>&               send_buff_int,
@@ -130,7 +131,7 @@ namespace kernel::comm {
                                   unsigned short               NREALS,
                                   unsigned short               NPRTLDX,
                                   unsigned short               NPLDS,
-                                  std::size_t                  idx_offset,
+                                  npart_t                  idx_offset,
                                   const array_t<int*>&         i1,
                                   const array_t<int*>&         i1_prev,
                                   const array_t<prtldx_t*>&    dx1,
@@ -150,7 +151,7 @@ namespace kernel::comm {
                                   const array_t<real_t*>&      phi,
                                   const array_t<real_t**>&     pld,
                                   array_t<short*>&             tag,
-                                  const array_t<std::size_t*>& outgoing_indices)
+                                  const array_t<npart_t*>& outgoing_indices)
       : send_buff_int { send_buff_int }
       , send_buff_real { send_buff_real }
       , send_buff_prtldx { send_buff_prtldx }
@@ -225,45 +226,45 @@ namespace kernel::comm {
     const array_t<real_t*>   recv_buff_pld;
 
     const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
-    const std::size_t    npart, npart_holes;
+    const npart_t        npart, npart_holes;
 
-    array_t<int*>               i1, i1_prev, i2, i2_prev, i3, i3_prev;
-    array_t<prtldx_t*>          dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
-    array_t<real_t*>            ux1, ux2, ux3, weight, phi;
-    array_t<real_t**>           pld;
-    array_t<short*>             tag;
-    const array_t<std::size_t*> outgoing_indices;
+    array_t<int*>           i1, i1_prev, i2, i2_prev, i3, i3_prev;
+    array_t<prtldx_t*>      dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
+    array_t<real_t*>        ux1, ux2, ux3, weight, phi;
+    array_t<real_t**>       pld;
+    array_t<short*>         tag;
+    const array_t<npart_t*> outgoing_indices;
 
   public:
-    ExtractReceivedPrtls_kernel(const array_t<int*>&         recv_buff_int,
-                                const array_t<real_t*>&      recv_buff_real,
-                                const array_t<prtldx_t*>&    recv_buff_prtldx,
-                                const array_t<real_t*>&      recv_buff_pld,
-                                unsigned short               NINTS,
-                                unsigned short               NREALS,
-                                unsigned short               NPRTLDX,
-                                unsigned short               NPLDS,
-                                std::size_t                  npart,
-                                array_t<int*>&               i1,
-                                array_t<int*>&               i1_prev,
-                                array_t<prtldx_t*>&          dx1,
-                                array_t<prtldx_t*>&          dx1_prev,
-                                array_t<int*>&               i2,
-                                array_t<int*>&               i2_prev,
-                                array_t<prtldx_t*>&          dx2,
-                                array_t<prtldx_t*>&          dx2_prev,
-                                array_t<int*>&               i3,
-                                array_t<int*>&               i3_prev,
-                                array_t<prtldx_t*>&          dx3,
-                                array_t<prtldx_t*>&          dx3_prev,
-                                array_t<real_t*>&            ux1,
-                                array_t<real_t*>&            ux2,
-                                array_t<real_t*>&            ux3,
-                                array_t<real_t*>&            weight,
-                                array_t<real_t*>&            phi,
-                                array_t<real_t**>&           pld,
-                                array_t<short*>&             tag,
-                                const array_t<std::size_t*>& outgoing_indices)
+    ExtractReceivedPrtls_kernel(const array_t<int*>&      recv_buff_int,
+                                const array_t<real_t*>&   recv_buff_real,
+                                const array_t<prtldx_t*>& recv_buff_prtldx,
+                                const array_t<real_t*>&   recv_buff_pld,
+                                unsigned short            NINTS,
+                                unsigned short            NREALS,
+                                unsigned short            NPRTLDX,
+                                unsigned short            NPLDS,
+                                npart_t                   npart,
+                                array_t<int*>&            i1,
+                                array_t<int*>&            i1_prev,
+                                array_t<prtldx_t*>&       dx1,
+                                array_t<prtldx_t*>&       dx1_prev,
+                                array_t<int*>&            i2,
+                                array_t<int*>&            i2_prev,
+                                array_t<prtldx_t*>&       dx2,
+                                array_t<prtldx_t*>&       dx2_prev,
+                                array_t<int*>&            i3,
+                                array_t<int*>&            i3_prev,
+                                array_t<prtldx_t*>&       dx3,
+                                array_t<prtldx_t*>&       dx3_prev,
+                                array_t<real_t*>&         ux1,
+                                array_t<real_t*>&         ux2,
+                                array_t<real_t*>&         ux3,
+                                array_t<real_t*>&         weight,
+                                array_t<real_t*>&         phi,
+                                array_t<real_t**>&        pld,
+                                array_t<short*>&          tag,
+                                const array_t<npart_t*>&  outgoing_indices)
       : recv_buff_int { recv_buff_int }
       , recv_buff_real { recv_buff_real }
       , recv_buff_prtldx { recv_buff_prtldx }
@@ -296,7 +297,7 @@ namespace kernel::comm {
       , outgoing_indices { outgoing_indices } {}
 
     Inline void operator()(index_t p) const {
-      std::size_t idx;
+      npart_t idx;
       if (p >= npart_holes) {
         idx = npart + p - npart_holes;
       } else {

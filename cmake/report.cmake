@@ -1,106 +1,31 @@
-function(PadTo Text Padding Target Result)
-  set(rt ${Text})
-  string(FIND ${rt} "${Magenta}" mg_fnd)
-
-  if(mg_fnd GREATER -1)
-    string(REGEX REPLACE "${Esc}\\[35m" "" rt ${rt})
-  endif()
-
-  string(LENGTH "${rt}" TextLength)
-  math(EXPR PaddingNeeded "${Target} - ${TextLength}")
-  set(rt ${Text})
-
-  if(PaddingNeeded GREATER 0)
-    foreach(i RANGE 0 ${PaddingNeeded})
-      set(rt "${rt}${Padding}")
-    endforeach()
-  else()
-    set(${rt} "${rt}")
-  endif()
-
-  set(${Result}
-      "${rt}"
-      PARENT_SCOPE)
-endfunction()
-
-function(
-  PrintChoices
-  Label
-  Flag
-  Choices
-  Value
-  Default
-  Color
-  OutputString
-  Multiline
-  Padding)
-  list(LENGTH "${Choices}" nchoices)
-  set(rstring "")
-  set(counter 0)
-
-  foreach(ch ${Choices})
-    if(${counter} EQUAL 0)
-      set(rstring_i "- ${Label}")
-
-      if(NOT "${Flag}" STREQUAL "")
-        set(rstring_i "${rstring_i} [${Magenta}${Flag}${ColorReset}]")
-      endif()
-
-      set(rstring_i "${rstring_i}:")
-      padto("${rstring_i}" " " ${Padding} rstring_i)
-    else()
-      set(rstring_i "")
-
-      if(NOT ${counter} EQUAL ${nchoices})
-        if(${Multiline} EQUAL 1)
-          set(rstring_i "${rstring_i}\n")
-          padto("${rstring_i}" " " ${Padding} rstring_i)
-        else()
-          set(rstring_i "${rstring_i}/")
-        endif()
-      endif()
-    endif()
-
-    if(${ch} STREQUAL ${Value})
-      if(${ch} STREQUAL "ON")
-        set(col ${Green})
-      elseif(${ch} STREQUAL "OFF")
-        set(col ${Red})
-      else()
-        set(col ${Color})
-      endif()
-    else()
-      set(col ${Dim})
-    endif()
-
-    if(${ch} STREQUAL ${Default})
-      set(col ${Underline}${col})
-    endif()
-
-    set(rstring_i "${rstring_i}${col}${ch}${ColorReset}")
-    math(EXPR counter "${counter} + 1")
-    set(rstring "${rstring}${rstring_i}")
-    set(rstring_i "")
-  endforeach()
-
-  set(${OutputString}
-      "${rstring}"
-      PARENT_SCOPE)
-endfunction()
-
-set(ON_OFF_VALUES "ON" "OFF")
-
 if(${PGEN_FOUND})
   printchoices(
     "Problem generator"
     "pgen"
     "${problem_generators}"
     ${PGEN}
-    ${default_pgen}
+    ""
     "${Blue}"
     PGEN_REPORT
-    1
-    36)
+    0)
+elseif(${TESTS})
+  set(TEST_NAMES "")
+  foreach(test_dir IN LISTS TEST_DIRECTORIES)
+    get_property(
+      LOCAL_TEST_NAMES
+      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir}/tests
+      PROPERTY TESTS)
+    list(APPEND TEST_NAMES ${LOCAL_TEST_NAMES})
+  endforeach()
+  printchoices(
+    "Test cases"
+    ""
+    "${TEST_NAMES}"
+    ""
+    "${ColorReset}"
+    ""
+    TESTS_REPORT
+    0)
 endif()
 
 printchoices(
@@ -111,8 +36,7 @@ printchoices(
   ${default_precision}
   "${Blue}"
   PRECISION_REPORT
-  1
-  36)
+  46)
 printchoices(
   "Output"
   "output"
@@ -121,18 +45,7 @@ printchoices(
   ${default_output}
   "${Green}"
   OUTPUT_REPORT
-  0
-  36)
-printchoices(
-  "GUI"
-  "gui"
-  "${ON_OFF_VALUES}"
-  ${gui}
-  ${default_gui}
-  "${Green}"
-  GUI_REPORT
-  0
-  36)
+  46)
 printchoices(
   "MPI"
   "mpi"
@@ -141,8 +54,18 @@ printchoices(
   OFF
   "${Green}"
   MPI_REPORT
-  0
-  42)
+  46)
+if(${mpi} AND ${DEVICE_ENABLED})
+  printchoices(
+    "GPU-aware MPI"
+    "gpu_aware_mpi"
+    "${ON_OFF_VALUES}"
+    ${gpu_aware_mpi}
+    OFF
+    "${Green}"
+    GPU_AWARE_MPI_REPORT
+    46)
+endif()
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -151,144 +74,20 @@ printchoices(
   OFF
   "${Green}"
   DEBUG_REPORT
-  0
-  42)
-
-printchoices(
-  "CUDA"
-  "Kokkos_ENABLE_CUDA"
-  "${ON_OFF_VALUES}"
-  ${Kokkos_ENABLE_CUDA}
-  "OFF"
-  "${Green}"
-  CUDA_REPORT
-  0
-  42)
-printchoices(
-  "HIP"
-  "Kokkos_ENABLE_HIP"
-  "${ON_OFF_VALUES}"
-  ${Kokkos_ENABLE_HIP}
-  "OFF"
-  "${Green}"
-  HIP_REPORT
-  0
-  42)
-printchoices(
-  "OpenMP"
-  "Kokkos_ENABLE_OPENMP"
-  "${ON_OFF_VALUES}"
-  ${Kokkos_ENABLE_OPENMP}
-  "OFF"
-  "${Green}"
-  OPENMP_REPORT
-  0
-  42)
-
-printchoices(
-  "C++ compiler"
-  "CMAKE_CXX_COMPILER"
-  "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
-  "${CMAKE_CXX_COMPILER} v${CMAKE_CXX_COMPILER_VERSION}"
-  "N/A"
-  "${ColorReset}"
-  CXX_COMPILER_REPORT
-  0
-  42)
-
-printchoices(
-  "C compiler"
-  "CMAKE_C_COMPILER"
-  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
-  "${CMAKE_C_COMPILER} v${CMAKE_C_COMPILER_VERSION}"
-  "N/A"
-  "${ColorReset}"
-  C_COMPILER_REPORT
-  0
-  42)
-
-get_cmake_property(_variableNames VARIABLES)
-foreach(_variableName ${_variableNames})
-  string(REGEX MATCH "Kokkos_ARCH_*" _isMatched ${_variableName})
-  if(_isMatched)
-    get_property(
-      isSet
-      CACHE ${_variableName}
-      PROPERTY VALUE)
-    if(isSet STREQUAL "ON")
-      string(REGEX REPLACE "Kokkos_ARCH_" "" ARCH ${_variableName})
-      break()
-    endif()
-  endif()
-endforeach()
-printchoices(
-  "Architecture"
-  "Kokkos_ARCH_*"
-  "${ARCH}"
-  "${ARCH}"
-  "N/A"
-  "${ColorReset}"
-  ARCH_REPORT
-  0
-  42)
-
-if(${Kokkos_ENABLE_CUDA})
-  if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
-    execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
-  else()
-    set(CUDACOMP ${CMAKE_CUDA_COMPILER})
-  endif()
-
-  string(STRIP ${CUDACOMP} CUDACOMP)
-
-  message(STATUS "CUDA compiler: ${CUDACOMP}")
-  execute_process(
-    COMMAND
-      bash -c
-      "${CUDACOMP} --version | grep release | sed -e 's/.*release //' -e 's/,.*//'"
-    OUTPUT_VARIABLE CUDACOMP_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  printchoices(
-    "CUDA compiler"
-    "CMAKE_CUDA_COMPILER"
-    "${CUDACOMP}"
-    "${CUDACOMP}"
-    "N/A"
-    "${ColorReset}"
-    CUDA_COMPILER_REPORT
-    0
-    42)
-endif()
-
-if(${Kokkos_ENABLE_HIP})
-  execute_process(
-    COMMAND bash -c "hipcc --version | grep HIP | cut -d ':' -f 2 | tr -d ' '"
-    OUTPUT_VARIABLE ROCM_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif()
-
-set(DOT_SYMBOL "${ColorReset}.")
-set(DOTTED_LINE_SYMBOL
-    "${ColorReset}. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . "
-)
-
-set(DASHED_LINE_SYMBOL
-    "${ColorReset}....................................................................... "
-)
+  46)
 
 if(NOT ${PROJECT_VERSION_TWEAK} EQUAL 0)
-  set(VERSION_SYMBOL
-      "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}"
-  )
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}." "${PROJECT_VERSION_MINOR}.")
+  string(APPEND VERSION_SYMBOL
+         "${PROJECT_VERSION_PATCH}-rc${PROJECT_VERSION_TWEAK}")
 else()
-  set(VERSION_SYMBOL
-      "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    "
-  )
+  set(VERSION_SYMBOL "v${PROJECT_VERSION_MAJOR}.")
+  string(APPEND VERSION_SYMBOL
+         "${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}    ")
 endif()
 
-message(
-  "${Blue}              __        __
+set(REPORT_TEXT
+    "${Blue}              __        __
              /\\ \\__  __/\\ \\__
     __    ___\\ \\  _\\/\\_\\ \\  _\\  __  __
   / __ \\ / __ \\ \\ \\/\\/\\ \\ \\ \\/ /\\ \\/\\ \\
@@ -297,54 +96,145 @@ message(
   \\/____/\\/_/\\/_/\\/__/ \\/_/\\/__/ \\/___/  \\/_/
                                     /\\___/
 Entity ${VERSION_SYMBOL}\t\t    \\/__/")
-message("${DASHED_LINE_SYMBOL}
-Main configurations")
+string(APPEND REPORT_TEXT ${ColorReset} "\n")
+
+string(APPEND REPORT_TEXT ${DASHED_LINE_SYMBOL} "\n" "Configurations" "\n")
 
 if(${PGEN_FOUND})
-  message("  ${PGEN_REPORT}")
+  string(APPEND REPORT_TEXT "  " ${PGEN_REPORT} "\n")
+elseif(${TESTS})
+  string(APPEND REPORT_TEXT "  " ${TESTS_REPORT} "\n")
 endif()
 
-message("  ${PRECISION_REPORT}")
-message("  ${OUTPUT_REPORT}")
-message("${DASHED_LINE_SYMBOL}\nCompile configurations")
+string(
+  APPEND
+  REPORT_TEXT
+  "  "
+  ${PRECISION_REPORT}
+  "\n"
+  "  "
+  ${OUTPUT_REPORT}
+  "\n")
 
-if(NOT "${ARCH_REPORT}" STREQUAL "")
-  message("  ${ARCH_REPORT}")
+string(REPLACE ";" "+" Kokkos_ARCH "${Kokkos_ARCH}")
+string(REPLACE ";" "+" Kokkos_DEVICES "${Kokkos_DEVICES}")
+
+string(
+  APPEND
+  REPORT_TEXT
+  "  - ARCH [${Magenta}Kokkos_ARCH_***${ColorReset}]:                   "
+  "${Kokkos_ARCH}"
+  "\n"
+  "  - DEVICES [${Magenta}Kokkos_ENABLE_***${ColorReset}]:              "
+  "${Kokkos_DEVICES}"
+  "\n"
+  "  "
+  ${MPI_REPORT}
+  "\n")
+
+if(${mpi} AND ${DEVICE_ENABLED})
+  string(APPEND REPORT_TEXT "  " ${GPU_AWARE_MPI_REPORT} "\n")
 endif()
-message("  ${CUDA_REPORT}")
-message("  ${HIP_REPORT}")
-message("  ${OPENMP_REPORT}")
 
-message("  ${C_COMPILER_REPORT}")
+string(
+  APPEND
+  REPORT_TEXT
+  "  "
+  ${DEBUG_REPORT}
+  "\n"
+  ${DASHED_LINE_SYMBOL}
+  "\n"
+  "Compilers & dependencies"
+  "\n")
 
-message("  ${CXX_COMPILER_REPORT}")
+string(
+  APPEND
+  REPORT_TEXT
+  "  - C compiler [${Magenta}CMAKE_C_COMPILER${ColorReset}]: v"
+  ${CMAKE_C_COMPILER_VERSION}
+  "\n"
+  "    ${Dim}"
+  ${CMAKE_C_COMPILER}
+  "${ColorReset}\n"
+  "  - C++ compiler [${Magenta}CMAKE_CXX_COMPILER${ColorReset}]: v"
+  ${CMAKE_CXX_COMPILER_VERSION}
+  "\n"
+  "    ${Dim}"
+  ${CMAKE_CXX_COMPILER}
+  "${ColorReset}\n")
 
-if(NOT "${CUDA_COMPILER_REPORT}" STREQUAL "")
-  message("  ${CUDA_COMPILER_REPORT}")
+if(${Kokkos_DEVICES} MATCHES "CUDA")
+  if("${CMAKE_CUDA_COMPILER}" STREQUAL "")
+    execute_process(COMMAND which nvcc OUTPUT_VARIABLE CUDACOMP)
+  else()
+    set(CUDACOMP ${CMAKE_CUDA_COMPILER})
+  endif()
+  string(STRIP ${CUDACOMP} CUDACOMP)
+  set(cmd "${CUDACOMP} --version |")
+  string(APPEND cmd " grep release | sed -e 's/.*release //' -e 's/,.*//'")
+  execute_process(
+    COMMAND bash -c ${cmd}
+    OUTPUT_VARIABLE CUDACOMP_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  string(
+    APPEND
+    REPORT_TEXT
+    "  - CUDA compiler: v"
+    ${CUDACOMP_VERSION}
+    "\n"
+    "    ${Dim}"
+    ${CUDACOMP}
+    "${ColorReset}\n")
+elseif(${Kokkos_DEVICES} MATCHES "HIP")
+  set(cmd "hipcc --version | grep HIP | cut -d ':' -f 2 | tr -d ' '")
+  execute_process(
+    COMMAND bash -c ${cmd}
+    OUTPUT_VARIABLE ROCM_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  string(APPEND REPORT_TEXT "  - ROCm: v" ${ROCM_VERSION} "\n")
 endif()
 
-message("  ${MPI_REPORT}")
-
-message("  ${DEBUG_REPORT}")
-
-message("${DASHED_LINE_SYMBOL}\nDependencies")
-
-if(NOT "${CUDACOMP_VERSION}" STREQUAL "")
-  message("  - CUDA:\tv${CUDACOMP_VERSION}")
-elseif(NOT "${ROCM_VERSION}" STREQUAL "")
-  message("  - ROCm:\tv${ROCM_VERSION}")
+string(APPEND REPORT_TEXT "  - Kokkos: v" ${Kokkos_VERSION} "\n")
+if(${Kokkos_FOUND})
+  string(APPEND REPORT_TEXT "    " ${Dim}${Kokkos_DIR}${ColorReset} "\n")
+else()
+  string(APPEND REPORT_TEXT "    " ${Dim}${Kokkos_BUILD_DIR}${ColorReset} "\n")
 endif()
-message("  - Kokkos:\tv${Kokkos_VERSION}")
+
 if(${output})
-  message("  - ADIOS2:\tv${adios2_VERSION}")
-endif()
-if(${HDF5_FOUND})
-  message("  - HDF5:\tv${HDF5_VERSION}")
+  string(APPEND REPORT_TEXT "  - ADIOS2: v" ${adios2_VERSION} "\n")
+  if(${adios2_FOUND})
+    string(APPEND REPORT_TEXT "    " "${Dim}${adios2_DIR}${ColorReset}" "\n")
+  else()
+    string(APPEND REPORT_TEXT "    " "${Dim}${adios2_BUILD_DIR}${ColorReset}"
+           "\n")
+  endif()
 endif()
 
-message(
-  "${DASHED_LINE_SYMBOL}
-Notes
-   ${Dim}: Set flags with `cmake ... -D ${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, the ${Underline}default${ColorReset}${Dim} value
-   :   will be used unless the variable is explicitly set.${ColorReset}
-")
+string(
+  APPEND
+  REPORT_TEXT
+  ${DASHED_LINE_SYMBOL}
+  "\n"
+  "Notes"
+  "\n"
+  "    ${Dim}: Set flags with `cmake ... -D "
+  "${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, "
+  "the ${Underline}default${ColorReset}${Dim} value"
+  "\n"
+  "    :   will be used unless the variable is explicitly set.${ColorReset}")
+
+if(${TESTS})
+  string(
+    APPEND
+    REPORT_TEXT
+    "\n"
+    "    ${Dim}: Run the tests with the following command:"
+    "\n"
+    "    :   ctest --test-dir ${CMAKE_CURRENT_BINARY_DIR}${ColorReset}"
+    "\n")
+endif()
+
+string(APPEND REPORT_TEXT "\n")
+
+message(${REPORT_TEXT})

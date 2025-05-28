@@ -41,8 +41,6 @@
 #include <vector>
 
 namespace timer {
-  using timestamp  = std::chrono::time_point<std::chrono::system_clock>;
-  using duration_t = long double;
 
   inline void convertTime(duration_t& value, std::string& units) {
     if (value > 1e6) {
@@ -58,10 +56,10 @@ namespace timer {
   }
 
   class Timers {
-    std::map<std::string, std::pair<timestamp, duration_t>> m_timers;
-    std::vector<std::string>                                m_names;
-    const bool                                              m_blocking;
-    const std::function<void(void)>                         m_synchronize;
+    std::map<std::string, std::pair<timestamp_t, duration_t>> m_timers;
+    std::vector<std::string>                                  m_names;
+    const bool                                                m_blocking;
+    const std::function<void(void)>                           m_synchronize;
 
   public:
     Timers(std::initializer_list<std::string> names,
@@ -75,7 +73,7 @@ namespace timer {
       for (const auto& name : names) {
         m_timers.insert({
           name,
-          {std::chrono::system_clock::now(), 0.0}
+          { std::chrono::system_clock::now(), 0.0 }
         });
         m_names.push_back(name);
       }
@@ -89,7 +87,9 @@ namespace timer {
 
     void stop(const std::string& name) {
       if (m_blocking) {
-        m_synchronize();
+        if (m_synchronize != nullptr) {
+          m_synchronize();
+        }
 #if defined(MPI_ENABLED)
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -139,15 +139,15 @@ namespace timer {
      */
     [[nodiscard]]
     auto gather(const std::vector<std::string>& ignore_in_tot,
-                std::size_t                     npart,
-                std::size_t                     ncells) const
+                npart_t                         npart,
+                ncells_t                        ncells) const
       -> std::map<std::string,
                   std::tuple<duration_t, duration_t, duration_t, unsigned short, unsigned short>>;
 
     [[nodiscard]]
-    auto printAll(TimerFlags  flags  = Timer::Default,
-                  std::size_t npart  = 0,
-                  std::size_t ncells = 0) const -> std::string;
+    auto printAll(TimerFlags flags  = Timer::Default,
+                  npart_t    npart  = 0,
+                  ncells_t   ncells = 0) const -> std::string;
   };
 } // namespace timer
 

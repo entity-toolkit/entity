@@ -73,8 +73,8 @@ namespace ntt {
     Domain(bool,
            unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<std::size_t>&      offset_ncells,
-           const std::vector<std::size_t>&      ncells,
+           const std::vector<ncells_t>&         offset_ncells,
+           const std::vector<ncells_t>&         ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
            const std::vector<ParticleSpecies>&)
@@ -88,8 +88,8 @@ namespace ntt {
 
     Domain(unsigned int                         index,
            const std::vector<unsigned int>&     offset_ndomains,
-           const std::vector<std::size_t>&      offset_ncells,
-           const std::vector<std::size_t>&      ncells,
+           const std::vector<ncells_t>&         offset_ncells,
+           const std::vector<ncells_t>&         ncells,
            const boundaries_t<real_t>&          extent,
            const std::map<std::string, real_t>& metric_params,
            const std::vector<ParticleSpecies>&  species_params)
@@ -124,7 +124,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto offset_ncells() const -> std::vector<std::size_t> {
+    auto offset_ncells() const -> std::vector<ncells_t> {
       return m_offset_ncells;
     }
 
@@ -146,7 +146,8 @@ namespace ntt {
     }
 
     /* setters -------------------------------------------------------------- */
-    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx) -> void {
+    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
+      -> void {
       m_neighbor_idx[dir] = idx;
     }
 
@@ -156,7 +157,7 @@ namespace ntt {
     // offset of the domain in # of domains
     std::vector<unsigned int>   m_offset_ndomains;
     // offset of the domain in cells (# of cells in each dimension)
-    std::vector<std::size_t>    m_offset_ncells;
+    std::vector<ncells_t>       m_offset_ncells;
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
@@ -164,8 +165,8 @@ namespace ntt {
   };
 
   template <SimEngine::type S, class M>
-  inline auto operator<<(std::ostream&       os,
-                         const Domain<S, M>& domain) -> std::ostream& {
+  inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
+    -> std::ostream& {
     os << "Domain #" << domain.index();
 #if defined(MPI_ENABLED)
     os << " [MPI rank: " << domain.mpi_rank() << "]";
@@ -184,23 +185,16 @@ namespace ntt {
     }
     os << "\n";
     os << std::setw(19) << std::left << "  physical extent: ";
-    for (auto dim = 0; dim < M::Dim; ++dim) {
+    for (auto dim { 0u }; dim < M::Dim; ++dim) {
       os << std::setw(15) << std::left
          << fmt::format("{%.2f; %.2f}",
-                        domain.mesh.extent(dim).first,
-                        domain.mesh.extent(dim).second);
+                        domain.mesh.extent(static_cast<in>(dim)).first,
+                        domain.mesh.extent(static_cast<in>(dim)).second);
     }
     os << "\n  neighbors:\n";
     for (auto& direction : dir::Directions<M::Dim>::all) {
-      auto neighbor = domain.neighbor_in(direction);
-      os << "   " << direction;
-      if (neighbor != nullptr) {
-        os << " -> #" << neighbor->index() << "\n";
-      } else {
-        os << " -> "
-           << "N/A"
-           << "\n";
-      }
+      auto neighbor_idx = domain.neighbor_idx_in(direction);
+      os << "   " << direction << " -> #" << neighbor_idx << "\n";
     }
     os << "  field boundaries:\n";
     for (auto& direction : dir::Directions<M::Dim>::orth) {

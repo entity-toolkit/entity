@@ -4,10 +4,10 @@
  * @implements
  *   - tools::ArrayImbalance -> unsigned short
  *   - tools::TensorProduct<> -> boundaries_t<T>
- *   - tools::decompose1D -> std::vector<std::size_t>
+ *   - tools::decompose1D -> std::vector<ncells_t>
  *   - tools::divideInProportions2D -> std::tuple<unsigned int, unsigned int>
  *   - tools::divideInProportions3D -> std::tuple<unsigned int, unsigned int, unsigned int>
- *   - tools::Decompose -> std::vector<std::vector<std::size_t>>
+ *   - tools::Decompose -> std::vector<std::vector<ncells_t>>
  *   - tools::Tracker
  * @namespaces:
  *   - tools::
@@ -60,8 +60,8 @@ namespace tools {
    * @return Tensor product of list
    */
   template <typename T>
-  inline auto TensorProduct(const std::vector<std::vector<T>>& list)
-    -> std::vector<std::vector<T>> {
+  inline auto TensorProduct(
+    const std::vector<std::vector<T>>& list) -> std::vector<std::vector<T>> {
     std::vector<std::vector<T>> result = { {} };
     for (const auto& sublist : list) {
       std::vector<std::vector<T>> temp;
@@ -81,16 +81,16 @@ namespace tools {
    * @param ndomains Number of domains
    * @param ncells Number of cells
    */
-  inline auto decompose1D(unsigned int ndomains, std::size_t ncells)
-    -> std::vector<std::size_t> {
-    auto size          = (std::size_t)((double)ncells / (double)ndomains);
-    auto ncells_domain = std::vector<std::size_t>(ndomains, size);
-    for (std::size_t i { 0 }; i < ncells - size * ndomains; ++i) {
+  inline auto decompose1D(unsigned int ndomains,
+                          ncells_t     ncells) -> std::vector<ncells_t> {
+    auto size          = (ncells_t)((double)ncells / (double)ndomains);
+    auto ncells_domain = std::vector<ncells_t>(ndomains, size);
+    for (auto i { 0u }; i < ncells - size * ndomains; ++i) {
       ncells_domain[i] += 1;
     }
     auto sum = std::accumulate(ncells_domain.begin(),
                                ncells_domain.end(),
-                               (std::size_t)0);
+                               (ncells_t)0);
     raise::ErrorIf(sum != ncells, "Decomposition error: sum != ncells", HERE);
     raise::ErrorIf(ncells_domain.size() != (std::size_t)ndomains,
                    "Decomposition error: size != ndomains",
@@ -107,8 +107,10 @@ namespace tools {
    * @param s1 Proportion of the first dimension
    * @param s2 Proportion of the second dimension
    */
-  inline auto divideInProportions2D(unsigned int ntot, unsigned int s1, unsigned int s2)
-    -> std::tuple<unsigned int, unsigned int> {
+  inline auto divideInProportions2D(
+    unsigned int ntot,
+    unsigned int s1,
+    unsigned int s2) -> std::tuple<unsigned int, unsigned int> {
     auto n1 = (unsigned int)(std::sqrt((double)ntot * (double)s1 / (double)s2));
     if (n1 == 0) {
       return { 1, ntot };
@@ -130,11 +132,11 @@ namespace tools {
    * @param s2 Proportion of the second dimension
    * @param s3 Proportion of the third dimension
    */
-  inline auto divideInProportions3D(unsigned int ntot,
-                                    unsigned int s1,
-                                    unsigned int s2,
-                                    unsigned int s3)
-    -> std::tuple<unsigned int, unsigned int, unsigned int> {
+  inline auto divideInProportions3D(
+    unsigned int ntot,
+    unsigned int s1,
+    unsigned int s2,
+    unsigned int s3) -> std::tuple<unsigned int, unsigned int, unsigned int> {
     auto n1 = (unsigned int)(std::cbrt(
       (double)ntot * (double)(SQR(s1)) / (double)(s2 * s3)));
     if (n1 > ntot) {
@@ -163,10 +165,10 @@ namespace tools {
    *
    * @note If decomposition has -1, it will be calculated automatically
    */
-  inline auto Decompose(unsigned int                    ndomains,
-                        const std::vector<std::size_t>& ncells,
-                        const std::vector<int>&         decomposition)
-    -> std::vector<std::vector<std::size_t>> {
+  inline auto Decompose(
+    unsigned int                 ndomains,
+    const std::vector<ncells_t>& ncells,
+    const std::vector<int>& decomposition) -> std::vector<std::vector<ncells_t>> {
     const auto dimension = ncells.size();
     raise::ErrorIf(dimension != decomposition.size(),
                    "Decomposition error: dimension != decomposition.size",
@@ -277,16 +279,16 @@ namespace tools {
     bool m_initialized { false };
 
     std::string m_type;
-    std::size_t m_interval;
-    long double m_interval_time;
+    timestep_t  m_interval;
+    simtime_t   m_interval_time;
     bool        m_use_time;
 
-    long double m_last_output_time { -1.0 };
+    simtime_t m_last_output_time { -1.0 };
 
   public:
     Tracker() = default;
 
-    Tracker(const std::string& type, std::size_t interval, long double interval_time)
+    Tracker(const std::string& type, timestep_t interval, simtime_t interval_time)
       : m_initialized { true }
       , m_type { type }
       , m_interval { interval }
@@ -295,9 +297,7 @@ namespace tools {
 
     ~Tracker() = default;
 
-    void init(const std::string& type,
-              std::size_t        interval,
-              long double        interval_time) {
+    void init(const std::string& type, timestep_t interval, simtime_t interval_time) {
       m_type          = type;
       m_interval      = interval;
       m_interval_time = interval_time;
@@ -305,7 +305,7 @@ namespace tools {
       m_initialized   = true;
     }
 
-    auto shouldWrite(std::size_t step, long double time) -> bool {
+    auto shouldWrite(timestep_t step, simtime_t time) -> bool {
       raise::ErrorIf(!m_initialized, "Tracker not initialized", HERE);
       if (m_use_time) {
         if ((m_last_output_time < 0) or

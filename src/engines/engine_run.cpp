@@ -34,11 +34,11 @@ namespace ntt {
          },
         m_params.get<bool>("diagnostics.blocking_timers")
       };
-      const auto diag_interval = m_params.get<std::size_t>(
+      const auto diag_interval = m_params.get<timestep_t>(
         "diagnostics.interval");
 
       auto       time_history   = pbar::DurationHistory { 1000 };
-      const auto clear_interval = m_params.template get<std::size_t>(
+      const auto clear_interval = m_params.template get<timestep_t>(
         "particles.clear_interval");
 
       // main algorithm loop
@@ -71,7 +71,7 @@ namespace ntt {
           traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
           auto lambda_custom_field_output = [&](const std::string&    name,
                                                 ndfield_t<M::Dim, 6>& buff,
-                                                std::size_t           idx,
+                                                index_t               idx,
                                                 const Domain<S, M>&   dom) {
             m_pgen.CustomFieldOutput(name, buff, idx, dom);
           };
@@ -84,6 +84,11 @@ namespace ntt {
         } else {
           print_output = m_metadomain.Write(m_params, step, step - 1, time, time - dt);
         }
+        print_output &= m_metadomain.WriteStats(m_params,
+                                                step,
+                                                step - 1,
+                                                time,
+                                                time - dt);
         timers.stop("Output");
 
         timers.start("Checkpoint");

@@ -67,14 +67,14 @@ namespace ntt {
     Metadomain<S, M> m_metadomain;
     user::PGen<S, M> m_pgen;
 
-    const bool        is_resuming;
-    const long double runtime;
-    const real_t      dt;
-    const std::size_t max_steps;
-    const std::size_t start_step;
-    const long double start_time;
-    long double       time;
-    std::size_t       step;
+    const bool       is_resuming;
+    const simtime_t  runtime;
+    const real_t     dt;
+    const timestep_t max_steps;
+    const timestep_t start_step;
+    const simtime_t  start_time;
+    simtime_t        time;
+    timestep_t       step;
 
   public:
     static constexpr bool pgen_is_ok {
@@ -91,8 +91,7 @@ namespace ntt {
       , m_metadomain { m_params.get<unsigned int>("simulation.domain.number"),
                        m_params.get<std::vector<int>>(
                          "simulation.domain.decomposition"),
-                       m_params.get<std::vector<std::size_t>>(
-                         "grid.resolution"),
+                       m_params.get<std::vector<ncells_t>>("grid.resolution"),
                        m_params.get<boundaries_t<real_t>>("grid.extent"),
                        m_params.get<boundaries_t<FldsBC>>(
                          "grid.boundaries.fields"),
@@ -104,11 +103,11 @@ namespace ntt {
                          "particles.species") }
       , m_pgen { m_params, m_metadomain }
       , is_resuming { m_params.get<bool>("checkpoint.is_resuming") }
-      , runtime { m_params.get<long double>("simulation.runtime") }
+      , runtime { m_params.get<simtime_t>("simulation.runtime") }
       , dt { m_params.get<real_t>("algorithms.timestep.dt") }
-      , max_steps { static_cast<std::size_t>(runtime / dt) }
-      , start_step { m_params.get<std::size_t>("checkpoint.start_step") }
-      , start_time { m_params.get<long double>("checkpoint.start_time") }
+      , max_steps { static_cast<timestep_t>(runtime / dt) }
+      , start_step { m_params.get<timestep_t>("checkpoint.start_step") }
+      , start_time { m_params.get<simtime_t>("checkpoint.start_time") }
       , time { start_time }
       , step { start_step } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
