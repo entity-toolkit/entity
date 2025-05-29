@@ -411,6 +411,287 @@ using member_type = team_policy::member_type;
     }
   };
 
+
+//       if (tag(p) == ParticleTag::dead) {
+//         return;
+//       }
+//       // recover particle velocity to deposit in unsimulated direction
+//       vec_t<Dim::_3D> vp { ZERO };
+//       {
+//         coord_t<M::PrtlDim> xp { ZERO };
+//         if constexpr (D == Dim::_1D) {
+//           xp[0] = i_di_to_Xi(i1(p), dx1(p));
+//         } else if constexpr (D == Dim::_2D) {
+//           if constexpr (M::PrtlDim == Dim::_3D) {
+//             xp[0] = i_di_to_Xi(i1(p), dx1(p));
+//             xp[1] = i_di_to_Xi(i2(p), dx2(p));
+//             xp[2] = phi(p);
+//           } else {
+//             xp[0] = i_di_to_Xi(i1(p), dx1(p));
+//             xp[1] = i_di_to_Xi(i2(p), dx2(p));
+//           }
+//         } else {
+//           xp[0] = i_di_to_Xi(i1(p), dx1(p));
+//           xp[1] = i_di_to_Xi(i2(p), dx2(p));
+//           xp[2] = i_di_to_Xi(i3(p), dx3(p));
+//         }
+//         auto inv_energy { ZERO };
+//         if constexpr (S == SimEngine::SRPIC) {
+//           metric.template transform_xyz<Idx::XYZ, Idx::U>(xp,
+//                                                           { ux1(p), ux2(p), ux3(p) },
+//                                                           vp);
+//           inv_energy = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
+//         } else {
+//           metric.template transform<Idx::D, Idx::U>(xp,
+//                                                     { ux1(p), ux2(p), ux3(p) },
+//                                                     vp);
+//           inv_energy = ONE / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
+//                                         ux3(p) * vp[2]);
+//         }
+//         if (Kokkos::isnan(vp[2]) || Kokkos::isinf(vp[2])) {
+//           vp[2] = ZERO;
+//         }
+//         vp[0] *= inv_energy;
+//         vp[1] *= inv_energy;
+//         vp[2] *= inv_energy;
+//       }
+
+//       const real_t coeff { weight(p) * charge };
+
+//       const auto dxp_r_1 { static_cast<prtldx_t>(i1(p) == i1_prev(p)) *
+//                            (dx1(p) + dx1_prev(p)) * static_cast<prtldx_t>(INV_2) };
+
+//       const real_t Wx1_1 { INV_2 * (dxp_r_1 + dx1_prev(p) +
+//                                     static_cast<real_t>(i1(p) > i1_prev(p))) };
+//       const real_t Wx1_2 { INV_2 * (dx1(p) + dxp_r_1 +
+//                                     static_cast<real_t>(
+//                                       static_cast<int>(i1(p) > i1_prev(p)) +
+//                                       i1_prev(p) - i1(p))) };
+//       const real_t Fx1_1 { (static_cast<real_t>(i1(p) > i1_prev(p)) + dxp_r_1 -
+//                             dx1_prev(p)) *
+//                            coeff * inv_dt };
+//       const real_t Fx1_2 { (static_cast<real_t>(
+//                               i1(p) - i1_prev(p) -
+//                               static_cast<int>(i1(p) > i1_prev(p))) +
+//                             dx1(p) - dxp_r_1) *
+//                            coeff * inv_dt };
+
+//       auto J_acc = J.access();
+
+//       // tuple_t<prtldx_t, D> dxp_r;
+//       if constexpr (D == Dim::_1D) {
+//         const real_t Fx2_1 { HALF * vp[1] * coeff };
+//         const real_t Fx2_2 { HALF * vp[1] * coeff };
+
+//         const real_t Fx3_1 { HALF * vp[2] * coeff };
+//         const real_t Fx3_2 { HALF * vp[2] * coeff };
+
+//         J_acc(i1_prev(p) + N_GHOSTS, cur::jx1) += Fx1_1;
+//         J_acc(i1(p) + N_GHOSTS, cur::jx1)      += Fx1_2;
+
+//         J_acc(i1_prev(p) + N_GHOSTS, cur::jx2)     += Fx2_1 * (ONE - Wx1_1);
+//         J_acc(i1_prev(p) + N_GHOSTS + 1, cur::jx2) += Fx2_1 * Wx1_1;
+//         J_acc(i1(p) + N_GHOSTS, cur::jx2)          += Fx2_2 * (ONE - Wx1_2);
+//         J_acc(i1(p) + N_GHOSTS + 1, cur::jx2)      += Fx2_2 * Wx1_2;
+
+//         J_acc(i1_prev(p) + N_GHOSTS, cur::jx3)     += Fx3_1 * (ONE - Wx1_1);
+//         J_acc(i1_prev(p) + N_GHOSTS + 1, cur::jx3) += Fx3_1 * Wx1_1;
+//         J_acc(i1(p) + N_GHOSTS, cur::jx3)          += Fx3_2 * (ONE - Wx1_2);
+//         J_acc(i1(p) + N_GHOSTS + 1, cur::jx3)      += Fx3_2 * Wx1_2;
+//       } else if constexpr (D == Dim::_2D || D == Dim::_3D) {
+//         const auto dxp_r_2 { static_cast<prtldx_t>(i2(p) == i2_prev(p)) *
+//                              (dx2(p) + dx2_prev(p)) *
+//                              static_cast<prtldx_t>(INV_2) };
+
+//         const real_t Wx2_1 { INV_2 * (dxp_r_2 + dx2_prev(p) +
+//                                       static_cast<real_t>(i2(p) > i2_prev(p))) };
+//         const real_t Wx2_2 { INV_2 * (dx2(p) + dxp_r_2 +
+//                                       static_cast<real_t>(
+//                                         static_cast<int>(i2(p) > i2_prev(p)) +
+//                                         i2_prev(p) - i2(p))) };
+//         const real_t Fx2_1 { (static_cast<real_t>(i2(p) > i2_prev(p)) +
+//                               dxp_r_2 - dx2_prev(p)) *
+//                              coeff * inv_dt };
+//         const real_t Fx2_2 { (static_cast<real_t>(
+//                                 i2(p) - i2_prev(p) -
+//                                 static_cast<int>(i2(p) > i2_prev(p))) +
+//                               dx2(p) - dxp_r_2) *
+//                              coeff * inv_dt };
+
+//         if constexpr (D == Dim::_2D) {
+//           const real_t Fx3_1 { HALF * vp[2] * coeff };
+//           const real_t Fx3_2 { HALF * vp[2] * coeff };
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 cur::jx1) += Fx1_1 * (ONE - Wx2_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 cur::jx1) += Fx1_1 * Wx2_1;
+//           J_acc(i1(p) + N_GHOSTS, i2(p) + N_GHOSTS, cur::jx1) += Fx1_2 *
+//                                                                  (ONE - Wx2_2);
+//           J_acc(i1(p) + N_GHOSTS, i2(p) + N_GHOSTS + 1, cur::jx1) += Fx1_2 * Wx2_2;
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_1 * (ONE - Wx1_1);
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_1 * Wx1_1;
+//           J_acc(i1(p) + N_GHOSTS, i2(p) + N_GHOSTS, cur::jx2) += Fx2_2 *
+//                                                                  (ONE - Wx1_2);
+//           J_acc(i1(p) + N_GHOSTS + 1, i2(p) + N_GHOSTS, cur::jx2) += Fx2_2 * Wx1_2;
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 cur::jx3) += Fx3_1 * Wx1_1 * Wx2_1;
+
+//           J_acc(i1(p) + N_GHOSTS, i2(p) + N_GHOSTS, cur::jx3) += Fx3_2 *
+//                                                                  (ONE - Wx1_2) *
+//                                                                  (ONE - Wx2_2);
+//           J_acc(i1(p) + N_GHOSTS + 1,
+//                 i2(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS + 1,
+//                 cur::jx3) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+//           J_acc(i1(p) + N_GHOSTS + 1, i2(p) + N_GHOSTS + 1, cur::jx3) += Fx3_2 *
+//                                                                          Wx1_2 *
+//                                                                          Wx2_2;
+//         } else {
+//           const auto   dxp_r_3 { static_cast<prtldx_t>(i3(p) == i3_prev(p)) *
+//                                (dx3(p) + dx3_prev(p)) *
+//                                static_cast<prtldx_t>(INV_2) };
+//           const real_t Wx3_1 { INV_2 * (dxp_r_3 + dx3_prev(p) +
+//                                         static_cast<real_t>(i3(p) > i3_prev(p))) };
+//           const real_t Wx3_2 { INV_2 * (dx3(p) + dxp_r_3 +
+//                                         static_cast<real_t>(
+//                                           static_cast<int>(i3(p) > i3_prev(p)) +
+//                                           i3_prev(p) - i3(p))) };
+//           const real_t Fx3_1 { (static_cast<real_t>(i3(p) > i3_prev(p)) +
+//                                 dxp_r_3 - dx3_prev(p)) *
+//                                coeff * inv_dt };
+//           const real_t Fx3_2 { (static_cast<real_t>(
+//                                   i3(p) - i3_prev(p) -
+//                                   static_cast<int>(i3(p) > i3_prev(p))) +
+//                                 dx3(p) - dxp_r_3) *
+//                                coeff * inv_dt };
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx1) += Fx1_1 * (ONE - Wx2_1) * (ONE - Wx3_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx1) += Fx1_1 * Wx2_1 * (ONE - Wx3_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS + 1,
+//                 cur::jx1) += Fx1_1 * (ONE - Wx2_1) * Wx3_1;
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 i3_prev(p) + N_GHOSTS + 1,
+//                 cur::jx1) += Fx1_1 * Wx2_1 * Wx3_1;
+
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx1) += Fx1_2 * (ONE - Wx2_2) * (ONE - Wx3_2);
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS + 1,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx1) += Fx1_2 * Wx2_2 * (ONE - Wx3_2);
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS + 1,
+//                 cur::jx1) += Fx1_2 * (ONE - Wx2_2) * Wx3_2;
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS + 1,
+//                 i3(p) + N_GHOSTS + 1,
+//                 cur::jx1) += Fx1_2 * Wx2_2 * Wx3_2;
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_1 * (ONE - Wx1_1) * (ONE - Wx3_1);
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_1 * Wx1_1 * (ONE - Wx3_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS + 1,
+//                 cur::jx2) += Fx2_1 * (ONE - Wx1_1) * Wx3_1;
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS + 1,
+//                 cur::jx2) += Fx2_1 * Wx1_1 * Wx3_1;
+
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_2 * (ONE - Wx1_2) * (ONE - Wx3_2);
+//           J_acc(i1(p) + N_GHOSTS + 1,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx2) += Fx2_2 * Wx1_2 * (ONE - Wx3_2);
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS + 1,
+//                 cur::jx2) += Fx2_2 * (ONE - Wx1_2) * Wx3_2;
+//           J_acc(i1(p) + N_GHOSTS + 1,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS + 1,
+//                 cur::jx2) += Fx2_2 * Wx1_2 * Wx3_2;
+
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * Wx1_1 * (ONE - Wx2_1);
+//           J_acc(i1_prev(p) + N_GHOSTS,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
+//           J_acc(i1_prev(p) + N_GHOSTS + 1,
+//                 i2_prev(p) + N_GHOSTS + 1,
+//                 i3_prev(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_1 * Wx1_1 * Wx2_1;
+
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_2 * (ONE - Wx1_2) * (ONE - Wx2_2);
+//           J_acc(i1(p) + N_GHOSTS + 1,
+//                 i2(p) + N_GHOSTS,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_2 * Wx1_2 * (ONE - Wx2_2);
+//           J_acc(i1(p) + N_GHOSTS,
+//                 i2(p) + N_GHOSTS + 1,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_2 * (ONE - Wx1_2) * Wx2_2;
+//           J_acc(i1(p) + N_GHOSTS + 1,
+//                 i2(p) + N_GHOSTS + 1,
+//                 i3(p) + N_GHOSTS,
+//                 cur::jx3) += Fx3_2 * Wx1_2 * Wx2_2;
+//         }
+//       }
+//     }
+//   };
+
 } // namespace kernel
 
 #undef i_di_to_Xi
