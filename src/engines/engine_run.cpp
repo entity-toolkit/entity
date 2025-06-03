@@ -72,23 +72,41 @@ namespace ntt {
           auto lambda_custom_field_output = [&](const std::string&    name,
                                                 ndfield_t<M::Dim, 6>& buff,
                                                 index_t               idx,
+                                                timestep_t            step,
+                                                simtime_t             time,
                                                 const Domain<S, M>&   dom) {
-            m_pgen.CustomFieldOutput(name, buff, idx, dom);
+            m_pgen.CustomFieldOutput(name, buff, idx, step, time, dom);
           };
-          print_output = m_metadomain.Write(m_params,
-                                            step,
-                                            step - 1,
-                                            time,
-                                            time - dt,
-                                            lambda_custom_field_output);
+          print_output &= m_metadomain.Write(m_params,
+                                             step,
+                                             step - 1,
+                                             time,
+                                             time - dt,
+                                             lambda_custom_field_output);
         } else {
-          print_output = m_metadomain.Write(m_params, step, step - 1, time, time - dt);
+          print_output &= m_metadomain.Write(m_params, step, step - 1, time, time - dt);
         }
-        print_output &= m_metadomain.WriteStats(m_params,
-                                                step,
-                                                step - 1,
-                                                time,
-                                                time - dt);
+        if constexpr (
+          traits::has_method<traits::pgen::custom_stat_t, decltype(m_pgen)>::value) {
+          auto lambda_custom_stat = [&](const std::string&  name,
+                                        timestep_t          step,
+                                        simtime_t           time,
+                                        const Domain<S, M>& dom) -> real_t {
+            return m_pgen.CustomStat(name, step, time, dom);
+          };
+          print_output &= m_metadomain.WriteStats(m_params,
+                                                  step,
+                                                  step - 1,
+                                                  time,
+                                                  time - dt,
+                                                  lambda_custom_stat);
+        } else {
+          print_output &= m_metadomain.WriteStats(m_params,
+                                                  step,
+                                                  step - 1,
+                                                  time,
+                                                  time - dt);
+        }
         timers.stop("Output");
 
         timers.start("Checkpoint");
@@ -133,4 +151,5 @@ namespace ntt {
   template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::run();
+
 } // namespace ntt

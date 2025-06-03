@@ -59,7 +59,6 @@ namespace kernel {
     const bool               use_weights;
     const M                  metric;
     const int                ni2;
-    const real_t             inv_n0;
     const unsigned short     window;
 
     const real_t contrib;
@@ -113,11 +112,10 @@ namespace kernel {
       , use_weights { use_weights }
       , metric { metric }
       , ni2 { static_cast<int>(ni2) }
-      , inv_n0 { inv_n0 }
       , window { window }
       , contrib { get_contrib<F>(mass, charge) }
-      , smooth { ONE / (real_t)(math::pow(TWO * (real_t)window + ONE,
-                                          static_cast<int>(D))) } {
+      , smooth { inv_n0 / (real_t)(math::pow(TWO * (real_t)window + ONE,
+                                             static_cast<int>(D))) } {
       raise::ErrorIf(buff_idx >= N, "Invalid buffer index", HERE);
       raise::ErrorIf(window > N_GHOSTS, "Window size too large", HERE);
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
@@ -296,19 +294,21 @@ namespace kernel {
         // for nppc calculation ...
         // ... do not take volume, weights or smoothing into account
         if constexpr (D == Dim::_1D) {
-          coeff *= inv_n0 /
+          coeff *= smooth /
                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF });
         } else if constexpr (D == Dim::_2D) {
-          coeff *= inv_n0 /
+          coeff *= smooth /
                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
                                        static_cast<real_t>(i2(p)) + HALF });
         } else if constexpr (D == Dim::_3D) {
-          coeff *= inv_n0 /
+          coeff *= smooth /
                    metric.sqrt_det_h({ static_cast<real_t>(i1(p)) + HALF,
                                        static_cast<real_t>(i2(p)) + HALF,
                                        static_cast<real_t>(i3(p)) + HALF });
         }
-        coeff *= weight(p) * smooth;
+        if (use_weights) {
+          coeff *= weight(p);
+        }
       }
       auto buff_access = Buff.access();
       if constexpr (D == Dim::_1D) {

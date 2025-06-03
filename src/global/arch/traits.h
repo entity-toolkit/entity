@@ -99,7 +99,7 @@ namespace traits {
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
-    using ext_current_t = decltype(&T::ext_current);	    
+    using ext_current_t = decltype(&T::ext_current);
 
     template <typename T>
     using atm_fields_t = decltype(&T::AtmFields);
@@ -145,6 +145,9 @@ namespace traits {
 
     template <typename T>
     using custom_field_output_t = decltype(&T::CustomFieldOutput);
+
+    template <typename T>
+    using custom_stat_t = decltype(&T::CustomStat);
   } // namespace pgen
 
   // for pgen extforce

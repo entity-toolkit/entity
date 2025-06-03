@@ -133,6 +133,15 @@ namespace metric {
     }
 
     /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      // @TODO: Ask Alisa
+      return ZERO;
+    }
+
+    /**
      * metric component with lower indices: h_ij
      * @param x coordinate array in code units
      */

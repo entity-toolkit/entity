@@ -82,7 +82,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t {
+    auto totVolume() const -> real_t override {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {
