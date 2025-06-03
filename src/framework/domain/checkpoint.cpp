@@ -474,13 +474,26 @@ namespace ntt {
       HERE);
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+#define METADOMAIN_CHECKPOINTS(S, M)                                             \
+  template void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*,           \
+                                                       const SimulationParams&); \
+  template auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams&,       \
+                                                  timestep_t,                    \
+                                                  timestep_t,                    \
+                                                  simtime_t,                     \
+                                                  simtime_t) -> bool;            \
+  template void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS*,         \
+                                                         const SimulationParams&);
+
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+#undef METADOMAIN_CHECKPOINTS
 
 } // namespace ntt

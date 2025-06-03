@@ -81,6 +81,20 @@ namespace metric {
     }
 
     /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      if constexpr (D == Dim::_1D) {
+        return x1_max - x1_min;
+      } else if constexpr (D == Dim::_2D) {
+        return (x1_max - x1_min) * (x2_max - x2_min);
+      } else {
+        return (x1_max - x1_min) * (x2_max - x2_min) * (x3_max - x3_min);
+      }
+    }
+
+    /**
      * metric component with lower indices: h_ij
      * @param x coordinate array in code units
      */

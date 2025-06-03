@@ -453,6 +453,10 @@
     #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
     #   @note: Same notation as for `output.fields.quantities`
     quantities = ""
+    # Custom (user-defined) stats:
+    #   @type: array of strings
+    #   @default: []
+    custom = ""
 
 [checkpoint]
   # Number of timesteps between checkpoints:

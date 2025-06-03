@@ -13,17 +13,17 @@ auto main() -> int {
   using namespace ntt;
   try {
     {
-      const auto e = OutputStats("E^2");
-      raise::ErrorIf(e.is_vector(), "E^2 should not be a vector quantity", HERE);
+      const auto e = OutputStats("E^2", false);
+      raise::ErrorIf(not e.is_vector(), "E^2 should be a vector quantity", HERE);
       raise::ErrorIf(e.is_moment(), "E^2 should not be a moment", HERE);
       raise::ErrorIf(e.id() != StatsID::E2, "E^2 should have ID StatsID::E2", HERE);
       raise::ErrorIf(e.species.size() != 0, "E^2 should have no species", HERE);
-      raise::ErrorIf(e.comp.size() != 0, "E^2 should have no components", HERE);
-      raise::ErrorIf(e.name() != "E^2", "E^2 should have name `E^2`", HERE);
+      raise::ErrorIf(e.comp.size() != 3, "E^2 should have 3 components", HERE);
+      raise::ErrorIf(e.name() != "Ei^2", "E^2 should have name `Ei^2`", HERE);
     }
 
     {
-      const auto e = OutputStats("ExB");
+      const auto e = OutputStats("ExB", false);
       raise::ErrorIf(not e.is_vector(), "ExB should be a vector quantity", HERE);
       raise::ErrorIf(e.is_moment(), "ExB should not be a moment", HERE);
       raise::ErrorIf(e.id() != StatsID::ExB, "ExB should have ID StatsID::ExB", HERE);
@@ -33,7 +33,7 @@ auto main() -> int {
     }
 
     {
-      const auto e = OutputStats("J.E");
+      const auto e = OutputStats("J.E", false);
       raise::ErrorIf(e.is_vector(), "J.E should not be a vector quantity", HERE);
       raise::ErrorIf(e.is_moment(), "J.E should not be a moment", HERE);
       raise::ErrorIf(e.id() != StatsID::JdotE,
@@ -45,7 +45,7 @@ auto main() -> int {
     }
 
     {
-      const auto rho = OutputStats("Rho_1_3");
+      const auto rho = OutputStats("Rho_1_3", false);
       raise::ErrorIf(not rho.is_moment(), "Rho should be a moment", HERE);
       raise::ErrorIf(rho.id() != StatsID::Rho,
                      "Rho should have ID StatsID::Rho",
@@ -58,7 +58,7 @@ auto main() -> int {
     }
 
     {
-      const auto t = OutputStats("Tti_2_3");
+      const auto t = OutputStats("Tti_2_3", false);
       raise::ErrorIf(not t.is_moment(), "T should be a moment", HERE);
       raise::ErrorIf(t.is_vector(), "T should not be a vector quantity", HERE);
       raise::ErrorIf(t.id() != StatsID::T, "T should have ID StatsID::T", HERE);
@@ -91,8 +91,20 @@ auto main() -> int {
     }
 
     {
-      const auto t = OutputStats("Tij");
+      const auto t = OutputStats("Tij", false);
       raise::ErrorIf(t.comp.size() != 6, "T should have 6 component", HERE);
+    }
+
+    {
+      const auto custom = OutputStats("C2x_12", true);
+      raise::ErrorIf(custom.name() != "C2x_12",
+                     "Custom should have name `C2x_12`",
+                     HERE);
+      raise::ErrorIf(not custom.is_custom(),
+                     "Custom should be... well... a custom",
+                     HERE);
+      raise::ErrorIf(custom.is_moment(), "Custom should not be a moment", HERE);
+      raise::ErrorIf(custom.is_vector(), "Custom should not be a vector", HERE);
     }
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;

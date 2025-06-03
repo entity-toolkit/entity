@@ -104,6 +104,9 @@ namespace metric {
     virtual auto find_dxMin() const -> real_t = 0;
 
     [[nodiscard]]
+    virtual auto totVolume() const -> real_t = 0;
+
+    [[nodiscard]]
     auto dxMin() const -> real_t {
       return dx_min;
     }
