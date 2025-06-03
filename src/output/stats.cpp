@@ -11,6 +11,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <iomanip>
 #include <string>
 #include <vector>
 
@@ -19,7 +20,14 @@ using namespace out;
 
 namespace stats {
 
-  OutputStats::OutputStats(const std::string& name) : m_name { name } {
+  OutputStats::OutputStats(const std::string& name, bool is_custom)
+    : m_name { name } {
+    if (is_custom) {
+      m_id    = StatsID::Custom;
+      comp    = {};
+      species = {};
+      return;
+    }
     // determine the stats ID
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
@@ -29,7 +37,7 @@ namespace stats {
     if (StatsID::contains(fmt::toLower(name_raw).c_str())) {
       m_id = StatsID::pick(fmt::toLower(name_raw).c_str());
     } else {
-      raise::Error("Unrecognized stats ID " + fmt::toLower(name_raw), HERE);
+      raise::Error("Unrecognized stats name: " + name, HERE);
     }
     // determine the species and components to output
     if (is_moment()) {
@@ -38,13 +46,13 @@ namespace stats {
       species = {};
     }
     if (is_vector()) {
-      // always write all the ExB and V components
+      // always write all the E^2, B^2, ExB components
       comp = { { 1 }, { 2 }, { 3 } };
     } else if (id() == StatsID::T) {
       // energy-momentum tensor
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
     } else {
-      // scalar (e.g., Rho, E^2, etc.)
+      // scalar (e.g., Rho, Npart, etc.)
       comp = {};
     }
   }
@@ -61,9 +69,10 @@ namespace stats {
     m_fname = filename;
   }
 
-  void Writer::defineStatsOutputs(const std::vector<std::string>& stats_to_write) {
+  void Writer::defineStatsOutputs(const std::vector<std::string>& stats_to_write,
+                                  bool is_custom) {
     for (const auto& stat : stats_to_write) {
-      m_stat_writers.emplace_back(stat);
+      m_stat_writers.emplace_back(stat, is_custom);
     }
   }
 
@@ -71,14 +80,15 @@ namespace stats {
     CallOnce(
       [](auto& fname, auto& stat_writers) {
         std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << "step,time,";
+        StatsOut << std::setw(14) << "step" << "," << std::setw(14) << "time"
+                 << ",";
         for (const auto& stat : stat_writers) {
           if (stat.is_vector()) {
             for (auto i { 0u }; i < stat.comp.size(); ++i) {
-              StatsOut << stat.name(i) << ",";
+              StatsOut << std::setw(14) << stat.name(i) << ",";
             }
           } else {
-            StatsOut << stat.name() << ",";
+            StatsOut << std::setw(14) << stat.name() << ",";
           }
         }
         StatsOut << std::endl;

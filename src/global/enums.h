@@ -14,6 +14,8 @@
  *   - enum ntt::Cooling           // synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
+ *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
+ *                                    charge, n, npart
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -321,15 +323,16 @@ namespace ntt {
       Charge  = 7,
       N       = 8,
       Npart   = 9,
+      Custom  = 10,
     };
 
     constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
 
     static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
-                                                Rho, Charge, N,   Npart };
-    static constexpr const char* lookup[]   = { "b^2",    "e^2", "exb",
-                                                "j.e",    "t",   "rho",
-                                                "charge", "n",   "npart" };
+                                                Rho, Charge, N,   Npart, Custom };
+    static constexpr const char* lookup[] = { "b^2",   "e^2",   "exb",    "j.e",
+                                              "t",     "rho",   "charge", "n",
+                                              "npart", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
