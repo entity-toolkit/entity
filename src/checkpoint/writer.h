@@ -53,7 +53,7 @@ namespace checkpoint {
               timestep_t,
               simtime_t,
               int,
-              const std::string&);
+              const std::string& = "");
 
     auto shouldSave(timestep_t, simtime_t) -> bool;
 

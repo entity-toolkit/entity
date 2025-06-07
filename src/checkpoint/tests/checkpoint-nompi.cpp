@@ -60,18 +60,18 @@ auto main(int argc, char* argv[]) -> int {
           const auto i1_        = static_cast<real_t>(i1);
           const auto i2_        = static_cast<real_t>(i2);
           const auto i3_        = static_cast<real_t>(i3);
-          field1(i1, i2, i3, 0) = i1_ + i2_ + i3;
-          field1(i1, i2, i3, 1) = i1_ * i2_ / i3;
-          field1(i1, i2, i3, 2) = i1_ / i2_ * i3;
-          field1(i1, i2, i3, 3) = i1_ + i2_ - i3;
-          field1(i1, i2, i3, 4) = i1_ * i2_ + i3;
-          field1(i1, i2, i3, 5) = i1_ / i2_ - i3;
-          field2(i1, i2, i3, 0) = -(i1_ + i2_ + i3);
-          field2(i1, i2, i3, 1) = -(i1_ * i2_ / i3);
-          field2(i1, i2, i3, 2) = -(i1_ / i2_ * i3);
-          field2(i1, i2, i3, 3) = -(i1_ + i2_ - i3);
-          field2(i1, i2, i3, 4) = -(i1_ * i2_ + i3);
-          field2(i1, i2, i3, 5) = -(i1_ / i2_ - i3);
+          field1(i1, i2, i3, 0) = i1_ + i2_ + i3_;
+          field1(i1, i2, i3, 1) = i1_ * i2_ / i3_;
+          field1(i1, i2, i3, 2) = i1_ / i2_ * i3_;
+          field1(i1, i2, i3, 3) = i1_ + i2_ - i3_;
+          field1(i1, i2, i3, 4) = i1_ * i2_ + i3_;
+          field1(i1, i2, i3, 5) = i1_ / i2_ - i3_;
+          field2(i1, i2, i3, 0) = -(i1_ + i2_ + i3_);
+          field2(i1, i2, i3, 1) = -(i1_ * i2_ / i3_);
+          field2(i1, i2, i3, 2) = -(i1_ / i2_ * i3_);
+          field2(i1, i2, i3, 3) = -(i1_ + i2_ - i3_);
+          field2(i1, i2, i3, 4) = -(i1_ * i2_ + i3_);
+          field2(i1, i2, i3, 5) = -(i1_ / i2_ - i3_);
         });
       Kokkos::parallel_for(
         "fillPrtl1",
@@ -94,8 +94,8 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       // write checkpoint
-      Writer writer { checkpoint_path };
-      writer.init(&adios, 0, 0.0, 1);
+      Writer writer {};
+      writer.init(&adios, checkpoint_path, 0, 0.0, 1);
 
       writer.defineFieldVariables(SimEngine::GRPIC,
                                   { nx1_gh, nx2_gh, nx3_gh },

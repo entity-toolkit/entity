@@ -66,8 +66,7 @@ template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
 auto compute_field_stat(const M&                    metric,
                         const ndfield_t<M::Dim, 6>& em,
                         const ndfield_t<M::Dim, 3>& j,
-                        const range_t<M::Dim>&      range,
-                        ncells_t                    num_cells) -> real_t {
+                        const range_t<M::Dim>&      range) -> real_t {
   real_t buff = ZERO;
   Kokkos::parallel_reduce("ReduceFields",
                           range,
@@ -113,13 +112,11 @@ void testReducedStats(const std::vector<std::size_t>& res,
   ndfield_t<M::Dim, 6> EM;
   ndfield_t<M::Dim, 3> J;
   range_t<M::Dim>      cell_range;
-  ncells_t             num_cells;
 
   if constexpr (M::Dim == Dim::_1D) {
     EM         = ndfield_t<M::Dim, 6> { "EM", res[0] + 2 * N_GHOSTS };
     J          = ndfield_t<M::Dim, 3> { "J", res[0] + 2 * N_GHOSTS };
     cell_range = { N_GHOSTS, res[0] + N_GHOSTS };
-    num_cells  = res[0];
 
     put_value<M::Dim, 6>(EM, values[0], em::ex1);
     put_value<M::Dim, 6>(EM, values[1], em::ex2);
@@ -140,7 +137,6 @@ void testReducedStats(const std::vector<std::size_t>& res,
       {          N_GHOSTS,          N_GHOSTS },
       { res[0] + N_GHOSTS, res[1] + N_GHOSTS }
     };
-    num_cells = res[0] * res[1];
 
     put_value<M::Dim, 6>(EM, values[0], em::ex1);
     put_value<M::Dim, 6>(EM, values[1], em::ex2);
@@ -167,7 +163,6 @@ void testReducedStats(const std::vector<std::size_t>& res,
       {          N_GHOSTS,          N_GHOSTS,          N_GHOSTS },
       { res[0] + N_GHOSTS, res[1] + N_GHOSTS, res[2] + N_GHOSTS }
     };
-    num_cells = res[0] * res[1] * res[2];
 
     put_value<M::Dim, 6>(EM, values[0], em::ex1);
     put_value<M::Dim, 6>(EM, values[1], em::ex2);
@@ -186,8 +181,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto Ex_Sq = compute_field_stat<S, M, StatsID::E2, 1>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(Ex_Sq, (real_t)(1), acc),
                    "Ex_Sq does not match expected value",
                    HERE);
@@ -197,8 +191,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto Ey_Sq = compute_field_stat<S, M, StatsID::E2, 2>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(Ey_Sq, (real_t)(4), acc),
                    "Ey_Sq does not match expected value",
                    HERE);
@@ -208,8 +201,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto Ez_Sq = compute_field_stat<S, M, StatsID::E2, 3>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(Ez_Sq, (real_t)(9), acc),
                    "Ez_Sq does not match expected value",
                    HERE);
@@ -219,8 +211,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto Bx_Sq = compute_field_stat<S, M, StatsID::B2, 1>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(Bx_Sq, (real_t)(1), acc),
                    "Bx_Sq does not match expected value",
                    HERE);
@@ -230,8 +221,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto By_Sq = compute_field_stat<S, M, StatsID::B2, 2>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(By_Sq, (real_t)(4), acc),
                    "By_Sq does not match expected value",
                    HERE);
@@ -241,8 +231,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto Bz_Sq = compute_field_stat<S, M, StatsID::B2, 3>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(Bz_Sq, (real_t)(9), acc),
                    "Bz_Sq does not match expected value",
                    HERE);
@@ -252,8 +241,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto ExB_x = compute_field_stat<S, M, StatsID::ExB, 1>(metric,
                                                                  EM,
                                                                  J,
-                                                                 cell_range,
-                                                                 num_cells);
+                                                                 cell_range);
     raise::ErrorIf(not almost_equal(ExB_x, (real_t)(12), acc),
                    "ExB_x does not match expected value",
                    HERE);
@@ -263,8 +251,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto ExB_y = compute_field_stat<S, M, StatsID::ExB, 2>(metric,
                                                                  EM,
                                                                  J,
-                                                                 cell_range,
-                                                                 num_cells);
+                                                                 cell_range);
     raise::ErrorIf(not almost_equal(ExB_y, (real_t)(-6), acc),
                    "ExB_y does not match expected value",
                    HERE);
@@ -274,8 +261,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto ExB_z = compute_field_stat<S, M, StatsID::ExB, 3>(metric,
                                                                  EM,
                                                                  J,
-                                                                 cell_range,
-                                                                 num_cells);
+                                                                 cell_range);
     raise::ErrorIf(not almost_equal(ExB_z, (real_t)(0), acc),
                    "ExB_z does not match expected value",
                    HERE);
@@ -285,8 +271,7 @@ void testReducedStats(const std::vector<std::size_t>& res,
     const auto JdotE = compute_field_stat<S, M, StatsID::JdotE>(metric,
                                                                 EM,
                                                                 J,
-                                                                cell_range,
-                                                                num_cells);
+                                                                cell_range);
     raise::ErrorIf(not almost_equal(JdotE, (real_t)(11), acc),
                    "JdotE does not match expected value",
                    HERE);

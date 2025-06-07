@@ -160,21 +160,28 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       xi[2] = zi_1;
     }
     metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xi, xCd);
-    put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
-    put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
-    put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
-    put_value<prtldx_t>(dx1,
-                        static_cast<prtldx_t>(xCd[0]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[0])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx2,
-                        static_cast<prtldx_t>(xCd[1]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[1])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx3,
-                        static_cast<prtldx_t>(xCd[2]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[2])),
-                        prtl_idx);
+    if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
+                  M::PrtlDim == Dim::_3D) {
+      put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
+      put_value<prtldx_t>(dx1,
+                          static_cast<prtldx_t>(xCd[0]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[0])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+      put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
+      put_value<prtldx_t>(dx2,
+                          static_cast<prtldx_t>(xCd[1]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[1])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_3D) {
+      put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
+      put_value<prtldx_t>(dx3,
+                          static_cast<prtldx_t>(xCd[2]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[2])),
+                          prtl_idx);
+    }
     put_value<real_t>(ux1, ux_1, prtl_idx);
     put_value<real_t>(ux2, uy_1, prtl_idx);
     put_value<real_t>(ux3, uz_1, prtl_idx);
@@ -195,21 +202,28 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       xi[2] = zi_2;
     }
     metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xi, xCd);
-    put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
-    put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
-    put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
-    put_value<prtldx_t>(dx1,
-                        static_cast<prtldx_t>(xCd[0]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[0])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx2,
-                        static_cast<prtldx_t>(xCd[1]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[1])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx3,
-                        static_cast<prtldx_t>(xCd[2]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[2])),
-                        prtl_idx);
+    if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
+                  M::PrtlDim == Dim::_3D) {
+      put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
+      put_value<prtldx_t>(dx1,
+                          static_cast<prtldx_t>(xCd[0]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[0])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+      put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
+      put_value<prtldx_t>(dx2,
+                          static_cast<prtldx_t>(xCd[1]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[1])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_3D) {
+      put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
+      put_value<prtldx_t>(dx3,
+                          static_cast<prtldx_t>(xCd[2]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[2])),
+                          prtl_idx);
+    }
     put_value<real_t>(ux1, ux_2, prtl_idx);
     put_value<real_t>(ux2, uy_2, prtl_idx);
     put_value<real_t>(ux3, uz_2, prtl_idx);
