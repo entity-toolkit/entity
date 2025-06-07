@@ -1189,7 +1189,7 @@ namespace kernel::sr {
         const auto w1dx = ONE - w0dx - w2dx;
         const auto w0dy = HALF * SQR(ONE - dx2_);
         const auto w2dy = HALF * SQR(dx2_);
-        const auto w1dy = ONE - w0dx - w2dy;
+        const auto w1dy = ONE - w0dy - w2dy;
 
         // Ex1
         // Interpolate --- (dual, primal)
@@ -1349,10 +1349,10 @@ namespace kernel::sr {
         const auto w1dx = ONE - w0dx - w2dx;
         const auto w0dy = HALF * SQR(ONE - dx2_);
         const auto w2dy = HALF * SQR(dx2_);
-        const auto w1dy = ONE - w0dx - w2dy;
+        const auto w1dy = ONE - w0dy - w2dy;
         const auto w0dz = HALF * SQR(ONE - dx3_);
         const auto w2dz = HALF * SQR(dx3_);
-        const auto w1dz = ONE - w0dx - w2dy;
+        const auto w1dz = ONE - w0dz - w2dz;
 
         // Ex1
         // Interpolate --- (dual, primal, primal)
