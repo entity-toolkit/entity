@@ -106,13 +106,13 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(std::size_t bytes)
-      -> std::pair<long double, std::string> {
+    auto bytes_to_human_readable(
+      std::size_t bytes) -> std::pair<double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       idx_t                          unit_idx = 0;
-      auto                           size     = static_cast<long double>(bytes);
-      while ((size >= 1024) && (unit_idx < units.size() - 1)) {
-        size /= 1024;
+      auto                           size     = static_cast<double>(bytes);
+      while ((size >= 1024.0) and (unit_idx < units.size() - 1)) {
+        size /= 1024.0;
         ++unit_idx;
       }
       return { size, units[unit_idx] };

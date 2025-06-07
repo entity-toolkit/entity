@@ -93,6 +93,7 @@
 #define GLOBAL_GLOBAL_H
 
 #include <chrono>
+#include <filesystem>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -356,6 +357,9 @@ using index_t = const std::size_t;
 using idx_t   = unsigned short;
 using spidx_t = unsigned short;
 using dim_t   = unsigned short;
+
+// utility
+using path_t = std::filesystem::path;
 
 using range_tuple_t = std::pair<ncells_t, ncells_t>;
 

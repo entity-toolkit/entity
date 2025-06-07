@@ -57,7 +57,7 @@ namespace out {
 
     bool        m_flds_ghosts;
     std::string m_engine;
-    std::string m_fname;
+    path_t      m_fname;
 
     std::map<std::string, tools::Tracker> m_trackers;
 
@@ -116,7 +116,7 @@ namespace out {
     void endWriting(WriteModeTags);
 
     /* getters -------------------------------------------------------------- */
-    auto fname() const -> const std::string& {
+    auto fname() const -> const path_t& {
       return m_fname;
     }
 

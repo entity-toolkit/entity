@@ -491,8 +491,8 @@ namespace kernel::bc {
                   "Invalid component index");
 
     ndfield_t<D, 6>   Fld;
-    const BCTags      tags;
     const std::size_t i_edge;
+    const BCTags      tags;
 
     ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
