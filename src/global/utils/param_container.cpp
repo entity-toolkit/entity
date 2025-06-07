@@ -331,6 +331,11 @@ namespace prm {
       try {
         write_any(io, key, value);
       } catch (const std::exception& e) {
+        raise::Warning(
+          fmt::format("Failed to write parameter '%s', skipping. Error msg: %s",
+                      key.c_str(),
+                      e.what()),
+          HERE);
         continue;
       }
     }
