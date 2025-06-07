@@ -89,7 +89,6 @@ namespace ntt {
     }
     // some parameters
     const auto use_weights = params.template get<bool>("particles.use_weights");
-    const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
 
     real_t buffer = static_cast<real_t>(0);
     for (const auto& sp : specs) {
@@ -186,8 +185,8 @@ namespace ntt {
     timestep_t              finished_step,
     simtime_t               current_time,
     simtime_t               finished_time,
-    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> CustomStat)
-    -> bool {
+    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>
+      CustomStat) -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
@@ -272,16 +271,16 @@ namespace ntt {
     return true;
   }
 
-#define METADOMAIN_STATS(S, M)                                                             \
-  template void Metadomain<S, M>::InitStatsWriter(const SimulationParams&, bool);          \
-  template auto Metadomain<S, M>::WriteStats(                                              \
-    const SimulationParams&,                                                               \
-    timestep_t,                                                                            \
-    timestep_t,                                                                            \
-    simtime_t,                                                                             \
-    simtime_t,                                                                             \
-    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>) \
-    -> bool;
+#define METADOMAIN_STATS(S, M)                                                    \
+  template void Metadomain<S, M>::InitStatsWriter(const SimulationParams&, bool); \
+  template auto Metadomain<S, M>::WriteStats(                                     \
+    const SimulationParams&,                                                      \
+    timestep_t,                                                                   \
+    timestep_t,                                                                   \
+    simtime_t,                                                                    \
+    simtime_t,                                                                    \
+    std::function<                                                                \
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>) -> bool;
 
   METADOMAIN_STATS(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
   METADOMAIN_STATS(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)

@@ -43,7 +43,6 @@
   #include <mpi.h>
 #endif // MPI_ENABLED
 
-#include <chrono>
 #include <map>
 #include <vector>
 
@@ -61,9 +60,6 @@ namespace ntt {
   #else
     adios2::ADIOS m_adios;
   #endif
-    const timestamp_t start_walltime { std::chrono::system_clock::now() };
-    timestamp_t       end_walltime {};
-    bool              walltime_checkpoint_pending { false };
 #endif
 
     SimulationParams m_params;
@@ -114,7 +110,6 @@ namespace ntt {
       , time { start_time }
       , step { start_step } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
-      print_report();
     }
 
     ~Engine() = default;

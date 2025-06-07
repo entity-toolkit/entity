@@ -483,6 +483,15 @@
   #   @note: Empty string means disables this (still writes checkpoints on interval)
   #   @note: This does not exit the simulation
   walltime = ""
+  # Parent directory to write checkpoints to
+  #   @type: string
+  #   @default: "checkpoints"
+  #   @note: The directory is created if it does not exist
+  write_path = ""
+  # Parent directory to use when resuming from a checkpoint
+  #   @type: string
+  #   @default: inherits from `write_path`
+  read_path = ""
 
   # @inferred:
   # - is_resuming

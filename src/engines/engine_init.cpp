@@ -27,20 +27,6 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
       m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
-
-      const auto checkpoint_walltime = m_params.template get<std::string>(
-        "checkpoint.walltime");
-      if (not checkpoint_walltime.empty()) {
-        walltime_checkpoint_pending = true;
-        raise::ErrorIf(checkpoint_walltime.size() != 8,
-                       "invalid checkpoint walltime format, expected HH:MM:SS",
-                       HERE);
-        end_walltime =
-          start_walltime +
-          std::chrono::hours(std::stoi(checkpoint_walltime.substr(0, 2))) +
-          std::chrono::minutes(std::stoi(checkpoint_walltime.substr(3, 2))) +
-          std::chrono::seconds(std::stoi(checkpoint_walltime.substr(6, 2)));
-      }
 #endif
       logger::Checkpoint("Initializing Engine", HERE);
       if (not is_resuming) {
@@ -82,6 +68,7 @@ namespace ntt {
 #endif
       }
     }
+    print_report();
   }
 
   template class Engine<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
@@ -92,4 +79,5 @@ namespace ntt {
   template class Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
   template class Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
   template class Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
+
 } // namespace ntt

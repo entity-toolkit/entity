@@ -18,11 +18,11 @@
 
 #include "global.h"
 
-#include "arch/kokkos_aliases.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include <chrono>
 #include <cmath>
 #include <numeric>
 #include <tuple>
@@ -275,6 +275,11 @@ namespace tools {
     }
   }
 
+  /**
+   * Class for tracking the passage of time either in steps, physical time units, or walltime
+   *
+   * @note Primarily used for writing checkpoints and all types of outputs at specified intervals
+   */
   class Tracker {
     bool m_initialized { false };
 
@@ -283,31 +288,55 @@ namespace tools {
     simtime_t   m_interval_time;
     bool        m_use_time;
 
+    timestamp_t m_start_walltime;
+    timestamp_t m_end_walltime;
+    bool        m_walltime_pending { false };
+
     simtime_t m_last_output_time { -1.0 };
 
   public:
     Tracker() = default;
 
-    Tracker(const std::string& type, timestep_t interval, simtime_t interval_time)
-      : m_initialized { true }
-      , m_type { type }
-      , m_interval { interval }
-      , m_interval_time { interval_time }
-      , m_use_time { interval_time > 0.0 } {}
+    Tracker(const std::string& type,
+            timestep_t         interval,
+            simtime_t          interval_time,
+            const std::string& end_walltime = "",
+            const timestamp_t& start_walltime = std::chrono::system_clock::now()) {
+      init(type, interval, interval_time, end_walltime, start_walltime);
+    }
 
     ~Tracker() = default;
 
-    void init(const std::string& type, timestep_t interval, simtime_t interval_time) {
-      m_type          = type;
-      m_interval      = interval;
-      m_interval_time = interval_time;
-      m_use_time      = interval_time > 0.0;
-      m_initialized   = true;
+    void init(const std::string& type,
+              timestep_t         interval,
+              simtime_t          interval_time,
+              const std::string& end_walltime = "",
+              const timestamp_t& start_walltime = std::chrono::system_clock::now()) {
+      m_initialized    = true;
+      m_type           = type;
+      m_interval       = interval;
+      m_interval_time  = interval_time;
+      m_use_time       = interval_time > 0.0;
+      m_start_walltime = start_walltime;
+      if (not end_walltime.empty()) {
+        m_walltime_pending = true;
+        raise::ErrorIf(end_walltime.size() != 8,
+                       "invalid end walltime format, expected HH:MM:SS",
+                       HERE);
+        m_end_walltime = m_start_walltime +
+                         std::chrono::hours(std::stoi(end_walltime.substr(0, 2))) +
+                         std::chrono::minutes(std::stoi(end_walltime.substr(3, 2))) +
+                         std::chrono::seconds(std::stoi(end_walltime.substr(6, 2)));
+      }
     }
 
     auto shouldWrite(timestep_t step, simtime_t time) -> bool {
       raise::ErrorIf(!m_initialized, "Tracker not initialized", HERE);
-      if (m_use_time) {
+      if (m_walltime_pending and
+          (std::chrono::system_clock::now() > m_end_walltime)) {
+        m_walltime_pending = false;
+        return true;
+      } else if (m_use_time) {
         if ((m_last_output_time < 0) or
             (time - m_last_output_time >= m_interval_time)) {
           m_last_output_time = time;
