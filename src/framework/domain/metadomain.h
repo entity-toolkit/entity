@@ -116,7 +116,7 @@ namespace ntt {
     ~Metadomain() = default;
 
 #if defined(OUTPUT_ENABLED)
-    void InitWriter(adios2::ADIOS*, const SimulationParams&, bool);
+    void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
                timestep_t,
                timestep_t,

@@ -25,7 +25,7 @@ namespace ntt {
     if constexpr (pgen_is_ok) {
       m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
-      m_metadomain.InitWriter(&m_adios, m_params, is_resuming);
+      m_metadomain.InitWriter(&m_adios, m_params);
       m_metadomain.InitCheckpointWriter(&m_adios, m_params);
 #endif
       logger::Checkpoint("Initializing Engine", HERE);

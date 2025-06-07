@@ -40,8 +40,7 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
-                                    const SimulationParams& params,
-                                    bool                    is_resuming) {
+                                    const SimulationParams& params) {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -103,11 +102,7 @@ namespace ntt {
                           params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    if (is_resuming and std::filesystem::exists(g_writer.fname())) {
-      g_writer.setMode(adios2::Mode::Append);
-    } else {
-      g_writer.writeAttrs(params);
-    }
+    g_writer.writeAttrs(params);
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -715,8 +710,7 @@ namespace ntt {
 
 #define METADOMAIN_OUTPUT(S, M)                                                \
   template void Metadomain<S, M>::InitWriter(adios2::ADIOS*,                   \
-                                             const SimulationParams&,          \
-                                             bool);                            \
+                                             const SimulationParams&);         \
   template auto Metadomain<S, M>::Write(                                       \
     const SimulationParams&,                                                   \
     timestep_t,                                                                \
