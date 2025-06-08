@@ -48,9 +48,8 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type,
-                           timestep_t         step,
-                           simtime_t          time) -> bool {
+  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
+    -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {

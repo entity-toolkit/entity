@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(
-    const std::vector<ncells_t>&         resolution,
-    const boundaries_t<real_t>&          extent,
-    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
+                  const boundaries_t<real_t>&          extent,
+                  const std::map<std::string, real_t>& params)
+    -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -609,14 +609,20 @@ namespace ntt {
         toml::find_or<simtime_t>(toml_data, "checkpoint", "interval_time", -1.0));
     set("checkpoint.keep",
         toml::find_or(toml_data, "checkpoint", "keep", defaults::checkpoint::keep));
-    set("checkpoint.walltime",
-        toml::find_or(toml_data, "checkpoint", "walltime", std::string("")));
+    auto walltime_str = toml::find_or(toml_data,
+                                      "checkpoint",
+                                      "walltime",
+                                      defaults::checkpoint::walltime);
+    if (walltime_str.empty()) {
+      walltime_str = defaults::checkpoint::walltime;
+    }
+    set("checkpoint.walltime", walltime_str);
 
     const auto checkpoint_write_path = toml::find_or(
       toml_data,
       "checkpoint",
       "write_path",
-      std::string("checkpoints"));
+      defaults::checkpoint::write_path);
     set("checkpoint.write_path", checkpoint_write_path);
     set("checkpoint.read_path",
         toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));

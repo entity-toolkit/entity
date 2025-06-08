@@ -476,7 +476,7 @@
   keep = ""
   # Write a checkpoint once after a fixed walltime 
   #   @type: string
-  #   @default: "" (disabled)
+  #   @default: "00:00:00" (disabled)
   #   @note: The format is "HH:MM:SS"
   #   @note: Useful for long-running simulations to ensure that ...
   #   @note: ... the simulation can be resumed after allocation expires
