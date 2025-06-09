@@ -67,8 +67,10 @@ namespace ntt::defaults {
   } // namespace output
 
   namespace checkpoint {
-    const timestep_t interval = 1000;
-    const int        keep     = 2;
+    const timestep_t  interval   = 1000;
+    const int         keep       = 2;
+    const std::string walltime   = "00:00:00";
+    const std::string write_path = "%s.ckpt";
   } // namespace checkpoint
 
   namespace diag {

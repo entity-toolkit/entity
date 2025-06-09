@@ -93,6 +93,7 @@
 #define GLOBAL_GLOBAL_H
 
 #include <chrono>
+#include <filesystem>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -342,18 +343,23 @@ template <Dimension D>
 using vec_t = tuple_t<real_t, D>;
 
 // time/duration
+using duration_t = double;
+using simtime_t  = double;
+using timestep_t = std::size_t;
+using ncells_t   = std::size_t;
+using npart_t    = unsigned long int;
+
+// walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
-using duration_t  = double;
-using simtime_t   = double;
-using timestep_t  = std::size_t;
-using ncells_t    = std::size_t;
-using npart_t     = unsigned long int;
 
 // index/number
 using index_t = const std::size_t;
 using idx_t   = unsigned short;
 using spidx_t = unsigned short;
 using dim_t   = unsigned short;
+
+// utility
+using path_t = std::filesystem::path;
 
 using range_tuple_t = std::pair<ncells_t, ncells_t>;
 

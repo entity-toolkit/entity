@@ -51,8 +51,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Spherical(std::vector<ncells_t> res,
-              boundaries_t<real_t>  ext,
+    Spherical(const std::vector<ncells_t>& res,
+              const boundaries_t<real_t>&  ext,
               const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dr((x1_max - x1_min) / nx1)

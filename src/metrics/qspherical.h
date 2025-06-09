@@ -56,8 +56,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    QSpherical(std::vector<ncells_t>                res,
-               boundaries_t<real_t>                 ext,
+    QSpherical(const std::vector<ncells_t>&         res,
+               const boundaries_t<real_t>&          ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , r0 { params.at("r0") }

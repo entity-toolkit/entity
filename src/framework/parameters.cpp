@@ -609,6 +609,24 @@ namespace ntt {
         toml::find_or<simtime_t>(toml_data, "checkpoint", "interval_time", -1.0));
     set("checkpoint.keep",
         toml::find_or(toml_data, "checkpoint", "keep", defaults::checkpoint::keep));
+    auto walltime_str = toml::find_or(toml_data,
+                                      "checkpoint",
+                                      "walltime",
+                                      defaults::checkpoint::walltime);
+    if (walltime_str.empty()) {
+      walltime_str = defaults::checkpoint::walltime;
+    }
+    set("checkpoint.walltime", walltime_str);
+
+    const auto checkpoint_write_path = toml::find_or(
+      toml_data,
+      "checkpoint",
+      "write_path",
+      fmt::format(defaults::checkpoint::write_path.c_str(),
+                  get<std::string>("simulation.name").c_str()));
+    set("checkpoint.write_path", checkpoint_write_path);
+    set("checkpoint.read_path",
+        toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));
 
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",

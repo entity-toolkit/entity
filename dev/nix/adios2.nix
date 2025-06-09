@@ -19,10 +19,12 @@ let
     BUILD_TESTING = "OFF";
     ADIOS2_BUILD_EXAMPLES = "OFF";
     ADIOS2_USE_MPI = if mpi then "ON" else "OFF";
+    ADIOS2_HAVE_HDF5_VOL = if mpi then "ON" else "OFF";
     CMAKE_BUILD_TYPE = "Release";
-  } // (if !mpi then { ADIOS2_HAVE_HDF5_VOL = "OFF"; } else { });
+  };
+  stdenv = pkgs.gcc13Stdenv;
 in
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   pname = "${name}${if hdf5 then "-hdf5" else ""}${if mpi then "-mpi" else ""}";
   version = "${version}";
   src = pkgs.fetchgit {
@@ -36,12 +38,10 @@ pkgs.stdenv.mkDerivation {
     perl
   ];
 
-  propagatedBuildInputs =
-    [
-      pkgs.gcc13
-    ]
-    ++ (if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5 ]) else [ ])
-    ++ (if mpi then [ pkgs.openmpi ] else [ ]);
+  propagatedBuildInputs = [
+    pkgs.gcc13
+  ] ++ (if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5-cpp ]) else [ ]);
+  # ++ (if mpi then [ pkgs.openmpi ] else [ ]);
 
   configurePhase = ''
     cmake -B build $src ${
