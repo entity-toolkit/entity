@@ -60,7 +60,7 @@ namespace ntt {
         raw_params,
         "checkpoint",
         "write_path",
-        "checkpoints");
+        fmt::format(defaults::checkpoint::write_path.c_str(), sim_name.c_str()));
       const path_t checkpoint_read_path = toml::find_or<std::string>(
         raw_params,
         "checkpoint",

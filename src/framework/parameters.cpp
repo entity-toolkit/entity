@@ -622,7 +622,8 @@ namespace ntt {
       toml_data,
       "checkpoint",
       "write_path",
-      defaults::checkpoint::write_path);
+      fmt::format(defaults::checkpoint::write_path.c_str(),
+                  get<std::string>("simulation.name").c_str()));
     set("checkpoint.write_path", checkpoint_write_path);
     set("checkpoint.read_path",
         toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));
