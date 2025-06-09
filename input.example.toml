@@ -485,7 +485,7 @@
   walltime = ""
   # Parent directory to write checkpoints to
   #   @type: string
-  #   @default: "checkpoints"
+  #   @default: "<simname>.ckpt"
   #   @note: The directory is created if it does not exist
   write_path = ""
   # Parent directory to use when resuming from a checkpoint
