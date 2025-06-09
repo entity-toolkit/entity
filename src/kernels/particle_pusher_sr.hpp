@@ -1251,15 +1251,15 @@ namespace kernel::sr {
         // Bx1
         // Interpolate --- (primal, dual)
         // clang-format off
-        const auto bx1_000 = EB(indx + i - 1, indy + j - 1, em::bx1);
-        const auto bx1_100 = EB(indx + i,     indy + j - 1, em::bx1);
-        const auto bx1_200 = EB(indx + i + 1, indy + j - 1, em::bx1);
-        const auto bx1_010 = EB(indx + i - 1, indy + j, em::bx1);
-        const auto bx1_110 = EB(indx + i,     indy + j, em::bx1);
-        const auto bx1_210 = EB(indx + i + 1, indy + j, em::bx1);
-        const auto bx1_020 = EB(indx + i - 1, indy + j + 1, em::bx1);
-        const auto bx1_120 = EB(indx + i,     indy + j + 1, em::bx1);
-        const auto bx1_220 = EB(indx + i + 1, indy + j + 1, em::bx1);
+        const auto bx1_000 = EB(indx + i - 1, j - 1, em::bx1);
+        const auto bx1_100 = EB(indx + i,     j - 1, em::bx1);
+        const auto bx1_200 = EB(indx + i + 1, j - 1, em::bx1);
+        const auto bx1_010 = EB(indx + i - 1, j,     em::bx1);
+        const auto bx1_110 = EB(indx + i,     j,     em::bx1);
+        const auto bx1_210 = EB(indx + i + 1, j,     em::bx1);
+        const auto bx1_020 = EB(indx + i - 1, j + 1, em::bx1);
+        const auto bx1_120 = EB(indx + i,     j + 1, em::bx1);
+        const auto bx1_220 = EB(indx + i + 1, j + 1, em::bx1);
         // clang-format on
 
         const auto bx1_0 = bx1_000 * w0px + bx1_100 * w1px + bx1_200 * w2px;
