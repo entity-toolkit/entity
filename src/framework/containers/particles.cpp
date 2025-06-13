@@ -4,8 +4,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/numeric.h"
-#include "utils/sorting.h"
 
 #include "framework/containers/species.h"
 
@@ -13,9 +11,6 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
-#include <iomanip>
-#include <iostream>
-#include <iterator>
 #include <string>
 #include <vector>
 

@@ -365,9 +365,9 @@ namespace arch {
         }
       }
 
-      Inline void operator()(const coord_t<M::Dim>&,
-                             vec_t<Dim::_3D>& v,
-                             spidx_t          sp = 0) const override {
+      Inline void operator()(const coord_t<M::Dim>& x_Code,
+                             vec_t<Dim::_3D>&       v,
+                             spidx_t = 0) const override {
         if (cmp::AlmostZero(temperature)) {
           v[0] = ZERO;
           v[1] = ZERO;

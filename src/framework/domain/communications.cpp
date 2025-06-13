@@ -36,10 +36,10 @@ namespace ntt {
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvRanks(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction) -> std::pair<address_t, address_t> {
+  auto GetSendRecvRanks(Metadomain<S, M>*        metadomain,
+                        Domain<S, M>&            domain,
+                        dir::direction_t<M::Dim> direction)
+    -> std::pair<address_t, address_t> {
     Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
@@ -119,11 +119,11 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvParams(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction,
-    bool synchronize) -> std::pair<comm_params_t, comm_params_t> {
+  auto GetSendRecvParams(Metadomain<S, M>*        metadomain,
+                         Domain<S, M>&            domain,
+                         dir::direction_t<M::Dim> direction,
+                         bool                     synchronize)
+    -> std::pair<comm_params_t, comm_params_t> {
     const auto [send_indrank,
                 recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
     const auto [send_ind, send_rank] = send_indrank;
@@ -727,13 +727,23 @@ namespace ntt {
     }
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+#define METADOMAIN_COMM(S, M)                                                  \
+  template void Metadomain<S, M>::CommunicateFields(Domain<S, M>&, CommTags);  \
+  template void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&,             \
+                                                    CommTags,                  \
+                                                    const range_tuple_t&);     \
+  template void Metadomain<S, M>::CommunicateParticles(Domain<S, M>&);         \
+  template void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>&);
+
+  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_COMM(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_COMM(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_COMM(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_COMM(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_COMM(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+#undef METADOMAIN_COMM
 
 } // namespace ntt

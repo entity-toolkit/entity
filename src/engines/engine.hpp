@@ -23,7 +23,6 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
-#include "utils/progressbar.h"
 #include "utils/timer.h"
 #include "utils/toml.h"
 
@@ -111,7 +110,6 @@ namespace ntt {
       , time { start_time }
       , step { start_step } {
       raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
-      print_report();
     }
 
     ~Engine() = default;

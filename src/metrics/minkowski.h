@@ -47,24 +47,26 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Minkowski(std::vector<ncells_t> res,
-              boundaries_t<real_t>  ext,
+    Minkowski(const std::vector<ncells_t>& res,
+              const boundaries_t<real_t>&  ext,
               const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dx { (x1_max - x1_min) / nx1 }
       , dx_inv { ONE / dx } {
       set_dxMin(find_dxMin());
       const auto epsilon = std::numeric_limits<real_t>::epsilon() *
-                         static_cast<real_t>(100.0);
+                           static_cast<real_t>(100.0);
       if constexpr (D != Dim::_1D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx, epsilon),
-                       "dx2 must be equal to dx1 in 2D",
-                       HERE);
+        raise::ErrorIf(
+          not cmp::AlmostEqual((x2_max - x2_min) / (real_t)(nx2), dx, epsilon),
+          "dx2 must be equal to dx1 in 2D",
+          HERE);
       }
       if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx, epsilon),
-                       "dx3 must be equal to dx1 in 3D",
-                       HERE);
+        raise::ErrorIf(
+          not cmp::AlmostEqual((x3_max - x3_min) / (real_t)(nx3), dx, epsilon),
+          "dx3 must be equal to dx1 in 3D",
+          HERE);
       }
     }
 
@@ -76,6 +78,20 @@ namespace metric {
     [[nodiscard]]
     auto find_dxMin() const -> real_t override {
       return dx / math::sqrt(static_cast<real_t>(D));
+    }
+
+    /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      if constexpr (D == Dim::_1D) {
+        return x1_max - x1_min;
+      } else if constexpr (D == Dim::_2D) {
+        return (x1_max - x1_min) * (x2_max - x2_min);
+      } else {
+        return (x1_max - x1_min) * (x2_max - x2_min) * (x3_max - x3_min);
+      }
     }
 
     /**
@@ -242,7 +258,8 @@ namespace metric {
      * @note tetrad/cart <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr (i > static_cast<idx_t>(D)) {

@@ -55,7 +55,12 @@ void testDeposit(const std::vector<std::size_t>&      res,
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
 
-  M metric { res, ext, params };
+  auto extents = ext;
+  if constexpr (M::CoordType != Coord::Cart) {
+    extents.emplace_back(ZERO, (real_t)(constant::PI));
+  }
+
+  M metric { res, extents, params };
 
   const auto nx1 = res[0];
   const auto nx2 = res[1];
@@ -170,59 +175,49 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 0.0, 55.0 }, { 0.0, 55.0 } },
-      {},
-      500);
+    const auto res      = std::vector<std::size_t> { 10, 10 };
+    const auto r_extent = boundaries_t<real_t> {
+      { 0.0, 100.0 }
+    };
+    const auto xy_extent = boundaries_t<real_t> {
+      { 0.0, 55.0 },
+      { 0.0, 55.0 }
+    };
 
-    testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      {},
-      500);
+    testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(res, xy_extent, {}, 500);
 
-    testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 } },
-      500);
+    testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(res, r_extent, {}, 500);
 
-    testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
+    testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(res,
+                                                        r_extent,
+                                                        {
+                                                          { "r0",  0.0 },
+                                                          {  "h", 0.25 }
     },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } },
-      500);
+                                                        500);
 
-    testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
+    testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(res,
+                                                        r_extent,
+                                                        {
+                                                          { "a", 0.9 }
     },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } },
-      500);
+                                                        500);
 
-    testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
+    testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(res,
+                                                         r_extent,
+                                                         {
+                                                           { "r0",  0.0 },
+                                                           {  "h", 0.25 },
+                                                           {  "a",  0.9 }
     },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } },
-      500);
+                                                         500);
+
+    testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(res,
+                                                         r_extent,
+                                                         {
+                                                           { "a", 0.9 }
+    },
+                                                         500);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

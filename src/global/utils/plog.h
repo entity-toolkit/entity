@@ -80,9 +80,9 @@ namespace logger {
     static plog::RollingFileAppender<plog::NttInfoFormatter> errfileAppender(
       errfile_name.c_str());
     auto log_severity = plog::verbose;
-    if (fmt::toLower(log_level) == "WARNING") {
+    if (fmt::toLower(log_level) == "warning") {
       log_severity = plog::warning;
-    } else if (fmt::toLower(log_level) == "ERROR") {
+    } else if (fmt::toLower(log_level) == "error") {
       log_severity = plog::error;
     }
     plog::init<log_tag>(log_severity, &logfileAppender);

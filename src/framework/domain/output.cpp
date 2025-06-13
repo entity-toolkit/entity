@@ -40,8 +40,7 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
-                                    const SimulationParams& params,
-                                    bool                    is_resuming) {
+                                    const SimulationParams& params) {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -109,11 +108,7 @@ namespace ntt {
                           params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    if (is_resuming and std::filesystem::exists(g_writer.fname())) {
-      g_writer.setMode(adios2::Mode::Append);
-    } else {
-      g_writer.writeAttrs(params);
-    }
+    g_writer.writeAttrs(params);
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -227,14 +222,17 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
-    const SimulationParams& params,
-    timestep_t              current_step,
-    timestep_t              finished_step,
-    simtime_t               current_time,
-    simtime_t               finished_time,
-    std::function<
-      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
-      CustomFieldOutput) -> bool {
+    const SimulationParams&                  params,
+    timestep_t                               current_step,
+    timestep_t                               finished_step,
+    simtime_t                                current_time,
+    simtime_t                                finished_time,
+    std::function<void(const std::string&,
+                       ndfield_t<M::Dim, 6>&,
+                       index_t,
+                       timestep_t,
+                       simtime_t,
+                       const Domain<S, M>&)> CustomFieldOutput) -> bool {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -421,6 +419,8 @@ namespace ntt {
               CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
+                                finished_step,
+                                finished_time,
                                 *local_domain);
             } else {
               raise::Error("Custom output requested but no function provided",
@@ -758,13 +758,31 @@ namespace ntt {
     return true;
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+#define METADOMAIN_OUTPUT(S, M)                                                \
+  template void Metadomain<S, M>::InitWriter(adios2::ADIOS*,                   \
+                                             const SimulationParams&);         \
+  template auto Metadomain<S, M>::Write(                                       \
+    const SimulationParams&,                                                   \
+    timestep_t,                                                                \
+    timestep_t,                                                                \
+    simtime_t,                                                                 \
+    simtime_t,                                                                 \
+    std::function<void(const std::string&,                                     \
+                       ndfield_t<M::Dim, 6>&,                                  \
+                       index_t,                                                \
+                       timestep_t,                                             \
+                       simtime_t,                                              \
+                       const Domain<S, M>&)>) -> bool;
+
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+#undef METADOMAIN_OUTPUT
 
 } // namespace ntt

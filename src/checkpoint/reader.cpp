@@ -110,7 +110,7 @@ namespace checkpoint {
 
   void ReadParticlePayloads(adios2::IO&        io,
                             adios2::Engine&    reader,
-                            spidx_t     s,
+                            spidx_t            s,
                             array_t<real_t**>& array,
                             std::size_t        nplds,
                             npart_t            count,
@@ -130,64 +130,32 @@ namespace checkpoint {
     }
   }
 
-  template void ReadFields<Dim::_1D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_1D, 3>&);
-  template void ReadFields<Dim::_2D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_2D, 3>&);
-  template void ReadFields<Dim::_3D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_3D, 3>&);
-  template void ReadFields<Dim::_1D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_1D, 6>&);
-  template void ReadFields<Dim::_2D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_2D, 6>&);
-  template void ReadFields<Dim::_3D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const adios2::Box<adios2::Dims>&,
-                                        ndfield_t<Dim::_3D, 6>&);
+#define CHECKPOINT_FIELDS(D, N)                                                \
+  template void ReadFields<D, N>(adios2::IO&,                                  \
+                                 adios2::Engine&,                              \
+                                 const std::string&,                           \
+                                 const adios2::Box<adios2::Dims>&,             \
+                                 ndfield_t<D, N>&);
+  CHECKPOINT_FIELDS(Dim::_1D, 3)
+  CHECKPOINT_FIELDS(Dim::_2D, 3)
+  CHECKPOINT_FIELDS(Dim::_3D, 3)
+  CHECKPOINT_FIELDS(Dim::_1D, 6)
+  CHECKPOINT_FIELDS(Dim::_2D, 6)
+  CHECKPOINT_FIELDS(Dim::_3D, 6)
+#undef CHECKPOINT_FIELDS
 
-  template void ReadParticleData<int>(adios2::IO&,
-                                      adios2::Engine&,
-                                      const std::string&,
-                                      spidx_t,
-                                      array_t<int*>&,
-                                      npart_t,
-                                      npart_t);
-  template void ReadParticleData<float>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        spidx_t,
-                                        array_t<float*>&,
-                                        npart_t,
-                                        npart_t);
-  template void ReadParticleData<double>(adios2::IO&,
-                                         adios2::Engine&,
-                                         const std::string&,
-                                         spidx_t,
-                                         array_t<double*>&,
-                                         npart_t,
-                                         npart_t);
-  template void ReadParticleData<short>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        spidx_t,
-                                        array_t<short*>&,
-                                        npart_t,
-                                        npart_t);
+#define CHECKPOINT_PARTICLE_DATA(T)                                            \
+  template void ReadParticleData<T>(adios2::IO&,                               \
+                                    adios2::Engine&,                           \
+                                    const std::string&,                        \
+                                    spidx_t,                                   \
+                                    array_t<T*>&,                              \
+                                    npart_t,                                   \
+                                    npart_t);
+  CHECKPOINT_PARTICLE_DATA(int)
+  CHECKPOINT_PARTICLE_DATA(float)
+  CHECKPOINT_PARTICLE_DATA(double)
+  CHECKPOINT_PARTICLE_DATA(short)
+#undef CHECKPOINT_PARTICLE_DATA
 
 } // namespace checkpoint

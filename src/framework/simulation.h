@@ -22,9 +22,6 @@
 
 #include "framework/parameters.h"
 
-#include <stdexcept>
-#include <type_traits>
-
 namespace ntt {
 
   class Simulation {

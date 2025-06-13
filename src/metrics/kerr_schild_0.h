@@ -54,8 +54,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    KerrSchild0(std::vector<ncells_t> res,
-                boundaries_t<real_t>  ext,
+    KerrSchild0(const std::vector<ncells_t>& res,
+                const boundaries_t<real_t>&  ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , a { ZERO }
@@ -106,6 +106,20 @@ namespace metric {
         }
       }
       return min_dx;
+    }
+
+    /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      if constexpr (D == Dim::_1D) {
+        raise::Error("1D spherical metric not applicable", HERE);
+      } else if constexpr (D == Dim::_2D) {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min);
+      } else {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min) * (x3_max - x3_min);
+      }
     }
 
     /**

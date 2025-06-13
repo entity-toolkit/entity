@@ -73,8 +73,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    KerrSchild(std::vector<ncells_t>                res,
-               boundaries_t<real_t>                 ext,
+    KerrSchild(const std::vector<ncells_t>&         res,
+               const boundaries_t<real_t>&          ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
@@ -126,6 +126,15 @@ namespace metric {
         }
       }
       return min_dx;
+    }
+
+    /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      // @TODO: Ask Alisa
+      return ZERO;
     }
 
     /**

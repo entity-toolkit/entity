@@ -34,6 +34,7 @@
 namespace raise {
   using namespace files;
 
+  [[noreturn]]
   inline void Error(const std::string& msg,
                     const std::string& file,
                     const std::string& func,
