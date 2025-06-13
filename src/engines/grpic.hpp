@@ -595,13 +595,24 @@ namespace ntt {
       /**
        * match boundaries
        */
-      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
+      // const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
+      const auto ds_array = m_params.template get<boundaries_t<real_t>>(
+        "grid.boundaries.match.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
-      xg_max  = m_metadomain.mesh().extent(dim).second;
-      xg_min  = xg_max - ds;
-      xg_edge = xg_max;
-
+      auto       sign = direction.get_sign();
+      real_t     ds;
+      if (sign > 0) { // + direction
+        ds      = ds_array[(short)dim].second;
+        xg_max  = m_metadomain.mesh().extent(dim).second;
+        xg_min  = xg_max - ds;
+        xg_edge = xg_max;
+      } else { // - direction
+        ds      = ds_array[(short)dim].first;
+        xg_min  = m_metadomain.mesh().extent(dim).first;
+        xg_max  = xg_min + ds;
+        xg_edge = xg_min;
+      }
       boundaries_t<real_t> box;
       boundaries_t<bool>   incl_ghosts;
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
@@ -654,9 +665,13 @@ namespace ntt {
       /**
        * match boundaries
        */
-      const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
+      // @TODO: also in MatchFieldsIn (need a better way)
+      const auto ds_array = m_params.template get<boundaries_t<real_t>>(
+        "grid.boundaries.match.ds");
       const auto dim = in::x1;
       real_t     xg_min, xg_max, xg_edge;
+      real_t     ds;
+      ds      = ds_array[(short)dim].second;
       xg_max  = m_metadomain.mesh().extent(dim).second;
       xg_min  = xg_max - ds;
       xg_edge = xg_max;
