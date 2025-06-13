@@ -1,14 +1,14 @@
 [simulation]
-  name    = "wald"
+  name    = "vacuum"
   engine  = "grpic"
-  runtime = 500.0
+  runtime = 100.0
 
 [grid]
-  resolution = [256, 256]
-  extent     = [[1.0, 6.0]]
+  resolution = [128, 128]
+  extent     = [[1.0, 10.0]]
 
   [grid.metric]
-    metric  = "qkerr_schild"
+    metric  = "kerr_schild"
     qsph_r0 = 0.0
     qsph_h  = 0.0
     ks_a    = 0.95
@@ -21,57 +21,31 @@
       ds = 1.0
 
 [scales]
-  larmor0    = 0.025
-  skindepth0 = 0.5
+  larmor0    = 0.0025
+  skindepth0 = 0.05
 
 [algorithms]
-  current_filters = 4
-
-  [algorithms.gr]
-    pusher_niter = 10
-    pusher_eps   = 1e-2
+  current_filters = 0
 
   [algorithms.timestep]
-    CFL        = 0.5
-    correction = 1.0
+    CFL = 0.5
 
   [algorithms.toggles]
-    deposit     = true
+    deposit     = false
     fieldsolver = true
 
 [particles]
-  ppc0           = 4.0
-  use_weights    = true
-  clear_interval = 100
-
-  [[particles.species]]
-    label    = "e-"
-    mass     = 1.0
-    charge   = -1.0
-    maxnpart = 2e8
-    pusher   = "Boris"
-
-  [[particles.species]]
-    label    = "e+"
-    mass     = 1.0
-    charge   = 1.0
-    maxnpart = 2e8
-    pusher   = "Boris"
+  ppc0 = 2.0
 
 [setup]
-  multiplicity = 1.0
-  sigma_max    = 1000.0
-  temperature  = 0.01
-  xi_min       = [1.5, 0.0]
-  xi_max       = [4.0, 3.14159265]
-  m_eps        = 1.0
 
 [output]
-  format = "hdf5"
+  format         = "hdf5"
+  separate_files = false
 
   [output.fields]
     interval_time = 1.0
-    quantities    = ["D", "B", "N_1", "N_2", "A"]
+    quantities    = ["D", "H", "B", "A"]
 
   [output.particles]
     enable = false

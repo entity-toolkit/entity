@@ -715,17 +715,17 @@ namespace ntt {
           "OpenBCFields",
           range,
           kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em,
-                                                         i1_min,
-                                                         tags,
-                                                         nfilter));
+                                                  i1_min,
+                                                  tags,
+                                                  nfilter));
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
           kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em0,
-                                                         i1_min,
-                                                         tags,
-                                                         nfilter));
-      } 
+                                                  i1_min,
+                                                  tags,
+                                                  nfilter));
+      }
     }
 
     void AxisFieldsIn(dir::direction_t<M::Dim> direction,
@@ -1099,7 +1099,7 @@ namespace ntt {
           "algorithms.gr.pusher_niter");
         // clang-format off
         if (species.pusher() == PrtlPusher::PHOTON) {
-        auto range_policy = Kokkos::RangePolicy<AccelExeSpace, kernel::gr::Massless_t>(
+        auto range_policy = Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massless_t>(
           0,
           species.npart());
 
@@ -1124,7 +1124,7 @@ namespace ntt {
               domain.mesh.prtl_bc()
           ));
         } else if (species.pusher() == PrtlPusher::BORIS) {
-          auto range_policy = Kokkos::RangePolicy<AccelExeSpace, kernel::gr::Massive_t>(
+          auto range_policy = Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massive_t>(
           0,
           species.npart());
           Kokkos::parallel_for(
