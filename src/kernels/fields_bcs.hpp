@@ -16,6 +16,7 @@
 #ifndef KERNELS_FIELDS_BCS_HPP
 #define KERNELS_FIELDS_BCS_HPP
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -844,57 +845,57 @@ namespace kernel::bc {
     }
   };
 
-  /*
-   * @tparam I: Field Setter class
-   * @tparam M: Metric
-   * @tparam P: Positive/Negative direction
-   * @tparam O: Orientation
-   *
-   * @brief Applies enforced boundary conditions (fixed value)
-   */
-  template <Dimension D, bool P>
-  struct AxisBoundariesGR_kernel {
-    ndfield_t<D, 6>   Fld;
-    const std::size_t i_edge;
-    const bool        setE, setB;
-
-    AxisBoundariesGR_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
-      : Fld { Fld } // , i_edge { i_edge }
-      , i_edge { P ? (i_edge + 1) : i_edge }
-      , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
-      , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
-
-    Inline void operator()(index_t i1) const {
-      if constexpr (D == Dim::_2D) {
-        // if (setB) {
-        //   Fld(i1, i_edge, em::bx2) = ZERO;
-        // }
-        if constexpr (not P) {
-          if (setE) {
-            Fld(i1, i_edge - 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
-            Fld(i1, i_edge, em::ex3)     = ZERO;
-          }
-          if (setB) {
-            Fld(i1, i_edge - 1, em::bx1) = Fld(i1, i_edge, em::bx1);
-            Fld(i1, i_edge, em::bx2)     = ZERO;
-            Fld(i1, i_edge - 1, em::bx3) = Fld(i1, i_edge, em::bx3);
-          }
-        } else {
-          if (setE) {
-            Fld(i1, i_edge + 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
-            Fld(i1, i_edge + 1, em::ex3) = ZERO;
-          }
-          if (setB) {
-            Fld(i1, i_edge + 1, em::bx1) = Fld(i1, i_edge, em::bx1);
-            Fld(i1, i_edge + 1, em::bx2) = ZERO;
-            Fld(i1, i_edge + 1, em::bx3) = Fld(i1, i_edge, em::bx3);
-          }
-        }
-      } else {
-        raise::KernelError(HERE, "AxisBoundariesGR_kernel: D != 2");
-      }
-    }
-  };
+  // /*
+  //  * @tparam I: Field Setter class
+  //  * @tparam M: Metric
+  //  * @tparam P: Positive/Negative direction
+  //  * @tparam O: Orientation
+  //  *
+  //  * @brief Applies enforced boundary conditions (fixed value)
+  //  */
+  // template <Dimension D, bool P>
+  // struct AxisBoundariesGR_kernel {
+  //   ndfield_t<D, 6>   Fld;
+  //   const std::size_t i_edge;
+  //   const bool        setE, setB;
+  //
+  //   AxisBoundariesGR_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+  //     : Fld { Fld } // , i_edge { i_edge }
+  //     , i_edge { P ? (i_edge + 1) : i_edge }
+  //     , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
+  //     , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
+  //
+  //   Inline void operator()(index_t i1) const {
+  //     if constexpr (D == Dim::_2D) {
+  //       // if (setB) {
+  //       //   Fld(i1, i_edge, em::bx2) = ZERO;
+  //       // }
+  //       if constexpr (not P) {
+  //         if (setE) {
+  //           Fld(i1, i_edge - 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
+  //           Fld(i1, i_edge, em::ex3)     = ZERO;
+  //         }
+  //         if (setB) {
+  //           Fld(i1, i_edge - 1, em::bx1) = Fld(i1, i_edge, em::bx1);
+  //           Fld(i1, i_edge, em::bx2)     = ZERO;
+  //           Fld(i1, i_edge - 1, em::bx3) = Fld(i1, i_edge, em::bx3);
+  //         }
+  //       } else {
+  //         if (setE) {
+  //           Fld(i1, i_edge + 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
+  //           Fld(i1, i_edge + 1, em::ex3) = ZERO;
+  //         }
+  //         if (setB) {
+  //           Fld(i1, i_edge + 1, em::bx1) = Fld(i1, i_edge, em::bx1);
+  //           Fld(i1, i_edge + 1, em::bx2) = ZERO;
+  //           Fld(i1, i_edge + 1, em::bx3) = Fld(i1, i_edge, em::bx3);
+  //         }
+  //       }
+  //     } else {
+  //       raise::KernelError(HERE, "AxisBoundariesGR_kernel: D != 2");
+  //     }
+  //   }
+  // };
 
   template <class I, class M, bool P, in O>
   struct EnforcedBoundaries_kernel {
@@ -1215,101 +1216,104 @@ namespace kernel::bc {
     }
   };
 
-  template <class M>
-  struct HorizonBoundaries_kernel {
-    ndfield_t<M::Dim, 6> Fld;
-    const std::size_t    i1_min;
-    const bool           setE, setB;
-    const std::size_t    nfilter;
+  namespace gr {
 
-    HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
-                             std::size_t          i1_min,
-                             BCTags               tags,
-                             std::size_t          nfilter)
-      : Fld { Fld }
-      , i1_min { i1_min }
-      , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
-               (tags & BC::Dx1 or tags & BC::Dx2 or tags & BC::Dx3) }
-      , setB { (tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3) or
-               (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) }
-      , nfilter { nfilter } {}
+    template <class M>
+    struct HorizonBoundaries_kernel {
+      ndfield_t<M::Dim, 6> Fld;
+      const std::size_t    i1_min;
+      const bool           setE, setB;
+      const std::size_t    nfilter;
 
-    Inline void operator()(index_t i2) const {
-      if constexpr (M::Dim == Dim::_2D) {
-        if (setE) {
-          for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx1) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::dx1);
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx2) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::dx2);
-            Fld(i1_min - N_GHOSTS + i, i2, em::dx3) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::dx3);
+      HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
+                               std::size_t          i1_min,
+                               BCTags               tags,
+                               std::size_t          nfilter)
+        : Fld { Fld }
+        , i1_min { i1_min }
+        , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
+                 (tags & BC::Dx1 or tags & BC::Dx2 or tags & BC::Dx3) }
+        , setB { (tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3) or
+                 (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) }
+        , nfilter { nfilter } {}
+
+      Inline void operator()(index_t i2) const {
+        if constexpr (M::Dim == Dim::_2D) {
+          if (setE) {
+            for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::dx1) = Fld(i1_min + 1 + nfilter, i2, em::dx1);
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::dx2) = Fld(i1_min + 1 + nfilter, i2, em::dx2);
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::dx3) = Fld(i1_min + 1 + nfilter, i2, em::dx3);
+            }
           }
-        }
-        if (setB) {
-          for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx1) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::bx1);
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx2) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::bx2);
-            Fld(i1_min - N_GHOSTS + i, i2, em::bx3) = Fld(i1_min + 1 + nfilter,
-                                                          i2,
-                                                          em::bx3);
+          if (setB) {
+            for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::bx1) = Fld(i1_min + 1 + nfilter, i2, em::bx1);
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::bx2) = Fld(i1_min + 1 + nfilter, i2, em::bx2);
+              Fld(i1_min - N_GHOSTS + i,
+                  i2,
+                  em::bx3) = Fld(i1_min + 1 + nfilter, i2, em::bx3);
+            }
           }
+        } else {
+          raise::KernelError(
+            HERE,
+            "HorizonBoundaries_kernel: 2D implementation called for D != 2");
         }
-      } else {
-        raise::KernelError(
-          HERE,
-          "HorizonBoundaries_kernel: 2D implementation called for D != 2");
       }
-    }
-  };
+    };
 
-  template <class M, idx_t i>
-  struct AbsorbCurrentsGR_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(i <= static_cast<unsigned short>(M::Dim),
-                  "Invalid component index");
+    template <class M, idx_t i>
+    struct AbsorbCurrents_kernel {
+      static_assert(M::is_metric, "M must be a metric class");
+      static_assert(i <= static_cast<unsigned short>(M::Dim),
+                    "Invalid component index");
 
-    ndfield_t<M::Dim, 3> J;
-    const M              metric;
-    const real_t         xg_edge;
-    const real_t         dx_abs;
+      ndfield_t<M::Dim, 3> J;
+      const M              metric;
+      const real_t         xg_edge;
+      const real_t         dx_abs;
 
-    AbsorbCurrentsGR_kernel(ndfield_t<M::Dim, 3> J,
+      AbsorbCurrents_kernel(ndfield_t<M::Dim, 3> J,
                             const M&             metric,
                             real_t               xg_edge,
                             real_t               dx_abs)
-      : J { J }
-      , metric { metric }
-      , xg_edge { xg_edge }
-      , dx_abs { dx_abs } {}
+        : J { J }
+        , metric { metric }
+        , xg_edge { xg_edge }
+        , dx_abs { dx_abs } {}
 
-    Inline void operator()(index_t i1, index_t i2) const {
-      if constexpr (M::Dim == Dim::_2D) {
-        const auto      i1_ = COORD(i1);
-        const auto      i2_ = COORD(i2);
-        coord_t<M::Dim> x_Cd { ZERO };
-        x_Cd[0]       = i1_;
-        x_Cd[1]       = i2_;
-        const auto dx = math::abs(
-          metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
-        J(i1, i2, 0) *= math::tanh(dx / (INV_4 * dx_abs));
-        J(i1, i2, 1) *= math::tanh(dx / (INV_4 * dx_abs));
-        J(i1, i2, 2) *= math::tanh(dx / (INV_4 * dx_abs));
+      Inline void operator()(index_t i1, index_t i2) const {
+        if constexpr (M::Dim == Dim::_2D) {
+          const auto      i1_ = COORD(i1);
+          const auto      i2_ = COORD(i2);
+          coord_t<M::Dim> x_Cd { ZERO };
+          x_Cd[0]       = i1_;
+          x_Cd[1]       = i2_;
+          const auto dx = math::abs(
+            metric.template convert<i, Crd::Cd, Crd::Ph>(x_Cd[i - 1]) - xg_edge);
+          J(i1, i2, 0) *= math::tanh(dx / (INV_4 * dx_abs));
+          J(i1, i2, 1) *= math::tanh(dx / (INV_4 * dx_abs));
+          J(i1, i2, 2) *= math::tanh(dx / (INV_4 * dx_abs));
 
-      } else {
-        raise::KernelError(
-          HERE,
-          "AbsorbCurrentsGR_kernel: 2D implementation called for D != 2");
+        } else {
+          raise::KernelError(
+            HERE,
+            "gr::AbsorbCurrents_kernel: 2D implementation called for D != 2");
+        }
       }
-    }
-  };
+    };
+  } // namespace gr
 
 } // namespace kernel::bc
 

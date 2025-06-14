@@ -291,10 +291,14 @@ namespace BC {
     Hx1  = 1 << 3,
     Hx2  = 1 << 4,
     Hx3  = 1 << 5,
+    Jx1  = 1 << 6,
+    Jx2  = 1 << 7,
+    Jx3  = 1 << 8,
     B    = Bx1 | Bx2 | Bx3,
     E    = Ex1 | Ex2 | Ex3,
     D    = Dx1 | Dx2 | Dx3,
     H    = Hx1 | Hx2 | Hx3,
+    J    = Jx1 | Jx2 | Jx3,
   };
 } // namespace BC
 

@@ -16,13 +16,11 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
 #include "utils/toml.h"
 
-#include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters.h"
 
@@ -33,7 +31,6 @@
 #include "kernels/digital_filter.hpp"
 #include "kernels/faraday_gr.hpp"
 #include "kernels/fields_bcs.hpp"
-#include "kernels/particle_moments.hpp"
 #include "kernels/particle_pusher_gr.hpp"
 #include "pgen.hpp"
 
@@ -64,7 +61,8 @@ namespace ntt {
   };
   enum class gr_bc {
     main,
-    aux
+    aux,
+    curr
   };
 
   template <class M>
@@ -385,7 +383,7 @@ namespace ntt {
           timers.stop("Communications");
 
           timers.start("FieldBoundaries");
-          CurrentsBoundaryConditions(dom);
+          FieldBoundaries(dom, BC::J, gr_bc::curr);
           timers.stop("FieldBoundaries");
 
           timers.start("CurrentFiltering");
@@ -563,27 +561,25 @@ namespace ntt {
       if (g == gr_bc::main) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
           if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::MATCH) {
-            MatchFieldsIn(direction, domain, tags);
-          } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::AXIS) {
-            if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
-              AxisFieldsIn(direction, domain, tags);
-            }
+            MatchFieldsIn(direction, domain, tags, g);
+          } else if (domain.mesh.flds_bc_in(direction) == FldsBC::AXIS) {
+            AxisFieldsIn(direction, domain, tags);
           } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::CUSTOM) {
-            if (domain.mesh.flds_bc_in(direction) == FldsBC::CUSTOM) {
-              CustomFieldsIn(direction, domain, tags, g);
-            }
-          } else if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
-              HorizonFieldsIn(direction, domain, tags, g);
-            }
+            CustomFieldsIn(direction, domain, tags, g);
+          } else if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
+            HorizonFieldsIn(direction, domain, tags, g);
           }
         } // loop over directions
       } else if (g == gr_bc::aux) {
         for (auto& direction : dir::Directions<M::Dim>::orth) {
-          if (m_metadomain.mesh().flds_bc_in(direction) == FldsBC::HORIZON) {
-            if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
-              HorizonFieldsIn(direction, domain, tags, g);
-            }
+          if (domain.mesh.flds_bc_in(direction) == FldsBC::HORIZON) {
+            HorizonFieldsIn(direction, domain, tags, g);
+          }
+        }
+      } else if (g == gr_bc::curr) {
+        for (auto& direction : dir::Directions<M::Dim>::orth) {
+          if (domain.mesh.prtl_bc_in(direction) == PrtlBC::ABSORB) {
+            MatchFieldsIn(direction, domain, tags, g);
           }
         }
       }
@@ -591,17 +587,22 @@ namespace ntt {
 
     void MatchFieldsIn(dir::direction_t<M::Dim> direction,
                        domain_t&                domain,
-                       BCTags                   tags) {
+                       BCTags                   tags,
+                       const gr_bc&             g) {
       /**
        * match boundaries
        */
-      // const auto ds = m_params.template get<real_t>("grid.boundaries.match.ds");
       const auto ds_array = m_params.template get<boundaries_t<real_t>>(
         "grid.boundaries.match.ds");
       const auto dim = direction.get_dim();
       real_t     xg_min, xg_max, xg_edge;
       auto       sign = direction.get_sign();
-      real_t     ds;
+
+      raise::ErrorIf(((dim != in::x1) or (sign > 0)) and (g == gr_bc::curr),
+                     "Absorption of currents only possible in +x1 (+r)",
+                     HERE);
+
+      real_t ds;
       if (sign > 0) { // + direction
         ds      = ds_array[(short)dim].second;
         xg_max  = m_metadomain.mesh().extent(dim).second;
@@ -636,76 +637,88 @@ namespace ntt {
         range_max[d] = intersect_range[d].second;
       }
       if (dim == in::x1) {
-        Kokkos::parallel_for(
-          "MatchBoundaries",
-          CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
-            domain.fields.em,
-            m_pgen.init_flds,
-            domain.mesh.metric,
-            xg_edge,
-            ds,
-            tags));
-        Kokkos::parallel_for(
-          "MatchBoundaries",
-          CreateRangePolicy<M::Dim>(range_min, range_max),
-          kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
-            domain.fields.em0,
-            m_pgen.init_flds,
-            domain.mesh.metric,
-            xg_edge,
-            ds,
-            tags));
+        if (g != gr_bc::curr) {
+          Kokkos::parallel_for(
+            "MatchBoundaries",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              domain.fields.em,
+              m_pgen.init_flds,
+              domain.mesh.metric,
+              xg_edge,
+              ds,
+              tags));
+          Kokkos::parallel_for(
+            "MatchBoundaries",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              domain.fields.em0,
+              m_pgen.init_flds,
+              domain.mesh.metric,
+              xg_edge,
+              ds,
+              tags));
+        } else {
+          Kokkos::parallel_for(
+            "AbsorbCurrents",
+            CreateRangePolicy<M::Dim>(range_min, range_max),
+            kernel::bc::gr::AbsorbCurrents_kernel<M, 1>(domain.fields.cur0,
+                                                        domain.mesh.metric,
+                                                        xg_edge,
+                                                        ds));
+        }
       } else {
         raise::Error("Invalid dimension", HERE);
       }
     }
 
-    void CurrentsBoundaryConditions(domain_t& domain) {
-      /**
-       * match boundaries
-       */
-      // @TODO: also in MatchFieldsIn (need a better way)
-      const auto ds_array = m_params.template get<boundaries_t<real_t>>(
-        "grid.boundaries.match.ds");
-      const auto dim = in::x1;
-      real_t     xg_min, xg_max, xg_edge;
-      real_t     ds;
-      ds      = ds_array[(short)dim].second;
-      xg_max  = m_metadomain.mesh().extent(dim).second;
-      xg_min  = xg_max - ds;
-      xg_edge = xg_max;
-
-      boundaries_t<real_t> box;
-      boundaries_t<bool>   incl_ghosts;
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
-        if (d == static_cast<unsigned short>(dim)) {
-          box.push_back({ xg_min, xg_max });
-          incl_ghosts.push_back({ false, true });
-        } else {
-          box.push_back(Range::All);
-          incl_ghosts.push_back({ true, true });
-        }
-      }
-      if (not domain.mesh.Intersects(box)) {
-        return;
-      }
-      const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> range_min { 0 };
-      tuple_t<std::size_t, M::Dim> range_max { 0 };
-
-      for (unsigned short d { 0 }; d < M::Dim; ++d) {
-        range_min[d] = intersect_range[d].first;
-        range_max[d] = intersect_range[d].second;
-      }
-      Kokkos::parallel_for(
-        "AbsorbCurrentsGR",
-        CreateRangePolicy<M::Dim>(range_min, range_max),
-        kernel::bc::AbsorbCurrentsGR_kernel<M, 1>(domain.fields.cur0,
-                                                  domain.mesh.metric,
-                                                  xg_edge,
-                                                  ds));
-    }
+    // void AbsorbCurrentsIn(dir::direction_t<M::Dim> direction,
+    //                       domain_t&                domain,
+    //                       BCTags                   tags) {
+    //   /**
+    //    * absorbing currents at the boundaries
+    //    */
+    //   // @TODO: also in MatchFieldsIn (need a better way)
+    //   const auto ds_array = m_params.template get<boundaries_t<real_t>>(
+    //     "grid.boundaries.match.ds");
+    //   const auto dim = in::x1;
+    //   real_t     xg_min, xg_max, xg_edge;
+    //   real_t     ds;
+    //   ds      = ds_array[(short)dim].second;
+    //   xg_max  = m_metadomain.mesh().extent(dim).second;
+    //   xg_min  = xg_max - ds;
+    //   xg_edge = xg_max;
+    //
+    //   boundaries_t<real_t> box;
+    //   boundaries_t<bool>   incl_ghosts;
+    //   for (unsigned short d { 0 }; d < M::Dim; ++d) {
+    //     if (d == static_cast<unsigned short>(dim)) {
+    //       box.push_back({ xg_min, xg_max });
+    //       incl_ghosts.push_back({ false, true });
+    //     } else {
+    //       box.push_back(Range::All);
+    //       incl_ghosts.push_back({ true, true });
+    //     }
+    //   }
+    //   if (not domain.mesh.Intersects(box)) {
+    //     return;
+    //   }
+    //   const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
+    //   tuple_t<std::size_t, M::Dim> range_min { 0 };
+    //   tuple_t<std::size_t, M::Dim> range_max { 0 };
+    //
+    //   for (unsigned short d { 0 }; d < M::Dim; ++d) {
+    //     range_min[d] = intersect_range[d].first;
+    //     range_max[d] = intersect_range[d].second;
+    //   }
+    //   Kokkos::parallel_for(
+    //     "AbsorbCurrentsGR",
+    //     CreateRangePolicy<M::Dim>(range_min, range_max),
+    //     kernel::bc::AbsorbCurrentsGR_kernel<M, 1>(domain.fields.cur0,
+    //                                               domain.mesh.metric,
+    //                                               xg_edge,
+    //                                               ds));
+    // }
 
     void HorizonFieldsIn(dir::direction_t<M::Dim> direction,
                          domain_t&                domain,
@@ -729,17 +742,17 @@ namespace ntt {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em,
-                                                  i1_min,
-                                                  tags,
-                                                  nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em,
+                                                      i1_min,
+                                                      tags,
+                                                      nfilter));
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::HorizonBoundaries_kernel<M>(domain.fields.em0,
-                                                  i1_min,
-                                                  tags,
-                                                  nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em0,
+                                                      i1_min,
+                                                      tags,
+                                                      nfilter));
       }
     }
 
@@ -757,34 +770,32 @@ namespace ntt {
                      HERE);
       const auto i2_min = domain.mesh.i_min(in::x2);
       const auto i2_max = domain.mesh.i_max(in::x2);
-      auto range = CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x1) - 1 },
-                                               { domain.mesh.i_max(in::x1) });
       if (direction.get_sign() < 0) {
         Kokkos::parallel_for(
           "AxisBCFields",
-          range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em,
-                                                             i2_min,
-                                                             tags));
+          domain.mesh.n_all(in::x1),
+          kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em,
+                                                           i2_min,
+                                                           tags));
         Kokkos::parallel_for(
           "AxisBCFields",
-          range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, false>(domain.fields.em0,
-                                                             i2_min,
-                                                             tags));
+          domain.mesh.n_all(in::x1),
+          kernel::bc::AxisBoundaries_kernel<M::Dim, false>(domain.fields.em0,
+                                                           i2_min,
+                                                           tags));
       } else {
         Kokkos::parallel_for(
           "AxisBCFields",
-          range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em,
-                                                            i2_max,
-                                                            tags));
+          domain.mesh.n_all(in::x1),
+          kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em,
+                                                          i2_max,
+                                                          tags));
         Kokkos::parallel_for(
           "AxisBCFields",
-          range,
-          kernel::bc::AxisBoundariesGR_kernel<M::Dim, true>(domain.fields.em0,
-                                                            i2_max,
-                                                            tags));
+          domain.mesh.n_all(in::x1),
+          kernel::bc::AxisBoundaries_kernel<M::Dim, true>(domain.fields.em0,
+                                                          i2_max,
+                                                          tags));
       }
     }
 
