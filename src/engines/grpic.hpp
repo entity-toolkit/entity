@@ -598,7 +598,7 @@ namespace ntt {
       real_t     xg_min, xg_max, xg_edge;
       auto       sign = direction.get_sign();
 
-      raise::ErrorIf(((dim != in::x1) or (sign > 0)) and (g == gr_bc::curr),
+      raise::ErrorIf(((dim != in::x1) or (sign < 0)) and (g == gr_bc::curr),
                      "Absorption of currents only possible in +x1 (+r)",
                      HERE);
 
