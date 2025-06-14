@@ -181,6 +181,27 @@ namespace kernel::sr {
       }
       return f_x3;
     }
+
+
+    Inline auto ex1(const unsigned short& sp,
+                     const real_t&         time,
+                     const coord_t<D>&     x_Ph) const -> real_t {
+         return pgen_force.ex1(sp, time, x_Ph);
+     }
+
+    Inline auto ex2(const unsigned short& sp,
+                     const real_t&         time,
+                     const coord_t<D>&     x_Ph) const -> real_t {
+         return pgen_force.ex2(sp, time, x_Ph);
+     }
+
+    Inline auto ex3(const unsigned short& sp,
+                     const real_t&         time,
+                     const coord_t<D>&     x_Ph) const -> real_t {
+         return pgen_force.ex3(sp, time, x_Ph);
+     }
+
+
   };
 
   /**
@@ -192,6 +213,8 @@ namespace kernel::sr {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D        = M::Dim;
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
+    static constexpr auto ExtField = not std::is_same<F, NoForce_t>::value;
+    
 
   private:
     const PrtlPusher::type pusher;
@@ -490,7 +513,7 @@ namespace kernel::sr {
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
       }
-      if constexpr (ExtForce) {
+      if constexpr (ExtForce or ExtField) {
         coord_t<M::PrtlDim> xp_Ph { ZERO };
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
@@ -499,12 +522,42 @@ namespace kernel::sr {
         if constexpr (M::PrtlDim == Dim::_3D) {
           xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
         }
+        if constexpr (ExtForce) {
         metric.template transform_xyz<Idx::T, Idx::XYZ>(
           xp_Cd,
           { force.fx1(sp, time, ext_force, xp_Ph),
             force.fx2(sp, time, ext_force, xp_Ph),
             force.fx3(sp, time, ext_force, xp_Ph) },
           force_Cart);
+        }
+         if constexpr (ExtField) {
+           // reusing ei, bi for the external fields
+           ei[0] = ZERO;
+           ei[1] = ZERO;
+           ei[2] = ZERO;
+           bi[0] = ZERO;
+           bi[1] = ZERO;
+           bi[2] = ZERO;
+           metric.template transform_xyz<Idx::T, Idx::XYZ>(
+             xp_Cd,
+             { force.ex1(sp, time, xp_Ph),
+               force.ex2(sp, time, xp_Ph),
+               force.ex3(sp, time, xp_Ph) },
+             ei);
+           metric.template transform_xyz<Idx::T, Idx::XYZ>(
+             xp_Cd,
+             { force.bx1(sp, time, xp_Ph),
+               force.bx2(sp, time, xp_Ph),
+               force.bx3(sp, time, xp_Ph) },
+             bi);
+           // add external fields to the total fields
+           ei_Cart[0] += ei[0];
+           ei_Cart[1] += ei[1];
+           ei_Cart[2] += ei[2];
+           bi_Cart[0] += bi[0];
+           bi_Cart[1] += bi[1];
+           bi_Cart[2] += bi[2];
+         }
       }
       if (GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
