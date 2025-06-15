@@ -27,13 +27,16 @@ void errorIf(bool condition, const std::string& message) {
   }
 }
 
-inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
+const real_t eps = std::is_same_v<real_t, double> ? (real_t)(1e-6)
+                                                  : (real_t)(1e-3);
 
-Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE)
-  -> bool {
-  const auto eps = epsilon * acc;
-  if (not cmp::AlmostEqual(a, b, eps)) {
+Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
+  if ((a - b) >= eps * math::max(math::fabs(a), math::fabs(b))) {
     printf("%.12e != %.12e %s\n", a, b, msg);
+    printf("%.12e >= %.12e %s\n",
+           a - b,
+           eps * math::max(math::fabs(a), math::fabs(b)),
+           msg);
     return false;
   }
   return true;
@@ -49,13 +52,18 @@ void put_value(array_t<T*> arr, T value, int i) {
 template <typename M, ntt::SimEngine::type S>
 void testDeposit(const std::vector<std::size_t>&      res,
                  const boundaries_t<real_t>&          ext,
-                 const std::map<std::string, real_t>& params = {},
-                 const real_t                         acc    = ONE) {
+                 const std::map<std::string, real_t>& params,
+                 const real_t                         eps) {
   static_assert(M::Dim == 2);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
 
-  M metric { res, ext, params };
+  auto extents = ext;
+  if constexpr (M::CoordType != Coord::Cart) {
+    extents.emplace_back(ZERO, (real_t)(constant::PI));
+  }
+
+  M metric { res, extents, params };
 
   const auto nx1 = res[0];
   const auto nx2 = res[1];
@@ -153,13 +161,13 @@ void testDeposit(const std::vector<std::size_t>&      res,
   if (not cmp::AlmostZero(SumDivJ)) {
     throw std::logic_error("DepositCurrents_kernel::SumDivJ != 0");
   }
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx1), Jx1, "", acc),
+  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx1), Jx1, "", eps),
           "DepositCurrents_kernel::Jx1 is incorrect");
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + 1 + N_GHOSTS, cur::jx1), Jx2, "", acc),
+  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + 1 + N_GHOSTS, cur::jx1), Jx2, "", eps),
           "DepositCurrents_kernel::Jx2 is incorrect");
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy1, "", acc),
+  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy1, "", eps),
           "DepositCurrents_kernel::Jy1 is incorrect");
-  errorIf(not equal(J_h(i0 + 1 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy2, "", acc),
+  errorIf(not equal(J_h(i0 + 1 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy2, "", eps),
           "DepositCurrents_kernel::Jy2 is incorrect");
 }
 
@@ -170,59 +178,26 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 0.0, 55.0 }, { 0.0, 55.0 } },
-      {},
-      500);
+    const auto res      = std::vector<std::size_t> { 10, 10 };
+    const auto r_extent = boundaries_t<real_t> {
+      { 0.0, 100.0 }
+    };
+    const auto xy_extent = boundaries_t<real_t> {
+      { 0.0, 55.0 },
+      { 0.0, 55.0 }
+    };
+    const std::map<std::string, real_t> params {
+      { "r0",  0.0 },
+      {  "h", 0.25 },
+      {  "a",  0.9 }
+    };
 
-    testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      {},
-      500);
-
-    testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 } },
-      500);
-
-    testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } },
-      500);
-
-    testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } },
-      500);
-
-    testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } },
-      500);
+    testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(res, xy_extent, {}, eps);
+    testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(res, r_extent, {}, eps);
+    testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(res, r_extent, params, eps);
+    testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
+    testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
+    testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

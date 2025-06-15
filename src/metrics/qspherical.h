@@ -38,6 +38,7 @@ namespace metric {
     const real_t r0, h, chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
+    const bool   small_angle;
 
   public:
     static constexpr const char*       Label { "qspherical" };
@@ -55,8 +56,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    QSpherical(std::vector<ncells_t>                res,
-               boundaries_t<real_t>                 ext,
+    QSpherical(const std::vector<ncells_t>&         res,
+               const boundaries_t<real_t>&          ext,
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , r0 { params.at("r0") }
@@ -69,7 +70,8 @@ namespace metric {
       , dphi { (x3_max - x3_min) / nx3 }
       , dchi_inv { ONE / dchi }
       , deta_inv { ONE / deta }
-      , dphi_inv { ONE / dphi } {
+      , dphi_inv { ONE / dphi }
+      , small_angle { eta2theta(HALF * deta) < constant::SMALL_ANGLE } {
       set_dxMin(find_dxMin());
     }
 
@@ -95,6 +97,20 @@ namespace metric {
         }
       }
       return min_dx;
+    }
+
+    /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      if constexpr (D == Dim::_1D) {
+        raise::Error("1D spherical metric not applicable", HERE);
+      } else if constexpr (D == Dim::_2D) {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min);
+      } else {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min) * (x3_max - x3_min);
+      }
     }
 
     /**
@@ -155,11 +171,11 @@ namespace metric {
      */
     Inline auto sqrt_det_h(const coord_t<D>& x) const -> real_t {
       if constexpr (D == Dim::_2D) {
-        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        const real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
         return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
                SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
       } else if constexpr (D == Dim::_3D) {
-        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        const real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
         return dchi * deta * dphi * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
                SQR(r0 + exp_chi) * math::sin(eta2theta(x[1] * deta + eta_min));
       }
@@ -171,7 +187,7 @@ namespace metric {
      */
     Inline auto sqrt_det_h_tilde(const coord_t<D>& x) const -> real_t {
       if constexpr (D != Dim::_1D) {
-        real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
+        const real_t exp_chi { math::exp(x[0] * dchi + chi_min) };
         return dchi * deta * exp_chi * dtheta_deta(x[1] * deta + eta_min) *
                SQR(r0 + exp_chi);
       }
@@ -183,9 +199,16 @@ namespace metric {
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
       if constexpr (D != Dim::_1D) {
-        real_t exp_chi { math::exp(x1 * dchi + chi_min) };
-        return dchi * exp_chi * SQR(r0 + exp_chi) *
-               (ONE - math::cos(eta2theta(HALF * deta)));
+        const real_t exp_chi { math::exp(x1 * dchi + chi_min) };
+        if (small_angle) {
+          const real_t dtheta = eta2theta(HALF * deta);
+          return dchi * exp_chi * SQR(r0 + exp_chi) *
+                 (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
+                 static_cast<real_t>(384);
+        } else {
+          return dchi * exp_chi * SQR(r0 + exp_chi) *
+                 (ONE - math::cos(eta2theta(HALF * deta)));
+        }
       }
     }
 
@@ -284,7 +307,8 @@ namespace metric {
      * @note tetrad/sph <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr ((in == Idx::T && out == Idx::Sph) ||

@@ -53,35 +53,45 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   const auto NoGCA      = false;
   const auto NoExtForce = false;
 
-  boundaries_t<real_t> extent;
-  extent        = ext;
-  const auto sx = static_cast<real_t>(extent[0].second - extent[0].first);
-  const auto sy = static_cast<real_t>(
-    extent.size() > 1 ? extent[1].second - extent[1].first : 0);
-  const auto sz = static_cast<real_t>(
-    extent.size() > 2 ? extent[2].second - extent[2].first : 0);
+  real_t sx = ZERO, sy = ZERO, sz = ZERO;
+  if (ext.size() > 0) {
+    sx = static_cast<real_t>(ext.at(0).second - ext.at(0).first);
+  }
+  if (ext.size() > 1) {
+    sy = static_cast<real_t>(ext.at(1).second - ext.at(1).first);
+  }
+  if (ext.size() > 2) {
+    sz = static_cast<real_t>(ext.at(2).second - ext.at(2).first);
+  }
 
-  M metric { res, extent, params };
+  M metric { res, ext, params };
 
-  const int nx1 = res[0];
-  const int nx2 = res[1];
-  const int nx3 = res[2];
+  int nx1 = 0, nx2 = 0, nx3 = 0;
+  if (res.size() > 0) {
+    nx1 = static_cast<int>(res.at(0));
+  }
+  if (res.size() > 1) {
+    nx2 = static_cast<int>(res.at(1));
+  }
+  if (res.size() > 2) {
+    nx3 = static_cast<int>(res.at(2));
+  }
 
-  const real_t dt    = 0.1 * (extent[0].second - extent[0].first) / sx;
+  const real_t dt    = 0.1 * (ext.at(0).second - ext.at(0).first) / sx;
   const real_t coeff = HALF * dt;
 
   ndfield_t<M::Dim, 6> emfield;
   if constexpr (M::Dim == Dim::_1D) {
-    emfield = ndfield_t<M::Dim, 6> { "emfield", res[0] + 2 * N_GHOSTS };
+    emfield = ndfield_t<M::Dim, 6> { "emfield", res.at(0) + 2 * N_GHOSTS };
   } else if constexpr (M::Dim == Dim::_2D) {
     emfield = ndfield_t<M::Dim, 6> { "emfield",
-                                     res[0] + 2 * N_GHOSTS,
-                                     res[1] + 2 * N_GHOSTS };
+                                     res.at(0) + 2 * N_GHOSTS,
+                                     res.at(1) + 2 * N_GHOSTS };
   } else {
     emfield = ndfield_t<M::Dim, 6> { "emfield",
-                                     res[0] + 2 * N_GHOSTS,
-                                     res[1] + 2 * N_GHOSTS,
-                                     res[2] + 2 * N_GHOSTS };
+                                     res.at(0) + 2 * N_GHOSTS,
+                                     res.at(1) + 2 * N_GHOSTS,
+                                     res.at(2) + 2 * N_GHOSTS };
   }
 
   const short        sp_idx = 1;
@@ -106,18 +116,26 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   array_t<real_t*> phi;
 
   // init parameters of prtl #1
-  real_t xi_1    = 0.515460 * sx + extent[0].first;
-  real_t yi_1    = 0.340680 * sy + extent[1].first;
-  real_t zi_1    = 0.940722 * sz + extent[2].first;
+  real_t xi_1 = ZERO, yi_1 = ZERO, zi_1 = ZERO;
+  real_t xi_2 = ZERO, yi_2 = ZERO, zi_2 = ZERO;
+  if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+    xi_1 = 0.515460 * sx + ext.at(0).first;
+    xi_2 = 0.149088 * sx + ext.at(0).first;
+  }
+  if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+    yi_1 = 0.340680 * sy + ext.at(1).first;
+    yi_2 = 0.997063 * sy + ext.at(1).first;
+  }
+  if constexpr (M::Dim == Dim::_3D) {
+    zi_1 = 0.940722 * sz + ext.at(2).first;
+    zi_2 = 0.607354 * sz + ext.at(2).first;
+  }
   real_t ux_1    = 0.569197;
   real_t uy_1    = 0.716085;
   real_t uz_1    = 0.760101;
   real_t gamma_1 = math::sqrt(1.0 + SQR(ux_1) + SQR(uy_1) + SQR(uz_1));
 
   // init parameters of prtl #2
-  real_t xi_2    = 0.149088 * sx + extent[0].first;
-  real_t yi_2    = 0.997063 * sy + extent[1].first;
-  real_t zi_2    = 0.607354 * sz + extent[2].first;
   real_t ux_2    = -0.872069;
   real_t uy_2    = 0.0484461;
   real_t uz_2    = -0.613575;
@@ -142,21 +160,28 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       xi[2] = zi_1;
     }
     metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xi, xCd);
-    put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
-    put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
-    put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
-    put_value<prtldx_t>(dx1,
-                        static_cast<prtldx_t>(xCd[0]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[0])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx2,
-                        static_cast<prtldx_t>(xCd[1]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[1])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx3,
-                        static_cast<prtldx_t>(xCd[2]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[2])),
-                        prtl_idx);
+    if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
+                  M::PrtlDim == Dim::_3D) {
+      put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
+      put_value<prtldx_t>(dx1,
+                          static_cast<prtldx_t>(xCd[0]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[0])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+      put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
+      put_value<prtldx_t>(dx2,
+                          static_cast<prtldx_t>(xCd[1]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[1])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_3D) {
+      put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
+      put_value<prtldx_t>(dx3,
+                          static_cast<prtldx_t>(xCd[2]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[2])),
+                          prtl_idx);
+    }
     put_value<real_t>(ux1, ux_1, prtl_idx);
     put_value<real_t>(ux2, uy_1, prtl_idx);
     put_value<real_t>(ux3, uz_1, prtl_idx);
@@ -177,21 +202,28 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
       xi[2] = zi_2;
     }
     metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xi, xCd);
-    put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
-    put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
-    put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
-    put_value<prtldx_t>(dx1,
-                        static_cast<prtldx_t>(xCd[0]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[0])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx2,
-                        static_cast<prtldx_t>(xCd[1]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[1])),
-                        prtl_idx);
-    put_value<prtldx_t>(dx3,
-                        static_cast<prtldx_t>(xCd[2]) -
-                          static_cast<prtldx_t>(static_cast<int>(xCd[2])),
-                        prtl_idx);
+    if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
+                  M::PrtlDim == Dim::_3D) {
+      put_value<int>(i1, static_cast<int>(xCd[0]), prtl_idx);
+      put_value<prtldx_t>(dx1,
+                          static_cast<prtldx_t>(xCd[0]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[0])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+      put_value<int>(i2, static_cast<int>(xCd[1]), prtl_idx);
+      put_value<prtldx_t>(dx2,
+                          static_cast<prtldx_t>(xCd[1]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[1])),
+                          prtl_idx);
+    }
+    if constexpr (M::PrtlDim == Dim::_3D) {
+      put_value<int>(i3, static_cast<int>(xCd[2]), prtl_idx);
+      put_value<prtldx_t>(dx3,
+                          static_cast<prtldx_t>(xCd[2]) -
+                            static_cast<prtldx_t>(static_cast<int>(xCd[2])),
+                          prtl_idx);
+    }
     put_value<real_t>(ux1, ux_2, prtl_idx);
     put_value<real_t>(ux2, uy_2, prtl_idx);
     put_value<real_t>(ux3, uz_2, prtl_idx);
@@ -268,16 +300,16 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
       xi_1 += dt * ux_1 / gamma_1;
       xi_2 += dt * ux_2 / gamma_2;
-      if (xi_1 >= extent[0].second) {
+      if (xi_1 >= ext.at(0).second) {
         xi_1 -= sx;
       }
-      if (xi_1 < extent[0].first) {
+      if (xi_1 < ext.at(0).first) {
         xi_1 += sx;
       }
-      if (xi_2 >= extent[0].second) {
+      if (xi_2 >= ext.at(0).second) {
         xi_2 -= sx;
       }
-      if (xi_2 < extent[0].first) {
+      if (xi_2 < ext.at(0).first) {
         xi_2 += sx;
       }
       errorIf(not equal(xPh_1[0] / sx,
@@ -290,16 +322,16 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
       yi_1 += dt * uy_1 / gamma_1;
       yi_2 += dt * uy_2 / gamma_2;
-      if (yi_1 >= extent[1].second) {
+      if (yi_1 >= ext.at(1).second) {
         yi_1 -= sy;
       }
-      if (yi_1 < extent[1].first) {
+      if (yi_1 < ext.at(1).first) {
         yi_1 += sy;
       }
-      if (yi_2 >= extent[1].second) {
+      if (yi_2 >= ext.at(1).second) {
         yi_2 -= sy;
       }
-      if (yi_2 < extent[1].first) {
+      if (yi_2 < ext.at(1).first) {
         yi_2 += sy;
       }
       errorIf(not equal(xPh_1[1] / sy,
@@ -312,16 +344,16 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     if constexpr (M::Dim == Dim::_3D) {
       zi_1 += dt * uz_1 / gamma_1;
       zi_2 += dt * uz_2 / gamma_2;
-      if (zi_1 >= extent[2].second) {
+      if (zi_1 >= ext.at(2).second) {
         zi_1 -= sz;
       }
-      if (zi_1 < extent[2].first) {
+      if (zi_1 < ext.at(2).first) {
         zi_1 += sz;
       }
-      if (zi_2 >= extent[2].second) {
+      if (zi_2 >= ext.at(2).second) {
         zi_2 -= sz;
       }
-      if (zi_2 < extent[2].first) {
+      if (zi_2 < ext.at(2).first) {
         zi_2 += sz;
       }
       errorIf(not equal(xPh_1[2] / sz,

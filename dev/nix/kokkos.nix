@@ -20,15 +20,24 @@ let
     "CUDA" = with pkgs.cudaPackages; [
       cudatoolkit
       cuda_cudart
+      pkgs.gcc13
     ];
     "NONE" = [
       pkgs.gcc13
     ];
   };
+  getArch =
+    _:
+    if gpu != "NONE" && arch == "NATIVE" then
+      throw "Please specify an architecture when the GPU support is enabled. Available architectures: https://kokkos.org/kokkos-core-wiki/get-started/configuration-guide.html#gpu-architectures"
+    else
+      arch;
   cmakeExtraFlags = {
     "HIP" = [
       "-D Kokkos_ENABLE_HIP=ON"
       "-D Kokkos_ARCH_${getArch { }}=ON"
+      # remove leading AMD_
+      "-D AMDGPU_TARGETS=${builtins.replaceStrings [ "amd_" ] [ "" ] (pkgs.lib.toLower (getArch { }))}"
       "-D CMAKE_C_COMPILER=hipcc"
       "-D CMAKE_CXX_COMPILER=hipcc"
     ];
@@ -39,13 +48,6 @@ let
     ];
     "NONE" = [ ];
   };
-  getArch =
-    _:
-    if gpu != "NONE" && arch == "NATIVE" then
-      throw "Please specify an architecture when the GPU support is enabled. Available architectures: https://kokkos.org/kokkos-core-wiki/keywords.html#architectures"
-    else
-      arch;
-
 in
 pkgs.stdenv.mkDerivation rec {
   pname = "${name}";

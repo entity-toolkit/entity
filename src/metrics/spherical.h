@@ -33,6 +33,7 @@ namespace metric {
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
+    const bool   small_angle;
 
   public:
     static constexpr const char*       Label { "spherical" };
@@ -50,8 +51,8 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Spherical(std::vector<ncells_t> res,
-              boundaries_t<real_t>  ext,
+    Spherical(const std::vector<ncells_t>& res,
+              const boundaries_t<real_t>&  ext,
               const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
       , dr((x1_max - x1_min) / nx1)
@@ -59,7 +60,8 @@ namespace metric {
       , dphi((x3_max - x3_min) / nx3)
       , dr_inv { ONE / dr }
       , dtheta_inv { ONE / dtheta }
-      , dphi_inv { ONE / dphi } {
+      , dphi_inv { ONE / dphi }
+      , small_angle { HALF * dtheta < constant::SMALL_ANGLE } {
       set_dxMin(find_dxMin());
     }
 
@@ -74,6 +76,20 @@ namespace metric {
       auto dx1 { dr };
       auto dx2 { x1_min * dtheta };
       return ONE / math::sqrt(ONE / SQR(dx1) + ONE / SQR(dx2));
+    }
+
+    /**
+     * total volume of the region described by the metric (in physical units)
+     */
+    [[nodiscard]]
+    auto totVolume() const -> real_t override {
+      if constexpr (D == Dim::_1D) {
+        raise::Error("1D spherical metric not applicable", HERE);
+      } else if constexpr (D == Dim::_2D) {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min);
+      } else {
+        return (SQR(x1_max) - SQR(x1_min)) * (x2_max - x2_min) * (x3_max - x3_min);
+      }
     }
 
     /**
@@ -152,9 +168,16 @@ namespace metric {
     /**
      * differential area at the pole (used in axisymmetric solvers)
      * @param x1 radial coordinate along the axis (code units)
+     * @note uses small-angle approximation when the resolution is too high
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
-      return dr * SQR(x1 * dr + x1_min) * (ONE - math::cos(HALF * dtheta));
+      if (small_angle) {
+        return dr * SQR(x1 * dr + x1_min) *
+               (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
+               static_cast<real_t>(384);
+      } else {
+        return dr * SQR(x1 * dr + x1_min) * (ONE - math::cos(HALF * dtheta));
+      }
     }
 
     /**
@@ -252,7 +275,8 @@ namespace metric {
      * @note tetrad/sph <-> cntrv <-> cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& xi, const real_t& v_in) const
+      -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       if constexpr ((in == Idx::T && out == Idx::Sph) ||

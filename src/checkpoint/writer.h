@@ -39,15 +39,21 @@ namespace checkpoint {
 
     std::vector<std::pair<std::string, std::string>> m_written;
 
-    int  m_keep;
-    bool m_enabled;
+    int    m_keep;
+    bool   m_enabled;
+    path_t m_checkpoint_root;
 
   public:
     Writer() {}
 
     ~Writer() = default;
 
-    void init(adios2::ADIOS*, timestep_t, simtime_t, int);
+    void init(adios2::ADIOS*,
+              const path_t&,
+              timestep_t,
+              simtime_t,
+              int,
+              const std::string& = "");
 
     auto shouldSave(timestep_t, simtime_t) -> bool;
 

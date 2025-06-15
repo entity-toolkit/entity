@@ -47,11 +47,16 @@ namespace ntt {
       nplds.push_back(local_domain->species[s].npld());
     }
 
+    const path_t checkpoint_root = params.template get<std::string>(
+      "checkpoint.write_path");
+
     g_checkpoint_writer.init(
       ptr_adios,
+      checkpoint_root,
       params.template get<timestep_t>("checkpoint.interval"),
       params.template get<simtime_t>("checkpoint.interval_time"),
-      params.template get<int>("checkpoint.keep"));
+      params.template get<int>("checkpoint.keep"),
+      params.template get<std::string>("checkpoint.walltime"));
     if (g_checkpoint_writer.enabled()) {
       g_checkpoint_writer.defineFieldVariables(S,
                                                glob_shape_with_ghosts,
@@ -261,9 +266,12 @@ namespace ntt {
   void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
                                                 const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
-    auto fname = fmt::format(
-      "checkpoints/step-%08lu.bp",
-      params.template get<timestep_t>("checkpoint.start_step"));
+    const path_t checkpoint_root = params.template get<std::string>(
+      "checkpoint.read_path");
+    const auto fname = checkpoint_root /
+                       fmt::format("step-%08lu.bp",
+                                   params.template get<timestep_t>(
+                                     "checkpoint.start_step"));
     logger::Checkpoint(fmt::format("Reading checkpoint from %s", fname.c_str()),
                        HERE);
 
@@ -474,13 +482,24 @@ namespace ntt {
       HERE);
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+#define METADOMAIN_CHECKPOINTS(S, M)                                             \
+  template void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*,           \
+                                                       const SimulationParams&); \
+  template auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams&,       \
+                                                  timestep_t,                    \
+                                                  timestep_t,                    \
+                                                  simtime_t,                     \
+                                                  simtime_t) -> bool;            \
+  template void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS*,         \
+                                                         const SimulationParams&);
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+#undef METADOMAIN_CHECKPOINTS
 
 } // namespace ntt

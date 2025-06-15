@@ -1,4 +1,4 @@
-include = ["input.example.toml", "setups/**/*.toml"]
+include = ["input.example.toml", "pgens/**/*.toml"]
 exclude = [".taplo.toml"]
 
 [formatting]

@@ -73,10 +73,9 @@ namespace arch {
       , pl_ind { pl_ind }
       , pool { pool } {}
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t = 0) const  {
-
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           spidx_t = 0) const {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -98,15 +97,6 @@ namespace arch {
       v[2]         = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
       v[1]         = v[2] * math::cos(constant::TWO_PI * rand_X3);
       v[2]         = v[2] * math::sin(constant::TWO_PI * rand_X3);
-
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
 
       pool.free_state(rand_gen);
     }
@@ -175,12 +165,13 @@ namespace arch {
   }
 
   template <SimEngine::type S, bool CanBoost>
-  Inline void SampleFromMaxwellian(vec_t<Dim::_3D>&            v,
-                                   const real_t&               temperature,
-                                   const real_t&               boost_velocity,
-                                   const in&                   boost_direction,
-                                   bool                        flip_velocity,
-                                   const random_number_pool_t& pool) {
+  Inline void SampleFromMaxwellian(
+    vec_t<Dim::_3D>&            v,
+    const random_number_pool_t& pool,
+    const real_t&               temperature,
+    const real_t&               boost_velocity  = static_cast<real_t>(0),
+    const in&                   boost_direction = in::x1,
+    bool                        flip_velocity   = false) {
     if (cmp::AlmostZero(temperature)) {
       v[0] = ZERO;
       v[1] = ZERO;
@@ -233,29 +224,21 @@ namespace arch {
                      "Maxwellian: Temperature must be non-negative",
                      HERE);
       raise::ErrorIf(
-        (not cmp::AlmostZero(boost_vel, ZERO)) && (M::CoordType != Coord::Cart),
+        (not cmp::AlmostZero_host(boost_vel, ZERO)) && (M::CoordType != Coord::Cart),
         "Maxwellian: Boosting is only supported in Cartesian coordinates",
         HERE);
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t                sp = 0) const {
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           spidx_t          sp = 0) const {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(v,
+                                                           pool,
                                                            temperature,
                                                            boost_velocity,
                                                            boost_direction,
                                                            not zero_current and
-                                                             sp % 2 == 0,
-                                                           pool);
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
+                                                             sp % 2 == 0);
     }
 
   private:
@@ -298,24 +281,16 @@ namespace arch {
                      HERE);
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t                sp = 0) const {
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           spidx_t          sp = 0) const {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(
         v,
+        pool,
         (sp == sp_1) ? temperature_1 : temperature_2,
         boost_velocity,
         boost_direction,
-        not zero_current and sp == sp_1,
-        pool);
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
+        not zero_current and sp == sp_1);
     }
 
   private:
@@ -382,7 +357,7 @@ namespace arch {
 
       Inline void operator()(const coord_t<M::Dim>& x_Code,
                              vec_t<Dim::_3D>&       v,
-                             spidx_t                sp = 0) const {
+                             spidx_t = 0) const {
         if (cmp::AlmostZero(temperature)) {
           v[0] = ZERO;
           v[1] = ZERO;
@@ -433,13 +408,6 @@ namespace arch {
                      (drift_dir_x1 + ONE);
             }
           }
-        } else if constexpr (S == SimEngine::GRPIC) {
-          // convert from the tetrad basis to covariant
-          vec_t<Dim::_3D> v_Hat;
-          v_Hat[0] = v[0];
-          v_Hat[1] = v[1];
-          v_Hat[2] = v[2];
-          metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
         }
       }
 

@@ -453,6 +453,10 @@
     #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
     #   @note: Same notation as for `output.fields.quantities`
     quantities = ""
+    # Custom (user-defined) stats:
+    #   @type: array of strings
+    #   @default: []
+    custom = ""
 
 [checkpoint]
   # Number of timesteps between checkpoints:
@@ -470,6 +474,24 @@
   #   @note: 0 = disable checkpointing
   #   @note: -1 = keep all checkpoints
   keep = ""
+  # Write a checkpoint once after a fixed walltime 
+  #   @type: string
+  #   @default: "00:00:00" (disabled)
+  #   @note: The format is "HH:MM:SS"
+  #   @note: Useful for long-running simulations to ensure that ...
+  #   @note: ... the simulation can be resumed after allocation expires
+  #   @note: Empty string means disables this (still writes checkpoints on interval)
+  #   @note: This does not exit the simulation
+  walltime = ""
+  # Parent directory to write checkpoints to
+  #   @type: string
+  #   @default: "<simname>.ckpt"
+  #   @note: The directory is created if it does not exist
+  write_path = ""
+  # Parent directory to use when resuming from a checkpoint
+  #   @type: string
+  #   @default: inherits from `write_path`
+  read_path = ""
 
   # @inferred:
   # - is_resuming
