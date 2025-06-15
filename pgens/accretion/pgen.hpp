@@ -43,7 +43,8 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -61,7 +62,8 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -174,7 +176,7 @@ namespace user {
       return false;
     }
 
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
       auto fill = true;
       for (auto d = 0u; d < M::Dim; ++d) {
         fill &= x_Ph[d] > x_min[d] and x_Ph[d] < x_max[d] and sigma_crit(x_Ph);

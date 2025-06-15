@@ -28,7 +28,7 @@ namespace user {
       , center_x { center_x }
       , cs_y { cs_y } {}
 
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t override {
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
       return ONE / SQR(math::cosh((x_Ph[1] - cs_y) / cs_width)) *
              (ONE - math::exp(-SQR((x_Ph[0] - center_x) / cs_width)));
     }
