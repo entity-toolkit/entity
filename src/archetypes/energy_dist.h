@@ -83,8 +83,8 @@ namespace arch {
       , pl_ind { pl_ind }
       , pool { pool } {}
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
                            spidx_t = 0) const override {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
@@ -107,15 +107,6 @@ namespace arch {
       v[2]         = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
       v[1]         = v[2] * math::cos(constant::TWO_PI * rand_X3);
       v[2]         = v[2] * math::sin(constant::TWO_PI * rand_X3);
-
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
 
       pool.free_state(rand_gen);
     }
@@ -248,9 +239,9 @@ namespace arch {
         HERE);
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t                sp = 0) const override {
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           spidx_t          sp = 0) const override {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(v,
                                                            pool,
                                                            temperature,
@@ -258,14 +249,6 @@ namespace arch {
                                                            boost_direction,
                                                            not zero_current and
                                                              sp % 2 == 0);
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
     }
 
   private:
@@ -308,9 +291,9 @@ namespace arch {
                      HERE);
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t                sp = 0) const override {
+    Inline void operator()(const coord_t<M::Dim>&,
+                           vec_t<Dim::_3D>& v,
+                           spidx_t          sp = 0) const override {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(
         v,
         pool,
@@ -318,14 +301,6 @@ namespace arch {
         boost_velocity,
         boost_direction,
         not zero_current and sp == sp_1);
-      if constexpr (S == SimEngine::GRPIC) {
-        // convert from the tetrad basis to covariant
-        vec_t<Dim::_3D> v_Hat;
-        v_Hat[0] = v[0];
-        v_Hat[1] = v[1];
-        v_Hat[2] = v[2];
-        metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
-      }
     }
 
   private:
@@ -443,13 +418,6 @@ namespace arch {
                      (drift_dir_x1 + ONE);
             }
           }
-        } else if constexpr (S == SimEngine::GRPIC) {
-          // convert from the tetrad basis to covariant
-          vec_t<Dim::_3D> v_Hat;
-          v_Hat[0] = v[0];
-          v_Hat[1] = v[1];
-          v_Hat[2] = v[2];
-          metric.template transform<Idx::T, Idx::D>(x_Code, v_Hat, v);
         }
       }
 

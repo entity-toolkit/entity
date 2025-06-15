@@ -4,13 +4,11 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/comparators.h"
 #include "utils/error.h"
 
 #include "metrics/minkowski.h"
 
 #include <iostream>
-#include <limits>
 #include <utility>
 
 using namespace ntt;
@@ -18,15 +16,17 @@ using namespace metric;
 
 template <Dimension D, unsigned short N>
 class Fill_kernel {
-  ndfield_t<D, N>& arr;
-  real_t           v;
-  unsigned short   c;
+  ndfield_t<D, N> arr;
+  real_t          v;
+  unsigned short  c;
 
 public:
   Fill_kernel(ndfield_t<D, N>& arr_, real_t v_, unsigned short c_)
     : arr { arr_ }
     , v { v_ }
-    , c { c_ } {}
+    , c { c_ } {
+    raise::ErrorIf(c_ >= N, "c > N", HERE);
+  }
 
   Inline void operator()(index_t i1) const {
     arr(i1, c) = v;
