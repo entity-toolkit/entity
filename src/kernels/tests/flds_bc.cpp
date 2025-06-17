@@ -89,9 +89,13 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
       { res[0] + 2 * N_GHOSTS, res[1] + N_GHOSTS, res[2] + N_GHOSTS });
   }
 
-  const auto xg_edge = (real_t)(sx[0].second);
-  const auto dx_abs  = (real_t)(res[0] / 10.0);
-
+  const auto           xg_edge = (real_t)(sx[0].second);
+  const auto           dx_abs  = (real_t)(res[0] / 10.0);
+  boundaries_t<FldsBC> flds_bc {
+    { FldsBC::PERIODIC, FldsBC::PERIODIC },
+    { FldsBC::PERIODIC, FldsBC::PERIODIC },
+    { FldsBC::PERIODIC, FldsBC::PERIODIC }
+  };
   Kokkos::parallel_for(
     "MatchBoundaries_kernel",
     range,
@@ -101,7 +105,8 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
       metric,
       xg_edge,
       dx_abs,
-      BC::E | BC::B));
+      BC::E | BC::B,
+      flds_bc));
 
   if constexpr (D == Dim::_1D) {
     Kokkos::parallel_for(

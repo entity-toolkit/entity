@@ -647,7 +647,8 @@ namespace ntt {
               domain.mesh.metric,
               xg_edge,
               ds,
-              tags));
+              tags,
+              domain.mesh.flds_bc()));
           Kokkos::parallel_for(
             "MatchBoundaries",
             CreateRangePolicy<M::Dim>(range_min, range_max),
@@ -657,7 +658,8 @@ namespace ntt {
               domain.mesh.metric,
               xg_edge,
               ds,
-              tags));
+              tags,
+              domain.mesh.flds_bc()));
         } else {
           Kokkos::parallel_for(
             "AbsorbCurrents",
@@ -671,54 +673,6 @@ namespace ntt {
         raise::Error("Invalid dimension", HERE);
       }
     }
-
-    // void AbsorbCurrentsIn(dir::direction_t<M::Dim> direction,
-    //                       domain_t&                domain,
-    //                       BCTags                   tags) {
-    //   /**
-    //    * absorbing currents at the boundaries
-    //    */
-    //   // @TODO: also in MatchFieldsIn (need a better way)
-    //   const auto ds_array = m_params.template get<boundaries_t<real_t>>(
-    //     "grid.boundaries.match.ds");
-    //   const auto dim = in::x1;
-    //   real_t     xg_min, xg_max, xg_edge;
-    //   real_t     ds;
-    //   ds      = ds_array[(short)dim].second;
-    //   xg_max  = m_metadomain.mesh().extent(dim).second;
-    //   xg_min  = xg_max - ds;
-    //   xg_edge = xg_max;
-    //
-    //   boundaries_t<real_t> box;
-    //   boundaries_t<bool>   incl_ghosts;
-    //   for (unsigned short d { 0 }; d < M::Dim; ++d) {
-    //     if (d == static_cast<unsigned short>(dim)) {
-    //       box.push_back({ xg_min, xg_max });
-    //       incl_ghosts.push_back({ false, true });
-    //     } else {
-    //       box.push_back(Range::All);
-    //       incl_ghosts.push_back({ true, true });
-    //     }
-    //   }
-    //   if (not domain.mesh.Intersects(box)) {
-    //     return;
-    //   }
-    //   const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-    //   tuple_t<std::size_t, M::Dim> range_min { 0 };
-    //   tuple_t<std::size_t, M::Dim> range_max { 0 };
-    //
-    //   for (unsigned short d { 0 }; d < M::Dim; ++d) {
-    //     range_min[d] = intersect_range[d].first;
-    //     range_max[d] = intersect_range[d].second;
-    //   }
-    //   Kokkos::parallel_for(
-    //     "AbsorbCurrentsGR",
-    //     CreateRangePolicy<M::Dim>(range_min, range_max),
-    //     kernel::bc::AbsorbCurrentsGR_kernel<M, 1>(domain.fields.cur0,
-    //                                               domain.mesh.metric,
-    //                                               xg_edge,
-    //                                               ds));
-    // }
 
     void HorizonFieldsIn(dir::direction_t<M::Dim> direction,
                          domain_t&                domain,
