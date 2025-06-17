@@ -42,6 +42,7 @@ namespace kernel::bc {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
+    static constexpr auto  D = M::Dim;
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
     static constexpr bool defines_dx1 = traits::has_method<traits::dx1_t, I>::value;
     static constexpr bool defines_dx2 = traits::has_method<traits::dx2_t, I>::value;
@@ -66,18 +67,30 @@ namespace kernel::bc {
     const real_t         dx_abs;
     const BCTags         tags;
 
-    MatchBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
-                           const I&             fset,
-                           const M&             metric,
-                           real_t               xg_edge,
-                           real_t               dx_abs,
-                           BCTags               tags)
+    ncells_t extent_2 { 0u };
+    bool     is_axis_i2min { false }, is_axis_i2max { false };
+
+    MatchBoundaries_kernel(ndfield_t<M::Dim, 6>        Fld,
+                           const I&                    fset,
+                           const M&                    metric,
+                           real_t                      xg_edge,
+                           real_t                      dx_abs,
+                           BCTags                      tags,
+                           const boundaries_t<FldsBC>& boundaries)
       : Fld { Fld }
       , fset { fset }
       , metric { metric }
       , xg_edge { xg_edge }
       , dx_abs { dx_abs }
-      , tags { tags } {}
+      , tags { tags } {
+      if constexpr ((M::CoordType != Coord::Cart) &&
+                    ((D == Dim::_2D) || (D == Dim::_3D))) {
+        raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
+        is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
+        is_axis_i2max = (boundaries[1].second == FldsBC::AXIS);
+        extent_2      = static_cast<ncells_t>(Fld.extent(1));
+      }
+    }
 
     Inline auto shape(const real_t& dx) const -> real_t {
       return math::tanh(dx * FOUR / dx_abs);
@@ -281,14 +294,20 @@ namespace kernel::bc {
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_, i2_ }, x_Ph_00);
 
             if constexpr (defines_ex3 and S == SimEngine::SRPIC) {
-              Fld(i1, i2, em::ex3) = s * Fld(i1, i2, em::ex3) +
-                                     (ONE - s) *
-                                       metric.template transform<3, Idx::T, Idx::U>(
-                                         { i1_, i2_ },
-                                         fset.ex3(x_Ph_00));
+              Fld(i1, i2, em::ex3) = s * Fld(i1, i2, em::ex3);
+              if ((!is_axis_i2min or (i2 > N_GHOSTS)) and
+                  (!is_axis_i2max or (i2 < extent_2 - N_GHOSTS))) {
+                Fld(i1, i2, em::ex3) += (ONE - s) *
+                                        metric.template transform<3, Idx::T, Idx::U>(
+                                          { i1_, i2_ },
+                                          fset.ex3(x_Ph_00));
+              }
             } else if constexpr (defines_dx3 and S == SimEngine::GRPIC) {
-              Fld(i1, i2, em::dx3) = s * Fld(i1, i2, em::dx3) +
-                                     (ONE - s) * fset.dx3(x_Ph_00);
+              Fld(i1, i2, em::dx3) = s * Fld(i1, i2, em::dx3);
+              if ((!is_axis_i2min or (i2 > N_GHOSTS)) and
+                  (!is_axis_i2max or (i2 < extent_2 - N_GHOSTS))) {
+                Fld(i1, i2, em::dx3) += (ONE - s) * fset.dx3(x_Ph_00);
+              }
             }
           }
         }
@@ -403,11 +422,14 @@ namespace kernel::bc {
                 coord_t<Dim::_3D> x_Ph_00H { ZERO };
                 metric.template convert<Crd::Cd, Crd::Ph>({ i1_, i2_, i3_ + HALF },
                                                           x_Ph_00H);
-                Fld(i1, i2, i3, em::ex3) =
-                  s * Fld(i1, i2, i3, em::ex3) +
-                  (ONE - s) * metric.template transform<3, Idx::T, Idx::U>(
-                                { i1_, i2_, i3_ + HALF },
-                                fset.ex3(x_Ph_00H));
+                Fld(i1, i2, i3, em::ex3) = s * Fld(i1, i2, i3, em::ex3);
+                if ((!is_axis_i2min or (i2 > N_GHOSTS)) and
+                    (!is_axis_i2max or (i2 < extent_2 - N_GHOSTS))) {
+                  Fld(i1, i2, i3, em::ex3) +=
+                    (ONE - s) * metric.template transform<3, Idx::T, Idx::U>(
+                                  { i1_, i2_, i3_ + HALF },
+                                  fset.ex3(x_Ph_00H));
+                }
               }
             }
           }
