@@ -492,31 +492,20 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
+        // clang-format off
         Kokkos::parallel_for("CurrentsDeposit",
                              species.rangeActiveParticles(),
                              kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
                                scatter_cur,
-                               species.i1,
-                               species.i2,
-                               species.i3,
-                               species.i1_prev,
-                               species.i2_prev,
-                               species.i3_prev,
-                               species.dx1,
-                               species.dx2,
-                               species.dx3,
-                               species.dx1_prev,
-                               species.dx2_prev,
-                               species.dx3_prev,
-                               species.ux1,
-                               species.ux2,
-                               species.ux3,
-                               species.phi,
-                               species.weight,
-                               species.tag,
+                               species.i1, species.i2, species.i3,
+                               species.i1_prev, species.i2_prev, species.i3_prev,
+                               species.dx1, species.dx2, species.dx3,
+                               species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                               species.ux1, species.ux2, species.ux3,
+                               species.phi, species.weight, species.tag,
                                domain.mesh.metric,
-                               (real_t)(species.charge()),
-                               dt));
+                               (real_t)(species.charge()), dt));
+        // clang-format on
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
@@ -685,6 +674,7 @@ namespace ntt {
           traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
           auto match_fields = m_pgen.MatchFields(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            domain.mesh.flds_bc(),
                                                             match_fields,
                                                             domain.mesh.metric,
                                                             xg_edge,
@@ -696,6 +686,7 @@ namespace ntt {
           traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
           auto match_fields = m_pgen.MatchFieldsInX1(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            domain.mesh.flds_bc(),
                                                             match_fields,
                                                             domain.mesh.metric,
                                                             xg_edge,
@@ -710,6 +701,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -721,6 +713,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFieldsInX2(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -738,6 +731,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -749,6 +743,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFieldsInX3(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -1463,14 +1458,15 @@ namespace ntt {
     }
 
     template <class T, in O>
-    void call_match_fields(ndfield_t<M::Dim, 6>&      fields,
-                           const T&                   match_fields,
-                           const M&                   metric,
-                           real_t                     xg_edge,
-                           real_t                     ds,
-                           BCTags                     tags,
-                           tuple_t<ncells_t, M::Dim>& range_min,
-                           tuple_t<ncells_t, M::Dim>& range_max) {
+    void call_match_fields(ndfield_t<M::Dim, 6>&       fields,
+                           const boundaries_t<FldsBC>& boundaries,
+                           const T&                    match_fields,
+                           const M&                    metric,
+                           real_t                      xg_edge,
+                           real_t                      ds,
+                           BCTags                      tags,
+                           tuple_t<ncells_t, M::Dim>&  range_min,
+                           tuple_t<ncells_t, M::Dim>&  range_max) {
       Kokkos::parallel_for(
         "MatchFields",
         CreateRangePolicy<M::Dim>(range_min, range_max),
@@ -1479,7 +1475,8 @@ namespace ntt {
                                                                       metric,
                                                                       xg_edge,
                                                                       ds,
-                                                                      tags));
+                                                                      tags,
+                                                                      boundaries));
     }
   };
 
