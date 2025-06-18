@@ -78,6 +78,11 @@ namespace kernel::sr {
     static_assert(ExtForce or Atm,
                   "Force initialized with neither PGen force nor gravity");
 
+     static constexpr auto definesEx1 = traits::has_member<traits::ex1_t, F>::value;
+     static constexpr auto definesEx2 = traits::has_member<traits::ex2_t, F>::value;
+     static constexpr auto definesEx3 = traits::has_member<traits::ex3_t, F>::value;
+     static constexpr auto ExtFields = definesEx1 || definesEx2 || definesEx3;
+
     const F      pgen_force;
     const real_t gx1, gx2, gx3, x_surf, ds;
 
@@ -186,20 +191,31 @@ namespace kernel::sr {
     Inline auto ex1(const unsigned short& sp,
                      const real_t&         time,
                      const coord_t<D>&     x_Ph) const -> real_t {
+       if constexpr (definesEx1) {
          return pgen_force.ex1(sp, time, x_Ph);
-     }
+       } else {
+         return ZERO;
+       }     }
 
     Inline auto ex2(const unsigned short& sp,
                      const real_t&         time,
                      const coord_t<D>&     x_Ph) const -> real_t {
-         return pgen_force.ex2(sp, time, x_Ph);
-     }
+       if constexpr (definesEx1) {
+         return pgen_force.ex1(sp, time, x_Ph);
+       } else {
+         return ZERO;
+       }
+           }
 
     Inline auto ex3(const unsigned short& sp,
                      const real_t&         time,
                      const coord_t<D>&     x_Ph) const -> real_t {
-         return pgen_force.ex3(sp, time, x_Ph);
-     }
+       if constexpr (definesEx1) {
+         return pgen_force.ex1(sp, time, x_Ph);
+       } else {
+         return ZERO;
+       }
+           }
 
 
   };
@@ -531,32 +547,20 @@ namespace kernel::sr {
           force_Cart);
         }
          if constexpr (ExtField) {
-           // reusing ei, bi for the external fields
+           // reusing ei for the external fields
            ei[0] = ZERO;
            ei[1] = ZERO;
            ei[2] = ZERO;
-           bi[0] = ZERO;
-           bi[1] = ZERO;
-           bi[2] = ZERO;
            metric.template transform_xyz<Idx::T, Idx::XYZ>(
              xp_Cd,
              { force.ex1(sp, time, xp_Ph),
                force.ex2(sp, time, xp_Ph),
                force.ex3(sp, time, xp_Ph) },
              ei);
-           metric.template transform_xyz<Idx::T, Idx::XYZ>(
-             xp_Cd,
-             { force.bx1(sp, time, xp_Ph),
-               force.bx2(sp, time, xp_Ph),
-               force.bx3(sp, time, xp_Ph) },
-             bi);
            // add external fields to the total fields
            ei_Cart[0] += ei[0];
            ei_Cart[1] += ei[1];
            ei_Cart[2] += ei[2];
-           bi_Cart[0] += bi[0];
-           bi_Cart[1] += bi[1];
-           bi_Cart[2] += bi[2];
          }
       }
       if (GCA) {
