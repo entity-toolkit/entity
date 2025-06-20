@@ -200,8 +200,8 @@ namespace kernel::sr {
     Inline auto ex2(const unsigned short& sp,
                      const real_t&         time,
                      const coord_t<D>&     x_Ph) const -> real_t {
-       if constexpr (definesEx1) {
-         return pgen_force.ex1(sp, time, x_Ph);
+       if constexpr (definesEx2) {
+         return pgen_force.ex2(sp, time, x_Ph);
        } else {
          return ZERO;
        }
@@ -210,8 +210,8 @@ namespace kernel::sr {
     Inline auto ex3(const unsigned short& sp,
                      const real_t&         time,
                      const coord_t<D>&     x_Ph) const -> real_t {
-       if constexpr (definesEx1) {
-         return pgen_force.ex1(sp, time, x_Ph);
+       if constexpr (definesEx3) {
+         return pgen_force.ex3(sp, time, x_Ph);
        } else {
          return ZERO;
        }
