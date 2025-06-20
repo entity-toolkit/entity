@@ -158,7 +158,7 @@ auto main(int argc, char* argv[]) -> int {
                 if (not cmp::AlmostEqual(
                       field_read(i1),
                       field(i1 * dwn1 + first_cell + i1min, cntr))) {
-                  printf("\n:::::::::::::::\nfield_read(%ld) = %f != "
+                  Kokkos::printf("\n:::::::::::::::\nfield_read(%ld) = %f != "
                          "field(%ld, %d) = %f\n:::::::::::::::\n",
                          i1,
                          field_read(i1),

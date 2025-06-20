@@ -179,7 +179,7 @@ auto main(int argc, char* argv[]) -> int {
                                                i2 * dwn2 + i2min,
                                                i3 * dwn3 + i3min,
                                                cntr))) {
-                  printf("\n:::::::::::::::\nfield_read(%ld, %ld, %ld) = %f != "
+                  Kokkos::printf("\n:::::::::::::::\nfield_read(%ld, %ld, %ld) = %f != "
                          "field(%ld, %ld, %ld, %d) = %f\n:::::::::::::::\n",
                          i1,
                          i2,

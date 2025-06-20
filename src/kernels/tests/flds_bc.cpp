@@ -48,7 +48,7 @@ struct DummyFieldsBCs {
 
 Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
   if (not(math::abs(a - b) < acc)) {
-    printf("%.12e != %.12e [%.12e] %s\n", a, b, math::abs(a - b), msg);
+    Kokkos::printf("%.12e != %.12e [%.12e] %s\n", a, b, math::abs(a - b), msg);
     return false;
   }
   return true;
@@ -118,19 +118,19 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
         const auto factor2 = math::tanh(FOUR * math::abs(x - xg_edge) / dx_abs);
         if (not cmp::AlmostEqual(flds(i1, em::ex1), TWO * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, em::ex1), TWO * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, em::ex1), TWO * (ONE - factor1));
           raise::KernelError(HERE, "incorrect ex1");
         }
         if (not cmp::AlmostEqual(flds(i1, em::ex2), THREE * (ONE - factor2))) {
-          printf("%f != %f\n", flds(i1, em::ex2), THREE * (ONE - factor2));
+          Kokkos::printf("%f != %f\n", flds(i1, em::ex2), THREE * (ONE - factor2));
           raise::KernelError(HERE, "incorrect ex2");
         }
         if (not cmp::AlmostEqual(flds(i1, em::bx2), FOUR * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, em::bx2), FOUR * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, em::bx2), FOUR * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx2");
         }
         if (not cmp::AlmostEqual(flds(i1, em::bx3), FIVE * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, em::bx3), FIVE * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, em::bx3), FIVE * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx3");
         }
       });
@@ -145,19 +145,19 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
         const auto factor2 = math::tanh(FOUR * math::abs(x - xg_edge) / dx_abs);
         if (not cmp::AlmostEqual(flds(i1, i2, em::ex1), TWO * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, em::ex1), TWO * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, em::ex1), TWO * (ONE - factor1));
           raise::KernelError(HERE, "incorrect ex1");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, em::ex2), THREE * (ONE - factor2))) {
-          printf("%f != %f\n", flds(i1, i2, em::ex2), THREE * (ONE - factor2));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, em::ex2), THREE * (ONE - factor2));
           raise::KernelError(HERE, "incorrect ex2");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, em::bx2), FOUR * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, em::bx2), FOUR * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, em::bx2), FOUR * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx2");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, em::bx3), FIVE * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, em::bx3), FIVE * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, em::bx3), FIVE * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx3");
         }
       });
@@ -173,22 +173,22 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
         const auto factor2 = math::tanh(FOUR * math::abs(x - xg_edge) / dx_abs);
         if (not cmp::AlmostEqual(flds(i1, i2, i3, em::ex1), TWO * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, i3, em::ex1), TWO * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, i3, em::ex1), TWO * (ONE - factor1));
           raise::KernelError(HERE, "incorrect ex1");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, i3, em::ex2),
                                  THREE * (ONE - factor2))) {
-          printf("%f != %f\n", flds(i1, i2, i3, em::ex2), THREE * (ONE - factor2));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, i3, em::ex2), THREE * (ONE - factor2));
           raise::KernelError(HERE, "incorrect ex2");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, i3, em::bx2),
                                  FOUR * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, i3, em::bx2), FOUR * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, i3, em::bx2), FOUR * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx2");
         }
         if (not cmp::AlmostEqual(flds(i1, i2, i3, em::bx3),
                                  FIVE * (ONE - factor1))) {
-          printf("%f != %f\n", flds(i1, i2, i3, em::bx3), FIVE * (ONE - factor1));
+          Kokkos::printf("%f != %f\n", flds(i1, i2, i3, em::bx3), FIVE * (ONE - factor1));
           raise::KernelError(HERE, "incorrect bx3");
         }
       });

@@ -30,7 +30,7 @@ Inline auto equal(const coord_t<D>& a,
   const auto eps = epsilon * acc;
   for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
-      printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
+      Kokkos::printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
     }
   }
