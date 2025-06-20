@@ -118,9 +118,8 @@ namespace kernel {
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
         if constexpr (M::CoordType == Coord::Cart) {
-          vec_t<Dim::_3D> v_Ph { ZERO };
-          energy_dist(x_Ph, v_Ph, spidx1);
-          energy_dist(x_Ph, v_Ph, spidx2);
+          energy_dist(x_Ph, v1, spidx1);
+          energy_dist(x_Ph, v2, spidx2);
         } else if constexpr (S == SimEngine::SRPIC) {
           coord_t<M::PrtlDim> x_Cd_ { ZERO };
           x_Cd_[0] = x_Cd[0];
@@ -287,9 +286,8 @@ namespace kernel {
           coord_t<M::Dim> x_Ph { ZERO };
           metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
           if constexpr (M::CoordType == Coord::Cart) {
-            vec_t<Dim::_3D> v_Ph { ZERO };
-            energy_dist_1(x_Ph, v_Ph, spidx1);
-            energy_dist_2(x_Ph, v_Ph, spidx2);
+            energy_dist_1(x_Ph, v1, spidx1);
+            energy_dist_2(x_Ph, v2, spidx2);
           } else if constexpr (S == SimEngine::SRPIC) {
             coord_t<M::PrtlDim> x_Cd_ { ZERO };
             x_Cd_[0] = x_Cd[0];
