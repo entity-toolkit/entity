@@ -57,6 +57,8 @@ namespace kernel::sr {
   typedef int CoolingTags;
 
   struct NoForce_t {
+    static constexpr auto ExtForce  = false;
+    static constexpr auto ExtFields = false;
     NoForce_t() {}
   };
 
@@ -74,14 +76,17 @@ namespace kernel::sr {
    */
   template <Dimension D, Coord::type C, class F = NoForce_t, bool Atm = false>
   struct Force {
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
-    static_assert(ExtForce or Atm,
-                  "Force initialized with neither PGen force nor gravity");
+    static constexpr auto definesFx1 = traits::has_member<traits::fx1_t, F>::value;
+    static constexpr auto definesFx2 = traits::has_member<traits::fx2_t, F>::value;
+    static constexpr auto definesFx3 = traits::has_member<traits::fx3_t, F>::value;
+    static constexpr auto ExtForce = definesFx1 || definesFx2 || definesFx3;
+    static constexpr auto definesEx1 = traits::has_member<traits::ex1_t, F>::value;
+    static constexpr auto definesEx2 = traits::has_member<traits::ex2_t, F>::value;
+    static constexpr auto definesEx3 = traits::has_member<traits::ex3_t, F>::value;
+    static constexpr auto ExtFields = definesEx1 || definesEx2 || definesEx3;
 
-     static constexpr auto definesEx1 = traits::has_member<traits::ex1_t, F>::value;
-     static constexpr auto definesEx2 = traits::has_member<traits::ex2_t, F>::value;
-     static constexpr auto definesEx3 = traits::has_member<traits::ex3_t, F>::value;
-     static constexpr auto ExtFields = definesEx1 || definesEx2 || definesEx3;
+    static_assert(ExtFields or ExtForce or Atm,
+                  "Force initialized with neither PGen force nor gravity");
 
     const F      pgen_force;
     const real_t gx1, gx2, gx3, x_surf, ds;
@@ -106,7 +111,7 @@ namespace kernel::sr {
 
     Force(const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
       : Force { NoForce_t {}, g, x_surf, ds } {
-      raise::ErrorIf(ExtForce, "External force not provided", HERE);
+      raise::ErrorIf(ExtForce or ExtFields, "External force not provided", HERE);
     }
 
     Inline auto fx1(const spidx_t&    sp,
@@ -195,7 +200,8 @@ namespace kernel::sr {
          return pgen_force.ex1(sp, time, x_Ph);
        } else {
          return ZERO;
-       }     }
+       }     
+      }
 
     Inline auto ex2(const unsigned short& sp,
                      const real_t&         time,
@@ -228,9 +234,8 @@ namespace kernel::sr {
   struct Pusher_kernel {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D        = M::Dim;
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
-    static constexpr auto ExtField = not std::is_same<F, NoForce_t>::value;
-    
+    static constexpr auto ExtForce  = F::ExtForce;
+    static constexpr auto ExtFields = F::ExtFields;  
 
   private:
     const PrtlPusher::type pusher;
@@ -529,7 +534,7 @@ namespace kernel::sr {
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
       }
-      if constexpr (ExtForce or ExtField) {
+      if constexpr (ExtForce or ExtFields) {
         coord_t<M::PrtlDim> xp_Ph { ZERO };
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
@@ -546,7 +551,7 @@ namespace kernel::sr {
             force.fx3(sp, time, ext_force, xp_Ph) },
           force_Cart);
         }
-         if constexpr (ExtField) {
+         if constexpr (ExtFields) {
            // reusing ei for the external fields
            ei[0] = ZERO;
            ei[1] = ZERO;
