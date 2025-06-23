@@ -48,8 +48,9 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
-    -> bool {
+  auto Writer::shouldWrite(const std::string& type,
+                           timestep_t         step,
+                           simtime_t          time) -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -360,6 +361,7 @@ namespace out {
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
                              const std::string&      varname) {
+    auto var      = m_io.InquireVariable<real_t>(varname);
     auto counts_h = Kokkos::create_mirror_view(counts);
     Kokkos::deep_copy(counts_h, counts);
 #if defined(MPI_ENABLED)
@@ -375,12 +377,14 @@ namespace out {
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank == MPI_ROOT_RANK) {
-      auto var = m_io.InquireVariable<real_t>(varname);
-      var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+      var.SetSelection(
+        adios2::Box<adios2::Dims>({ 0u }, { counts_h_all.extent(0) }));
       m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Sync);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+      m_writer.Put<real_t>(var, nullptr);
     }
 #else
-    auto var = m_io.InquireVariable<real_t>(varname);
     var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
     m_writer.Put<real_t>(var, counts_h, adios2::Mode::Sync);
 #endif
@@ -388,18 +392,23 @@ namespace out {
 
   void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
                                  const std::string&      varname) {
+    auto var      = m_io.InquireVariable<real_t>(varname);
+    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
+    Kokkos::deep_copy(e_bins_h, e_bins);
 #if defined(MPI_ENABLED)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank != MPI_ROOT_RANK) {
-      return;
+    if (rank == MPI_ROOT_RANK) {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { e_bins_h.extent(0) }));
+      m_writer.Put<real_t>(var, e_bins_h.data(), adios2::Mode::Sync);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+      m_writer.Put<real_t>(var, nullptr, adios2::Mode::Sync);
     }
-#endif
-    auto var = m_io.InquireVariable<real_t>(varname);
-    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
-    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
-    Kokkos::deep_copy(e_bins_h, e_bins);
+#else
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins_h.extent(0) }));
     m_writer.Put<real_t>(var, e_bins_h, adios2::Mode::Sync);
+#endif
   }
 
   void Writer::writeMesh(unsigned short                  dim,
