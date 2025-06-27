@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -491,11 +491,30 @@ namespace ntt {
                       "fields",
                       "mom_smooth",
                       defaults::output::mom_smooth));
-    auto field_dwn = toml::find_or(toml_data,
-                                   "output",
-                                   "fields",
-                                   "downsampling",
-                                   std::vector<unsigned int> { 1, 1, 1 });
+    std::vector<unsigned int> field_dwn;
+    try {
+      auto field_dwn_ = toml::find<std::vector<unsigned int>>(toml_data,
+                                                              "output",
+                                                              "fields",
+                                                              "downsampling");
+      for (auto i = 0u; i < field_dwn_.size(); ++i) {
+        field_dwn.push_back(field_dwn_[i]);
+      }
+    } catch (...) {
+      try {
+        auto field_dwn_ = toml::find<unsigned int>(toml_data,
+                                                   "output",
+                                                   "fields",
+                                                   "downsampling");
+        for (auto i = 0u; i < dim; ++i) {
+          field_dwn.push_back(field_dwn_);
+        }
+      } catch (...) {
+        for (auto i = 0u; i < dim; ++i) {
+          field_dwn.push_back(1u);
+        }
+      }
+    }
     raise::ErrorIf(field_dwn.size() > 3, "invalid `output.fields.downsampling`", HERE);
     if (field_dwn.size() > dim) {
       field_dwn.erase(field_dwn.begin() + (std::size_t)(dim), field_dwn.end());
