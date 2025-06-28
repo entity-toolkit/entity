@@ -10,6 +10,14 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
+## Join the community
+
+Everyone is welcome to join our small yet steadily growing community of code users and developers; regardless of how much you are planning to contribute -- we always welcome fresh ideas and feedback. We hold weekly Zoom meetings on Mondays at 12pm NY time, and have a dedicated Slack channel where you can be easily added by [emailing](mailto:haykh.astro@gmail.com) [one of the maintainers](mailto:genegorbs@gmail.com). If you prefer to just join our Zoom meetings without the Slack involvement -- that's totally fine, just email, and we can send you the Zoom link. 
+
+Another way of contacting us is via GitHub issues and/or pull requests. Make sure to check out our [F.A.Q.](https://entity-toolkit.github.io/wiki/content/1-getting-started/9-faq/), as it might help you answer your question.
+
+> Keep in mind, you are free to use the code in any capacity, and there is absolutely no requirement on our end of including any of the developers in your project/proposal (as highlighted in our Code of Conduct). When contributing, also keep in mind that the code you upload to the repository automatically becomes public and open-source, and the same standards will be applied to it as to the rest of the code. 
+
 ## Contributors (alphabetical)
 
 * :guitar: Ludwig Böss {[@LudwigBoess](https://github.com/LudwigBoess)}
