@@ -32,7 +32,6 @@
 #endif // MPI_ENABLED
 
 #include <algorithm>
-#include <filesystem>
 #include <iterator>
 #include <vector>
 
@@ -200,9 +199,9 @@ namespace ntt {
         mesh.rangeActiveCells(),
         Lambda(index_t i, index_t j) {
           const real_t i_ { static_cast<real_t>(static_cast<int>(i) - (N_GHOSTS)) };
-          const auto   k_min = (i2_min - (N_GHOSTS)) + 1;
-          const auto   k_max = (j - (N_GHOSTS));
-          real_t       A3    = ZERO;
+          const auto k_min = (i2_min - (N_GHOSTS)) + 1;
+          const auto k_max = (j - (N_GHOSTS));
+          real_t     A3    = ZERO;
           for (auto k { k_min }; k <= k_max; ++k) {
             real_t k_ = static_cast<real_t>(k);
             real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i_, k_ - HALF }) };
@@ -434,8 +433,9 @@ namespace ntt {
                                            c,
                                            local_domain->mesh);
             } else {
-              raise::Error("Vector potential can only be computed for GRPIC in 2D",
-                           HERE);
+              raise::Error(
+                "Vector potential can only be computed for GRPIC in 2D",
+                HERE);
             }
           } else {
             raise::Error("Wrong # of components requested for "
