@@ -235,6 +235,13 @@ namespace ntt {
         promiseToDefine("algorithms.synchrotron.gamma_rad");
       }
 
+      if (cooling_enum == Cooling::COMPTON) {
+        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
+                       "Inverse Compton cooling is only supported for SRPIC",
+                       HERE);
+        promiseToDefine("algorithms.compton.gamma_rad");
+      }
+
       species.emplace_back(ParticleSpecies(idx,
                                            label,
                                            mass,
@@ -915,6 +922,14 @@ namespace ntt {
                         "synchrotron",
                         "gamma_rad",
                         defaults::synchrotron::gamma_rad));
+    }
+    if (isPromised("algorithms.compton.gamma_rad")) {
+      set("algorithms.compton.gamma_rad",
+          toml::find_or(toml_data,
+                        "algorithms",
+                        "compton",
+                        "gamma_rad",
+                        defaults::compton::gamma_rad));
     }
 
     // @TODO: disabling stats for non-Cartesian
