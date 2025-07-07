@@ -860,7 +860,8 @@ namespace ntt {
                        index_t,                                                \
                        timestep_t,                                             \
                        simtime_t,                                              \
-                       const Domain<S, M>&)>) -> bool;
+                       const Domain<S, M>&)>) -> bool;                         \
+  template void Metadomain<S, M>::CommunicateVectorPotential(unsigned short);
 
   METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
   METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
