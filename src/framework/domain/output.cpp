@@ -247,6 +247,19 @@ namespace ntt {
 
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
   template <SimEngine::type S, class M>
+  void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
+                              array_t<real_t*>&     aphi_r,
+                              unsigned short        buff_idx,
+                              const Mesh<M>         mesh) {
+    Kokkos::parallel_for(
+      "AddVectorPotential",
+      mesh.rangeActiveCells(),
+      Lambda(index_t i1, index_t i2) {
+        buffer(i1, i2, buff_idx) += aphi_r(i1 - N_GHOSTS);
+      });
+  }
+
+  template <SimEngine::type S, class M>
   void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
     if constexpr (M::Dim == Dim::_2D) {
       auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -287,12 +300,7 @@ namespace ntt {
                      0,
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
-            Kokkos::parallel_for(
-              "AddVectorPotential",
-              local_domain->mesh.rangeActiveCells(),
-              Lambda(index_t i1, index_t i2) {
-                buffer(i1, i2, buff_idx) += aphi_r(i1 - N_GHOSTS);
-              });
+            ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
           }
         }
       }
