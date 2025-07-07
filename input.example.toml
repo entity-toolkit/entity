@@ -1,73 +1,72 @@
 [simulation]
-  # Name of the simulation:
+  # Name of the simulation
   #   @required
   #   @type: string
-  #   @example: "MySim"
-  #   @note: The name is used for the output files.
+  #   @note: The name is used for the output files
   name = ""
   # Simulation engine to use
   #   @required
   #   @type: string
-  #   @valid: "SRPIC", "GRPIC"
+  #   @enum: "SRPIC", "GRPIC"
   engine = ""
-  # Max runtime in physical (code) units:
+  # Max runtime in physical (code) units
   #   @required
-  #   @type: float: > 0
+  #   @type: float [> 0]
   #   @example: 1e5
   runtime = ""
 
   [simulation.domain]
     # Number of domains
-    #   @type int
-    #   @default: 1 (no MPI)
-    #   @default: MPI_SIZE (MPI)
+    #   @type: int
+    #   @default: 1 [no MPI]; MPI_SIZE [MPI]
     number = ""
-    # Decomposition of the domain (e.g., for MPI) in each of the directions
-    #   @type array of int of size 1, 2 or 3
-    #   @example: [2, 2, 2] (for a total of 8 domains)
+    # Decomposition of the domain (for MPI) in each of the directions
+    #   @type: array<int> [size 1 :->: 3]
     #   @default: [-1, -1, -1]
     #   @note: -1 means the code will determine the decomposition in the specific direction automatically
-    #   @note: automatic detection is either done by inference from # of MPI tasks, or by balancing the grid size on each domain
+    #   @note: Automatic detection is either done by inference from # of MPI tasks, or by balancing the grid size on each domain
+    #   @example: [2, 2, 2] (total of 8 domains)
     decomposition = ""
 
 [grid]
-  # Spatial resolution of the grid:
+  # Spatial resolution of the grid
   #   @required
-  #   @type: array of uint of size 1, 2 or 3
-  #   @example: [1024, 1024, 1024]
+  #   @type: array<uint> [size 1 :->: 3]
   #   @note: Dimensionality is inferred from the size of this array
+  #   @example: [1024, 1024, 1024]
   resolution = ""
-  # Physical extent of the grid:
+  # Physical extent of the grid
   #   @required
-  #   @type: 1/2/3-size array of float tuples, each of size 2
+  #   @type: array<tuple<float>> [size 1 :->: 3]
+  #   @note: For spherical geometry, only specify `[[rmin, rmax]]`, other values are set automatically
+  #   @note: For cartesian geometry, cell aspect ratio has to be 1: `dx=dy=dz`
   #   @example: [[0.0, 1.0], [-1.0, 1.0]]
-  #   @note: For spherical geometry, only specify [[rmin, rmax]], other values are set automatically
-  #   @note: For cartesian geometry, cell aspect ratio has to be 1, i.e., dx=dy=dz
   extent = ""
 
   # @inferred:
   # - dim
   #     @brief: Dimensionality of the grid
-  #     @type: short (1, 2, 3)
+  #     @type: short
+  #     @enum: 1, 2, 3
   #     @from: `grid.resolution`
 
   [grid.metric]
     # Metric on the grid
     #   @required
     #   @type: string
-    #   @valid: "Minkowski", "Spherical", "QSpherical", "Kerr_Schild", "QKerr_Schild", "Kerr_Schild_0"
+    #   @enum: "Minkowski", "Spherical", "QSpherical", "Kerr_Schild", "QKerr_Schild", "Kerr_Schild_0"
     metric = ""
-    # r0 paramter for the QSpherical metric, x1 = log(r-r0):
-    #   @type: float: -inf < ... < rmin
-    #   @default: 0.0 (e.g., x1 = log(r))
-    #   @note: negative values produce almost uniform grid in r
+    # `r0` paramter for the QSpherical metric `x1 = log(r-r0)`
+    #   @type: float [-inf -> rmin]
+    #   @default: 0.0
+    #   @note: Negative values produce almost uniform grid in r
     qsph_r0 = ""
-    # h paramter for the QSpherical metric, th = x2 + 2*h x2 (pi-2*x2)*(pi-x2)/pi^2:
-    #   @type: float: -1 < ... < 1
-    #   @default: 0.0 (e.g., x2 = th)
+    # `h` paramter for the QSpherical metric `th = x2 + 2*h x2 (pi-2*x2)*(pi-x2)/pi^2`
+    #   @type: float [-1 :->: 1]
+    #   @default: 0.0
     qsph_h = ""
-    # Spin parameter for the Kerr Schild metric:
-    #   @type: float: 0 < ... < 1
+    # Spin parameter for the Kerr Schild metric
+    #   @type: float [0 :-> 1]
     #   @default: 0.0
     ks_a = ""
 
@@ -75,7 +74,7 @@
     # - coord
     #     @brief: Coordinate system on the grid
     #     @type: string
-    #     @valid: "cartesian", "spherical", "qspherical"
+    #     @enum: "cartesian", "spherical", "qspherical"
     #     @from: `grid.metric.metric`
     # - ks_rh
     #     @brief: Size of the horizon for GR Kerr Schild
@@ -87,56 +86,56 @@
     #     @from: `grid.metric`
 
   [grid.boundaries]
-    # Boundary conditions for fields:
+    # Boundary conditions for fields
     #   @required
-    #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
-    #   @valid: "PERIODIC", "MATCH", "FIXED", "ATMOSPHERE", "CUSTOM", "HORIZON", "CONDUCTOR"
-    #   @example: [["CUSTOM", "MATCH"]] (for 2D spherical [[rmin, rmax]])
+    #   @type: array<tuple<string>> [size 1 :->: 3]
+    #   @enum: "PERIODIC", "MATCH", "FIXED", "ATMOSPHERE", "CUSTOM", "HORIZON", "CONDUCTOR"
     #   @note: When periodic in any of the directions, you should only set one value: [..., ["PERIODIC"], ...]
-    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]): [["ATMOSPHERE", "MATCH"]]
+    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ `[rmin, rmax]`): [["ATMOSPHERE", "MATCH"]]
     #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["MATCH"]]
+    #   @example: [["CUSTOM", "MATCH"]] (for 2D spherical `[[rmin, rmax]]`)
     fields = ""
-    # Boundary conditions for fields:
+    # Boundary conditions for fields
     #   @required
-    #   @type: 1/2/3-size array of string tuples, each of size 1 or 2
-    #   @valid: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "REFLECT", "HORIZON"
-    #   @example: [["PERIODIC"], ["PERIODIC"]]
+    #   @type: array<tuple<string>> [size 1 :->: 3]
+    #   @enum: "PERIODIC", "ABSORB", "ATMOSPHERE", "CUSTOM", "REFLECT", "HORIZON"
     #   @note: When periodic in any of the directions, you should only set one value [..., ["PERIODIC"], ...]
-    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ [rmin, rmax]) [["ATMOSPHERE", "ABSORB"]]
-    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ rmax): [["ABSORB"]]
+    #   @note: In spherical, bondaries in theta/phi are set automatically (only specify bc @ `[rmin, rmax]`) [["ATMOSPHERE", "ABSORB"]]
+    #   @note: In GR, the horizon boundary is set automatically (only specify bc @ `rmax`): [["ABSORB"]]
+    #   @example: [["PERIODIC"], ["PERIODIC"]]
     particles = ""
 
     [grid.boundaries.match]
-      # Size of the matching layer in each direction for fields in physical (code) units:
-      #   @type: float or array of tuples
+      # Size of the matching layer in each direction for fields in physical (code) units
+      #   @type: float | array<tuple<float>> 
       #   @default: 1% of the domain size (in shortest dimension)
-      #   @note: In spherical, this is the size of the layer in r from the outer wall
-      #   @example: ds = 1.5 (will set the same for all directions)
-      #   @example: ds = [[1.5], [2.0, 1.0], [1.1]] (will duplicate 1.5 for +/- x1 and 1.1 for +/- x3)
-      #   @example: ds = [[], [1.5], []] (will only set for x2)
+      #   @note: In spherical, this is the size of the layer in `r` from the outer wall
+      #   @example: `ds = 1.5` (will set the same for all directions)
+      #   @example: `ds = [[1.5], [2.0, 1.0], [1.1]]` (will duplicate 1.5 for +/- `x1` and 1.1 for +/- `x3`)
+      #   @example: `ds = [[], [1.5], []]` (will only set for x2)
       ds = ""
 
     [grid.boundaries.absorb]
-      # Size of the absorption layer for particles in physical (code) units:
+      # Size of the absorption layer for particles in physical (code) units
       #   @type: float
       #   @default: 1% of the domain size (in shortest dimension)
-      #   @note: In spherical, this is the size of the layer in r from the outer wall
+      #   @note: In spherical, this is the size of the layer in `r` from the outer wall
       #   @note: In cartesian, this is the same for all dimensions where applicable
       ds = ""
 
     [grid.boundaries.atmosphere]
-      # @required: if ATMOSPHERE is one of the boundaries
-      # Temperature of the atmosphere in units of m0 c^2
+      # Temperature of the atmosphere in units of `m0 c^2`
       #   @type: float
+      #   @note: [required] if `ATMOSPHERE` is one of the boundaries
       temperature = ""
-      # Peak number density of the atmosphere at base in units of n0
+      # Peak number density of the atmosphere at base in units of `n0`
       #   @type: float
       density = ""
       # Pressure scale-height in physical units
       #   @type: float
       height = ""
       # Species indices of particles that populate the atmosphere
-      #   @type: array of ints of size 2
+      #   @type: array<int> [size 2]
       species = ""
       # Distance from the edge to which the gravity is imposed in physical units
       #   @type: float
@@ -145,19 +144,20 @@
       ds = ""
 
       # @inferred:
-      # - g [= temperature / height]
+      # - g
       #     @brief: Acceleration due to imposed gravity
       #     @type: float
       #     @from: `grid.boundaries.atmosphere.temperature`, `grid.boundaries.atmosphere.height`
+      #     @value: `temperature / height`
 
 [scales]
-  # Fiducial larmor radius:
+  # Fiducial larmor radius
   #   @required
-  #   @type: float: > 0.0
+  #   @type: float [> 0.0]
   larmor0 = ""
-  # Fiducial plasma skin depth:
+  # Fiducial plasma skin depth
   #   @required
-  #   @type: float: > 0.0
+  #   @type: float [> 0.0]
   skindepth0 = ""
 
   # @inferred:
@@ -169,238 +169,252 @@
   #     @brief: fiducial elementary volume
   #     @type: float
   #     @from: `grid`
-  # - n0 [= ppc0 / V0]
+  # - n0
   #     @brief: Fiducial number density
   #     @type: float
   #     @from: `particles.ppc0`, `grid`
-  # - q0 [= 1 / (n0 * skindepth0^2)]
+  #     @value: `ppc0 / V0`
+  # - q0
   #     @brief: Fiducial elementary charge
   #     @type: float
   #     @from: `scales.skindepth0`, `scales.n0`
-  # - sigma0 [= (skindepth0 / larmor0)^2]
+  #     @value: `1 / (n0 * skindepth0^2)`
+  # - sigma0
   #     @brief: Fiducial magnetization parameter
   #     @type: float
   #     @from: `scales.larmor0`, `scales.skindepth0`
-  # - B0 [= 1 / larmor0]
+  #     @value: `(skindepth0 / larmor0)^2`
+  # - B0
   #     @brief: Fiducial magnetic field
   #     @type: float
   #     @from: `scales.larmor0`
-  # - omegaB0 [= 1 / larmor0]
+  #     @value: `1 / larmor0`
+  # - omegaB0
   #     @brief: Fiducial cyclotron frequency
   #     @type: float
   #     @from: `scales.larmor0`
+  #     @value: `1 / larmor0`
 
 [algorithms]
-  # Number of current smoothing passes:
-  #   @type: unsigned short: >= 0
+  # Number of current smoothing passes
+  #   @type: ushort [>= 0]
   #   @default: 0
   current_filters = ""
 
   [algorithms.toggles]
-    # Toggle for the field solver:
-    #   @type bool
+    # Toggle for the field solver
+    #   @type: bool
     #   @default: true
     fieldsolver = ""
-    # Toggle for the current deposition:
-    #   @type bool
+    # Toggle for the current deposition
+    #   @type: bool
     #   @default: true
     deposit = ""
 
   [algorithms.timestep]
-    # Courant-Friedrichs-Lewy number:
-    #   @type: float: 0.0 < ... < 1.0
+    # Courant-Friedrichs-Lewy number
+    #   @type: float [0.0 -> 1.0]
     #   @default: 0.95
-    #   @note: CFL number determines the timestep duration.
+    #   @note: CFL number determines the timestep duration
     CFL = ""
-    # Correction factor for the speed of light used in field solver:
-    #   @type: float: ~1
+    # Correction factor for the speed of light used in field solver
+    #   @type: float
     #   @default: 1.0
     correction = ""
 
     # @inferred:
-    # - dt [= CFL * dx0]
+    # - dt
     #     @brief: timestep duration
     #     @type: float
+    #     @from: `algorithms.timestep.CFL`, `scales.dx0`
+    #     @value: `CFL * dx0`
 
   [algorithms.gr]
-    # Stepsize for numerical differentiation in GR pusher:
-    #   @type: float: > 0
+    # Stepsize for numerical differentiation in GR pusher
+    #   @type: float [> 0.0]
     #   @default: 1e-6
     pusher_eps = ""
-    # Number of iterations for the Newton-Raphson method in GR pusher:
-    #   @type: unsigned short: > 0
+    # Number of iterations for the Newton-Raphson method in GR pusher
+    #   @type: ushort [> 0]
     #   @default: 10
     pusher_niter = ""
 
   [algorithms.gca]
-    # Maximum value for E/B allowed for GCA particles:
-    #   @type: float: 0.0 < ... < 1.0
+    # Maximum value for E/B allowed for GCA particles
+    #   @type: float [0.0 -> 1.0]
     #   @default: 0.9
     e_ovr_b_max = ""
-    # Maximum Larmor radius allowed for GCA particles (in physical units):
+    # Maximum Larmor radius allowed for GCA particles (in physical units)
     #   @type: float
     #   @default: 0.0
     #   @note: When `larmor_max` == 0, the limit is disabled
     larmor_max = ""
 
   [algorithms.synchrotron]
-    # Radiation reaction limit gamma-factor for synchrotron:
-    #   @required [if one of the species has `cooling = "synchrotron"`]
-    #   @type: float: > 0
+    # Radiation reaction limit gamma-factor for synchrotron
+    #   @type: float [> 0.0]
+    #   @default: 1.0
+    #   @note: [required] if one of the species has `cooling = "synchrotron"`
     gamma_rad = ""
 
 [particles]
-  # Fiducial number of particles per cell:
+  # Fiducial number of particles per cell
   #   @required
-  #   @type: float: > 0
+  #   @type: float [> 0.0]
   ppc0 = ""
-  # Toggle for using particle weights:
+  # Toggle for using particle weights
   #   @type: bool
   #   @default: false
   use_weights = ""
-  # Timesteps between particle re-sorting (removing dead particles):
-  #   @type: unsigned int
+  # Timesteps between particle re-sorting (removing dead particles)
+  #   @type: uint
   #   @default: 100
-  #   @note: set to 0 to disable re-sorting
+  #   @note: Set to 0 to disable re-sorting
   clear_interval = ""
 
   # @inferred:
   # - nspec
   #     @brief: Number of particle species
-  #     @type: unsigned int
-  #     @from: `particles.species`
-  # - species
-  #     @brief: An object containing information about all the species
-  #     @type: vector of ParticleSpecies
+  #     @type: uint
   #     @from: `particles.species`
 
   [[particles.species]]
-    # Label of the species:
+    # Label of the species
     #   @type: string
-    #   @default: "s*" (where "*" is the species index starting at 1)
+    #   @default: "s<INDEX>"
     #   @example: "e-"
+    #   @note: `<INDEX>` is the index of the species in the list starting from 1
     label = ""
-    # Mass of the species (in units of fiducial mass):
+    # Mass of the species (in units of fiducial mass)
     #   @required
-    #   @type: float
+    #   @type: float [>= 0.0]
     mass = ""
-    # Charge of the species (in units of fiducial charge):
+    # Charge of the species (in units of fiducial charge)
     #   @required
     #   @type: float
     charge = ""
-    # Maximum number of particles per task:
+    # Maximum number of particles per task
     #   @required
-    #   @type: unsigned int: > 0
+    #   @type: uint [> 0]
     maxnpart = ""
-    # Pusher algorithm for the species:
+    # Pusher algorithm for the species
     #   @type: string
-    #   @default: "Boris" for massive and "Photon" for massless
-    #   @valid: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
+    #   @default: "Boris" [massive]; "Photon" [massless]
+    #   @enum: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
     pusher = ""
-    # Number of additional (payload) variables for each particle of the given species:
-    #   @type: unsigned short
+    # Number of additional (payload) variables for each particle of the given species
+    #   @type: ushort
     #   @default: 0
     n_payloads = ""
-    # Radiation reaction to use for the species:
+    # Radiation reaction to use for the species
     #   @type: string
     #   @default: "None"
-    #   @valid: "None", "Synchrotron"
+    #   @enum: "None", "Synchrotron"
     cooling = ""
 
-# Parameters for specific problem generators and setups:
+# Parameters for specific problem generators and setups
 [setup]
 
 [output]
-  # Output format:
+  # Output format
   #   @type: string
-  #   @valid: "disabled", "hdf5", "BPFile"
   #   @default: "hdf5"
+  #   @enum: "disabled", "hdf5", "BPFile"
   format = ""
-  # Number of timesteps between all outputs (overriden by specific output interval below):
-  #   @type: unsigned int: > 0
+  # Number of timesteps between all outputs
+  #   @type: uint [> 0]
   #   @default: 1
+  #   @note: Value is overriden by output intervals for specific outputs
   interval = ""
-  # Physical (code) time interval between all outputs (overriden by specific output intervals below):
+  # Physical (code) time interval between all outputs
   #   @type: float
-  #   @default: -1.0 (disabled)
+  #   @default: -1.0
   #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+  #   @note: Value is overriden by output intervals for specific outputs
   interval_time = ""
-  # Whether to output each timestep into separate files:
+  # Whether to output each timestep into separate files
   #   @type: bool
   #   @default: true
+  #   @deprecated: starting v1.3.0
   separate_files = ""
 
   [output.fields]
-    # Toggle for the field output:
+    # Toggle for the field output
     #   @type: bool
     #   @default: true
     enable = ""
-    # Field quantities to output:
-    #   @type: array of strings
-    #   @valid: fields: "E", "B", "J", "divE"
-    #   @valid: moments: "Rho", "Charge", "N", "Nppc", "T0i", "Tij", "Vi"
-    #   @valid: for GR: "D", "H", "divD", "A"
+    # Field quantities to output
+    #   @type: array<string>
     #   @default: []
-    #   @note: For T, you can use unspecified indices, e.g., Tij, T0i, or specific ones, e.g., Ttt, T00, T02, T23
-    #   @note: For T, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
-    #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: e.g., Ttt_1_2, Rho_1, Rho_3_4
+    #   @enum: "E", "B", "J", "divE", "Rho", "Charge", "N", "Nppc", "T0i", "Tij", "Vi", "D", "H", "divD", "A"
+    #   @note: For `T`, you can use unspecified indices: `Tij`, `T0i`, or specific ones: `Ttt`, `T00`, `T02`, `T23`
+    #   @note: For `T`, in cartesian can also use "x" "y" "z" instead of "1" "2" "3"
+    #   @note: By default, we accumulate moments from all massive species, one can specify only specific species: `Ttt_1_2`, `Rho_1`, `Rho_3_4`
     quantities = ""
-    # Custom (user-defined) field quantities:
-    #   @type: array of strings
+    # Custom (user-defined) field quantities
+    #   @type: array<string>
     #   @default: []
     custom = ""
-    # Smoothing window for the output of moments (e.g., "Rho", "Charge", "T", etc.):
-    #   @type: unsigned short
+    # Smoothing window for the output of moments ("Rho", "Charge", "T", ...)
+    #   @type: ushort
     #   @default: 0
     mom_smooth = ""
-    # Number of timesteps between field outputs (overrides `output.interval`):
-    #   @type: unsigned int
-    #   @default: 0 (use `output.interval`)
+    # Number of timesteps between field outputs
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0`, `output.interval` is used
     interval = ""
-    # Physical (code) time interval between field outputs (overrides `output.interval_time`):
+    # Physical (code) time interval between field outputs
     #   @type: float
-    #   @default: -1.0 (use `output.interval_time`)
-    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
+    #   @note: When specified, overrides `output.interval_time`
     interval_time = ""
-    # Downsample factor for the output of fields:
-    #   @type: array of unsigned int >= 1
+    # Downsample factor for the output of fields
+    #   @type: uint | array<uint> [>= 1]
     #   @default: [1, 1, 1]
     #   @note: The output is downsampled by the given factors in each direction
+    #   @note: If a scalar is given, it is applied to all directions
     downsampling = ""
 
   [output.particles]
-    # Toggle for the particles output:
+    # Toggle for the particles output
     #   @type: bool
     #   @default: true
     enable = ""
-    # Particle species indices to output:
-    #   @type: array of ints
-    #   @default: [] = all species
+    # Particle species indices to output
+    #   @type: array<int>
+    #   @default: []
+    #   @note: If empty, all species are output
     species = ""
-    # Stride for the output of particles:
-    #   @type: unsigned int: > 1
+    # Stride for the output of particles
+    #   @type: uint [> 1]
     #   @default: 100
     stride = ""
-    # Number of timesteps between particle outputs (overrides `output.interval`):
-    #   @type: unsigned int: > 0
-    #   @default: 0 (use `output.interval`)
+    # Number of timesteps between particle outputs
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0`, `output.interval` is used
     interval = ""
-    # Physical (code) time interval between field outputs (overrides `output.interval_time`):
+    # Physical (code) time interval between particle outputs
     #   @type: float
-    #   @default: -1.0 (use `output.interval_time`)
-    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
+    #   @note: When specified, overrides `output.interval_time`
     interval_time = ""
 
   [output.spectra]
-    # Toggle for the spectra output:
+    # Toggle for the spectra output
     #   @type: bool
     #   @default: true
     enable = ""
-    # Minimum energy for the spectra output:
+    # Minimum energy for the spectra output
     #   @type: float
     #   @default: 1e-3
     e_min = ""
-    # Maximum energy for the spectra output:
+    # Maximum energy for the spectra output
     #   @type: float
     #   @default: 1e3
     e_max = ""
@@ -408,67 +422,70 @@
     #   @type: bool
     #   @default: true
     log_bins = ""
-    # Number of bins for the spectra output:
-    #   @type: unsigned int: > 0
+    # Number of bins for the spectra output
+    #   @type: uint [> 0]
     #   @default: 200
     n_bins = ""
-    # Number of timesteps between spectra outputs (overrides `output.interval`):
-    #   @type: unsigned int: > 0
-    #   @default: 0 (use `output.interval`)
+    # Number of timesteps between spectra outputs
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0`, `output.interval` is used
     interval = ""
-    # Physical (code) time interval between spectra outputs (overrides `output.interval_time`):
+    # Physical (code) time interval between spectra outputs
     #   @type: float
-    #   @default: -1.0 (use `output.interval_time`)
-    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
+    #   @note: When specified, overrides `output.interval_time`
     interval_time = ""
 
   [output.debug]
-    # Output fields "as is" without conversions:
+    # Output fields "as is" without conversions
     #   @type: bool
     #   @default: false
     as_is = ""
-    # Output fields with values in ghost cells:
+    # Output fields with values in ghost cells
     #   @type: bool
     #   @default: false
     ghosts = ""
 
   [output.stats]
-    # Toggle for the stats output:
+    # Toggle for the stats output
     #   @type: bool
     #   @default: true
     enable = ""
-    # Number of timesteps between stat outputs (overriden if `output.stats.interval_time != -1`):
-    #   @type: unsigned int: > 0
+    # Number of timesteps between stat outputs
+    #   @type: uint [> 0]
     #   @default: 100
+    #   @note: Overriden if `output.stats.interval_time != -1`
     interval = ""
-    # Physical (code) time interval between stat outputs:
+    # Physical (code) time interval between stat outputs
     #   @type: float
-    #   @default: -1.0 (use `output.stats.interval_time`)
-    #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
     interval_time = ""
-    # Field quantities to output:
-    #   @type: array of strings
-    #   @valid: fields: "B^2", "E^2", "ExB"
-    #   @valid: moments: "N", "Charge", "Rho", "T00", "T0i", "Tij"
+    # Field quantities to output
+    #   @type: array<string>
     #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
+    #   @enum: "B^2", "E^2", "ExB", "N", "Charge", "Rho", "T00", "T0i", "Tij"
     #   @note: Same notation as for `output.fields.quantities`
     quantities = ""
-    # Custom (user-defined) stats:
-    #   @type: array of strings
+    # Custom (user-defined) stats
+    #   @type: array<string>
     #   @default: []
     custom = ""
 
 [checkpoint]
-  # Number of timesteps between checkpoints:
-  #   @type: unsigned int: > 0
+  # Number of timesteps between checkpoints
+  #   @type: uint [> 0]
   #   @default: 1000
   interval = ""
-  # Physical (code) time interval between checkpoints:
-  #   @type: float: > 0
-  #   @default: -1.0 (disabled)
-  #   @note: When `interval_time` < 0, the output is controlled by `interval`, otherwise by `interval_time`
+  # Physical (code) time interval between checkpoints
+  #   @type: float [> 0]
+  #   @default: -1.0
+  #   @note: When `< 0`, the output is controlled by `interval`
   interval_time = ""
-  # Number of checkpoints to keep:
+  # Number of checkpoints to keep
   #   @type: int
   #   @default: 2
   #   @note: 0 = disable checkpointing
@@ -476,21 +493,19 @@
   keep = ""
   # Write a checkpoint once after a fixed walltime 
   #   @type: string
-  #   @default: "00:00:00" (disabled)
+  #   @default: "00:00:00"
   #   @note: The format is "HH:MM:SS"
-  #   @note: Useful for long-running simulations to ensure that ...
-  #   @note: ... the simulation can be resumed after allocation expires
-  #   @note: Empty string means disables this (still writes checkpoints on interval)
-  #   @note: This does not exit the simulation
+  #   @note: Empty string or "00:00:00" disables this functionality
+  #   @note: Writing checkpoint at walltime does not stop the simulation
   walltime = ""
   # Parent directory to write checkpoints to
   #   @type: string
-  #   @default: "<simname>.ckpt"
+  #   @default: `<simname>.ckpt`
   #   @note: The directory is created if it does not exist
   write_path = ""
   # Parent directory to use when resuming from a checkpoint
   #   @type: string
-  #   @default: inherits from `write_path`
+  #   @default: inherit `write_path`
   read_path = ""
 
   # @inferred:
@@ -500,7 +515,7 @@
   #     @from: command-line flag
   # - start_step
   #     @brief: Timestep of the checkpoint used to resume
-  #     @type: unsigned int
+  #     @type: uint
   #     @from: automatically determined during restart
   # - start_time
   #     @brief: Time of the checkpoint used to resume
@@ -508,11 +523,11 @@
   #     @from: automatically determined during restart
 
 [diagnostics]
-  # Number of timesteps between diagnostic logs:
-  #   @type: int: > 0
+  # Number of timesteps between diagnostic logs
+  #   @type: int [> 0]
   #   @default: 1
   interval = ""
-  # Blocking timers between successive algorithms:
+  # Blocking timers between successive algorithms
   #   @type: bool
   #   @default: false
   blocking_timers = ""
@@ -520,9 +535,9 @@
   #   @type: bool
   #   @default: true
   colored_stdout = ""
-  # Specify the log level:
+  # Specify the log level
   #   @type: string
-  #   @valid: "VERBOSE", "WARNING", "ERROR"
   #   @default: "VERBOSE"
-  #   @note: VERBOSE prints all messages, WARNING prints only warnings and errors, ERROR prints only errors
+  #   @enum: "VERBOSE", "WARNING", "ERROR"
+  #   @note: "VERBOSE" prints all messages, "WARNING" prints only warnings and errors, "ERROR" prints only errors
   log_level = ""

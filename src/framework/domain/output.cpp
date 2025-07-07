@@ -24,7 +24,6 @@
 #include "kernels/prtls_to_phys.hpp"
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
