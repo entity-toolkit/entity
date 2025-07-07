@@ -24,6 +24,7 @@
 #include "kernels/prtls_to_phys.hpp"
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
@@ -32,7 +33,6 @@
 #endif // MPI_ENABLED
 
 #include <algorithm>
-#include <filesystem>
 #include <iterator>
 #include <vector>
 
@@ -193,26 +193,66 @@ namespace ntt {
                               unsigned short        buff_idx,
                               const Mesh<M>         mesh) {
     if constexpr (M::Dim == Dim::_2D) {
-      const auto i2_min = mesh.i_min(in::x2);
-      // !TODO: this is quite slow
+      using TeamPolicy = Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>;
+      const auto nx1   = mesh.n_active(in::x1);
+      const auto nx2   = mesh.n_active(in::x2);
+
+      TeamPolicy policy(nx1, Kokkos::AUTO);
+
       Kokkos::parallel_for(
         "ComputeVectorPotential",
-        mesh.rangeActiveCells(),
-        Lambda(index_t i, index_t j) {
-          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - (N_GHOSTS)) };
-          const auto   k_min = (i2_min - (N_GHOSTS)) + 1;
-          const auto   k_max = (j - (N_GHOSTS));
-          real_t       A3    = ZERO;
-          for (auto k { k_min }; k <= k_max; ++k) {
-            real_t k_ = static_cast<real_t>(k);
-            real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i_, k_ - HALF }) };
-            real_t sqrt_detH_ij2 { mesh.metric.sqrt_det_h({ i_, k_ + HALF }) };
-            auto   k1 { k + N_GHOSTS };
-            A3 += HALF * (sqrt_detH_ij1 * EM(i, k1 - 1, em::bx1) +
-                          sqrt_detH_ij2 * EM(i, k1, em::bx1));
-          }
-          buffer(i, j, buff_idx) = A3;
+        policy,
+        Lambda(const TeamPolicy::member_type& team_member) {
+          index_t i1 = team_member.league_rank();
+          Kokkos::parallel_scan(
+            Kokkos::TeamThreadRange(team_member, nx2),
+            [=](index_t i2, real_t& update, const bool final_pass) {
+              const auto i1_ { static_cast<real_t>(i1) };
+              const auto i2_ { static_cast<real_t>(i2) };
+              real_t sqrt_detH_ijM { mesh.metric.sqrt_det_h({ i1_, i2_ - HALF }) };
+              real_t sqrt_detH_ijP { mesh.metric.sqrt_det_h({ i1_, i2_ + HALF }) };
+              const auto input_val =
+                HALF *
+                (sqrt_detH_ijM * EM(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, em::bx1) +
+                 sqrt_detH_ijP * EM(i1 + N_GHOSTS, i2 + N_GHOSTS, em::bx1));
+              if (final_pass) {
+                buffer(i1 + N_GHOSTS, i2 + N_GHOSTS, buff_idx) = update;
+              }
+              update += input_val;
+            });
         });
+
+#if defined(MPI_ENABLED)
+      array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+      Kokkos::deep_copy(aphi_r,
+                        Kokkos::subview(buffer,
+                                        std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
+                                        N_GHOSTS + nx2 - 1,
+                                        buff_idx));
+#endif
+
+      // !TODO: this is quite slow
+      // Kokkos::parallel_for(
+      //   "ComputeVectorPotential",
+      //   mesh.rangeActiveCells(),
+      //   Lambda(index_t i1, index_t i2) {
+      //     const real_t i1_ { COORD(i1) };
+      //     // const auto   k_min = (i2_min - (N_GHOSTS)) + 1;
+      //     // const auto   k_max = (j - (N_GHOSTS));
+      //     // real_t       A3    = ZERO;
+      //     // for (auto k { k_min }; k <= k_max; ++k) {
+      //     //   real_t k_ = static_cast<real_t>(k);
+      //     //   real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i_, k_ - HALF }) };
+      //     //   real_t sqrt_detH_ij2 { mesh.metric.sqrt_det_h({ i_, k_ + HALF }) };
+      //     //   auto   k1 { k + N_GHOSTS };
+      //     //   A3 += HALF * (sqrt_detH_ij1 * EM(i, k1 - 1, em::bx1) +
+      //     //                 sqrt_detH_ij2 * EM(i, k1, em::bx1));
+      //     // }
+      //     buffer(i1, i2, buff_idx) = HALF *
+      //                                (sqrt_detH_ij1 * EM(i, k1 - 1, em::bx1) +
+      //                                 sqrt_detH_ij2 * EM(i, k1, em::bx1));
+      //   });
+      // buffer(:, i2_max - 1)
     } else {
       raise::KernelError(
         HERE,
@@ -434,8 +474,9 @@ namespace ntt {
                                            c,
                                            local_domain->mesh);
             } else {
-              raise::Error("Vector potential can only be computed for GRPIC in 2D",
-                           HERE);
+              raise::Error(
+                "Vector potential can only be computed for GRPIC in 2D",
+                HERE);
             }
           } else {
             raise::Error("Wrong # of components requested for "
