@@ -39,6 +39,7 @@ namespace metric {
     const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
+    const bool   small_angle;
 
     Inline auto Delta(const real_t& r) const -> real_t {
       return SQR(r) - TWO * r + SQR(a);
@@ -89,7 +90,8 @@ namespace metric {
       , dphi { (x3_max - phi_min) / nx3 }
       , dchi_inv { ONE / dchi }
       , deta_inv { ONE / deta }
-      , dphi_inv { ONE / dphi } {
+      , dphi_inv { ONE / dphi }
+      , small_angle { eta2theta(HALF * deta) < constant::SMALL_ANGLE } {
       set_dxMin(find_dxMin());
     }
 
@@ -484,12 +486,25 @@ namespace metric {
      * @param x1 radial coordinate along the axis (code units)
      */
     Inline auto polar_area(const real_t& x1) const -> real_t {
-      return dchi * math::exp(x1 * dchi + chi_min) *
-             (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
-             math::sqrt(
-               ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
-                       (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
-             (ONE - math::cos(eta2theta(HALF * deta)));
+      if constexpr (D != Dim::_1D) {
+        if (small_angle) {
+          const real_t dtheta = eta2theta(HALF * deta);
+          return dchi * math::exp(x1 * dchi + chi_min) *
+                (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
+                math::sqrt(
+                  ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
+                          (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
+                (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
+                 static_cast<real_t>(384);
+        } else {
+          return dchi * math::exp(x1 * dchi + chi_min) *
+                (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
+                math::sqrt(
+                  ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
+                          (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
+                (ONE - math::cos(eta2theta(HALF * deta)));
+        }
+      }
     }
 
     /**
