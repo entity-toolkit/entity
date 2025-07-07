@@ -261,6 +261,9 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
+  #if defined(MPI_ENABLED)
+    void CommunicateVectorPotential(unsigned short);
+  #endif
 #endif
 
 #if defined(MPI_ENABLED)
