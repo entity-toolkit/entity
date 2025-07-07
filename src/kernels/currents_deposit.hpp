@@ -232,7 +232,7 @@ namespace kernel {
                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * (ONE - Wx2_1);
           J_acc(i1_prev(p) + N_GHOSTS + 1,
                 i2_prev(p) + N_GHOSTS,
-                cur::jx3) += Fx3_1 * Wx1_2 * (ONE - Wx2_1);
+                cur::jx3) += Fx3_1 * Wx1_1 * (ONE - Wx2_1);
           J_acc(i1_prev(p) + N_GHOSTS,
                 i2_prev(p) + N_GHOSTS + 1,
                 cur::jx3) += Fx3_1 * (ONE - Wx1_1) * Wx2_1;
