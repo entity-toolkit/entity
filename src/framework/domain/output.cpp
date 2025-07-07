@@ -220,12 +220,13 @@ namespace ntt {
       //         update += input_val;
       //       });
       //   });
+      // TODO: this is slow
       Kokkos::parallel_for(
         "ComputeVectorPotential",
         mesh.rangeActiveCells(),
         Lambda(index_t i1, index_t i2) {
           const real_t   i1_ { COORD(i1) };
-          const ncells_t k_min = 1;
+          const ncells_t k_min = 0;
           const ncells_t k_max = (i2 - (N_GHOSTS));
           real_t         A3    = ZERO;
           for (auto k { k_min }; k <= k_max; ++k) {
@@ -233,8 +234,8 @@ namespace ntt {
             real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i1_, k_ - HALF }) };
             real_t sqrt_detH_ij2 { mesh.metric.sqrt_det_h({ i1_, k_ + HALF }) };
             auto   k1 { k + N_GHOSTS };
-            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k - 1, em::bx1) +
-                          sqrt_detH_ij2 * EM(i1, k, em::bx1));
+            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k + N_GHOSTS - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i1, k + N_GHOSTS, em::bx1));
           }
           buffer(i1, i2, buff_idx) = A3;
         });
