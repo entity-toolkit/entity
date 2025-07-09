@@ -40,17 +40,6 @@ namespace arch {
 
     EnergyDistribution(const M& metric) : metric { metric } {}
 
-    // Takes the physical coordinate of the particle and returns
-    //   the velocity in tetrad basis
-    // last argument -- is the species index (1, ..., nspec)
-    Inline virtual void operator()(const coord_t<D>&,
-                                   vec_t<Dim::_3D>& v,
-                                   spidx_t = 0) const {
-      v[0] = ZERO;
-      v[1] = ZERO;
-      v[2] = ZERO;
-    }
-
   protected:
     const M metric;
   };
@@ -61,7 +50,8 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
-                           spidx_t = 0) const override {
+                           spidx_t = 0) const {
+
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
@@ -85,7 +75,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
-                           spidx_t = 0) const override {
+                           spidx_t = 0) const {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -241,7 +231,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
-                           spidx_t          sp = 0) const override {
+                           spidx_t          sp = 0) const {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(v,
                                                            pool,
                                                            temperature,
@@ -293,7 +283,7 @@ namespace arch {
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
-                           spidx_t          sp = 0) const override {
+                           spidx_t          sp = 0) const {
       SampleFromMaxwellian<S, M::CoordType == Coord::Cart>(
         v,
         pool,
@@ -367,7 +357,7 @@ namespace arch {
 
       Inline void operator()(const coord_t<M::Dim>& x_Code,
                              vec_t<Dim::_3D>&       v,
-                             spidx_t = 0) const override {
+                             spidx_t = 0) const {
         if (cmp::AlmostZero(temperature)) {
           v[0] = ZERO;
           v[1] = ZERO;

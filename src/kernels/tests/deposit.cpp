@@ -32,8 +32,8 @@ const real_t eps = std::is_same_v<real_t, double> ? (real_t)(1e-6)
 
 Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
   if ((a - b) >= eps * math::max(math::fabs(a), math::fabs(b))) {
-    printf("%.12e != %.12e %s\n", a, b, msg);
-    printf("%.12e >= %.12e %s\n",
+    Kokkos::printf("%.12e != %.12e %s\n", a, b, msg);
+    Kokkos::printf("%.12e >= %.12e %s\n",
            a - b,
            eps * math::max(math::fabs(a), math::fabs(b)),
            msg);

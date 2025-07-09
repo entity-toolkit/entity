@@ -101,12 +101,12 @@ namespace raise {
                           const char* func,
                           int         line,
                           const char* msg) {
-    printf("\n%s:%d @ %s\nError: %s", file, line, func, msg);
+    Kokkos::printf("\n%s:%d @ %s\nError: %s", file, line, func, msg);
     Kokkos::abort("kernel error");
   }
 
   Inline void KernelNotImplementedError(const char* file, const char* func, int line) {
-    printf("\n%s:%d @ %s\n", file, line, func);
+    Kokkos::printf("\n%s:%d @ %s\n", file, line, func);
     Kokkos::abort("kernel not implemented");
   }
 

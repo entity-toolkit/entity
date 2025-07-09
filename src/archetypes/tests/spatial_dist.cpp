@@ -76,7 +76,7 @@ struct RadialDist : public SpatialDistribution<S, M> {
 
   RadialDist(const M& metric) : SpatialDistribution<S, M> { metric } {}
 
-  Inline auto operator()(const coord_t<M::Dim>& x_Code) const -> real_t override {
+  auto operator()(const coord_t<M::Dim>& x_Code) const -> real_t {
     coord_t<M::Dim> x_Sph { ZERO };
     metric.template convert<Crd::Cd, Crd::Sph>(x_Code, x_Sph);
     auto r { ZERO };
