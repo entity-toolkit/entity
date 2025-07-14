@@ -678,6 +678,20 @@ namespace kernel::gr {
       xp[0] = i_di_to_Xi(i1(p), dx1(p));
       xp[1] = i_di_to_Xi(i2(p), dx2(p));
 
+      coord_t<Dim::_2D> xp_ { ZERO };
+      xp_[0] = xp[0];
+      xp_[1] = xp[1];
+      real_t theta_Cd { xp[1] };
+      const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(theta_Cd) };
+      const real_t small_angle { constant::SMALL_ANGLE_GR };
+      const auto large_angle { constant::PI - small_angle };
+      if (theta_Ph < small_angle) {
+        theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
+      } else if (theta_Ph >= large_angle) {
+        theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(large_angle);
+      }
+      xp_[1] = theta_Cd;
+
       vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
       interpolateFields(p, Dp_cntrv, Bp_cntrv);
@@ -694,7 +708,7 @@ namespace kernel::gr {
       vp[0] = vp_upd[0];
       vp[1] = vp_upd[1];
       vp[2] = vp_upd[2];
-      GeodesicMomentumPush<Massive_t>(Massive_t {}, xp, vp, vp_upd);
+      GeodesicMomentumPush<Massive_t>(Massive_t {}, xp_, vp, vp_upd);
       /* u**_i(n) -> u_i(n + 1/2) */
       vp[0] = vp_upd[0];
       vp[1] = vp_upd[1];
