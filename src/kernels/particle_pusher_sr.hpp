@@ -475,7 +475,7 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      // getInterpFlds(p, ei, bi);
+      //getInterpFlds(p, ei, bi);
       //  ToDo: Better way to call this
       getInterpFlds2nd(p, ei, bi);
 
@@ -1161,14 +1161,6 @@ namespace kernel::sr {
         const auto dx1_ { static_cast<real_t>(dx1(p)) };
         const auto dx2_ { static_cast<real_t>(dx2(p)) };
 
-        const int  dx1_less_half = static_cast<int>(dx1_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx1_center    = static_cast<real_t>(dx1_less_half) - dx1_;
-
-        const int  dx2_less_half = static_cast<int>(dx2_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx2_center    = static_cast<real_t>(dx2_less_half) - dx2_;
-
         // direct interpolation of staggered grid
         // primal = i+ind, dual = i
         const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
@@ -1176,12 +1168,14 @@ namespace kernel::sr {
 
         // Compute weights for second-order interpolation
         // primal
-        const auto w0px = HALF * SQR(HALF + dx1_center);
-        const auto w1px = static_cast<real_t>(0.75) - SQR(dx1_center);
-        const auto w2px = HALF * SQR(HALF - dx1_center);
-        const auto w0py = HALF * SQR(HALF + dx2_center);
-        const auto w1py = static_cast<real_t>(0.75) - SQR(dx2_center);
-        const auto w2py = HALF * SQR(HALF - dx2_center);
+        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1px = static_cast<real_t>(0.75) -
+                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2px = ONE - w0px - w1px;
+        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
+        const auto w1py = static_cast<real_t>(0.75) -
+                          SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w2py = ONE - w0py - w1py;
 
         // dual
         const auto w0dx = HALF * SQR(ONE - dx1_);
