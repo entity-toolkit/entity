@@ -130,7 +130,7 @@ namespace kernel {
           metric.template transform<Idx::D, Idx::U>(xp,
                                                     { ux1(p), ux2(p), ux3(p) },
                                                     vp);
-          inv_energy = metric.alpha(xp_) / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
+          inv_energy = metric.alpha(xp) / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
                                         ux3(p) * vp[2]);
         }
         if (Kokkos::isnan(vp[2]) || Kokkos::isinf(vp[2])) {
