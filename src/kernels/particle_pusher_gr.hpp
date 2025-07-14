@@ -680,7 +680,6 @@ namespace kernel::gr {
 
       coord_t<Dim::_2D> xp_ { ZERO };
       xp_[0] = xp[0];
-      xp_[1] = xp[1];
       real_t theta_Cd { xp[1] };
       const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(theta_Cd) };
       const real_t small_angle { constant::SMALL_ANGLE_GR };
