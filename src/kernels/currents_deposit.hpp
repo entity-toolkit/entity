@@ -127,10 +127,22 @@ namespace kernel {
                                                           vp);
           inv_energy = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
         } else {
-          metric.template transform<Idx::D, Idx::U>(xp,
+          coord_t<Dim::_2D> xp_ { ZERO };
+          xp_[0] = xp[0];
+          real_t theta_Cd { xp[1] };
+          const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(theta_Cd) };
+          const real_t small_angle { constant::SMALL_ANGLE_GR };
+          const auto large_angle { constant::PI - small_angle };
+          if (theta_Ph < small_angle) {
+            theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
+          } else if (theta_Ph >= large_angle) {
+            theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(large_angle);
+          }
+          xp_[1] = theta_Cd;
+          metric.template transform<Idx::D, Idx::U>(xp_,
                                                     { ux1(p), ux2(p), ux3(p) },
                                                     vp);
-          inv_energy = metric.alpha(xp) / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
+          inv_energy = metric.alpha(xp_) / math::sqrt(ONE + ux1(p) * vp[0] + ux2(p) * vp[1] +
                                         ux3(p) * vp[2]);
         }
         if (Kokkos::isnan(vp[2]) || Kokkos::isinf(vp[2])) {
