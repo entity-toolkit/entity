@@ -13,6 +13,7 @@ let
       rocm-core
       clr
       rocthrust
+      llvm.rocm-merged-llvm
       rocprim
       rocminfo
       rocm-smi
