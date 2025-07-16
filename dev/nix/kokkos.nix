@@ -10,20 +10,22 @@ let
   pversion = "4.6.01";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
+      llvm.rocm-merged-llvm
       rocm-core
       clr
       rocthrust
-      llvm.rocm-merged-llvm
       rocprim
       rocminfo
       rocm-smi
     ];
     "CUDA" = with pkgs.cudaPackages; [
+      llvmPackages_18.clang-tools
       cudatoolkit
       cuda_cudart
       pkgs.gcc13
     ];
     "NONE" = [
+      pkgs.llvmPackages_18.clang-tools
       pkgs.gcc13
     ];
   };
@@ -37,9 +39,7 @@ let
     "HIP" = [
       "-D Kokkos_ENABLE_HIP=ON"
       "-D Kokkos_ARCH_${getArch { }}=ON"
-      # remove leading AMD_
       "-D AMDGPU_TARGETS=${builtins.replaceStrings [ "amd_" ] [ "" ] (pkgs.lib.toLower (getArch { }))}"
-      "-D CMAKE_C_COMPILER=hipcc"
       "-D CMAKE_CXX_COMPILER=hipcc"
     ];
     "CUDA" = [

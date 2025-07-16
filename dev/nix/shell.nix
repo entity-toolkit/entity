@@ -42,9 +42,6 @@ pkgs.mkShell {
     zlib
     cmake
 
-    llvmPackages_18.clang-tools
-    libgcc
-
     adios2Pkg
     kokkosPkg
 
