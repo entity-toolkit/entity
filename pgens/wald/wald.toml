@@ -38,6 +38,7 @@
   ppc0 = 2.0
 
 [setup]
+  init_field = "wald" # or "vertical"
 
 [output]
   format = "hdf5"
