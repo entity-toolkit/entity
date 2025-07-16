@@ -192,32 +192,129 @@ namespace ntt {
                               unsigned short        buff_idx,
                               const Mesh<M>         mesh) {
     if constexpr (M::Dim == Dim::_2D) {
-      const auto i2_min = mesh.i_min(in::x2);
-      // !TODO: this is quite slow
+      const auto metric = mesh.metric;
       Kokkos::parallel_for(
         "ComputeVectorPotential",
         mesh.rangeActiveCells(),
-        Lambda(index_t i, index_t j) {
-          const real_t i_ { static_cast<real_t>(static_cast<int>(i) - (N_GHOSTS)) };
-          const auto k_min = (i2_min - (N_GHOSTS)) + 1;
-          const auto k_max = (j - (N_GHOSTS));
-          real_t     A3    = ZERO;
+        Lambda(index_t i1, index_t i2) {
+          const real_t   i1_ { COORD(i1) };
+          const ncells_t k_min = 0;
+          const ncells_t k_max = (i2 - (N_GHOSTS));
+          real_t         A3    = ZERO;
           for (auto k { k_min }; k <= k_max; ++k) {
             real_t k_ = static_cast<real_t>(k);
-            real_t sqrt_detH_ij1 { mesh.metric.sqrt_det_h({ i_, k_ - HALF }) };
-            real_t sqrt_detH_ij2 { mesh.metric.sqrt_det_h({ i_, k_ + HALF }) };
+            real_t sqrt_detH_ij1 { metric.sqrt_det_h({ i1_, k_ - HALF }) };
+            real_t sqrt_detH_ij2 { metric.sqrt_det_h({ i1_, k_ + HALF }) };
             auto   k1 { k + N_GHOSTS };
-            A3 += HALF * (sqrt_detH_ij1 * EM(i, k1 - 1, em::bx1) +
-                          sqrt_detH_ij2 * EM(i, k1, em::bx1));
+            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k + N_GHOSTS - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i1, k + N_GHOSTS, em::bx1));
           }
-          buffer(i, j, buff_idx) = A3;
+          buffer(i1, i2, buff_idx) = A3;
         });
+
+      // @TODO: Implementation with team policies works on AMD, but not on NVIDIA GPUs
+      //
+      // using TeamPolicy = Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>;
+      // const auto nx1   = mesh.n_active(in::x1);
+      // const auto nx2   = mesh.n_active(in::x2);
+      //
+      // TeamPolicy policy(nx1, Kokkos::AUTO);
+      //
+      // Kokkos::parallel_for(
+      //   "ComputeVectorPotential",
+      //   policy,
+      //   Lambda(const TeamPolicy::member_type& team_member) {
+      //     index_t i1 = team_member.league_rank();
+      //     Kokkos::parallel_scan(
+      //       Kokkos::TeamThreadRange(team_member, nx2),
+      //       [=](index_t i2, real_t& update, const bool final_pass) {
+      //         const auto i1_ { static_cast<real_t>(i1) };
+      //         const auto i2_ { static_cast<real_t>(i2) };
+      //         const real_t sqrt_detH_ijM { metric.sqrt_det_h({ i1_, i2_ - HALF }) };
+      //         const real_t sqrt_detH_ijP { metric.sqrt_det_h({ i1_, i2_ + HALF }) };
+      //         const auto input_val =
+      //           HALF *
+      //           (sqrt_detH_ijM * EM(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, em::bx1) +
+      //            sqrt_detH_ijP * EM(i1 + N_GHOSTS, i2 + N_GHOSTS, em::bx1));
+      //         if (final_pass) {
+      //           buffer(i1 + N_GHOSTS, i2 + N_GHOSTS, buff_idx) = update;
+      //         }
+      //         update += input_val;
+      //       });
+      //   });
     } else {
       raise::KernelError(
         HERE,
         "ComputeVectorPotential: 2D implementation called for D != 2");
     }
   }
+
+#if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
+  template <SimEngine::type S, class M>
+  void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
+                              array_t<real_t*>&     aphi_r,
+                              unsigned short        buff_idx,
+                              const Mesh<M>         mesh) {
+    Kokkos::parallel_for(
+      "AddVectorPotential",
+      mesh.rangeActiveCells(),
+      Lambda(index_t i1, index_t i2) {
+        buffer(i1, i2, buff_idx) += aphi_r(i1 - N_GHOSTS);
+      });
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
+    if constexpr (M::Dim == Dim::_2D) {
+      auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
+      const auto nx1          = local_domain->mesh.n_active(in::x1);
+      const auto nx2          = local_domain->mesh.n_active(in::x2);
+
+      auto& buffer = local_domain->fields.bckp;
+
+      const auto nranks_x1 = ndomains_per_dim()[0];
+      const auto nranks_x2 = ndomains_per_dim()[1];
+
+      for (auto nr2 { 1u }; nr2 < nranks_x2; ++nr2) {
+        const auto rank_send_pre = (nr2 - 1u) * nranks_x1;
+        const auto rank_recv_pre = nr2 * nranks_x1;
+        for (auto nr1 { 0u }; nr1 < nranks_x1; ++nr1) {
+          const auto rank_send = rank_send_pre + nr1;
+          const auto rank_recv = rank_recv_pre + nr1;
+          if (local_domain->mpi_rank() == rank_send) {
+            array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+            Kokkos::deep_copy(
+              aphi_r,
+              Kokkos::subview(buffer,
+                              std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
+                              N_GHOSTS + nx2 - 1,
+                              buff_idx));
+            MPI_Send(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_recv,
+                     0,
+                     MPI_COMM_WORLD);
+          } else if (local_domain->mpi_rank() == rank_recv) {
+            array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+            MPI_Recv(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_send,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+            ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
+          }
+        }
+      }
+    } else {
+      raise::Error("CommunicateVectorPotential: comm vector potential only "
+                   "possible for 2D",
+                   HERE);
+    }
+  }
+#endif
 
   template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
@@ -426,12 +523,15 @@ namespace ntt {
                            HERE);
             }
           } else if (fld.is_vpotential()) {
-            if (S == SimEngine::GRPIC && M::Dim == Dim::_2D) {
+            if constexpr (S == SimEngine::GRPIC && M::Dim == Dim::_2D) {
               const auto c = static_cast<unsigned short>(addresses.back());
               ComputeVectorPotential<S, M>(local_domain->fields.bckp,
                                            local_domain->fields.em,
                                            c,
                                            local_domain->mesh);
+#if defined(MPI_ENABLED)
+              CommunicateVectorPotential(c);
+#endif
             } else {
               raise::Error(
                 "Vector potential can only be computed for GRPIC in 2D",
@@ -784,5 +884,16 @@ namespace ntt {
   METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
 
 #undef METADOMAIN_OUTPUT
+
+#if defined(MPI_ENABLED)
+  #define COMMVECTORPOTENTIAL(S, M)                                            \
+    template void Metadomain<S, M>::CommunicateVectorPotential(unsigned short);
+
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+  #undef COMMVECTORPOTENTIAL
+#endif
 
 } // namespace ntt

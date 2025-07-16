@@ -4,11 +4,11 @@
   runtime = 100.0
 
 [grid]
-  resolution = [128, 128]
+  resolution = [512, 512]
   extent     = [[1.0, 10.0]]
 
   [grid.metric]
-    metric  = "kerr_schild"
+    metric  = "qkerr_schild"
     qsph_r0 = 0.0
     qsph_h  = 0.0
     ks_a    = 0.95
@@ -38,10 +38,10 @@
   ppc0 = 2.0
 
 [setup]
+  init_field = "wald" # or "vertical"
 
 [output]
-  format         = "hdf5"
-  separate_files = false
+  format = "hdf5"
 
   [output.fields]
     interval_time = 1.0
