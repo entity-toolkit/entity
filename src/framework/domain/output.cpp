@@ -192,36 +192,56 @@ namespace ntt {
                               unsigned short        buff_idx,
                               const Mesh<M>         mesh) {
     if constexpr (M::Dim == Dim::_2D) {
-      using TeamPolicy = Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>;
-      const auto nx1   = mesh.n_active(in::x1);
-      const auto nx2   = mesh.n_active(in::x2);
-
-      TeamPolicy policy(nx1, Kokkos::AUTO);
-
       const auto metric = mesh.metric;
-
       Kokkos::parallel_for(
         "ComputeVectorPotential",
-        policy,
-        Lambda(const TeamPolicy::member_type& team_member) {
-          index_t i1 = team_member.league_rank();
-          Kokkos::parallel_scan(
-            Kokkos::TeamThreadRange(team_member, nx2),
-            [=](index_t i2, real_t& update, const bool final_pass) {
-              const auto i1_ { static_cast<real_t>(i1) };
-              const auto i2_ { static_cast<real_t>(i2) };
-              real_t sqrt_detH_ijM { metric.sqrt_det_h({ i1_, i2_ - HALF }) };
-              real_t sqrt_detH_ijP { metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-              const auto input_val =
-                HALF *
-                (sqrt_detH_ijM * EM(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, em::bx1) +
-                 sqrt_detH_ijP * EM(i1 + N_GHOSTS, i2 + N_GHOSTS, em::bx1));
-              update += input_val;
-              if (final_pass) {
-                buffer(i1 + N_GHOSTS, i2 + N_GHOSTS, buff_idx) = update;
-              }
-            });
+        mesh.rangeActiveCells(),
+        Lambda(index_t i1, index_t i2) {
+          const real_t   i1_ { COORD(i1) };
+          const ncells_t k_min = 0;
+          const ncells_t k_max = (i2 - (N_GHOSTS));
+          real_t         A3    = ZERO;
+          for (auto k { k_min }; k <= k_max; ++k) {
+            real_t k_ = static_cast<real_t>(k);
+            real_t sqrt_detH_ij1 { metric.sqrt_det_h({ i1_, k_ - HALF }) };
+            real_t sqrt_detH_ij2 { metric.sqrt_det_h({ i1_, k_ + HALF }) };
+            auto   k1 { k + N_GHOSTS };
+            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k + N_GHOSTS - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i1, k + N_GHOSTS, em::bx1));
+          }
+          buffer(i1, i2, buff_idx) = A3;
         });
+
+      // @TODO: Implementation with team policies works on AMD, but not on NVIDIA GPUs
+      //
+      // using TeamPolicy = Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>;
+      // const auto nx1   = mesh.n_active(in::x1);
+      // const auto nx2   = mesh.n_active(in::x2);
+      //
+      // TeamPolicy policy(nx1, Kokkos::AUTO);
+      //
+      // Kokkos::parallel_for(
+      //   "ComputeVectorPotential",
+      //   policy,
+      //   Lambda(const TeamPolicy::member_type& team_member) {
+      //     index_t i1 = team_member.league_rank();
+      //     Kokkos::parallel_scan(
+      //       Kokkos::TeamThreadRange(team_member, nx2),
+      //       [=](index_t i2, real_t& update, const bool final_pass) {
+      //         const auto i1_ { static_cast<real_t>(i1) };
+      //         const auto i2_ { static_cast<real_t>(i2) };
+      //         const real_t sqrt_detH_ijM { metric.sqrt_det_h({ i1_, i2_ - HALF }) };
+      //         const real_t sqrt_detH_ijP { metric.sqrt_det_h({ i1_, i2_ + HALF }) };
+      //         const auto input_val =
+      //           HALF *
+      //           (sqrt_detH_ijM * EM(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, em::bx1) +
+      //            sqrt_detH_ijP * EM(i1 + N_GHOSTS, i2 + N_GHOSTS, em::bx1));
+      //         if (final_pass) {
+      //           buffer(i1 + N_GHOSTS, i2 + N_GHOSTS, buff_idx) = update;
+      //         }
+      //         update += input_val;
+      //       });
+      //   });
     } else {
       raise::KernelError(
         HERE,
