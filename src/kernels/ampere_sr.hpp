@@ -32,17 +32,17 @@ namespace kernel::sr {
     static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
-    ndfield_t<D, 6>   EB;
-    const M           metric;
-    const std::size_t i2max;
-    const real_t      coeff;
-    bool              is_axis_i2min { false }, is_axis_i2max { false };
+    ndfield_t<D, 6> EB;
+    const M         metric;
+    const ncells_t  i2max;
+    const real_t    coeff;
+    bool            is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
     Ampere_kernel(const ndfield_t<D, 6>&      EB,
                   const M&                    metric,
                   real_t                      coeff,
-                  std::size_t                 ni2,
+                  ncells_t                    ni2,
                   const boundaries_t<FldsBC>& boundaries)
       : EB { EB }
       , metric { metric }
@@ -57,9 +57,9 @@ namespace kernel::sr {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
+        constexpr ncells_t i2min { N_GHOSTS };
+        const real_t       i1_ { COORD(i1) };
+        const real_t       i2_ { COORD(i2) };
 
         const real_t inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
@@ -122,18 +122,18 @@ namespace kernel::sr {
    */
   template <class M>
   class CurrentsAmpere_kernel {
-    static constexpr auto        D     = M::Dim;
-    static constexpr std::size_t i2min = N_GHOSTS;
+    static constexpr auto     D     = M::Dim;
+    static constexpr ncells_t i2min = N_GHOSTS;
 
-    ndfield_t<D, 6>   E;
-    ndfield_t<D, 3>   J;
-    const M           metric;
-    const std::size_t i2max;
+    ndfield_t<D, 6> E;
+    ndfield_t<D, 3> J;
+    const M         metric;
+    const ncells_t  i2max;
     // coeff = -dt * q0 * n0 / B0
-    const real_t      coeff;
-    const real_t      inv_n0;
-    bool              is_axis_i2min { false };
-    bool              is_axis_i2max { false };
+    const real_t    coeff;
+    const real_t    inv_n0;
+    bool            is_axis_i2min { false };
+    bool            is_axis_i2max { false };
 
   public:
     /**
@@ -145,7 +145,7 @@ namespace kernel::sr {
                           const M&                    metric,
                           real_t                      coeff,
                           real_t                      inv_n0,
-                          std::size_t                 ni2,
+                          ncells_t                    ni2,
                           const boundaries_t<FldsBC>& boundaries)
       : E { E }
       , J { J }

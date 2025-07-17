@@ -1,11 +1,16 @@
+# cmake-lint: disable=C0103,C0111
 # ------------------------------
 # @brief: Generates tests for the `ntt_global` module
+#
 # @uses:
-# - kokkos [required]
-# - plog [required]
-# - mpi [optional]
+#
+# * kokkos [required]
+# * plog [required]
+# * mpi [optional]
+#
 # !TODO:
-# - add optional tests for the `mpi_aliases.h`
+#
+# * add optional tests for the `mpi_aliases.h`
 # ------------------------------
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)

@@ -73,7 +73,7 @@ namespace ntt {
 
   template <Dimension D>
   struct Grid {
-    Grid(const std::vector<std::size_t>& res) : m_resolution { res } {
+    Grid(const std::vector<ncells_t>& res) : m_resolution { res } {
       raise::ErrorIf(m_resolution.size() != D, "invalid dimension", HERE);
     }
 
@@ -81,7 +81,7 @@ namespace ntt {
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
-    auto i_min(in i) const -> std::size_t {
+    auto i_min(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
           return (m_resolution.size() > 0) ? N_GHOSTS : 0;
@@ -96,7 +96,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto i_max(in i) const -> std::size_t {
+    auto i_max(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
           return (m_resolution.size() > 0) ? (m_resolution[0] + N_GHOSTS) : 1;
@@ -111,7 +111,7 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto n_active(in i) const -> std::size_t {
+    auto n_active(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
           return (m_resolution.size() > 0) ? m_resolution[0] : 1;
@@ -126,12 +126,21 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto n_active() const -> std::vector<std::size_t> {
+    auto n_active() const -> std::vector<ncells_t> {
       return m_resolution;
     }
 
     [[nodiscard]]
-    auto n_all(in i) const -> std::size_t {
+    auto num_active() const -> ncells_t {
+      ncells_t total_active = 1u;
+      for (const auto& res : m_resolution) {
+        total_active *= res;
+      }
+      return total_active;
+    }
+
+    [[nodiscard]]
+    auto n_all(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
           return (m_resolution.size() > 0) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
@@ -146,12 +155,21 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto n_all() const -> std::vector<std::size_t> {
-      std::vector<std::size_t> nall;
-      for (std::size_t i = 0; i < D; ++i) {
+    auto n_all() const -> std::vector<ncells_t> {
+      std::vector<ncells_t> nall;
+      for (auto i = 0u; i < D; ++i) {
         nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
       }
       return nall;
+    }
+
+    [[nodiscard]]
+    auto num_all() const -> ncells_t {
+      ncells_t total_all = 1u;
+      for (const auto& res : n_all()) {
+        total_all *= res;
+      }
+      return total_all;
     }
 
     /* Ranges in the device execution space --------------------------------- */
@@ -204,7 +222,7 @@ namespace ntt {
     auto rangeCellsOnHost(const box_region_t<D>&) const -> range_h_t<D>;
 
   protected:
-    std::vector<std::size_t> m_resolution;
+    std::vector<ncells_t> m_resolution;
   };
 
 } // namespace ntt

@@ -22,31 +22,31 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
     {
-      const std::vector<std::size_t> res { 64, 32 };
-      const boundaries_t<real_t>     extent {
-            {1.0,         10.0},
-            {0.0, constant::PI}
+      const std::vector<ncells_t> res { 64, 32 };
+      const boundaries_t<real_t>  extent {
+         { 1.0,         10.0 },
+         { 0.0, constant::PI }
       };
       const boundaries_t<FldsBC> fldsbc {
-        {FldsBC::ATMOSPHERE, FldsBC::ABSORB},
-        {      FldsBC::AXIS,   FldsBC::AXIS}
+        { FldsBC::ATMOSPHERE, FldsBC::MATCH },
+        {       FldsBC::AXIS,  FldsBC::AXIS }
       };
       const boundaries_t<PrtlBC> prtlbc {
-        {PrtlBC::ATMOSPHERE, PrtlBC::ABSORB},
-        {      PrtlBC::AXIS,   PrtlBC::AXIS}
+        { PrtlBC::ATMOSPHERE, PrtlBC::ABSORB },
+        {       PrtlBC::AXIS,   PrtlBC::AXIS }
       };
       const std::map<std::string, real_t> params {
-        {"r0",         -ONE},
-        { "h", (real_t)0.25}
+        { "r0",         -ONE },
+        {  "h", (real_t)0.25 }
       };
 #if defined(OUTPUT_ENABLED)
       Metadomain<SimEngine::SRPIC, QSpherical<Dim::_2D>> metadomain {
-        4, { -1, -1 },
-         res, extent, fldsbc, prtlbc, params, {}, "disabled"
+        4u, { -1, -1 },
+         res, extent, fldsbc, prtlbc, params, {}
       };
 #else
       Metadomain<SimEngine::SRPIC, QSpherical<Dim::_2D>> metadomain {
-        4, { -1, -1 },
+        4u, { -1, -1 },
          res, extent, fldsbc, prtlbc, params, {}
       };
 #endif
@@ -132,7 +132,7 @@ auto main(int argc, char* argv[]) -> int {
           raise::ErrorIf(self.offset_ndomains()[0] != 1,
                          "Domain::offset_ndomains() failed",
                          HERE);
-          raise::ErrorIf(self.mesh.flds_bc_in({ +1, 0 }) != FldsBC::ABSORB,
+          raise::ErrorIf(self.mesh.flds_bc_in({ +1, 0 }) != FldsBC::MATCH,
                          "Mesh::flds_bc_in() failed",
                          HERE);
           raise::ErrorIf(self.mesh.prtl_bc_in({ +1, 0 }) != PrtlBC::ABSORB,

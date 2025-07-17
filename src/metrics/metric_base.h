@@ -46,11 +46,37 @@
 
 #include "global.h"
 
+#include "utils/error.h"
 #include "utils/numeric.h"
 
 #include <vector>
 
 namespace metric {
+
+  namespace {
+    template <Dimension D, unsigned short i>
+    auto getNXi(const std::vector<ncells_t>& res) -> real_t {
+      if constexpr (i >= static_cast<unsigned short>(D)) {
+        return ONE;
+      } else {
+        raise::ErrorIf(res.size() <= i, "Invalid res size provided to metric", HERE);
+        return static_cast<real_t>(res.at(i));
+      }
+    };
+
+    template <Dimension D, unsigned short i, bool min>
+    auto getExtent(const boundaries_t<real_t>& ext) -> real_t {
+      if constexpr (i >= static_cast<unsigned short>(D)) {
+        return ZERO;
+      } else {
+        raise::ErrorIf(ext.size() <= i, "Invalid ext size provided to metric", HERE);
+        return min ? ext.at(i).first : ext.at(i).second;
+      }
+    };
+
+    constexpr bool XMin = true;
+    constexpr bool XMax = false;
+  }; // namespace
 
   /**
    * Virtual parent metric class template: h_ij
@@ -61,21 +87,24 @@ namespace metric {
     static constexpr bool      is_metric { true };
     static constexpr Dimension Dim { D };
 
-    MetricBase(std::vector<std::size_t> res, boundaries_t<real_t> ext)
-      : nx1 { res.size() > 0 ? (real_t)(res[0]) : ONE }
-      , nx2 { res.size() > 1 ? (real_t)(res[1]) : ONE }
-      , nx3 { res.size() > 2 ? (real_t)(res[2]) : ONE }
-      , x1_min { res.size() > 0 ? ext[0].first : ZERO }
-      , x1_max { res.size() > 0 ? ext[0].second : ZERO }
-      , x2_min { res.size() > 1 ? ext[1].first : ZERO }
-      , x2_max { res.size() > 1 ? ext[1].second : ZERO }
-      , x3_min { res.size() > 2 ? ext[2].first : ZERO }
-      , x3_max { res.size() > 2 ? ext[2].second : ZERO } {}
+    MetricBase(const std::vector<ncells_t>& res, const boundaries_t<real_t>& ext)
+      : nx1 { getNXi<D, 0>(res) }
+      , nx2 { getNXi<D, 1>(res) }
+      , nx3 { getNXi<D, 2>(res) }
+      , x1_min { getExtent<D, 0, XMin>(ext) }
+      , x1_max { getExtent<D, 0, XMax>(ext) }
+      , x2_min { getExtent<D, 1, XMin>(ext) }
+      , x2_max { getExtent<D, 1, XMax>(ext) }
+      , x3_min { getExtent<D, 2, XMin>(ext) }
+      , x3_max { getExtent<D, 2, XMax>(ext) } {}
 
     ~MetricBase() = default;
 
     [[nodiscard]]
     virtual auto find_dxMin() const -> real_t = 0;
+
+    [[nodiscard]]
+    virtual auto totVolume() const -> real_t = 0;
 
     [[nodiscard]]
     auto dxMin() const -> real_t {

@@ -1,14 +1,13 @@
 #ifndef PIC_PARTICLE_PUSHER_H
 #define PIC_PARTICLE_PUSHER_H
 
-#include "wrapper.h"
-
-#include "pic.h"
+#include "utils/qmath.h"
 
 #include "io/output.h"
 #include "meshblock/meshblock.h"
 #include "meshblock/particles.h"
-#include "utils/qmath.h"
+#include "pic.h"
+#include "wrapper.h"
 #include METRIC_HEADER
 
 #include <typeindex>
@@ -73,35 +72,34 @@ namespace ntt {
                   real_t                          time,
                   real_t                          coeff,
                   real_t                          dt,
-                  ProblemGenerator<D, PICEngine>& pgen) :
-      EB { mblock.em },
-      i1 { particles.i1 },
-      i2 { particles.i2 },
-      i3 { particles.i3 },
-      i1_prev { particles.i1_prev },
-      i2_prev { particles.i2_prev },
-      i3_prev { particles.i3_prev },
-      dx1 { particles.dx1 },
-      dx2 { particles.dx2 },
-      dx3 { particles.dx3 },
-      dx1_prev { particles.dx1_prev },
-      dx2_prev { particles.dx2_prev },
-      dx3_prev { particles.dx3_prev },
-      ux1 { particles.ux1 },
-      ux2 { particles.ux2 },
-      ux3 { particles.ux3 },
-      phi { particles.phi },
-      tag { particles.tag },
-      metric { mblock.metric },
-      time { time },
-      coeff { coeff },
-      dt { dt },
-      ni1 { (int)mblock.Ni1() },
-      ni2 { (int)mblock.Ni2() },
-      ni3 { (int)mblock.Ni3() }
+                  ProblemGenerator<D, PICEngine>& pgen)
+      : EB { mblock.em }
+      , i1 { particles.i1 }
+      , i2 { particles.i2 }
+      , i3 { particles.i3 }
+      , i1_prev { particles.i1_prev }
+      , i2_prev { particles.i2_prev }
+      , i3_prev { particles.i3_prev }
+      , dx1 { particles.dx1 }
+      , dx2 { particles.dx2 }
+      , dx3 { particles.dx3 }
+      , dx1_prev { particles.dx1_prev }
+      , dx2_prev { particles.dx2_prev }
+      , dx3_prev { particles.dx3_prev }
+      , ux1 { particles.ux1 }
+      , ux2 { particles.ux2 }
+      , ux3 { particles.ux3 }
+      , phi { particles.phi }
+      , tag { particles.tag }
+      , metric { mblock.metric }
+      , time { time }
+      , coeff { coeff }
+      , dt { dt }
+      , ni1 { (int)mblock.Ni1() }
+      , ni2 { (int)mblock.Ni2() }
+      , ni3 { (int)mblock.Ni3() }
 #ifdef EXTERNAL_FORCE
-      ,
-      pgen { pgen }
+      , pgen { pgen }
 #endif
     {
       (void)pgen;
@@ -237,7 +235,7 @@ namespace ntt {
     const auto coeff           = charge_ovr_mass * HALF * dt * params.B0();
     Kokkos::parallel_for(
       "ParticlesPush",
-      Kokkos::RangePolicy<AccelExeSpace, P>(0, particles.npart()),
+      Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, P>(0, particles.npart()),
       Pusher_kernel<D>(mblock, particles, time, coeff, dt, pgen));
   }
 
@@ -638,9 +636,9 @@ namespace ntt {
   template <Dimension D>
   template <typename T>
   Inline void Pusher_kernel<D>::get3VelCntrv(T,
-                                             index_t&      p,
+                                             index_t&           p,
                                              vec_t<PrtlCoordD>& xp,
-                                             vec_t<Dim3>&  v) const {
+                                             vec_t<Dim3>&       v) const {
     metric.v3_Cart2Cntrv(xp, { ux1(p), ux2(p), ux3(p) }, v);
     auto inv_energy { ONE / getEnergy(T {}, p) };
     v[0] *= inv_energy;
@@ -666,7 +664,8 @@ namespace ntt {
   }
 
   template <>
-  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t& p, coord_t<PrtlCoordD>& xp) const {
+  Inline void Pusher_kernel<Dim2>::getPrtlPos(index_t&             p,
+                                              coord_t<PrtlCoordD>& xp) const {
     xp[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
     xp[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
     xp[2] = phi(p);
@@ -1066,7 +1065,7 @@ namespace ntt {
   #else
   template <Dimension D>
   Inline void Pusher_kernel<D>::initForce(coord_t<PrtlCoordD>& xp,
-                                          vec_t<Dim3>&    force_Cart) const {
+                                          vec_t<Dim3>& force_Cart) const {
     coord_t<PrtlCoordD> xp_Ph { ZERO };
     coord_t<PrtlCoordD> xp_Code { ZERO };
     for (short d { 0 }; d < static_cast<short>(PrtlCoordD); ++d) {

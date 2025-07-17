@@ -25,8 +25,9 @@ Inline auto equal(const vec_t<D>& a,
                   const char*     msg,
                   real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
+      Kokkos::printf("%s: %.12e : %.12e\n", msg, a[d], b[d]);
       return false;
     }
   }
@@ -37,7 +38,7 @@ template <Dimension D>
 Inline void unravel(std::size_t                    idx,
                     tuple_t<std::size_t, D>&       ijk,
                     const tuple_t<std::size_t, D>& res) {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
   }
@@ -74,7 +75,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       coord_t<M::Dim> x_Code { ZERO };
       coord_t<M::Dim> x_Phys { ZERO };
 
-      for (unsigned short d = 0; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code[d] = (real_t)(idx[d]) + HALF;
       }
 
@@ -137,31 +138,31 @@ void testMetric(const std::vector<std::size_t>&      res,
       vec_t<Dim::_3D> h_ij_expect { h_11_expect, h_22_expect, h_33_expect };
 
       if (not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc)) {
-        printf("h_ij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
-               h_ij_predict[0],
-               h_ij_predict[1],
-               h_ij_predict[2],
-               h_ij_expect[0],
-               h_ij_expect[1],
-               h_ij_expect[2]);
+        Kokkos::printf("h_ij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
+                       h_ij_predict[0],
+                       h_ij_predict[1],
+                       h_ij_predict[2],
+                       h_ij_expect[0],
+                       h_ij_expect[1],
+                       h_ij_expect[2]);
         Kokkos::abort("h_ij");
       }
       if (not equal<Dim::_1D>(h_13_predict, { h_13_expect }, "h_13", acc)) {
-        printf("h_13: %.12e : %.12e\n", h_13_predict[0], h_13_expect);
+        Kokkos::printf("h_13: %.12e : %.12e\n", h_13_predict[0], h_13_expect);
         Kokkos::abort("h_13");
       }
       if (not equal<Dim::_3D>(hij_predict, hij_expect, "hij", acc)) {
-        printf("hij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
-               hij_predict[0],
-               hij_predict[1],
-               hij_predict[2],
-               hij_expect[0],
-               hij_expect[1],
-               hij_expect[2]);
+        Kokkos::printf("hij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
+                       hij_predict[0],
+                       hij_predict[1],
+                       hij_predict[2],
+                       hij_expect[0],
+                       hij_expect[1],
+                       hij_expect[2]);
         Kokkos::abort("hij");
       }
       if (not equal<Dim::_1D>(h13_predict, { h13_expect }, "h13", acc)) {
-        printf("h13: %.12e : %.12e\n", h13_predict[0], h13_expect);
+        Kokkos::printf("h13: %.12e : %.12e\n", h13_predict[0], h13_expect);
         Kokkos::abort("h13");
       }
     });

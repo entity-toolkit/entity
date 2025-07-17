@@ -23,7 +23,6 @@
 
 #include <limits>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -32,29 +31,23 @@ namespace ntt {
   template <SimEngine::type S, class M>
   Metadomain<S, M>::Metadomain(unsigned int            global_ndomains,
                                const std::vector<int>& global_decomposition,
-                               const std::vector<std::size_t>& global_ncells,
-                               const boundaries_t<real_t>&     global_extent,
-                               const boundaries_t<FldsBC>&     global_flds_bc,
-                               const boundaries_t<PrtlBC>&     global_prtl_bc,
+                               const std::vector<ncells_t>& global_ncells,
+                               const boundaries_t<real_t>&  global_extent,
+                               const boundaries_t<FldsBC>&  global_flds_bc,
+                               const boundaries_t<PrtlBC>&  global_prtl_bc,
                                const std::map<std::string, real_t>& metric_params,
-                               const std::vector<ParticleSpecies>& species_params
-#if defined(OUTPUT_ENABLED)
-                               ,
-                               const std::string& output_engine
-#endif
-                               )
+                               const std::vector<ParticleSpecies>& species_params)
     : g_ndomains { global_ndomains }
     , g_decomposition { global_decomposition }
     , g_mesh { global_ncells, global_extent, metric_params, global_flds_bc, global_prtl_bc }
     , g_metric_params { metric_params }
-    , g_species_params { species_params }
-#if defined(OUTPUT_ENABLED)
-    , g_writer { output_engine }
-#endif
-  {
+    , g_species_params { species_params } {
 #if defined(MPI_ENABLED)
     MPI_Comm_size(MPI_COMM_WORLD, &g_mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &g_mpi_rank);
+    raise::ErrorIf(global_ndomains != (unsigned int)g_mpi_size,
+                   "Exactly 1 domain per MPI rank is allowed",
+                   HERE);
 #endif
     initialValidityCheck();
 
@@ -110,13 +103,13 @@ namespace ntt {
     raise::ErrorIf(d_ncells.size() != (std::size_t)D,
                    "Invalid number of dimensions received",
                    HERE);
-    auto d_offset_ncells = std::vector<std::vector<std::size_t>> {};
+    auto d_offset_ncells = std::vector<std::vector<ncells_t>> {};
     auto d_offset_ndoms  = std::vector<std::vector<unsigned int>> {};
     for (auto& d : d_ncells) {
       g_ndomains_per_dim.push_back(d.size());
-      auto offset_ncell = std::vector<std::size_t> { 0 };
+      auto offset_ncell = std::vector<ncells_t> { 0 };
       auto offset_ndom  = std::vector<unsigned int> { 0 };
-      for (std::size_t i { 1 }; i < d.size(); ++i) {
+      for (auto i { 1u }; i < d.size(); ++i) {
         auto di = d[i - 1];
         offset_ncell.push_back(offset_ncell.back() + di);
         offset_ndom.push_back(offset_ndom.back() + 1);
@@ -127,8 +120,8 @@ namespace ntt {
 
     /* compute tensor products of the domain decompositions --------------- */
     // works similar to np.meshgrid()
-    const auto domain_ncells = tools::TensorProduct<std::size_t>(d_ncells);
-    const auto domain_offset_ncells = tools::TensorProduct<std::size_t>(
+    const auto domain_ncells        = tools::TensorProduct<ncells_t>(d_ncells);
+    const auto domain_offset_ncells = tools::TensorProduct<ncells_t>(
       d_offset_ncells);
     const auto domain_offset_ndoms = tools::TensorProduct<unsigned int>(
       d_offset_ndoms);
@@ -146,7 +139,7 @@ namespace ntt {
       boundaries_t<real_t> l_extent;
       coord_t<D>           low_corner_Code { ZERO }, up_corner_Code { ZERO };
       coord_t<D>           low_corner_Phys { ZERO }, up_corner_Phys { ZERO };
-      for (unsigned short d { 0 }; d < (unsigned short)D; ++d) {
+      for (auto d { 0u }; d < D; d++) {
         low_corner_Code[d] = (real_t)l_offset_ncells[d];
         up_corner_Code[d]  = (real_t)(l_offset_ncells[d] + l_ncells[d]);
       }
@@ -240,7 +233,6 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::redefineBoundaries() {
-    // !TODO: not setting CommBC for now
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
       auto&      current_domain = g_subdomains[idx];
@@ -351,7 +343,7 @@ namespace ntt {
       }
       // check that local subdomains are contained in g_local_subdomain_indices
       auto contained_in_local = false;
-      for (const auto& gidx : g_local_subdomain_indices) {
+      for (const auto& gidx : l_subdomain_indices()) {
         contained_in_local |= (idx == gidx);
       }
 #if defined(MPI_ENABLED)
@@ -375,6 +367,8 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
+    const auto epsilon = std::numeric_limits<real_t>::epsilon() *
+                         static_cast<real_t>(100.0);
     const auto dx_min              = g_mesh.metric.dxMin();
     auto       dx_min_from_domains = std::numeric_limits<real_t>::infinity();
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
@@ -383,7 +377,7 @@ namespace ntt {
       dx_min_from_domains = std::min(dx_min_from_domains, current_dx_min);
     }
     raise::ErrorIf(
-      not cmp::AlmostEqual(dx_min, dx_min_from_domains),
+      not cmp::AlmostEqual_host(dx_min / dx_min_from_domains, ONE, epsilon),
       "dx_min is not the same across all domains: " + std::to_string(dx_min) +
         " " + std::to_string(dx_min_from_domains),
       HERE);
@@ -398,11 +392,147 @@ namespace ntt {
                   mpi::get_type<real_t>(),
                   MPI_COMM_WORLD);
     for (const auto& dx : dx_mins) {
-      raise::ErrorIf(!cmp::AlmostEqual(dx, dx_min),
+      raise::ErrorIf(not cmp::AlmostEqual_host(dx / dx_min, ONE, epsilon),
                      "dx_min is not the same across all MPI ranks",
                      HERE);
     }
 #endif
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::setFldsBC(const bc_in& dir, const FldsBC& new_bcs) {
+    if (dir == bc_in::Mx1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_flds_bc({ -1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_flds_bc({ +1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_flds_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set -x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ 0, 0, -1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set +x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_flds_bc({ 0, 0, +1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else {
+      raise::Error("Invalid direction", HERE);
+    }
+    redefineBoundaries();
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::setPrtlBC(const bc_in& dir, const PrtlBC& new_bcs) {
+    if (dir == bc_in::Mx1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_prtl_bc({ -1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px1) {
+      if constexpr (M::Dim == Dim::_1D) {
+        g_mesh.set_prtl_bc({ +1 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ -1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ -1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px2) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x2 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        g_mesh.set_prtl_bc({ +1, 0 }, new_bcs);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ +1, 0, 0 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Mx3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set -x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set -x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ 0, 0, -1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (dir == bc_in::Px3) {
+      if constexpr (M::Dim == Dim::_1D) {
+        raise::Error("Cannot set +x3 BCs for 1D", HERE);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        raise::Error("Cannot set +x3 BCs for 2D", HERE);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        g_mesh.set_prtl_bc({ 0, 0, +1 }, new_bcs);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else {
+      raise::Error("Invalid direction", HERE);
+    }
+    redefineBoundaries();
   }
 
   template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;

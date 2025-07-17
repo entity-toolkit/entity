@@ -45,12 +45,12 @@ auto main(int argc, char* argv[]) -> int {
     Kokkos::deep_copy(buff, ZERO);
 
     const auto send_slice = std::vector<range_tuple_t> {
-      {nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS},
-      {nx2 + N_GHOSTS, nx2 + 2 * N_GHOSTS}
+      { nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS },
+      { nx2 + N_GHOSTS, nx2 + 2 * N_GHOSTS }
     };
     const auto recv_slice = std::vector<range_tuple_t> {
-      {N_GHOSTS, 2 * N_GHOSTS},
-      {N_GHOSTS, 2 * N_GHOSTS}
+      { N_GHOSTS, 2 * N_GHOSTS },
+      { N_GHOSTS, 2 * N_GHOSTS }
     };
     const auto comp_slice = range_tuple_t(cur::jx1, cur::jx3 + 1);
 

@@ -8,6 +8,8 @@
  *   - fmt::splitString -> std::vector<std::string>
  *   - fmt::repeat -> std::string
  *   - fmt::formatVector -> std::string
+ *   - fmt::strlen_utf8 -> std::size_t
+ *   - fmt::alignedTable -> std::string
  * @namespaces:
  *   - fmt::
  */
@@ -51,8 +53,10 @@ namespace fmt {
    * @param c Character to pad with
    * @param right Pad on the right
    */
-  inline auto pad(const std::string& str, std::size_t n, char c, bool right = false)
-    -> std::string {
+  inline auto pad(const std::string& str,
+                  std::size_t        n,
+                  char               c,
+                  bool               right = false) -> std::string {
     if (n <= str.size()) {
       return str;
     }
@@ -111,8 +115,8 @@ namespace fmt {
    * @param delim Delimiter
    * @return Vector of strings
    */
-  inline auto splitString(const std::string& str, const std::string& delim)
-    -> std::vector<std::string> {
+  inline auto splitString(const std::string& str,
+                          const std::string& delim) -> std::vector<std::string> {
     std::regex regexz(delim);
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };
@@ -130,6 +134,66 @@ namespace fmt {
       result += s;
     }
     return result;
+  }
+
+  inline auto repeat(char s, std::size_t n) -> std::string {
+    return repeat(std::string(1, s), n);
+  }
+
+  /**
+   * @brief Calculate the length of a UTF-8 string
+   * @param str UTF-8 string
+   */
+  inline auto strlenUTF8(const std::string& str) -> std::size_t {
+    std::size_t length = 0;
+    for (char c : str) {
+      if ((c & 0xC0) != 0x80) {
+        ++length;
+      }
+    }
+    return length;
+  }
+
+  /**
+   * @brief Create a table with aligned columns and custom colors & separators
+   * @param columns Vector of column strings
+   * @param colors Vector of colors
+   * @param anchors Vector of column anchors (position of edge, negative means left-align)
+   * @param fillers Vector of separators
+   * @param c_bblack Black color
+   * @param c_reset Reset color
+   */
+  inline auto alignedTable(const std::vector<std::string>& columns,
+                           const std::vector<std::string>& colors,
+                           const std::vector<int>&         anchors,
+                           const std::vector<char>&        fillers,
+                           const std::string&              c_bblack,
+                           const std::string& c_reset) -> std::string {
+    std::string result { c_reset };
+    std::size_t cntr { 0 };
+    for (auto i { 0u }; i < columns.size(); ++i) {
+      const auto  anch { static_cast<std::size_t>(anchors[i] < 0 ? -anchors[i]
+                                                                : anchors[i]) };
+      const auto  leftalign { anchors[i] <= 0 };
+      const auto  cmn { columns[i] };
+      const auto  cmn_len { strlenUTF8(cmn) };
+      std::string left { c_bblack };
+      if (leftalign) {
+        if (fillers[i] == ':') {
+          left += " :";
+          left += repeat(' ', anch - cntr - 2);
+        } else {
+          left += repeat(fillers[i], anch - cntr);
+        }
+        cntr += anch - cntr;
+      } else {
+        left += repeat(fillers[i], anch - cntr - cmn_len);
+        cntr += anch - cntr - cmn_len;
+      }
+      result += left + colors[i] + cmn + c_reset;
+      cntr   += cmn_len;
+    }
+    return result + c_reset + "\n";
   }
 
 } // namespace fmt

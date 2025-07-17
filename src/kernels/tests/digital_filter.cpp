@@ -20,7 +20,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 void errorIf(bool condition, const std::string& message) {
@@ -34,18 +33,25 @@ void testFilter(const std::vector<std::size_t>&      res,
                 const boundaries_t<real_t>&          ext,
                 const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2);
-  errorIf(res.size() != M::Dim, "res.size() != M::Dim");
+  errorIf(res.size() != static_cast<std::size_t>(M::Dim), "res.size() != M::Dim");
   using namespace ntt;
 
   auto boundaries = boundaries_t<FldsBC> {};
+  auto extents    = ext;
   if constexpr (M::CoordType != Coord::Cart) {
     boundaries = {
-      {FldsBC::CUSTOM, FldsBC::CUSTOM},
-      {  FldsBC::AXIS,   FldsBC::AXIS}
+      { FldsBC::CUSTOM, FldsBC::CUSTOM },
+      {   FldsBC::AXIS,   FldsBC::AXIS }
+    };
+    extents.emplace_back(ZERO, (real_t)(constant::PI));
+  } else {
+    boundaries = {
+      { FldsBC::PERIODIC, FldsBC::PERIODIC },
+      { FldsBC::PERIODIC, FldsBC::PERIODIC }
     };
   }
 
-  M metric { res, ext, params };
+  M metric { res, extents, params };
 
   const auto nx1 = res[0];
   const auto nx2 = res[1];
@@ -128,53 +134,45 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    testFilter<Minkowski<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 0.0, 55.0 }, { 0.0, 55.0 } },
-      {});
+    const auto res      = std::vector<std::size_t> { 10, 10 };
+    const auto r_extent = boundaries_t<real_t> {
+      { 0.0, 100.0 }
+    };
+    const auto xy_extent = boundaries_t<real_t> {
+      { 0.0, 55.0 },
+      { 0.0, 55.0 }
+    };
 
-    testFilter<Spherical<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      {});
+    testFilter<Minkowski<Dim::_2D>>(res, xy_extent, {});
 
-    testFilter<QSpherical<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 } });
+    testFilter<Spherical<Dim::_2D>>(res, r_extent, {});
 
-    testFilter<KerrSchild<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } });
+    testFilter<QSpherical<Dim::_2D>>(res,
+                                     r_extent,
+                                     {
+                                       { "r0",  0.0 },
+                                       {  "h", 0.25 }
+    });
 
-    testFilter<QKerrSchild<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } });
+    testFilter<KerrSchild<Dim::_2D>>(res,
+                                     r_extent,
+                                     {
+                                       { "a", 0.9 }
+    });
 
-    testFilter<KerrSchild0<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 100.0 } },
-      { { "a", 0.9 } });
+    testFilter<QKerrSchild<Dim::_2D>>(res,
+                                      r_extent,
+                                      {
+                                        { "r0",  0.0 },
+                                        {  "h", 0.25 },
+                                        {  "a",  0.9 }
+    });
+
+    testFilter<KerrSchild0<Dim::_2D>>(res,
+                                      r_extent,
+                                      {
+                                        { "a", 0.9 }
+    });
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

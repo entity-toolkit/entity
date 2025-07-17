@@ -25,9 +25,9 @@ Inline auto equal(const vec_t<D>& a,
                   const char*     msg,
                   real_t          acc = ONE) -> bool {
   const auto eps = epsilon * acc;
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], eps)) {
-      printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
+      Kokkos::printf("%d : %.12e != %.12e %s\n", d, a[d], b[d], msg);
       return false;
     }
   }
@@ -38,7 +38,7 @@ template <Dimension D>
 Inline void unravel(std::size_t                    idx,
                     tuple_t<std::size_t, D>&       ijk,
                     const tuple_t<std::size_t, D>& res) {
-  for (unsigned short d = 0; d < D; ++d) {
+  for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
   }
@@ -74,7 +74,7 @@ void testMetric(const std::vector<std::size_t>&      res,
       coord_t<M::Dim> x_Code { ZERO };
       coord_t<M::Dim> x_Phys { ZERO };
 
-      for (unsigned short d = 0; d < M::Dim; ++d) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
         x_Code[d] = (real_t)(idx[d]) + HALF;
       }
 
@@ -115,12 +115,12 @@ auto main(int argc, char* argv[]) -> int {
     using namespace metric;
     const auto res = std::vector<std::size_t> { 64, 32 };
     const auto ext = boundaries_t<real_t> {
-      {1.0,         10.0},
-      {0.0, constant::PI}
+      { 1.0,         10.0 },
+      { 0.0, constant::PI }
     };
     const auto params = std::map<std::string, real_t> {
-      {"r0",         -ONE},
-      { "h", (real_t)0.25}
+      { "r0",         -ONE },
+      {  "h", (real_t)0.25 }
     };
 
     testMetric<Spherical<Dim::_2D>>(res, ext, 10);

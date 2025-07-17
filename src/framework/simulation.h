@@ -18,16 +18,18 @@
 
 #include "arch/traits.h"
 #include "utils/error.h"
+#include "utils/toml.h"
 
 #include "framework/parameters.h"
-
-#include <stdexcept>
-#include <type_traits>
 
 namespace ntt {
 
   class Simulation {
-    SimulationParams params;
+    SimulationParams m_params;
+
+    Dimension m_requested_dimension;
+    SimEngine m_requested_engine { SimEngine::INVALID };
+    Metric    m_requested_metric { Metric::INVALID };
 
   public:
     Simulation(int argc, char* argv[]);
@@ -41,7 +43,7 @@ namespace ntt {
       static_assert(traits::has_method<traits::run_t, engine_t>::value,
                     "Engine must contain a ::run() method");
       try {
-        engine_t engine { params };
+        engine_t engine { m_params };
         engine.run();
       } catch (const std::exception& e) {
         raise::Fatal(e.what(), HERE);
@@ -50,17 +52,17 @@ namespace ntt {
 
     [[nodiscard]]
     inline auto requested_dimension() const -> Dimension {
-      return params.get<Dimension>("grid.dim");
+      return m_requested_dimension;
     }
 
     [[nodiscard]]
     inline auto requested_engine() const -> SimEngine {
-      return params.get<SimEngine>("simulation.engine");
+      return m_requested_engine;
     }
 
     [[nodiscard]]
     inline auto requested_metric() const -> Metric {
-      return params.get<Metric>("grid.metric.metric");
+      return m_requested_metric;
     }
   };
 

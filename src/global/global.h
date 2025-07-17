@@ -13,6 +13,10 @@
  *   - enum PrepareOutput
  *   - enum CellLayer           // allLayer, activeLayer, minGhostLayer,
  *                                 minActiveLayer, maxActiveLayer, maxGhostLayer
+ *   - enum Idx                // U, D, T, XYZ, Sph, PU, PD
+ *   - enum Crd                // Cd, Ph, XYZ, Sph
+ *   - enum in                 // x1, x2, x3
+ *   - enum bc_in                // Px1, Mx1, Px2, Mx2, Px3, Mx3
  *   - type box_region_t
  *   - files::LogFile, files::ErrFile, files::InfoFile
  *   - type prtldx_t
@@ -88,6 +92,8 @@
 #ifndef GLOBAL_GLOBAL_H
 #define GLOBAL_GLOBAL_H
 
+#include <chrono>
+#include <filesystem>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -107,7 +113,7 @@ namespace files {
 
 namespace ntt {
 
-  inline constexpr unsigned int N_GHOSTS = 2;
+  inline constexpr std::size_t N_GHOSTS = 2;
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
@@ -184,6 +190,15 @@ enum class in : unsigned short {
   x3 = 2,
 };
 
+enum class bc_in : short {
+  Mx1 = -1,
+  Px1 = 1,
+  Mx2 = -2,
+  Px2 = 2,
+  Mx3 = -3,
+  Px3 = 3,
+};
+
 template <Dimension D>
 using box_region_t = CellLayer[D];
 
@@ -204,18 +219,15 @@ typedef int PrepareOutputFlags;
 
 namespace Timer {
   enum TimerFlags_ {
-    None          = 0,
-    PrintRelative = 1 << 0,
-    PrintUnits    = 1 << 1,
-    PrintIndents  = 1 << 2,
-    PrintTotal    = 1 << 3,
-    PrintTitle    = 1 << 4,
-    AutoConvert   = 1 << 5,
-    Colorful      = 1 << 6,
-    PrintOutput   = 1 << 7,
-    PrintSorting  = 1 << 8,
-    Default       = PrintRelative | PrintUnits | PrintIndents | PrintTotal |
-              PrintTitle | AutoConvert | Colorful,
+    None            = 0,
+    PrintTotal      = 1 << 0,
+    PrintTitle      = 1 << 1,
+    AutoConvert     = 1 << 2,
+    PrintOutput     = 1 << 3,
+    PrintPrtlClear  = 1 << 4,
+    PrintCheckpoint = 1 << 5,
+    PrintNormed     = 1 << 6,
+    Default         = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
   };
 } // namespace Timer
 
@@ -252,6 +264,18 @@ namespace Comm {
 
 typedef int CommTags;
 
+namespace WriteMode {
+  enum WriteModeTags_ {
+    None      = 0,
+    Fields    = 1 << 0,
+    Particles = 1 << 1,
+    Spectra   = 1 << 2,
+    Stats     = 1 << 3,
+  };
+} // namespace WriteMode
+
+typedef int WriteModeTags;
+
 namespace BC {
   enum BCTags_ {
     None = 0,
@@ -264,9 +288,17 @@ namespace BC {
     Dx1  = 1 << 0,
     Dx2  = 1 << 1,
     Dx3  = 1 << 2,
+    Hx1  = 1 << 3,
+    Hx2  = 1 << 4,
+    Hx3  = 1 << 5,
+    Jx1  = 1 << 6,
+    Jx2  = 1 << 7,
+    Jx3  = 1 << 8,
     B    = Bx1 | Bx2 | Bx3,
     E    = Ex1 | Ex2 | Ex3,
     D    = Dx1 | Dx2 | Dx3,
+    H    = Hx1 | Hx2 | Hx3,
+    J    = Jx1 | Jx2 | Jx3,
   };
 } // namespace BC
 
@@ -318,10 +350,26 @@ using coord_t = tuple_t<real_t, D>;
 template <Dimension D>
 using vec_t = tuple_t<real_t, D>;
 
+// time/duration
+using duration_t = double;
+using simtime_t  = double;
+using timestep_t = std::size_t;
+using ncells_t   = std::size_t;
+using npart_t    = unsigned long int;
+
+// walltime
+using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
+
+// index/number
 using index_t = const std::size_t;
 using idx_t   = unsigned short;
+using spidx_t = unsigned short;
+using dim_t   = unsigned short;
 
-using range_tuple_t = std::pair<std::size_t, std::size_t>;
+// utility
+using path_t = std::filesystem::path;
+
+using range_tuple_t = std::pair<ncells_t, ncells_t>;
 
 template <typename T>
 using boundaries_t = std::vector<std::pair<T, T>>;

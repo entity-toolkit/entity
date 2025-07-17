@@ -25,7 +25,7 @@ void errorIf(bool condition, const std::string& message) {
 
 Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
   if (not(math::abs(a - b) < acc)) {
-    printf("%.12e != %.12e [%.12e] %s\n", a, b, math::abs(a - b), msg);
+    Kokkos::printf("%.12e != %.12e [%.12e] %s\n", a, b, math::abs(a - b), msg);
     return false;
   }
   return true;
@@ -108,7 +108,7 @@ void testFaraday<Dim::_2D>(const std::vector<std::size_t>& res) {
   const real_t sx = constant::TWO_PI, sy = 4.0 * constant::PI;
   const auto   metric = Minkowski<Dim::_2D> {
     res,
-    {{ ZERO, sx }, { ZERO, sy }}
+    { { ZERO, sx }, { ZERO, sy } }
   };
   auto              emfield = ndfield_t<Dim::_2D, 6> { "emfield",
                                                        res[0] + 2 * N_GHOSTS,
@@ -116,7 +116,7 @@ void testFaraday<Dim::_2D>(const std::vector<std::size_t>& res) {
   const std::size_t i1min = N_GHOSTS, i1max = res[0] + N_GHOSTS;
   const std::size_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
   const auto        range     = CreateRangePolicy<Dim::_2D>({ i1min, i2min },
-                                                 { i1max, i2max });
+                                                            { i1max, i2max });
   const auto        range_ext = CreateRangePolicy<Dim::_2D>(
     { 0, 0 },
     { res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS });
@@ -212,7 +212,7 @@ void testFaraday<Dim::_3D>(const std::vector<std::size_t>& res) {
                sz   = constant::TWO_PI;
   const auto metric = Minkowski<Dim::_3D> {
     res,
-    {{ ZERO, sx }, { ZERO, sy }, { ZERO, sz }}
+    { { ZERO, sx }, { ZERO, sy }, { ZERO, sz } }
   };
   auto              emfield = ndfield_t<Dim::_3D, 6> { "emfield",
                                                        res[0] + 2 * N_GHOSTS,
@@ -222,7 +222,7 @@ void testFaraday<Dim::_3D>(const std::vector<std::size_t>& res) {
   const std::size_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
   const std::size_t i3min = N_GHOSTS, i3max = res[2] + N_GHOSTS;
   const auto        range = CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
-                                                 { i1max, i2max, i3max });
+                                                        { i1max, i2max, i3max });
   const auto        range_ext = CreateRangePolicy<Dim::_3D>(
     { 0, 0, 0 },
     { res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS });

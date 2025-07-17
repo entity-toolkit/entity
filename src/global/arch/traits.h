@@ -10,7 +10,12 @@
  *   - traits::run_t, traits::to_string_t
  *   - traits::pgen::init_flds_t
  *   - traits::pgen::ext_force_t
- *   - traits::pgen::field_driver_t
+ *   - traits::pgen::ext_current_t
+ *   - traits::pgen::atm_fields_t
+ *   - traits::pgen::match_fields_const_t
+ *   - traits::pgen::match_fields_t
+ *   - traits::pgen::fix_fields_const_t
+ *   - traits::pgen::fix_fields_t
  *   - traits::pgen::init_prtls_t
  *   - traits::pgen::custom_fields_t
  *   - traits::pgen::custom_field_output_t
@@ -94,7 +99,43 @@ namespace traits {
     using ext_force_t = decltype(&T::ext_force);
 
     template <typename T>
-    using field_driver_t = decltype(&T::FieldDriver);
+    using ext_current_t = decltype(&T::ext_current);
+
+    template <typename T>
+    using atm_fields_t = decltype(&T::AtmFields);
+
+    template <typename T>
+    using match_fields_t = decltype(&T::MatchFields);
+
+    template <typename T>
+    using match_fields_in_x1_t = decltype(&T::MatchFieldsInX1);
+
+    template <typename T>
+    using match_fields_in_x2_t = decltype(&T::MatchFieldsInX2);
+
+    template <typename T>
+    using match_fields_in_x3_t = decltype(&T::MatchFieldsInX3);
+
+    template <typename T>
+    using match_fields_const_t = decltype(&T::MatchFieldsConst);
+
+    template <typename T>
+    using fix_fields_t = decltype(&T::FixFields);
+
+    template <typename T>
+    using fix_fields_const_t = decltype(&T::FixFieldsConst);
+
+    template <typename T>
+    using perfect_conductor_fields_t = decltype(&T::PerfectConductorFields);
+
+    template <typename T>
+    using perfect_conductor_fields_const_t = decltype(&T::PerfectConductorFieldsConst);
+
+    template <typename T>
+    using perfect_conductor_currents_t = decltype(&T::PerfectConductorCurrents);
+
+    template <typename T>
+    using perfect_conductor_currents_const_t = decltype(&T::PerfectConductorCurrentsConst);
 
     template <typename T>
     using custom_fields_t = decltype(&T::CustomFields);
@@ -104,6 +145,9 @@ namespace traits {
 
     template <typename T>
     using custom_field_output_t = decltype(&T::CustomFieldOutput);
+
+    template <typename T>
+    using custom_stat_t = decltype(&T::CustomStat);
   } // namespace pgen
 
   // for pgen extforce

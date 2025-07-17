@@ -19,3 +19,10 @@ docker run -e TOKEN=<TOKEN> -e LABEL=nvidia-gpu --runtime=nvidia --gpus=all -dt 
 docker build -t ghrunner:amd -f Dockerfile.runner.rocm .
 docker run -e TOKEN=<TOKEN> -e LABEL=amd-gpu --device=/dev/kfd --device=/dev/dri --security-opt seccomp=unconfined --group-add video -dt ghrunner:amd
 ```
+
+### CPU
+
+```sh
+docker build -t ghrunner:cpu -f Dockerfile.runner.cpu .
+docker run -e TOKEN=<TOKEN> -e LABEL=cpu -dt ghrunner:cpu
+```
