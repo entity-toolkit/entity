@@ -840,8 +840,12 @@ namespace ntt {
       if constexpr (M::Dim == Dim::_2D) {
         if (domain.mesh.flds_bc_in({ 0, +1 }) == FldsBC::AXIS) {
           range = CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+            { domain.mesh.i_min(in::x1) - 1, domain.mesh.i_min(in::x2) },
             { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
+        } else {
+          range = CreateRangePolicy<Dim::_2D>(
+            { domain.mesh.i_min(in::x1) - 1, domain.mesh.i_min(in::x2) },
+            { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) });
         }
       } else if constexpr (M::Dim == Dim::_3D) {
         raise::Error("Invalid dimension", HERE);
