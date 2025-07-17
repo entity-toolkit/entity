@@ -1100,19 +1100,16 @@ namespace kernel::sr {
         const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
         const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
-        const int  dx1_less_half = static_cast<int>(dx1_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx1_center    = static_cast<real_t>(dx1_less_half) - dx1_;
-
         // direct interpolation of staggered grid
         // primal = i+ind, dual = i
         const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
 
         // Compute weights for second-order interpolation
         // primal
-        const auto w0p = HALF * SQR(HALF + dx1_center);
-        const auto w1p = static_cast<real_t>(0.75) - SQR(dx1_center);
-        const auto w2p = HALF * SQR(HALF - dx1_center);
+        const auto w0p = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1p = static_cast<real_t>(0.75) -
+                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2p = ONE - w0p - w1p;
 
         // dual
         const auto w0d = HALF * SQR(ONE - dx1_);
@@ -1307,18 +1304,6 @@ namespace kernel::sr {
         const auto dx2_ { static_cast<real_t>(dx2(p)) };
         const auto dx3_ { static_cast<real_t>(dx3(p)) };
 
-        const int  dx1_less_half = static_cast<int>(dx1_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx1_center    = static_cast<real_t>(dx1_less_half) - dx1_;
-
-        const int  dx2_less_half = static_cast<int>(dx2_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx2_center    = static_cast<real_t>(dx2_less_half) - dx2_;
-
-        const int  dx3_less_half = static_cast<int>(dx3_ <
-                                                   static_cast<prtldx_t>(0.5));
-        const auto dx3_center    = static_cast<real_t>(dx3_less_half) - dx3_;
-
         // direct interpolation of staggered grid
         // primal = i+ind, dual = i
         const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
@@ -1327,15 +1312,18 @@ namespace kernel::sr {
 
         // Compute weights for second-order interpolation
         // primal
-        const auto w0px = HALF * SQR(HALF + dx1_center);
-        const auto w1px = static_cast<real_t>(0.75) - SQR(dx1_center);
-        const auto w2px = HALF * SQR(HALF - dx1_center);
-        const auto w0py = HALF * SQR(HALF + dx2_center);
-        const auto w1py = static_cast<real_t>(0.75) - SQR(dx2_center);
-        const auto w2py = HALF * SQR(HALF - dx2_center);
-        const auto w0pz = HALF * SQR(HALF + dx3_center);
-        const auto w1pz = static_cast<real_t>(0.75) - SQR(dx3_center);
-        const auto w2pz = HALF * SQR(HALF - dx3_center);
+        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1px = static_cast<real_t>(0.75) -
+                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2px = ONE - w0px - w1px;
+        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
+        const auto w1py = static_cast<real_t>(0.75) -
+                          SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w2py = ONE - w0py - w1py;
+        const auto w0pz = HALF * SQR(HALF - dx3_ + static_cast<real_t>(indz));
+        const auto w1pz = static_cast<real_t>(0.75) -
+                          SQR(dx3_ - static_cast<real_t>(indz));
+        const auto w2pz = ONE - w0pz - w1pz;
 
         // dual
         const auto w0dx = HALF * SQR(ONE - dx1_);
