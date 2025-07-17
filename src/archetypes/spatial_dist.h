@@ -40,7 +40,7 @@ namespace arch {
   struct Uniform : public SpatialDistribution<S, M> {
     Uniform(const M& metric) : SpatialDistribution<S, M> { metric } {}
 
-    Inline auto operator()(const coord_t<M::Dim>&) const -> real_t  {
+    Inline auto operator()(const coord_t<M::Dim>&) const -> real_t {
       return ONE;
     }
   };
@@ -65,7 +65,7 @@ namespace arch {
       , target_density { target_density }
       , target_max_density { target_max_density } {}
 
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t  {
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
       coord_t<M::Dim> x_Cd { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd);
       real_t dens { ZERO };

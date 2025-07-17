@@ -113,45 +113,45 @@ namespace kernel::comm {
     array_t<real_t*>   send_buff_pld;
 
     const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
-    const npart_t    idx_offset;
+    const npart_t        idx_offset;
 
-    const array_t<int*>         i1, i1_prev, i2, i2_prev, i3, i3_prev;
-    const array_t<prtldx_t*>    dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
-    const array_t<real_t*>      ux1, ux2, ux3, weight, phi;
-    const array_t<real_t**>     pld;
-    array_t<short*>             tag;
-    const array_t<npart_t*> outgoing_indices;
+    const array_t<int*>      i1, i1_prev, i2, i2_prev, i3, i3_prev;
+    const array_t<prtldx_t*> dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
+    const array_t<real_t*>   ux1, ux2, ux3, weight, phi;
+    const array_t<real_t**>  pld;
+    array_t<short*>          tag;
+    const array_t<npart_t*>  outgoing_indices;
 
   public:
-    PopulatePrtlSendBuffer_kernel(array_t<int*>&               send_buff_int,
-                                  array_t<real_t*>&            send_buff_real,
-                                  array_t<prtldx_t*>&          send_buff_prtldx,
-                                  array_t<real_t*>&            send_buff_pld,
-                                  unsigned short               NINTS,
-                                  unsigned short               NREALS,
-                                  unsigned short               NPRTLDX,
-                                  unsigned short               NPLDS,
-                                  npart_t                  idx_offset,
-                                  const array_t<int*>&         i1,
-                                  const array_t<int*>&         i1_prev,
-                                  const array_t<prtldx_t*>&    dx1,
-                                  const array_t<prtldx_t*>&    dx1_prev,
-                                  const array_t<int*>&         i2,
-                                  const array_t<int*>&         i2_prev,
-                                  const array_t<prtldx_t*>&    dx2,
-                                  const array_t<prtldx_t*>&    dx2_prev,
-                                  const array_t<int*>&         i3,
-                                  const array_t<int*>&         i3_prev,
-                                  const array_t<prtldx_t*>&    dx3,
-                                  const array_t<prtldx_t*>&    dx3_prev,
-                                  const array_t<real_t*>&      ux1,
-                                  const array_t<real_t*>&      ux2,
-                                  const array_t<real_t*>&      ux3,
-                                  const array_t<real_t*>&      weight,
-                                  const array_t<real_t*>&      phi,
-                                  const array_t<real_t**>&     pld,
-                                  array_t<short*>&             tag,
-                                  const array_t<npart_t*>& outgoing_indices)
+    PopulatePrtlSendBuffer_kernel(array_t<int*>&            send_buff_int,
+                                  array_t<real_t*>&         send_buff_real,
+                                  array_t<prtldx_t*>&       send_buff_prtldx,
+                                  array_t<real_t*>&         send_buff_pld,
+                                  unsigned short            NINTS,
+                                  unsigned short            NREALS,
+                                  unsigned short            NPRTLDX,
+                                  unsigned short            NPLDS,
+                                  npart_t                   idx_offset,
+                                  const array_t<int*>&      i1,
+                                  const array_t<int*>&      i1_prev,
+                                  const array_t<prtldx_t*>& dx1,
+                                  const array_t<prtldx_t*>& dx1_prev,
+                                  const array_t<int*>&      i2,
+                                  const array_t<int*>&      i2_prev,
+                                  const array_t<prtldx_t*>& dx2,
+                                  const array_t<prtldx_t*>& dx2_prev,
+                                  const array_t<int*>&      i3,
+                                  const array_t<int*>&      i3_prev,
+                                  const array_t<prtldx_t*>& dx3,
+                                  const array_t<prtldx_t*>& dx3_prev,
+                                  const array_t<real_t*>&   ux1,
+                                  const array_t<real_t*>&   ux2,
+                                  const array_t<real_t*>&   ux3,
+                                  const array_t<real_t*>&   weight,
+                                  const array_t<real_t*>&   phi,
+                                  const array_t<real_t**>&  pld,
+                                  array_t<short*>&          tag,
+                                  const array_t<npart_t*>&  outgoing_indices)
       : send_buff_int { send_buff_int }
       , send_buff_real { send_buff_real }
       , send_buff_prtldx { send_buff_prtldx }

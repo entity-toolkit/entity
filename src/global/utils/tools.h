@@ -60,8 +60,8 @@ namespace tools {
    * @return Tensor product of list
    */
   template <typename T>
-  inline auto TensorProduct(const std::vector<std::vector<T>>& list)
-    -> std::vector<std::vector<T>> {
+  inline auto TensorProduct(
+    const std::vector<std::vector<T>>& list) -> std::vector<std::vector<T>> {
     std::vector<std::vector<T>> result = { {} };
     for (const auto& sublist : list) {
       std::vector<std::vector<T>> temp;
@@ -81,8 +81,8 @@ namespace tools {
    * @param ndomains Number of domains
    * @param ncells Number of cells
    */
-  inline auto decompose1D(unsigned int ndomains, ncells_t ncells)
-    -> std::vector<ncells_t> {
+  inline auto decompose1D(unsigned int ndomains,
+                          ncells_t     ncells) -> std::vector<ncells_t> {
     auto size          = (ncells_t)((double)ncells / (double)ndomains);
     auto ncells_domain = std::vector<ncells_t>(ndomains, size);
     for (auto i { 0u }; i < ncells - size * ndomains; ++i) {
@@ -107,8 +107,10 @@ namespace tools {
    * @param s1 Proportion of the first dimension
    * @param s2 Proportion of the second dimension
    */
-  inline auto divideInProportions2D(unsigned int ntot, unsigned int s1, unsigned int s2)
-    -> std::tuple<unsigned int, unsigned int> {
+  inline auto divideInProportions2D(
+    unsigned int ntot,
+    unsigned int s1,
+    unsigned int s2) -> std::tuple<unsigned int, unsigned int> {
     auto n1 = (unsigned int)(std::sqrt((double)ntot * (double)s1 / (double)s2));
     if (n1 == 0) {
       return { 1, ntot };
@@ -130,11 +132,11 @@ namespace tools {
    * @param s2 Proportion of the second dimension
    * @param s3 Proportion of the third dimension
    */
-  inline auto divideInProportions3D(unsigned int ntot,
-                                    unsigned int s1,
-                                    unsigned int s2,
-                                    unsigned int s3)
-    -> std::tuple<unsigned int, unsigned int, unsigned int> {
+  inline auto divideInProportions3D(
+    unsigned int ntot,
+    unsigned int s1,
+    unsigned int s2,
+    unsigned int s3) -> std::tuple<unsigned int, unsigned int, unsigned int> {
     auto n1 = (unsigned int)(std::cbrt(
       (double)ntot * (double)(SQR(s1)) / (double)(s2 * s3)));
     if (n1 > ntot) {
@@ -163,10 +165,10 @@ namespace tools {
    *
    * @note If decomposition has -1, it will be calculated automatically
    */
-  inline auto Decompose(unsigned int                 ndomains,
-                        const std::vector<ncells_t>& ncells,
-                        const std::vector<int>&      decomposition)
-    -> std::vector<std::vector<ncells_t>> {
+  inline auto Decompose(
+    unsigned int                 ndomains,
+    const std::vector<ncells_t>& ncells,
+    const std::vector<int>& decomposition) -> std::vector<std::vector<ncells_t>> {
     const auto dimension = ncells.size();
     raise::ErrorIf(dimension != decomposition.size(),
                    "Decomposition error: dimension != decomposition.size",

@@ -53,18 +53,21 @@ struct Force {
 
   Force(real_t force) : force { force } {}
 
-  Inline auto fx1(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
+  Inline auto fx1(const spidx_t&,
+                  const simtime_t&,
+                  const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::sin(ONE);
   }
 
-  Inline auto fx2(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
+  Inline auto fx2(const spidx_t&,
+                  const simtime_t&,
+                  const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::cos(ONE);
   }
 
-  Inline auto fx3(const spidx_t&, const simtime_t&, const coord_t<Dim::_3D>&) const
-    -> real_t {
+  Inline auto fx3(const spidx_t&,
+                  const simtime_t&,
+                  const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::cos(ONE);
   }
 

@@ -16,8 +16,8 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/numeric.h"
 #include "utils/comparators.h"
+#include "utils/numeric.h"
 
 #include "metrics/metric_base.h"
 
@@ -231,11 +231,12 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_alpha(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
 
-      return - (dr * Sigma(r, theta) - r * dr_Sigma) * CUBE(alpha(x)) / SQR(Sigma(r, theta));
+      return -(dr * Sigma(r, theta) - r * dr_Sigma) * CUBE(alpha(x)) /
+             SQR(Sigma(r, theta));
     }
 
     /**
@@ -243,8 +244,8 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_alpha(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
       return CUBE(alpha(x)) * r * dt_Sigma(theta) / SQR(Sigma(r, theta));
     }
 
@@ -262,11 +263,12 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_beta1(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
 
-      return dr_inv * TWO * (dr * Sigma(r, theta) - r * dr_Sigma) / SQR(Sigma(r, theta) + TWO * r);
+      return dr_inv * TWO * (dr * Sigma(r, theta) - r * dr_Sigma) /
+             SQR(Sigma(r, theta) + TWO * r);
     }
 
     /**
@@ -274,9 +276,10 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_beta1(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      return - dr_inv * TWO * r * dt_Sigma(theta) / SQR(Sigma(r, theta) * (ONE + z(r, theta)));
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      return -dr_inv * TWO * r * dt_Sigma(theta) /
+             SQR(Sigma(r, theta) * (ONE + z(r, theta)));
     }
 
     /**
@@ -284,15 +287,17 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_h11(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
-      const real_t dr_Delta {TWO * dr * (r - ONE)};
-      const real_t dr_A {FOUR * r * dr * (SQR(r) + SQR(a)) - SQR(a) * SQR(math::sin(theta)) * dr_Delta};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
+      const real_t dr_Delta { TWO * dr * (r - ONE) };
+      const real_t dr_A { FOUR * r * dr * (SQR(r) + SQR(a)) -
+                          SQR(a) * SQR(math::sin(theta)) * dr_Delta };
 
-      return (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dr_A 
-             - TWO * A(r, theta) * (r * dr_Sigma + Sigma(r, theta) * (dr_Sigma + dr))) 
-             / (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r))) * SQR(dr_inv);
+      return (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dr_A -
+              TWO * A(r, theta) *
+                (r * dr_Sigma + Sigma(r, theta) * (dr_Sigma + dr))) /
+             (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r))) * SQR(dr_inv);
     }
 
     /**
@@ -300,11 +305,11 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_h22(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
 
-      return - dr_Sigma / SQR(Sigma(r, theta)) * SQR(dtheta_inv);
+      return -dr_Sigma / SQR(Sigma(r, theta)) * SQR(dtheta_inv);
     }
 
     /**
@@ -312,11 +317,11 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_h33(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
 
-      return - dr_Sigma / SQR(Sigma(r, theta)) / SQR(math::sin(theta));
+      return -dr_Sigma / SQR(Sigma(r, theta)) / SQR(math::sin(theta));
     }
 
     /**
@@ -324,11 +329,11 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dr_h13(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      const real_t dr_Sigma {TWO * r * dr};
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      const real_t dr_Sigma { TWO * r * dr };
 
-      return - a * dr_Sigma / SQR(Sigma(r, theta)) * dr_inv;
+      return -a * dr_Sigma / SQR(Sigma(r, theta)) * dr_inv;
     }
 
     /**
@@ -336,11 +341,13 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_Sigma(const real_t& theta) const -> real_t {
-      const real_t dt_Sigma {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * dtheta};
-      if (cmp::AlmostZero(dt_Sigma))
+      const real_t dt_Sigma { -TWO * SQR(a) * math::sin(theta) *
+                              math::cos(theta) * dtheta };
+      if (cmp::AlmostZero(dt_Sigma)) {
         return ZERO;
-      else
+      } else {
         return dt_Sigma;
+      }
     }
 
     /**
@@ -348,11 +355,13 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_A(const real_t& r, const real_t& theta) const -> real_t {
-      const real_t dt_A {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * Delta(r) * dtheta};
-      if (cmp::AlmostZero(dt_A))
+      const real_t dt_A { -TWO * SQR(a) * math::sin(theta) * math::cos(theta) *
+                          Delta(r) * dtheta };
+      if (cmp::AlmostZero(dt_A)) {
         return ZERO;
-      else
+      } else {
         return dt_A;
+      }
     }
 
     /**
@@ -360,11 +369,11 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_h11(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      return (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dt_A(r, theta) 
-             - TWO * A(r, theta) * dt_Sigma(theta) * (r + Sigma(r, theta))) 
-             / (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r))) * SQR(dr_inv);
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      return (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dt_A(r, theta) -
+              TWO * A(r, theta) * dt_Sigma(theta) * (r + Sigma(r, theta))) /
+             (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r))) * SQR(dr_inv);
     }
 
     /**
@@ -372,9 +381,9 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_h22(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      return - dt_Sigma(theta) / SQR(Sigma(r, theta)) * SQR(dtheta_inv);
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      return -dt_Sigma(theta) / SQR(Sigma(r, theta)) * SQR(dtheta_inv);
     }
 
     /**
@@ -382,9 +391,11 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_h33(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      return - TWO * dtheta * math::cos(theta) * (Sigma(r, theta) - SQR(a) * SQR(math::sin(theta))) / CUBE(math::sin(theta)) / SQR(Sigma(r, theta));
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      return -TWO * dtheta * math::cos(theta) *
+             (Sigma(r, theta) - SQR(a) * SQR(math::sin(theta))) /
+             CUBE(math::sin(theta)) / SQR(Sigma(r, theta));
     }
 
     /**
@@ -392,9 +403,9 @@ namespace metric {
      * @param x coordinate array in code units
      */
     Inline auto dt_h13(const coord_t<D>& x) const -> real_t {
-      const real_t r {x[0] * dr + x1_min};
-      const real_t theta {x[1] * dtheta + x2_min};
-      return - a * dt_Sigma(theta) / SQR(Sigma(r, theta)) * dr_inv;
+      const real_t r { x[0] * dr + x1_min };
+      const real_t theta { x[1] * dtheta + x2_min };
+      return -a * dt_Sigma(theta) / SQR(Sigma(r, theta)) * dr_inv;
     }
 
     /**

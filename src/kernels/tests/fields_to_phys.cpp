@@ -45,7 +45,7 @@ void testFlds2Phys(const std::vector<std::size_t>&      res,
   } else {
     extent = {
       ext[0],
-      {ZERO, constant::PI}
+      { ZERO, constant::PI }
     };
   }
 

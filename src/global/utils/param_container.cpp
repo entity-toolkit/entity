@@ -31,8 +31,8 @@ namespace prm {
   }
 
   template <typename T>
-  auto write(adios2::IO& io, const std::string& name, T var)
-    -> decltype(void(T()), void()) {
+  auto write(adios2::IO& io, const std::string& name, T var) -> decltype(void(T()),
+                                                                         void()) {
     io.DefineAttribute(name, var);
   }
 
@@ -47,8 +47,8 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_pair(adios2::IO& io, const std::string& name, std::pair<T, T> var)
-    -> typename std::enable_if<has_to_string<T>::value, void>::type {
+  auto write_pair(adios2::IO& io, const std::string& name, std::pair<T, T> var) ->
+    typename std::enable_if<has_to_string<T>::value, void>::type {
     std::vector<std::string> var_str;
     var_str.push_back(var.first.to_string());
     var_str.push_back(var.second.to_string());
@@ -56,8 +56,9 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_pair(adios2::IO& io, const std::string& name, std::pair<T, T> var)
-    -> decltype(void(T()), void()) {
+  auto write_pair(adios2::IO&        io,
+                  const std::string& name,
+                  std::pair<T, T>    var) -> decltype(void(T()), void()) {
     std::vector<T> var_vec;
     var_vec.push_back(var.first);
     var_vec.push_back(var.second);
@@ -75,8 +76,9 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_vec(adios2::IO& io, const std::string& name, std::vector<T> var)
-    -> decltype(void(T()), void()) {
+  auto write_vec(adios2::IO&        io,
+                 const std::string& name,
+                 std::vector<T>     var) -> decltype(void(T()), void()) {
     io.DefineAttribute(name, var.data(), var.size());
   }
 
@@ -96,8 +98,8 @@ namespace prm {
   template <typename T>
   auto write_vec_pair(adios2::IO&                  io,
                       const std::string&           name,
-                      std::vector<std::pair<T, T>> var)
-    -> decltype(void(T()), void()) {
+                      std::vector<std::pair<T, T>> var) -> decltype(void(T()),
+                                                                    void()) {
     std::vector<T> var_vec;
     for (const auto& v : var) {
       var_vec.push_back(v.first);
@@ -123,8 +125,8 @@ namespace prm {
   template <typename T>
   auto write_vec_vec(adios2::IO&                 io,
                      const std::string&          name,
-                     std::vector<std::vector<T>> var)
-    -> decltype(void(T()), void()) {
+                     std::vector<std::vector<T>> var) -> decltype(void(T()),
+                                                                  void()) {
     std::vector<T> var_vec;
     for (const auto& vec : var) {
       for (const auto& v : vec) {

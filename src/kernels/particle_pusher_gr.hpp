@@ -356,28 +356,22 @@ namespace kernel::gr {
         //         DERIVATIVE_IN_TH((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
         //         TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp) *
         //           vp_mid[0] * vp_mid[2]));
-        vp_upd[0] =
-          vp[0] +
-          dt *
-            (-metric.alpha(xp) * u0 * metric.dr_alpha(xp) +
-             vp_mid[0] * metric.dr_beta1(xp) -
-             (HALF / u0) *
-               (metric.dr_h11(xp) * SQR(vp_mid[0]) +
-                metric.dr_h22(xp) * SQR(vp_mid[1]) +
-                metric.dr_h33(xp) * SQR(vp_mid[2]) +
-                TWO * metric.dr_h13(xp) *
-                  vp_mid[0] * vp_mid[2]));
-        vp_upd[1] =
-          vp[1] +
-          dt *
-            (-metric.alpha(xp) * u0 * metric.dt_alpha(xp) +
-             vp_mid[0] * metric.dt_beta1(xp) -
-             (HALF / u0) *
-               (metric.dt_h11(xp) * SQR(vp_mid[0]) +
-                metric.dt_h22(xp) * SQR(vp_mid[1]) +
-                metric.dt_h33(xp) * SQR(vp_mid[2]) +
-                TWO * metric.dt_h13(xp) *
-                  vp_mid[0] * vp_mid[2]));
+        vp_upd[0] = vp[0] +
+                    dt * (-metric.alpha(xp) * u0 * metric.dr_alpha(xp) +
+                          vp_mid[0] * metric.dr_beta1(xp) -
+                          (HALF / u0) *
+                            (metric.dr_h11(xp) * SQR(vp_mid[0]) +
+                             metric.dr_h22(xp) * SQR(vp_mid[1]) +
+                             metric.dr_h33(xp) * SQR(vp_mid[2]) +
+                             TWO * metric.dr_h13(xp) * vp_mid[0] * vp_mid[2]));
+        vp_upd[1] = vp[1] +
+                    dt * (-metric.alpha(xp) * u0 * metric.dt_alpha(xp) +
+                          vp_mid[0] * metric.dt_beta1(xp) -
+                          (HALF / u0) *
+                            (metric.dt_h11(xp) * SQR(vp_mid[0]) +
+                             metric.dt_h22(xp) * SQR(vp_mid[1]) +
+                             metric.dt_h33(xp) * SQR(vp_mid[2]) +
+                             TWO * metric.dt_h13(xp) * vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
@@ -680,10 +674,11 @@ namespace kernel::gr {
 
       coord_t<Dim::_2D> xp_ { ZERO };
       xp_[0] = xp[0];
-      real_t theta_Cd { xp[1] };
-      const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(theta_Cd) };
+      real_t       theta_Cd { xp[1] };
+      const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(
+        theta_Cd) };
       const real_t small_angle { constant::SMALL_ANGLE_GR };
-      const auto large_angle { constant::PI - small_angle };
+      const auto   large_angle { constant::PI - small_angle };
       if (theta_Ph < small_angle) {
         theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
       } else if (theta_Ph >= large_angle) {
@@ -723,7 +718,7 @@ namespace kernel::gr {
         { (xp[0] + xp_upd[0]) * HALF, (xp[1] + xp_upd[1]) * HALF },
         vp_upd,
         phi(p));
-      
+
       // update coordinate
       int      i1_, i2_;
       prtldx_t dx1_, dx2_;

@@ -139,12 +139,12 @@ void testMetric(const std::vector<std::size_t>&      res,
 
       if (not equal<Dim::_3D>(h_ij_predict, h_ij_expect, "h_ij", acc)) {
         Kokkos::printf("h_ij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
-               h_ij_predict[0],
-               h_ij_predict[1],
-               h_ij_predict[2],
-               h_ij_expect[0],
-               h_ij_expect[1],
-               h_ij_expect[2]);
+                       h_ij_predict[0],
+                       h_ij_predict[1],
+                       h_ij_predict[2],
+                       h_ij_expect[0],
+                       h_ij_expect[1],
+                       h_ij_expect[2]);
         Kokkos::abort("h_ij");
       }
       if (not equal<Dim::_1D>(h_13_predict, { h_13_expect }, "h_13", acc)) {
@@ -153,12 +153,12 @@ void testMetric(const std::vector<std::size_t>&      res,
       }
       if (not equal<Dim::_3D>(hij_predict, hij_expect, "hij", acc)) {
         Kokkos::printf("hij: %.12e %.12e %.12e : %.12e %.12e %.12e\n",
-               hij_predict[0],
-               hij_predict[1],
-               hij_predict[2],
-               hij_expect[0],
-               hij_expect[1],
-               hij_expect[2]);
+                       hij_predict[0],
+                       hij_predict[1],
+                       hij_predict[2],
+                       hij_expect[0],
+                       hij_expect[1],
+                       hij_expect[2]);
         Kokkos::abort("hij");
       }
       if (not equal<Dim::_1D>(h13_predict, { h13_expect }, "h13", acc)) {

@@ -159,12 +159,12 @@ auto main(int argc, char* argv[]) -> int {
                       field_read(i1),
                       field(i1 * dwn1 + first_cell + i1min, cntr))) {
                   Kokkos::printf("\n:::::::::::::::\nfield_read(%ld) = %f != "
-                         "field(%ld, %d) = %f\n:::::::::::::::\n",
-                         i1,
-                         field_read(i1),
-                         i1 * dwn1 + first_cell + i1min,
-                         cntr,
-                         field(i1 * dwn1 + first_cell + i1min, cntr));
+                                 "field(%ld, %d) = %f\n:::::::::::::::\n",
+                                 i1,
+                                 field_read(i1),
+                                 i1 * dwn1 + first_cell + i1min,
+                                 cntr,
+                                 field(i1 * dwn1 + first_cell + i1min, cntr));
                   raise::KernelError(HERE, "Field is not read correctly");
                 }
               });

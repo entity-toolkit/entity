@@ -840,30 +840,30 @@ namespace kernel::bc {
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_2D) {
-        // ! TODO: not all components are necessary 
+        // ! TODO: not all components are necessary
         if constexpr (not P) {
           if (setE) {
             Fld(i1, i_edge - 1, em::ex2) = -Fld(i1, i_edge, em::ex2);
-            Fld(i1, i_edge, em::ex3)     =  ZERO;
-            Fld(i1, i_edge - 1, em::ex3) =  Fld(i1, i_edge + 1, em::ex3);
+            Fld(i1, i_edge, em::ex3)     = ZERO;
+            Fld(i1, i_edge - 1, em::ex3) = Fld(i1, i_edge + 1, em::ex3);
           }
           if (setB) {
             Fld(i1, i_edge - 1, em::bx1) = Fld(i1, i_edge, em::bx1);
             Fld(i1, i_edge, em::bx2)     = ZERO;
-            Fld(i1, i_edge - 1, em::bx2) = - Fld(i1, i_edge + 1, em::bx2);
+            Fld(i1, i_edge - 1, em::bx2) = -Fld(i1, i_edge + 1, em::bx2);
             Fld(i1, i_edge - 1, em::bx3) = Fld(i1, i_edge, em::bx3);
           }
         } else {
           if (setE) {
-            Fld(i1, i_edge, em::ex2) = -Fld(i1, i_edge - 1, em::ex2);
-            Fld(i1, i_edge, em::ex3) =  ZERO;
+            Fld(i1, i_edge, em::ex2)     = -Fld(i1, i_edge - 1, em::ex2);
+            Fld(i1, i_edge, em::ex3)     = ZERO;
             Fld(i1, i_edge + 1, em::ex3) = Fld(i1, i_edge - 1, em::ex3);
           }
           if (setB) {
-            Fld(i1, i_edge, em::bx1) = Fld(i1, i_edge - 1, em::bx1);
-            Fld(i1, i_edge, em::bx2) = ZERO;
-            Fld(i1, i_edge + 1, em::bx2) = - Fld(i1, i_edge - 1, em::bx2);
-            Fld(i1, i_edge, em::bx3) = Fld(i1, i_edge - 1, em::bx3);
+            Fld(i1, i_edge, em::bx1)     = Fld(i1, i_edge - 1, em::bx1);
+            Fld(i1, i_edge, em::bx2)     = ZERO;
+            Fld(i1, i_edge + 1, em::bx2) = -Fld(i1, i_edge - 1, em::bx2);
+            Fld(i1, i_edge, em::bx3)     = Fld(i1, i_edge - 1, em::bx3);
           }
         }
       } else {
