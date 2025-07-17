@@ -34,9 +34,9 @@ Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
   if ((a - b) >= eps * math::max(math::fabs(a), math::fabs(b))) {
     Kokkos::printf("%.12e != %.12e %s\n", a, b, msg);
     Kokkos::printf("%.12e >= %.12e %s\n",
-           a - b,
-           eps * math::max(math::fabs(a), math::fabs(b)),
-           msg);
+                   a - b,
+                   eps * math::max(math::fabs(a), math::fabs(b)),
+                   msg);
     return false;
   }
   return true;
@@ -89,7 +89,7 @@ void testDeposit(const std::vector<std::size_t>&      res,
   array_t<short*>      tag { "tag", 10 };
   const real_t         charge { 1.0 }, inv_dt { 1.0 };
 
-  const int i0 = 4, j0 = 4;
+  const int i0 = 40, j0 = 40;
 
   const prtldx_t dxi = 0.53, dxf = 0.47;
   const prtldx_t dyi = 0.34, dyf = 0.52;
@@ -125,13 +125,16 @@ void testDeposit(const std::vector<std::size_t>&      res,
   put_value<prtldx_t>(dx2, dyf, 0);
   put_value<prtldx_t>(dx1_prev, dxi, 0);
   put_value<prtldx_t>(dx2_prev, dyi, 0);
+  put_value<real_t>(ux1, ZERO, 0);
+  put_value<real_t>(ux2, ZERO, 0);
+  put_value<real_t>(ux3, ZERO, 0);
   put_value<real_t>(weight, 1.0, 0);
   put_value<short>(tag, ParticleTag::alive, 0);
 
   auto J_scat = Kokkos::Experimental::create_scatter_view(J);
 
   // clang-format off
-  Kokkos::parallel_for("CurrentsDeposit", 10,
+  Kokkos::parallel_for("CurrentsDeposit", 1,
                        kernel::DepositCurrents_kernel<S, M>(J_scat,
                                                             i1, i2, i3,
                                                             i1_prev, i2_prev, i3_prev,
@@ -178,9 +181,9 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    const auto res      = std::vector<std::size_t> { 10, 10 };
+    const auto res      = std::vector<std::size_t> { 100, 100 };
     const auto r_extent = boundaries_t<real_t> {
-      { 0.0, 100.0 }
+      { 1.0, 100.0 }
     };
     const auto xy_extent = boundaries_t<real_t> {
       { 0.0, 55.0 },

@@ -250,10 +250,10 @@ namespace metric {
     Inline auto dr_alpha(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
-
-      return - (dx_r * Sigma(r, theta) - r * dr_Sigma) * CUBE(alpha(x)) / SQR(Sigma(r, theta));
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
+      return -(dx_r * Sigma(r, theta) - r * dr_Sigma) * CUBE(alpha(x)) /
+             SQR(Sigma(r, theta));
     }
 
     /**
@@ -262,10 +262,16 @@ namespace metric {
      */
     Inline auto dt_alpha(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      const real_t dx_dt {deta * (ONE + TWO * h0 * static_cast<real_t>(constant::INV_PI_SQR) * (TWO * THREE * SQR(eta) - TWO * THREE * static_cast<real_t>(constant::PI) * eta + static_cast<real_t>(constant::PI_SQR))) };
-      const real_t dt_Sigma {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * dx_dt};
+      const real_t dx_dt {
+        deta * (ONE + TWO * h0 * static_cast<real_t>(constant::INV_PI_SQR) *
+                        (TWO * THREE * SQR(eta) -
+                         TWO * THREE * static_cast<real_t>(constant::PI) * eta +
+                         static_cast<real_t>(constant::PI_SQR)))
+      };
+      const real_t dt_Sigma { -TWO * SQR(a) * math::sin(theta) *
+                              math::cos(theta) * dx_dt };
 
       return r * dt_Sigma * CUBE(alpha(x)) / SQR(Sigma(r, theta));
     }
@@ -291,11 +297,13 @@ namespace metric {
       const real_t r { r0 + math::exp(chi) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
       const real_t z_ { z(r, theta) };
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
 
-      return math::exp(-chi) * dchi_inv * TWO * (dx_r * Sigma(r, theta) - r * dr_Sigma) / SQR(Sigma(r, theta) + TWO * r)
-             - dchi * math::exp(-chi) * dchi_inv * z_ / (ONE + z_);
+      return math::exp(-chi) * dchi_inv * TWO *
+               (dx_r * Sigma(r, theta) - r * dr_Sigma) /
+               SQR(Sigma(r, theta) + TWO * r) -
+             dchi * math::exp(-chi) * dchi_inv * z_ / (ONE + z_);
     }
 
     /**
@@ -305,9 +313,10 @@ namespace metric {
     Inline auto dt_beta1(const coord_t<D>& x) const -> real_t {
       const real_t chi { x[0] * dchi + chi_min };
       const real_t r { r0 + math::exp(chi) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      return - math::exp(-chi) * dchi_inv * TWO * r * dt_Sigma(eta) / SQR(Sigma(r, theta) * (ONE + z(r, theta)));
+      return -math::exp(-chi) * dchi_inv * TWO * r * dt_Sigma(eta) /
+             SQR(Sigma(r, theta) * (ONE + z(r, theta)));
     }
 
     /**
@@ -318,16 +327,19 @@ namespace metric {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
 
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
-      const real_t dr_Delta {TWO * dx_r * (r - ONE)};
-      const real_t dr_A {FOUR * r * dx_r * (SQR(r) + SQR(a)) - SQR(a) * SQR(math::sin(theta)) * dr_Delta};
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
+      const real_t dr_Delta { TWO * dx_r * (r - ONE) };
+      const real_t dr_A { FOUR * r * dx_r * (SQR(r) + SQR(a)) -
+                          SQR(a) * SQR(math::sin(theta)) * dr_Delta };
 
-      return (math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) 
-             * (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dr_A 
-             - TWO * A(r, theta) * (r * dr_Sigma + Sigma(r, theta) * (dr_Sigma + dx_r))) 
-             / (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r))) )
-             -TWO * dchi * math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) * A(r, theta) / (Sigma(r, theta) * (Sigma(r, theta) + TWO * r));
+      return (math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) *
+              (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dr_A -
+               TWO * A(r, theta) *
+                 (r * dr_Sigma + Sigma(r, theta) * (dr_Sigma + dx_r))) /
+              (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r)))) -
+             TWO * dchi * math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) *
+               A(r, theta) / (Sigma(r, theta) * (Sigma(r, theta) + TWO * r));
     }
 
     /**
@@ -337,10 +349,10 @@ namespace metric {
     Inline auto dr_h22(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
 
-      return - dr_Sigma / SQR(Sigma(r, theta)) / SQR(deta);
+      return -dr_Sigma / SQR(Sigma(r, theta)) / SQR(deta);
     }
 
     /**
@@ -350,10 +362,10 @@ namespace metric {
     Inline auto dr_h33(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
 
-      return - dr_Sigma / SQR(Sigma(r, theta)) / SQR(math::sin(theta));
+      return -dr_Sigma / SQR(Sigma(r, theta)) / SQR(math::sin(theta));
     }
 
     /**
@@ -363,11 +375,13 @@ namespace metric {
     Inline auto dr_h13(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
       const real_t theta { eta2theta(x[1] * deta + eta_min) };
-      const real_t dx_r {dchi * math::exp(x[0] * dchi + chi_min)};
-      const real_t dr_Sigma {TWO * r * dx_r};
+      const real_t dx_r { dchi * math::exp(x[0] * dchi + chi_min) };
+      const real_t dr_Sigma { TWO * r * dx_r };
 
-      return - a * dr_Sigma / SQR(Sigma(r, theta)) * (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv)
-             - dchi * (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv) * a / Sigma(r, theta);
+      return -a * dr_Sigma / SQR(Sigma(r, theta)) *
+               (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv) -
+             dchi * (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv) * a /
+               Sigma(r, theta);
     }
 
     /**
@@ -376,11 +390,13 @@ namespace metric {
      */
     Inline auto dt_Sigma(const real_t& eta) const -> real_t {
       const real_t theta { eta2theta(eta) };
-      const real_t dt_Sigma {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * dx_dt(eta)};
-      if (cmp::AlmostZero(dt_Sigma))
+      const real_t dt_Sigma { -TWO * SQR(a) * math::sin(theta) *
+                              math::cos(theta) * dx_dt(eta) };
+      if (cmp::AlmostZero(dt_Sigma)) {
         return ZERO;
-      else
+      } else {
         return dt_Sigma;
+      }
     }
 
     /**
@@ -389,12 +405,14 @@ namespace metric {
      */
     Inline auto dt_A(const real_t& r, const real_t& eta) const -> real_t {
       const real_t theta { eta2theta(eta) };
-      const real_t dt_A {- TWO * SQR(a) * math::sin(theta) * math::cos(theta) * Delta(r) * dx_dt(eta)};
-      if (cmp::AlmostZero(dt_A))
+      const real_t dt_A { -TWO * SQR(a) * math::sin(theta) * math::cos(theta) *
+                          Delta(r) * dx_dt(eta) };
+      if (cmp::AlmostZero(dt_A)) {
         return ZERO;
-      else
+      } else {
         return dt_A;
-    }   
+      }
+    }
 
     /**
      * dtheta derivative of h^11
@@ -402,12 +420,12 @@ namespace metric {
      */
     Inline auto dt_h11(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      return math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) 
-             * (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dt_A(r, eta) 
-             - TWO * A(r, theta) * dt_Sigma(eta) * (r + Sigma(r, theta))) 
-             / (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r)));
+      return math::exp(-TWO * (x[0] * dchi + chi_min)) / SQR(dchi) *
+             (Sigma(r, theta) * (Sigma(r, theta) + TWO * r) * dt_A(r, eta) -
+              TWO * A(r, theta) * dt_Sigma(eta) * (r + Sigma(r, theta))) /
+             (SQR(Sigma(r, theta) * (Sigma(r, theta) + TWO * r)));
     }
 
     /**
@@ -416,9 +434,9 @@ namespace metric {
      */
     Inline auto dt_h22(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      return - dt_Sigma(eta) / SQR(Sigma(r, theta)) / SQR(deta);
+      return -dt_Sigma(eta) / SQR(Sigma(r, theta)) / SQR(deta);
     }
 
     /**
@@ -427,9 +445,11 @@ namespace metric {
      */
     Inline auto dt_h33(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      return - (dt_Sigma(eta) + TWO * math::cos(theta) / math::sin(theta) * Sigma(r, theta) * dx_dt(eta)) / SQR(Sigma(r, theta) * math::sin(theta));
+      return -(dt_Sigma(eta) + TWO * math::cos(theta) / math::sin(theta) *
+                                 Sigma(r, theta) * dx_dt(eta)) /
+             SQR(Sigma(r, theta) * math::sin(theta));
     }
 
     /**
@@ -438,9 +458,10 @@ namespace metric {
      */
     Inline auto dt_h13(const coord_t<D>& x) const -> real_t {
       const real_t r { r0 + math::exp(x[0] * dchi + chi_min) };
-      const real_t eta {x[1] * deta + eta_min };
+      const real_t eta { x[1] * deta + eta_min };
       const real_t theta { eta2theta(eta) };
-      return - a * dt_Sigma(eta) / SQR(Sigma(r, theta)) * (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv);
+      return -a * dt_Sigma(eta) / SQR(Sigma(r, theta)) *
+             (math::exp(-(x[0] * dchi + chi_min)) * dchi_inv);
     }
 
     /**
@@ -486,11 +507,11 @@ namespace metric {
     Inline auto polar_area(const real_t& x1) const -> real_t {
       if constexpr (D != Dim::_1D) {
         return dchi * math::exp(x1 * dchi + chi_min) *
-              (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
-              math::sqrt(
-                ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
-                        (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
-              (ONE - math::cos(eta2theta(HALF * deta)));
+               (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
+               math::sqrt(
+                 ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
+                         (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
+               (ONE - math::cos(eta2theta(HALF * deta)));
       }
     }
 
@@ -662,9 +683,10 @@ namespace metric {
       if (cmp::AlmostZero(h0)) {
         return deta;
       } else {
-        return deta * (ONE 
-               + TWO * h0 * constant::INV_PI_SQR * 
-               (TWO * THREE * SQR(eta) - TWO * THREE * constant::PI * eta + constant::PI_SQR));
+        return deta *
+               (ONE + TWO * h0 * constant::INV_PI_SQR *
+                        (TWO * THREE * SQR(eta) -
+                         TWO * THREE * constant::PI * eta + constant::PI_SQR));
       }
     }
 
