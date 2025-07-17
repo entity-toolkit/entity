@@ -475,7 +475,10 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      getInterpFlds(p, ei, bi);
+      //getInterpFlds(p, ei, bi);
+      //  ToDo: Better way to call this
+      getInterpFlds2nd(p, ei, bi);
+
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
       if (cooling != 0) {
@@ -1087,6 +1090,533 @@ namespace kernel::sr {
         c11   = c011 * pondmx + c111 * pondpx;
         c1    = c01 * ponpmy + c11 * ponppy;
         b0[2] = c0 * ponpmz + c1 * ponppz;
+      }
+    }
+
+    Inline void getInterpFlds2nd(index_t&         p,
+                                 vec_t<Dim::_3D>& e0,
+                                 vec_t<Dim::_3D>& b0) const {
+      if constexpr (D == Dim::_1D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+
+        // direct interpolation of staggered grid
+        // primal = i+ind, dual = i
+        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
+
+        // Compute weights for second-order interpolation
+        // primal
+        const auto w0p = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1p = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2p = ONE - w0p - w1p;
+
+        // dual
+        const auto w0d = HALF * SQR(ONE - dx1_);
+        const auto w2d = HALF * SQR(dx1_);
+        const auto w1d = ONE - w0d - w2d;
+
+        // Ex1 (dual grid)
+        const auto ex1_0 = EB(i - 1, em::ex1);
+        const auto ex1_1 = EB(i, em::ex1);
+        const auto ex1_2 = EB(i + 1, em::ex1);
+        e0[0]            = ex1_0 * w0d + ex1_1 * w1d + ex1_2 * w2d;
+
+        // Ex2 (primal grid)
+        const auto ex2_0 = EB(indx + i - 1, em::ex2);
+        const auto ex2_1 = EB(indx + i, em::ex2);
+        const auto ex2_2 = EB(indx + i + 1, em::ex2);
+        e0[1]            = ex2_0 * w0p + ex2_1 * w1p + ex2_2 * w2p;
+
+        // Ex3 (primal grid)
+        const auto ex3_0 = EB(indx + i - 1, em::ex3);
+        const auto ex3_1 = EB(indx + i, em::ex3);
+        const auto ex3_2 = EB(indx + i + 1, em::ex3);
+        e0[2]            = ex3_0 * w0p + ex3_1 * w1p + ex3_2 * w2p;
+
+        // Bx1 (primal grid)
+        const auto bx1_0 = EB(indx + i - 1, em::bx1);
+        const auto bx1_1 = EB(indx + i, em::bx1);
+        const auto bx1_2 = EB(indx + i + 1, em::bx1);
+        b0[0]            = bx1_0 * w0p + bx1_1 * w1p + bx1_2 * w2p;
+
+        // Bx2 (dual grid)
+        const auto bx2_0 = EB(i - 1, em::bx2);
+        const auto bx2_1 = EB(i, em::bx2);
+        const auto bx2_2 = EB(i + 1, em::bx2);
+        b0[1]            = bx2_0 * w0d + bx2_1 * w1d + bx2_2 * w2d;
+
+        // Bx3 (dual grid)
+        const auto bx3_0 = EB(i - 1, em::bx3);
+        const auto bx3_1 = EB(i, em::bx3);
+        const auto bx3_2 = EB(i + 1, em::bx3);
+        b0[2]            = bx3_0 * w0d + bx3_1 * w1d + bx3_2 * w2d;
+
+      } else if constexpr (D == Dim::_2D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+        const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+        // direct interpolation of staggered grid
+        // primal = i+ind, dual = i
+        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
+        const int indy = static_cast<int>(static_cast<real_t>(dx2_ + HALF));
+
+        // Compute weights for second-order interpolation
+        // primal
+        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2px = ONE - w0px - w1px;
+        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
+        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w2py = ONE - w0py - w1py;
+
+        // dual
+        const auto w0dx = HALF * SQR(ONE - dx1_);
+        const auto w2dx = HALF * SQR(dx1_);
+        const auto w1dx = ONE - w0dx - w2dx;
+        const auto w0dy = HALF * SQR(ONE - dx2_);
+        const auto w2dy = HALF * SQR(dx2_);
+        const auto w1dy = ONE - w0dy - w2dy;
+
+        // Ex1
+        // Interpolate --- (dual, primal)
+        // clang-format off
+        const auto ex1_000 = EB(i - 1, indy + j - 1, em::ex1);
+        const auto ex1_100 = EB(i,     indy + j - 1, em::ex1);
+        const auto ex1_200 = EB(i + 1, indy + j - 1, em::ex1);
+        const auto ex1_010 = EB(i - 1, indy + j,     em::ex1);
+        const auto ex1_110 = EB(i,     indy + j,     em::ex1);
+        const auto ex1_210 = EB(i + 1, indy + j,     em::ex1);
+        const auto ex1_020 = EB(i - 1, indy + j + 1, em::ex1);
+        const auto ex1_120 = EB(i,     indy + j + 1, em::ex1);
+        const auto ex1_220 = EB(i + 1, indy + j + 1, em::ex1);
+        // clang-format on
+
+        const auto ex1_0 = ex1_000 * w0dx + ex1_100 * w1dx + ex1_200 * w2dx;
+        const auto ex1_1 = ex1_010 * w0dx + ex1_110 * w1dx + ex1_210 * w2dx;
+        const auto ex1_2 = ex1_020 * w0dx + ex1_120 * w1dx + ex1_220 * w2dx;
+        e0[0]            = ex1_0 * w0py + ex1_1 * w1py + ex1_2 * w2py;
+
+        // Ex2
+        // Interpolate --- (primal, dual)
+        // clang-format off
+        const auto ex2_000 = EB(indx + i - 1, j - 1, em::ex2);
+        const auto ex2_100 = EB(indx + i,     j - 1, em::ex2);
+        const auto ex2_200 = EB(indx + i + 1, j - 1, em::ex2);
+        const auto ex2_010 = EB(indx + i - 1, j,     em::ex2);
+        const auto ex2_110 = EB(indx + i,     j,     em::ex2);
+        const auto ex2_210 = EB(indx + i + 1, j,     em::ex2);
+        const auto ex2_020 = EB(indx + i - 1, j + 1, em::ex2);
+        const auto ex2_120 = EB(indx + i,     j + 1, em::ex2);
+        const auto ex2_220 = EB(indx + i + 1, j + 1, em::ex2);
+        // clang-format on
+
+        const auto ex2_0 = ex2_000 * w0px + ex2_100 * w1px + ex2_200 * w2px;
+        const auto ex2_1 = ex2_010 * w0px + ex2_110 * w1px + ex2_210 * w2px;
+        const auto ex2_2 = ex2_020 * w0px + ex2_120 * w1px + ex2_220 * w2px;
+        e0[1]            = ex2_0 * w0dy + ex2_1 * w1dy + ex2_2 * w2dy;
+
+        // Ex3
+        // Interpolate --- (primal, primal)
+        // clang-format off
+        const auto ex3_000 = EB(indx + i - 1, indy + j - 1, em::ex3);
+        const auto ex3_100 = EB(indx + i,     indy + j - 1, em::ex3);
+        const auto ex3_200 = EB(indx + i + 1, indy + j - 1, em::ex3);
+        const auto ex3_010 = EB(indx + i - 1, indy + j,     em::ex3);
+        const auto ex3_110 = EB(indx + i,     indy + j,     em::ex3);
+        const auto ex3_210 = EB(indx + i + 1, indy + j,     em::ex3);
+        const auto ex3_020 = EB(indx + i - 1, indy + j + 1, em::ex3);
+        const auto ex3_120 = EB(indx + i,     indy + j + 1, em::ex3);
+        const auto ex3_220 = EB(indx + i + 1, indy + j + 1, em::ex3);
+        // clang-format on
+
+        const auto ex3_0 = ex3_000 * w0px + ex3_100 * w1px + ex3_200 * w2px;
+        const auto ex3_1 = ex3_010 * w0px + ex3_110 * w1px + ex3_210 * w2px;
+        const auto ex3_2 = ex3_020 * w0px + ex3_120 * w1px + ex3_220 * w2px;
+        e0[2]            = ex3_0 * w0py + ex3_1 * w1py + ex3_2 * w2py;
+
+        // Bx1
+        // Interpolate --- (primal, dual)
+        // clang-format off
+        const auto bx1_000 = EB(indx + i - 1, j - 1, em::bx1);
+        const auto bx1_100 = EB(indx + i,     j - 1, em::bx1);
+        const auto bx1_200 = EB(indx + i + 1, j - 1, em::bx1);
+        const auto bx1_010 = EB(indx + i - 1, j,     em::bx1);
+        const auto bx1_110 = EB(indx + i,     j,     em::bx1);
+        const auto bx1_210 = EB(indx + i + 1, j,     em::bx1);
+        const auto bx1_020 = EB(indx + i - 1, j + 1, em::bx1);
+        const auto bx1_120 = EB(indx + i,     j + 1, em::bx1);
+        const auto bx1_220 = EB(indx + i + 1, j + 1, em::bx1);
+        // clang-format on
+
+        const auto bx1_0 = bx1_000 * w0px + bx1_100 * w1px + bx1_200 * w2px;
+        const auto bx1_1 = bx1_010 * w0px + bx1_110 * w1px + bx1_210 * w2px;
+        const auto bx1_2 = bx1_020 * w0px + bx1_120 * w1px + bx1_220 * w2px;
+        b0[0]            = bx1_0 * w0dy + bx1_1 * w1dy + bx1_2 * w2dy;
+
+        // Bx2
+        // Interpolate --- (dual, primal)
+        // clang-format off
+        const auto bx2_000 = EB(i - 1, indy + j - 1, em::bx2);
+        const auto bx2_100 = EB(i,     indy + j - 1, em::bx2);
+        const auto bx2_200 = EB(i + 1, indy + j - 1, em::bx2);
+        const auto bx2_010 = EB(i - 1, indy + j,     em::bx2);
+        const auto bx2_110 = EB(i,     indy + j,     em::bx2);
+        const auto bx2_210 = EB(i + 1, indy + j,     em::bx2);
+        const auto bx2_020 = EB(i - 1, indy + j + 1, em::bx2);
+        const auto bx2_120 = EB(i,     indy + j + 1, em::bx2);
+        const auto bx2_220 = EB(i + 1, indy + j + 1, em::bx2);
+        // clang-format on
+
+        const auto bx2_0 = bx2_000 * w0dx + bx2_100 * w1dx + bx2_200 * w2dx;
+        const auto bx2_1 = bx2_010 * w0dx + bx2_110 * w1dx + bx2_210 * w2dx;
+        const auto bx2_2 = bx2_020 * w0dx + bx2_120 * w1dx + bx2_220 * w2dx;
+        b0[1]            = bx2_0 * w0py + bx2_1 * w1py + bx2_2 * w2py;
+
+        // Bx3
+        // Interpolate --- (dual, dual)
+        // clang-format off
+        const auto bx3_000 = EB(i - 1, j - 1, em::bx3);
+        const auto bx3_100 = EB(i,     j - 1, em::bx3);
+        const auto bx3_200 = EB(i + 1, j - 1, em::bx3);
+        const auto bx3_010 = EB(i - 1, j,     em::bx3);
+        const auto bx3_110 = EB(i,     j,     em::bx3);
+        const auto bx3_210 = EB(i + 1, j,     em::bx3);
+        const auto bx3_020 = EB(i - 1, j + 1, em::bx3);
+        const auto bx3_120 = EB(i,     j + 1, em::bx3);
+        const auto bx3_220 = EB(i + 1, j + 1, em::bx3);
+        // clang-format on
+
+        const auto bx3_0 = bx3_000 * w0dx + bx3_100 * w1dx + bx3_200 * w2dx;
+        const auto bx3_1 = bx3_010 * w0dx + bx3_110 * w1dx + bx3_210 * w2dx;
+        const auto bx3_2 = bx3_020 * w0dx + bx3_120 * w1dx + bx3_220 * w2dx;
+        b0[2]            = bx3_0 * w0dy + bx3_1 * w1dy + bx3_2 * w2dy;
+
+      } else if constexpr (D == Dim::_3D) {
+        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+        const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+        const auto dx1_ { static_cast<real_t>(dx1(p)) };
+        const auto dx2_ { static_cast<real_t>(dx2(p)) };
+        const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+        // direct interpolation of staggered grid
+        // primal = i+ind, dual = i
+        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
+        const int indy = static_cast<int>(static_cast<real_t>(dx2_ + HALF));
+        const int indz = static_cast<int>(static_cast<real_t>(dx3_ + HALF));
+
+        // Compute weights for second-order interpolation
+        // primal
+        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
+        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w2px = ONE - w0px - w1px;
+        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
+        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w2py = ONE - w0py - w1py;
+        const auto w0pz = HALF * SQR(HALF - dx3_ + static_cast<real_t>(indz));
+        const auto w1pz = THREE_FOURTHS - SQR(dx3_ - static_cast<real_t>(indz));
+        const auto w2pz = ONE - w0pz - w1pz;
+
+        // dual
+        const auto w0dx = HALF * SQR(ONE - dx1_);
+        const auto w2dx = HALF * SQR(dx1_);
+        const auto w1dx = ONE - w0dx - w2dx;
+        const auto w0dy = HALF * SQR(ONE - dx2_);
+        const auto w2dy = HALF * SQR(dx2_);
+        const auto w1dy = ONE - w0dy - w2dy;
+        const auto w0dz = HALF * SQR(ONE - dx3_);
+        const auto w2dz = HALF * SQR(dx3_);
+        const auto w1dz = ONE - w0dz - w2dz;
+
+        // Ex1
+        // Interpolate --- (dual, primal, primal)
+        // clang-format off
+        const auto ex1_000 = EB(i - 1, indy + j - 1, indz + k - 1, em::ex1);
+        const auto ex1_100 = EB(i,     indy + j - 1, indz + k - 1, em::ex1);
+        const auto ex1_200 = EB(i + 1, indy + j - 1, indz + k - 1, em::ex1);
+        const auto ex1_010 = EB(i - 1, indy + j,     indz + k - 1, em::ex1);
+        const auto ex1_110 = EB(i,     indy + j,     indz + k - 1, em::ex1);
+        const auto ex1_210 = EB(i + 1, indy + j,     indz + k - 1, em::ex1);
+        const auto ex1_020 = EB(i - 1, indy + j + 1, indz + k - 1, em::ex1);
+        const auto ex1_120 = EB(i,     indy + j + 1, indz + k - 1, em::ex1);
+        const auto ex1_220 = EB(i + 1, indy + j + 1, indz + k - 1, em::ex1);
+        const auto ex1_001 = EB(i - 1, indy + j - 1, indz + k,     em::ex1);
+        const auto ex1_101 = EB(i,     indy + j - 1, indz + k,     em::ex1);
+        const auto ex1_201 = EB(i + 1, indy + j - 1, indz + k,     em::ex1);
+        const auto ex1_011 = EB(i - 1, indy + j,     indz + k,     em::ex1);
+        const auto ex1_111 = EB(i,     indy + j,     indz + k,     em::ex1);
+        const auto ex1_211 = EB(i + 1, indy + j,     indz + k,     em::ex1);
+        const auto ex1_021 = EB(i - 1, indy + j + 1, indz + k,     em::ex1);
+        const auto ex1_121 = EB(i,     indy + j + 1, indz + k,     em::ex1);
+        const auto ex1_221 = EB(i + 1, indy + j + 1, indz + k,     em::ex1);
+        const auto ex1_002 = EB(i - 1, indy + j - 1, indz + k + 1, em::ex1);
+        const auto ex1_102 = EB(i,     indy + j - 1, indz + k + 1, em::ex1);
+        const auto ex1_202 = EB(i + 1, indy + j - 1, indz + k + 1, em::ex1);
+        const auto ex1_012 = EB(i - 1, indy + j,     indz + k + 1, em::ex1);
+        const auto ex1_112 = EB(i,     indy + j,     indz + k + 1, em::ex1);
+        const auto ex1_212 = EB(i + 1, indy + j,     indz + k + 1, em::ex1);
+        const auto ex1_022 = EB(i - 1, indy + j + 1, indz + k + 1, em::ex1);
+        const auto ex1_122 = EB(i,     indy + j + 1, indz + k + 1, em::ex1);
+        const auto ex1_222 = EB(i + 1, indy + j + 1, indz + k + 1, em::ex1);
+        // clang-format on
+
+        const auto ex1_0_0 = ex1_000 * w0dx + ex1_100 * w1dx + ex1_200 * w2dx;
+        const auto ex1_1_0 = ex1_010 * w0dx + ex1_110 * w1dx + ex1_210 * w2dx;
+        const auto ex1_2_0 = ex1_020 * w0dx + ex1_120 * w1dx + ex1_220 * w2dx;
+        const auto ex1_0_1 = ex1_001 * w0dx + ex1_101 * w1dx + ex1_201 * w2dx;
+        const auto ex1_1_1 = ex1_011 * w0dx + ex1_111 * w1dx + ex1_211 * w2dx;
+        const auto ex1_2_1 = ex1_021 * w0dx + ex1_121 * w1dx + ex1_221 * w2dx;
+        const auto ex1_0_2 = ex1_002 * w0dx + ex1_102 * w1dx + ex1_202 * w2dx;
+        const auto ex1_1_2 = ex1_012 * w0dx + ex1_112 * w1dx + ex1_212 * w2dx;
+        const auto ex1_2_2 = ex1_022 * w0dx + ex1_122 * w1dx + ex1_222 * w2dx;
+
+        const auto ex1_00 = ex1_0_0 * w0py + ex1_1_0 * w1py + ex1_2_0 * w2py;
+        const auto ex1_01 = ex1_0_1 * w0py + ex1_1_1 * w1py + ex1_2_1 * w2py;
+        const auto ex1_02 = ex1_0_2 * w0py + ex1_1_2 * w1py + ex1_2_2 * w2py;
+
+        e0[0] = ex1_00 * w0pz + ex1_01 * w1pz + ex1_02 * w2pz;
+
+        // Ex2
+        // Interpolate -- (primal, dual, primal)
+        // clang-format off
+        const auto ex2_000 = EB(indx + i - 1, j - 1, indz + k - 1, em::ex2);
+        const auto ex2_100 = EB(indx + i,     j - 1, indz + k - 1, em::ex2);
+        const auto ex2_200 = EB(indx + i + 1, j - 1, indz + k - 1, em::ex2);
+        const auto ex2_010 = EB(indx + i - 1, j,     indz + k - 1, em::ex2);
+        const auto ex2_110 = EB(indx + i,     j,     indz + k - 1, em::ex2);
+        const auto ex2_210 = EB(indx + i + 1, j,     indz + k - 1, em::ex2);
+        const auto ex2_020 = EB(indx + i - 1, j + 1, indz + k - 1, em::ex2);
+        const auto ex2_120 = EB(indx + i,     j + 1, indz + k - 1, em::ex2);
+        const auto ex2_220 = EB(indx + i + 1, j + 1, indz + k - 1, em::ex2);
+        const auto ex2_001 = EB(indx + i - 1, j - 1, indz + k,     em::ex2);
+        const auto ex2_101 = EB(indx + i,     j - 1, indz + k,     em::ex2);
+        const auto ex2_201 = EB(indx + i + 1, j - 1, indz + k,     em::ex2);
+        const auto ex2_011 = EB(indx + i - 1, j,     indz + k,     em::ex2);
+        const auto ex2_111 = EB(indx + i,     j,     indz + k,     em::ex2);
+        const auto ex2_211 = EB(indx + i + 1, j,     indz + k,     em::ex2);
+        const auto ex2_021 = EB(indx + i - 1, j + 1, indz + k,     em::ex2);
+        const auto ex2_121 = EB(indx + i,     j + 1, indz + k,     em::ex2);
+        const auto ex2_221 = EB(indx + i + 1, j + 1, indz + k,     em::ex2);
+        const auto ex2_002 = EB(indx + i - 1, j - 1, indz + k + 1, em::ex2);
+        const auto ex2_102 = EB(indx + i,     j - 1, indz + k + 1, em::ex2);
+        const auto ex2_202 = EB(indx + i + 1, j - 1, indz + k + 1, em::ex2);
+        const auto ex2_012 = EB(indx + i - 1, j,     indz + k + 1, em::ex2);
+        const auto ex2_112 = EB(indx + i,     j,     indz + k + 1, em::ex2);
+        const auto ex2_212 = EB(indx + i + 1, j,     indz + k + 1, em::ex2);
+        const auto ex2_022 = EB(indx + i - 1, j + 1, indz + k + 1, em::ex2);
+        const auto ex2_122 = EB(indx + i,     j + 1, indz + k + 1, em::ex2);
+        const auto ex2_222 = EB(indx + i + 1, j + 1, indz + k + 1, em::ex2);
+        // clang-format on
+
+        const auto ex2_0_0 = ex2_000 * w0px + ex2_100 * w1px + ex1_200 * w2px;
+        const auto ex2_1_0 = ex2_010 * w0px + ex2_110 * w1px + ex1_210 * w2px;
+        const auto ex2_2_0 = ex2_020 * w0px + ex2_120 * w1px + ex1_220 * w2px;
+        const auto ex2_0_1 = ex2_001 * w0px + ex2_101 * w1px + ex2_201 * w2px;
+        const auto ex2_1_1 = ex2_011 * w0px + ex2_111 * w1px + ex2_211 * w2px;
+        const auto ex2_2_1 = ex2_021 * w0px + ex2_121 * w1px + ex2_221 * w2px;
+        const auto ex2_0_2 = ex2_002 * w0px + ex2_102 * w1px + ex2_202 * w2px;
+        const auto ex2_1_2 = ex2_012 * w0px + ex2_112 * w1px + ex2_212 * w2px;
+        const auto ex2_2_2 = ex2_022 * w0px + ex2_122 * w1px + ex2_222 * w2px;
+
+        const auto ex2_00 = ex2_0_0 * w0dy + ex2_1_0 * w1dy + ex2_2_0 * w2dy;
+        const auto ex2_01 = ex2_0_1 * w0dy + ex2_1_1 * w1dy + ex2_2_1 * w2dy;
+        const auto ex2_02 = ex2_0_2 * w0dy + ex2_1_2 * w1dy + ex2_2_2 * w2dy;
+
+        e0[1] = ex2_00 * w0pz + ex2_01 * w1pz + ex2_02 * w2pz;
+
+        // Ex3
+        // Interpolate -- (primal, primal, dual)
+        // clang-format off
+        const auto ex3_000 = EB(indx + i - 1, indy + j - 1, k - 1, em::ex3);
+        const auto ex3_100 = EB(indx + i,     indy + j - 1, k - 1, em::ex3);
+        const auto ex3_200 = EB(indx + i + 1, indy + j - 1, k - 1, em::ex3);
+        const auto ex3_010 = EB(indx + i - 1, indy + j,     k - 1, em::ex3);
+        const auto ex3_110 = EB(indx + i,     indy + j,     k - 1, em::ex3);
+        const auto ex3_210 = EB(indx + i + 1, indy + j,     k - 1, em::ex3);
+        const auto ex3_020 = EB(indx + i - 1, indy + j + 1, k - 1, em::ex3);
+        const auto ex3_120 = EB(indx + i,     indy + j + 1, k - 1, em::ex3);
+        const auto ex3_220 = EB(indx + i + 1, indy + j + 1, k - 1, em::ex3);
+        const auto ex3_001 = EB(indx + i - 1, indy + j - 1, k,     em::ex3);
+        const auto ex3_101 = EB(indx + i,     indy + j - 1, k,     em::ex3);
+        const auto ex3_201 = EB(indx + i + 1, indy + j - 1, k,     em::ex3);
+        const auto ex3_011 = EB(indx + i - 1, indy + j,     k,     em::ex3);
+        const auto ex3_111 = EB(indx + i,     indy + j,     k,     em::ex3);
+        const auto ex3_211 = EB(indx + i + 1, indy + j,     k,     em::ex3);
+        const auto ex3_021 = EB(indx + i - 1, indy + j + 1, k,     em::ex3);
+        const auto ex3_121 = EB(indx + i,     indy + j + 1, k,     em::ex3);
+        const auto ex3_221 = EB(indx + i + 1, indy + j + 1, k,     em::ex3);
+        const auto ex3_002 = EB(indx + i - 1, indy + j - 1, k + 1, em::ex3);
+        const auto ex3_102 = EB(indx + i,     indy + j - 1, k + 1, em::ex3);
+        const auto ex3_202 = EB(indx + i + 1, indy + j - 1, k + 1, em::ex3);
+        const auto ex3_012 = EB(indx + i - 1, indy + j,     k + 1, em::ex3);
+        const auto ex3_112 = EB(indx + i,     indy + j,     k + 1, em::ex3);
+        const auto ex3_212 = EB(indx + i + 1, indy + j,     k + 1, em::ex3);
+        const auto ex3_022 = EB(indx + i - 1, indy + j + 1, k + 1, em::ex3);
+        const auto ex3_122 = EB(indx + i,     indy + j + 1, k + 1, em::ex3);
+        const auto ex3_222 = EB(indx + i + 1, indy + j + 1, k + 1, em::ex3);
+        // clang-format on
+
+        const auto ex3_0_0 = ex3_000 * w0px + ex3_100 * w1px + ex3_200 * w2px;
+        const auto ex3_1_0 = ex3_010 * w0px + ex3_110 * w1px + ex3_210 * w2px;
+        const auto ex3_2_0 = ex3_020 * w0px + ex3_120 * w1px + ex3_220 * w2px;
+        const auto ex3_0_1 = ex3_001 * w0px + ex3_101 * w1px + ex3_201 * w2px;
+        const auto ex3_1_1 = ex3_011 * w0px + ex3_111 * w1px + ex3_211 * w2px;
+        const auto ex3_2_1 = ex3_021 * w0px + ex3_121 * w1px + ex3_221 * w2px;
+        const auto ex3_0_2 = ex3_002 * w0px + ex3_102 * w1px + ex3_202 * w2px;
+        const auto ex3_1_2 = ex3_012 * w0px + ex3_112 * w1px + ex3_212 * w2px;
+        const auto ex3_2_2 = ex3_022 * w0px + ex3_122 * w1px + ex3_222 * w2px;
+
+        const auto ex3_00 = ex3_0_0 * w0py + ex3_1_0 * w1py + ex3_2_0 * w2py;
+        const auto ex3_01 = ex3_0_1 * w0py + ex3_1_1 * w1py + ex3_2_1 * w2py;
+        const auto ex3_02 = ex3_0_2 * w0py + ex3_1_2 * w1py + ex3_2_2 * w2py;
+
+        e0[2] = ex3_00 * w0dz + ex3_01 * w1dz + ex3_02 * w2dz;
+
+        // Bx1
+        // Interpolate -- (primal, dual, dual)
+        // clang-format off
+        const auto bx1_000 = EB(indx + i - 1, j - 1, k - 1, em::bx1);
+        const auto bx1_100 = EB(indx + i,     j - 1, k - 1, em::bx1);
+        const auto bx1_200 = EB(indx + i + 1, j - 1, k - 1, em::bx1);
+        const auto bx1_010 = EB(indx + i - 1, j,     k - 1, em::bx1);
+        const auto bx1_110 = EB(indx + i,     j,     k - 1, em::bx1);
+        const auto bx1_210 = EB(indx + i + 1, j,     k - 1, em::bx1);
+        const auto bx1_020 = EB(indx + i - 1, j + 1, k - 1, em::bx1);
+        const auto bx1_120 = EB(indx + i,     j + 1, k - 1, em::bx1);
+        const auto bx1_220 = EB(indx + i + 1, j + 1, k - 1, em::bx1);
+        const auto bx1_001 = EB(indx + i - 1, j - 1, k,     em::bx1);
+        const auto bx1_101 = EB(indx + i,     j - 1, k,     em::bx1);
+        const auto bx1_201 = EB(indx + i + 1, j - 1, k,     em::bx1);
+        const auto bx1_011 = EB(indx + i - 1, j,     k,     em::bx1);
+        const auto bx1_111 = EB(indx + i,     j,     k,     em::bx1);
+        const auto bx1_211 = EB(indx + i + 1, j,     k,     em::bx1);
+        const auto bx1_021 = EB(indx + i - 1, j + 1, k,     em::bx1);
+        const auto bx1_121 = EB(indx + i,     j + 1, k,     em::bx1);
+        const auto bx1_221 = EB(indx + i + 1, j + 1, k,     em::bx1);
+        const auto bx1_002 = EB(indx + i - 1, j - 1, k + 1, em::bx1);
+        const auto bx1_102 = EB(indx + i,     j - 1, k + 1, em::bx1);
+        const auto bx1_202 = EB(indx + i + 1, j - 1, k + 1, em::bx1);
+        const auto bx1_012 = EB(indx + i - 1, j,     k + 1, em::bx1);
+        const auto bx1_112 = EB(indx + i,     j,     k + 1, em::bx1);
+        const auto bx1_212 = EB(indx + i + 1, j,     k + 1, em::bx1);
+        const auto bx1_022 = EB(indx + i - 1, j + 1, k + 1, em::bx1);
+        const auto bx1_122 = EB(indx + i,     j + 1, k + 1, em::bx1);
+        const auto bx1_222 = EB(indx + i + 1, j + 1, k + 1, em::bx1);
+        // clang-format on
+
+        const auto bx1_0_0 = bx1_000 * w0px + bx1_100 * w1px + bx1_200 * w2px;
+        const auto bx1_1_0 = bx1_010 * w0px + bx1_110 * w1px + bx1_210 * w2px;
+        const auto bx1_2_0 = bx1_020 * w0px + bx1_120 * w1px + bx1_220 * w2px;
+        const auto bx1_0_1 = bx1_001 * w0px + bx1_101 * w1px + bx1_201 * w2px;
+        const auto bx1_1_1 = bx1_011 * w0px + bx1_111 * w1px + bx1_211 * w2px;
+        const auto bx1_2_1 = bx1_021 * w0px + bx1_121 * w1px + bx1_221 * w2px;
+        const auto bx1_0_2 = bx1_002 * w0px + bx1_102 * w1px + bx1_202 * w2px;
+        const auto bx1_1_2 = bx1_012 * w0px + bx1_112 * w1px + bx1_212 * w2px;
+        const auto bx1_2_2 = bx1_022 * w0px + bx1_122 * w1px + bx1_222 * w2px;
+
+        const auto bx1_00 = bx1_0_0 * w0dy + bx1_1_0 * w1dy + bx1_2_0 * w2dy;
+        const auto bx1_01 = bx1_0_1 * w0dy + bx1_1_1 * w1dy + bx1_2_1 * w2dy;
+        const auto bx1_02 = bx1_0_2 * w0dy + bx1_1_2 * w1dy + bx1_2_2 * w2dy;
+
+        b0[0] = bx1_00 * w0dz + bx1_01 * w1dz + bx1_02 * w2dz;
+
+        // Bx2
+        // Interpolate -- (dual, primal, dual)
+        // clang-format off
+        const auto bx2_000 = EB(i - 1, indy + j - 1, k - 1, em::bx2);
+        const auto bx2_100 = EB(i,     indy + j - 1, k - 1, em::bx2);
+        const auto bx2_200 = EB(i + 1, indy + j - 1, k - 1, em::bx2);
+        const auto bx2_010 = EB(i - 1, indy + j,     k - 1, em::bx2);
+        const auto bx2_110 = EB(i,     indy + j,     k - 1, em::bx2);
+        const auto bx2_210 = EB(i + 1, indy + j,     k - 1, em::bx2);
+        const auto bx2_020 = EB(i - 1, indy + j + 1, k - 1, em::bx2);
+        const auto bx2_120 = EB(i,     indy + j + 1, k - 1, em::bx2);
+        const auto bx2_220 = EB(i + 1, indy + j + 1, k - 1, em::bx2);
+        const auto bx2_001 = EB(i - 1, indy + j - 1, k,     em::bx2);
+        const auto bx2_101 = EB(i,     indy + j - 1, k,     em::bx2);
+        const auto bx2_201 = EB(i + 1, indy + j - 1, k,     em::bx2);
+        const auto bx2_011 = EB(i - 1, indy + j,     k,     em::bx2);
+        const auto bx2_111 = EB(i,     indy + j,     k,     em::bx2);
+        const auto bx2_211 = EB(i + 1, indy + j,     k,     em::bx2);
+        const auto bx2_021 = EB(i - 1, indy + j + 1, k,     em::bx2);
+        const auto bx2_121 = EB(i,     indy + j + 1, k,     em::bx2);
+        const auto bx2_221 = EB(i + 1, indy + j + 1, k,     em::bx2);
+        const auto bx2_002 = EB(i - 1, indy + j - 1, k + 1, em::bx2);
+        const auto bx2_102 = EB(i,     indy + j - 1, k + 1, em::bx2);
+        const auto bx2_202 = EB(i + 1, indy + j - 1, k + 1, em::bx2);
+        const auto bx2_012 = EB(i - 1, indy + j,     k + 1, em::bx2);
+        const auto bx2_112 = EB(i,     indy + j,     k + 1, em::bx2);
+        const auto bx2_212 = EB(i + 1, indy + j,     k + 1, em::bx2);
+        const auto bx2_022 = EB(i - 1, indy + j + 1, k + 1, em::bx2);
+        const auto bx2_122 = EB(i,     indy + j + 1, k + 1, em::bx2);
+        const auto bx2_222 = EB(i + 1, indy + j + 1, k + 1, em::bx2);
+        // clang-format on
+
+        const auto bx2_0_0 = bx2_000 * w0dx + bx2_100 * w1dx + bx2_200 * w2dx;
+        const auto bx2_1_0 = bx2_010 * w0dx + bx2_110 * w1dx + bx2_210 * w2dx;
+        const auto bx2_2_0 = bx2_020 * w0dx + bx2_120 * w1dx + bx2_220 * w2dx;
+        const auto bx2_0_1 = bx2_001 * w0dx + bx2_101 * w1dx + bx2_201 * w2dx;
+        const auto bx2_1_1 = bx2_011 * w0dx + bx2_111 * w1dx + bx2_211 * w2dx;
+        const auto bx2_2_1 = bx2_021 * w0dx + bx2_121 * w1dx + bx2_221 * w2dx;
+        const auto bx2_0_2 = bx2_002 * w0dx + bx2_102 * w1dx + bx2_202 * w2dx;
+        const auto bx2_1_2 = bx2_012 * w0dx + bx2_112 * w1dx + bx2_212 * w2dx;
+        const auto bx2_2_2 = bx2_022 * w0dx + bx2_122 * w1dx + bx2_222 * w2dx;
+
+        const auto bx2_00 = bx2_0_0 * w0py + bx2_1_0 * w1py + bx2_2_0 * w2py;
+        const auto bx2_01 = bx2_0_1 * w0py + bx2_1_1 * w1py + bx2_2_1 * w2py;
+        const auto bx2_02 = bx2_0_2 * w0py + bx2_1_2 * w1py + bx2_2_2 * w2py;
+
+        b0[1] = bx2_00 * w0dz + bx2_01 * w1dz + bx2_02 * w2dz;
+
+        // Bx3
+        // Interpolate -- (dual, dual, primal)
+        // clang-format off
+        const auto bx3_000 = EB(i - 1, j - 1, indz + k - 1, em::bx3);
+        const auto bx3_100 = EB(i,     j - 1, indz + k - 1, em::bx3);
+        const auto bx3_200 = EB(i + 1, j - 1, indz + k - 1, em::bx3);
+        const auto bx3_010 = EB(i - 1, j,     indz + k - 1, em::bx3);
+        const auto bx3_110 = EB(i,     j,     indz + k - 1, em::bx3);
+        const auto bx3_210 = EB(i + 1, j,     indz + k - 1, em::bx3);
+        const auto bx3_020 = EB(i - 1, j + 1, indz + k - 1, em::bx3);
+        const auto bx3_120 = EB(i,     j + 1, indz + k - 1, em::bx3);
+        const auto bx3_220 = EB(i + 1, j + 1, indz + k - 1, em::bx3);
+        const auto bx3_001 = EB(i - 1, j - 1, indz + k,     em::bx3);
+        const auto bx3_101 = EB(i,     j - 1, indz + k,     em::bx3);
+        const auto bx3_201 = EB(i + 1, j - 1, indz + k,     em::bx3);
+        const auto bx3_011 = EB(i - 1, j,     indz + k,     em::bx3);
+        const auto bx3_111 = EB(i,     j,     indz + k,     em::bx3);
+        const auto bx3_211 = EB(i + 1, j,     indz + k,     em::bx3);
+        const auto bx3_021 = EB(i - 1, j + 1, indz + k,     em::bx3);
+        const auto bx3_121 = EB(i,     j + 1, indz + k,     em::bx3);
+        const auto bx3_221 = EB(i + 1, j + 1, indz + k,     em::bx3);
+        const auto bx3_002 = EB(i - 1, j - 1, indz + k + 1, em::bx3);
+        const auto bx3_102 = EB(i,     j - 1, indz + k + 1, em::bx3);
+        const auto bx3_202 = EB(i + 1, j - 1, indz + k + 1, em::bx3);
+        const auto bx3_012 = EB(i - 1, j,     indz + k + 1, em::bx3);
+        const auto bx3_112 = EB(i,     j,     indz + k + 1, em::bx3);
+        const auto bx3_212 = EB(i + 1, j,     indz + k + 1, em::bx3);
+        const auto bx3_022 = EB(i - 1, j + 1, indz + k + 1, em::bx3);
+        const auto bx3_122 = EB(i,     j + 1, indz + k + 1, em::bx3);
+        const auto bx3_222 = EB(i + 1, j + 1, indz + k + 1, em::bx3);
+        // clang-format on
+
+        const auto bx3_0_0 = bx3_000 * w0dx + bx3_100 * w1dx + bx3_200 * w2dx;
+        const auto bx3_1_0 = bx3_010 * w0dx + bx3_110 * w1dx + bx3_210 * w2dx;
+        const auto bx3_2_0 = bx3_020 * w0dx + bx3_120 * w1dx + bx3_220 * w2dx;
+        const auto bx3_0_1 = bx3_001 * w0dx + bx3_101 * w1dx + bx3_201 * w2dx;
+        const auto bx3_1_1 = bx3_011 * w0dx + bx3_111 * w1dx + bx3_211 * w2dx;
+        const auto bx3_2_1 = bx3_021 * w0dx + bx3_121 * w1dx + bx3_221 * w2dx;
+        const auto bx3_0_2 = bx3_002 * w0dx + bx3_102 * w1dx + bx3_202 * w2dx;
+        const auto bx3_1_2 = bx3_012 * w0dx + bx3_112 * w1dx + bx3_212 * w2dx;
+        const auto bx3_2_2 = bx3_022 * w0dx + bx3_122 * w1dx + bx3_222 * w2dx;
+
+        const auto bx3_00 = bx3_0_0 * w0dy + bx3_1_0 * w1dy + bx3_2_0 * w2dy;
+        const auto bx3_01 = bx3_0_1 * w0dy + bx3_1_1 * w1dy + bx3_2_1 * w2dy;
+        const auto bx3_02 = bx3_0_2 * w0dy + bx3_1_2 * w1dy + bx3_2_2 * w2dy;
+
+        b0[2] = bx3_00 * w0pz + bx3_01 * w1pz + bx3_02 * w2pz;
       }
     }
 
