@@ -1107,8 +1107,7 @@ namespace kernel::sr {
         // Compute weights for second-order interpolation
         // primal
         const auto w0p = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1p = static_cast<real_t>(0.75) -
-                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w1p = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
         const auto w2p = ONE - w0p - w1p;
 
         // dual
@@ -1166,12 +1165,10 @@ namespace kernel::sr {
         // Compute weights for second-order interpolation
         // primal
         const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1px = static_cast<real_t>(0.75) -
-                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
         const auto w2px = ONE - w0px - w1px;
         const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
-        const auto w1py = static_cast<real_t>(0.75) -
-                          SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
         const auto w2py = ONE - w0py - w1py;
 
         // dual
@@ -1313,16 +1310,13 @@ namespace kernel::sr {
         // Compute weights for second-order interpolation
         // primal
         const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1px = static_cast<real_t>(0.75) -
-                          SQR(dx1_ - static_cast<real_t>(indx));
+        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
         const auto w2px = ONE - w0px - w1px;
         const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
-        const auto w1py = static_cast<real_t>(0.75) -
-                          SQR(dx2_ - static_cast<real_t>(indy));
+        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
         const auto w2py = ONE - w0py - w1py;
         const auto w0pz = HALF * SQR(HALF - dx3_ + static_cast<real_t>(indz));
-        const auto w1pz = static_cast<real_t>(0.75) -
-                          SQR(dx3_ - static_cast<real_t>(indz));
+        const auto w1pz = THREE_FOURTHS - SQR(dx3_ - static_cast<real_t>(indz));
         const auto w2pz = ONE - w0pz - w1pz;
 
         // dual

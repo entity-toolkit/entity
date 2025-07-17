@@ -102,13 +102,13 @@ namespace kernel {
         update_i2 = true;
 
         S0_0 = HALF * SQR(HALF + di_center_prev);
-        S0_1 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_1 = THREE_FOURTHS - SQR(di_center_prev);
         S0_2 = HALF * SQR(HALF - di_center_prev);
         S0_3 = ZERO;
 
         S1_0 = ZERO;
         S1_1 = HALF * SQR(HALF + di_center);
-        S1_2 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_2 = THREE_FOURTHS - SQR(di_center);
         S1_3 = HALF * SQR(HALF - di_center);
       } else if (shift_i == -1) {
         /*
@@ -121,11 +121,11 @@ namespace kernel {
 
         S0_0 = ZERO;
         S0_1 = HALF * SQR(HALF + di_center_prev);
-        S0_2 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_2 = THREE_FOURTHS - SQR(di_center_prev);
         S0_3 = HALF * SQR(HALF - di_center_prev);
 
         S1_0 = HALF * SQR(HALF + di_center);
-        S1_1 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_1 = THREE_FOURTHS - SQR(di_center);
         S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
 
@@ -139,12 +139,12 @@ namespace kernel {
         update_i2 = false;
 
         S0_0 = HALF * SQR(HALF + di_center_prev);
-        S0_1 = static_cast<real_t>(0.75) - SQR(di_center_prev);
+        S0_1 = THREE_FOURTHS - SQR(di_center_prev);
         S0_2 = HALF * SQR(HALF - di_center_prev);
         S0_3 = ZERO;
 
         S1_0 = HALF * SQR(HALF + di_center);
-        S1_1 = static_cast<real_t>(0.75) - SQR(di_center);
+        S1_1 = THREE_FOURTHS - SQR(di_center);
         S1_2 = HALF * SQR(HALF - di_center);
         S1_3 = ZERO;
       } else {
