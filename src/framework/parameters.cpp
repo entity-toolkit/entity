@@ -546,11 +546,30 @@ namespace ntt {
                       "fields",
                       "mom_smooth",
                       defaults::output::mom_smooth));
-    auto field_dwn = toml::find_or(toml_data,
-                                   "output",
-                                   "fields",
-                                   "downsampling",
-                                   std::vector<unsigned int> { 1, 1, 1 });
+    std::vector<unsigned int> field_dwn;
+    try {
+      auto field_dwn_ = toml::find<std::vector<unsigned int>>(toml_data,
+                                                              "output",
+                                                              "fields",
+                                                              "downsampling");
+      for (auto i = 0u; i < field_dwn_.size(); ++i) {
+        field_dwn.push_back(field_dwn_[i]);
+      }
+    } catch (...) {
+      try {
+        auto field_dwn_ = toml::find<unsigned int>(toml_data,
+                                                   "output",
+                                                   "fields",
+                                                   "downsampling");
+        for (auto i = 0u; i < dim; ++i) {
+          field_dwn.push_back(field_dwn_);
+        }
+      } catch (...) {
+        for (auto i = 0u; i < dim; ++i) {
+          field_dwn.push_back(1u);
+        }
+      }
+    }
     raise::ErrorIf(field_dwn.size() > 3, "invalid `output.fields.downsampling`", HERE);
     if (field_dwn.size() > dim) {
       field_dwn.erase(field_dwn.begin() + (std::size_t)(dim), field_dwn.end());
@@ -604,6 +623,12 @@ namespace ntt {
                       "stats",
                       "quantities",
                       defaults::output::stats_quantities));
+    set("output.stats.custom",
+        toml::find_or(toml_data,
+                      "output",
+                      "stats",
+                      "custom",
+                      std::vector<std::string> {}));
 
     // intervals
     for (const auto& type : { "fields", "particles", "spectra", "stats" }) {
@@ -658,6 +683,24 @@ namespace ntt {
         toml::find_or<simtime_t>(toml_data, "checkpoint", "interval_time", -1.0));
     set("checkpoint.keep",
         toml::find_or(toml_data, "checkpoint", "keep", defaults::checkpoint::keep));
+    auto walltime_str = toml::find_or(toml_data,
+                                      "checkpoint",
+                                      "walltime",
+                                      defaults::checkpoint::walltime);
+    if (walltime_str.empty()) {
+      walltime_str = defaults::checkpoint::walltime;
+    }
+    set("checkpoint.walltime", walltime_str);
+
+    const auto checkpoint_write_path = toml::find_or(
+      toml_data,
+      "checkpoint",
+      "write_path",
+      fmt::format(defaults::checkpoint::write_path.c_str(),
+                  get<std::string>("simulation.name").c_str()));
+    set("checkpoint.write_path", checkpoint_write_path);
+    set("checkpoint.read_path",
+        toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));
 
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",
@@ -927,6 +970,11 @@ namespace ntt {
                         "synchrotron",
                         "gamma_rad",
                         defaults::synchrotron::gamma_rad));
+    }
+
+    // @TODO: disabling stats for non-Cartesian
+    if (coord_enum != Coord::Cart) {
+      set("output.stats.enable", false);
     }
   }
 

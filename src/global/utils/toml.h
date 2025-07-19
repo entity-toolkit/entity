@@ -3611,7 +3611,7 @@ namespace toml {
       }
 
     } // namespace ansi
-  }   // namespace color
+  } // namespace color
 } // namespace toml
   #endif // TOML11_COLOR_IMPL_HPP
 #endif
@@ -10368,7 +10368,7 @@ namespace toml {
 
     template <typename... Ts>
     auto last_one(Ts&&... args) -> decltype(std::get<sizeof...(Ts) - 1>(
-      std::forward_as_tuple(std::forward<Ts>(args)...))) {
+                                  std::forward_as_tuple(std::forward<Ts>(args)...))) {
       return std::get<sizeof...(Ts) - 1>(
         std::forward_as_tuple(std::forward<Ts>(args)...));
     }
@@ -11787,7 +11787,7 @@ namespace toml {
       literal null_value(const spec&);
 
     } // namespace syntax
-  }   // namespace detail
+  } // namespace detail
 } // namespace toml
 #endif // TOML11_SYNTAX_FWD_HPP
 
@@ -12366,7 +12366,7 @@ namespace toml {
       }
 
     } // namespace syntax
-  }   // namespace detail
+  } // namespace detail
 } // namespace toml
   #endif // TOML11_SYNTAX_IMPL_HPP
 #endif
@@ -16465,7 +16465,7 @@ namespace toml {
   #endif
 
     } // namespace toml_literals
-  }   // namespace literals
+  } // namespace literals
 } // namespace toml
 #endif // TOML11_LITERAL_FWD_HPP
 
@@ -16619,7 +16619,7 @@ namespace toml {
     #endif
 
     } // namespace toml_literals
-  }   // namespace literals
+  } // namespace literals
 } // namespace toml
   #endif // TOML11_LITERAL_IMPL_HPP
 #endif

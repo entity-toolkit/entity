@@ -53,8 +53,7 @@ namespace color {
     return msg_nocol;
   }
 
-  inline auto get_color(const std::string& s, bool eight_bit = true)
-    -> std::string {
+  inline auto get_color(const std::string& s, bool eight_bit = true) -> std::string {
     if (not eight_bit) {
       return "";
     } else {
@@ -125,23 +124,23 @@ namespace color {
           c_bmagenta = c_bcyan = c_bwhite = "";
     }
     return {
-      {   "reset",    c_reset},
-      {   "black",    c_black},
-      {     "red",      c_red},
-      {   "green",    c_green},
-      {  "yellow",   c_yellow},
-      {    "blue",     c_blue},
-      { "magenta",  c_magenta},
-      {    "cyan",     c_cyan},
-      {   "white",    c_white},
-      {  "bblack",   c_bblack},
-      {    "bred",     c_bred},
-      {  "bgreen",   c_bgreen},
-      { "byellow",  c_byellow},
-      {   "bblue",    c_bblue},
-      {"bmagenta", c_bmagenta},
-      {   "bcyan",    c_bcyan},
-      {  "bwhite",   c_bwhite}
+      {    "reset",    c_reset },
+      {    "black",    c_black },
+      {      "red",      c_red },
+      {    "green",    c_green },
+      {   "yellow",   c_yellow },
+      {     "blue",     c_blue },
+      {  "magenta",  c_magenta },
+      {     "cyan",     c_cyan },
+      {    "white",    c_white },
+      {   "bblack",   c_bblack },
+      {     "bred",     c_bred },
+      {   "bgreen",   c_bgreen },
+      {  "byellow",  c_byellow },
+      {    "bblue",    c_bblue },
+      { "bmagenta", c_bmagenta },
+      {    "bcyan",    c_bcyan },
+      {   "bwhite",   c_bwhite }
     };
   }
 } // namespace color

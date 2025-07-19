@@ -23,7 +23,6 @@
 
 #include <limits>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -378,7 +377,7 @@ namespace ntt {
       dx_min_from_domains = std::min(dx_min_from_domains, current_dx_min);
     }
     raise::ErrorIf(
-      not cmp::AlmostEqual(dx_min / dx_min_from_domains, ONE, epsilon),
+      not cmp::AlmostEqual_host(dx_min / dx_min_from_domains, ONE, epsilon),
       "dx_min is not the same across all domains: " + std::to_string(dx_min) +
         " " + std::to_string(dx_min_from_domains),
       HERE);
@@ -393,10 +392,7 @@ namespace ntt {
                   mpi::get_type<real_t>(),
                   MPI_COMM_WORLD);
     for (const auto& dx : dx_mins) {
-      raise::ErrorIf(!cmp::AlmostEqual(dx,
-                                       dx_min,
-                                       std::numeric_limits<real_t>::epsilon() *
-                                         static_cast<real_t>(10.0)),
+      raise::ErrorIf(not cmp::AlmostEqual_host(dx / dx_min, ONE, epsilon),
                      "dx_min is not the same across all MPI ranks",
                      HERE);
     }

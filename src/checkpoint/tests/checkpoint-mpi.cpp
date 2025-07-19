@@ -20,7 +20,7 @@ using namespace checkpoint;
 
 void cleanup() {
   namespace fs = std::filesystem;
-  fs::path temp_path { "checkpoints" };
+  fs::path temp_path { "chck" };
   fs::remove_all(temp_path);
 }
 
@@ -126,11 +126,12 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     adios2::ADIOS adios;
+    const path_t  checkpoint_path { "chck" };
 
     {
       // write checkpoint
       Writer writer;
-      writer.init(&adios, 0, 0.0, 1);
+      writer.init(&adios, checkpoint_path, 0, 0.0, 1);
 
       writer.defineFieldVariables(SimEngine::GRPIC,
                                   { g_nx1_gh, g_nx2_gh },
@@ -190,7 +191,7 @@ auto main(int argc, char* argv[]) -> int {
       array_t<real_t**> plds1_read { "plds_1", npart1, 3 };
 
       adios2::IO     io     = adios.DeclareIO("checkpointRead");
-      adios2::Engine reader = io.Open("checkpoints/step-00000000.bp",
+      adios2::Engine reader = io.Open(checkpoint_path / "step-00000000.bp",
                                       adios2::Mode::Read);
       reader.BeginStep();
 

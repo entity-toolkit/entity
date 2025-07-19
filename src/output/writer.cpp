@@ -39,7 +39,7 @@ namespace out {
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
-    m_fname = title;
+    m_root = path_t(title);
   }
 
   void Writer::addTracker(const std::string& type,
@@ -48,8 +48,9 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
-    -> bool {
+  auto Writer::shouldWrite(const std::string& type,
+                           timestep_t         step,
+                           simtime_t          time) -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -320,7 +321,7 @@ namespace out {
     }
     auto output_field_h = Kokkos::create_mirror_view(output_field);
     Kokkos::deep_copy(output_field_h, output_field);
-    writer.Put(var, output_field_h);
+    writer.Put(var, output_field_h, adios2::Mode::Sync);
   }
 
   template <Dimension D, int N>
@@ -355,11 +356,12 @@ namespace out {
       adios2::Box<adios2::Dims>({ loc_offset }, { array.extent(0) }));
     auto array_h = Kokkos::create_mirror_view(array);
     Kokkos::deep_copy(array_h, array);
-    m_writer.Put<real_t>(var, array_h);
+    m_writer.Put<real_t>(var, array_h, adios2::Mode::Sync);
   }
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
                              const std::string&      varname) {
+    auto var      = m_io.InquireVariable<real_t>(varname);
     auto counts_h = Kokkos::create_mirror_view(counts);
     Kokkos::deep_copy(counts_h, counts);
 #if defined(MPI_ENABLED)
@@ -375,31 +377,38 @@ namespace out {
                MPI_ROOT_RANK,
                MPI_COMM_WORLD);
     if (rank == MPI_ROOT_RANK) {
-      auto var = m_io.InquireVariable<real_t>(varname);
-      var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
-      m_writer.Put<real_t>(var, counts_h_all);
+      var.SetSelection(
+        adios2::Box<adios2::Dims>({ 0u }, { counts_h_all.extent(0) }));
+      m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Sync);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+      m_writer.Put<real_t>(var, nullptr);
     }
 #else
-    auto var = m_io.InquireVariable<real_t>(varname);
     var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
-    m_writer.Put<real_t>(var, counts_h);
+    m_writer.Put<real_t>(var, counts_h, adios2::Mode::Sync);
 #endif
   }
 
   void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
                                  const std::string&      varname) {
+    auto var      = m_io.InquireVariable<real_t>(varname);
+    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
+    Kokkos::deep_copy(e_bins_h, e_bins);
 #if defined(MPI_ENABLED)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if (rank != MPI_ROOT_RANK) {
-      return;
+    if (rank == MPI_ROOT_RANK) {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { e_bins_h.extent(0) }));
+      m_writer.Put<real_t>(var, e_bins_h.data(), adios2::Mode::Sync);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+      m_writer.Put<real_t>(var, nullptr, adios2::Mode::Sync);
     }
+#else
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins_h.extent(0) }));
+    m_writer.Put<real_t>(var, e_bins_h, adios2::Mode::Sync);
 #endif
-    auto var = m_io.InquireVariable<real_t>(varname);
-    var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins.extent(0) }));
-    auto e_bins_h = Kokkos::create_mirror_view(e_bins);
-    Kokkos::deep_copy(e_bins_h, e_bins);
-    m_writer.Put<real_t>(var, e_bins_h);
   }
 
   void Writer::writeMesh(unsigned short                  dim,
@@ -412,11 +421,11 @@ namespace out {
     auto xe_h = Kokkos::create_mirror_view(xe);
     Kokkos::deep_copy(xc_h, xc);
     Kokkos::deep_copy(xe_h, xe);
-    m_writer.Put(varc, xc_h);
-    m_writer.Put(vare, xe_h);
+    m_writer.Put(varc, xc_h, adios2::Mode::Sync);
+    m_writer.Put(vare, xe_h, adios2::Mode::Sync);
     auto vard = m_io.InquireVariable<std::size_t>(
       "N" + std::to_string(dim + 1) + "l");
-    m_writer.Put(vard, loc_off_sz.data());
+    m_writer.Put(vard, loc_off_sz.data(), adios2::Mode::Sync);
   }
 
   void Writer::beginWriting(WriteModeTags write_mode,
@@ -427,53 +436,53 @@ namespace out {
     if (m_active_mode != WriteMode::None) {
       raise::Fatal("Already writing", HERE);
     }
-    m_active_mode = write_mode;
     try {
-      std::string       filename;
+      path_t filename;
+
       const std::string ext = (m_engine == "hdf5") ? "h5" : "bp";
       if (m_separate_files) {
         std::string mode_str;
-        if (m_active_mode == WriteMode::Fields) {
+        if (write_mode == WriteMode::Fields) {
           mode_str = "fields";
-        } else if (m_active_mode == WriteMode::Particles) {
+        } else if (write_mode == WriteMode::Particles) {
           mode_str = "particles";
-        } else if (m_active_mode == WriteMode::Spectra) {
+        } else if (write_mode == WriteMode::Spectra) {
           mode_str = "spectra";
         } else {
           raise::Fatal("Unknown write mode", HERE);
         }
         CallOnce(
-          [](auto& main_path, auto& mode_path) {
-            const std::filesystem::path main { main_path };
-            const std::filesystem::path mode { mode_path };
+          [](auto&& main_path, auto&& mode_path) {
+            const path_t main { main_path };
+            const path_t mode { mode_path };
             if (!std::filesystem::exists(main_path)) {
               std::filesystem::create_directory(main_path);
             }
-            if (!std::filesystem::exists(main / mode)) {
-              std::filesystem::create_directory(main / mode);
+            if (!std::filesystem::exists(main_path / mode_path)) {
+              std::filesystem::create_directory(main_path / mode_path);
             }
           },
-          m_fname,
+          m_root,
           mode_str);
-        filename = fmt::format("%s/%s/%s.%08lu.%s",
-                               m_fname.c_str(),
-                               mode_str.c_str(),
-                               mode_str.c_str(),
-                               tstep,
-                               ext.c_str());
-        m_mode   = adios2::Mode::Write;
+#if defined(MPI_ENABLED)
+        MPI_Barrier(MPI_COMM_WORLD);
+#endif
+        filename = m_root / path_t(mode_str) /
+                   fmt::format("%s.%08lu.%s", mode_str.c_str(), tstep, ext.c_str());
+        m_mode = adios2::Mode::Write;
       } else {
-        filename = fmt::format("%s.%s", m_fname.c_str(), ext.c_str());
+        filename = fmt::format("%s.%s", m_root.c_str(), ext.c_str());
         m_mode   = std::filesystem::exists(filename) ? adios2::Mode::Append
                                                      : adios2::Mode::Write;
       }
       m_writer = m_io.Open(filename, m_mode);
+      m_writer.BeginStep();
+      m_writer.Put(m_io.InquireVariable<timestep_t>("Step"), &tstep);
+      m_writer.Put(m_io.InquireVariable<simtime_t>("Time"), &time);
+      m_active_mode = write_mode;
     } catch (std::exception& e) {
       raise::Fatal(e.what(), HERE);
     }
-    m_writer.BeginStep();
-    m_writer.Put(m_io.InquireVariable<timestep_t>("Step"), &tstep);
-    m_writer.Put(m_io.InquireVariable<simtime_t>("Time"), &time);
   }
 
   void Writer::endWriting(WriteModeTags write_mode) {
@@ -490,72 +499,24 @@ namespace out {
     m_writer.Close();
   }
 
-  template void Writer::writeField<Dim::_1D, 3>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_1D, 3>&,
-                                                const std::vector<std::size_t>&);
-  template void Writer::writeField<Dim::_1D, 6>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_1D, 6>&,
-                                                const std::vector<std::size_t>&);
-  template void Writer::writeField<Dim::_2D, 3>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_2D, 3>&,
-                                                const std::vector<std::size_t>&);
-  template void Writer::writeField<Dim::_2D, 6>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_2D, 6>&,
-                                                const std::vector<std::size_t>&);
-  template void Writer::writeField<Dim::_3D, 3>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_3D, 3>&,
-                                                const std::vector<std::size_t>&);
-  template void Writer::writeField<Dim::_3D, 6>(const std::vector<std::string>&,
-                                                const ndfield_t<Dim::_3D, 6>&,
-                                                const std::vector<std::size_t>&);
-
-  template void WriteField<Dim::_1D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_1D, 3>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
-  template void WriteField<Dim::_1D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_1D, 6>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
-  template void WriteField<Dim::_2D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_2D, 3>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
-  template void WriteField<Dim::_2D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_2D, 6>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
-  template void WriteField<Dim::_3D, 3>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_3D, 3>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
-  template void WriteField<Dim::_3D, 6>(adios2::IO&,
-                                        adios2::Engine&,
-                                        const std::string&,
-                                        const ndfield_t<Dim::_3D, 6>&,
-                                        std::size_t,
-                                        std::vector<unsigned int>,
-                                        std::vector<ncells_t>,
-                                        bool);
+#define WRITE_FIELD(D, N)                                                      \
+  template void Writer::writeField<D, N>(const std::vector<std::string>&,      \
+                                         const ndfield_t<D, N>&,               \
+                                         const std::vector<std::size_t>&);     \
+  template void WriteField<D, N>(adios2::IO&,                                  \
+                                 adios2::Engine&,                              \
+                                 const std::string&,                           \
+                                 const ndfield_t<D, N>&,                       \
+                                 std::size_t,                                  \
+                                 std::vector<unsigned int>,                    \
+                                 std::vector<ncells_t>,                        \
+                                 bool);
+  WRITE_FIELD(Dim::_1D, 3)
+  WRITE_FIELD(Dim::_1D, 6)
+  WRITE_FIELD(Dim::_2D, 3)
+  WRITE_FIELD(Dim::_2D, 6)
+  WRITE_FIELD(Dim::_3D, 3)
+  WRITE_FIELD(Dim::_3D, 6)
+#undef WRITE_FIELD
 
 } // namespace out

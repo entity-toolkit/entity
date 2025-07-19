@@ -4,7 +4,7 @@ if(${PGEN_FOUND})
     "pgen"
     "${problem_generators}"
     ${PGEN}
-    ${default_pgen}
+    ""
     "${Blue}"
     PGEN_REPORT
     0)

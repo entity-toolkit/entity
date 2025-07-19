@@ -132,8 +132,8 @@ namespace dir {
   using dirs_t = std::vector<direction_t<D>>;
 
   template <Dimension D>
-  inline auto operator<<(std::ostream& os, const direction_t<D>& dir)
-    -> std::ostream& {
+  inline auto operator<<(std::ostream&         os,
+                         const direction_t<D>& dir) -> std::ostream& {
     for (auto& d : dir) {
       os << std::setw(2) << std::left;
       if (d > 0) {

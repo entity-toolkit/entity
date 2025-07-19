@@ -45,10 +45,12 @@ struct Caller {
         raise::KernelError(HERE, "Gamma out of bounds");
       }
     } else {
-      vec_t<Dim::_3D> vup { ZERO };
-      metric.template transform<Idx::D, Idx::U>(xp, vp, vup);
+      vec_t<Dim::_3D> vd { ZERO };
+      vec_t<Dim::_3D> vu { ZERO };
+      metric.template transform<Idx::T, Idx::D>(xp, vp, vd);
+      metric.template transform<Idx::T, Idx::U>(xp, vp, vu);
       const auto gamma = math::sqrt(
-        ONE + vup[0] * vp[0] + vup[1] * vp[1] + vup[2] * vp[2]);
+        ONE + vu[0] * vd[0] + vu[1] * vd[1] + vu[2] * vd[2]);
       if (gamma < 10 or gamma > 1000) {
         raise::KernelError(HERE, "Gamma out of bounds");
       }

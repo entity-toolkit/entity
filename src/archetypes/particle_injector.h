@@ -256,8 +256,10 @@ namespace arch {
 
   template <SimEngine::type S,
             class M,
-            template <SimEngine::type, class> class ED,
-            template <SimEngine::type, class> class SD>
+            template <SimEngine::type, class>
+            class ED,
+            template <SimEngine::type, class>
+            class SD>
   struct NonUniformInjector {
     using energy_dist_t  = ED<S, M>;
     using spatial_dist_t = SD<S, M>;
@@ -507,8 +509,10 @@ namespace arch {
 
     template <SimEngine::type S,
               class M,
-              template <SimEngine::type, class> class ED1,
-              template <SimEngine::type, class> class ED2>
+              template <SimEngine::type, class>
+              class ED1,
+              template <SimEngine::type, class>
+              class ED2>
     struct UniformInjector : BaseInjector<S, M> {
       using energy_dist_1_t = ED1<S, M>;
       using energy_dist_2_t = ED2<S, M>;
