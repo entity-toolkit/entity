@@ -292,6 +292,395 @@ namespace kernel {
       i_min += N_GHOSTS;
     }
 
+    Inline void W(real_t* _S, real_t x) const {
+
+      if constexpr (O == 2) {
+
+        _S[0] = HALF * SQR(HALF - x);
+        _S[1] = THREE_FOURTHS - SQR(x);
+        _S[2] = HALF * SQR(HALF + x);
+
+      } else if constexpr (O == 3) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+
+        _S[0] = static_cast<real_t>(1 / 6) * (ONE - x3) - HALF * SQR(x - x2);
+        _S[1] = static_cast<real_t>(2 / 3) - x2 + HALF * x3;
+        _S[2] = static_cast<real_t>(1 / 6) + HALF * (x + x2 + x3);
+        _S[3] = static_cast<real_t>(1 / 6) * x3;
+
+      } else if constexpr (O == 4) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+        const auto x4 = x2 * x2;
+
+        _S[0] = static_cast<real_t>(1 / 384) - static_cast<real_t>(1 / 48) * x +
+                static_cast<real_t>(1 / 16) * x2 -
+                static_cast<real_t>(1 / 12) * x3 +
+                static_cast<real_t>(1 / 24) * x4;
+        _S[1] = static_cast<real_t>(19 / 96) - static_cast<real_t>(11 / 24) * x +
+                static_cast<real_t>(1 / 4) * x2 +
+                static_cast<real_t>(1 / 6) * x3 - static_cast<real_t>(1 / 6) * x4;
+        _S[2] = static_cast<real_t>(115 / 192) - static_cast<real_t>(5 / 8) * x2 +
+                static_cast<real_t>(1 / 4) * x4;
+        _S[3] = static_cast<real_t>(19 / 96) + static_cast<real_t>(11 / 24) * x +
+                static_cast<real_t>(1 / 4) * x2 -
+                static_cast<real_t>(1 / 6) * x3 - static_cast<real_t>(1 / 6) * x4;
+        _S[4] = static_cast<real_t>(1 / 384) + static_cast<real_t>(1 / 48) * x +
+                static_cast<real_t>(1 / 16) * x2 +
+                static_cast<real_t>(1 / 12) * x3 +
+                static_cast<real_t>(1 / 24) * x4;
+
+      } else if constexpr (O == 5) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+        const auto x4 = x2 * x2;
+        const auto x5 = x3 * x2;
+        const auto x6 = x3 * x3;
+
+        _S[0] = static_cast<real_t>(1.0 / 46080.0) -
+                static_cast<real_t>(1.0 / 3840.0) * x +
+                static_cast<real_t>(1.0 / 384.0) * x2 -
+                static_cast<real_t>(1.0 / 96.0) * x3 +
+                static_cast<real_t>(1.0 / 72.0) * x4 -
+                static_cast<real_t>(1.0 / 144.0) * x5 +
+                static_cast<real_t>(1.0 / 720.0) * x6;
+
+        _S[1] = static_cast<real_t>(13.0 / 9216.0) -
+                static_cast<real_t>(11.0 / 768.0) * x +
+                static_cast<real_t>(1.0 / 48.0) * x2 +
+                static_cast<real_t>(5.0 / 72.0) * x3 -
+                static_cast<real_t>(1.0 / 8.0) * x4 +
+                static_cast<real_t>(5.0 / 144.0) * x5 -
+                static_cast<real_t>(1.0 / 144.0) * x6;
+
+        _S[2] = static_cast<real_t>(115.0 / 768.0) -
+                static_cast<real_t>(5.0 / 24.0) * x2 +
+                static_cast<real_t>(1.0 / 8.0) * x4 -
+                static_cast<real_t>(1.0 / 72.0) * x6;
+
+        _S[3] = static_cast<real_t>(115.0 / 768.0) -
+                static_cast<real_t>(5.0 / 24.0) * x2 +
+                static_cast<real_t>(1.0 / 8.0) * x4 -
+                static_cast<real_t>(1.0 / 72.0) * x6;
+
+        _S[4] = static_cast<real_t>(13.0 / 9216.0) +
+                static_cast<real_t>(11.0 / 768.0) * x +
+                static_cast<real_t>(1.0 / 48.0) * x2 -
+                static_cast<real_t>(5.0 / 72.0) * x3 -
+                static_cast<real_t>(1.0 / 8.0) * x4 -
+                static_cast<real_t>(5.0 / 144.0) * x5 -
+                static_cast<real_t>(1.0 / 144.0) * x6;
+
+        _S[5] = static_cast<real_t>(1.0 / 46080.0) +
+                static_cast<real_t>(1.0 / 3840.0) * x +
+                static_cast<real_t>(1.0 / 384.0) * x2 +
+                static_cast<real_t>(1.0 / 96.0) * x3 +
+                static_cast<real_t>(1.0 / 72.0) * x4 +
+                static_cast<real_t>(1.0 / 144.0) * x5 +
+                static_cast<real_t>(1.0 / 720.0) * x6;
+
+      } else if constexpr (O == 6) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+        const auto x4 = x2 * x2;
+        const auto x5 = x3 * x2;
+        const auto x6 = x3 * x3;
+
+        _S[0] = static_cast<real_t>(1.0 / 40320.0) -
+                static_cast<real_t>(1.0 / 4480.0) * x +
+                static_cast<real_t>(1.0 / 640.0) * x2 -
+                static_cast<real_t>(1.0 / 192.0) * x3 +
+                static_cast<real_t>(1.0 / 144.0) * x4 -
+                static_cast<real_t>(1.0 / 288.0) * x5 +
+                static_cast<real_t>(1.0 / 1440.0) * x6;
+
+        _S[1] = static_cast<real_t>(1.0 / 1344.0) -
+                static_cast<real_t>(1.0 / 160.0) * x +
+                static_cast<real_t>(5.0 / 192.0) * x2 -
+                static_cast<real_t>(1.0 / 48.0) * x3 -
+                static_cast<real_t>(1.0 / 48.0) * x4 +
+                static_cast<real_t>(5.0 / 288.0) * x5 -
+                static_cast<real_t>(1.0 / 288.0) * x6;
+
+        _S[2] = static_cast<real_t>(17.0 / 336.0) -
+                static_cast<real_t>(5.0 / 48.0) * x2 +
+                static_cast<real_t>(1.0 / 12.0) * x4 -
+                static_cast<real_t>(1.0 / 144.0) * x6;
+
+        _S[3] = static_cast<real_t>(151.0 / 252.0) -
+                static_cast<real_t>(35.0 / 48.0) * x2 +
+                static_cast<real_t>(5.0 / 12.0) * x4 -
+                static_cast<real_t>(1.0 / 36.0) * x6;
+
+        _S[4] = static_cast<real_t>(17.0 / 336.0) -
+                static_cast<real_t>(5.0 / 48.0) * x2 +
+                static_cast<real_t>(1.0 / 12.0) * x4 -
+                static_cast<real_t>(1.0 / 144.0) * x6;
+
+        _S[5] = static_cast<real_t>(1.0 / 1344.0) +
+                static_cast<real_t>(1.0 / 160.0) * x +
+                static_cast<real_t>(5.0 / 192.0) * x2 +
+                static_cast<real_t>(1.0 / 48.0) * x3 -
+                static_cast<real_t>(1.0 / 48.0) * x4 -
+                static_cast<real_t>(5.0 / 288.0) * x5 -
+                static_cast<real_t>(1.0 / 288.0) * x6;
+
+        _S[6] = static_cast<real_t>(1.0 / 40320.0) +
+                static_cast<real_t>(1.0 / 4480.0) * x +
+                static_cast<real_t>(1.0 / 640.0) * x2 +
+                static_cast<real_t>(1.0 / 192.0) * x3 +
+                static_cast<real_t>(1.0 / 144.0) * x4 +
+                static_cast<real_t>(1.0 / 288.0) * x5 +
+                static_cast<real_t>(1.0 / 1440.0) * x6;
+
+      } else if constexpr (O == 7) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+        const auto x4 = x2 * x2;
+        const auto x5 = x3 * x2;
+        const auto x6 = x3 * x3;
+        const auto x7 = x4 * x3;
+
+        _S[0] = static_cast<real_t>(1.0 / 645120.0) -
+                static_cast<real_t>(1.0 / 64512.0) * x +
+                static_cast<real_t>(1.0 / 9216.0) * x2 -
+                static_cast<real_t>(1.0 / 3072.0) * x3 +
+                static_cast<real_t>(1.0 / 2304.0) * x4 -
+                static_cast<real_t>(1.0 / 4608.0) * x5 +
+                static_cast<real_t>(1.0 / 23040.0) * x6 -
+                static_cast<real_t>(1.0 / 161280.0) * x7;
+
+        _S[1] = static_cast<real_t>(1.0 / 9216.0) -
+                static_cast<real_t>(5.0 / 4608.0) * x +
+                static_cast<real_t>(35.0 / 9216.0) * x2 -
+                static_cast<real_t>(7.0 / 768.0) * x3 -
+                static_cast<real_t>(7.0 / 1152.0) * x4 +
+                static_cast<real_t>(35.0 / 4608.0) * x5 -
+                static_cast<real_t>(5.0 / 4608.0) * x6 +
+                static_cast<real_t>(1.0 / 9216.0) * x7;
+
+        _S[2] = static_cast<real_t>(25.0 / 1536.0) -
+                static_cast<real_t>(35.0 / 768.0) * x2 +
+                static_cast<real_t>(7.0 / 192.0) * x4 -
+                static_cast<real_t>(1.0 / 96.0) * x6;
+
+        _S[3] = static_cast<real_t>(245.0 / 384.0) -
+                static_cast<real_t>(245.0 / 192.0) * x2 +
+                static_cast<real_t>(49.0 / 48.0) * x4 -
+                static_cast<real_t>(7.0 / 72.0) * x6;
+
+        _S[4] = _S[3]; // symmetry
+
+        _S[5] = _S[2]; // symmetry
+
+        _S[6] = static_cast<real_t>(1 / 9216) + static_cast<real_t>(5 / 4608) * x +
+                static_cast<real_t>(35 / 9216) * x2 +
+                static_cast<real_t>(7 / 768) * x3 -
+                static_cast<real_t>(7 / 1152) * x4 -
+                static_cast<real_t>(35 / 4608) * x5 -
+                static_cast<real_t>(5 / 4608) * x6 -
+                static_cast<real_t>(1 / 9216) * x7;
+
+        _S[7] = static_cast<real_t>(1 / 645120) +
+                static_cast<real_t>(1 / 64512) * x +
+                static_cast<real_t>(1 / 9216) * x2 +
+                static_cast<real_t>(1 / 3072) * x3 +
+                static_cast<real_t>(1 / 2304) * x4 +
+                static_cast<real_t>(1 / 4608) * x5 +
+                static_cast<real_t>(1 / 23040) * x6 +
+                static_cast<real_t>(1 / 161280) * x7;
+
+      } else if constexpr (O == 8) {
+
+        const auto x2 = x * x;
+        const auto x3 = x2 * x;
+        const auto x4 = x2 * x2;
+        const auto x5 = x3 * x2;
+        const auto x6 = x3 * x3;
+        const auto x7 = x4 * x3;
+        const auto x8 = x4 * x4;
+
+        _S[0] = static_cast<real_t>(1.0 / 10321920.0) -
+                static_cast<real_t>(1.0 / 1146880.0) * x +
+                static_cast<real_t>(1.0 / 161280.0) * x2 -
+                static_cast<real_t>(1.0 / 53760.0) * x3 +
+                static_cast<real_t>(1.0 / 43008.0) * x4 -
+                static_cast<real_t>(1.0 / 96768.0) * x5 +
+                static_cast<real_t>(1.0 / 645120.0) * x6 -
+                static_cast<real_t>(1.0 / 1032192.0) * x7 +
+                static_cast<real_t>(1.0 / 4134528.0) * x8;
+
+        _S[1] = static_cast<real_t>(1.0 / 129024.0) -
+                static_cast<real_t>(1.0 / 14336.0) * x +
+                static_cast<real_t>(17.0 / 43008.0) * x2 -
+                static_cast<real_t>(17.0 / 21504.0) * x3 +
+                static_cast<real_t>(17.0 / 21504.0) * x4 -
+                static_cast<real_t>(17.0 / 43008.0) * x5 +
+                static_cast<real_t>(1.0 / 14336.0) * x6 -
+                static_cast<real_t>(1.0 / 129024.0) * x7 +
+                static_cast<real_t>(1.0 / 1032192.0) * x8;
+
+        _S[2] = static_cast<real_t>(361.0 / 64512.0) -
+                static_cast<real_t>(153.0 / 14336.0) * x2 +
+                static_cast<real_t>(51.0 / 14336.0) * x4 -
+                static_cast<real_t>(17.0 / 43008.0) * x6 +
+                static_cast<real_t>(1.0 / 1032192.0) * x8;
+
+        _S[3] = static_cast<real_t>(3061.0 / 16128.0) -
+                static_cast<real_t>(170.0 / 1792.0) * x2 +
+                static_cast<real_t>(34.0 / 1536.0) * x4 -
+                static_cast<real_t>(17.0 / 16128.0) * x6;
+
+        _S[4] = static_cast<real_t>(257135.0 / 32256.0) -
+                static_cast<real_t>(1785.0 / 896.0) * x2 +
+                static_cast<real_t>(255.0 / 256.0) * x4 -
+                static_cast<real_t>(85.0 / 1152.0) * x6;
+
+        _S[5] = _S[3]; // symmetry
+
+        _S[6] = _S[2]; // symmetry
+
+        _S[7] = static_cast<real_t>(1 / 129024) +
+                static_cast<real_t>(1 / 14336) * x +
+                static_cast<real_t>(17 / 43008) * x2 +
+                static_cast<real_t>(17 / 21504) * x3 +
+                static_cast<real_t>(17 / 21504) * x4 +
+                static_cast<real_t>(17 / 43008) * x5 +
+                static_cast<real_t>(1 / 14336) * x6 +
+                static_cast<real_t>(1 / 129024) * x7 +
+                static_cast<real_t>(1 / 1032192) * x8;
+
+        _S[8] = static_cast<real_t>(1 / 10321920) +
+                static_cast<real_t>(1 / 1146880) * x +
+                static_cast<real_t>(1 / 161280) * x2 +
+                static_cast<real_t>(1 / 53760) * x3 +
+                static_cast<real_t>(1 / 43008) * x4 +
+                static_cast<real_t>(1 / 96768) * x5 +
+                static_cast<real_t>(1 / 645120) * x6 +
+                static_cast<real_t>(1 / 1032192) * x7 +
+                static_cast<real_t>(1 / 4134528) * x8;
+
+      } else {
+        raise::KernelError(HERE, "Invalid order of shape function!");
+      }
+    }
+
+    Inline void shape_function_Nth(real_t*        S0,
+                                   real_t*        S1,
+                                   ncells_t&      i_min,
+                                   const index_t& i,
+                                   const real_t&  di,
+                                   const index_t& i_prev,
+                                   const real_t&  di_prev) const {
+      /*
+        Shape function per particle is a O+1 element array.
+        We need to find which indices are contributing to the shape function
+        For this we first compute the indices of the particle position
+
+        Let * be the particle position at the current timestep
+        Let x be the particle position at the previous timestep
+
+
+          (-1)    0      1      ...    N     N+1
+        __________________________________________
+        |      |  x*  |  x*  |  //  |  x*  |      |      // shift_i = 0
+        |______|______|______|______|______|______|
+        |      |  x   |  x*  |  //  |  x*  |   *  |      // shift_i = 1
+        |______|______|______|______|______|______|
+        |  *   |  x*  |  x*  |  //  |  x   |      |      // shift_i = -1
+        |______|______|______|______|______|______|
+      */
+
+      // find shift in indices
+      // ToDo: fix
+      const int di_less_half = static_cast<int>(di < static_cast<prtldx_t>(0.5));
+      const int di_prev_less_half = static_cast<int>(
+        di_prev < static_cast<prtldx_t>(0.5));
+
+      const int shift_i = (i - di_less_half) - (i_prev - di_prev_less_half);
+
+      // find the minimum index of the shape function -> ToDo!
+      i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
+
+      // center index of the shape function -> ToDo!
+      const auto di_center_prev = static_cast<real_t>(1 - di_prev_less_half) -
+                                  di_prev;
+      const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
+      // ToDo: end fix
+
+      real_t _S0[O+1], _S1[O+1];
+      // apply shape function
+      W(_S0, di_center_prev);
+      W(_S1, di_center);
+
+      // find indices and define shape function
+      if (shift_i == 1) {
+        /*
+            (-1)    0      1      ...     N     N+1
+          __________________________________________
+          |      |  x   |  x*  |  //  |  x*  |   *  |   // shift_i = 1
+          |______|______|______|______|______|______|
+        */
+
+        for (int j = 0; j < O; j++) {
+          S0[j] = _S0[j];
+        }
+        S0[O + 1] = ZERO;
+
+        S1[0] = ZERO;
+        for (int j = 0; j < O; j++) {
+          S1[j+1] = _S1[j];
+        }
+
+      } else if (shift_i == -1) {
+        /*
+            (-1)    0      1     ...     N     N+1
+          __________________________________________
+          |  *   |  x*  |  x*  |  //  |  x   |      |   // shift_i = -1
+          |______|______|______|______|______|______|
+        */
+
+        S0[0] = ZERO;
+        for (int j = 0; j < O; j++) {
+          S0[j+1] = _S0[j];
+        }
+
+        for (int j = 0; j < O; j++) {
+          S1[j] = _S1[j];
+        }
+        S1[O+1] = ZERO;
+
+      } else if (shift_i == 0) {
+        /*
+            (-1)    0      1     ...      N     N+1
+          __________________________________________
+          |      |  x*  |  x*  |  //  |  x*  |      |  // shift_i = 0
+          |______|______|______|______|______|______|
+        */
+
+        for (int j = 0; j < O; j++) {
+          S0[j] = _S0[j];
+        }
+        S0[O + 1] = ZERO;
+
+        for (int j = 0; j < O; j++) {
+          S1[j] = _S1[j];
+        }
+        S1[O + 1] = ZERO;
+      } else {
+        raise::KernelError(HERE, "Invalid shift in indices");
+      }
+
+      // account for ghost cells here to shorten J update expression
+      i_min += N_GHOSTS;
+    }
+
   public:
     /**
      * @brief explicit constructor.
@@ -931,27 +1320,6 @@ namespace kernel {
                              i3(p), dx3(p),
                              i3_prev(p), dx3_prev(p));
           // clang-format on
-
-          // Calculate weight function
-          // for (int i = 0; i < interp_order + 2; ++i) {
-          //   for (int j = 0; j < interp_order + 2; ++j) {
-          //     for (int k = 0; k < interp_order + 2; ++k) {
-          //       // Esirkepov 2001, Eq. 31
-          //       Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
-          //                     ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
-          //                      HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
-          //
-          //       Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
-          //                     (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
-          //                      HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
-          //
-          //       Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
-          //                     (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
-          //                      HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
-          //     }
-          //   }
-          // }
-          //
 
           // Unrolled calculations for Wx, Wy, and Wz
           // clang-format off
@@ -2178,13 +2546,251 @@ namespace kernel {
           if (update_x3 && update_y3) {
             J_acc(ix_min + 4, iy_min + 4, cur::jx3) += QVz * Wz_4_4;
           }
-        } // dim
-      } else { // order
-        raise::KernelError(HERE, "Unsupported interpolation order");
+
+        } // dim -> ToDo: 3D!
+
+      } else if constexpr (O > 3u) {
+
+        // shape function in dim1 -> always required
+        real_t   S0x[O + 2], S1x[O + 2];
+        // indices of the shape function
+        ncells_t ix_min;
+
+        // ToDo: Call shape function
+
+        if constexpr (D == Dim::_1D) {
+          // ToDo
+        } else if constexpr (D == Dim::_2D) {
+
+          // shape function in dim2
+          real_t   S0y[O + 2], S1y[O + 2];
+          // indices of the shape function
+          ncells_t iy_min;
+
+          // ToDo: Call shape function
+
+          // define weight tensors
+          real_t Wx[O + 1][O + 1];
+          real_t Wy[O + 1][O + 1];
+          real_t Wz[O + 1][O + 1];
+
+// Calculate weight function
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+              // Esirkepov 2001, Eq. 38
+              Wx[i][j] = (S1x[i] - S0x[i]) * (S0y[j] + HALF * (S1y[j] - S0y[j]));
+
+              Wy[i][j] = (S1y[i] - S0y[i]) * (S0y[j] + HALF * (S1x[j] - S0x[j]));
+
+              Wz[i][j] = S0x[i] * S0y[j] + HALF * (S1x[i] - S1x[i]) * S0y[j] +
+                         HALF * S0x[i] * (S1y[j] - S0y[j]) +
+                         THIRD * (S1x[i] - S0x[i]) * (S1y[j] - S0y[j]);
+            }
+          }
+
+          // contribution within the shape function stencil
+          real_t jx[O + 2][O + 2], jy[O + 2][O + 2], jz[O + 2][O + 2];
+
+          // prefactors to j update
+          const real_t Qdxdt = coeff * inv_dt;
+          const real_t Qdydt = coeff * inv_dt;
+          const real_t QVz   = coeff * inv_dt * vp[2];
+
+          // Calculate current contribution
+
+          // jx
+#pragma unroll
+          for (int j = 0; j < O + 2; ++j) {
+            jx[0][j] = -Qdxdt * Wx[0][j];
+          }
+
+#pragma unroll
+          for (int i = 1; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+              jx[i][j] = jx[i - 1][j] - Qdxdt * Wx[i][j];
+            }
+          }
+
+          // jy
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+            jy[i][0] = -Qdydt * Wy[i][0];
+          }
+
+#pragma unroll
+          for (int j = 1; j < O + 2; ++j) {
+#pragma unroll
+            for (int i = 0; i < O + 2; ++i) {
+              jy[i][j] = jy[i][j - 1] - Qdydt * Wy[i][j];
+            }
+          }
+
+          // jz
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+              jz[i][j] = QVz * Wz[i][j];
+            }
+          }
+
+          /*
+              Current update
+            */
+          auto J_acc = J.access();
+
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+              J_acc(ix_min + i, iy_min + j, cur::jx1) += jx[i][j];
+              J_acc(ix_min + i, iy_min + j, cur::jx2) += jy[i][j];
+              J_acc(ix_min + i, iy_min + j, cur::jx3) += jz[i][j];
+            }
+          }
+
+        } else if constexpr (D == Dim::_3D) {
+          // shape function in dim2
+          real_t   S0y[O + 2], S1y[O + 2];
+          // indices of the shape function
+          ncells_t iy_min;
+
+          // ToDo: Call shape function
+
+          // shape function in dim3
+          real_t   S0z[O + 2], S1z[O + 2];
+          // indices of the shape function
+          ncells_t iz_min;
+
+          // ToDo: Call shape function
+
+          // define weight tensors
+          real_t Wx[O + 1][O + 1][O + 1];
+          real_t Wy[O + 1][O + 1][O + 1];
+          real_t Wz[O + 1][O + 1][O + 1];
+
+// Calculate weight function
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+#pragma unroll
+              for (int k = 0; k < O + 2; ++k) {
+                // Esirkepov 2001, Eq. 31
+                Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
+                              ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
+                               HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
+
+                Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
+                              (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
+                               HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
+
+                Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
+                              (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
+                               HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
+              }
+            }
+          }
+
+          // contribution within the shape function stencil
+          real_t jx[O + 2][O + 2][O + 2], jy[O + 2][O + 2][O + 2],
+            jz[O + 2][O + 2][O + 2];
+
+          // prefactors to j update
+          const real_t Qdxdt = coeff * inv_dt;
+          const real_t Qdydt = coeff * inv_dt;
+          const real_t Qdzdt = coeff * inv_dt;
+
+          // Calculate current contribution
+
+          // jx
+#pragma unroll
+          for (int j = 0; j < O + 2; ++j) {
+#pragma unroll
+            for (int k = 0; k < O + 2; ++k) {
+              jx[0][j][k] = -Qdxdt * Wx[0][j][k];
+            }
+          }
+
+#pragma unroll
+          for (int i = 1; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+#pragma unroll
+              for (int k = 0; j < O + 2; ++k) {
+                jx[i][j][k] = jx[i - 1][j][k] - Qdxdt * Wx[i][j][k];
+              }
+            }
+          }
+
+          // jy
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int k = 0; k < O + 2; ++k) {
+              jy[i][0][k] = -Qdydt * Wy[i][0][k];
+            }
+          }
+
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 1; j < O + 2; ++j) {
+#pragma unroll
+              for (int k = 0; k < O + 2; ++k) {
+                jy[i][j][k] = jy[i][j - 1][k] - Qdydt * Wy[i][j][k];
+              }
+            }
+          }
+
+          // jz
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+              jy[i][j][0] = -Qdydt * Wy[i][j][0];
+            }
+          }
+
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+#pragma unroll
+              for (int k = 1; k < O + 2; ++k) {
+                jz[i][j][k] = jz[i][j][k - 1] - Qdzdt * Wz[i][j][k];
+              }
+            }
+          }
+
+          /*
+            Current update
+          */
+          auto J_acc = J.access();
+
+#pragma unroll
+          for (int i = 0; i < O + 2; ++i) {
+#pragma unroll
+            for (int j = 0; j < O + 2; ++j) {
+#pragma unroll
+              for (int k = 1; k < O + 2; ++k) {
+                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx1) += jx[i][j][k];
+                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx2) += jy[i][j][k];
+                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx3) += jz[i][j][k];
+              }
+            }
+          }
+        }
+        
+        } else { // order
+          raise::KernelError(HERE, "Unsupported interpolation order");
+        }
       }
-    }
-  };
-} // namespace kernel
+    };
+  } // namespace kernel
 
 #undef i_di_to_Xi
 
