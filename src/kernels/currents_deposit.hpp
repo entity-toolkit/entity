@@ -14,7 +14,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/error.h"
 #include "utils/numeric.h"
+
+#include "particle_shapes.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -43,117 +46,117 @@ namespace kernel {
     const M                  metric;
     const real_t             charge, inv_dt;
 
-    Inline void shape_function_2nd(real_t&        S0_0,
-                                   real_t&        S0_1,
-                                   real_t&        S0_2,
-                                   real_t&        S0_3,
-                                   real_t&        S1_0,
-                                   real_t&        S1_1,
-                                   real_t&        S1_2,
-                                   real_t&        S1_3,
-                                   ncells_t&      i_min,
-                                   bool&          update_i2,
-                                   const index_t& i,
-                                   const real_t&  di,
-                                   const index_t& i_prev,
-                                   const real_t&  di_prev) const {
-      /*
-        Shape function per particle is a 4 element array.
-        We need to find which indices are contributing to the shape function
-        For this we first compute the indices of the particle position
-
-        Let * be the particle position at the current timestep
-        Let x be the particle position at the previous timestep
-
-
-          (-1)    0      1      2      3
-        ___________________________________
-        |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
-        |______|______|______|______|______|
-        |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
-        |______|______|______|______|______|
-        |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
-        |______|______|______|______|______|
-      */
-
-      // find shift in indices
-      const int di_less_half = static_cast<int>(di < static_cast<prtldx_t>(0.5));
-      const int di_prev_less_half = static_cast<int>(
-        di_prev < static_cast<prtldx_t>(0.5));
-
-      const int shift_i = (i - di_less_half) - (i_prev - di_prev_less_half);
-
-      // find the minimum index of the shape function
-      i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
-
-      // center index of the shape function
-      const auto di_center_prev = static_cast<real_t>(1 - di_prev_less_half) -
-                                  di_prev;
-      const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
-
-      // find indices and define shape function
-      if (shift_i == 1) {
-        /*
-            (-1)    0      1      2      3
-          ___________________________________
-          |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
-          |______|______|______|______|______|
-        */
-        update_i2 = true;
-
-        S0_0 = HALF * SQR(HALF + di_center_prev);
-        S0_1 = THREE_FOURTHS - SQR(di_center_prev);
-        S0_2 = HALF * SQR(HALF - di_center_prev);
-        S0_3 = ZERO;
-
-        S1_0 = ZERO;
-        S1_1 = HALF * SQR(HALF + di_center);
-        S1_2 = THREE_FOURTHS - SQR(di_center);
-        S1_3 = HALF * SQR(HALF - di_center);
-      } else if (shift_i == -1) {
-        /*
-            (-1)    0      1      2      3
-          ___________________________________
-          |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
-          |______|______|______|______|______|
-        */
-        update_i2 = true;
-
-        S0_0 = ZERO;
-        S0_1 = HALF * SQR(HALF + di_center_prev);
-        S0_2 = THREE_FOURTHS - SQR(di_center_prev);
-        S0_3 = HALF * SQR(HALF - di_center_prev);
-
-        S1_0 = HALF * SQR(HALF + di_center);
-        S1_1 = THREE_FOURTHS - SQR(di_center);
-        S1_2 = HALF * SQR(HALF - di_center);
-        S1_3 = ZERO;
-
-      } else if (shift_i == 0) {
-        /*
-            (-1)    0      1      2      3
-          ___________________________________
-          |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
-          |______|______|______|______|______|
-        */
-        update_i2 = false;
-
-        S0_0 = HALF * SQR(HALF + di_center_prev);
-        S0_1 = THREE_FOURTHS - SQR(di_center_prev);
-        S0_2 = HALF * SQR(HALF - di_center_prev);
-        S0_3 = ZERO;
-
-        S1_0 = HALF * SQR(HALF + di_center);
-        S1_1 = THREE_FOURTHS - SQR(di_center);
-        S1_2 = HALF * SQR(HALF - di_center);
-        S1_3 = ZERO;
-      } else {
-        raise::KernelError(HERE, "Invalid shift in indices");
-      }
-
-      // account for ghost cells here to shorten J update expression
-      i_min += N_GHOSTS;
-    }
+    // Inline void shape_function_2nd(real_t&        S0_0,
+    //                                real_t&        S0_1,
+    //                                real_t&        S0_2,
+    //                                real_t&        S0_3,
+    //                                real_t&        S1_0,
+    //                                real_t&        S1_1,
+    //                                real_t&        S1_2,
+    //                                real_t&        S1_3,
+    //                                ncells_t&      i_min,
+    //                                bool&          update_i2,
+    //                                const index_t& i,
+    //                                const real_t&  di,
+    //                                const index_t& i_prev,
+    //                                const real_t&  di_prev) const {
+    //   /*
+    //     Shape function per particle is a 4 element array.
+    //     We need to find which indices are contributing to the shape function
+    //     For this we first compute the indices of the particle position
+    //
+    //     Let * be the particle position at the current timestep
+    //     Let x be the particle position at the previous timestep
+    //
+    //
+    //       (-1)    0      1      2      3
+    //     ___________________________________
+    //     |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
+    //     |______|______|______|______|______|
+    //     |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
+    //     |______|______|______|______|______|
+    //     |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
+    //     |______|______|______|______|______|
+    //   */
+    //
+    //   // find shift in indices
+    //   const int di_less_half = static_cast<int>(di < static_cast<prtldx_t>(0.5));
+    //   const int di_prev_less_half = static_cast<int>(
+    //     di_prev < static_cast<prtldx_t>(0.5));
+    //
+    //   const int shift_i = (i - di_less_half) - (i_prev - di_prev_less_half);
+    //
+    //   // find the minimum index of the shape function
+    //   i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
+    //
+    //   // center index of the shape function
+    //   const auto di_center_prev = static_cast<real_t>(1 - di_prev_less_half) -
+    //                               di_prev;
+    //   const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
+    //
+    //   // find indices and define shape function
+    //   if (shift_i == 1) {
+    //     /*
+    //         (-1)    0      1      2      3
+    //       ___________________________________
+    //       |      |  x   |  x*  |  x*  |  *   |   // shift_i = 1
+    //       |______|______|______|______|______|
+    //     */
+    //     update_i2 = true;
+    //
+    //     S0_0 = HALF * SQR(HALF + di_center_prev);
+    //     S0_1 = THREE_FOURTHS - SQR(di_center_prev);
+    //     S0_2 = HALF * SQR(HALF - di_center_prev);
+    //     S0_3 = ZERO;
+    //
+    //     S1_0 = ZERO;
+    //     S1_1 = HALF * SQR(HALF + di_center);
+    //     S1_2 = THREE_FOURTHS - SQR(di_center);
+    //     S1_3 = HALF * SQR(HALF - di_center);
+    //   } else if (shift_i == -1) {
+    //     /*
+    //         (-1)    0      1      2      3
+    //       ___________________________________
+    //       |  *   |  x*  |  x*  |  x   |      |   // shift_i = -1
+    //       |______|______|______|______|______|
+    //     */
+    //     update_i2 = true;
+    //
+    //     S0_0 = ZERO;
+    //     S0_1 = HALF * SQR(HALF + di_center_prev);
+    //     S0_2 = THREE_FOURTHS - SQR(di_center_prev);
+    //     S0_3 = HALF * SQR(HALF - di_center_prev);
+    //
+    //     S1_0 = HALF * SQR(HALF + di_center);
+    //     S1_1 = THREE_FOURTHS - SQR(di_center);
+    //     S1_2 = HALF * SQR(HALF - di_center);
+    //     S1_3 = ZERO;
+    //
+    //   } else if (shift_i == 0) {
+    //     /*
+    //         (-1)    0      1      2      3
+    //       ___________________________________
+    //       |      |  x*  |  x*  |  x*  |      |   // shift_i = 0
+    //       |______|______|______|______|______|
+    //     */
+    //     update_i2 = false;
+    //
+    //     S0_0 = HALF * SQR(HALF + di_center_prev);
+    //     S0_1 = THREE_FOURTHS - SQR(di_center_prev);
+    //     S0_2 = HALF * SQR(HALF - di_center_prev);
+    //     S0_3 = ZERO;
+    //
+    //     S1_0 = HALF * SQR(HALF + di_center);
+    //     S1_1 = THREE_FOURTHS - SQR(di_center);
+    //     S1_2 = HALF * SQR(HALF - di_center);
+    //     S1_3 = ZERO;
+    //   } else {
+    //     raise::KernelError(HERE, "Invalid shift in indices");
+    //   }
+    //
+    //   // account for ghost cells here to shorten J update expression
+    //   i_min += N_GHOSTS;
+    // }
 
     Inline void shape_function_3rd(real_t&        S0_0,
                                    real_t&        S0_1,
@@ -614,7 +617,7 @@ namespace kernel {
       const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
       // ToDo: end fix
 
-      real_t _S0[O+1], _S1[O+1];
+      real_t _S0[O + 1], _S1[O + 1];
       // apply shape function
       W(_S0, di_center_prev);
       W(_S1, di_center);
@@ -635,7 +638,7 @@ namespace kernel {
 
         S1[0] = ZERO;
         for (int j = 0; j < O; j++) {
-          S1[j+1] = _S1[j];
+          S1[j + 1] = _S1[j];
         }
 
       } else if (shift_i == -1) {
@@ -648,13 +651,13 @@ namespace kernel {
 
         S0[0] = ZERO;
         for (int j = 0; j < O; j++) {
-          S0[j+1] = _S0[j];
+          S0[j + 1] = _S0[j];
         }
 
         for (int j = 0; j < O; j++) {
           S1[j] = _S1[j];
         }
-        S1[O+1] = ZERO;
+        S1[O + 1] = ZERO;
 
       } else if (shift_i == 0) {
         /*
@@ -1026,1185 +1029,1182 @@ namespace kernel {
         }
       } else if constexpr (O == 2u) {
         /*
-          Higher order charge conserving current deposition based on
-          Esirkepov (2001) https://ui.adsabs.harvard.edu/abs/2001CoPhC.135..144E/abstract
+         * Higher order charge conserving current deposition based on
+         * Esirkepov (2001) https://ui.adsabs.harvard.edu/abs/2001CoPhC.135..144E/abstract
+         **/
 
-          We need to define the follwowing variable:
-          - Shape functions in spatial directions for the particle position
-            before and after the current timestep.
-            S0_*, S1_*
-          - Density composition matrix
-            Wx_*, Wy_*, Wz_*
-        */
+        // iS -> shape function for init position
+        // fS -> shape function for final position
 
-        /*
-            x - direction
-        */
+        // shape function at staggered points (one coeff is always ZERO)
+        int    i1_minH;
+        real_t iS_x1H_0, iS_x1H_1, iS_x1H_2, iS_x1H_3;
+        real_t fS_x1H_0, fS_x1H_1, fS_x1H_2, fS_x1H_3;
 
-        // shape function at previous timestep
-        real_t   S0x_0, S0x_1, S0x_2, S0x_3;
-        // shape function at current timestep
-        real_t   S1x_0, S1x_1, S1x_2, S1x_3;
-        // indices of the shape function
-        ncells_t ix_min;
-        bool     update_x2;
-        // find indices and define shape function
+        // shape function at integer points (one coeff is always ZERO)
+        int    i1_min;
+        real_t iS_x1_0, iS_x1_1, iS_x1_2, iS_x1_3;
+        real_t fS_x1_0, fS_x1_1, fS_x1_2, fS_x1_3;
+
         // clang-format off
-        shape_function_2nd(S0x_0, S0x_1, S0x_2, S0x_3,
-                           S1x_0, S1x_1, S1x_2, S1x_3,
-                           ix_min, update_x2,
-                           i1(p), dx1(p),
-                           i1_prev(p), dx1_prev(p));
+        prtl_shape::for_deposit_2nd<true>(i1_prev(p), static_cast<real_t>(dx1_prev(p)),
+                                          i1(p), static_cast<real_t>(dx1(p)),
+                                          i1_minH,
+                                          iS_x1H_0, iS_x1H_1, iS_x1H_2, iS_x1H_3,
+                                          fS_x1H_0, fS_x1H_1, fS_x1H_2, fS_x1H_3);
+        prtl_shape::for_deposit_2nd<false>(i1_prev(p), static_cast<real_t>(dx1_prev(p)),
+                                           i1(p), static_cast<real_t>(dx1(p)),
+                                           i1_min,
+                                           iS_x1_0, iS_x1_1, iS_x1_2, iS_x1_3,
+                                           fS_x1_0, fS_x1_1, fS_x1_2, fS_x1_3);
         // clang-format on
 
         if constexpr (D == Dim::_1D) {
-          // ToDo
+          raise::KernelNotImplementedError(HERE);
         } else if constexpr (D == Dim::_2D) {
 
-          /*
-            y - direction
-          */
+          // shape function at staggered points (one coeff is always ZERO)
+          int    i2_minH;
+          real_t iS_x2H_0, iS_x2H_1, iS_x2H_2, iS_x2H_3;
+          real_t fS_x2H_0, fS_x2H_1, fS_x2H_2, fS_x2H_3;
 
-          // shape function at previous timestep
-          real_t   S0y_0, S0y_1, S0y_2, S0y_3;
-          // shape function at current timestep
-          real_t   S1y_0, S1y_1, S1y_2, S1y_3;
-          // indices of the shape function
-          ncells_t iy_min;
-          bool     update_y2;
-          // find indices and define shape function
+          // shape function at integer points (one coeff is always ZERO)
+          int    i2_min;
+          real_t iS_x2_0, iS_x2_1, iS_x2_2, iS_x2_3;
+          real_t fS_x2_0, fS_x2_1, fS_x2_2, fS_x2_3;
+
           // clang-format off
-          shape_function_2nd(S0y_0, S0y_1, S0y_2, S0y_3,
-                             S1y_0, S1y_1, S1y_2, S1y_3,
-                             iy_min, update_y2,
-                             i2(p), dx2(p),
-                             i2_prev(p), dx2_prev(p));
+          prtl_shape::for_deposit_2nd<true>(i2_prev(p), static_cast<real_t>(dx2_prev(p)),
+                                            i2(p), static_cast<real_t>(dx2(p)),
+                                            i2_minH,
+                                            iS_x2H_0, iS_x2H_1, iS_x2H_2, iS_x2H_3,
+                                            fS_x2H_0, fS_x2H_1, fS_x2H_2, fS_x2H_3);
+          prtl_shape::for_deposit_2nd<false>(i2_prev(p), static_cast<real_t>(dx2_prev(p)),
+                                             i2(p), static_cast<real_t>(dx2(p)),
+                                             i2_min,
+                                             iS_x2_0, iS_x2_1, iS_x2_2, iS_x2_3,
+                                             fS_x2_0, fS_x2_1, fS_x2_2, fS_x2_3);
           // clang-format on
+          // x1-components
+          const auto Wx1_00 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_01 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_02 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_03 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_3 + iS_x2_3);
 
-          // Esirkepov 2001, Eq. 38
-          /*
-              x - component
-          */
-          // Calculate weight function - unrolled
-          const auto Wx_0_0 = HALF * (S1x_0 - S0x_0) * (S0y_0 + S1y_0);
-          const auto Wx_0_1 = HALF * (S1x_0 - S0x_0) * (S0y_1 + S1y_1);
-          const auto Wx_0_2 = HALF * (S1x_0 - S0x_0) * (S0y_2 + S1y_2);
-          const auto Wx_0_3 = HALF * (S1x_0 - S0x_0) * (S0y_3 + S1y_3);
+          const auto Wx1_10 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_11 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_12 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_13 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_3 + iS_x2_3);
 
-          const auto Wx_1_0 = HALF * (S1x_1 - S0x_1) * (S0y_0 + S1y_0);
-          const auto Wx_1_1 = HALF * (S1x_1 - S0x_1) * (S0y_1 + S1y_1);
-          const auto Wx_1_2 = HALF * (S1x_1 - S0x_1) * (S0y_2 + S1y_2);
-          const auto Wx_1_3 = HALF * (S1x_1 - S0x_1) * (S0y_3 + S1y_3);
+          const auto Wx1_20 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_21 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_22 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_23 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_3 + iS_x2_3);
 
-          const auto Wx_2_0 = HALF * (S1x_2 - S0x_2) * (S0y_0 + S1y_0);
-          const auto Wx_2_1 = HALF * (S1x_2 - S0x_2) * (S0y_1 + S1y_1);
-          const auto Wx_2_2 = HALF * (S1x_2 - S0x_2) * (S0y_2 + S1y_2);
-          const auto Wx_2_3 = HALF * (S1x_2 - S0x_2) * (S0y_3 + S1y_3);
+          const auto Wx1_30 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_31 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_32 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_33 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_3 + iS_x2_3);
 
-          // Unrolled calculations for Wy
-          const auto Wy_0_0 = HALF * (S1x_0 + S0x_0) * (S1y_0 - S0y_0);
-          const auto Wy_0_1 = HALF * (S1x_0 + S0x_0) * (S1y_1 - S0y_1);
-          const auto Wy_0_2 = HALF * (S1x_0 + S0x_0) * (S1y_2 - S0y_2);
+          // x2-components
+          const auto Wx2_00 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_0 - iS_x2H_0);
+          const auto Wx2_01 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_1 - iS_x2H_1);
+          const auto Wx2_02 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_2 - iS_x2H_2);
+          const auto Wx2_03 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_3 - iS_x2H_3);
 
-          const auto Wy_1_0 = HALF * (S1x_1 + S0x_1) * (S1y_0 - S0y_0);
-          const auto Wy_1_1 = HALF * (S1x_1 + S0x_1) * (S1y_1 - S0y_1);
-          const auto Wy_1_2 = HALF * (S1x_1 + S0x_1) * (S1y_2 - S0y_2);
+          const auto Wx2_10 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_0 - iS_x2H_0);
+          const auto Wx2_11 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_1 - iS_x2H_1);
+          const auto Wx2_12 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_2 - iS_x2H_2);
+          const auto Wx2_13 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_3 - iS_x2H_3);
 
-          const auto Wy_2_0 = HALF * (S1x_2 + S0x_2) * (S1y_0 - S0y_0);
-          const auto Wy_2_1 = HALF * (S1x_2 + S0x_2) * (S1y_1 - S0y_1);
-          const auto Wy_2_2 = HALF * (S1x_2 + S0x_2) * (S1y_2 - S0y_2);
+          const auto Wx2_20 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_0 - iS_x2H_0);
+          const auto Wx2_21 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_1 - iS_x2H_1);
+          const auto Wx2_22 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_2 - iS_x2H_2);
+          const auto Wx2_23 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_3 - iS_x2H_3);
 
-          const auto Wy_3_0 = HALF * (S1x_3 + S0x_3) * (S1y_0 - S0y_0);
-          const auto Wy_3_1 = HALF * (S1x_3 + S0x_3) * (S1y_1 - S0y_1);
-          const auto Wy_3_2 = HALF * (S1x_3 + S0x_3) * (S1y_2 - S0y_2);
+          const auto Wx2_30 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_0 - iS_x2H_0);
+          const auto Wx2_31 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_1 - iS_x2H_1);
+          const auto Wx2_32 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_2 - iS_x2H_2);
+          const auto Wx2_33 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_3 - iS_x2H_3);
 
-          // Unrolled calculations for Wz
-          const auto Wz_0_0 = THIRD * (S1y_0 * (HALF * S0x_0 + S1x_0) +
-                                       S0y_0 * (HALF * S1x_0 + S0x_0));
-          const auto Wz_0_1 = THIRD * (S1y_1 * (HALF * S0x_0 + S1x_0) +
-                                       S0y_1 * (HALF * S1x_0 + S0x_0));
-          const auto Wz_0_2 = THIRD * (S1y_2 * (HALF * S0x_0 + S1x_0) +
-                                       S0y_2 * (HALF * S1x_0 + S0x_0));
-          const auto Wz_0_3 = THIRD * (S1y_3 * (HALF * S0x_0 + S1x_0) +
-                                       S0y_3 * (HALF * S1x_0 + S0x_0));
+          // x3-components
+          const auto Wx3_00 = THIRD * (fS_x2_0 * (HALF * iS_x1_0 + fS_x1_0) +
+                                       iS_x2_0 * (HALF * fS_x1_0 + iS_x1_0));
+          const auto Wx3_01 = THIRD * (fS_x2_1 * (HALF * iS_x1_0 + fS_x1_0) +
+                                       iS_x2_1 * (HALF * fS_x1_0 + iS_x1_0));
+          const auto Wx3_02 = THIRD * (fS_x2_2 * (HALF * iS_x1_0 + fS_x1_0) +
+                                       iS_x2_2 * (HALF * fS_x1_0 + iS_x1_0));
+          const auto Wx3_03 = THIRD * (fS_x2_3 * (HALF * iS_x1_0 + fS_x1_0) +
+                                       iS_x2_3 * (HALF * fS_x1_0 + iS_x1_0));
 
-          const auto Wz_1_0 = THIRD * (S1y_0 * (HALF * S0x_1 + S1x_1) +
-                                       S0y_0 * (HALF * S1x_1 + S0x_1));
-          const auto Wz_1_1 = THIRD * (S1y_1 * (HALF * S0x_1 + S1x_1) +
-                                       S0y_1 * (HALF * S1x_1 + S0x_1));
-          const auto Wz_1_2 = THIRD * (S1y_2 * (HALF * S0x_1 + S1x_1) +
-                                       S0y_2 * (HALF * S1x_1 + S0x_1));
-          const auto Wz_1_3 = THIRD * (S1y_3 * (HALF * S0x_1 + S1x_1) +
-                                       S0y_3 * (HALF * S1x_1 + S0x_1));
+          const auto Wx3_10 = THIRD * (fS_x2_0 * (HALF * iS_x1_1 + fS_x1_1) +
+                                       iS_x2_0 * (HALF * fS_x1_1 + iS_x1_1));
+          const auto Wx3_11 = THIRD * (fS_x2_1 * (HALF * iS_x1_1 + fS_x1_1) +
+                                       iS_x2_1 * (HALF * fS_x1_1 + iS_x1_1));
+          const auto Wx3_12 = THIRD * (fS_x2_2 * (HALF * iS_x1_1 + fS_x1_1) +
+                                       iS_x2_2 * (HALF * fS_x1_1 + iS_x1_1));
+          const auto Wx3_13 = THIRD * (fS_x2_3 * (HALF * iS_x1_1 + fS_x1_1) +
+                                       iS_x2_3 * (HALF * fS_x1_1 + iS_x1_1));
 
-          const auto Wz_2_0 = THIRD * (S1y_0 * (HALF * S0x_2 + S1x_2) +
-                                       S0y_0 * (HALF * S1x_2 + S0x_2));
-          const auto Wz_2_1 = THIRD * (S1y_1 * (HALF * S0x_2 + S1x_2) +
-                                       S0y_1 * (HALF * S1x_2 + S0x_2));
-          const auto Wz_2_2 = THIRD * (S1y_2 * (HALF * S0x_2 + S1x_2) +
-                                       S0y_2 * (HALF * S1x_2 + S0x_2));
-          const auto Wz_2_3 = THIRD * (S1y_3 * (HALF * S0x_2 + S1x_2) +
-                                       S0y_3 * (HALF * S1x_2 + S0x_2));
+          const auto Wx3_20 = THIRD * (fS_x2_0 * (HALF * iS_x1_2 + fS_x1_2) +
+                                       iS_x2_0 * (HALF * fS_x1_2 + iS_x1_2));
+          const auto Wx3_21 = THIRD * (fS_x2_1 * (HALF * iS_x1_2 + fS_x1_2) +
+                                       iS_x2_1 * (HALF * fS_x1_2 + iS_x1_2));
+          const auto Wx3_22 = THIRD * (fS_x2_2 * (HALF * iS_x1_2 + fS_x1_2) +
+                                       iS_x2_2 * (HALF * fS_x1_2 + iS_x1_2));
+          const auto Wx3_23 = THIRD * (fS_x2_3 * (HALF * iS_x1_2 + fS_x1_2) +
+                                       iS_x2_3 * (HALF * fS_x1_2 + iS_x1_2));
 
-          const auto Wz_3_0 = THIRD * (S1y_0 * (HALF * S0x_3 + S1x_3) +
-                                       S0y_0 * (HALF * S1x_3 + S0x_3));
-          const auto Wz_3_1 = THIRD * (S1y_1 * (HALF * S0x_3 + S1x_3) +
-                                       S0y_1 * (HALF * S1x_3 + S0x_3));
-          const auto Wz_3_2 = THIRD * (S1y_2 * (HALF * S0x_3 + S1x_3) +
-                                       S0y_2 * (HALF * S1x_3 + S0x_3));
-          const auto Wz_3_3 = THIRD * (S1y_3 * (HALF * S0x_3 + S1x_3) +
-                                       S0y_3 * (HALF * S1x_3 + S0x_3));
+          const auto Wx3_30 = THIRD * (fS_x2_0 * (HALF * iS_x1_3 + fS_x1_3) +
+                                       iS_x2_0 * (HALF * fS_x1_3 + iS_x1_3));
+          const auto Wx3_31 = THIRD * (fS_x2_1 * (HALF * iS_x1_3 + fS_x1_3) +
+                                       iS_x2_1 * (HALF * fS_x1_3 + iS_x1_3));
+          const auto Wx3_32 = THIRD * (fS_x2_2 * (HALF * iS_x1_3 + fS_x1_3) +
+                                       iS_x2_2 * (HALF * fS_x1_3 + iS_x1_3));
+          const auto Wx3_33 = THIRD * (fS_x2_3 * (HALF * iS_x1_3 + fS_x1_3) +
+                                       iS_x2_3 * (HALF * fS_x1_3 + iS_x1_3));
 
-          const real_t Qdxdt = coeff * inv_dt;
-          const real_t Qdydt = coeff * inv_dt;
-          const real_t QVz   = coeff * vp[2];
+          // x1-component
+          const auto jx1_00 = Wx1_00;
+          const auto jx1_10 = jx1_00 + Wx1_10;
+          const auto jx1_20 = jx1_10 + Wx1_20;
+          const auto jx1_30 = jx1_20 + Wx1_30;
 
-          // Esirkepov - Eq. 39
-          // x-component
-          const auto jx_0_0 = -Qdxdt * Wx_0_0;
-          const auto jx_1_0 = jx_0_0 - Qdxdt * Wx_1_0;
-          const auto jx_2_0 = jx_1_0 - Qdxdt * Wx_2_0;
+          const auto jx1_01 = Wx1_01;
+          const auto jx1_11 = jx1_01 + Wx1_11;
+          const auto jx1_21 = jx1_11 + Wx1_21;
+          const auto jx1_31 = jx1_21 + Wx1_31;
 
-          const auto jx_0_1 = -Qdxdt * Wx_0_1;
-          const auto jx_1_1 = jx_0_1 - Qdxdt * Wx_1_1;
-          const auto jx_2_1 = jx_1_1 - Qdxdt * Wx_2_1;
+          const auto jx1_02 = Wx1_02;
+          const auto jx1_12 = jx1_02 + Wx1_12;
+          const auto jx1_22 = jx1_12 + Wx1_22;
+          const auto jx1_32 = jx1_22 + Wx1_32;
 
-          const auto jx_0_2 = -Qdxdt * Wx_0_2;
-          const auto jx_1_2 = jx_0_2 - Qdxdt * Wx_1_2;
-          const auto jx_2_2 = jx_1_2 - Qdxdt * Wx_2_2;
-
-          const auto jx_0_3 = -Qdxdt * Wx_0_3;
-          const auto jx_1_3 = jx_0_3 - Qdxdt * Wx_1_3;
-          const auto jx_2_3 = jx_1_3 - Qdxdt * Wx_2_3;
+          const auto jx1_03 = Wx1_03;
+          const auto jx1_13 = jx1_03 + Wx1_13;
+          const auto jx1_23 = jx1_13 + Wx1_23;
+          const auto jx1_33 = jx1_23 + Wx1_33;
 
           // y-component
-          const auto jy_0_0 = -Qdydt * Wy_0_0;
-          const auto jy_0_1 = jy_0_0 - Qdydt * Wy_0_1;
-          const auto jy_0_2 = jy_0_1 - Qdydt * Wy_0_2;
+          const auto jx2_00 = Wx2_00;
+          const auto jx2_01 = jx2_00 + Wx2_01;
+          const auto jx2_02 = jx2_01 + Wx2_02;
+          const auto jx2_03 = jx2_02 + Wx2_03;
 
-          const auto jy_1_0 = -Qdydt * Wy_1_0;
-          const auto jy_1_1 = jy_1_0 - Qdydt * Wy_1_1;
-          const auto jy_1_2 = jy_1_1 - Qdydt * Wy_1_2;
+          const auto jx2_10 = Wx2_10;
+          const auto jx2_11 = jx2_10 + Wx2_11;
+          const auto jx2_12 = jx2_11 + Wx2_12;
+          const auto jx2_13 = jx2_12 + Wx2_13;
 
-          const auto jy_2_0 = -Qdydt * Wy_2_0;
-          const auto jy_2_1 = jy_2_0 - Qdydt * Wy_2_1;
-          const auto jy_2_2 = jy_2_1 - Qdydt * Wy_2_2;
+          const auto jx2_20 = Wx2_20;
+          const auto jx2_21 = jx2_20 + Wx2_21;
+          const auto jx2_22 = jx2_21 + Wx2_22;
+          const auto jx2_23 = jx2_22 + Wx2_23;
 
-          const auto jy_3_0 = -Qdydt * Wy_3_0;
-          const auto jy_3_1 = jy_3_0 - Qdydt * Wy_3_1;
-          const auto jy_3_2 = jy_3_1 - Qdydt * Wy_3_2;
+          const auto jx2_30 = Wx2_30;
+          const auto jx2_31 = jx2_30 + Wx2_31;
+          const auto jx2_32 = jx2_31 + Wx2_32;
+          const auto jx2_33 = jx2_32 + Wx2_33;
 
-          /*
-            Current update
-          */
+          i1_minH += N_GHOSTS;
+          i1_min  += N_GHOSTS;
+          i2_minH += N_GHOSTS;
+          i2_min  += N_GHOSTS;
+
+          // @TODO: not sure about the signs here
+          const real_t Qdx1dt = -coeff * inv_dt;
+          const real_t Qdx2dt = -coeff * inv_dt;
+          const real_t QVx3   = coeff * vp[2];
+
           auto J_acc = J.access();
 
-          /*
-              x - component
-          */
-          J_acc(ix_min, iy_min, cur::jx1)     += jx_0_0;
-          J_acc(ix_min, iy_min + 1, cur::jx1) += jx_0_1;
-          J_acc(ix_min, iy_min + 2, cur::jx1) += jx_0_2;
+          // x1-currents
+          J_acc(i1_minH + 0, i2_min + 0, cur::jx1) += Qdx1dt * jx1_00;
+          J_acc(i1_minH + 0, i2_min + 1, cur::jx1) += Qdx1dt * jx1_01;
+          J_acc(i1_minH + 0, i2_min + 2, cur::jx1) += Qdx1dt * jx1_02;
+          J_acc(i1_minH + 0, i2_min + 3, cur::jx1) += Qdx1dt * jx1_03;
 
-          J_acc(ix_min + 1, iy_min, cur::jx1)     += jx_1_0;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx1) += jx_1_1;
-          J_acc(ix_min + 1, iy_min + 2, cur::jx1) += jx_1_2;
+          J_acc(i1_minH + 1, i2_min + 0, cur::jx1) += Qdx1dt * jx1_10;
+          J_acc(i1_minH + 1, i2_min + 1, cur::jx1) += Qdx1dt * jx1_11;
+          J_acc(i1_minH + 1, i2_min + 2, cur::jx1) += Qdx1dt * jx1_12;
+          J_acc(i1_minH + 1, i2_min + 3, cur::jx1) += Qdx1dt * jx1_13;
 
-          if (update_x2) {
-            J_acc(ix_min + 2, iy_min, cur::jx1)     += jx_2_0;
-            J_acc(ix_min + 2, iy_min + 1, cur::jx1) += jx_2_1;
-            J_acc(ix_min + 2, iy_min + 2, cur::jx1) += jx_2_2;
-          }
+          J_acc(i1_minH + 2, i2_min + 0, cur::jx1) += Qdx1dt * jx1_20;
+          J_acc(i1_minH + 2, i2_min + 1, cur::jx1) += Qdx1dt * jx1_21;
+          J_acc(i1_minH + 2, i2_min + 2, cur::jx1) += Qdx1dt * jx1_22;
+          J_acc(i1_minH + 2, i2_min + 3, cur::jx1) += Qdx1dt * jx1_23;
 
-          if (update_y2) {
-            J_acc(ix_min + 1, iy_min + 3, cur::jx1) += jx_1_3;
-            J_acc(ix_min, iy_min + 3, cur::jx1)     += jx_0_3;
-          }
+          J_acc(i1_minH + 3, i2_min + 0, cur::jx1) += Qdx1dt * jx1_30;
+          J_acc(i1_minH + 3, i2_min + 1, cur::jx1) += Qdx1dt * jx1_31;
+          J_acc(i1_minH + 3, i2_min + 2, cur::jx1) += Qdx1dt * jx1_32;
+          J_acc(i1_minH + 3, i2_min + 3, cur::jx1) += Qdx1dt * jx1_33;
 
-          if (update_x2 && update_y2) {
-            J_acc(ix_min + 2, iy_min + 3, cur::jx1) += jx_2_3;
-          }
+          // x2-currents
+          J_acc(i1_min + 0, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_00;
+          J_acc(i1_min + 0, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_01;
+          J_acc(i1_min + 0, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_02;
+          J_acc(i1_min + 0, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_03;
 
-          /*
-              y - component
-          */
-          J_acc(ix_min, iy_min, cur::jx2)     += jy_0_0;
-          J_acc(ix_min + 1, iy_min, cur::jx2) += jy_1_0;
-          J_acc(ix_min + 2, iy_min, cur::jx2) += jy_2_0;
+          J_acc(i1_min + 1, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_10;
+          J_acc(i1_min + 1, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_11;
+          J_acc(i1_min + 1, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_12;
+          J_acc(i1_min + 1, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_13;
 
-          J_acc(ix_min, iy_min + 1, cur::jx2)     += jy_0_1;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx2) += jy_1_1;
-          J_acc(ix_min + 2, iy_min + 1, cur::jx2) += jy_2_1;
+          J_acc(i1_min + 2, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_20;
+          J_acc(i1_min + 2, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_21;
+          J_acc(i1_min + 2, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_22;
+          J_acc(i1_min + 2, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_23;
 
-          if (update_x2) {
-            J_acc(ix_min + 3, iy_min + 1, cur::jx2) += jy_3_1;
-            J_acc(ix_min + 3, iy_min, cur::jx2)     += jy_3_0;
-          }
+          J_acc(i1_min + 3, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_30;
+          J_acc(i1_min + 3, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_31;
+          J_acc(i1_min + 3, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_32;
+          J_acc(i1_min + 3, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_33;
 
-          if (update_y2) {
-            J_acc(ix_min, iy_min + 2, cur::jx2)     += jy_0_2;
-            J_acc(ix_min + 1, iy_min + 2, cur::jx2) += jy_1_2;
-            J_acc(ix_min + 2, iy_min + 2, cur::jx2) += jy_2_2;
-          }
+          // x3-currents
+          J_acc(i1_min + 0, i2_min + 0, cur::jx3) += QVx3 * Wx3_00;
+          J_acc(i1_min + 0, i2_min + 1, cur::jx3) += QVx3 * Wx3_01;
+          J_acc(i1_min + 0, i2_min + 2, cur::jx3) += QVx3 * Wx3_02;
+          J_acc(i1_min + 0, i2_min + 3, cur::jx3) += QVx3 * Wx3_03;
 
-          if (update_x2 && update_y2) {
-            J_acc(ix_min + 3, iy_min + 2, cur::jx2) += jy_3_2;
-          }
-          /*
-              z - component, unsimulated direction
-          */
-          J_acc(ix_min, iy_min, cur::jx3)     += QVz * Wz_0_0;
-          J_acc(ix_min, iy_min + 1, cur::jx3) += QVz * Wz_0_1;
-          J_acc(ix_min, iy_min + 2, cur::jx3) += QVz * Wz_0_2;
+          J_acc(i1_min + 1, i2_min + 0, cur::jx3) += QVx3 * Wx3_10;
+          J_acc(i1_min + 1, i2_min + 1, cur::jx3) += QVx3 * Wx3_11;
+          J_acc(i1_min + 1, i2_min + 2, cur::jx3) += QVx3 * Wx3_12;
+          J_acc(i1_min + 1, i2_min + 3, cur::jx3) += QVx3 * Wx3_13;
 
-          J_acc(ix_min + 1, iy_min, cur::jx3)     += QVz * Wz_1_0;
-          J_acc(ix_min + 1, iy_min + 1, cur::jx3) += QVz * Wz_1_1;
-          J_acc(ix_min + 1, iy_min + 2, cur::jx3) += QVz * Wz_1_2;
+          J_acc(i1_min + 2, i2_min + 0, cur::jx3) += QVx3 * Wx3_20;
+          J_acc(i1_min + 2, i2_min + 1, cur::jx3) += QVx3 * Wx3_21;
+          J_acc(i1_min + 2, i2_min + 2, cur::jx3) += QVx3 * Wx3_22;
+          J_acc(i1_min + 2, i2_min + 3, cur::jx3) += QVx3 * Wx3_23;
 
-          J_acc(ix_min + 2, iy_min, cur::jx3)     += QVz * Wz_2_0;
-          J_acc(ix_min + 2, iy_min + 1, cur::jx3) += QVz * Wz_2_1;
-          J_acc(ix_min + 2, iy_min + 2, cur::jx3) += QVz * Wz_2_2;
-
-          if (update_x2) {
-            J_acc(ix_min + 3, iy_min, cur::jx3)     += QVz * Wz_3_0;
-            J_acc(ix_min + 3, iy_min + 1, cur::jx3) += QVz * Wz_3_1;
-            J_acc(ix_min + 3, iy_min + 2, cur::jx3) += QVz * Wz_3_2;
-          }
-
-          if (update_y2) {
-            J_acc(ix_min, iy_min + 3, cur::jx3)     += QVz * Wz_0_3;
-            J_acc(ix_min + 1, iy_min + 3, cur::jx3) += QVz * Wz_1_3;
-            J_acc(ix_min + 2, iy_min + 3, cur::jx3) += QVz * Wz_2_3;
-          }
-          if (update_x2 && update_y2) {
-            J_acc(ix_min + 3, iy_min + 3, cur::jx3) += QVz * Wz_3_3;
-          }
-
+          J_acc(i1_min + 3, i2_min + 0, cur::jx3) += QVx3 * Wx3_30;
+          J_acc(i1_min + 3, i2_min + 1, cur::jx3) += QVx3 * Wx3_31;
+          J_acc(i1_min + 3, i2_min + 2, cur::jx3) += QVx3 * Wx3_32;
+          J_acc(i1_min + 3, i2_min + 3, cur::jx3) += QVx3 * Wx3_33;
         } else if constexpr (D == Dim::_3D) {
-          /*
-            y - direction
-          */
-
-          // shape function at previous timestep
-          real_t   S0y_0, S0y_1, S0y_2, S0y_3;
-          // shape function at current timestep
-          real_t   S1y_0, S1y_1, S1y_2, S1y_3;
-          // indices of the shape function
-          ncells_t iy_min;
-          bool     update_y2;
-          // find indices and define shape function
-          // clang-format off
-          shape_function_2nd(S0y_0, S0y_1, S0y_2, S0y_3,
-                             S1y_0, S1y_1, S1y_2, S1y_3,
-                             iy_min, update_y2,
-                             i2(p), dx2(p),
-                             i2_prev(p), dx2_prev(p));
-          // clang-format on
-
-          /*
-            y - direction
-          */
-
-          // shape function at previous timestep
-          real_t   S0z_0, S0z_1, S0z_2, S0z_3;
-          // shape function at current timestep
-          real_t   S1z_0, S1z_1, S1z_2, S1z_3;
-          // indices of the shape function
-          ncells_t iz_min;
-          bool     update_z2;
-          // find indices and define shape function
-          // clang-format off
-          shape_function_2nd(S0z_0, S0z_1, S0z_2, S0z_3,
-                             S1z_0, S1z_1, S1z_2, S1z_3,
-                             iz_min, update_z2,
-                             i3(p), dx3(p),
-                             i3_prev(p), dx3_prev(p));
-          // clang-format on
-
-          // Unrolled calculations for Wx, Wy, and Wz
-          // clang-format off
-          const auto Wx_0_0_0 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
-          const auto Wx_0_0_1 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
-          const auto Wx_0_0_2 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
-          const auto Wx_0_0_3 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
-          
-          const auto Wx_0_1_0 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
-          const auto Wx_0_1_1 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
-          const auto Wx_0_1_2 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
-          const auto Wx_0_1_3 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
-          
-          const auto Wx_0_2_0 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
-          const auto Wx_0_2_1 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
-          const auto Wx_0_2_2 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
-          const auto Wx_0_2_3 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
-          
-          const auto Wx_0_3_0 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
-          const auto Wx_0_3_1 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
-          const auto Wx_0_3_2 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
-          const auto Wx_0_3_3 = THIRD * (S1x_0 - S0x_0) *
-                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
-          
-          const auto Wx_1_0_0 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
-          const auto Wx_1_0_1 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
-          const auto Wx_1_0_2 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
-          const auto Wx_1_0_3 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
-          
-          const auto Wx_1_1_0 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
-          const auto Wx_1_1_1 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
-          const auto Wx_1_1_2 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
-          const auto Wx_1_1_3 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
-          
-          const auto Wx_1_2_0 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
-          const auto Wx_1_2_1 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
-          const auto Wx_1_2_2 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
-          const auto Wx_1_2_3 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
-          
-          const auto Wx_1_3_0 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
-          const auto Wx_1_3_1 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
-          const auto Wx_1_3_2 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
-          const auto Wx_1_3_3 = THIRD * (S1x_1 - S0x_1) *
-                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
-          
-          const auto Wx_2_0_0 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
-          const auto Wx_2_0_1 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
-          const auto Wx_2_0_2 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
-          const auto Wx_2_0_3 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
-          
-          const auto Wx_2_1_0 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
-          const auto Wx_2_1_1 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
-          const auto Wx_2_1_2 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
-          const auto Wx_2_1_3 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
-          
-          const auto Wx_2_2_0 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
-          const auto Wx_2_2_1 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
-          const auto Wx_2_2_2 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
-          const auto Wx_2_2_3 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
-          
-          const auto Wx_2_3_0 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
-                                 HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
-          const auto Wx_2_3_1 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
-                                 HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
-          const auto Wx_2_3_2 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
-                                 HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
-          const auto Wx_2_3_3 = THIRD * (S1x_2 - S0x_2) *
-                                ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
-                                 HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
-
-          const real_t Qdxdt = coeff * inv_dt;
-
-          const auto jx_0_0_0 =          - Qdxdt * Wx_0_0_0;
-          const auto jx_1_0_0 = jx_0_0_0 - Qdxdt * Wx_1_0_0;
-          const auto jx_2_0_0 = jx_1_0_0 - Qdxdt * Wx_2_0_0;
-          const auto jx_0_1_0 =          - Qdxdt * Wx_0_1_0;
-          const auto jx_1_1_0 = jx_0_1_0 - Qdxdt * Wx_1_1_0;
-          const auto jx_2_1_0 = jx_1_1_0 - Qdxdt * Wx_2_1_0;
-          const auto jx_0_2_0 =          - Qdxdt * Wx_0_2_0;
-          const auto jx_1_2_0 = jx_0_2_0 - Qdxdt * Wx_1_2_0;
-          const auto jx_2_2_0 = jx_1_2_0 - Qdxdt * Wx_2_2_0;
-          const auto jx_0_3_0 =          - Qdxdt * Wx_0_3_0;
-          const auto jx_1_3_0 = jx_0_3_0 - Qdxdt * Wx_1_3_0;
-          const auto jx_2_3_0 = jx_1_3_0 - Qdxdt * Wx_2_3_0;
-
-          const auto jx_0_0_1 =          - Qdxdt * Wx_0_0_1;
-          const auto jx_1_0_1 = jx_0_0_1 - Qdxdt * Wx_1_0_1;
-          const auto jx_2_0_1 = jx_1_0_1 - Qdxdt * Wx_2_0_1;
-          const auto jx_0_1_1 =          - Qdxdt * Wx_0_1_1;
-          const auto jx_1_1_1 = jx_0_1_1 - Qdxdt * Wx_1_1_1;
-          const auto jx_2_1_1 = jx_1_1_1 - Qdxdt * Wx_2_1_1;
-          const auto jx_0_2_1 =          - Qdxdt * Wx_0_2_1;
-          const auto jx_1_2_1 = jx_0_2_1 - Qdxdt * Wx_1_2_1;
-          const auto jx_2_2_1 = jx_1_2_1 - Qdxdt * Wx_2_2_1;
-          const auto jx_0_3_1 =          - Qdxdt * Wx_0_3_1;
-          const auto jx_1_3_1 = jx_0_3_1 - Qdxdt * Wx_1_3_1;
-          const auto jx_2_3_1 = jx_1_3_1 - Qdxdt * Wx_2_3_1;
-
-          const auto jx_0_0_2 =          - Qdxdt * Wx_0_0_2;
-          const auto jx_1_0_2 = jx_0_0_2 - Qdxdt * Wx_1_0_2;
-          const auto jx_2_0_2 = jx_1_0_2 - Qdxdt * Wx_2_0_2;
-          const auto jx_0_1_2 =          - Qdxdt * Wx_0_1_2;
-          const auto jx_1_1_2 = jx_0_1_2 - Qdxdt * Wx_1_1_2;
-          const auto jx_2_1_2 = jx_1_1_2 - Qdxdt * Wx_2_1_2;
-          const auto jx_0_2_2 =          - Qdxdt * Wx_0_2_2;
-          const auto jx_1_2_2 = jx_0_2_2 - Qdxdt * Wx_1_2_2;
-          const auto jx_2_2_2 = jx_1_2_2 - Qdxdt * Wx_2_2_2;
-          const auto jx_0_3_2 =          - Qdxdt * Wx_0_3_2;
-          const auto jx_1_3_2 = jx_0_3_2 - Qdxdt * Wx_1_3_2;
-          const auto jx_2_3_2 = jx_1_3_2 - Qdxdt * Wx_2_3_2;
-
-          const auto jx_0_0_3 =          - Qdxdt * Wx_0_0_3;
-          const auto jx_1_0_3 = jx_0_0_3 - Qdxdt * Wx_1_0_3;
-          const auto jx_2_0_3 = jx_1_0_3 - Qdxdt * Wx_2_0_3;
-          const auto jx_0_1_3 =          - Qdxdt * Wx_0_1_3;
-          const auto jx_1_1_3 = jx_0_1_3 - Qdxdt * Wx_1_1_3;
-          const auto jx_2_1_3 = jx_1_1_3 - Qdxdt * Wx_2_1_3;
-          const auto jx_0_2_3 =          - Qdxdt * Wx_0_2_3;
-          const auto jx_1_2_3 = jx_0_2_3 - Qdxdt * Wx_1_2_3;
-          const auto jx_2_2_3 = jx_1_2_3 - Qdxdt * Wx_2_2_3;
-          const auto jx_0_3_3 =          - Qdxdt * Wx_0_3_3;
-          const auto jx_1_3_3 = jx_0_3_3 - Qdxdt * Wx_1_3_3;
-          const auto jx_2_3_3 = jx_1_3_3 - Qdxdt * Wx_2_3_3;
-          
-          /*
-            y-component
-          */
-          const auto Wy_0_0_0 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
-          const auto Wy_0_0_1 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
-          const auto Wy_0_0_2 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
-          const auto Wy_0_0_3 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
-          
-          const auto Wy_0_1_0 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
-          const auto Wy_0_1_1 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
-          const auto Wy_0_1_2 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
-          const auto Wy_0_1_3 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
-          
-          const auto Wy_0_2_0 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
-          const auto Wy_0_2_1 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
-          const auto Wy_0_2_2 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
-          const auto Wy_0_2_3 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
-          
-          const auto Wy_1_0_0 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
-          const auto Wy_1_0_1 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
-          const auto Wy_1_0_2 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
-          const auto Wy_1_0_3 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
-          
-          const auto Wy_1_1_0 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
-          const auto Wy_1_1_1 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
-          const auto Wy_1_1_2 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
-          const auto Wy_1_1_3 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
-          
-          const auto Wy_1_2_0 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
-          const auto Wy_1_2_1 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
-          const auto Wy_1_2_2 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
-          const auto Wy_1_2_3 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
-
-          const auto Wy_2_0_0 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          const auto Wy_2_0_1 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          const auto Wy_2_0_2 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          const auto Wy_2_0_3 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          
-          const auto Wy_2_1_0 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          const auto Wy_2_1_1 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          const auto Wy_2_1_2 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          const auto Wy_2_1_3 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          
-          const auto Wy_2_2_0 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
-          const auto Wy_2_2_1 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
-          const auto Wy_2_2_2 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
-          const auto Wy_2_2_3 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
-          
-          const auto Wy_3_0_0 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          const auto Wy_3_0_1 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          const auto Wy_3_0_2 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          const auto Wy_3_0_3 = THIRD * (S1y_0 - S0y_0) *
-                                (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          
-          const auto Wy_3_1_0 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          const auto Wy_3_1_1 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          const auto Wy_3_1_2 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          const auto Wy_3_1_3 = THIRD * (S1y_1 - S0y_1) *
-                                (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          
-          const auto Wy_3_2_0 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
-                                 HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
-          const auto Wy_3_2_1 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
-                                 HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
-          const auto Wy_3_2_2 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
-                                 HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
-          const auto Wy_3_2_3 = THIRD * (S1y_2 - S0y_2) *
-                                (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
-                                 HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
-          
-          const real_t Qdydt = coeff * inv_dt;
-
-          const auto jy_0_0_0 =          - Qdydt * Wy_0_0_0;
-          const auto jy_0_1_0 = jy_0_0_0 - Qdydt * Wy_0_1_0;
-          const auto jy_0_2_0 = jy_0_1_0 - Qdydt * Wy_0_2_0;
-          const auto jy_1_0_0 =          - Qdydt * Wy_1_0_0;
-          const auto jy_1_1_0 = jy_1_0_0 - Qdydt * Wy_1_1_0;
-          const auto jy_1_2_0 = jy_1_1_0 - Qdydt * Wy_1_2_0;
-          const auto jy_2_0_0 =          - Qdydt * Wy_2_0_0;
-          const auto jy_2_1_0 = jy_2_0_0 - Qdydt * Wy_2_1_0;
-          const auto jy_2_2_0 = jy_2_1_0 - Qdydt * Wy_2_2_0;
-          const auto jy_3_0_0 =          - Qdydt * Wy_3_0_0;
-          const auto jy_3_1_0 = jy_3_0_0 - Qdydt * Wy_3_1_0;
-          const auto jy_3_2_0 = jy_3_1_0 - Qdydt * Wy_3_2_0;
-
-          const auto jy_0_0_1 =          - Qdydt * Wy_0_0_1;
-          const auto jy_0_1_1 = jy_0_0_1 - Qdydt * Wy_0_1_1;
-          const auto jy_0_2_1 = jy_0_1_1 - Qdydt * Wy_0_2_1;
-          const auto jy_1_0_1 =          - Qdydt * Wy_1_0_1;
-          const auto jy_1_1_1 = jy_1_0_1 - Qdydt * Wy_1_1_1;
-          const auto jy_1_2_1 = jy_1_1_1 - Qdydt * Wy_1_2_1;
-          const auto jy_2_0_1 =          - Qdydt * Wy_2_0_1;
-          const auto jy_2_1_1 = jy_2_0_1 - Qdydt * Wy_2_1_1;
-          const auto jy_2_2_1 = jy_2_1_1 - Qdydt * Wy_2_2_1;
-          const auto jy_3_0_1 =          - Qdydt * Wy_3_0_1;
-          const auto jy_3_1_1 = jy_3_0_1 - Qdydt * Wy_3_1_1;
-          const auto jy_3_2_1 = jy_3_1_1 - Qdydt * Wy_3_2_1;
-
-          const auto jy_0_0_2 =          - Qdydt * Wy_0_0_2;
-          const auto jy_0_1_2 = jy_0_0_2 - Qdydt * Wy_0_1_2;
-          const auto jy_0_2_2 = jy_0_1_2 - Qdydt * Wy_0_2_2;
-          const auto jy_1_0_2 =          - Qdydt * Wy_1_0_2;
-          const auto jy_1_1_2 = jy_1_0_2 - Qdydt * Wy_1_1_2;
-          const auto jy_1_2_2 = jy_1_1_2 - Qdydt * Wy_1_2_2;
-          const auto jy_2_0_2 =          - Qdydt * Wy_2_0_2;
-          const auto jy_2_1_2 = jy_2_0_2 - Qdydt * Wy_2_1_2;
-          const auto jy_2_2_2 = jy_2_1_2 - Qdydt * Wy_2_2_2;
-          const auto jy_3_0_2 =          - Qdydt * Wy_3_0_2;
-          const auto jy_3_1_2 = jy_3_0_2 - Qdydt * Wy_3_1_2;
-          const auto jy_3_2_2 = jy_3_1_2 - Qdydt * Wy_3_2_2;
-
-          const auto jy_0_0_3 =          - Qdydt * Wy_0_0_3;
-          const auto jy_0_1_3 = jy_0_0_3 - Qdydt * Wy_0_1_3;
-          const auto jy_0_2_3 = jy_0_1_3 - Qdydt * Wy_0_2_3;
-          const auto jy_1_0_3 =          - Qdydt * Wy_1_0_3;
-          const auto jy_1_1_3 = jy_1_0_3 - Qdydt * Wy_1_1_3;
-          const auto jy_1_2_3 = jy_1_1_3 - Qdydt * Wy_1_2_3;
-          const auto jy_2_0_3 =          - Qdydt * Wy_2_0_3;
-          const auto jy_2_1_3 = jy_2_0_3 - Qdydt * Wy_2_1_3;
-          const auto jy_2_2_3 = jy_2_1_3 - Qdydt * Wy_2_2_3;
-          const auto jy_3_0_3 =          - Qdydt * Wy_3_0_3;
-          const auto jy_3_1_3 = jy_3_0_3 - Qdydt * Wy_3_1_3;
-          const auto jy_3_2_3 = jy_3_1_3 - Qdydt * Wy_3_2_3;
-
-          /*
-            z - component
-          */
-          const auto Wz_0_0_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-                                 HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          const auto Wz_0_0_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-                                 HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          const auto Wz_0_0_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
-                                 HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
-          
-          const auto Wz_0_1_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-                                 HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          const auto Wz_0_1_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-                                 HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          const auto Wz_0_1_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
-                                 HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
-          
-          const auto Wz_0_2_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-                                 HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          const auto Wz_0_2_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-                                 HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          const auto Wz_0_2_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
-                                 HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
-          
-          const auto Wz_0_3_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-                                 HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          const auto Wz_0_3_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-                                 HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          const auto Wz_0_3_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
-                                 HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
-          
-          // Unrolled loop for Wz[i][j][k] with i = 1 and interp_order + 2 = 4
-          const auto Wz_1_0_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-                                 HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          const auto Wz_1_0_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-                                 HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          const auto Wz_1_0_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
-                                 HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
-          
-          const auto Wz_1_1_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-                                 HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          const auto Wz_1_1_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-                                 HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          const auto Wz_1_1_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
-                                 HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
-          
-          const auto Wz_1_2_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-                                 HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          const auto Wz_1_2_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-                                 HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          const auto Wz_1_2_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
-                                 HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
-          
-          const auto Wz_1_3_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-                                 HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          const auto Wz_1_3_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-                                 HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-          const auto Wz_1_3_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
-                                 HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
-
-          // Unrolled loop for Wz[i][j][k] with i = 2 and interp_order + 2 = 4
-          const auto Wz_2_0_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
-                                 HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
-          const auto Wz_2_0_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
-                                 HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
-          const auto Wz_2_0_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
-                                 HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
-          
-          const auto Wz_2_1_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
-                                 HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
-          const auto Wz_2_1_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
-                                 HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
-          const auto Wz_2_1_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
-                                 HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
-          
-          const auto Wz_2_2_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
-                                 HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
-          const auto Wz_2_2_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
-                                 HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
-          const auto Wz_2_2_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
-                                 HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
-          
-          const auto Wz_2_3_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
-                                 HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
-          const auto Wz_2_3_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
-                                 HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
-          const auto Wz_2_3_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
-                                 HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
-
-          // Unrolled loop for Wz[i][j][k] with i = 3 and interp_order + 2 = 4
-          const auto Wz_3_0_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-                                 HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          const auto Wz_3_0_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-                                 HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          const auto Wz_3_0_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
-                                 HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
-          
-          const auto Wz_3_1_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-                                 HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          const auto Wz_3_1_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-                                 HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          const auto Wz_3_1_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
-                                 HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
-          
-          const auto Wz_3_2_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-                                 HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          const auto Wz_3_2_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-                                 HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          const auto Wz_3_2_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
-                                 HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
-          
-          const auto Wz_3_3_0 = THIRD * (S1z_0 - S0z_0) *
-                                (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-                                 HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          const auto Wz_3_3_1 = THIRD * (S1z_1 - S0z_1) *
-                                (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-                                 HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-          const auto Wz_3_3_2 = THIRD * (S1z_2 - S0z_2) *
-                                (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
-                                 HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
-
-          const real_t Qdzdt = coeff * inv_dt;
-
-          const auto jz_0_0_0 =          - Qdzdt * Wz_0_0_0;
-          const auto jz_0_0_1 = jz_0_0_0 - Qdzdt * Wz_0_0_1;
-          const auto jz_0_0_2 = jz_0_0_1 - Qdzdt * Wz_0_0_2;
-          const auto jz_0_1_0 =          - Qdzdt * Wz_0_1_0;
-          const auto jz_0_1_1 = jz_0_1_0 - Qdzdt * Wz_0_1_1;
-          const auto jz_0_1_2 = jz_0_1_1 - Qdzdt * Wz_0_1_2;
-          const auto jz_0_2_0 =          - Qdzdt * Wz_0_2_0;
-          const auto jz_0_2_1 = jz_0_2_0 - Qdzdt * Wz_0_2_1;
-          const auto jz_0_2_2 = jz_0_2_1 - Qdzdt * Wz_0_2_2;
-          const auto jz_0_3_0 =          - Qdzdt * Wz_0_3_0;
-          const auto jz_0_3_1 = jz_0_3_0 - Qdzdt * Wz_0_3_1;
-          const auto jz_0_3_2 = jz_0_3_1 - Qdzdt * Wz_0_3_2;
-
-          const auto jz_1_0_0 =          - Qdzdt * Wz_1_0_0;
-          const auto jz_1_0_1 = jz_1_0_0 - Qdzdt * Wz_1_0_1;
-          const auto jz_1_0_2 = jz_1_0_1 - Qdzdt * Wz_1_0_2;
-          const auto jz_1_1_0 =          - Qdzdt * Wz_1_1_0;
-          const auto jz_1_1_1 = jz_1_1_0 - Qdzdt * Wz_1_1_1;
-          const auto jz_1_1_2 = jz_1_1_1 - Qdzdt * Wz_1_1_2;
-          const auto jz_1_2_0 =          - Qdzdt * Wz_1_2_0;
-          const auto jz_1_2_1 = jz_1_2_0 - Qdzdt * Wz_1_2_1;
-          const auto jz_1_2_2 = jz_1_2_1 - Qdzdt * Wz_1_2_2;
-          const auto jz_1_3_0 =          - Qdzdt * Wz_1_3_0;
-          const auto jz_1_3_1 = jz_1_3_0 - Qdzdt * Wz_1_3_1;
-          const auto jz_1_3_2 = jz_1_3_1 - Qdzdt * Wz_1_3_2;
-
-          const auto jz_2_0_0 =          - Qdzdt * Wz_2_0_0;
-          const auto jz_2_0_1 = jz_2_0_0 - Qdzdt * Wz_2_0_1;
-          const auto jz_2_0_2 = jz_2_0_1 - Qdzdt * Wz_2_0_2;
-          const auto jz_2_1_0 =          - Qdzdt * Wz_2_1_0;
-          const auto jz_2_1_1 = jz_2_1_0 - Qdzdt * Wz_2_1_1;
-          const auto jz_2_1_2 = jz_2_1_1 - Qdzdt * Wz_2_1_2;
-          const auto jz_2_2_0 =          - Qdzdt * Wz_2_2_0;
-          const auto jz_2_2_1 = jz_2_2_0 - Qdzdt * Wz_2_2_1;
-          const auto jz_2_2_2 = jz_2_2_1 - Qdzdt * Wz_2_2_2;
-          const auto jz_2_3_0 =          - Qdzdt * Wz_2_3_0;
-          const auto jz_2_3_1 = jz_2_3_0 - Qdzdt * Wz_2_3_1;
-          const auto jz_2_3_2 = jz_2_3_1 - Qdzdt * Wz_2_3_2;
-
-          const auto jz_3_0_0 =          - Qdzdt * Wz_3_0_0;
-          const auto jz_3_0_1 = jz_3_0_0 - Qdzdt * Wz_3_0_1;
-          const auto jz_3_0_2 = jz_3_0_1 - Qdzdt * Wz_3_0_2;
-          const auto jz_3_1_0 =          - Qdzdt * Wz_3_1_0;
-          const auto jz_3_1_1 = jz_3_1_0 - Qdzdt * Wz_3_1_1;
-          const auto jz_3_1_2 = jz_3_1_1 - Qdzdt * Wz_3_1_2;
-          const auto jz_3_2_0 =          - Qdzdt * Wz_3_2_0;
-          const auto jz_3_2_1 = jz_3_2_0 - Qdzdt * Wz_3_2_1;
-          const auto jz_3_2_2 = jz_3_2_1 - Qdzdt * Wz_3_2_2;
-          const auto jz_3_3_0 =          - Qdzdt * Wz_3_3_0;
-          const auto jz_3_3_1 = jz_3_3_0 - Qdzdt * Wz_3_3_1;
-          const auto jz_3_3_2 = jz_3_3_1 - Qdzdt * Wz_3_3_2;
-
-
-          /*
-            Current update
-          */
-          auto J_acc = J.access();
-          
-          J_acc(ix_min,     iy_min,     iz_min,     cur::jx1) += jx_0_0_0;
-          J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx1) += jx_0_0_1;
-          J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx1) += jx_0_0_2;
-          J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx1) += jx_0_1_0;
-          J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx1) += jx_0_1_1;
-          J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx1) += jx_0_1_2;
-          J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx1) += jx_0_2_0;
-          J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx1) += jx_0_2_1;
-          J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx1) += jx_0_2_2;
-          J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx1) += jx_1_0_0;
-          J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx1) += jx_1_0_1;
-          J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx1) += jx_1_0_2;
-          J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx1) += jx_1_1_0;
-          J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx1) += jx_1_1_1;
-          J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx1) += jx_1_1_2;
-          J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx1) += jx_1_2_0;
-          J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx1) += jx_1_2_1;
-          J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx1) += jx_1_2_2;
-          
-          if (update_x2)
-          {
-            J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx1) += jx_2_0_0;
-            J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx1) += jx_2_0_1;
-            J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx1) += jx_2_0_2;
-            J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx1) += jx_2_1_0;
-            J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx1) += jx_2_1_1;
-            J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx1) += jx_2_1_2;
-            J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx1) += jx_2_2_0;
-            J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx1) += jx_2_2_1;
-            J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx1) += jx_2_2_2;
-
-            if (update_y2)
-            {
-              J_acc(ix_min + 2, iy_min + 3, iz_min,     cur::jx1) += jx_2_3_0;
-              J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx1) += jx_2_3_1;
-              J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx1) += jx_2_3_2;
-            }
-
-            if (update_z2)
-            {
-              J_acc(ix_min + 2, iy_min,     iz_min + 3, cur::jx1) += jx_2_0_3;
-              J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx1) += jx_2_1_3;
-              J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx1) += jx_2_2_3;
-
-              if (update_y2)
-              {
-                J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx1) += jx_2_3_3;
-              }
-            }
-          }
+          //   /*
+          //     y - direction
+          //   */
           //
-          if (update_y2)
-          {
-            J_acc(ix_min,     iy_min + 3, iz_min,     cur::jx1) += jx_0_3_0;
-            J_acc(ix_min,     iy_min + 3, iz_min + 1, cur::jx1) += jx_0_3_1;
-            J_acc(ix_min,     iy_min + 3, iz_min + 2, cur::jx1) += jx_0_3_2;
-            J_acc(ix_min + 1, iy_min + 3, iz_min,     cur::jx1) += jx_1_3_0;
-            J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx1) += jx_1_3_1;
-            J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx1) += jx_1_3_2;
-          }
-
-          if (update_z2)
-          {
-            J_acc(ix_min,     iy_min,     iz_min + 3, cur::jx1) += jx_0_0_3;
-            J_acc(ix_min,     iy_min + 1, iz_min + 3, cur::jx1) += jx_0_1_3;
-            J_acc(ix_min,     iy_min + 2, iz_min + 3, cur::jx1) += jx_0_2_3;
-            J_acc(ix_min + 1, iy_min,     iz_min + 3, cur::jx1) += jx_1_0_3;
-            J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx1) += jx_1_1_3;
-            J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx1) += jx_1_2_3;
-
-            if (update_y2)
-            {
-              J_acc(ix_min,     iy_min + 3, iz_min + 3, cur::jx1) += jx_0_3_3;
-              J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx1) += jx_1_3_3;
-            }
-          }
-
-
-          /*
-            y-component
-          */
-          J_acc(ix_min,     iy_min,     iz_min,     cur::jx2) += jy_0_0_0;
-          J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx2) += jy_0_0_1;
-          J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx2) += jy_0_0_2;
-          J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx2) += jy_0_1_0;
-          J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx2) += jy_0_1_1;
-          J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx2) += jy_0_1_2;
-          J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx2) += jy_1_0_0;
-          J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx2) += jy_1_0_1;
-          J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx2) += jy_1_0_2;
-          J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx2) += jy_1_1_0;
-          J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx2) += jy_1_1_1;
-          J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx2) += jy_1_1_2;
-          J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx2) += jy_2_0_0;
-          J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx2) += jy_2_0_1;
-          J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx2) += jy_2_0_2;
-          J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx2) += jy_2_1_0;
-          J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx2) += jy_2_1_1;
-          J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx2) += jy_2_1_2;
-          
-          if (update_x2)
-          {
-            J_acc(ix_min + 3, iy_min,     iz_min,     cur::jx2) += jy_3_0_0;
-            J_acc(ix_min + 3, iy_min,     iz_min + 1, cur::jx2) += jy_3_0_1;
-            J_acc(ix_min + 3, iy_min,     iz_min + 2, cur::jx2) += jy_3_0_2;
-            J_acc(ix_min + 3, iy_min + 1, iz_min,     cur::jx2) += jy_3_1_0;
-            J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx2) += jy_3_1_1;
-            J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx2) += jy_3_1_2;
-  
-            if (update_z2)
-            {
-              J_acc(ix_min + 3, iy_min,     iz_min + 3, cur::jx2) += jy_3_0_3;
-              J_acc(ix_min + 3, iy_min + 1, iz_min + 3, cur::jx2) += jy_3_1_3;
-            }
-          }
-
-          if (update_y2)
-          {
-            J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx2) += jy_0_2_0;
-            J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx2) += jy_0_2_1;
-            J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx2) += jy_0_2_2;
-            J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx2) += jy_1_2_0;
-            J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx2) += jy_1_2_1;
-            J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx2) += jy_1_2_2;
-            J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx2) += jy_2_2_0;
-            J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx2) += jy_2_2_1;
-            J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx2) += jy_2_2_2;
-
-            if (update_x2)
-            {
-              J_acc(ix_min + 3, iy_min + 2, iz_min,     cur::jx2) += jy_3_2_0;
-              J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx2) += jy_3_2_1;
-              J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx2) += jy_3_2_2;
-
-              if (update_z2)
-              {
-                J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx2) += jy_2_2_3;
-                J_acc(ix_min + 3, iy_min + 2, iz_min + 3, cur::jx2) += jy_3_2_3;
-              }
-            }
-
-            if (update_z2)
-            {
-              J_acc(ix_min,     iy_min + 2, iz_min + 3, cur::jx2) += jy_0_2_3;
-              J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx2) += jy_1_2_3;
-            }
-          }
-
-          if (update_z2)
-          {
-            J_acc(ix_min,     iy_min,     iz_min + 3, cur::jx2) += jy_0_0_3;
-            J_acc(ix_min,     iy_min + 1, iz_min + 3, cur::jx2) += jy_0_1_3;
-            J_acc(ix_min + 1, iy_min,     iz_min + 3, cur::jx2) += jy_1_0_3;
-            J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx2) += jy_1_1_3;
-            J_acc(ix_min + 2, iy_min,     iz_min + 3, cur::jx2) += jy_2_0_3;
-            J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx2) += jy_2_1_3;
-          }
-
-          /*
-            z-component
-          */            
-          J_acc(ix_min,     iy_min,     iz_min,     cur::jx3) += jz_0_0_0;
-          J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx3) += jz_0_0_1;
-          J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx3) += jz_0_1_0;
-          J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx3) += jz_0_1_1;
-          J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx3) += jz_0_2_0;
-          J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx3) += jz_0_2_1;
-          J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx3) += jz_1_0_0;
-          J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx3) += jz_1_0_1;
-          J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx3) += jz_1_1_0;
-          J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx3) += jz_1_1_1;
-          J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx3) += jz_1_2_0;
-          J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx3) += jz_1_2_1;
-          J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx3) += jz_2_0_0;
-          J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx3) += jz_2_0_1;
-          J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx3) += jz_2_1_0;
-          J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx3) += jz_2_1_1;
-          J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx3) += jz_2_2_0;
-          J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx3) += jz_2_2_1;
-
-          if (update_x2)
-          {
-            J_acc(ix_min + 3, iy_min,     iz_min,     cur::jx3) += jz_3_0_0;
-            J_acc(ix_min + 3, iy_min,     iz_min + 1, cur::jx3) += jz_3_0_1;
-            J_acc(ix_min + 3, iy_min + 1, iz_min,     cur::jx3) += jz_3_1_0;
-            J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx3) += jz_3_1_1;
-            J_acc(ix_min + 3, iy_min + 2, iz_min,     cur::jx3) += jz_3_2_0;
-            J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx3) += jz_3_2_1;
-            J_acc(ix_min + 3, iy_min + 3, iz_min,     cur::jx3) += jz_3_3_0;
-            J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx3) += jz_3_3_1;
-          }
-
-          if (update_y2)
-          {
-            J_acc(ix_min,     iy_min + 3, iz_min,     cur::jx3) += jz_0_3_0;
-            J_acc(ix_min,     iy_min + 3, iz_min + 1, cur::jx3) += jz_0_3_1;
-            J_acc(ix_min + 1, iy_min + 3, iz_min,     cur::jx3) += jz_1_3_0;
-            J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx3) += jz_1_3_1;
-            J_acc(ix_min + 2, iy_min + 3, iz_min,     cur::jx3) += jz_2_3_0;
-            J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx3) += jz_2_3_1;
-          }
-
-          if (update_z2)
-          {
-            J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx3) += jz_0_0_2;
-            J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx3) += jz_0_1_2;
-            J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx3) += jz_0_2_2;
-            J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx3) += jz_1_0_2;
-            J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx3) += jz_1_1_2;
-            J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx3) += jz_1_2_2;
-            J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx3) += jz_2_0_2;          
-            J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx3) += jz_2_1_2;
-            J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx3) += jz_2_2_2;
-
-            if (update_x2)
-            {
-              J_acc(ix_min + 3, iy_min,     iz_min + 2, cur::jx3) += jz_3_0_2;
-              J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx3) += jz_3_1_2;
-              J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx3) += jz_3_2_2;
-
-              if (update_y2)
-              {
-                J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx3) += jz_3_3_2;
-              }
-            }
-
-            if (update_y2)
-            {
-              J_acc(ix_min,     iy_min + 3, iz_min + 2, cur::jx3) += jz_0_3_2;
-              J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx3) += jz_1_3_2;
-              J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx3) += jz_2_3_2;
-            }
-          }
+          //   // shape function at previous timestep
+          //   real_t   S0y_0, S0y_1, S0y_2, S0y_3;
+          //   // shape function at current timestep
+          //   real_t   S1y_0, S1y_1, S1y_2, S1y_3;
+          //   // indices of the shape function
+          //   ncells_t iy_min;
+          //   bool     update_y2;
+          //   // find indices and define shape function
+          //   // clang-format off
+          //   shape_function_2nd(S0y_0, S0y_1, S0y_2, S0y_3,
+          //                      S1y_0, S1y_1, S1y_2, S1y_3,
+          //                      iy_min, update_y2,
+          //                      i2(p), dx2(p),
+          //                      i2_prev(p), dx2_prev(p));
+          //   // clang-format on
+          //
+          //   /*
+          //     y - direction
+          //   */
+          //
+          //   // shape function at previous timestep
+          //   real_t   S0z_0, S0z_1, S0z_2, S0z_3;
+          //   // shape function at current timestep
+          //   real_t   S1z_0, S1z_1, S1z_2, S1z_3;
+          //   // indices of the shape function
+          //   ncells_t iz_min;
+          //   bool     update_z2;
+          //   // find indices and define shape function
+          //   // clang-format off
+          //   shape_function_2nd(S0z_0, S0z_1, S0z_2, S0z_3,
+          //                      S1z_0, S1z_1, S1z_2, S1z_3,
+          //                      iz_min, update_z2,
+          //                      i3(p), dx3(p),
+          //                      i3_prev(p), dx3_prev(p));
+          //   // clang-format on
+          //
+          //   // Unrolled calculations for Wx, Wy, and Wz
+          //   // clang-format off
+          //   const auto Wx_0_0_0 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          //   const auto Wx_0_0_1 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          //   const auto Wx_0_0_2 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          //   const auto Wx_0_0_3 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+          //
+          //   const auto Wx_0_1_0 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          //   const auto Wx_0_1_1 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          //   const auto Wx_0_1_2 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          //   const auto Wx_0_1_3 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+          //
+          //   const auto Wx_0_2_0 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          //   const auto Wx_0_2_1 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          //   const auto Wx_0_2_2 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          //   const auto Wx_0_2_3 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+          //
+          //   const auto Wx_0_3_0 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          //   const auto Wx_0_3_1 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          //   const auto Wx_0_3_2 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          //   const auto Wx_0_3_3 = THIRD * (S1x_0 - S0x_0) *
+          //                         ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+          //
+          //   const auto Wx_1_0_0 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          //   const auto Wx_1_0_1 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          //   const auto Wx_1_0_2 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          //   const auto Wx_1_0_3 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+          //
+          //   const auto Wx_1_1_0 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          //   const auto Wx_1_1_1 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          //   const auto Wx_1_1_2 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          //   const auto Wx_1_1_3 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+          //
+          //   const auto Wx_1_2_0 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          //   const auto Wx_1_2_1 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          //   const auto Wx_1_2_2 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          //   const auto Wx_1_2_3 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+          //
+          //   const auto Wx_1_3_0 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          //   const auto Wx_1_3_1 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          //   const auto Wx_1_3_2 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          //   const auto Wx_1_3_3 = THIRD * (S1x_1 - S0x_1) *
+          //                         ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+          //
+          //   const auto Wx_2_0_0 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_0 * S0z_0 + S1y_0 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_0 + S0y_0 * S1z_0));
+          //   const auto Wx_2_0_1 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_0 * S0z_1 + S1y_0 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_0 + S0y_0 * S1z_1));
+          //   const auto Wx_2_0_2 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_0 * S0z_2 + S1y_0 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_0 + S0y_0 * S1z_2));
+          //   const auto Wx_2_0_3 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_0 * S0z_3 + S1y_0 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_0 + S0y_0 * S1z_3));
+          //
+          //   const auto Wx_2_1_0 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_1 * S0z_0 + S1y_1 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_1 + S0y_1 * S1z_0));
+          //   const auto Wx_2_1_1 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_1 * S0z_1 + S1y_1 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_1 + S0y_1 * S1z_1));
+          //   const auto Wx_2_1_2 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_1 * S0z_2 + S1y_1 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_1 + S0y_1 * S1z_2));
+          //   const auto Wx_2_1_3 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_1 * S0z_3 + S1y_1 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_1 + S0y_1 * S1z_3));
+          //
+          //   const auto Wx_2_2_0 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_2 * S0z_0 + S1y_2 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_2 + S0y_2 * S1z_0));
+          //   const auto Wx_2_2_1 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_2 * S0z_1 + S1y_2 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_2 + S0y_2 * S1z_1));
+          //   const auto Wx_2_2_2 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_2 * S0z_2 + S1y_2 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_2 + S0y_2 * S1z_2));
+          //   const auto Wx_2_2_3 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_2 * S0z_3 + S1y_2 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_2 + S0y_2 * S1z_3));
+          //
+          //   const auto Wx_2_3_0 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_3 * S0z_0 + S1y_3 * S1z_0) +
+          //                          HALF * (S0z_0 * S1y_3 + S0y_3 * S1z_0));
+          //   const auto Wx_2_3_1 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_3 * S0z_1 + S1y_3 * S1z_1) +
+          //                          HALF * (S0z_1 * S1y_3 + S0y_3 * S1z_1));
+          //   const auto Wx_2_3_2 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_3 * S0z_2 + S1y_3 * S1z_2) +
+          //                          HALF * (S0z_2 * S1y_3 + S0y_3 * S1z_2));
+          //   const auto Wx_2_3_3 = THIRD * (S1x_2 - S0x_2) *
+          //                         ((S0y_3 * S0z_3 + S1y_3 * S1z_3) +
+          //                          HALF * (S0z_3 * S1y_3 + S0y_3 * S1z_3));
+          //
+          //   const real_t Qdxdt = coeff * inv_dt;
+          //
+          //   const auto jx_0_0_0 =          - Qdxdt * Wx_0_0_0;
+          //   const auto jx_1_0_0 = jx_0_0_0 - Qdxdt * Wx_1_0_0;
+          //   const auto jx_2_0_0 = jx_1_0_0 - Qdxdt * Wx_2_0_0;
+          //   const auto jx_0_1_0 =          - Qdxdt * Wx_0_1_0;
+          //   const auto jx_1_1_0 = jx_0_1_0 - Qdxdt * Wx_1_1_0;
+          //   const auto jx_2_1_0 = jx_1_1_0 - Qdxdt * Wx_2_1_0;
+          //   const auto jx_0_2_0 =          - Qdxdt * Wx_0_2_0;
+          //   const auto jx_1_2_0 = jx_0_2_0 - Qdxdt * Wx_1_2_0;
+          //   const auto jx_2_2_0 = jx_1_2_0 - Qdxdt * Wx_2_2_0;
+          //   const auto jx_0_3_0 =          - Qdxdt * Wx_0_3_0;
+          //   const auto jx_1_3_0 = jx_0_3_0 - Qdxdt * Wx_1_3_0;
+          //   const auto jx_2_3_0 = jx_1_3_0 - Qdxdt * Wx_2_3_0;
+          //
+          //   const auto jx_0_0_1 =          - Qdxdt * Wx_0_0_1;
+          //   const auto jx_1_0_1 = jx_0_0_1 - Qdxdt * Wx_1_0_1;
+          //   const auto jx_2_0_1 = jx_1_0_1 - Qdxdt * Wx_2_0_1;
+          //   const auto jx_0_1_1 =          - Qdxdt * Wx_0_1_1;
+          //   const auto jx_1_1_1 = jx_0_1_1 - Qdxdt * Wx_1_1_1;
+          //   const auto jx_2_1_1 = jx_1_1_1 - Qdxdt * Wx_2_1_1;
+          //   const auto jx_0_2_1 =          - Qdxdt * Wx_0_2_1;
+          //   const auto jx_1_2_1 = jx_0_2_1 - Qdxdt * Wx_1_2_1;
+          //   const auto jx_2_2_1 = jx_1_2_1 - Qdxdt * Wx_2_2_1;
+          //   const auto jx_0_3_1 =          - Qdxdt * Wx_0_3_1;
+          //   const auto jx_1_3_1 = jx_0_3_1 - Qdxdt * Wx_1_3_1;
+          //   const auto jx_2_3_1 = jx_1_3_1 - Qdxdt * Wx_2_3_1;
+          //
+          //   const auto jx_0_0_2 =          - Qdxdt * Wx_0_0_2;
+          //   const auto jx_1_0_2 = jx_0_0_2 - Qdxdt * Wx_1_0_2;
+          //   const auto jx_2_0_2 = jx_1_0_2 - Qdxdt * Wx_2_0_2;
+          //   const auto jx_0_1_2 =          - Qdxdt * Wx_0_1_2;
+          //   const auto jx_1_1_2 = jx_0_1_2 - Qdxdt * Wx_1_1_2;
+          //   const auto jx_2_1_2 = jx_1_1_2 - Qdxdt * Wx_2_1_2;
+          //   const auto jx_0_2_2 =          - Qdxdt * Wx_0_2_2;
+          //   const auto jx_1_2_2 = jx_0_2_2 - Qdxdt * Wx_1_2_2;
+          //   const auto jx_2_2_2 = jx_1_2_2 - Qdxdt * Wx_2_2_2;
+          //   const auto jx_0_3_2 =          - Qdxdt * Wx_0_3_2;
+          //   const auto jx_1_3_2 = jx_0_3_2 - Qdxdt * Wx_1_3_2;
+          //   const auto jx_2_3_2 = jx_1_3_2 - Qdxdt * Wx_2_3_2;
+          //
+          //   const auto jx_0_0_3 =          - Qdxdt * Wx_0_0_3;
+          //   const auto jx_1_0_3 = jx_0_0_3 - Qdxdt * Wx_1_0_3;
+          //   const auto jx_2_0_3 = jx_1_0_3 - Qdxdt * Wx_2_0_3;
+          //   const auto jx_0_1_3 =          - Qdxdt * Wx_0_1_3;
+          //   const auto jx_1_1_3 = jx_0_1_3 - Qdxdt * Wx_1_1_3;
+          //   const auto jx_2_1_3 = jx_1_1_3 - Qdxdt * Wx_2_1_3;
+          //   const auto jx_0_2_3 =          - Qdxdt * Wx_0_2_3;
+          //   const auto jx_1_2_3 = jx_0_2_3 - Qdxdt * Wx_1_2_3;
+          //   const auto jx_2_2_3 = jx_1_2_3 - Qdxdt * Wx_2_2_3;
+          //   const auto jx_0_3_3 =          - Qdxdt * Wx_0_3_3;
+          //   const auto jx_1_3_3 = jx_0_3_3 - Qdxdt * Wx_1_3_3;
+          //   const auto jx_2_3_3 = jx_1_3_3 - Qdxdt * Wx_2_3_3;
+          //
+          //   /*
+          //     y-component
+          //   */
+          //   const auto Wy_0_0_0 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
+          //   const auto Wy_0_0_1 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
+          //   const auto Wy_0_0_2 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
+          //   const auto Wy_0_0_3 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
+          //
+          //   const auto Wy_0_1_0 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
+          //   const auto Wy_0_1_1 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
+          //   const auto Wy_0_1_2 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
+          //   const auto Wy_0_1_3 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
+          //
+          //   const auto Wy_0_2_0 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_0 * S0z_0 + S1x_0 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_0 + S0x_0 * S1z_0));
+          //   const auto Wy_0_2_1 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_0 * S0z_1 + S1x_0 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_0 + S0x_0 * S1z_1));
+          //   const auto Wy_0_2_2 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_0 * S0z_2 + S1x_0 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_0 + S0x_0 * S1z_2));
+          //   const auto Wy_0_2_3 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_0 * S0z_3 + S1x_0 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_0 + S0x_0 * S1z_3));
+          //
+          //   const auto Wy_1_0_0 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
+          //   const auto Wy_1_0_1 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
+          //   const auto Wy_1_0_2 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
+          //   const auto Wy_1_0_3 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
+          //
+          //   const auto Wy_1_1_0 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
+          //   const auto Wy_1_1_1 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
+          //   const auto Wy_1_1_2 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
+          //   const auto Wy_1_1_3 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
+          //
+          //   const auto Wy_1_2_0 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_1 * S0z_0 + S1x_1 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_1 + S0x_1 * S1z_0));
+          //   const auto Wy_1_2_1 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_1 * S0z_1 + S1x_1 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_1 + S0x_1 * S1z_1));
+          //   const auto Wy_1_2_2 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_1 * S0z_2 + S1x_1 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_1 + S0x_1 * S1z_2));
+          //   const auto Wy_1_2_3 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_1 * S0z_3 + S1x_1 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_1 + S0x_1 * S1z_3));
+          //
+          //   const auto Wy_2_0_0 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
+          //   const auto Wy_2_0_1 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
+          //   const auto Wy_2_0_2 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
+          //   const auto Wy_2_0_3 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
+          //
+          //   const auto Wy_2_1_0 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
+          //   const auto Wy_2_1_1 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
+          //   const auto Wy_2_1_2 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
+          //   const auto Wy_2_1_3 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
+          //
+          //   const auto Wy_2_2_0 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_2 * S0z_0 + S1x_2 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_2 + S0x_2 * S1z_0));
+          //   const auto Wy_2_2_1 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_2 * S0z_1 + S1x_2 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_2 + S0x_2 * S1z_1));
+          //   const auto Wy_2_2_2 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_2 * S0z_2 + S1x_2 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_2 + S0x_2 * S1z_2));
+          //   const auto Wy_2_2_3 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_2 * S0z_3 + S1x_2 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_2 + S0x_2 * S1z_3));
+          //
+          //   const auto Wy_3_0_0 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
+          //   const auto Wy_3_0_1 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
+          //   const auto Wy_3_0_2 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
+          //   const auto Wy_3_0_3 = THIRD * (S1y_0 - S0y_0) *
+          //                         (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
+          //
+          //   const auto Wy_3_1_0 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
+          //   const auto Wy_3_1_1 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
+          //   const auto Wy_3_1_2 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
+          //   const auto Wy_3_1_3 = THIRD * (S1y_1 - S0y_1) *
+          //                         (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
+          //
+          //   const auto Wy_3_2_0 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_3 * S0z_0 + S1x_3 * S1z_0 +
+          //                          HALF * (S0z_0 * S1x_3 + S0x_3 * S1z_0));
+          //   const auto Wy_3_2_1 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_3 * S0z_1 + S1x_3 * S1z_1 +
+          //                          HALF * (S0z_1 * S1x_3 + S0x_3 * S1z_1));
+          //   const auto Wy_3_2_2 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_3 * S0z_2 + S1x_3 * S1z_2 +
+          //                          HALF * (S0z_2 * S1x_3 + S0x_3 * S1z_2));
+          //   const auto Wy_3_2_3 = THIRD * (S1y_2 - S0y_2) *
+          //                         (S0x_3 * S0z_3 + S1x_3 * S1z_3 +
+          //                          HALF * (S0z_3 * S1x_3 + S0x_3 * S1z_3));
+          //
+          //   const real_t Qdydt = coeff * inv_dt;
+          //
+          //   const auto jy_0_0_0 =          - Qdydt * Wy_0_0_0;
+          //   const auto jy_0_1_0 = jy_0_0_0 - Qdydt * Wy_0_1_0;
+          //   const auto jy_0_2_0 = jy_0_1_0 - Qdydt * Wy_0_2_0;
+          //   const auto jy_1_0_0 =          - Qdydt * Wy_1_0_0;
+          //   const auto jy_1_1_0 = jy_1_0_0 - Qdydt * Wy_1_1_0;
+          //   const auto jy_1_2_0 = jy_1_1_0 - Qdydt * Wy_1_2_0;
+          //   const auto jy_2_0_0 =          - Qdydt * Wy_2_0_0;
+          //   const auto jy_2_1_0 = jy_2_0_0 - Qdydt * Wy_2_1_0;
+          //   const auto jy_2_2_0 = jy_2_1_0 - Qdydt * Wy_2_2_0;
+          //   const auto jy_3_0_0 =          - Qdydt * Wy_3_0_0;
+          //   const auto jy_3_1_0 = jy_3_0_0 - Qdydt * Wy_3_1_0;
+          //   const auto jy_3_2_0 = jy_3_1_0 - Qdydt * Wy_3_2_0;
+          //
+          //   const auto jy_0_0_1 =          - Qdydt * Wy_0_0_1;
+          //   const auto jy_0_1_1 = jy_0_0_1 - Qdydt * Wy_0_1_1;
+          //   const auto jy_0_2_1 = jy_0_1_1 - Qdydt * Wy_0_2_1;
+          //   const auto jy_1_0_1 =          - Qdydt * Wy_1_0_1;
+          //   const auto jy_1_1_1 = jy_1_0_1 - Qdydt * Wy_1_1_1;
+          //   const auto jy_1_2_1 = jy_1_1_1 - Qdydt * Wy_1_2_1;
+          //   const auto jy_2_0_1 =          - Qdydt * Wy_2_0_1;
+          //   const auto jy_2_1_1 = jy_2_0_1 - Qdydt * Wy_2_1_1;
+          //   const auto jy_2_2_1 = jy_2_1_1 - Qdydt * Wy_2_2_1;
+          //   const auto jy_3_0_1 =          - Qdydt * Wy_3_0_1;
+          //   const auto jy_3_1_1 = jy_3_0_1 - Qdydt * Wy_3_1_1;
+          //   const auto jy_3_2_1 = jy_3_1_1 - Qdydt * Wy_3_2_1;
+          //
+          //   const auto jy_0_0_2 =          - Qdydt * Wy_0_0_2;
+          //   const auto jy_0_1_2 = jy_0_0_2 - Qdydt * Wy_0_1_2;
+          //   const auto jy_0_2_2 = jy_0_1_2 - Qdydt * Wy_0_2_2;
+          //   const auto jy_1_0_2 =          - Qdydt * Wy_1_0_2;
+          //   const auto jy_1_1_2 = jy_1_0_2 - Qdydt * Wy_1_1_2;
+          //   const auto jy_1_2_2 = jy_1_1_2 - Qdydt * Wy_1_2_2;
+          //   const auto jy_2_0_2 =          - Qdydt * Wy_2_0_2;
+          //   const auto jy_2_1_2 = jy_2_0_2 - Qdydt * Wy_2_1_2;
+          //   const auto jy_2_2_2 = jy_2_1_2 - Qdydt * Wy_2_2_2;
+          //   const auto jy_3_0_2 =          - Qdydt * Wy_3_0_2;
+          //   const auto jy_3_1_2 = jy_3_0_2 - Qdydt * Wy_3_1_2;
+          //   const auto jy_3_2_2 = jy_3_1_2 - Qdydt * Wy_3_2_2;
+          //
+          //   const auto jy_0_0_3 =          - Qdydt * Wy_0_0_3;
+          //   const auto jy_0_1_3 = jy_0_0_3 - Qdydt * Wy_0_1_3;
+          //   const auto jy_0_2_3 = jy_0_1_3 - Qdydt * Wy_0_2_3;
+          //   const auto jy_1_0_3 =          - Qdydt * Wy_1_0_3;
+          //   const auto jy_1_1_3 = jy_1_0_3 - Qdydt * Wy_1_1_3;
+          //   const auto jy_1_2_3 = jy_1_1_3 - Qdydt * Wy_1_2_3;
+          //   const auto jy_2_0_3 =          - Qdydt * Wy_2_0_3;
+          //   const auto jy_2_1_3 = jy_2_0_3 - Qdydt * Wy_2_1_3;
+          //   const auto jy_2_2_3 = jy_2_1_3 - Qdydt * Wy_2_2_3;
+          //   const auto jy_3_0_3 =          - Qdydt * Wy_3_0_3;
+          //   const auto jy_3_1_3 = jy_3_0_3 - Qdydt * Wy_3_1_3;
+          //   const auto jy_3_2_3 = jy_3_1_3 - Qdydt * Wy_3_2_3;
+          //
+          //   /*
+          //     z - component
+          //   */
+          //   const auto Wz_0_0_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
+          //                          HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
+          //   const auto Wz_0_0_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
+          //                          HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
+          //   const auto Wz_0_0_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_0 * S0y_0 + S1x_0 * S1y_0 +
+          //                          HALF * (S0x_0 * S1y_0 + S0y_0 * S1x_0));
+          //
+          //   const auto Wz_0_1_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
+          //                          HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
+          //   const auto Wz_0_1_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
+          //                          HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
+          //   const auto Wz_0_1_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_0 * S0y_1 + S1x_0 * S1y_1 +
+          //                          HALF * (S0x_0 * S1y_1 + S0y_1 * S1x_0));
+          //
+          //   const auto Wz_0_2_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
+          //                          HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
+          //   const auto Wz_0_2_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
+          //                          HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
+          //   const auto Wz_0_2_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_0 * S0y_2 + S1x_0 * S1y_2 +
+          //                          HALF * (S0x_0 * S1y_2 + S0y_2 * S1x_0));
+          //
+          //   const auto Wz_0_3_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
+          //                          HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
+          //   const auto Wz_0_3_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
+          //                          HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
+          //   const auto Wz_0_3_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_0 * S0y_3 + S1x_0 * S1y_3 +
+          //                          HALF * (S0x_0 * S1y_3 + S0y_3 * S1x_0));
+          //
+          //   // Unrolled loop for Wz[i][j][k] with i = 1 and interp_order + 2 = 4
+          //   const auto Wz_1_0_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
+          //                          HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
+          //   const auto Wz_1_0_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
+          //                          HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
+          //   const auto Wz_1_0_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_1 * S0y_0 + S1x_1 * S1y_0 +
+          //                          HALF * (S0x_1 * S1y_0 + S0y_0 * S1x_1));
+          //
+          //   const auto Wz_1_1_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
+          //                          HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
+          //   const auto Wz_1_1_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
+          //                          HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
+          //   const auto Wz_1_1_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_1 * S0y_1 + S1x_1 * S1y_1 +
+          //                          HALF * (S0x_1 * S1y_1 + S0y_1 * S1x_1));
+          //
+          //   const auto Wz_1_2_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
+          //                          HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
+          //   const auto Wz_1_2_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
+          //                          HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
+          //   const auto Wz_1_2_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_1 * S0y_2 + S1x_1 * S1y_2 +
+          //                          HALF * (S0x_1 * S1y_2 + S0y_2 * S1x_1));
+          //
+          //   const auto Wz_1_3_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
+          //                          HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
+          //   const auto Wz_1_3_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
+          //                          HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
+          //   const auto Wz_1_3_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_1 * S0y_3 + S1x_1 * S1y_3 +
+          //                          HALF * (S0x_1 * S1y_3 + S0y_3 * S1x_1));
+          //
+          //   // Unrolled loop for Wz[i][j][k] with i = 2 and interp_order + 2 = 4
+          //   const auto Wz_2_0_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
+          //                          HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
+          //   const auto Wz_2_0_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
+          //                          HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
+          //   const auto Wz_2_0_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_2 * S0y_0 + S1x_2 * S1y_0 +
+          //                          HALF * (S0x_2 * S1y_0 + S0y_0 * S1x_2));
+          //
+          //   const auto Wz_2_1_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
+          //                          HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
+          //   const auto Wz_2_1_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
+          //                          HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
+          //   const auto Wz_2_1_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_2 * S0y_1 + S1x_2 * S1y_1 +
+          //                          HALF * (S0x_2 * S1y_1 + S0y_1 * S1x_2));
+          //
+          //   const auto Wz_2_2_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
+          //                          HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
+          //   const auto Wz_2_2_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
+          //                          HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
+          //   const auto Wz_2_2_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_2 * S0y_2 + S1x_2 * S1y_2 +
+          //                          HALF * (S0x_2 * S1y_2 + S0y_2 * S1x_2));
+          //
+          //   const auto Wz_2_3_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
+          //                          HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
+          //   const auto Wz_2_3_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
+          //                          HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
+          //   const auto Wz_2_3_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_2 * S0y_3 + S1x_2 * S1y_3 +
+          //                          HALF * (S0x_2 * S1y_3 + S0y_3 * S1x_2));
+          //
+          //   // Unrolled loop for Wz[i][j][k] with i = 3 and interp_order + 2 = 4
+          //   const auto Wz_3_0_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
+          //                          HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
+          //   const auto Wz_3_0_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
+          //                          HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
+          //   const auto Wz_3_0_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_3 * S0y_0 + S1x_3 * S1y_0 +
+          //                          HALF * (S0x_3 * S1y_0 + S0y_0 * S1x_3));
+          //
+          //   const auto Wz_3_1_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
+          //                          HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
+          //   const auto Wz_3_1_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
+          //                          HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
+          //   const auto Wz_3_1_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_3 * S0y_1 + S1x_3 * S1y_1 +
+          //                          HALF * (S0x_3 * S1y_1 + S0y_1 * S1x_3));
+          //
+          //   const auto Wz_3_2_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
+          //                          HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
+          //   const auto Wz_3_2_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
+          //                          HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
+          //   const auto Wz_3_2_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_3 * S0y_2 + S1x_3 * S1y_2 +
+          //                          HALF * (S0x_3 * S1y_2 + S0y_2 * S1x_3));
+          //
+          //   const auto Wz_3_3_0 = THIRD * (S1z_0 - S0z_0) *
+          //                         (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
+          //                          HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
+          //   const auto Wz_3_3_1 = THIRD * (S1z_1 - S0z_1) *
+          //                         (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
+          //                          HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
+          //   const auto Wz_3_3_2 = THIRD * (S1z_2 - S0z_2) *
+          //                         (S0x_3 * S0y_3 + S1x_3 * S1y_3 +
+          //                          HALF * (S0x_3 * S1y_3 + S0y_3 * S1x_3));
+          //
+          //   const real_t Qdzdt = coeff * inv_dt;
+          //
+          //   const auto jz_0_0_0 =          - Qdzdt * Wz_0_0_0;
+          //   const auto jz_0_0_1 = jz_0_0_0 - Qdzdt * Wz_0_0_1;
+          //   const auto jz_0_0_2 = jz_0_0_1 - Qdzdt * Wz_0_0_2;
+          //   const auto jz_0_1_0 =          - Qdzdt * Wz_0_1_0;
+          //   const auto jz_0_1_1 = jz_0_1_0 - Qdzdt * Wz_0_1_1;
+          //   const auto jz_0_1_2 = jz_0_1_1 - Qdzdt * Wz_0_1_2;
+          //   const auto jz_0_2_0 =          - Qdzdt * Wz_0_2_0;
+          //   const auto jz_0_2_1 = jz_0_2_0 - Qdzdt * Wz_0_2_1;
+          //   const auto jz_0_2_2 = jz_0_2_1 - Qdzdt * Wz_0_2_2;
+          //   const auto jz_0_3_0 =          - Qdzdt * Wz_0_3_0;
+          //   const auto jz_0_3_1 = jz_0_3_0 - Qdzdt * Wz_0_3_1;
+          //   const auto jz_0_3_2 = jz_0_3_1 - Qdzdt * Wz_0_3_2;
+          //
+          //   const auto jz_1_0_0 =          - Qdzdt * Wz_1_0_0;
+          //   const auto jz_1_0_1 = jz_1_0_0 - Qdzdt * Wz_1_0_1;
+          //   const auto jz_1_0_2 = jz_1_0_1 - Qdzdt * Wz_1_0_2;
+          //   const auto jz_1_1_0 =          - Qdzdt * Wz_1_1_0;
+          //   const auto jz_1_1_1 = jz_1_1_0 - Qdzdt * Wz_1_1_1;
+          //   const auto jz_1_1_2 = jz_1_1_1 - Qdzdt * Wz_1_1_2;
+          //   const auto jz_1_2_0 =          - Qdzdt * Wz_1_2_0;
+          //   const auto jz_1_2_1 = jz_1_2_0 - Qdzdt * Wz_1_2_1;
+          //   const auto jz_1_2_2 = jz_1_2_1 - Qdzdt * Wz_1_2_2;
+          //   const auto jz_1_3_0 =          - Qdzdt * Wz_1_3_0;
+          //   const auto jz_1_3_1 = jz_1_3_0 - Qdzdt * Wz_1_3_1;
+          //   const auto jz_1_3_2 = jz_1_3_1 - Qdzdt * Wz_1_3_2;
+          //
+          //   const auto jz_2_0_0 =          - Qdzdt * Wz_2_0_0;
+          //   const auto jz_2_0_1 = jz_2_0_0 - Qdzdt * Wz_2_0_1;
+          //   const auto jz_2_0_2 = jz_2_0_1 - Qdzdt * Wz_2_0_2;
+          //   const auto jz_2_1_0 =          - Qdzdt * Wz_2_1_0;
+          //   const auto jz_2_1_1 = jz_2_1_0 - Qdzdt * Wz_2_1_1;
+          //   const auto jz_2_1_2 = jz_2_1_1 - Qdzdt * Wz_2_1_2;
+          //   const auto jz_2_2_0 =          - Qdzdt * Wz_2_2_0;
+          //   const auto jz_2_2_1 = jz_2_2_0 - Qdzdt * Wz_2_2_1;
+          //   const auto jz_2_2_2 = jz_2_2_1 - Qdzdt * Wz_2_2_2;
+          //   const auto jz_2_3_0 =          - Qdzdt * Wz_2_3_0;
+          //   const auto jz_2_3_1 = jz_2_3_0 - Qdzdt * Wz_2_3_1;
+          //   const auto jz_2_3_2 = jz_2_3_1 - Qdzdt * Wz_2_3_2;
+          //
+          //   const auto jz_3_0_0 =          - Qdzdt * Wz_3_0_0;
+          //   const auto jz_3_0_1 = jz_3_0_0 - Qdzdt * Wz_3_0_1;
+          //   const auto jz_3_0_2 = jz_3_0_1 - Qdzdt * Wz_3_0_2;
+          //   const auto jz_3_1_0 =          - Qdzdt * Wz_3_1_0;
+          //   const auto jz_3_1_1 = jz_3_1_0 - Qdzdt * Wz_3_1_1;
+          //   const auto jz_3_1_2 = jz_3_1_1 - Qdzdt * Wz_3_1_2;
+          //   const auto jz_3_2_0 =          - Qdzdt * Wz_3_2_0;
+          //   const auto jz_3_2_1 = jz_3_2_0 - Qdzdt * Wz_3_2_1;
+          //   const auto jz_3_2_2 = jz_3_2_1 - Qdzdt * Wz_3_2_2;
+          //   const auto jz_3_3_0 =          - Qdzdt * Wz_3_3_0;
+          //   const auto jz_3_3_1 = jz_3_3_0 - Qdzdt * Wz_3_3_1;
+          //   const auto jz_3_3_2 = jz_3_3_1 - Qdzdt * Wz_3_3_2;
+          //
+          //
+          //   /*
+          //     Current update
+          //   */
+          //   auto J_acc = J.access();
+          //
+          //   J_acc(ix_min,     iy_min,     iz_min,     cur::jx1) += jx_0_0_0;
+          //   J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx1) += jx_0_0_1;
+          //   J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx1) += jx_0_0_2;
+          //   J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx1) += jx_0_1_0;
+          //   J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx1) += jx_0_1_1;
+          //   J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx1) += jx_0_1_2;
+          //   J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx1) += jx_0_2_0;
+          //   J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx1) += jx_0_2_1;
+          //   J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx1) += jx_0_2_2;
+          //   J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx1) += jx_1_0_0;
+          //   J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx1) += jx_1_0_1;
+          //   J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx1) += jx_1_0_2;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx1) += jx_1_1_0;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx1) += jx_1_1_1;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx1) += jx_1_1_2;
+          //   J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx1) += jx_1_2_0;
+          //   J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx1) += jx_1_2_1;
+          //   J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx1) += jx_1_2_2;
+          //
+          //   if (update_x2)
+          //   {
+          //     J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx1) += jx_2_0_0;
+          //     J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx1) += jx_2_0_1;
+          //     J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx1) += jx_2_0_2;
+          //     J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx1) += jx_2_1_0;
+          //     J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx1) += jx_2_1_1;
+          //     J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx1) += jx_2_1_2;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx1) += jx_2_2_0;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx1) += jx_2_2_1;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx1) += jx_2_2_2;
+          //
+          //     if (update_y2)
+          //     {
+          //       J_acc(ix_min + 2, iy_min + 3, iz_min,     cur::jx1) += jx_2_3_0;
+          //       J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx1) += jx_2_3_1;
+          //       J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx1) += jx_2_3_2;
+          //     }
+          //
+          //     if (update_z2)
+          //     {
+          //       J_acc(ix_min + 2, iy_min,     iz_min + 3, cur::jx1) += jx_2_0_3;
+          //       J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx1) += jx_2_1_3;
+          //       J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx1) += jx_2_2_3;
+          //
+          //       if (update_y2)
+          //       {
+          //         J_acc(ix_min + 2, iy_min + 3, iz_min + 3, cur::jx1) += jx_2_3_3;
+          //       }
+          //     }
+          //   }
+          //   //
+          //   if (update_y2)
+          //   {
+          //     J_acc(ix_min,     iy_min + 3, iz_min,     cur::jx1) += jx_0_3_0;
+          //     J_acc(ix_min,     iy_min + 3, iz_min + 1, cur::jx1) += jx_0_3_1;
+          //     J_acc(ix_min,     iy_min + 3, iz_min + 2, cur::jx1) += jx_0_3_2;
+          //     J_acc(ix_min + 1, iy_min + 3, iz_min,     cur::jx1) += jx_1_3_0;
+          //     J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx1) += jx_1_3_1;
+          //     J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx1) += jx_1_3_2;
+          //   }
+          //
+          //   if (update_z2)
+          //   {
+          //     J_acc(ix_min,     iy_min,     iz_min + 3, cur::jx1) += jx_0_0_3;
+          //     J_acc(ix_min,     iy_min + 1, iz_min + 3, cur::jx1) += jx_0_1_3;
+          //     J_acc(ix_min,     iy_min + 2, iz_min + 3, cur::jx1) += jx_0_2_3;
+          //     J_acc(ix_min + 1, iy_min,     iz_min + 3, cur::jx1) += jx_1_0_3;
+          //     J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx1) += jx_1_1_3;
+          //     J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx1) += jx_1_2_3;
+          //
+          //     if (update_y2)
+          //     {
+          //       J_acc(ix_min,     iy_min + 3, iz_min + 3, cur::jx1) += jx_0_3_3;
+          //       J_acc(ix_min + 1, iy_min + 3, iz_min + 3, cur::jx1) += jx_1_3_3;
+          //     }
+          //   }
+          //
+          //
+          //   /*
+          //     y-component
+          //   */
+          //   J_acc(ix_min,     iy_min,     iz_min,     cur::jx2) += jy_0_0_0;
+          //   J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx2) += jy_0_0_1;
+          //   J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx2) += jy_0_0_2;
+          //   J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx2) += jy_0_1_0;
+          //   J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx2) += jy_0_1_1;
+          //   J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx2) += jy_0_1_2;
+          //   J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx2) += jy_1_0_0;
+          //   J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx2) += jy_1_0_1;
+          //   J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx2) += jy_1_0_2;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx2) += jy_1_1_0;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx2) += jy_1_1_1;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx2) += jy_1_1_2;
+          //   J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx2) += jy_2_0_0;
+          //   J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx2) += jy_2_0_1;
+          //   J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx2) += jy_2_0_2;
+          //   J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx2) += jy_2_1_0;
+          //   J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx2) += jy_2_1_1;
+          //   J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx2) += jy_2_1_2;
+          //
+          //   if (update_x2)
+          //   {
+          //     J_acc(ix_min + 3, iy_min,     iz_min,     cur::jx2) += jy_3_0_0;
+          //     J_acc(ix_min + 3, iy_min,     iz_min + 1, cur::jx2) += jy_3_0_1;
+          //     J_acc(ix_min + 3, iy_min,     iz_min + 2, cur::jx2) += jy_3_0_2;
+          //     J_acc(ix_min + 3, iy_min + 1, iz_min,     cur::jx2) += jy_3_1_0;
+          //     J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx2) += jy_3_1_1;
+          //     J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx2) += jy_3_1_2;
+          //
+          //     if (update_z2)
+          //     {
+          //       J_acc(ix_min + 3, iy_min,     iz_min + 3, cur::jx2) += jy_3_0_3;
+          //       J_acc(ix_min + 3, iy_min + 1, iz_min + 3, cur::jx2) += jy_3_1_3;
+          //     }
+          //   }
+          //
+          //   if (update_y2)
+          //   {
+          //     J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx2) += jy_0_2_0;
+          //     J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx2) += jy_0_2_1;
+          //     J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx2) += jy_0_2_2;
+          //     J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx2) += jy_1_2_0;
+          //     J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx2) += jy_1_2_1;
+          //     J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx2) += jy_1_2_2;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx2) += jy_2_2_0;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx2) += jy_2_2_1;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx2) += jy_2_2_2;
+          //
+          //     if (update_x2)
+          //     {
+          //       J_acc(ix_min + 3, iy_min + 2, iz_min,     cur::jx2) += jy_3_2_0;
+          //       J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx2) += jy_3_2_1;
+          //       J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx2) += jy_3_2_2;
+          //
+          //       if (update_z2)
+          //       {
+          //         J_acc(ix_min + 2, iy_min + 2, iz_min + 3, cur::jx2) += jy_2_2_3;
+          //         J_acc(ix_min + 3, iy_min + 2, iz_min + 3, cur::jx2) += jy_3_2_3;
+          //       }
+          //     }
+          //
+          //     if (update_z2)
+          //     {
+          //       J_acc(ix_min,     iy_min + 2, iz_min + 3, cur::jx2) += jy_0_2_3;
+          //       J_acc(ix_min + 1, iy_min + 2, iz_min + 3, cur::jx2) += jy_1_2_3;
+          //     }
+          //   }
+          //
+          //   if (update_z2)
+          //   {
+          //     J_acc(ix_min,     iy_min,     iz_min + 3, cur::jx2) += jy_0_0_3;
+          //     J_acc(ix_min,     iy_min + 1, iz_min + 3, cur::jx2) += jy_0_1_3;
+          //     J_acc(ix_min + 1, iy_min,     iz_min + 3, cur::jx2) += jy_1_0_3;
+          //     J_acc(ix_min + 1, iy_min + 1, iz_min + 3, cur::jx2) += jy_1_1_3;
+          //     J_acc(ix_min + 2, iy_min,     iz_min + 3, cur::jx2) += jy_2_0_3;
+          //     J_acc(ix_min + 2, iy_min + 1, iz_min + 3, cur::jx2) += jy_2_1_3;
+          //   }
+          //
+          //   /*
+          //     z-component
+          //   */
+          //   J_acc(ix_min,     iy_min,     iz_min,     cur::jx3) += jz_0_0_0;
+          //   J_acc(ix_min,     iy_min,     iz_min + 1, cur::jx3) += jz_0_0_1;
+          //   J_acc(ix_min,     iy_min + 1, iz_min,     cur::jx3) += jz_0_1_0;
+          //   J_acc(ix_min,     iy_min + 1, iz_min + 1, cur::jx3) += jz_0_1_1;
+          //   J_acc(ix_min,     iy_min + 2, iz_min,     cur::jx3) += jz_0_2_0;
+          //   J_acc(ix_min,     iy_min + 2, iz_min + 1, cur::jx3) += jz_0_2_1;
+          //   J_acc(ix_min + 1, iy_min,     iz_min,     cur::jx3) += jz_1_0_0;
+          //   J_acc(ix_min + 1, iy_min,     iz_min + 1, cur::jx3) += jz_1_0_1;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min,     cur::jx3) += jz_1_1_0;
+          //   J_acc(ix_min + 1, iy_min + 1, iz_min + 1, cur::jx3) += jz_1_1_1;
+          //   J_acc(ix_min + 1, iy_min + 2, iz_min,     cur::jx3) += jz_1_2_0;
+          //   J_acc(ix_min + 1, iy_min + 2, iz_min + 1, cur::jx3) += jz_1_2_1;
+          //   J_acc(ix_min + 2, iy_min,     iz_min,     cur::jx3) += jz_2_0_0;
+          //   J_acc(ix_min + 2, iy_min,     iz_min + 1, cur::jx3) += jz_2_0_1;
+          //   J_acc(ix_min + 2, iy_min + 1, iz_min,     cur::jx3) += jz_2_1_0;
+          //   J_acc(ix_min + 2, iy_min + 1, iz_min + 1, cur::jx3) += jz_2_1_1;
+          //   J_acc(ix_min + 2, iy_min + 2, iz_min,     cur::jx3) += jz_2_2_0;
+          //   J_acc(ix_min + 2, iy_min + 2, iz_min + 1, cur::jx3) += jz_2_2_1;
+          //
+          //   if (update_x2)
+          //   {
+          //     J_acc(ix_min + 3, iy_min,     iz_min,     cur::jx3) += jz_3_0_0;
+          //     J_acc(ix_min + 3, iy_min,     iz_min + 1, cur::jx3) += jz_3_0_1;
+          //     J_acc(ix_min + 3, iy_min + 1, iz_min,     cur::jx3) += jz_3_1_0;
+          //     J_acc(ix_min + 3, iy_min + 1, iz_min + 1, cur::jx3) += jz_3_1_1;
+          //     J_acc(ix_min + 3, iy_min + 2, iz_min,     cur::jx3) += jz_3_2_0;
+          //     J_acc(ix_min + 3, iy_min + 2, iz_min + 1, cur::jx3) += jz_3_2_1;
+          //     J_acc(ix_min + 3, iy_min + 3, iz_min,     cur::jx3) += jz_3_3_0;
+          //     J_acc(ix_min + 3, iy_min + 3, iz_min + 1, cur::jx3) += jz_3_3_1;
+          //   }
+          //
+          //   if (update_y2)
+          //   {
+          //     J_acc(ix_min,     iy_min + 3, iz_min,     cur::jx3) += jz_0_3_0;
+          //     J_acc(ix_min,     iy_min + 3, iz_min + 1, cur::jx3) += jz_0_3_1;
+          //     J_acc(ix_min + 1, iy_min + 3, iz_min,     cur::jx3) += jz_1_3_0;
+          //     J_acc(ix_min + 1, iy_min + 3, iz_min + 1, cur::jx3) += jz_1_3_1;
+          //     J_acc(ix_min + 2, iy_min + 3, iz_min,     cur::jx3) += jz_2_3_0;
+          //     J_acc(ix_min + 2, iy_min + 3, iz_min + 1, cur::jx3) += jz_2_3_1;
+          //   }
+          //
+          //   if (update_z2)
+          //   {
+          //     J_acc(ix_min,     iy_min,     iz_min + 2, cur::jx3) += jz_0_0_2;
+          //     J_acc(ix_min,     iy_min + 1, iz_min + 2, cur::jx3) += jz_0_1_2;
+          //     J_acc(ix_min,     iy_min + 2, iz_min + 2, cur::jx3) += jz_0_2_2;
+          //     J_acc(ix_min + 1, iy_min,     iz_min + 2, cur::jx3) += jz_1_0_2;
+          //     J_acc(ix_min + 1, iy_min + 1, iz_min + 2, cur::jx3) += jz_1_1_2;
+          //     J_acc(ix_min + 1, iy_min + 2, iz_min + 2, cur::jx3) += jz_1_2_2;
+          //     J_acc(ix_min + 2, iy_min,     iz_min + 2, cur::jx3) += jz_2_0_2;
+          //     J_acc(ix_min + 2, iy_min + 1, iz_min + 2, cur::jx3) += jz_2_1_2;
+          //     J_acc(ix_min + 2, iy_min + 2, iz_min + 2, cur::jx3) += jz_2_2_2;
+          //
+          //     if (update_x2)
+          //     {
+          //       J_acc(ix_min + 3, iy_min,     iz_min + 2, cur::jx3) += jz_3_0_2;
+          //       J_acc(ix_min + 3, iy_min + 1, iz_min + 2, cur::jx3) += jz_3_1_2;
+          //       J_acc(ix_min + 3, iy_min + 2, iz_min + 2, cur::jx3) += jz_3_2_2;
+          //
+          //       if (update_y2)
+          //       {
+          //         J_acc(ix_min + 3, iy_min + 3, iz_min + 2, cur::jx3) += jz_3_3_2;
+          //       }
+          //     }
+          //
+          //     if (update_y2)
+          //     {
+          //       J_acc(ix_min,     iy_min + 3, iz_min + 2, cur::jx3) += jz_0_3_2;
+          //       J_acc(ix_min + 1, iy_min + 3, iz_min + 2, cur::jx3) += jz_1_3_2;
+          //       J_acc(ix_min + 2, iy_min + 3, iz_min + 2, cur::jx3) += jz_2_3_2;
+          //     }
+          //   }
           // clang-format on
         } // dimension
 
@@ -2784,13 +2784,13 @@ namespace kernel {
             }
           }
         }
-        
-        } else { // order
-          raise::KernelError(HERE, "Unsupported interpolation order");
-        }
+
+      } else { // order
+        raise::KernelError(HERE, "Unsupported interpolation order");
       }
-    };
-  } // namespace kernel
+    }
+  };
+} // namespace kernel
 
 #undef i_di_to_Xi
 

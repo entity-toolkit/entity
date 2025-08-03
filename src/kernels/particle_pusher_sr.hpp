@@ -475,9 +475,13 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      //getInterpFlds(p, ei, bi);
-      //  ToDo: Better way to call this
-      getInterpFlds2nd(p, ei, bi);
+      // getInterpFlds(p, ei, bi);
+      //   ToDo: Better way to call this
+      //  getInterpFlds2nd(p, ei, bi);
+      for (auto i { 0u }; i < 3u; ++i) {
+        ei[i] = ZERO;
+        bi[i] = ZERO;
+      }
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
