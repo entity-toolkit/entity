@@ -32,7 +32,7 @@ namespace prtl_shape {
         S2    = ONE - S0 - S1;
       } else {
         i_min = i;
-        S0    = HALF * SQR(THREE_FOURTHS - di);
+        S0    = HALF * SQR(static_cast<real_t>(1.5) - di);
         S2    = HALF * SQR(di - HALF);
         S1    = ONE - S0 - S2;
       }
