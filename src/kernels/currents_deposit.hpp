@@ -295,395 +295,6 @@ namespace kernel {
       i_min += N_GHOSTS;
     }
 
-    Inline void W(real_t* _S, real_t x) const {
-
-      if constexpr (O == 2) {
-
-        _S[0] = HALF * SQR(HALF - x);
-        _S[1] = THREE_FOURTHS - SQR(x);
-        _S[2] = HALF * SQR(HALF + x);
-
-      } else if constexpr (O == 3) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-
-        _S[0] = static_cast<real_t>(1 / 6) * (ONE - x3) - HALF * SQR(x - x2);
-        _S[1] = static_cast<real_t>(2 / 3) - x2 + HALF * x3;
-        _S[2] = static_cast<real_t>(1 / 6) + HALF * (x + x2 + x3);
-        _S[3] = static_cast<real_t>(1 / 6) * x3;
-
-      } else if constexpr (O == 4) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-        const auto x4 = x2 * x2;
-
-        _S[0] = static_cast<real_t>(1 / 384) - static_cast<real_t>(1 / 48) * x +
-                static_cast<real_t>(1 / 16) * x2 -
-                static_cast<real_t>(1 / 12) * x3 +
-                static_cast<real_t>(1 / 24) * x4;
-        _S[1] = static_cast<real_t>(19 / 96) - static_cast<real_t>(11 / 24) * x +
-                static_cast<real_t>(1 / 4) * x2 +
-                static_cast<real_t>(1 / 6) * x3 - static_cast<real_t>(1 / 6) * x4;
-        _S[2] = static_cast<real_t>(115 / 192) - static_cast<real_t>(5 / 8) * x2 +
-                static_cast<real_t>(1 / 4) * x4;
-        _S[3] = static_cast<real_t>(19 / 96) + static_cast<real_t>(11 / 24) * x +
-                static_cast<real_t>(1 / 4) * x2 -
-                static_cast<real_t>(1 / 6) * x3 - static_cast<real_t>(1 / 6) * x4;
-        _S[4] = static_cast<real_t>(1 / 384) + static_cast<real_t>(1 / 48) * x +
-                static_cast<real_t>(1 / 16) * x2 +
-                static_cast<real_t>(1 / 12) * x3 +
-                static_cast<real_t>(1 / 24) * x4;
-
-      } else if constexpr (O == 5) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-        const auto x4 = x2 * x2;
-        const auto x5 = x3 * x2;
-        const auto x6 = x3 * x3;
-
-        _S[0] = static_cast<real_t>(1.0 / 46080.0) -
-                static_cast<real_t>(1.0 / 3840.0) * x +
-                static_cast<real_t>(1.0 / 384.0) * x2 -
-                static_cast<real_t>(1.0 / 96.0) * x3 +
-                static_cast<real_t>(1.0 / 72.0) * x4 -
-                static_cast<real_t>(1.0 / 144.0) * x5 +
-                static_cast<real_t>(1.0 / 720.0) * x6;
-
-        _S[1] = static_cast<real_t>(13.0 / 9216.0) -
-                static_cast<real_t>(11.0 / 768.0) * x +
-                static_cast<real_t>(1.0 / 48.0) * x2 +
-                static_cast<real_t>(5.0 / 72.0) * x3 -
-                static_cast<real_t>(1.0 / 8.0) * x4 +
-                static_cast<real_t>(5.0 / 144.0) * x5 -
-                static_cast<real_t>(1.0 / 144.0) * x6;
-
-        _S[2] = static_cast<real_t>(115.0 / 768.0) -
-                static_cast<real_t>(5.0 / 24.0) * x2 +
-                static_cast<real_t>(1.0 / 8.0) * x4 -
-                static_cast<real_t>(1.0 / 72.0) * x6;
-
-        _S[3] = static_cast<real_t>(115.0 / 768.0) -
-                static_cast<real_t>(5.0 / 24.0) * x2 +
-                static_cast<real_t>(1.0 / 8.0) * x4 -
-                static_cast<real_t>(1.0 / 72.0) * x6;
-
-        _S[4] = static_cast<real_t>(13.0 / 9216.0) +
-                static_cast<real_t>(11.0 / 768.0) * x +
-                static_cast<real_t>(1.0 / 48.0) * x2 -
-                static_cast<real_t>(5.0 / 72.0) * x3 -
-                static_cast<real_t>(1.0 / 8.0) * x4 -
-                static_cast<real_t>(5.0 / 144.0) * x5 -
-                static_cast<real_t>(1.0 / 144.0) * x6;
-
-        _S[5] = static_cast<real_t>(1.0 / 46080.0) +
-                static_cast<real_t>(1.0 / 3840.0) * x +
-                static_cast<real_t>(1.0 / 384.0) * x2 +
-                static_cast<real_t>(1.0 / 96.0) * x3 +
-                static_cast<real_t>(1.0 / 72.0) * x4 +
-                static_cast<real_t>(1.0 / 144.0) * x5 +
-                static_cast<real_t>(1.0 / 720.0) * x6;
-
-      } else if constexpr (O == 6) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-        const auto x4 = x2 * x2;
-        const auto x5 = x3 * x2;
-        const auto x6 = x3 * x3;
-
-        _S[0] = static_cast<real_t>(1.0 / 40320.0) -
-                static_cast<real_t>(1.0 / 4480.0) * x +
-                static_cast<real_t>(1.0 / 640.0) * x2 -
-                static_cast<real_t>(1.0 / 192.0) * x3 +
-                static_cast<real_t>(1.0 / 144.0) * x4 -
-                static_cast<real_t>(1.0 / 288.0) * x5 +
-                static_cast<real_t>(1.0 / 1440.0) * x6;
-
-        _S[1] = static_cast<real_t>(1.0 / 1344.0) -
-                static_cast<real_t>(1.0 / 160.0) * x +
-                static_cast<real_t>(5.0 / 192.0) * x2 -
-                static_cast<real_t>(1.0 / 48.0) * x3 -
-                static_cast<real_t>(1.0 / 48.0) * x4 +
-                static_cast<real_t>(5.0 / 288.0) * x5 -
-                static_cast<real_t>(1.0 / 288.0) * x6;
-
-        _S[2] = static_cast<real_t>(17.0 / 336.0) -
-                static_cast<real_t>(5.0 / 48.0) * x2 +
-                static_cast<real_t>(1.0 / 12.0) * x4 -
-                static_cast<real_t>(1.0 / 144.0) * x6;
-
-        _S[3] = static_cast<real_t>(151.0 / 252.0) -
-                static_cast<real_t>(35.0 / 48.0) * x2 +
-                static_cast<real_t>(5.0 / 12.0) * x4 -
-                static_cast<real_t>(1.0 / 36.0) * x6;
-
-        _S[4] = static_cast<real_t>(17.0 / 336.0) -
-                static_cast<real_t>(5.0 / 48.0) * x2 +
-                static_cast<real_t>(1.0 / 12.0) * x4 -
-                static_cast<real_t>(1.0 / 144.0) * x6;
-
-        _S[5] = static_cast<real_t>(1.0 / 1344.0) +
-                static_cast<real_t>(1.0 / 160.0) * x +
-                static_cast<real_t>(5.0 / 192.0) * x2 +
-                static_cast<real_t>(1.0 / 48.0) * x3 -
-                static_cast<real_t>(1.0 / 48.0) * x4 -
-                static_cast<real_t>(5.0 / 288.0) * x5 -
-                static_cast<real_t>(1.0 / 288.0) * x6;
-
-        _S[6] = static_cast<real_t>(1.0 / 40320.0) +
-                static_cast<real_t>(1.0 / 4480.0) * x +
-                static_cast<real_t>(1.0 / 640.0) * x2 +
-                static_cast<real_t>(1.0 / 192.0) * x3 +
-                static_cast<real_t>(1.0 / 144.0) * x4 +
-                static_cast<real_t>(1.0 / 288.0) * x5 +
-                static_cast<real_t>(1.0 / 1440.0) * x6;
-
-      } else if constexpr (O == 7) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-        const auto x4 = x2 * x2;
-        const auto x5 = x3 * x2;
-        const auto x6 = x3 * x3;
-        const auto x7 = x4 * x3;
-
-        _S[0] = static_cast<real_t>(1.0 / 645120.0) -
-                static_cast<real_t>(1.0 / 64512.0) * x +
-                static_cast<real_t>(1.0 / 9216.0) * x2 -
-                static_cast<real_t>(1.0 / 3072.0) * x3 +
-                static_cast<real_t>(1.0 / 2304.0) * x4 -
-                static_cast<real_t>(1.0 / 4608.0) * x5 +
-                static_cast<real_t>(1.0 / 23040.0) * x6 -
-                static_cast<real_t>(1.0 / 161280.0) * x7;
-
-        _S[1] = static_cast<real_t>(1.0 / 9216.0) -
-                static_cast<real_t>(5.0 / 4608.0) * x +
-                static_cast<real_t>(35.0 / 9216.0) * x2 -
-                static_cast<real_t>(7.0 / 768.0) * x3 -
-                static_cast<real_t>(7.0 / 1152.0) * x4 +
-                static_cast<real_t>(35.0 / 4608.0) * x5 -
-                static_cast<real_t>(5.0 / 4608.0) * x6 +
-                static_cast<real_t>(1.0 / 9216.0) * x7;
-
-        _S[2] = static_cast<real_t>(25.0 / 1536.0) -
-                static_cast<real_t>(35.0 / 768.0) * x2 +
-                static_cast<real_t>(7.0 / 192.0) * x4 -
-                static_cast<real_t>(1.0 / 96.0) * x6;
-
-        _S[3] = static_cast<real_t>(245.0 / 384.0) -
-                static_cast<real_t>(245.0 / 192.0) * x2 +
-                static_cast<real_t>(49.0 / 48.0) * x4 -
-                static_cast<real_t>(7.0 / 72.0) * x6;
-
-        _S[4] = _S[3]; // symmetry
-
-        _S[5] = _S[2]; // symmetry
-
-        _S[6] = static_cast<real_t>(1 / 9216) + static_cast<real_t>(5 / 4608) * x +
-                static_cast<real_t>(35 / 9216) * x2 +
-                static_cast<real_t>(7 / 768) * x3 -
-                static_cast<real_t>(7 / 1152) * x4 -
-                static_cast<real_t>(35 / 4608) * x5 -
-                static_cast<real_t>(5 / 4608) * x6 -
-                static_cast<real_t>(1 / 9216) * x7;
-
-        _S[7] = static_cast<real_t>(1 / 645120) +
-                static_cast<real_t>(1 / 64512) * x +
-                static_cast<real_t>(1 / 9216) * x2 +
-                static_cast<real_t>(1 / 3072) * x3 +
-                static_cast<real_t>(1 / 2304) * x4 +
-                static_cast<real_t>(1 / 4608) * x5 +
-                static_cast<real_t>(1 / 23040) * x6 +
-                static_cast<real_t>(1 / 161280) * x7;
-
-      } else if constexpr (O == 8) {
-
-        const auto x2 = x * x;
-        const auto x3 = x2 * x;
-        const auto x4 = x2 * x2;
-        const auto x5 = x3 * x2;
-        const auto x6 = x3 * x3;
-        const auto x7 = x4 * x3;
-        const auto x8 = x4 * x4;
-
-        _S[0] = static_cast<real_t>(1.0 / 10321920.0) -
-                static_cast<real_t>(1.0 / 1146880.0) * x +
-                static_cast<real_t>(1.0 / 161280.0) * x2 -
-                static_cast<real_t>(1.0 / 53760.0) * x3 +
-                static_cast<real_t>(1.0 / 43008.0) * x4 -
-                static_cast<real_t>(1.0 / 96768.0) * x5 +
-                static_cast<real_t>(1.0 / 645120.0) * x6 -
-                static_cast<real_t>(1.0 / 1032192.0) * x7 +
-                static_cast<real_t>(1.0 / 4134528.0) * x8;
-
-        _S[1] = static_cast<real_t>(1.0 / 129024.0) -
-                static_cast<real_t>(1.0 / 14336.0) * x +
-                static_cast<real_t>(17.0 / 43008.0) * x2 -
-                static_cast<real_t>(17.0 / 21504.0) * x3 +
-                static_cast<real_t>(17.0 / 21504.0) * x4 -
-                static_cast<real_t>(17.0 / 43008.0) * x5 +
-                static_cast<real_t>(1.0 / 14336.0) * x6 -
-                static_cast<real_t>(1.0 / 129024.0) * x7 +
-                static_cast<real_t>(1.0 / 1032192.0) * x8;
-
-        _S[2] = static_cast<real_t>(361.0 / 64512.0) -
-                static_cast<real_t>(153.0 / 14336.0) * x2 +
-                static_cast<real_t>(51.0 / 14336.0) * x4 -
-                static_cast<real_t>(17.0 / 43008.0) * x6 +
-                static_cast<real_t>(1.0 / 1032192.0) * x8;
-
-        _S[3] = static_cast<real_t>(3061.0 / 16128.0) -
-                static_cast<real_t>(170.0 / 1792.0) * x2 +
-                static_cast<real_t>(34.0 / 1536.0) * x4 -
-                static_cast<real_t>(17.0 / 16128.0) * x6;
-
-        _S[4] = static_cast<real_t>(257135.0 / 32256.0) -
-                static_cast<real_t>(1785.0 / 896.0) * x2 +
-                static_cast<real_t>(255.0 / 256.0) * x4 -
-                static_cast<real_t>(85.0 / 1152.0) * x6;
-
-        _S[5] = _S[3]; // symmetry
-
-        _S[6] = _S[2]; // symmetry
-
-        _S[7] = static_cast<real_t>(1 / 129024) +
-                static_cast<real_t>(1 / 14336) * x +
-                static_cast<real_t>(17 / 43008) * x2 +
-                static_cast<real_t>(17 / 21504) * x3 +
-                static_cast<real_t>(17 / 21504) * x4 +
-                static_cast<real_t>(17 / 43008) * x5 +
-                static_cast<real_t>(1 / 14336) * x6 +
-                static_cast<real_t>(1 / 129024) * x7 +
-                static_cast<real_t>(1 / 1032192) * x8;
-
-        _S[8] = static_cast<real_t>(1 / 10321920) +
-                static_cast<real_t>(1 / 1146880) * x +
-                static_cast<real_t>(1 / 161280) * x2 +
-                static_cast<real_t>(1 / 53760) * x3 +
-                static_cast<real_t>(1 / 43008) * x4 +
-                static_cast<real_t>(1 / 96768) * x5 +
-                static_cast<real_t>(1 / 645120) * x6 +
-                static_cast<real_t>(1 / 1032192) * x7 +
-                static_cast<real_t>(1 / 4134528) * x8;
-
-      } else {
-        raise::KernelError(HERE, "Invalid order of shape function!");
-      }
-    }
-
-    Inline void shape_function_Nth(real_t*        S0,
-                                   real_t*        S1,
-                                   ncells_t&      i_min,
-                                   const index_t& i,
-                                   const real_t&  di,
-                                   const index_t& i_prev,
-                                   const real_t&  di_prev) const {
-      /*
-        Shape function per particle is a O+1 element array.
-        We need to find which indices are contributing to the shape function
-        For this we first compute the indices of the particle position
-
-        Let * be the particle position at the current timestep
-        Let x be the particle position at the previous timestep
-
-
-          (-1)    0      1      ...    N     N+1
-        __________________________________________
-        |      |  x*  |  x*  |  //  |  x*  |      |      // shift_i = 0
-        |______|______|______|______|______|______|
-        |      |  x   |  x*  |  //  |  x*  |   *  |      // shift_i = 1
-        |______|______|______|______|______|______|
-        |  *   |  x*  |  x*  |  //  |  x   |      |      // shift_i = -1
-        |______|______|______|______|______|______|
-      */
-
-      // find shift in indices
-      // ToDo: fix
-      const int di_less_half = static_cast<int>(di < static_cast<prtldx_t>(0.5));
-      const int di_prev_less_half = static_cast<int>(
-        di_prev < static_cast<prtldx_t>(0.5));
-
-      const int shift_i = (i - di_less_half) - (i_prev - di_prev_less_half);
-
-      // find the minimum index of the shape function -> ToDo!
-      i_min = Kokkos::min((i - di_less_half), (i_prev - di_prev_less_half));
-
-      // center index of the shape function -> ToDo!
-      const auto di_center_prev = static_cast<real_t>(1 - di_prev_less_half) -
-                                  di_prev;
-      const auto di_center = static_cast<real_t>(1 - di_less_half) - di;
-      // ToDo: end fix
-
-      real_t _S0[O + 1], _S1[O + 1];
-      // apply shape function
-      W(_S0, di_center_prev);
-      W(_S1, di_center);
-
-      // find indices and define shape function
-      if (shift_i == 1) {
-        /*
-            (-1)    0      1      ...     N     N+1
-          __________________________________________
-          |      |  x   |  x*  |  //  |  x*  |   *  |   // shift_i = 1
-          |______|______|______|______|______|______|
-        */
-
-        for (int j = 0; j < O; j++) {
-          S0[j] = _S0[j];
-        }
-        S0[O + 1] = ZERO;
-
-        S1[0] = ZERO;
-        for (int j = 0; j < O; j++) {
-          S1[j + 1] = _S1[j];
-        }
-
-      } else if (shift_i == -1) {
-        /*
-            (-1)    0      1     ...     N     N+1
-          __________________________________________
-          |  *   |  x*  |  x*  |  //  |  x   |      |   // shift_i = -1
-          |______|______|______|______|______|______|
-        */
-
-        S0[0] = ZERO;
-        for (int j = 0; j < O; j++) {
-          S0[j + 1] = _S0[j];
-        }
-
-        for (int j = 0; j < O; j++) {
-          S1[j] = _S1[j];
-        }
-        S1[O + 1] = ZERO;
-
-      } else if (shift_i == 0) {
-        /*
-            (-1)    0      1     ...      N     N+1
-          __________________________________________
-          |      |  x*  |  x*  |  //  |  x*  |      |  // shift_i = 0
-          |______|______|______|______|______|______|
-        */
-
-        for (int j = 0; j < O; j++) {
-          S0[j] = _S0[j];
-        }
-        S0[O + 1] = ZERO;
-
-        for (int j = 0; j < O; j++) {
-          S1[j] = _S1[j];
-        }
-        S1[O + 1] = ZERO;
-      } else {
-        raise::KernelError(HERE, "Invalid shift in indices");
-      }
-
-      // account for ghost cells here to shorten J update expression
-      i_min += N_GHOSTS;
-    }
-
   public:
     /**
      * @brief explicit constructor.
@@ -1036,37 +647,22 @@ namespace kernel {
         // iS -> shape function for init position
         // fS -> shape function for final position
 
-        // shape function at staggered points (one coeff is always ZERO)
-        int    i1_minH;
-        real_t iS_x1H_0, iS_x1H_1, iS_x1H_2, iS_x1H_3;
-        real_t fS_x1H_0, fS_x1H_1, fS_x1H_2, fS_x1H_3;
-
         // shape function at integer points (one coeff is always ZERO)
         int    i1_min;
         real_t iS_x1_0, iS_x1_1, iS_x1_2, iS_x1_3;
         real_t fS_x1_0, fS_x1_1, fS_x1_2, fS_x1_3;
 
         // clang-format off
-        prtl_shape::for_deposit_2nd<true>(i1_prev(p), static_cast<real_t>(dx1_prev(p)),
-                                          i1(p), static_cast<real_t>(dx1(p)),
-                                          i1_minH,
-                                          iS_x1H_0, iS_x1H_1, iS_x1H_2, iS_x1H_3,
-                                          fS_x1H_0, fS_x1H_1, fS_x1H_2, fS_x1H_3);
-        prtl_shape::for_deposit_2nd<false>(i1_prev(p), static_cast<real_t>(dx1_prev(p)),
-                                           i1(p), static_cast<real_t>(dx1(p)),
-                                           i1_min,
-                                           iS_x1_0, iS_x1_1, iS_x1_2, iS_x1_3,
-                                           fS_x1_0, fS_x1_1, fS_x1_2, fS_x1_3);
+        prtl_shape::for_deposit_2nd(i1_prev(p), static_cast<real_t>(dx1_prev(p)),
+                                    i1(p), static_cast<real_t>(dx1(p)),
+                                    i1_min,
+                                    iS_x1_0, iS_x1_1, iS_x1_2, iS_x1_3,
+                                    fS_x1_0, fS_x1_1, fS_x1_2, fS_x1_3);
         // clang-format on
 
         if constexpr (D == Dim::_1D) {
           raise::KernelNotImplementedError(HERE);
         } else if constexpr (D == Dim::_2D) {
-
-          // shape function at staggered points (one coeff is always ZERO)
-          int    i2_minH;
-          real_t iS_x2H_0, iS_x2H_1, iS_x2H_2, iS_x2H_3;
-          real_t fS_x2H_0, fS_x2H_1, fS_x2H_2, fS_x2H_3;
 
           // shape function at integer points (one coeff is always ZERO)
           int    i2_min;
@@ -1074,58 +670,53 @@ namespace kernel {
           real_t fS_x2_0, fS_x2_1, fS_x2_2, fS_x2_3;
 
           // clang-format off
-          prtl_shape::for_deposit_2nd<true>(i2_prev(p), static_cast<real_t>(dx2_prev(p)),
-                                            i2(p), static_cast<real_t>(dx2(p)),
-                                            i2_minH,
-                                            iS_x2H_0, iS_x2H_1, iS_x2H_2, iS_x2H_3,
-                                            fS_x2H_0, fS_x2H_1, fS_x2H_2, fS_x2H_3);
-          prtl_shape::for_deposit_2nd<false>(i2_prev(p), static_cast<real_t>(dx2_prev(p)),
-                                             i2(p), static_cast<real_t>(dx2(p)),
-                                             i2_min,
-                                             iS_x2_0, iS_x2_1, iS_x2_2, iS_x2_3,
-                                             fS_x2_0, fS_x2_1, fS_x2_2, fS_x2_3);
+          prtl_shape::for_deposit_2nd(i2_prev(p), static_cast<real_t>(dx2_prev(p)),
+                                      i2(p), static_cast<real_t>(dx2(p)),
+                                      i2_min,
+                                      iS_x2_0, iS_x2_1, iS_x2_2, iS_x2_3,
+                                      fS_x2_0, fS_x2_1, fS_x2_2, fS_x2_3);
           // clang-format on
           // x1-components
-          const auto Wx1_00 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_0 + iS_x2_0);
-          const auto Wx1_01 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_1 + iS_x2_1);
-          const auto Wx1_02 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_2 + iS_x2_2);
-          const auto Wx1_03 = HALF * (fS_x1H_0 - iS_x1H_0) * (fS_x2_3 + iS_x2_3);
+          const auto Wx1_00 = HALF * (fS_x1_0 - iS_x1_0) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_01 = HALF * (fS_x1_0 - iS_x1_0) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_02 = HALF * (fS_x1_0 - iS_x1_0) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_03 = HALF * (fS_x1_0 - iS_x1_0) * (fS_x2_3 + iS_x2_3);
 
-          const auto Wx1_10 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_0 + iS_x2_0);
-          const auto Wx1_11 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_1 + iS_x2_1);
-          const auto Wx1_12 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_2 + iS_x2_2);
-          const auto Wx1_13 = HALF * (fS_x1H_1 - iS_x1H_1) * (fS_x2_3 + iS_x2_3);
+          const auto Wx1_10 = HALF * (fS_x1_1 - iS_x1_1) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_11 = HALF * (fS_x1_1 - iS_x1_1) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_12 = HALF * (fS_x1_1 - iS_x1_1) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_13 = HALF * (fS_x1_1 - iS_x1_1) * (fS_x2_3 + iS_x2_3);
 
-          const auto Wx1_20 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_0 + iS_x2_0);
-          const auto Wx1_21 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_1 + iS_x2_1);
-          const auto Wx1_22 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_2 + iS_x2_2);
-          const auto Wx1_23 = HALF * (fS_x1H_2 - iS_x1H_2) * (fS_x2_3 + iS_x2_3);
+          const auto Wx1_20 = HALF * (fS_x1_2 - iS_x1_2) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_21 = HALF * (fS_x1_2 - iS_x1_2) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_22 = HALF * (fS_x1_2 - iS_x1_2) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_23 = HALF * (fS_x1_2 - iS_x1_2) * (fS_x2_3 + iS_x2_3);
 
-          const auto Wx1_30 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_0 + iS_x2_0);
-          const auto Wx1_31 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_1 + iS_x2_1);
-          const auto Wx1_32 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_2 + iS_x2_2);
-          const auto Wx1_33 = HALF * (fS_x1H_3 - iS_x1H_3) * (fS_x2_3 + iS_x2_3);
+          const auto Wx1_30 = HALF * (fS_x1_3 - iS_x1_3) * (fS_x2_0 + iS_x2_0);
+          const auto Wx1_31 = HALF * (fS_x1_3 - iS_x1_3) * (fS_x2_1 + iS_x2_1);
+          const auto Wx1_32 = HALF * (fS_x1_3 - iS_x1_3) * (fS_x2_2 + iS_x2_2);
+          const auto Wx1_33 = HALF * (fS_x1_3 - iS_x1_3) * (fS_x2_3 + iS_x2_3);
 
           // x2-components
-          const auto Wx2_00 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_0 - iS_x2H_0);
-          const auto Wx2_01 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_1 - iS_x2H_1);
-          const auto Wx2_02 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_2 - iS_x2H_2);
-          const auto Wx2_03 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2H_3 - iS_x2H_3);
+          const auto Wx2_00 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2_0 - iS_x2_0);
+          const auto Wx2_01 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2_1 - iS_x2_1);
+          const auto Wx2_02 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2_2 - iS_x2_2);
+          const auto Wx2_03 = HALF * (fS_x1_0 + iS_x1_0) * (fS_x2_3 - iS_x2_3);
 
-          const auto Wx2_10 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_0 - iS_x2H_0);
-          const auto Wx2_11 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_1 - iS_x2H_1);
-          const auto Wx2_12 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_2 - iS_x2H_2);
-          const auto Wx2_13 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2H_3 - iS_x2H_3);
+          const auto Wx2_10 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2_0 - iS_x2_0);
+          const auto Wx2_11 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2_1 - iS_x2_1);
+          const auto Wx2_12 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2_2 - iS_x2_2);
+          const auto Wx2_13 = HALF * (fS_x1_1 + iS_x1_1) * (fS_x2_3 - iS_x2_3);
 
-          const auto Wx2_20 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_0 - iS_x2H_0);
-          const auto Wx2_21 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_1 - iS_x2H_1);
-          const auto Wx2_22 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_2 - iS_x2H_2);
-          const auto Wx2_23 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2H_3 - iS_x2H_3);
+          const auto Wx2_20 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2_0 - iS_x2_0);
+          const auto Wx2_21 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2_1 - iS_x2_1);
+          const auto Wx2_22 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2_2 - iS_x2_2);
+          const auto Wx2_23 = HALF * (fS_x1_2 + iS_x1_2) * (fS_x2_3 - iS_x2_3);
 
-          const auto Wx2_30 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_0 - iS_x2H_0);
-          const auto Wx2_31 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_1 - iS_x2H_1);
-          const auto Wx2_32 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_2 - iS_x2H_2);
-          const auto Wx2_33 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2H_3 - iS_x2H_3);
+          const auto Wx2_30 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2_0 - iS_x2_0);
+          const auto Wx2_31 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2_1 - iS_x2_1);
+          const auto Wx2_32 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2_2 - iS_x2_2);
+          const auto Wx2_33 = HALF * (fS_x1_3 + iS_x1_3) * (fS_x2_3 - iS_x2_3);
 
           // x3-components
           const auto Wx3_00 = THIRD * (fS_x2_0 * (HALF * iS_x1_0 + fS_x1_0) +
@@ -1206,9 +797,7 @@ namespace kernel {
           const auto jx2_32 = jx2_31 + Wx2_32;
           const auto jx2_33 = jx2_32 + Wx2_33;
 
-          i1_minH += N_GHOSTS;
           i1_min  += N_GHOSTS;
-          i2_minH += N_GHOSTS;
           i2_min  += N_GHOSTS;
 
           // @TODO: not sure about the signs here
@@ -1219,46 +808,46 @@ namespace kernel {
           auto J_acc = J.access();
 
           // x1-currents
-          J_acc(i1_minH + 0, i2_min + 0, cur::jx1) += Qdx1dt * jx1_00;
-          J_acc(i1_minH + 0, i2_min + 1, cur::jx1) += Qdx1dt * jx1_01;
-          J_acc(i1_minH + 0, i2_min + 2, cur::jx1) += Qdx1dt * jx1_02;
-          J_acc(i1_minH + 0, i2_min + 3, cur::jx1) += Qdx1dt * jx1_03;
+          J_acc(i1_min + 0, i2_min + 0, cur::jx1) += Qdx1dt * jx1_00;
+          J_acc(i1_min + 0, i2_min + 1, cur::jx1) += Qdx1dt * jx1_01;
+          J_acc(i1_min + 0, i2_min + 2, cur::jx1) += Qdx1dt * jx1_02;
+          J_acc(i1_min + 0, i2_min + 3, cur::jx1) += Qdx1dt * jx1_03;
 
-          J_acc(i1_minH + 1, i2_min + 0, cur::jx1) += Qdx1dt * jx1_10;
-          J_acc(i1_minH + 1, i2_min + 1, cur::jx1) += Qdx1dt * jx1_11;
-          J_acc(i1_minH + 1, i2_min + 2, cur::jx1) += Qdx1dt * jx1_12;
-          J_acc(i1_minH + 1, i2_min + 3, cur::jx1) += Qdx1dt * jx1_13;
+          J_acc(i1_min + 1, i2_min + 0, cur::jx1) += Qdx1dt * jx1_10;
+          J_acc(i1_min + 1, i2_min + 1, cur::jx1) += Qdx1dt * jx1_11;
+          J_acc(i1_min + 1, i2_min + 2, cur::jx1) += Qdx1dt * jx1_12;
+          J_acc(i1_min + 1, i2_min + 3, cur::jx1) += Qdx1dt * jx1_13;
 
-          J_acc(i1_minH + 2, i2_min + 0, cur::jx1) += Qdx1dt * jx1_20;
-          J_acc(i1_minH + 2, i2_min + 1, cur::jx1) += Qdx1dt * jx1_21;
-          J_acc(i1_minH + 2, i2_min + 2, cur::jx1) += Qdx1dt * jx1_22;
-          J_acc(i1_minH + 2, i2_min + 3, cur::jx1) += Qdx1dt * jx1_23;
+          J_acc(i1_min + 2, i2_min + 0, cur::jx1) += Qdx1dt * jx1_20;
+          J_acc(i1_min + 2, i2_min + 1, cur::jx1) += Qdx1dt * jx1_21;
+          J_acc(i1_min + 2, i2_min + 2, cur::jx1) += Qdx1dt * jx1_22;
+          J_acc(i1_min + 2, i2_min + 3, cur::jx1) += Qdx1dt * jx1_23;
 
-          J_acc(i1_minH + 3, i2_min + 0, cur::jx1) += Qdx1dt * jx1_30;
-          J_acc(i1_minH + 3, i2_min + 1, cur::jx1) += Qdx1dt * jx1_31;
-          J_acc(i1_minH + 3, i2_min + 2, cur::jx1) += Qdx1dt * jx1_32;
-          J_acc(i1_minH + 3, i2_min + 3, cur::jx1) += Qdx1dt * jx1_33;
+          J_acc(i1_min + 3, i2_min + 0, cur::jx1) += Qdx1dt * jx1_30;
+          J_acc(i1_min + 3, i2_min + 1, cur::jx1) += Qdx1dt * jx1_31;
+          J_acc(i1_min + 3, i2_min + 2, cur::jx1) += Qdx1dt * jx1_32;
+          J_acc(i1_min + 3, i2_min + 3, cur::jx1) += Qdx1dt * jx1_33;
 
           // x2-currents
-          J_acc(i1_min + 0, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_00;
-          J_acc(i1_min + 0, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_01;
-          J_acc(i1_min + 0, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_02;
-          J_acc(i1_min + 0, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_03;
+          J_acc(i1_min + 0, i2_min + 0, cur::jx2) += Qdx2dt * jx2_00;
+          J_acc(i1_min + 0, i2_min + 1, cur::jx2) += Qdx2dt * jx2_01;
+          J_acc(i1_min + 0, i2_min + 2, cur::jx2) += Qdx2dt * jx2_02;
+          J_acc(i1_min + 0, i2_min + 3, cur::jx2) += Qdx2dt * jx2_03;
 
-          J_acc(i1_min + 1, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_10;
-          J_acc(i1_min + 1, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_11;
-          J_acc(i1_min + 1, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_12;
-          J_acc(i1_min + 1, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_13;
+          J_acc(i1_min + 1, i2_min + 0, cur::jx2) += Qdx2dt * jx2_10;
+          J_acc(i1_min + 1, i2_min + 1, cur::jx2) += Qdx2dt * jx2_11;
+          J_acc(i1_min + 1, i2_min + 2, cur::jx2) += Qdx2dt * jx2_12;
+          J_acc(i1_min + 1, i2_min + 3, cur::jx2) += Qdx2dt * jx2_13;
 
-          J_acc(i1_min + 2, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_20;
-          J_acc(i1_min + 2, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_21;
-          J_acc(i1_min + 2, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_22;
-          J_acc(i1_min + 2, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_23;
+          J_acc(i1_min + 2, i2_min + 0, cur::jx2) += Qdx2dt * jx2_20;
+          J_acc(i1_min + 2, i2_min + 1, cur::jx2) += Qdx2dt * jx2_21;
+          J_acc(i1_min + 2, i2_min + 2, cur::jx2) += Qdx2dt * jx2_22;
+          J_acc(i1_min + 2, i2_min + 3, cur::jx2) += Qdx2dt * jx2_23;
 
-          J_acc(i1_min + 3, i2_minH + 0, cur::jx2) += Qdx2dt * jx2_30;
-          J_acc(i1_min + 3, i2_minH + 1, cur::jx2) += Qdx2dt * jx2_31;
-          J_acc(i1_min + 3, i2_minH + 2, cur::jx2) += Qdx2dt * jx2_32;
-          J_acc(i1_min + 3, i2_minH + 3, cur::jx2) += Qdx2dt * jx2_33;
+          J_acc(i1_min + 3, i2_min + 0, cur::jx2) += Qdx2dt * jx2_30;
+          J_acc(i1_min + 3, i2_min + 1, cur::jx2) += Qdx2dt * jx2_31;
+          J_acc(i1_min + 3, i2_min + 2, cur::jx2) += Qdx2dt * jx2_32;
+          J_acc(i1_min + 3, i2_min + 3, cur::jx2) += Qdx2dt * jx2_33;
 
           // x3-currents
           J_acc(i1_min + 0, i2_min + 0, cur::jx3) += QVx3 * Wx3_00;
@@ -1280,6 +869,7 @@ namespace kernel {
           J_acc(i1_min + 3, i2_min + 1, cur::jx3) += QVx3 * Wx3_31;
           J_acc(i1_min + 3, i2_min + 2, cur::jx3) += QVx3 * Wx3_32;
           J_acc(i1_min + 3, i2_min + 3, cur::jx3) += QVx3 * Wx3_33;
+
         } else if constexpr (D == Dim::_3D) {
           //   /*
           //     y - direction
@@ -2549,30 +2139,44 @@ namespace kernel {
 
         } // dim -> ToDo: 3D!
 
-      } else if constexpr (O > 3u) {
+      } else if constexpr ((O > 3u) && (O < 5u)) {
 
         // shape function in dim1 -> always required
-        real_t   S0x[O + 2], S1x[O + 2];
+        real_t   iS_x1[O + 2], fS_x1[O + 2];
         // indices of the shape function
-        ncells_t ix_min;
+        ncells_t i1_min;
 
-        // ToDo: Call shape function
+        // call shape function
+        prtl_shape::for_deposit<O>(i1_prev(p),
+                                   static_cast<real_t>(dx1_prev(p)),
+                                   i1(p),
+                                   static_cast<real_t>(dx1(p)),
+                                   i1_min,
+                                   iS_x1,
+                                   fS_x1);
 
         if constexpr (D == Dim::_1D) {
           // ToDo
         } else if constexpr (D == Dim::_2D) {
 
-          // shape function in dim2
-          real_t   S0y[O + 2], S1y[O + 2];
+          // shape function in dim1 -> always required
+          real_t   iS_x2[O + 2], fS_x2[O + 2];
           // indices of the shape function
-          ncells_t iy_min;
+          ncells_t i2_min;
 
-          // ToDo: Call shape function
+          // call shape function
+          prtl_shape::for_deposit<O>(i2_prev(p),
+                                            static_cast<real_t>(dx2_prev(p)),
+                                            i2(p),
+                                            static_cast<real_t>(dx2(p)),
+                                            i2_min,
+                                            iS_x2,
+                                            fS_x2);
 
           // define weight tensors
-          real_t Wx[O + 1][O + 1];
-          real_t Wy[O + 1][O + 1];
-          real_t Wz[O + 1][O + 1];
+          real_t Wx[O + 2][O + 2];
+          real_t Wy[O + 2][O + 2];
+          real_t Wz[O + 2][O + 2];
 
 // Calculate weight function
 #pragma unroll
@@ -2580,51 +2184,54 @@ namespace kernel {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
               // Esirkepov 2001, Eq. 38
-              Wx[i][j] = (S1x[i] - S0x[i]) * (S0y[j] + HALF * (S1y[j] - S0y[j]));
+              Wx[i][j] = (fS_x1[i] - iS_x1[i]) *
+                         (iS_x2[j] + HALF * (fS_x2[j] - iS_x2[j]));
 
-              Wy[i][j] = (S1y[i] - S0y[i]) * (S0y[j] + HALF * (S1x[j] - S0x[j]));
+              Wy[i][j] = (fS_x2[j] - iS_x2[j]) *
+                         (iS_x2[j] + HALF * (fS_x1[i] - iS_x1[i]));
 
-              Wz[i][j] = S0x[i] * S0y[j] + HALF * (S1x[i] - S1x[i]) * S0y[j] +
-                         HALF * S0x[i] * (S1y[j] - S0y[j]) +
-                         THIRD * (S1x[i] - S0x[i]) * (S1y[j] - S0y[j]);
+              Wz[i][j] = iS_x1[i] * iS_x2[j] +
+                         HALF * (fS_x1[i] - fS_x1[i]) * iS_x2[j] +
+                         HALF * iS_x1[i] * (fS_x2[j] - iS_x2[j]) +
+                         THIRD * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
             }
           }
 
           // contribution within the shape function stencil
           real_t jx[O + 2][O + 2], jy[O + 2][O + 2], jz[O + 2][O + 2];
 
-          // prefactors to j update
-          const real_t Qdxdt = coeff * inv_dt;
-          const real_t Qdydt = coeff * inv_dt;
-          const real_t QVz   = coeff * inv_dt * vp[2];
+          // prefactors for j update
+          const real_t Qdx1dt = -coeff * inv_dt;
+          const real_t Qdx2dt = -coeff * inv_dt;
+          const real_t QVx3   = coeff * vp[2];
 
           // Calculate current contribution
 
           // jx
 #pragma unroll
           for (int j = 0; j < O + 2; ++j) {
-            jx[0][j] = -Qdxdt * Wx[0][j];
+            jx[0][j] = Wx[0][j];
           }
 
 #pragma unroll
           for (int i = 1; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
-              jx[i][j] = jx[i - 1][j] - Qdxdt * Wx[i][j];
+              jx[i][j] = jx[i - 1][j] + Wx[i][j];
             }
           }
 
           // jy
 #pragma unroll
           for (int i = 0; i < O + 2; ++i) {
-            jy[i][0] = -Qdydt * Wy[i][0];
+            jy[i][0] = Wy[i][0];
           }
 
 #pragma unroll
           for (int j = 1; j < O + 2; ++j) {
 #pragma unroll
             for (int i = 0; i < O + 2; ++i) {
-              jy[i][j] = jy[i][j - 1] - Qdydt * Wy[i][j];
+              jy[i][j] = jy[i][j - 1] + Wy[i][j];
             }
           }
 
@@ -2633,39 +2240,56 @@ namespace kernel {
           for (int i = 0; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
-              jz[i][j] = QVz * Wz[i][j];
+              jz[i][j] = Wz[i][j];
             }
           }
 
+          // account for ghost cells
+          i1_min += N_GHOSTS;
+          i2_min += N_GHOSTS;
+
           /*
               Current update
-            */
+          */
           auto J_acc = J.access();
 
 #pragma unroll
           for (int i = 0; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
-              J_acc(ix_min + i, iy_min + j, cur::jx1) += jx[i][j];
-              J_acc(ix_min + i, iy_min + j, cur::jx2) += jy[i][j];
-              J_acc(ix_min + i, iy_min + j, cur::jx3) += jz[i][j];
+              J_acc(i1_min + i, i2_min + j, cur::jx1) += Qdx1dt * jx[i][j];
+              J_acc(i1_min + i, i2_min + j, cur::jx2) += Qdx2dt * jy[i][j];
+              J_acc(i1_min + i, i2_min + j, cur::jx3) += QVx3 * jz[i][j];
             }
           }
 
         } else if constexpr (D == Dim::_3D) {
           // shape function in dim2
-          real_t   S0y[O + 2], S1y[O + 2];
+          real_t   iS_x2[O + 2], fS_x2[O + 2];
           // indices of the shape function
-          ncells_t iy_min;
-
-          // ToDo: Call shape function
+          ncells_t i2_min;
+          // call shape function
+          prtl_shape::for_deposit<O>(i2_prev(p),
+                                     static_cast<real_t>(dx2_prev(p)),
+                                     i2(p),
+                                     static_cast<real_t>(dx2(p)),
+                                     i2_min,
+                                     iS_x2,
+                                     fS_x2);
 
           // shape function in dim3
-          real_t   S0z[O + 2], S1z[O + 2];
+          real_t   iS_x3[O + 2], fS_x3[O + 2];
           // indices of the shape function
-          ncells_t iz_min;
+          ncells_t i3_min;
 
-          // ToDo: Call shape function
+          // call shape function
+          prtl_shape::for_deposit<O>(i3_prev(p),
+                                     static_cast<real_t>(dx3_prev(p)),
+                                     i3(p),
+                                     static_cast<real_t>(dx3(p)),
+                                     i3_min,
+                                     iS_x3,
+                                     fS_x3);
 
           // define weight tensors
           real_t Wx[O + 1][O + 1][O + 1];
@@ -2680,17 +2304,17 @@ namespace kernel {
 #pragma unroll
               for (int k = 0; k < O + 2; ++k) {
                 // Esirkepov 2001, Eq. 31
-                Wx[i][j][k] = THIRD * (S1x[i] - S0x[i]) *
-                              ((S0y[j] * S0z[k] + S1y[j] * S1z[k]) +
-                               HALF * (S0z[k] * S1y[j] + S0y[j] * S1z[k]));
+                Wx[i][j][k] = THIRD * (fS_x1[i] - iS_x1[i]) *
+                              ((iS_x2[j] * iS_x3[k] + fS_x2[j] * fS_x3[k]) +
+                               HALF * (iS_x3[k] * fS_x2[j] + iS_x2[j] * fS_x3[k]));
 
-                Wy[i][j][k] = THIRD * (S1y[j] - S0y[j]) *
-                              (S0x[i] * S0z[k] + S1x[i] * S1z[k] +
-                               HALF * (S0z[k] * S1x[i] + S0x[i] * S1z[k]));
+                Wy[i][j][k] = THIRD * (fS_x2[j] - iS_x2[j]) *
+                              (iS_x1[i] * iS_x3[k] + fS_x1[i] * fS_x3[k] +
+                               HALF * (iS_x3[k] * fS_x1[i] + iS_x1[i] * fS_x3[k]));
 
-                Wz[i][j][k] = THIRD * (S1z[k] - S0z[k]) *
-                              (S0x[i] * S0y[j] + S1x[i] * S1y[j] +
-                               HALF * (S0x[i] * S1y[j] + S0y[j] * S1x[i]));
+                Wz[i][j][k] = THIRD * (fS_x3[k] - iS_x3[k]) *
+                              (iS_x1[i] * iS_x2[j] + fS_x1[i] * fS_x2[j] +
+                               HALF * (iS_x1[i] * fS_x2[j] + iS_x2[j] * fS_x1[i]));
               }
             }
           }
@@ -2777,9 +2401,9 @@ namespace kernel {
             for (int j = 0; j < O + 2; ++j) {
 #pragma unroll
               for (int k = 1; k < O + 2; ++k) {
-                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx1) += jx[i][j][k];
-                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx2) += jy[i][j][k];
-                J_acc(ix_min + i, iy_min + j, iz_min, cur::jx3) += jz[i][j][k];
+                J_acc(i1_min + i, i2_min + j, i3_min, cur::jx1) += jx[i][j][k];
+                J_acc(i1_min + i, i2_min + j, i3_min, cur::jx2) += jy[i][j][k];
+                J_acc(i1_min + i, i2_min + j, i3_min, cur::jx3) += jz[i][j][k];
               }
             }
           }
