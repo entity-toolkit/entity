@@ -25,8 +25,8 @@ auto main() -> int {
   const auto nonexist_vec = std::vector<int> { 1, 2, 3 };
   const auto flds_bc_vec = std::vector<FldsBC> { FldsBC::AXIS, FldsBC::PERIODIC };
   const auto prtl_bc_vec = boundaries_t<PrtlBC> {
-    {PrtlBC::REFLECT, PrtlBC::PERIODIC},
-    {PrtlBC::REFLECT,  PrtlBC::REFLECT}
+    { PrtlBC::REFLECT, PrtlBC::PERIODIC },
+    { PrtlBC::REFLECT,  PrtlBC::REFLECT }
   };
 
   p.set("a", 1);

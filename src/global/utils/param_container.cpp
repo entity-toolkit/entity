@@ -13,7 +13,6 @@
   #include <string>
   #include <type_traits>
   #include <typeindex>
-  #include <typeinfo>
   #include <utility>
   #include <vector>
 
@@ -328,9 +327,18 @@ namespace prm {
     register_write_function_for_dict<std::string>();
 
     for (auto& [key, value] : allVars()) {
+      // @TODO: add particles.species support in attrs
+      if (key == "particles.species") {
+        continue;
+      }
       try {
         write_any(io, key, value);
       } catch (const std::exception& e) {
+        raise::Warning(
+          fmt::format("Failed to write parameter '%s', skipping. Error msg: %s",
+                      key.c_str(),
+                      e.what()),
+          HERE);
         continue;
       }
     }
@@ -338,4 +346,4 @@ namespace prm {
 
 } // namespace prm
 
-#endif
+#endif // OUTPUT_ENABLED

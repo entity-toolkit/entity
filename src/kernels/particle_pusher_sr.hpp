@@ -30,9 +30,7 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
-  }
+  { I = static_cast<int>((XI + 1)) - 1; }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \

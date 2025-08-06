@@ -179,20 +179,18 @@ auto main(int argc, char* argv[]) -> int {
                                                i2 * dwn2 + i2min,
                                                i3 * dwn3 + i3min,
                                                cntr))) {
-                  printf("\n:::::::::::::::\nfield_read(%ld, %ld, %ld) = %f != "
-                         "field(%ld, %ld, %ld, %d) = %f\n:::::::::::::::\n",
-                         i1,
-                         i2,
-                         i3,
-                         field_read(i1, i2, i3),
-                         i1 * dwn1 + i1min,
-                         i2 * dwn2 + i2min,
-                         i3 * dwn3 + i3min,
-                         cntr,
-                         field(i1 * dwn1 + i1min,
-                               i2 * dwn2 + i2min,
-                               i3 * dwn3 + i3min,
-                               cntr));
+                  Kokkos::printf(
+                    "\n:::::::::::::::\nfield_read(%ld, %ld, %ld) = %f != "
+                    "field(%ld, %ld, %ld, %d) = %f\n:::::::::::::::\n",
+                    i1,
+                    i2,
+                    i3,
+                    field_read(i1, i2, i3),
+                    i1 * dwn1 + i1min,
+                    i2 * dwn2 + i2min,
+                    i3 * dwn3 + i3min,
+                    cntr,
+                    field(i1 * dwn1 + i1min, i2 * dwn2 + i2min, i3 * dwn3 + i3min, cntr));
                   raise::KernelError(HERE, "Field is not read correctly");
                 }
               });

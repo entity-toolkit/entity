@@ -93,6 +93,7 @@
 #define GLOBAL_GLOBAL_H
 
 #include <chrono>
+#include <filesystem>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -287,9 +288,17 @@ namespace BC {
     Dx1  = 1 << 0,
     Dx2  = 1 << 1,
     Dx3  = 1 << 2,
+    Hx1  = 1 << 3,
+    Hx2  = 1 << 4,
+    Hx3  = 1 << 5,
+    Jx1  = 1 << 6,
+    Jx2  = 1 << 7,
+    Jx3  = 1 << 8,
     B    = Bx1 | Bx2 | Bx3,
     E    = Ex1 | Ex2 | Ex3,
     D    = Dx1 | Dx2 | Dx3,
+    H    = Hx1 | Hx2 | Hx3,
+    J    = Jx1 | Jx2 | Jx3,
   };
 } // namespace BC
 
@@ -342,18 +351,23 @@ template <Dimension D>
 using vec_t = tuple_t<real_t, D>;
 
 // time/duration
+using duration_t = double;
+using simtime_t  = double;
+using timestep_t = std::size_t;
+using ncells_t   = std::size_t;
+using npart_t    = unsigned long int;
+
+// walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
-using duration_t  = double;
-using simtime_t   = double;
-using timestep_t  = std::size_t;
-using ncells_t    = std::size_t;
-using npart_t     = unsigned long int;
 
 // index/number
 using index_t = const std::size_t;
 using idx_t   = unsigned short;
 using spidx_t = unsigned short;
 using dim_t   = unsigned short;
+
+// utility
+using path_t = std::filesystem::path;
 
 using range_tuple_t = std::pair<ncells_t, ncells_t>;
 

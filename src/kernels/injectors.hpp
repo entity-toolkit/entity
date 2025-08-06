@@ -118,27 +118,24 @@ namespace kernel {
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
         if constexpr (M::CoordType == Coord::Cart) {
-          vec_t<Dim::_3D> v_Ph { ZERO };
-          energy_dist(x_Ph, v_Ph, spidx1);
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v1);
-          energy_dist(x_Ph, v_Ph, spidx2);
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v2);
+          energy_dist(x_Ph, v1, spidx1);
+          energy_dist(x_Ph, v2, spidx2);
         } else if constexpr (S == SimEngine::SRPIC) {
-          coord_t<M::PrtlDim> x_Ph_ { ZERO };
-          x_Ph_[0] = x_Ph[0];
-          x_Ph_[1] = x_Ph[1];
-          x_Ph_[2] = ZERO; // phi = 0
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          x_Cd_[2] = ZERO; // phi = 0
           vec_t<Dim::_3D> v_Ph { ZERO };
           energy_dist(x_Ph, v_Ph, spidx1);
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph_, v_Ph, v1);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v1);
           energy_dist(x_Ph, v_Ph, spidx2);
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph_, v_Ph, v2);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v2);
         } else if constexpr (S == SimEngine::GRPIC) {
           vec_t<Dim::_3D> v_Ph { ZERO };
           energy_dist(x_Ph, v_Ph, spidx1);
-          metric.template transform<Idx::T, Idx::D>(x_Ph, v_Ph, v1);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v1);
           energy_dist(x_Ph, v_Ph, spidx2);
-          metric.template transform<Idx::T, Idx::D>(x_Ph, v_Ph, v2);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v2);
         } else {
           raise::KernelError(HERE, "Unknown simulation engine");
         }
@@ -289,27 +286,24 @@ namespace kernel {
           coord_t<M::Dim> x_Ph { ZERO };
           metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
           if constexpr (M::CoordType == Coord::Cart) {
-            vec_t<Dim::_3D> v_Ph { ZERO };
-            energy_dist_1(x_Ph, v_Ph, spidx1);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v1);
-            energy_dist_2(x_Ph, v_Ph, spidx2);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph, v_Ph, v2);
+            energy_dist_1(x_Ph, v1, spidx1);
+            energy_dist_2(x_Ph, v2, spidx2);
           } else if constexpr (S == SimEngine::SRPIC) {
-            coord_t<M::PrtlDim> x_Ph_ { ZERO };
-            x_Ph_[0] = x_Ph[0];
-            x_Ph_[1] = x_Ph[1];
-            x_Ph_[2] = ZERO; // phi = 0
+            coord_t<M::PrtlDim> x_Cd_ { ZERO };
+            x_Cd_[0] = x_Cd[0];
+            x_Cd_[1] = x_Cd[1];
+            x_Cd_[2] = ZERO; // phi = 0
             vec_t<Dim::_3D> v_Ph { ZERO };
             energy_dist_1(x_Ph, v_Ph, spidx1);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph_, v_Ph, v1);
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v1);
             energy_dist_2(x_Ph, v_Ph, spidx2);
-            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Ph_, v_Ph, v2);
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v2);
           } else if constexpr (S == SimEngine::GRPIC) {
             vec_t<Dim::_3D> v_Ph { ZERO };
             energy_dist_1(x_Ph, v_Ph, spidx1);
-            metric.template transform<Idx::T, Idx::D>(x_Ph, v_Ph, v1);
+            metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v1);
             energy_dist_2(x_Ph, v_Ph, spidx2);
-            metric.template transform<Idx::T, Idx::D>(x_Ph, v_Ph, v2);
+            metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v2);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
@@ -508,7 +502,7 @@ namespace kernel {
           if constexpr (S == SimEngine::SRPIC) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, u_Ph, u_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
-            global_metric.template transform<Idx::T, Idx::D>(x_Cd, u_Ph, u_Cd);
+            global_metric.template transform<Idx::PD, Idx::D>(x_Cd, u_Ph, u_Cd);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
@@ -553,7 +547,7 @@ namespace kernel {
           if constexpr (S == SimEngine::SRPIC) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
-            global_metric.template transform<Idx::T, Idx::D>(x_Cd, u_Ph, u_Cd);
+            global_metric.template transform<Idx::PD, Idx::D>(x_Cd, u_Ph, u_Cd);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
           }

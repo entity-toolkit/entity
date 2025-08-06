@@ -12,14 +12,13 @@
 
 #include <filesystem>
 #include <iostream>
-#include <stdexcept>
 
 using namespace ntt;
 using namespace checkpoint;
 
 void cleanup() {
   namespace fs = std::filesystem;
-  fs::path temp_path { "checkpoints" };
+  fs::path temp_path { "chck" };
   fs::remove_all(temp_path);
 }
 
@@ -58,18 +57,21 @@ auto main(int argc, char* argv[]) -> int {
         CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
                                     { i1max, i2max, i3max }),
         Lambda(index_t i1, index_t i2, index_t i3) {
-          field1(i1, i2, i3, 0) = i1 + i2 + i3;
-          field1(i1, i2, i3, 1) = i1 * i2 / i3;
-          field1(i1, i2, i3, 2) = i1 / i2 * i3;
-          field1(i1, i2, i3, 3) = i1 + i2 - i3;
-          field1(i1, i2, i3, 4) = i1 * i2 + i3;
-          field1(i1, i2, i3, 5) = i1 / i2 - i3;
-          field2(i1, i2, i3, 0) = -(i1 + i2 + i3);
-          field2(i1, i2, i3, 1) = -(i1 * i2 / i3);
-          field2(i1, i2, i3, 2) = -(i1 / i2 * i3);
-          field2(i1, i2, i3, 3) = -(i1 + i2 - i3);
-          field2(i1, i2, i3, 4) = -(i1 * i2 + i3);
-          field2(i1, i2, i3, 5) = -(i1 / i2 - i3);
+          const auto i1_        = static_cast<real_t>(i1);
+          const auto i2_        = static_cast<real_t>(i2);
+          const auto i3_        = static_cast<real_t>(i3);
+          field1(i1, i2, i3, 0) = i1_ + i2_ + i3_;
+          field1(i1, i2, i3, 1) = i1_ * i2_ / i3_;
+          field1(i1, i2, i3, 2) = i1_ / i2_ * i3_;
+          field1(i1, i2, i3, 3) = i1_ + i2_ - i3_;
+          field1(i1, i2, i3, 4) = i1_ * i2_ + i3_;
+          field1(i1, i2, i3, 5) = i1_ / i2_ - i3_;
+          field2(i1, i2, i3, 0) = -(i1_ + i2_ + i3_);
+          field2(i1, i2, i3, 1) = -(i1_ * i2_ / i3_);
+          field2(i1, i2, i3, 2) = -(i1_ / i2_ * i3_);
+          field2(i1, i2, i3, 3) = -(i1_ + i2_ - i3_);
+          field2(i1, i2, i3, 4) = -(i1_ * i2_ + i3_);
+          field2(i1, i2, i3, 5) = -(i1_ / i2_ - i3_);
         });
       Kokkos::parallel_for(
         "fillPrtl1",
@@ -88,11 +90,12 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     adios2::ADIOS adios;
+    const path_t  checkpoint_path { "chck" };
 
     {
       // write checkpoint
-      Writer writer;
-      writer.init(&adios, 0, 0.0, 1);
+      Writer writer {};
+      writer.init(&adios, checkpoint_path, 0, 0.0, 1);
 
       writer.defineFieldVariables(SimEngine::GRPIC,
                                   { nx1_gh, nx2_gh, nx3_gh },
@@ -127,7 +130,7 @@ auto main(int argc, char* argv[]) -> int {
       array_t<real_t*> u2_read { "u_2", npart2 };
 
       adios2::IO     io     = adios.DeclareIO("checkpointRead");
-      adios2::Engine reader = io.Open("checkpoints/step-00000000.bp",
+      adios2::Engine reader = io.Open(checkpoint_path / "step-00000000.bp",
                                       adios2::Mode::Read);
       reader.BeginStep();
 

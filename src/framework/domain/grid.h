@@ -131,6 +131,15 @@ namespace ntt {
     }
 
     [[nodiscard]]
+    auto num_active() const -> ncells_t {
+      ncells_t total_active = 1u;
+      for (const auto& res : m_resolution) {
+        total_active *= res;
+      }
+      return total_active;
+    }
+
+    [[nodiscard]]
     auto n_all(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
@@ -152,6 +161,15 @@ namespace ntt {
         nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
       }
       return nall;
+    }
+
+    [[nodiscard]]
+    auto num_all() const -> ncells_t {
+      ncells_t total_all = 1u;
+      for (const auto& res : n_all()) {
+        total_all *= res;
+      }
+      return total_all;
     }
 
     /* Ranges in the device execution space --------------------------------- */

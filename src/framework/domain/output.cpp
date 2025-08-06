@@ -32,7 +32,6 @@
 #endif // MPI_ENABLED
 
 #include <algorithm>
-#include <filesystem>
 #include <iterator>
 #include <vector>
 
@@ -40,8 +39,7 @@ namespace ntt {
 
   template <SimEngine::type S, class M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
-                                    const SimulationParams& params,
-                                    bool                    is_resuming) {
+                                    const SimulationParams& params) {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -89,7 +87,13 @@ namespace ntt {
     const auto species_to_write = params.template get<std::vector<spidx_t>>(
       "output.particles.species");
     g_writer.defineFieldOutputs(S, all_fields_to_write);
-    g_writer.defineParticleOutputs(M::PrtlDim, species_to_write);
+
+    Dimension dim = M::PrtlDim;
+    if constexpr (M::CoordType != Coord::Cart) {
+      dim = Dim::_3D;
+    }
+    g_writer.defineParticleOutputs(dim, species_to_write);
+
     // spectra write all particle species
     std::vector<spidx_t> spectra_species {};
     for (const auto& sp : species_params()) {
@@ -103,11 +107,7 @@ namespace ntt {
                           params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
-    if (is_resuming and std::filesystem::exists(g_writer.fname())) {
-      g_writer.setMode(adios2::Mode::Append);
-    } else {
-      g_writer.writeAttrs(params);
-    }
+    g_writer.writeAttrs(params);
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -187,15 +187,148 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+  void ComputeVectorPotential(ndfield_t<M::Dim, 6>& buffer,
+                              ndfield_t<M::Dim, 6>& EM,
+                              unsigned short        buff_idx,
+                              const Mesh<M>         mesh) {
+    if constexpr (M::Dim == Dim::_2D) {
+      const auto metric = mesh.metric;
+      Kokkos::parallel_for(
+        "ComputeVectorPotential",
+        mesh.rangeActiveCells(),
+        Lambda(index_t i1, index_t i2) {
+          const real_t   i1_ { COORD(i1) };
+          const ncells_t k_min = 0;
+          const ncells_t k_max = (i2 - (N_GHOSTS));
+          real_t         A3    = ZERO;
+          for (auto k { k_min }; k <= k_max; ++k) {
+            real_t k_ = static_cast<real_t>(k);
+            real_t sqrt_detH_ij1 { metric.sqrt_det_h({ i1_, k_ - HALF }) };
+            real_t sqrt_detH_ij2 { metric.sqrt_det_h({ i1_, k_ + HALF }) };
+            auto   k1 { k + N_GHOSTS };
+            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k + N_GHOSTS - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i1, k + N_GHOSTS, em::bx1));
+          }
+          buffer(i1, i2, buff_idx) = A3;
+        });
+
+      // @TODO: Implementation with team policies works on AMD, but not on NVIDIA GPUs
+      //
+      // using TeamPolicy = Kokkos::TeamPolicy<Kokkos::DefaultExecutionSpace>;
+      // const auto nx1   = mesh.n_active(in::x1);
+      // const auto nx2   = mesh.n_active(in::x2);
+      //
+      // TeamPolicy policy(nx1, Kokkos::AUTO);
+      //
+      // Kokkos::parallel_for(
+      //   "ComputeVectorPotential",
+      //   policy,
+      //   Lambda(const TeamPolicy::member_type& team_member) {
+      //     index_t i1 = team_member.league_rank();
+      //     Kokkos::parallel_scan(
+      //       Kokkos::TeamThreadRange(team_member, nx2),
+      //       [=](index_t i2, real_t& update, const bool final_pass) {
+      //         const auto i1_ { static_cast<real_t>(i1) };
+      //         const auto i2_ { static_cast<real_t>(i2) };
+      //         const real_t sqrt_detH_ijM { metric.sqrt_det_h({ i1_, i2_ - HALF }) };
+      //         const real_t sqrt_detH_ijP { metric.sqrt_det_h({ i1_, i2_ + HALF }) };
+      //         const auto input_val =
+      //           HALF *
+      //           (sqrt_detH_ijM * EM(i1 + N_GHOSTS, i2 + N_GHOSTS - 1, em::bx1) +
+      //            sqrt_detH_ijP * EM(i1 + N_GHOSTS, i2 + N_GHOSTS, em::bx1));
+      //         if (final_pass) {
+      //           buffer(i1 + N_GHOSTS, i2 + N_GHOSTS, buff_idx) = update;
+      //         }
+      //         update += input_val;
+      //       });
+      //   });
+    } else {
+      raise::KernelError(
+        HERE,
+        "ComputeVectorPotential: 2D implementation called for D != 2");
+    }
+  }
+
+#if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
+  template <SimEngine::type S, class M>
+  void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
+                              array_t<real_t*>&     aphi_r,
+                              unsigned short        buff_idx,
+                              const Mesh<M>         mesh) {
+    Kokkos::parallel_for(
+      "AddVectorPotential",
+      mesh.rangeActiveCells(),
+      Lambda(index_t i1, index_t i2) {
+        buffer(i1, i2, buff_idx) += aphi_r(i1 - N_GHOSTS);
+      });
+  }
+
+  template <SimEngine::type S, class M>
+  void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
+    if constexpr (M::Dim == Dim::_2D) {
+      auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
+      const auto nx1          = local_domain->mesh.n_active(in::x1);
+      const auto nx2          = local_domain->mesh.n_active(in::x2);
+
+      auto& buffer = local_domain->fields.bckp;
+
+      const auto nranks_x1 = ndomains_per_dim()[0];
+      const auto nranks_x2 = ndomains_per_dim()[1];
+
+      for (auto nr2 { 1u }; nr2 < nranks_x2; ++nr2) {
+        const auto rank_send_pre = (nr2 - 1u) * nranks_x1;
+        const auto rank_recv_pre = nr2 * nranks_x1;
+        for (auto nr1 { 0u }; nr1 < nranks_x1; ++nr1) {
+          const auto rank_send = rank_send_pre + nr1;
+          const auto rank_recv = rank_recv_pre + nr1;
+          if (local_domain->mpi_rank() == rank_send) {
+            array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+            Kokkos::deep_copy(
+              aphi_r,
+              Kokkos::subview(buffer,
+                              std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
+                              N_GHOSTS + nx2 - 1,
+                              buff_idx));
+            MPI_Send(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_recv,
+                     0,
+                     MPI_COMM_WORLD);
+          } else if (local_domain->mpi_rank() == rank_recv) {
+            array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+            MPI_Recv(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_send,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+            ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
+          }
+        }
+      }
+    } else {
+      raise::Error("CommunicateVectorPotential: comm vector potential only "
+                   "possible for 2D",
+                   HERE);
+    }
+  }
+#endif
+
+  template <SimEngine::type S, class M>
   auto Metadomain<S, M>::Write(
-    const SimulationParams& params,
-    timestep_t              current_step,
-    timestep_t              finished_step,
-    simtime_t               current_time,
-    simtime_t               finished_time,
-    std::function<
-      void(const std::string&, ndfield_t<M::Dim, 6>&, std::size_t, const Domain<S, M>&)>
-      CustomFieldOutput) -> bool {
+    const SimulationParams&                  params,
+    timestep_t                               current_step,
+    timestep_t                               finished_step,
+    simtime_t                                current_time,
+    simtime_t                                finished_time,
+    std::function<void(const std::string&,
+                       ndfield_t<M::Dim, 6>&,
+                       index_t,
+                       timestep_t,
+                       simtime_t,
+                       const Domain<S, M>&)> CustomFieldOutput) -> bool {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -382,10 +515,27 @@ namespace ntt {
               CustomFieldOutput(fld.name().substr(1),
                                 local_domain->fields.bckp,
                                 addresses.back(),
+                                finished_step,
+                                finished_time,
                                 *local_domain);
             } else {
               raise::Error("Custom output requested but no function provided",
                            HERE);
+            }
+          } else if (fld.is_vpotential()) {
+            if constexpr (S == SimEngine::GRPIC && M::Dim == Dim::_2D) {
+              const auto c = static_cast<unsigned short>(addresses.back());
+              ComputeVectorPotential<S, M>(local_domain->fields.bckp,
+                                           local_domain->fields.em,
+                                           c,
+                                           local_domain->mesh);
+#if defined(MPI_ENABLED)
+              CommunicateVectorPotential(c);
+#endif
+            } else {
+              raise::Error(
+                "Vector potential can only be computed for GRPIC in 2D",
+                HERE);
             }
           } else {
             raise::Error("Wrong # of components requested for "
@@ -708,13 +858,42 @@ namespace ntt {
     return true;
   }
 
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Minkowski<Dim::_3D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::Spherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::SRPIC, metric::QSpherical<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
-  template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+#define METADOMAIN_OUTPUT(S, M)                                                \
+  template void Metadomain<S, M>::InitWriter(adios2::ADIOS*,                   \
+                                             const SimulationParams&);         \
+  template auto Metadomain<S, M>::Write(                                       \
+    const SimulationParams&,                                                   \
+    timestep_t,                                                                \
+    timestep_t,                                                                \
+    simtime_t,                                                                 \
+    simtime_t,                                                                 \
+    std::function<void(const std::string&,                                     \
+                       ndfield_t<M::Dim, 6>&,                                  \
+                       index_t,                                                \
+                       timestep_t,                                             \
+                       simtime_t,                                              \
+                       const Domain<S, M>&)>) -> bool;
+
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+#undef METADOMAIN_OUTPUT
+
+#if defined(MPI_ENABLED)
+  #define COMMVECTORPOTENTIAL(S, M)                                            \
+    template void Metadomain<S, M>::CommunicateVectorPotential(unsigned short);
+
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+
+  #undef COMMVECTORPOTENTIAL
+#endif
 
 } // namespace ntt

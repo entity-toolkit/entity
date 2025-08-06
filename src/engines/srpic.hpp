@@ -722,6 +722,7 @@ namespace ntt {
           traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
           auto match_fields = m_pgen.MatchFields(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            domain.mesh.flds_bc(),
                                                             match_fields,
                                                             domain.mesh.metric,
                                                             xg_edge,
@@ -733,6 +734,7 @@ namespace ntt {
           traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
           auto match_fields = m_pgen.MatchFieldsInX1(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
+                                                            domain.mesh.flds_bc(),
                                                             match_fields,
                                                             domain.mesh.metric,
                                                             xg_edge,
@@ -747,6 +749,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -758,6 +761,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFieldsInX2(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -775,6 +779,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -786,6 +791,7 @@ namespace ntt {
             traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
             auto match_fields = m_pgen.MatchFieldsInX3(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
+                                                              domain.mesh.flds_bc(),
                                                               match_fields,
                                                               domain.mesh.metric,
                                                               xg_edge,
@@ -1500,14 +1506,15 @@ namespace ntt {
     }
 
     template <class T, in O>
-    void call_match_fields(ndfield_t<M::Dim, 6>&      fields,
-                           const T&                   match_fields,
-                           const M&                   metric,
-                           real_t                     xg_edge,
-                           real_t                     ds,
-                           BCTags                     tags,
-                           tuple_t<ncells_t, M::Dim>& range_min,
-                           tuple_t<ncells_t, M::Dim>& range_max) {
+    void call_match_fields(ndfield_t<M::Dim, 6>&       fields,
+                           const boundaries_t<FldsBC>& boundaries,
+                           const T&                    match_fields,
+                           const M&                    metric,
+                           real_t                      xg_edge,
+                           real_t                      ds,
+                           BCTags                      tags,
+                           tuple_t<ncells_t, M::Dim>&  range_min,
+                           tuple_t<ncells_t, M::Dim>&  range_max) {
       Kokkos::parallel_for(
         "MatchFields",
         CreateRangePolicy<M::Dim>(range_min, range_max),
@@ -1516,7 +1523,8 @@ namespace ntt {
                                                                       metric,
                                                                       xg_edge,
                                                                       ds,
-                                                                      tags));
+                                                                      tags,
+                                                                      boundaries));
     }
   };
 

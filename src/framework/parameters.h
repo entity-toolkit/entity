@@ -26,6 +26,8 @@ namespace ntt {
 
     SimulationParams() {}
 
+    SimulationParams(const SimulationParams&) = default;
+
     SimulationParams& operator=(const SimulationParams& other) {
       vars     = std::move(other.vars);
       promises = std::move(other.promises);

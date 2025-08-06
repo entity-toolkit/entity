@@ -27,13 +27,16 @@ void errorIf(bool condition, const std::string& message) {
   }
 }
 
-inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
+const real_t eps = std::is_same_v<real_t, double> ? (real_t)(1e-6)
+                                                  : (real_t)(1e-3);
 
-Inline auto equal(real_t a, real_t b, const char* msg = "", real_t acc = ONE)
-  -> bool {
-  const auto eps = epsilon * acc;
-  if (not cmp::AlmostEqual(a, b, eps)) {
-    printf("%.12e != %.12e %s\n", a, b, msg);
+Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
+  if ((a - b) >= eps * math::max(math::fabs(a), math::fabs(b))) {
+    Kokkos::printf("%.12e != %.12e %s\n", a, b, msg);
+    Kokkos::printf("%.12e >= %.12e %s\n",
+                   a - b,
+                   eps * math::max(math::fabs(a), math::fabs(b)),
+                   msg);
     return false;
   }
   return true;
@@ -49,13 +52,18 @@ void put_value(array_t<T*> arr, T value, int i) {
 template <typename M, ntt::SimEngine::type S>
 void testDeposit(const std::vector<std::size_t>&      res,
                  const boundaries_t<real_t>&          ext,
-                 const std::map<std::string, real_t>& params = {},
-                 const real_t                         acc    = ONE) {
+                 const std::map<std::string, real_t>& params,
+                 const real_t                         eps) {
   static_assert(M::Dim == 2);
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   using namespace ntt;
 
-  M metric { res, ext, params };
+  auto extents = ext;
+  if constexpr (M::CoordType != Coord::Cart) {
+    extents.emplace_back(ZERO, (real_t)(constant::PI));
+  }
+
+  M metric { res, extents, params };
 
   const auto nx1 = res[0];
   const auto nx2 = res[1];
@@ -129,6 +137,9 @@ void testDeposit(const std::vector<std::size_t>&      res,
   put_value<prtldx_t>(dx2, dyf, 0);
   put_value<prtldx_t>(dx1_prev, dxi, 0);
   put_value<prtldx_t>(dx2_prev, dyi, 0);
+  put_value<real_t>(ux1, ZERO, 0);
+  put_value<real_t>(ux2, ZERO, 0);
+  put_value<real_t>(ux3, ZERO, 0);
   put_value<prtldx_t>(ux3, uz, 0);
   put_value<real_t>(weight, 1.0, 0);
   put_value<short>(tag, ParticleTag::alive, 0);
