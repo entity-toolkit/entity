@@ -142,6 +142,9 @@ string(
   "  "
   ${DEBUG_REPORT}
   "\n"
+  "  - Install prefix [${Magenta}CMAKE_INSTALL_PREFIX${ColorReset}]:    "
+  "${CMAKE_INSTALL_PREFIX}"
+  "\n"
   ${DASHED_LINE_SYMBOL}
   "\n"
   "Compilers & dependencies"
@@ -222,7 +225,12 @@ string(
   "${Magenta}<FLAG>${ColorReset}${Dim}=<VALUE>`, "
   "the ${Underline}default${ColorReset}${Dim} value"
   "\n"
-  "    :   will be used unless the variable is explicitly set.${ColorReset}")
+  "    :   will be used unless the variable is explicitly set.${ColorReset}"
+  "\n"
+  "    ${Dim}: When running `cmake --install <BUILD_DIR>`,"
+  " \n"
+  "    :   the executable is copied to "
+  "`${Magenta}<CMAKE_INSTALL_PREFIX>${ColorReset}${Dim}/bin`.${ColorReset}")
 
 if(${TESTS})
   string(
