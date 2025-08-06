@@ -19,7 +19,25 @@ namespace prtl_shape {
 
   template <bool STAGGERED, unsigned short O>
   Inline void order(const int& i, const real_t& di, int& i_min, real_t* S) {
-    if constexpr (O == 2u) {
+    if constexpr (O == 1u) {
+      // S(x) = 1 - |x|      |x| < 1
+      //        0.0          |x| ≥ 1
+      if constexpr (not STAGGERED) { // compute at i positions
+        i_min = i;
+        S[0]  = ONE - di;
+        S[1]  = di;
+      } else { // compute at i + 1/2 positions
+        if (di < HALF) {
+          i_min = i - 1;
+          S[0]  = HALF - di;
+          S[1]  = ONE - S[0];
+        } else {
+          i_min = i;
+          S[1]  = static_cast<real_t>(1.5) - di;
+          S[0]  = ONE - S[1];
+        }
+      } // staggered
+    } else if constexpr (O == 2u) {
       //        3/4 - |x|^2              |x| < 1/2
       // S(x) = 1/2 * (3/2 - |x|)^2     1/2 ≤ |x| < 3/2
       //        0.0                      |x| ≥ 3/2
@@ -194,7 +212,7 @@ namespace prtl_shape {
                               real_t&       fS_3) {
 
     /*
-    The second order shape function per particle is a 4 element array 
+    The second order shape function per particle is a 4 element array
     where the shape function contributes to only 3 elements.
     We need to find which indices are contributing to the shape function
     For this we first compute the indices of the particle position
@@ -262,6 +280,7 @@ namespace prtl_shape {
                           const int&    i_fin,
                           const real_t& di_fin,
                           int&          i_min,
+                          int&          i_max,
                           real_t*       iS,
                           real_t*       fS) {
 
@@ -294,6 +313,7 @@ namespace prtl_shape {
 
     if (i_init_min < i_fin_min) {
       i_min = i_init_min;
+      i_max = i_fin_min + O + 1;
 
 #pragma unroll
       for (int j = 0; j < O; j++) {
@@ -309,6 +329,7 @@ namespace prtl_shape {
 
     } else if (i_init_min > i_fin_min) {
       i_min = i_fin_min;
+      i_max = i_init_min + O + 1;
 
       iS[0] = ZERO;
 #pragma unroll
@@ -324,6 +345,7 @@ namespace prtl_shape {
 
     } else {
       i_min = i_init_min;
+      i_max = i_min + O;
 
 #pragma unroll
       for (int j = 0; j < O; j++) {
@@ -338,7 +360,6 @@ namespace prtl_shape {
       fS[O + 1] = ZERO;
     }
   }
-
 } // namespace prtl_shape
 
 #endif // KERNELS_PARTICLE_SHAPES_HPP
