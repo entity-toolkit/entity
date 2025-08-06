@@ -313,7 +313,7 @@ namespace prtl_shape {
 
     if (i_init_min < i_fin_min) {
       i_min = i_init_min;
-      i_max = i_fin_min + O + 1;
+      i_max = i_fin_min + O;
 
 #pragma unroll
       for (int j = 0; j < O; j++) {
@@ -329,7 +329,7 @@ namespace prtl_shape {
 
     } else if (i_init_min > i_fin_min) {
       i_min = i_fin_min;
-      i_max = i_init_min + O + 1;
+      i_max = i_init_min + O;
 
       iS[0] = ZERO;
 #pragma unroll
