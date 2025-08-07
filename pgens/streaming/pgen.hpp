@@ -103,6 +103,17 @@ namespace user {
           domain,
           injector,
           densities[n / 2]);
+        // for (auto& i : { n, n + 1 }) {
+        //   auto& ux2 = domain.species[i].ux2;
+        //   auto& ux3 = domain.species[i].ux3;
+        //   Kokkos::parallel_for(
+        //     "Remove_ux2ux3",
+        //     domain.species[i].npart(),
+        //     Lambda(index_t p) {
+        //       ux2(p) = ZERO;
+        //       ux3(p) = ZERO;
+        //     });
+        // }
       }
     }
   };

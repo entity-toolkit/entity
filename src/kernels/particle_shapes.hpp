@@ -18,7 +18,7 @@
 namespace prtl_shape {
 
   template <bool STAGGERED, unsigned short O>
-  Inline void order(const int& i, const real_t& di, int& i_min, real_t* S) {
+  Inline void order(const int& i, const real_t& di, int& i_min, real_t S[O + 1]) {
     if constexpr (O == 1u) {
       // S(x) = 1 - |x|      |x| < 1
       //        0.0          |x| ≥ 1
@@ -281,8 +281,8 @@ namespace prtl_shape {
                           const real_t& di_fin,
                           int&          i_min,
                           int&          i_max,
-                          real_t*       iS,
-                          real_t*       fS) {
+                          real_t        iS[O + 2],
+                          real_t        fS[O + 2]) {
 
     /*
     The N-th order shape function per particle is a N+2 element array
@@ -316,14 +316,14 @@ namespace prtl_shape {
       i_max = i_fin_min + O;
 
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         iS[j] = iS_[j];
       }
       iS[O + 1] = ZERO;
 
       fS[0] = ZERO;
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         fS[j + 1] = fS_[j];
       }
 
@@ -333,12 +333,12 @@ namespace prtl_shape {
 
       iS[0] = ZERO;
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         iS[j + 1] = iS_[j];
       }
 
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         fS[j] = fS_[j];
       }
       fS[O + 1] = ZERO;
@@ -348,13 +348,13 @@ namespace prtl_shape {
       i_max = i_min + O;
 
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         iS[j] = iS_[j];
       }
       iS[O + 1] = ZERO;
 
 #pragma unroll
-      for (int j = 0; j < O; j++) {
+      for (int j = 0; j < O + 1; j++) {
         fS[j] = fS_[j];
       }
       fS[O + 1] = ZERO;
