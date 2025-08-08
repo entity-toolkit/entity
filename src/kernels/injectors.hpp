@@ -53,6 +53,8 @@ namespace kernel {
     const real_t           inv_V0;
     random_number_pool_t   random_pool;
 
+    const bool use_weights;
+
     UniformInjector_kernel(spidx_t                          spidx1,
                            spidx_t                          spidx2,
                            Particles<M::Dim, M::CoordType>& species1,
@@ -98,7 +100,13 @@ namespace kernel {
       , xi_max { xi_max }
       , energy_dist { energy_dist }
       , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {}
+      , random_pool { random_pool }
+      , use_weights { (weights_1.extent(0) > 0) and (weights_2.extent(0) > 0) } {
+      raise::ErrorIf((weights_1.extent(0) > 0) != (weights_2.extent(0) > 0),
+                     "Weights for species 1 and 2 must be either both defined "
+                     "or both undefined",
+                     HERE);
+    }
 
     Inline void operator()(index_t p) const {
       coord_t<M::Dim> x_Cd { ZERO };
@@ -173,12 +181,16 @@ namespace kernel {
       tags_1(p + offset1) = ParticleTag::alive;
       tags_2(p + offset2) = ParticleTag::alive;
       if constexpr (M::CoordType == Coord::Cart) {
-        weights_1(p + offset1) = ONE;
-        weights_2(p + offset2) = ONE;
+        if (use_weights) {
+          weights_1(p + offset1) = ONE;
+          weights_2(p + offset2) = ONE;
+        }
       } else {
-        const auto sqrt_det_h  = metric.sqrt_det_h(x_Cd);
-        weights_1(p + offset1) = sqrt_det_h * inv_V0;
-        weights_2(p + offset2) = sqrt_det_h * inv_V0;
+        if (use_weights) {
+          const auto sqrt_det_h  = metric.sqrt_det_h(x_Cd);
+          weights_1(p + offset1) = sqrt_det_h * inv_V0;
+          weights_2(p + offset2) = sqrt_det_h * inv_V0;
+        }
       }
     }
   }; // struct UniformInjector_kernel
@@ -216,6 +228,8 @@ namespace kernel {
       const ED2              energy_dist_2;
       const real_t           inv_V0;
       random_number_pool_t   random_pool;
+
+      const bool use_weights;
 
       UniformInjector_kernel(spidx_t                          spidx1,
                              spidx_t                          spidx2,
@@ -264,7 +278,14 @@ namespace kernel {
         , energy_dist_1 { energy_dist_1 }
         , energy_dist_2 { energy_dist_2 }
         , inv_V0 { inv_V0 }
-        , random_pool { random_pool } {}
+        , random_pool { random_pool }
+        , use_weights { (weights_1.extent(0) > 0) and (weights_2.extent(0) > 0) } {
+        raise::ErrorIf(
+          (weights_1.extent(0) > 0) != (weights_2.extent(0) > 0),
+          "Weights for species 1 and 2 must be either both defined "
+          "or both undefined",
+          HERE);
+      } // UniformInjector_kernel
 
       Inline void operator()(index_t p) const {
         coord_t<M::Dim> x_Cd { ZERO };
@@ -341,12 +362,16 @@ namespace kernel {
         tags_1(p + offset1) = ParticleTag::alive;
         tags_2(p + offset2) = ParticleTag::alive;
         if constexpr (M::CoordType == Coord::Cart) {
-          weights_1(p + offset1) = ONE;
-          weights_2(p + offset2) = ONE;
+          if (use_weights) {
+            weights_1(p + offset1) = ONE;
+            weights_2(p + offset2) = ONE;
+          }
         } else {
-          const auto sqrt_det_h  = metric.sqrt_det_h(x_Cd);
-          weights_1(p + offset1) = sqrt_det_h * inv_V0;
-          weights_2(p + offset2) = sqrt_det_h * inv_V0;
+          if (use_weights) {
+            const auto sqrt_det_h  = metric.sqrt_det_h(x_Cd);
+            weights_1(p + offset1) = sqrt_det_h * inv_V0;
+            weights_2(p + offset2) = sqrt_det_h * inv_V0;
+          }
         }
       }
     }; // struct UniformInjector_kernel
@@ -384,13 +409,13 @@ namespace kernel {
     real_t   x1_min, x1_max, x2_min, x2_max, x3_min, x3_max;
     ncells_t i1_offset, i2_offset, i3_offset;
 
+    const bool use_weights;
+
     GlobalInjector_kernel(Particles<M::Dim, M::CoordType>& species,
                           const M&                         global_metric,
                           const Domain<S, M>&              local_domain,
-                          const std::map<std::string, std::vector<real_t>>& data,
-                          bool use_weights)
-      : use_weights { use_weights }
-      , i1s { species.i1 }
+                          const std::map<std::string, std::vector<real_t>>& data)
+      : i1s { species.i1 }
       , i2s { species.i2 }
       , i3s { species.i3 }
       , dx1s { species.dx1 }
@@ -403,7 +428,8 @@ namespace kernel {
       , weights { species.weight }
       , tags { species.tag }
       , offset { species.npart() }
-      , global_metric { global_metric } {
+      , global_metric { global_metric }
+      , use_weights { weights.extent(0) > 0 } {
       const auto n_inject = data.at("x1").size();
 
       x1_min    = local_domain.mesh.extent(in::x1).first;
@@ -477,9 +503,7 @@ namespace kernel {
           ux3s(index) = u_XYZ[2];
           tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weights(index) = in_wei(p);
           }
         }
       } else if constexpr (D == Dim::_2D) {
@@ -527,9 +551,7 @@ namespace kernel {
           }
           tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weights(index) = in_wei(p);
           }
         }
       } else {
@@ -575,9 +597,7 @@ namespace kernel {
           ux3s(index) = u_Cd[2];
           tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weights(index) = in_wei(p);
           }
         }
       }
@@ -615,6 +635,8 @@ namespace kernel {
     const SD             spatial_dist;
     const real_t         inv_V0;
     random_number_pool_t random_pool;
+
+    const bool use_weights;
 
     NonUniformInjector_kernel(real_t                           ppc0,
                               spidx_t                          spidx1,
@@ -661,7 +683,16 @@ namespace kernel {
       , energy_dist { energy_dist }
       , spatial_dist { spatial_dist }
       , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {}
+      , random_pool { random_pool }
+      , use_weights { (weights_1.extent(0) > 0) and (weights_2.extent(0) > 0) } {
+      {
+        raise::ErrorIf(
+          (weights_1.extent(0) > 0) != (weights_2.extent(0) > 0),
+          "Weights for species 1 and 2 must be either both defined "
+          "or both undefined",
+          HERE);
+      }
+    }
 
     auto number_injected() const -> npart_t {
       auto idx_h = Kokkos::create_mirror_view(idx);
@@ -704,12 +735,16 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            if (use_weights) {
+              weights_1(index + offset1) = ONE;
+              weights_2(index + offset2) = ONE;
+            }
           } else {
-            const auto wei = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
-            weights_1(index + offset1) = wei;
-            weights_2(index + offset2) = wei;
+            if (use_weights) {
+              const auto wei = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+              weights_1(index + offset1) = wei;
+              weights_2(index + offset2) = wei;
+            }
           }
         }
         random_pool.free_state(rand_gen);
@@ -774,12 +809,17 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            if (use_weights) {
+              weights_1(index + offset1) = ONE;
+              weights_2(index + offset2) = ONE;
+            }
           } else {
-            const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
-            weights_1(index + offset1) = wei;
-            weights_2(index + offset2) = wei;
+            if (use_weights) {
+              const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) *
+                               inv_V0;
+              weights_1(index + offset1) = wei;
+              weights_2(index + offset2) = wei;
+            }
           }
         }
         random_pool.free_state(rand_gen);
@@ -847,14 +887,18 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            if (use_weights) {
+              weights_1(index + offset1) = ONE;
+              weights_2(index + offset2) = ONE;
+            }
           } else {
-            const auto wei = metric.sqrt_det_h(
-                               { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
-                             inv_V0;
-            weights_1(index + offset1) = wei;
-            weights_2(index + offset2) = wei;
+            if (use_weights) {
+              const auto wei = metric.sqrt_det_h(
+                                 { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
+                               inv_V0;
+              weights_1(index + offset1) = wei;
+              weights_2(index + offset2) = wei;
+            }
           }
         }
         random_pool.free_state(rand_gen);

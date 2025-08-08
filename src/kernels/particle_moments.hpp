@@ -56,7 +56,6 @@ namespace kernel {
     const array_t<short*>    tag;
     const float              mass;
     const float              charge;
-    const bool               use_weights;
     const M                  metric;
     const int                ni2;
     const unsigned short     window;
@@ -64,6 +63,8 @@ namespace kernel {
     const real_t contrib;
     const real_t smooth;
     bool         is_axis_i2min { false }, is_axis_i2max { false };
+
+    const bool use_weights;
 
   public:
     ParticleMoments_kernel(const std::vector<unsigned short>& components,
@@ -83,7 +84,6 @@ namespace kernel {
                            const array_t<short*>&             tag,
                            float                              mass,
                            float                              charge,
-                           bool                               use_weights,
                            const M&                           metric,
                            const boundaries_t<FldsBC>&        boundaries,
                            ncells_t                           ni2,
@@ -109,13 +109,13 @@ namespace kernel {
       , tag { tag }
       , mass { mass }
       , charge { charge }
-      , use_weights { use_weights }
       , metric { metric }
       , ni2 { static_cast<int>(ni2) }
       , window { window }
       , contrib { get_contrib<F>(mass, charge) }
       , smooth { inv_n0 / (real_t)(math::pow(TWO * (real_t)window + ONE,
-                                             static_cast<int>(D))) } {
+                                             static_cast<int>(D))) }
+      , use_weights { weight.extent(0) > 0 } {
       raise::ErrorIf(buff_idx >= N, "Invalid buffer index", HERE);
       raise::ErrorIf(window > N_GHOSTS, "Window size too large", HERE);
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),

@@ -415,10 +415,11 @@ namespace kernel {
     const array_t<short*>    tag;
     const float              mass;
     const float              charge;
-    const bool               use_weights;
     const M                  metric;
 
     const real_t contrib;
+
+    const bool use_weights;
 
   public:
     ReducedParticleMoments_kernel(const std::vector<unsigned short>& components,
@@ -436,8 +437,7 @@ namespace kernel {
                                   const array_t<short*>&             tag,
                                   float                              mass,
                                   float                              charge,
-                                  bool     use_weights,
-                                  const M& metric)
+                                  const M&                           metric)
       : c1 { (components.size() > 0) ? components[0]
                                      : static_cast<unsigned short>(0) }
       , c2 { (components.size() == 2) ? components[1]
@@ -456,9 +456,9 @@ namespace kernel {
       , tag { tag }
       , mass { mass }
       , charge { charge }
-      , use_weights { use_weights }
       , metric { metric }
-      , contrib { get_contrib<P>(mass, charge) } {
+      , contrib { get_contrib<P>(mass, charge) }
+      , use_weights { weight.extent(0) > 0 } {
       raise::ErrorIf(((P == StatsID::Rho) || (P == StatsID::Charge)) &&
                        (mass == ZERO),
                      "Rho & Charge for massless particles not defined",

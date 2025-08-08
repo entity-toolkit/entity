@@ -22,10 +22,11 @@ namespace ntt {
                              float              ch,
                              npart_t            maxnpart,
                              const PrtlPusher&  pusher,
+                             bool               use_weights,
                              bool               use_gca,
                              const Cooling&     cooling,
                              unsigned short     npld)
-    : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
+    : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_weights, use_gca, cooling, npld) {
 
     if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
       i1       = array_t<int*> { label + "_i1", maxnpart };
@@ -52,7 +53,9 @@ namespace ntt {
     ux2 = array_t<real_t*> { label + "_ux2", maxnpart };
     ux3 = array_t<real_t*> { label + "_ux3", maxnpart };
 
-    weight = array_t<real_t*> { label + "_w", maxnpart };
+    if (this->use_weights()) {
+      weight = array_t<real_t*> { label + "_w", maxnpart };
+    }
 
     tag = array_t<short*> { label + "_tag", maxnpart };
 
@@ -200,7 +203,10 @@ namespace ntt {
     RemoveDeadInArray(ux1, indices_alive);
     RemoveDeadInArray(ux2, indices_alive);
     RemoveDeadInArray(ux3, indices_alive);
-    RemoveDeadInArray(weight, indices_alive);
+
+    if (this->use_weights()) {
+      RemoveDeadInArray(weight, indices_alive);
+    }
 
     if constexpr (D == Dim::_2D && C != Coord::Cart) {
       RemoveDeadInArray(phi, indices_alive);
