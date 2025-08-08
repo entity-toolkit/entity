@@ -20,23 +20,20 @@ Another way of contacting us is via GitHub issues and/or pull requests. Make sur
 
 ## Contributors (alphabetical)
 
-Maintainers indicated with an asterisk.
+Maintainers indicated with an arrow.
 
 * :guitar: Ludwig Böss {[@LudwigBoess](https://github.com/LudwigBoess)}
 * :eyes: Yangyang Cai {[@StaticObserver](https://github.com/StaticObserver)}
 * :tipping_hand_person: Alexander Chernoglazov {[@SChernoglazov](https://github.com/SChernoglazov)}
 * :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand)}
 * :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk)}
-* :steam_locomotive: Evgeny Gorbunov {[@Alcauchy](https://github.com/Alcauchy)} [*]
-* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh)} [*]
+* :steam_locomotive: Evgeny Gorbunov {[@Alcauchy](https://github.com/Alcauchy)} [-> [haykh.astro [at] gmail](mailto:haykh.astro@gmail.com)]
+* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh)} [-> [genegorbs [at] gmail](mailto:genegorbs@gmail.com)]
 * :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann)}
 * :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph)}
 * :radio: Siddhant Solanki {[@sidruns30](https://github.com/sidruns30)}
 * :shrug: Arno Vanthieghem {[@vanthieg](https://github.com/vanthieg)}
 * :cat: Muni Zhou {[@munizhou](https://github.com/munizhou)}
-
-* [*] [haykh.astro@gmail.com](mailto:haykh.astro@gmail.com)
-* [*] [genegorbs@gmail.com](mailto:genegorbs@gmail.com)
 
 ## Branch policy
 
