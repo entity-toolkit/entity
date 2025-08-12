@@ -22,6 +22,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "particle_shapes.hpp"
+
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
 #endif
@@ -30,7 +32,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -473,9 +477,9 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      // getInterpFlds(p, ei, bi);
-      //   ToDo: Better way to call this
-      //  getInterpFlds2nd(p, ei, bi);
+      // field interpolation 1st-6th order
+      //getInterpFlds(p, ei, bi);
+
       for (auto i { 0u }; i < 3u; ++i) {
         ei[i] = ZERO;
         bi[i] = ZERO;
@@ -834,791 +838,523 @@ namespace kernel::sr {
     Inline void getInterpFlds(index_t&         p,
                               vec_t<Dim::_3D>& e0,
                               vec_t<Dim::_3D>& b0) const {
-      if constexpr (D == Dim::_1D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
-
-        // first order
-        real_t c0, c1;
-
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
-
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
-
-        // Ex1
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::ex1);
-        c1    = EB(i + indx, em::ex1);
-        e0[0] = c0 * pondmx + c1 * pondpx;
-        // Ex2
-        // Interpolate --- (primal)
-        c0    = EB(i, em::ex2);
-        c1    = EB(i + 1, em::ex2);
-        e0[1] = c0 * ponpmx + c1 * ponppx;
-        // Ex3
-        // Interpolate --- (primal)
-        c0    = EB(i, em::ex3);
-        c1    = EB(i + 1, em::ex3);
-        e0[2] = c0 * ponpmx + c1 * ponppx;
-        // Bx1
-        // Interpolate --- (primal)
-        c0    = EB(i, em::bx1);
-        c1    = EB(i + 1, em::bx1);
-        b0[0] = c0 * ponpmx + c1 * ponppx;
-        // Bx2
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::bx2);
-        c1    = EB(i + indx, em::bx2);
-        b0[1] = c0 * pondmx + c1 * pondpx;
-        // Bx3
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::bx3);
-        c1    = EB(i + indx, em::bx3);
-        b0[2] = c0 * pondmx + c1 * pondpx;
-      } else if constexpr (D == Dim::_2D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
-
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
-        int indy = static_cast<int>(dx2_ + HALF);
-
-        // first order
-        real_t c000, c100, c010, c110, c00, c10;
-
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
-        real_t ponpmy = ONE - dx2_;
-        real_t ponppy = dx2_;
-
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
-        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
-        real_t pondpy = ONE - pondmy;
-
-        // Ex1
-        // Interpolate --- (dual, primal)
-        c000  = EB(i - 1 + indx, j, em::ex1);
-        c100  = EB(i + indx, j, em::ex1);
-        c010  = EB(i - 1 + indx, j + 1, em::ex1);
-        c110  = EB(i + indx, j + 1, em::ex1);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        e0[0] = c00 * ponpmy + c10 * ponppy;
-        // Ex2
-        // Interpolate -- (primal, dual)
-        c000  = EB(i, j - 1 + indy, em::ex2);
-        c100  = EB(i + 1, j - 1 + indy, em::ex2);
-        c010  = EB(i, j + indy, em::ex2);
-        c110  = EB(i + 1, j + indy, em::ex2);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        e0[1] = c00 * pondmy + c10 * pondpy;
-        // Ex3
-        // Interpolate -- (primal, primal)
-        c000  = EB(i, j, em::ex3);
-        c100  = EB(i + 1, j, em::ex3);
-        c010  = EB(i, j + 1, em::ex3);
-        c110  = EB(i + 1, j + 1, em::ex3);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        e0[2] = c00 * ponpmy + c10 * ponppy;
-
-        // Bx1
-        // Interpolate -- (primal, dual)
-        c000  = EB(i, j - 1 + indy, em::bx1);
-        c100  = EB(i + 1, j - 1 + indy, em::bx1);
-        c010  = EB(i, j + indy, em::bx1);
-        c110  = EB(i + 1, j + indy, em::bx1);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        b0[0] = c00 * pondmy + c10 * pondpy;
-        // Bx2
-        // Interpolate -- (dual, primal)
-        c000  = EB(i - 1 + indx, j, em::bx2);
-        c100  = EB(i + indx, j, em::bx2);
-        c010  = EB(i - 1 + indx, j + 1, em::bx2);
-        c110  = EB(i + indx, j + 1, em::bx2);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        b0[1] = c00 * ponpmy + c10 * ponppy;
-        // Bx3
-        // Interpolate -- (dual, dual)
-        c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
-        c100  = EB(i + indx, j - 1 + indy, em::bx3);
-        c010  = EB(i - 1 + indx, j + indy, em::bx3);
-        c110  = EB(i + indx, j + indy, em::bx3);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        b0[2] = c00 * pondmy + c10 * pondpy;
-      } else if constexpr (D == Dim::_3D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
-        const auto dx3_ { static_cast<real_t>(dx3(p)) };
-
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
-        int indy = static_cast<int>(dx2_ + HALF);
-        int indz = static_cast<int>(dx3_ + HALF);
-
-        // first order
-        real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
-          c11, c0, c1;
-
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
-        real_t ponpmy = ONE - dx2_;
-        real_t ponppy = dx2_;
-        real_t ponpmz = ONE - dx3_;
-        real_t ponppz = dx3_;
-
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
-        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
-        real_t pondpy = ONE - pondmy;
-        real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
-        real_t pondpz = ONE - pondmz;
-
-        // Ex1
-        // Interpolate --- (dual, primal, primal)
-        c000  = EB(i - 1 + indx, j, k, em::ex1);
-        c100  = EB(i + indx, j, k, em::ex1);
-        c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
-        c110  = EB(i + indx, j + 1, k, em::ex1);
-        c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
-        c101  = EB(i + indx, j, k + 1, em::ex1);
-        c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
-        c111  = EB(i + indx, j + 1, k + 1, em::ex1);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        e0[0] = c0 * ponpmz + c1 * ponppz;
-        // Ex2
-        // Interpolate -- (primal, dual, primal)
-        c000  = EB(i, j - 1 + indy, k, em::ex2);
-        c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
-        c010  = EB(i, j + indy, k, em::ex2);
-        c110  = EB(i + 1, j + indy, k, em::ex2);
-        c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
-        c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
-        c011  = EB(i, j + indy, k + 1, em::ex2);
-        c111  = EB(i + 1, j + indy, k + 1, em::ex2);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * pondmy + c10 * pondpy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * pondmy + c11 * pondpy;
-        e0[1] = c0 * ponpmz + c1 * ponppz;
-        // Ex3
-        // Interpolate -- (primal, primal, dual)
-        c000  = EB(i, j, k - 1 + indz, em::ex3);
-        c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
-        c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
-        c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
-        c001  = EB(i, j, k + indz, em::ex3);
-        c101  = EB(i + 1, j, k + indz, em::ex3);
-        c011  = EB(i, j + 1, k + indz, em::ex3);
-        c111  = EB(i + 1, j + 1, k + indz, em::ex3);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        e0[2] = c0 * pondmz + c1 * pondpz;
-
-        // Bx1
-        // Interpolate -- (primal, dual, dual)
-        c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
-        c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
-        c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
-        c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
-        c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
-        c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
-        c011  = EB(i, j + indy, k + indz, em::bx1);
-        c111  = EB(i + 1, j + indy, k + indz, em::bx1);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * pondmy + c10 * pondpy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * pondmy + c11 * pondpy;
-        b0[0] = c0 * pondmz + c1 * pondpz;
-        // Bx2
-        // Interpolate -- (dual, primal, dual)
-        c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
-        c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
-        c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
-        c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
-        c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
-        c101  = EB(i + indx, j, k + indz, em::bx2);
-        c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
-        c111  = EB(i + indx, j + 1, k + indz, em::bx2);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        b0[1] = c0 * pondmz + c1 * pondpz;
-        // Bx3
-        // Interpolate -- (dual, dual, primal)
-        c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
-        c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
-        c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
-        c110  = EB(i + indx, j + indy, k, em::bx3);
-        c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
-        c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
-        c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
-        c111  = EB(i + indx, j + indy, k + 1, em::bx3);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        b0[2] = c0 * ponpmz + c1 * ponppz;
-      }
-    }
-
-    Inline void getInterpFlds2nd(index_t&         p,
-                                 vec_t<Dim::_3D>& e0,
-                                 vec_t<Dim::_3D>& b0) const {
-      if constexpr (D == Dim::_1D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-
-        // direct interpolation of staggered grid
-        // primal = i+ind, dual = i
-        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
-
-        // Compute weights for second-order interpolation
-        // primal
-        const auto w0p = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1p = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
-        const auto w2p = ONE - w0p - w1p;
-
-        // dual
-        const auto w0d = HALF * SQR(ONE - dx1_);
-        const auto w2d = HALF * SQR(dx1_);
-        const auto w1d = ONE - w0d - w2d;
-
-        // Ex1 (dual grid)
-        const auto ex1_0 = EB(i - 1, em::ex1);
-        const auto ex1_1 = EB(i, em::ex1);
-        const auto ex1_2 = EB(i + 1, em::ex1);
-        e0[0]            = ex1_0 * w0d + ex1_1 * w1d + ex1_2 * w2d;
-
-        // Ex2 (primal grid)
-        const auto ex2_0 = EB(indx + i - 1, em::ex2);
-        const auto ex2_1 = EB(indx + i, em::ex2);
-        const auto ex2_2 = EB(indx + i + 1, em::ex2);
-        e0[1]            = ex2_0 * w0p + ex2_1 * w1p + ex2_2 * w2p;
-
-        // Ex3 (primal grid)
-        const auto ex3_0 = EB(indx + i - 1, em::ex3);
-        const auto ex3_1 = EB(indx + i, em::ex3);
-        const auto ex3_2 = EB(indx + i + 1, em::ex3);
-        e0[2]            = ex3_0 * w0p + ex3_1 * w1p + ex3_2 * w2p;
-
-        // Bx1 (primal grid)
-        const auto bx1_0 = EB(indx + i - 1, em::bx1);
-        const auto bx1_1 = EB(indx + i, em::bx1);
-        const auto bx1_2 = EB(indx + i + 1, em::bx1);
-        b0[0]            = bx1_0 * w0p + bx1_1 * w1p + bx1_2 * w2p;
-
-        // Bx2 (dual grid)
-        const auto bx2_0 = EB(i - 1, em::bx2);
-        const auto bx2_1 = EB(i, em::bx2);
-        const auto bx2_2 = EB(i + 1, em::bx2);
-        b0[1]            = bx2_0 * w0d + bx2_1 * w1d + bx2_2 * w2d;
-
-        // Bx3 (dual grid)
-        const auto bx3_0 = EB(i - 1, em::bx3);
-        const auto bx3_1 = EB(i, em::bx3);
-        const auto bx3_2 = EB(i + 1, em::bx3);
-        b0[2]            = bx3_0 * w0d + bx3_1 * w1d + bx3_2 * w2d;
-
-      } else if constexpr (D == Dim::_2D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
-
-        // direct interpolation of staggered grid
-        // primal = i+ind, dual = i
-        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
-        const int indy = static_cast<int>(static_cast<real_t>(dx2_ + HALF));
-
-        // Compute weights for second-order interpolation
-        // primal
-        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
-        const auto w2px = ONE - w0px - w1px;
-        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
-        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
-        const auto w2py = ONE - w0py - w1py;
-
-        // dual
-        const auto w0dx = HALF * SQR(ONE - dx1_);
-        const auto w2dx = HALF * SQR(dx1_);
-        const auto w1dx = ONE - w0dx - w2dx;
-        const auto w0dy = HALF * SQR(ONE - dx2_);
-        const auto w2dy = HALF * SQR(dx2_);
-        const auto w1dy = ONE - w0dy - w2dy;
-
-        // Ex1
-        // Interpolate --- (dual, primal)
-        // clang-format off
-        const auto ex1_000 = EB(i - 1, indy + j - 1, em::ex1);
-        const auto ex1_100 = EB(i,     indy + j - 1, em::ex1);
-        const auto ex1_200 = EB(i + 1, indy + j - 1, em::ex1);
-        const auto ex1_010 = EB(i - 1, indy + j,     em::ex1);
-        const auto ex1_110 = EB(i,     indy + j,     em::ex1);
-        const auto ex1_210 = EB(i + 1, indy + j,     em::ex1);
-        const auto ex1_020 = EB(i - 1, indy + j + 1, em::ex1);
-        const auto ex1_120 = EB(i,     indy + j + 1, em::ex1);
-        const auto ex1_220 = EB(i + 1, indy + j + 1, em::ex1);
-        // clang-format on
-
-        const auto ex1_0 = ex1_000 * w0dx + ex1_100 * w1dx + ex1_200 * w2dx;
-        const auto ex1_1 = ex1_010 * w0dx + ex1_110 * w1dx + ex1_210 * w2dx;
-        const auto ex1_2 = ex1_020 * w0dx + ex1_120 * w1dx + ex1_220 * w2dx;
-        e0[0]            = ex1_0 * w0py + ex1_1 * w1py + ex1_2 * w2py;
-
-        // Ex2
-        // Interpolate --- (primal, dual)
-        // clang-format off
-        const auto ex2_000 = EB(indx + i - 1, j - 1, em::ex2);
-        const auto ex2_100 = EB(indx + i,     j - 1, em::ex2);
-        const auto ex2_200 = EB(indx + i + 1, j - 1, em::ex2);
-        const auto ex2_010 = EB(indx + i - 1, j,     em::ex2);
-        const auto ex2_110 = EB(indx + i,     j,     em::ex2);
-        const auto ex2_210 = EB(indx + i + 1, j,     em::ex2);
-        const auto ex2_020 = EB(indx + i - 1, j + 1, em::ex2);
-        const auto ex2_120 = EB(indx + i,     j + 1, em::ex2);
-        const auto ex2_220 = EB(indx + i + 1, j + 1, em::ex2);
-        // clang-format on
-
-        const auto ex2_0 = ex2_000 * w0px + ex2_100 * w1px + ex2_200 * w2px;
-        const auto ex2_1 = ex2_010 * w0px + ex2_110 * w1px + ex2_210 * w2px;
-        const auto ex2_2 = ex2_020 * w0px + ex2_120 * w1px + ex2_220 * w2px;
-        e0[1]            = ex2_0 * w0dy + ex2_1 * w1dy + ex2_2 * w2dy;
-
-        // Ex3
-        // Interpolate --- (primal, primal)
-        // clang-format off
-        const auto ex3_000 = EB(indx + i - 1, indy + j - 1, em::ex3);
-        const auto ex3_100 = EB(indx + i,     indy + j - 1, em::ex3);
-        const auto ex3_200 = EB(indx + i + 1, indy + j - 1, em::ex3);
-        const auto ex3_010 = EB(indx + i - 1, indy + j,     em::ex3);
-        const auto ex3_110 = EB(indx + i,     indy + j,     em::ex3);
-        const auto ex3_210 = EB(indx + i + 1, indy + j,     em::ex3);
-        const auto ex3_020 = EB(indx + i - 1, indy + j + 1, em::ex3);
-        const auto ex3_120 = EB(indx + i,     indy + j + 1, em::ex3);
-        const auto ex3_220 = EB(indx + i + 1, indy + j + 1, em::ex3);
-        // clang-format on
-
-        const auto ex3_0 = ex3_000 * w0px + ex3_100 * w1px + ex3_200 * w2px;
-        const auto ex3_1 = ex3_010 * w0px + ex3_110 * w1px + ex3_210 * w2px;
-        const auto ex3_2 = ex3_020 * w0px + ex3_120 * w1px + ex3_220 * w2px;
-        e0[2]            = ex3_0 * w0py + ex3_1 * w1py + ex3_2 * w2py;
-
-        // Bx1
-        // Interpolate --- (primal, dual)
-        // clang-format off
-        const auto bx1_000 = EB(indx + i - 1, j - 1, em::bx1);
-        const auto bx1_100 = EB(indx + i,     j - 1, em::bx1);
-        const auto bx1_200 = EB(indx + i + 1, j - 1, em::bx1);
-        const auto bx1_010 = EB(indx + i - 1, j,     em::bx1);
-        const auto bx1_110 = EB(indx + i,     j,     em::bx1);
-        const auto bx1_210 = EB(indx + i + 1, j,     em::bx1);
-        const auto bx1_020 = EB(indx + i - 1, j + 1, em::bx1);
-        const auto bx1_120 = EB(indx + i,     j + 1, em::bx1);
-        const auto bx1_220 = EB(indx + i + 1, j + 1, em::bx1);
-        // clang-format on
-
-        const auto bx1_0 = bx1_000 * w0px + bx1_100 * w1px + bx1_200 * w2px;
-        const auto bx1_1 = bx1_010 * w0px + bx1_110 * w1px + bx1_210 * w2px;
-        const auto bx1_2 = bx1_020 * w0px + bx1_120 * w1px + bx1_220 * w2px;
-        b0[0]            = bx1_0 * w0dy + bx1_1 * w1dy + bx1_2 * w2dy;
-
-        // Bx2
-        // Interpolate --- (dual, primal)
-        // clang-format off
-        const auto bx2_000 = EB(i - 1, indy + j - 1, em::bx2);
-        const auto bx2_100 = EB(i,     indy + j - 1, em::bx2);
-        const auto bx2_200 = EB(i + 1, indy + j - 1, em::bx2);
-        const auto bx2_010 = EB(i - 1, indy + j,     em::bx2);
-        const auto bx2_110 = EB(i,     indy + j,     em::bx2);
-        const auto bx2_210 = EB(i + 1, indy + j,     em::bx2);
-        const auto bx2_020 = EB(i - 1, indy + j + 1, em::bx2);
-        const auto bx2_120 = EB(i,     indy + j + 1, em::bx2);
-        const auto bx2_220 = EB(i + 1, indy + j + 1, em::bx2);
-        // clang-format on
-
-        const auto bx2_0 = bx2_000 * w0dx + bx2_100 * w1dx + bx2_200 * w2dx;
-        const auto bx2_1 = bx2_010 * w0dx + bx2_110 * w1dx + bx2_210 * w2dx;
-        const auto bx2_2 = bx2_020 * w0dx + bx2_120 * w1dx + bx2_220 * w2dx;
-        b0[1]            = bx2_0 * w0py + bx2_1 * w1py + bx2_2 * w2py;
-
-        // Bx3
-        // Interpolate --- (dual, dual)
-        // clang-format off
-        const auto bx3_000 = EB(i - 1, j - 1, em::bx3);
-        const auto bx3_100 = EB(i,     j - 1, em::bx3);
-        const auto bx3_200 = EB(i + 1, j - 1, em::bx3);
-        const auto bx3_010 = EB(i - 1, j,     em::bx3);
-        const auto bx3_110 = EB(i,     j,     em::bx3);
-        const auto bx3_210 = EB(i + 1, j,     em::bx3);
-        const auto bx3_020 = EB(i - 1, j + 1, em::bx3);
-        const auto bx3_120 = EB(i,     j + 1, em::bx3);
-        const auto bx3_220 = EB(i + 1, j + 1, em::bx3);
-        // clang-format on
-
-        const auto bx3_0 = bx3_000 * w0dx + bx3_100 * w1dx + bx3_200 * w2dx;
-        const auto bx3_1 = bx3_010 * w0dx + bx3_110 * w1dx + bx3_210 * w2dx;
-        const auto bx3_2 = bx3_020 * w0dx + bx3_120 * w1dx + bx3_220 * w2dx;
-        b0[2]            = bx3_0 * w0dy + bx3_1 * w1dy + bx3_2 * w2dy;
-
-      } else if constexpr (D == Dim::_3D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
-        const auto dx3_ { static_cast<real_t>(dx3(p)) };
-
-        // direct interpolation of staggered grid
-        // primal = i+ind, dual = i
-        const int indx = static_cast<int>(static_cast<real_t>(dx1_ + HALF));
-        const int indy = static_cast<int>(static_cast<real_t>(dx2_ + HALF));
-        const int indz = static_cast<int>(static_cast<real_t>(dx3_ + HALF));
-
-        // Compute weights for second-order interpolation
-        // primal
-        const auto w0px = HALF * SQR(HALF - dx1_ + static_cast<real_t>(indx));
-        const auto w1px = THREE_FOURTHS - SQR(dx1_ - static_cast<real_t>(indx));
-        const auto w2px = ONE - w0px - w1px;
-        const auto w0py = HALF * SQR(HALF - dx2_ + static_cast<real_t>(indy));
-        const auto w1py = THREE_FOURTHS - SQR(dx2_ - static_cast<real_t>(indy));
-        const auto w2py = ONE - w0py - w1py;
-        const auto w0pz = HALF * SQR(HALF - dx3_ + static_cast<real_t>(indz));
-        const auto w1pz = THREE_FOURTHS - SQR(dx3_ - static_cast<real_t>(indz));
-        const auto w2pz = ONE - w0pz - w1pz;
-
-        // dual
-        const auto w0dx = HALF * SQR(ONE - dx1_);
-        const auto w2dx = HALF * SQR(dx1_);
-        const auto w1dx = ONE - w0dx - w2dx;
-        const auto w0dy = HALF * SQR(ONE - dx2_);
-        const auto w2dy = HALF * SQR(dx2_);
-        const auto w1dy = ONE - w0dy - w2dy;
-        const auto w0dz = HALF * SQR(ONE - dx3_);
-        const auto w2dz = HALF * SQR(dx3_);
-        const auto w1dz = ONE - w0dz - w2dz;
-
-        // Ex1
-        // Interpolate --- (dual, primal, primal)
-        // clang-format off
-        const auto ex1_000 = EB(i - 1, indy + j - 1, indz + k - 1, em::ex1);
-        const auto ex1_100 = EB(i,     indy + j - 1, indz + k - 1, em::ex1);
-        const auto ex1_200 = EB(i + 1, indy + j - 1, indz + k - 1, em::ex1);
-        const auto ex1_010 = EB(i - 1, indy + j,     indz + k - 1, em::ex1);
-        const auto ex1_110 = EB(i,     indy + j,     indz + k - 1, em::ex1);
-        const auto ex1_210 = EB(i + 1, indy + j,     indz + k - 1, em::ex1);
-        const auto ex1_020 = EB(i - 1, indy + j + 1, indz + k - 1, em::ex1);
-        const auto ex1_120 = EB(i,     indy + j + 1, indz + k - 1, em::ex1);
-        const auto ex1_220 = EB(i + 1, indy + j + 1, indz + k - 1, em::ex1);
-        const auto ex1_001 = EB(i - 1, indy + j - 1, indz + k,     em::ex1);
-        const auto ex1_101 = EB(i,     indy + j - 1, indz + k,     em::ex1);
-        const auto ex1_201 = EB(i + 1, indy + j - 1, indz + k,     em::ex1);
-        const auto ex1_011 = EB(i - 1, indy + j,     indz + k,     em::ex1);
-        const auto ex1_111 = EB(i,     indy + j,     indz + k,     em::ex1);
-        const auto ex1_211 = EB(i + 1, indy + j,     indz + k,     em::ex1);
-        const auto ex1_021 = EB(i - 1, indy + j + 1, indz + k,     em::ex1);
-        const auto ex1_121 = EB(i,     indy + j + 1, indz + k,     em::ex1);
-        const auto ex1_221 = EB(i + 1, indy + j + 1, indz + k,     em::ex1);
-        const auto ex1_002 = EB(i - 1, indy + j - 1, indz + k + 1, em::ex1);
-        const auto ex1_102 = EB(i,     indy + j - 1, indz + k + 1, em::ex1);
-        const auto ex1_202 = EB(i + 1, indy + j - 1, indz + k + 1, em::ex1);
-        const auto ex1_012 = EB(i - 1, indy + j,     indz + k + 1, em::ex1);
-        const auto ex1_112 = EB(i,     indy + j,     indz + k + 1, em::ex1);
-        const auto ex1_212 = EB(i + 1, indy + j,     indz + k + 1, em::ex1);
-        const auto ex1_022 = EB(i - 1, indy + j + 1, indz + k + 1, em::ex1);
-        const auto ex1_122 = EB(i,     indy + j + 1, indz + k + 1, em::ex1);
-        const auto ex1_222 = EB(i + 1, indy + j + 1, indz + k + 1, em::ex1);
-        // clang-format on
-
-        const auto ex1_0_0 = ex1_000 * w0dx + ex1_100 * w1dx + ex1_200 * w2dx;
-        const auto ex1_1_0 = ex1_010 * w0dx + ex1_110 * w1dx + ex1_210 * w2dx;
-        const auto ex1_2_0 = ex1_020 * w0dx + ex1_120 * w1dx + ex1_220 * w2dx;
-        const auto ex1_0_1 = ex1_001 * w0dx + ex1_101 * w1dx + ex1_201 * w2dx;
-        const auto ex1_1_1 = ex1_011 * w0dx + ex1_111 * w1dx + ex1_211 * w2dx;
-        const auto ex1_2_1 = ex1_021 * w0dx + ex1_121 * w1dx + ex1_221 * w2dx;
-        const auto ex1_0_2 = ex1_002 * w0dx + ex1_102 * w1dx + ex1_202 * w2dx;
-        const auto ex1_1_2 = ex1_012 * w0dx + ex1_112 * w1dx + ex1_212 * w2dx;
-        const auto ex1_2_2 = ex1_022 * w0dx + ex1_122 * w1dx + ex1_222 * w2dx;
-
-        const auto ex1_00 = ex1_0_0 * w0py + ex1_1_0 * w1py + ex1_2_0 * w2py;
-        const auto ex1_01 = ex1_0_1 * w0py + ex1_1_1 * w1py + ex1_2_1 * w2py;
-        const auto ex1_02 = ex1_0_2 * w0py + ex1_1_2 * w1py + ex1_2_2 * w2py;
-
-        e0[0] = ex1_00 * w0pz + ex1_01 * w1pz + ex1_02 * w2pz;
-
-        // Ex2
-        // Interpolate -- (primal, dual, primal)
-        // clang-format off
-        const auto ex2_000 = EB(indx + i - 1, j - 1, indz + k - 1, em::ex2);
-        const auto ex2_100 = EB(indx + i,     j - 1, indz + k - 1, em::ex2);
-        const auto ex2_200 = EB(indx + i + 1, j - 1, indz + k - 1, em::ex2);
-        const auto ex2_010 = EB(indx + i - 1, j,     indz + k - 1, em::ex2);
-        const auto ex2_110 = EB(indx + i,     j,     indz + k - 1, em::ex2);
-        const auto ex2_210 = EB(indx + i + 1, j,     indz + k - 1, em::ex2);
-        const auto ex2_020 = EB(indx + i - 1, j + 1, indz + k - 1, em::ex2);
-        const auto ex2_120 = EB(indx + i,     j + 1, indz + k - 1, em::ex2);
-        const auto ex2_220 = EB(indx + i + 1, j + 1, indz + k - 1, em::ex2);
-        const auto ex2_001 = EB(indx + i - 1, j - 1, indz + k,     em::ex2);
-        const auto ex2_101 = EB(indx + i,     j - 1, indz + k,     em::ex2);
-        const auto ex2_201 = EB(indx + i + 1, j - 1, indz + k,     em::ex2);
-        const auto ex2_011 = EB(indx + i - 1, j,     indz + k,     em::ex2);
-        const auto ex2_111 = EB(indx + i,     j,     indz + k,     em::ex2);
-        const auto ex2_211 = EB(indx + i + 1, j,     indz + k,     em::ex2);
-        const auto ex2_021 = EB(indx + i - 1, j + 1, indz + k,     em::ex2);
-        const auto ex2_121 = EB(indx + i,     j + 1, indz + k,     em::ex2);
-        const auto ex2_221 = EB(indx + i + 1, j + 1, indz + k,     em::ex2);
-        const auto ex2_002 = EB(indx + i - 1, j - 1, indz + k + 1, em::ex2);
-        const auto ex2_102 = EB(indx + i,     j - 1, indz + k + 1, em::ex2);
-        const auto ex2_202 = EB(indx + i + 1, j - 1, indz + k + 1, em::ex2);
-        const auto ex2_012 = EB(indx + i - 1, j,     indz + k + 1, em::ex2);
-        const auto ex2_112 = EB(indx + i,     j,     indz + k + 1, em::ex2);
-        const auto ex2_212 = EB(indx + i + 1, j,     indz + k + 1, em::ex2);
-        const auto ex2_022 = EB(indx + i - 1, j + 1, indz + k + 1, em::ex2);
-        const auto ex2_122 = EB(indx + i,     j + 1, indz + k + 1, em::ex2);
-        const auto ex2_222 = EB(indx + i + 1, j + 1, indz + k + 1, em::ex2);
-        // clang-format on
-
-        const auto ex2_0_0 = ex2_000 * w0px + ex2_100 * w1px + ex1_200 * w2px;
-        const auto ex2_1_0 = ex2_010 * w0px + ex2_110 * w1px + ex1_210 * w2px;
-        const auto ex2_2_0 = ex2_020 * w0px + ex2_120 * w1px + ex1_220 * w2px;
-        const auto ex2_0_1 = ex2_001 * w0px + ex2_101 * w1px + ex2_201 * w2px;
-        const auto ex2_1_1 = ex2_011 * w0px + ex2_111 * w1px + ex2_211 * w2px;
-        const auto ex2_2_1 = ex2_021 * w0px + ex2_121 * w1px + ex2_221 * w2px;
-        const auto ex2_0_2 = ex2_002 * w0px + ex2_102 * w1px + ex2_202 * w2px;
-        const auto ex2_1_2 = ex2_012 * w0px + ex2_112 * w1px + ex2_212 * w2px;
-        const auto ex2_2_2 = ex2_022 * w0px + ex2_122 * w1px + ex2_222 * w2px;
-
-        const auto ex2_00 = ex2_0_0 * w0dy + ex2_1_0 * w1dy + ex2_2_0 * w2dy;
-        const auto ex2_01 = ex2_0_1 * w0dy + ex2_1_1 * w1dy + ex2_2_1 * w2dy;
-        const auto ex2_02 = ex2_0_2 * w0dy + ex2_1_2 * w1dy + ex2_2_2 * w2dy;
-
-        e0[1] = ex2_00 * w0pz + ex2_01 * w1pz + ex2_02 * w2pz;
-
-        // Ex3
-        // Interpolate -- (primal, primal, dual)
-        // clang-format off
-        const auto ex3_000 = EB(indx + i - 1, indy + j - 1, k - 1, em::ex3);
-        const auto ex3_100 = EB(indx + i,     indy + j - 1, k - 1, em::ex3);
-        const auto ex3_200 = EB(indx + i + 1, indy + j - 1, k - 1, em::ex3);
-        const auto ex3_010 = EB(indx + i - 1, indy + j,     k - 1, em::ex3);
-        const auto ex3_110 = EB(indx + i,     indy + j,     k - 1, em::ex3);
-        const auto ex3_210 = EB(indx + i + 1, indy + j,     k - 1, em::ex3);
-        const auto ex3_020 = EB(indx + i - 1, indy + j + 1, k - 1, em::ex3);
-        const auto ex3_120 = EB(indx + i,     indy + j + 1, k - 1, em::ex3);
-        const auto ex3_220 = EB(indx + i + 1, indy + j + 1, k - 1, em::ex3);
-        const auto ex3_001 = EB(indx + i - 1, indy + j - 1, k,     em::ex3);
-        const auto ex3_101 = EB(indx + i,     indy + j - 1, k,     em::ex3);
-        const auto ex3_201 = EB(indx + i + 1, indy + j - 1, k,     em::ex3);
-        const auto ex3_011 = EB(indx + i - 1, indy + j,     k,     em::ex3);
-        const auto ex3_111 = EB(indx + i,     indy + j,     k,     em::ex3);
-        const auto ex3_211 = EB(indx + i + 1, indy + j,     k,     em::ex3);
-        const auto ex3_021 = EB(indx + i - 1, indy + j + 1, k,     em::ex3);
-        const auto ex3_121 = EB(indx + i,     indy + j + 1, k,     em::ex3);
-        const auto ex3_221 = EB(indx + i + 1, indy + j + 1, k,     em::ex3);
-        const auto ex3_002 = EB(indx + i - 1, indy + j - 1, k + 1, em::ex3);
-        const auto ex3_102 = EB(indx + i,     indy + j - 1, k + 1, em::ex3);
-        const auto ex3_202 = EB(indx + i + 1, indy + j - 1, k + 1, em::ex3);
-        const auto ex3_012 = EB(indx + i - 1, indy + j,     k + 1, em::ex3);
-        const auto ex3_112 = EB(indx + i,     indy + j,     k + 1, em::ex3);
-        const auto ex3_212 = EB(indx + i + 1, indy + j,     k + 1, em::ex3);
-        const auto ex3_022 = EB(indx + i - 1, indy + j + 1, k + 1, em::ex3);
-        const auto ex3_122 = EB(indx + i,     indy + j + 1, k + 1, em::ex3);
-        const auto ex3_222 = EB(indx + i + 1, indy + j + 1, k + 1, em::ex3);
-        // clang-format on
-
-        const auto ex3_0_0 = ex3_000 * w0px + ex3_100 * w1px + ex3_200 * w2px;
-        const auto ex3_1_0 = ex3_010 * w0px + ex3_110 * w1px + ex3_210 * w2px;
-        const auto ex3_2_0 = ex3_020 * w0px + ex3_120 * w1px + ex3_220 * w2px;
-        const auto ex3_0_1 = ex3_001 * w0px + ex3_101 * w1px + ex3_201 * w2px;
-        const auto ex3_1_1 = ex3_011 * w0px + ex3_111 * w1px + ex3_211 * w2px;
-        const auto ex3_2_1 = ex3_021 * w0px + ex3_121 * w1px + ex3_221 * w2px;
-        const auto ex3_0_2 = ex3_002 * w0px + ex3_102 * w1px + ex3_202 * w2px;
-        const auto ex3_1_2 = ex3_012 * w0px + ex3_112 * w1px + ex3_212 * w2px;
-        const auto ex3_2_2 = ex3_022 * w0px + ex3_122 * w1px + ex3_222 * w2px;
-
-        const auto ex3_00 = ex3_0_0 * w0py + ex3_1_0 * w1py + ex3_2_0 * w2py;
-        const auto ex3_01 = ex3_0_1 * w0py + ex3_1_1 * w1py + ex3_2_1 * w2py;
-        const auto ex3_02 = ex3_0_2 * w0py + ex3_1_2 * w1py + ex3_2_2 * w2py;
-
-        e0[2] = ex3_00 * w0dz + ex3_01 * w1dz + ex3_02 * w2dz;
-
-        // Bx1
-        // Interpolate -- (primal, dual, dual)
-        // clang-format off
-        const auto bx1_000 = EB(indx + i - 1, j - 1, k - 1, em::bx1);
-        const auto bx1_100 = EB(indx + i,     j - 1, k - 1, em::bx1);
-        const auto bx1_200 = EB(indx + i + 1, j - 1, k - 1, em::bx1);
-        const auto bx1_010 = EB(indx + i - 1, j,     k - 1, em::bx1);
-        const auto bx1_110 = EB(indx + i,     j,     k - 1, em::bx1);
-        const auto bx1_210 = EB(indx + i + 1, j,     k - 1, em::bx1);
-        const auto bx1_020 = EB(indx + i - 1, j + 1, k - 1, em::bx1);
-        const auto bx1_120 = EB(indx + i,     j + 1, k - 1, em::bx1);
-        const auto bx1_220 = EB(indx + i + 1, j + 1, k - 1, em::bx1);
-        const auto bx1_001 = EB(indx + i - 1, j - 1, k,     em::bx1);
-        const auto bx1_101 = EB(indx + i,     j - 1, k,     em::bx1);
-        const auto bx1_201 = EB(indx + i + 1, j - 1, k,     em::bx1);
-        const auto bx1_011 = EB(indx + i - 1, j,     k,     em::bx1);
-        const auto bx1_111 = EB(indx + i,     j,     k,     em::bx1);
-        const auto bx1_211 = EB(indx + i + 1, j,     k,     em::bx1);
-        const auto bx1_021 = EB(indx + i - 1, j + 1, k,     em::bx1);
-        const auto bx1_121 = EB(indx + i,     j + 1, k,     em::bx1);
-        const auto bx1_221 = EB(indx + i + 1, j + 1, k,     em::bx1);
-        const auto bx1_002 = EB(indx + i - 1, j - 1, k + 1, em::bx1);
-        const auto bx1_102 = EB(indx + i,     j - 1, k + 1, em::bx1);
-        const auto bx1_202 = EB(indx + i + 1, j - 1, k + 1, em::bx1);
-        const auto bx1_012 = EB(indx + i - 1, j,     k + 1, em::bx1);
-        const auto bx1_112 = EB(indx + i,     j,     k + 1, em::bx1);
-        const auto bx1_212 = EB(indx + i + 1, j,     k + 1, em::bx1);
-        const auto bx1_022 = EB(indx + i - 1, j + 1, k + 1, em::bx1);
-        const auto bx1_122 = EB(indx + i,     j + 1, k + 1, em::bx1);
-        const auto bx1_222 = EB(indx + i + 1, j + 1, k + 1, em::bx1);
-        // clang-format on
-
-        const auto bx1_0_0 = bx1_000 * w0px + bx1_100 * w1px + bx1_200 * w2px;
-        const auto bx1_1_0 = bx1_010 * w0px + bx1_110 * w1px + bx1_210 * w2px;
-        const auto bx1_2_0 = bx1_020 * w0px + bx1_120 * w1px + bx1_220 * w2px;
-        const auto bx1_0_1 = bx1_001 * w0px + bx1_101 * w1px + bx1_201 * w2px;
-        const auto bx1_1_1 = bx1_011 * w0px + bx1_111 * w1px + bx1_211 * w2px;
-        const auto bx1_2_1 = bx1_021 * w0px + bx1_121 * w1px + bx1_221 * w2px;
-        const auto bx1_0_2 = bx1_002 * w0px + bx1_102 * w1px + bx1_202 * w2px;
-        const auto bx1_1_2 = bx1_012 * w0px + bx1_112 * w1px + bx1_212 * w2px;
-        const auto bx1_2_2 = bx1_022 * w0px + bx1_122 * w1px + bx1_222 * w2px;
-
-        const auto bx1_00 = bx1_0_0 * w0dy + bx1_1_0 * w1dy + bx1_2_0 * w2dy;
-        const auto bx1_01 = bx1_0_1 * w0dy + bx1_1_1 * w1dy + bx1_2_1 * w2dy;
-        const auto bx1_02 = bx1_0_2 * w0dy + bx1_1_2 * w1dy + bx1_2_2 * w2dy;
-
-        b0[0] = bx1_00 * w0dz + bx1_01 * w1dz + bx1_02 * w2dz;
-
-        // Bx2
-        // Interpolate -- (dual, primal, dual)
-        // clang-format off
-        const auto bx2_000 = EB(i - 1, indy + j - 1, k - 1, em::bx2);
-        const auto bx2_100 = EB(i,     indy + j - 1, k - 1, em::bx2);
-        const auto bx2_200 = EB(i + 1, indy + j - 1, k - 1, em::bx2);
-        const auto bx2_010 = EB(i - 1, indy + j,     k - 1, em::bx2);
-        const auto bx2_110 = EB(i,     indy + j,     k - 1, em::bx2);
-        const auto bx2_210 = EB(i + 1, indy + j,     k - 1, em::bx2);
-        const auto bx2_020 = EB(i - 1, indy + j + 1, k - 1, em::bx2);
-        const auto bx2_120 = EB(i,     indy + j + 1, k - 1, em::bx2);
-        const auto bx2_220 = EB(i + 1, indy + j + 1, k - 1, em::bx2);
-        const auto bx2_001 = EB(i - 1, indy + j - 1, k,     em::bx2);
-        const auto bx2_101 = EB(i,     indy + j - 1, k,     em::bx2);
-        const auto bx2_201 = EB(i + 1, indy + j - 1, k,     em::bx2);
-        const auto bx2_011 = EB(i - 1, indy + j,     k,     em::bx2);
-        const auto bx2_111 = EB(i,     indy + j,     k,     em::bx2);
-        const auto bx2_211 = EB(i + 1, indy + j,     k,     em::bx2);
-        const auto bx2_021 = EB(i - 1, indy + j + 1, k,     em::bx2);
-        const auto bx2_121 = EB(i,     indy + j + 1, k,     em::bx2);
-        const auto bx2_221 = EB(i + 1, indy + j + 1, k,     em::bx2);
-        const auto bx2_002 = EB(i - 1, indy + j - 1, k + 1, em::bx2);
-        const auto bx2_102 = EB(i,     indy + j - 1, k + 1, em::bx2);
-        const auto bx2_202 = EB(i + 1, indy + j - 1, k + 1, em::bx2);
-        const auto bx2_012 = EB(i - 1, indy + j,     k + 1, em::bx2);
-        const auto bx2_112 = EB(i,     indy + j,     k + 1, em::bx2);
-        const auto bx2_212 = EB(i + 1, indy + j,     k + 1, em::bx2);
-        const auto bx2_022 = EB(i - 1, indy + j + 1, k + 1, em::bx2);
-        const auto bx2_122 = EB(i,     indy + j + 1, k + 1, em::bx2);
-        const auto bx2_222 = EB(i + 1, indy + j + 1, k + 1, em::bx2);
-        // clang-format on
-
-        const auto bx2_0_0 = bx2_000 * w0dx + bx2_100 * w1dx + bx2_200 * w2dx;
-        const auto bx2_1_0 = bx2_010 * w0dx + bx2_110 * w1dx + bx2_210 * w2dx;
-        const auto bx2_2_0 = bx2_020 * w0dx + bx2_120 * w1dx + bx2_220 * w2dx;
-        const auto bx2_0_1 = bx2_001 * w0dx + bx2_101 * w1dx + bx2_201 * w2dx;
-        const auto bx2_1_1 = bx2_011 * w0dx + bx2_111 * w1dx + bx2_211 * w2dx;
-        const auto bx2_2_1 = bx2_021 * w0dx + bx2_121 * w1dx + bx2_221 * w2dx;
-        const auto bx2_0_2 = bx2_002 * w0dx + bx2_102 * w1dx + bx2_202 * w2dx;
-        const auto bx2_1_2 = bx2_012 * w0dx + bx2_112 * w1dx + bx2_212 * w2dx;
-        const auto bx2_2_2 = bx2_022 * w0dx + bx2_122 * w1dx + bx2_222 * w2dx;
-
-        const auto bx2_00 = bx2_0_0 * w0py + bx2_1_0 * w1py + bx2_2_0 * w2py;
-        const auto bx2_01 = bx2_0_1 * w0py + bx2_1_1 * w1py + bx2_2_1 * w2py;
-        const auto bx2_02 = bx2_0_2 * w0py + bx2_1_2 * w1py + bx2_2_2 * w2py;
-
-        b0[1] = bx2_00 * w0dz + bx2_01 * w1dz + bx2_02 * w2dz;
-
-        // Bx3
-        // Interpolate -- (dual, dual, primal)
-        // clang-format off
-        const auto bx3_000 = EB(i - 1, j - 1, indz + k - 1, em::bx3);
-        const auto bx3_100 = EB(i,     j - 1, indz + k - 1, em::bx3);
-        const auto bx3_200 = EB(i + 1, j - 1, indz + k - 1, em::bx3);
-        const auto bx3_010 = EB(i - 1, j,     indz + k - 1, em::bx3);
-        const auto bx3_110 = EB(i,     j,     indz + k - 1, em::bx3);
-        const auto bx3_210 = EB(i + 1, j,     indz + k - 1, em::bx3);
-        const auto bx3_020 = EB(i - 1, j + 1, indz + k - 1, em::bx3);
-        const auto bx3_120 = EB(i,     j + 1, indz + k - 1, em::bx3);
-        const auto bx3_220 = EB(i + 1, j + 1, indz + k - 1, em::bx3);
-        const auto bx3_001 = EB(i - 1, j - 1, indz + k,     em::bx3);
-        const auto bx3_101 = EB(i,     j - 1, indz + k,     em::bx3);
-        const auto bx3_201 = EB(i + 1, j - 1, indz + k,     em::bx3);
-        const auto bx3_011 = EB(i - 1, j,     indz + k,     em::bx3);
-        const auto bx3_111 = EB(i,     j,     indz + k,     em::bx3);
-        const auto bx3_211 = EB(i + 1, j,     indz + k,     em::bx3);
-        const auto bx3_021 = EB(i - 1, j + 1, indz + k,     em::bx3);
-        const auto bx3_121 = EB(i,     j + 1, indz + k,     em::bx3);
-        const auto bx3_221 = EB(i + 1, j + 1, indz + k,     em::bx3);
-        const auto bx3_002 = EB(i - 1, j - 1, indz + k + 1, em::bx3);
-        const auto bx3_102 = EB(i,     j - 1, indz + k + 1, em::bx3);
-        const auto bx3_202 = EB(i + 1, j - 1, indz + k + 1, em::bx3);
-        const auto bx3_012 = EB(i - 1, j,     indz + k + 1, em::bx3);
-        const auto bx3_112 = EB(i,     j,     indz + k + 1, em::bx3);
-        const auto bx3_212 = EB(i + 1, j,     indz + k + 1, em::bx3);
-        const auto bx3_022 = EB(i - 1, j + 1, indz + k + 1, em::bx3);
-        const auto bx3_122 = EB(i,     j + 1, indz + k + 1, em::bx3);
-        const auto bx3_222 = EB(i + 1, j + 1, indz + k + 1, em::bx3);
-        // clang-format on
-
-        const auto bx3_0_0 = bx3_000 * w0dx + bx3_100 * w1dx + bx3_200 * w2dx;
-        const auto bx3_1_0 = bx3_010 * w0dx + bx3_110 * w1dx + bx3_210 * w2dx;
-        const auto bx3_2_0 = bx3_020 * w0dx + bx3_120 * w1dx + bx3_220 * w2dx;
-        const auto bx3_0_1 = bx3_001 * w0dx + bx3_101 * w1dx + bx3_201 * w2dx;
-        const auto bx3_1_1 = bx3_011 * w0dx + bx3_111 * w1dx + bx3_211 * w2dx;
-        const auto bx3_2_1 = bx3_021 * w0dx + bx3_121 * w1dx + bx3_221 * w2dx;
-        const auto bx3_0_2 = bx3_002 * w0dx + bx3_102 * w1dx + bx3_202 * w2dx;
-        const auto bx3_1_2 = bx3_012 * w0dx + bx3_112 * w1dx + bx3_212 * w2dx;
-        const auto bx3_2_2 = bx3_022 * w0dx + bx3_122 * w1dx + bx3_222 * w2dx;
-
-        const auto bx3_00 = bx3_0_0 * w0dy + bx3_1_0 * w1dy + bx3_2_0 * w2dy;
-        const auto bx3_01 = bx3_0_1 * w0dy + bx3_1_1 * w1dy + bx3_2_1 * w2dy;
-        const auto bx3_02 = bx3_0_2 * w0dy + bx3_1_2 * w1dy + bx3_2_2 * w2dy;
-
-        b0[2] = bx3_00 * w0pz + bx3_01 * w1pz + bx3_02 * w2pz;
+
+      // ToDo: implement template in srpic.hpp
+      const unsigned int O = 2u;
+
+      // ToDo: change to 1u!
+      if constexpr (O == 0u) {
+
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+
+          // first order
+          real_t c0, c1;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+
+          // Ex1
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::ex1);
+          c1    = EB(i + indx, em::ex1);
+          e0[0] = c0 * pondmx + c1 * pondpx;
+          // Ex2
+          // Interpolate --- (primal)
+          c0    = EB(i, em::ex2);
+          c1    = EB(i + 1, em::ex2);
+          e0[1] = c0 * ponpmx + c1 * ponppx;
+          // Ex3
+          // Interpolate --- (primal)
+          c0    = EB(i, em::ex3);
+          c1    = EB(i + 1, em::ex3);
+          e0[2] = c0 * ponpmx + c1 * ponppx;
+          // Bx1
+          // Interpolate --- (primal)
+          c0    = EB(i, em::bx1);
+          c1    = EB(i + 1, em::bx1);
+          b0[0] = c0 * ponpmx + c1 * ponppx;
+          // Bx2
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::bx2);
+          c1    = EB(i + indx, em::bx2);
+          b0[1] = c0 * pondmx + c1 * pondpx;
+          // Bx3
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::bx3);
+          c1    = EB(i + indx, em::bx3);
+          b0[2] = c0 * pondmx + c1 * pondpx;
+        } else if constexpr (D == Dim::_2D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
+
+          // first order
+          real_t c000, c100, c010, c110, c00, c10;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
+
+          // Ex1
+          // Interpolate --- (dual, primal)
+          c000  = EB(i - 1 + indx, j, em::ex1);
+          c100  = EB(i + indx, j, em::ex1);
+          c010  = EB(i - 1 + indx, j + 1, em::ex1);
+          c110  = EB(i + indx, j + 1, em::ex1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          e0[0] = c00 * ponpmy + c10 * ponppy;
+          // Ex2
+          // Interpolate -- (primal, dual)
+          c000  = EB(i, j - 1 + indy, em::ex2);
+          c100  = EB(i + 1, j - 1 + indy, em::ex2);
+          c010  = EB(i, j + indy, em::ex2);
+          c110  = EB(i + 1, j + indy, em::ex2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[1] = c00 * pondmy + c10 * pondpy;
+          // Ex3
+          // Interpolate -- (primal, primal)
+          c000  = EB(i, j, em::ex3);
+          c100  = EB(i + 1, j, em::ex3);
+          c010  = EB(i, j + 1, em::ex3);
+          c110  = EB(i + 1, j + 1, em::ex3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[2] = c00 * ponpmy + c10 * ponppy;
+
+          // Bx1
+          // Interpolate -- (primal, dual)
+          c000  = EB(i, j - 1 + indy, em::bx1);
+          c100  = EB(i + 1, j - 1 + indy, em::bx1);
+          c010  = EB(i, j + indy, em::bx1);
+          c110  = EB(i + 1, j + indy, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          b0[0] = c00 * pondmy + c10 * pondpy;
+          // Bx2
+          // Interpolate -- (dual, primal)
+          c000  = EB(i - 1 + indx, j, em::bx2);
+          c100  = EB(i + indx, j, em::bx2);
+          c010  = EB(i - 1 + indx, j + 1, em::bx2);
+          c110  = EB(i + indx, j + 1, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[1] = c00 * ponpmy + c10 * ponppy;
+          // Bx3
+          // Interpolate -- (dual, dual)
+          c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
+          c100  = EB(i + indx, j - 1 + indy, em::bx3);
+          c010  = EB(i - 1 + indx, j + indy, em::bx3);
+          c110  = EB(i + indx, j + indy, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[2] = c00 * pondmy + c10 * pondpy;
+        } else if constexpr (D == Dim::_3D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
+          int indz = static_cast<int>(dx3_ + HALF);
+
+          // first order
+          real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
+            c11, c0, c1;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
+          real_t ponpmz = ONE - dx3_;
+          real_t ponppz = dx3_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
+          real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+          real_t pondpz = ONE - pondmz;
+
+          // Ex1
+          // Interpolate --- (dual, primal, primal)
+          c000  = EB(i - 1 + indx, j, k, em::ex1);
+          c100  = EB(i + indx, j, k, em::ex1);
+          c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
+          c110  = EB(i + indx, j + 1, k, em::ex1);
+          c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
+          c101  = EB(i + indx, j, k + 1, em::ex1);
+          c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
+          c111  = EB(i + indx, j + 1, k + 1, em::ex1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[0] = c0 * ponpmz + c1 * ponppz;
+          // Ex2
+          // Interpolate -- (primal, dual, primal)
+          c000  = EB(i, j - 1 + indy, k, em::ex2);
+          c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
+          c010  = EB(i, j + indy, k, em::ex2);
+          c110  = EB(i + 1, j + indy, k, em::ex2);
+          c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
+          c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
+          c011  = EB(i, j + indy, k + 1, em::ex2);
+          c111  = EB(i + 1, j + indy, k + 1, em::ex2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          e0[1] = c0 * ponpmz + c1 * ponppz;
+          // Ex3
+          // Interpolate -- (primal, primal, dual)
+          c000  = EB(i, j, k - 1 + indz, em::ex3);
+          c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
+          c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
+          c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
+          c001  = EB(i, j, k + indz, em::ex3);
+          c101  = EB(i + 1, j, k + indz, em::ex3);
+          c011  = EB(i, j + 1, k + indz, em::ex3);
+          c111  = EB(i + 1, j + 1, k + indz, em::ex3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[2] = c0 * pondmz + c1 * pondpz;
+
+          // Bx1
+          // Interpolate -- (primal, dual, dual)
+          c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
+          c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
+          c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
+          c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
+          c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
+          c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
+          c011  = EB(i, j + indy, k + indz, em::bx1);
+          c111  = EB(i + 1, j + indy, k + indz, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          b0[0] = c0 * pondmz + c1 * pondpz;
+          // Bx2
+          // Interpolate -- (dual, primal, dual)
+          c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
+          c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
+          c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
+          c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
+          c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
+          c101  = EB(i + indx, j, k + indz, em::bx2);
+          c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
+          c111  = EB(i + indx, j + 1, k + indz, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[1] = c0 * pondmz + c1 * pondpz;
+          // Bx3
+          // Interpolate -- (dual, dual, primal)
+          c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
+          c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
+          c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
+          c110  = EB(i + indx, j + indy, k, em::bx3);
+          c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
+          c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
+          c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
+          c111  = EB(i + indx, j + indy, k + 1, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[2] = c0 * ponpmz + c1 * ponppz;
+        }
+      } else if constexpr ((O >= 1u) and (O <= 5u)) {
+
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          // primal and dual shape function
+          real_t     Sp[O + 1], Sd[O + 1];
+          // minimum contributing cells
+          int        ip_min, id_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, Sp);
+
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, Sd);
+
+          // Ex1 -- dual
+          e0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[0] += Sd[idx1] * EB(id_min + idx1, em::ex1);
+          }
+
+          // Ex2 -- primal
+          e0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[1] += Sp[idx1] * EB(ip_min + idx1, em::ex2);
+          }
+
+          // Ex3 -- primal
+          e0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[2] += Sp[idx1] * EB(ip_min + idx1, em::ex3);
+          }
+
+          // Bx1 -- primal
+          b0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[0] += Sp[idx1] * EB(ip_min + idx1, em::bx1);
+          }
+
+          // Bx2 -- dual
+          b0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[1] += Sd[idx1] * EB(id_min + idx1, em::bx2);
+          }
+
+          // Bx3 -- dual
+          b0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[2] += Sd[idx1] * EB(id_min + idx1, em::bx3);
+          }
+
+        } else if constexpr (D == Dim::_2D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          // minimum contributing cells
+          int    ip_min, id_min;
+          int    jp_min, jd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+
+          // Ex1 -- dual, primal
+          e0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::ex1);
+            }
+            e0[0] += c0 * S2p[idx2];
+          }
+
+          // Ex2 -- primal, dual
+          e0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::ex2);
+            }
+            e0[1] += c0 * S2d[idx2];
+          }
+
+          // Ex3 -- primal, primal
+          e0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jp_min + idx2, em::ex3);
+            }
+            e0[2] += c0 * S2p[idx2];
+          }
+
+          // Bx1 -- primal, dual
+          b0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::bx1);
+            }
+            b0[0] += c0 * S2d[idx2];
+          }
+
+          // Bx2 -- dual, primal
+          b0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::bx2);
+            }
+            b0[1] += c0 * S2p[idx2];
+          }
+
+          // Bx3 -- dual, dual
+          b0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = 0.0;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jd_min + idx2, em::bx3);
+            }
+            b0[2] += c0 * S2d[idx2];
+          }
+
+        } else if constexpr (D == Dim::_3D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          real_t S3p[O + 1], S3d[O + 1];
+
+          // minimum contributing cells
+          int ip_min, id_min;
+          int jp_min, jd_min;
+          int kp_min, kd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          prtl_shape::order<false, O>(k, dx3_, kp_min, S3p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+          prtl_shape::order<true, O>(k, dx3_, kd_min, S3d);
+
+          // Ex1 -- dual, primal, primal
+          e0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jp_min + idx2, kp_min + idx3, em::ex1);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[0] += c0 * S3p[idx3];
+          }
+
+          // Ex2 -- primal, dual, primal
+          e0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jd_min + idx2, kp_min + idx3, em::ex2);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            e0[1] += c0 * S3p[idx3];
+          }
+
+          // Ex3 -- primal, primal, dual
+          e0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jp_min + idx2, kd_min + idx3, em::ex3);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[2] += c0 * S3d[idx3];
+          }
+
+          // Bx1 -- primal, dual, dual
+          b0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jd_min + idx2, kd_min + idx3, em::bx1);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[0] += c0 * S3d[idx3];
+          }
+
+          // Bx2 -- dual, primal, dual
+          b0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jp_min + idx2, kd_min + idx3, em::bx2);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            b0[1] += c0 * S3d[idx3];
+          }
+
+          // Bx3 -- dual, dual, primal
+          b0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = 0.0;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = 0.0;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jd_min + idx2, kp_min + idx3, em::bx3);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[2] += c0 * S3p[idx3];
+          }
+        }
       }
     }
 
