@@ -448,33 +448,22 @@ namespace kernel {
           for (int i = 0; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
-              // Esirkepov 2001, Eq. 38
-              Wx1[i][j] = (fS_x1[i] - iS_x1[i]) *
-                          (iS_x2[j] + HALF * (fS_x2[j] - iS_x2[j]));
+              // Esirkepov 2001, Eq. 38 (simplified)
+              Wx1[i][j] = HALF * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] + iS_x2[j]);
 
-              Wx2[i][j] = (fS_x2[j] - iS_x2[j]) *
-                          (iS_x2[j] + HALF * (fS_x1[i] - iS_x1[i]));
+              Wx2[i][j] = HALF * (fS_x1[i] + iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
 
-              Wx3[i][j] = iS_x1[i] * iS_x2[j] +
-                          HALF * (fS_x1[i] - fS_x1[i]) * iS_x2[j] +
-                          HALF * iS_x1[i] * (fS_x2[j] - iS_x2[j]) +
-                          THIRD * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
-
-              // Wx1[i][j] = HALF * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] + iS_x2[j]);
-
-              // Wx2[i][j] = HALF * (fS_x1[i] + iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
-
-              // Wx3[i][j] = THIRD * (fS_x2[j] * (HALF * iS_x1[i] + fS_x2[j]) +
-              //                     iS_x2[j] * (HALF * fS_x2[j] + iS_x2[i]));
+              Wx3[i][j] = THIRD * (fS_x2[j] * (HALF * iS_x1[i] + fS_x1[i]) +
+                                  iS_x2[j] * (HALF * fS_x1[i] + iS_x1[i]));
             }
           }
 
           // contribution within the shape function stencil
-          real_t jx1[O + 2][O + 2], jx2[O + 2][O + 2], jx3[O + 2][O + 2];
+          real_t jx1[O + 2][O + 2], jx2[O + 2][O + 2];
 
           // prefactors for j update
-          const real_t Qdx1dt = -coeff * inv_dt;
-          const real_t Qdx2dt = -coeff * inv_dt;
+          const real_t Qdx1dt = coeff * inv_dt;
+          const real_t Qdx2dt = coeff * inv_dt;
           const real_t QVx3   = coeff * vp[2];
 
           // Calculate current contribution
@@ -482,37 +471,28 @@ namespace kernel {
           // jx1
 #pragma unroll
           for (int j = 0; j < O + 2; ++j) {
-            jx1[0][j] = Wx1[0][j];
+            jx1[0][j] = -Qdx1dt * Wx1[0][j];
           }
 
 #pragma unroll
           for (int i = 1; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
-              jx1[i][j] = jx1[i - 1][j] + Wx1[i][j];
+              jx1[i][j] = jx1[i - 1][j] - Qdx1dt * Wx1[i][j];
             }
           }
 
           // jx2
 #pragma unroll
           for (int i = 0; i < O + 2; ++i) {
-            jx2[i][0] = Wx2[i][0];
+            jx2[i][0] = -Qdx2dt * Wx2[i][0];
           }
 
 #pragma unroll
           for (int j = 1; j < O + 2; ++j) {
 #pragma unroll
             for (int i = 0; i < O + 2; ++i) {
-              jx2[i][j] = jx2[i][j - 1] + Wx2[i][j];
-            }
-          }
-
-          // jx3
-#pragma unroll
-          for (int i = 0; i < O + 2; ++i) {
-#pragma unroll
-            for (int j = 0; j < O + 2; ++j) {
-              jx3[i][j] = Wx3[i][j];
+              jx2[i][j] = jx2[i][j - 1] - Qdx2dt * Wx2[i][j];
             }
           }
 
@@ -531,21 +511,21 @@ namespace kernel {
           */
           auto J_acc = J.access();
 
-          for (int i = 0; i <= di_x1; ++i) {
+          for (int i = 0; i < di_x1; ++i) {
             for (int j = 0; j <= di_x2; ++j) {
-              J_acc(i1_min + i, i2_min + j, cur::jx1) += Qdx1dt * jx1[i][j];
+              J_acc(i1_min + i, i2_min + j, cur::jx1) += jx1[i][j];
+            }
+          }
+
+          for (int i = 0; i <= di_x1; ++i) {
+            for (int j = 0; j < di_x2; ++j) {
+              J_acc(i1_min + i, i2_min + j, cur::jx2) += jx2[i][j];
             }
           }
 
           for (int i = 0; i <= di_x1; ++i) {
             for (int j = 0; j <= di_x2; ++j) {
-              J_acc(i1_min + i, i2_min + j, cur::jx2) += Qdx2dt * jx2[i][j];
-            }
-          }
-
-          for (int i = 0; i <= di_x1; ++i) {
-            for (int j = 0; j <= di_x2; ++j) {
-              J_acc(i1_min + i, i2_min + j, cur::jx3) += QVx3 * jx3[i][j];
+              J_acc(i1_min + i, i2_min + j, cur::jx3) += QVx3 * Wx3[i][j];
             }
           }
 
