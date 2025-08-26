@@ -12,7 +12,7 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 ## Join the community
 
-Everyone is welcome to join our small yet steadily growing community of code users and developers; regardless of how much you are planning to contribute -- we always welcome fresh ideas and feedback. We hold weekly Zoom meetings on Mondays at 12pm NY time, and have a dedicated Slack channel where you can be easily added by [emailing](mailto:haykh.astro@gmail.com) [one of the maintainers](mailto:genegorbs@gmail.com). If you prefer to just join our Zoom meetings without the Slack involvement -- that's totally fine, just email, and we can send you the Zoom link. 
+Everyone is welcome to join our small yet steadily growing community of code users and developers; regardless of how much you are planning to contribute -- we always welcome fresh ideas and feedback. We hold weekly Slack calls on Mondays at 12pm NY time, and have a dedicated Slack channel where you can be easily added by emailing one of the maintainers (indicated with an asterisk in the list below). Anyone is welcome to join both our **Slack workspace** and the weekly meetings -- please feel free to request access by emailing.
 
 Another way of contacting us is via GitHub issues and/or pull requests. Make sure to check out our [F.A.Q.](https://entity-toolkit.github.io/wiki/content/1-getting-started/9-faq/), as it might help you answer your question.
 
@@ -20,13 +20,15 @@ Another way of contacting us is via GitHub issues and/or pull requests. Make sur
 
 ## Contributors (alphabetical)
 
+Maintainers indicated with an arrow.
+
 * :guitar: Ludwig Böss {[@LudwigBoess](https://github.com/LudwigBoess)}
 * :eyes: Yangyang Cai {[@StaticObserver](https://github.com/StaticObserver)}
 * :tipping_hand_person: Alexander Chernoglazov {[@SChernoglazov](https://github.com/SChernoglazov)}
 * :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand)}
 * :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk)}
-* :steam_locomotive: Evgeny Gorbunov {[@Alcauchy](https://github.com/Alcauchy)}
-* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh)}
+* :steam_locomotive: Evgeny Gorbunov {[@Alcauchy](https://github.com/Alcauchy)} [-> [haykh.astro [at] gmail](mailto:haykh.astro@gmail.com)]
+* :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh)} [-> [genegorbs [at] gmail](mailto:genegorbs@gmail.com)]
 * :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann)}
 * :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph)}
 * :radio: Siddhant Solanki {[@sidruns30](https://github.com/sidruns30)}
