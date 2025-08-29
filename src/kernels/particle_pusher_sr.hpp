@@ -478,12 +478,7 @@ namespace kernel::sr {
       bool            is_gca { false };
 
       // field interpolation 1st-6th order
-      //getInterpFlds(p, ei, bi);
-
-      for (auto i { 0u }; i < 3u; ++i) {
-        ei[i] = ZERO;
-        bi[i] = ZERO;
-      }
+      getInterpFlds(p, ei, bi);
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
@@ -840,7 +835,7 @@ namespace kernel::sr {
                               vec_t<Dim::_3D>& b0) const {
 
       // ToDo: implement template in srpic.hpp
-      const unsigned int O = 2u;
+      const unsigned int O = 1u;
 
       // ToDo: change to 1u!
       if constexpr (O == 0u) {
@@ -1180,7 +1175,7 @@ namespace kernel::sr {
           // Ex1 -- dual, primal
           e0[0] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::ex1);
             }
@@ -1190,7 +1185,7 @@ namespace kernel::sr {
           // Ex2 -- primal, dual
           e0[1] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::ex2);
             }
@@ -1200,7 +1195,7 @@ namespace kernel::sr {
           // Ex3 -- primal, primal
           e0[2] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1p[idx1] * EB(ip_min + idx1, jp_min + idx2, em::ex3);
             }
@@ -1210,7 +1205,7 @@ namespace kernel::sr {
           // Bx1 -- primal, dual
           b0[0] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::bx1);
             }
@@ -1220,7 +1215,7 @@ namespace kernel::sr {
           // Bx2 -- dual, primal
           b0[1] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::bx2);
             }
@@ -1230,7 +1225,7 @@ namespace kernel::sr {
           // Bx3 -- dual, dual
           b0[2] = ZERO;
           for (int idx2 = 0; idx2 < O + 1; idx2++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx1 = 0; idx1 < O + 1; idx1++) {
               c0 += S1d[idx1] * EB(id_min + idx1, jd_min + idx2, em::bx3);
             }
@@ -1268,9 +1263,9 @@ namespace kernel::sr {
           // Ex1 -- dual, primal, primal
           e0[0] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1d[idx1] *
                        EB(id_min + idx1, jp_min + idx2, kp_min + idx3, em::ex1);
@@ -1283,9 +1278,9 @@ namespace kernel::sr {
           // Ex2 -- primal, dual, primal
           e0[1] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1p[idx1] *
                        EB(ip_min + idx1, jd_min + idx2, kp_min + idx3, em::ex2);
@@ -1298,9 +1293,9 @@ namespace kernel::sr {
           // Ex3 -- primal, primal, dual
           e0[2] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1p[idx1] *
                        EB(ip_min + idx1, jp_min + idx2, kd_min + idx3, em::ex3);
@@ -1313,9 +1308,9 @@ namespace kernel::sr {
           // Bx1 -- primal, dual, dual
           b0[0] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1p[idx1] *
                        EB(ip_min + idx1, jd_min + idx2, kd_min + idx3, em::bx1);
@@ -1328,9 +1323,9 @@ namespace kernel::sr {
           // Bx2 -- dual, primal, dual
           b0[1] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1d[idx1] *
                        EB(id_min + idx1, jp_min + idx2, kd_min + idx3, em::bx2);
@@ -1343,9 +1338,9 @@ namespace kernel::sr {
           // Bx3 -- dual, dual, primal
           b0[2] = ZERO;
           for (int idx3 = 0; idx3 < O + 1; idx3++) {
-            real_t c0 = 0.0;
+            real_t c0 = ZERO;
             for (int idx2 = 0; idx2 < O + 1; idx2++) {
-              real_t c00 = 0.0;
+              real_t c00 = ZERO;
               for (int idx1 = 0; idx1 < O + 1; idx1++) {
                 c00 += S1d[idx1] *
                        EB(id_min + idx1, jd_min + idx2, kp_min + idx3, em::bx3);
