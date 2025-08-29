@@ -223,7 +223,7 @@ namespace ntt {
     auto flds_bc() const -> boundaries_t<FldsBC> {
       if constexpr (D == Dim::_1D) {
         return {
-          { flds_bc_in({ -1 }), flds_bc_in({ -1 }) }
+          { flds_bc_in({ -1 }), flds_bc_in({ 1 }) }
         };
       } else if constexpr (D == Dim::_2D) {
         return {
@@ -246,7 +246,7 @@ namespace ntt {
     auto prtl_bc() const -> boundaries_t<PrtlBC> {
       if constexpr (D == Dim::_1D) {
         return {
-          { prtl_bc_in({ -1 }), prtl_bc_in({ -1 }) }
+          { prtl_bc_in({ -1 }), prtl_bc_in({ 1 }) }
         };
       } else if constexpr (D == Dim::_2D) {
         return {
