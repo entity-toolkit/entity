@@ -33,8 +33,8 @@ namespace prtl_shape {
           S[1]  = ONE - S[0];
         } else {
           i_min = i;
-          S[1]  = static_cast<real_t>(1.5) - di;
-          S[0]  = ONE - S[1];
+          S[0]  = static_cast<real_t>(1.5) - di;
+          S[1]  = ONE - S[0];
         }
       } // staggered
     } else if constexpr (O == 2u) {
