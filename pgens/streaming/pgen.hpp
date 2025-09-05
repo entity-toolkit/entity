@@ -9,9 +9,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "archetypes/energy_dist.h"
-#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
+#include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
@@ -81,28 +80,19 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& domain) {
       const auto nspec = domain.species.size();
       for (auto n = 0u; n < nspec; n += 2) {
-        const auto drift_1  = prmvec_t { drifts_in_x[n],
+        const auto drift_1 = prmvec_t { drifts_in_x[n],
                                         drifts_in_y[n],
                                         drifts_in_z[n] };
-        const auto drift_2  = prmvec_t { drifts_in_x[n + 1],
+        const auto drift_2 = prmvec_t { drifts_in_x[n + 1],
                                         drifts_in_y[n + 1],
                                         drifts_in_z[n + 1] };
-        const auto injector = arch::experimental::
-          UniformInjector<S, M, arch::experimental::Maxwellian, arch::experimental::Maxwellian>(
-            arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
-                                                 domain.random_pool,
-                                                 temperatures[n],
-                                                 drift_1),
-            arch::experimental::Maxwellian<S, M>(domain.mesh.metric,
-                                                 domain.random_pool,
-                                                 temperatures[n + 1],
-                                                 drift_2),
-            { n + 1, n + 2 });
-        arch::experimental::InjectUniform<S, M, decltype(injector)>(
+        arch::InjectUniformMaxwellians<S, M>(
           params,
           domain,
-          injector,
-          densities[n / 2]);
+          densities[n / 2],
+          { temperatures[n], temperatures[n + 1] },
+          { n + 1, n + 2 },
+          { drift_1, drift_2 });
       }
     }
   };
