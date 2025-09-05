@@ -11,7 +11,7 @@
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
  *                                    custom, horizon, axis, conductor, sync
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
- *   - enum ntt::Cooling           // synchrotron, none
+ *   - enum ntt::Cooling           // compton, synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
  *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
@@ -265,13 +265,14 @@ namespace ntt {
     enum type : uint8_t {
       INVALID     = 0,
       SYNCHROTRON = 1,
-      NONE        = 2,
+      COMPTON     = 2,
+      NONE        = 3,
     };
 
     constexpr Cooling(uint8_t c) : enums_hidden::BaseEnum<Cooling> { c } {}
 
-    static constexpr type        variants[] = { SYNCHROTRON, NONE };
-    static constexpr const char* lookup[]   = { "synchrotron", "none" };
+    static constexpr type        variants[] = { SYNCHROTRON, COMPTON, NONE };
+    static constexpr const char* lookup[]   = { "synchrotron", "compton", "none" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
