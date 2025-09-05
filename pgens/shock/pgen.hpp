@@ -136,7 +136,7 @@ namespace user {
       }
     }
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    inline void InitPrtls(Domain<S, M>& domain) {
 
       /*
        *  Plasma setup as partially filled box
@@ -173,14 +173,13 @@ namespace user {
       // species #2 -> protons
 
       // energy distribution of the particles
-      const auto temperatures = std::make_pair<real_t, real_t>(
-        temperature,
-        temperature_ratio * temperature);
-      const auto drifts = std::make_pair<std::vector<real_t>, std::vector<real_t>>(
-        { -drift_ux, ZERO, ZERO },
-        { -drift_ux, ZERO, ZERO });
+      const auto temperatures = std::make_pair(temperature,
+                                               temperature_ratio * temperature);
+      const auto drifts       = std::make_pair(
+        std::vector<real_t> { -drift_ux, ZERO, ZERO },
+        std::vector<real_t> { -drift_ux, ZERO, ZERO });
       arch::InjectUniformMaxwellians<S, M>(params,
-                                           local_domain,
+                                           domain,
                                            ONE,
                                            temperatures,
                                            { 1, 2 },
@@ -307,14 +306,13 @@ namespace user {
       }
 
       // same maxwell distribution as above
-      const auto temperatures = std::make_pair<real_t, real_t>(
-        temperature,
-        temperature_ratio * temperature);
-      const auto drifts = std::make_pair<std::vector<real_t>, std::vector<real_t>>(
-        { -drift_ux, ZERO, ZERO },
-        { -drift_ux, ZERO, ZERO });
+      const auto temperatures = std::make_pair(temperature,
+                                               temperature_ratio * temperature);
+      const auto drifts       = std::make_pair(
+        std::vector<real_t> { -drift_ux, ZERO, ZERO },
+        std::vector<real_t> { -drift_ux, ZERO, ZERO });
       arch::InjectUniformMaxwellians<S, M>(params,
-                                           local_domain,
+                                           domain,
                                            ONE,
                                            temperatures,
                                            { 1, 2 },

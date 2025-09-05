@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import myplotlib
 
-plt.style.use("hershey.light")
+plt.style.use("latex")
 
 fig = plt.figure(dpi=600)
 ax = fig.add_subplot(111)
@@ -42,7 +42,7 @@ ax.annotate(
 ax.text(
     -0.94,
     0.25,
-    "grid.boundaries.match.ds[0]",
+    r"$\mathtt{grid.boundaries.match.ds[0]}$",
     color="red",
     size=5,
     ha="left",
@@ -51,7 +51,7 @@ ax.text(
 ax.text(
     -0.5,
     0.44,
-    "grid.boundaries.match.ds[1]",
+    r"$\mathtt{grid.boundaries.match.ds[1]}$",
     color="blue",
     size=5,
     ha="center",
@@ -74,7 +74,7 @@ ax.annotate(
 ax.text(
     -0.5,
     -0.06,
-    "setup.cs_width",
+    r"$\mathtt{setup.cs\_width}$",
     color="g",
     size=5,
     ha="center",
@@ -83,7 +83,7 @@ ax.text(
 ax.text(
     0.5,
     0.33,
-    "setup.inj_ypad",
+    r"$\mathtt{setup.inj\_ypad}$",
     color="magenta",
     size=5,
     ha="center",
@@ -92,7 +92,7 @@ ax.text(
 ax.text(
     0.0,
     0.0,
-    "current layer plasma with peak density setup.cs_overdensity $\\times ~n_0$",
+    r"current layer plasma with peak density $\mathtt{setup.cs\_overdensity} \times n_0$",
     color="green",
     size=5,
     ha="center",
@@ -125,7 +125,7 @@ ax.annotate(
 ax.text(
     0.9,
     0.22,
-    "magnetic field of strength setup.bg_B $\\times ~B_0$",
+    r"magnetic field of strength $\mathtt{setup.bg\_B}\times B_0$",
     color="red",
     size=5,
     ha="right",
@@ -158,7 +158,7 @@ ax.add_patch(mpatches.Circle((0.75, -0.15), 0.005, color="red", fill=True, lw=0.
 ax.text(
     0.71,
     0.15,
-    "setup.bg_Bguide $\\times ~B_0$",
+    r"$\mathtt{setup.bg\_Bguide} \times B_0$",
     color="r",
     size=5,
     ha="right",
