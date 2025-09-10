@@ -60,72 +60,75 @@ namespace prtl_shape {
         S[1] = ONE - S[0] - S[2];
       } // staggered
     } else if constexpr (O == 3u) {
-      //        1/6 * ( 4 - 6 * |x|^2 + 3 * |x|^2)    |x| < 1
+      //        1/6 * ( 4 - 6 * |x|^2 + 3 * |x|^3)    |x| < 1
       // S(x) = 1/6 * ( 2 - |x|)^3                    1 ≤ |x| < 2
       //        0.0                                   |x| ≥ 2
       if constexpr (not STAGGERED) { // compute at i positions
         i_min = i - 2;
         S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
-        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
         S[1]  = static_cast<real_t>(1.0 / 6.0) *
                (FOUR - SIX * SQR(di) + THREE * CUBE(di));
+        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
         S[2] = ONE - S[0] - S[1] - S[3];
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 2;
           S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
           S[1]  = static_cast<real_t>(1.0 / 6.0) *
-                 (FOUR - SIX * SQR(HALF - di) + THREE * CUBE(HALF - di));
+                 (FOUR - SIX * SQR(HALF + di) + THREE * CUBE(HALF + di));
+          S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
           S[2] = ONE - S[0] - S[1] - S[3];
         } else {
           i_min = i - 1;
-          S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
-          S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
+          S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(static_cast<real_t>(1.5) - di);
           S[1]  = static_cast<real_t>(1.0 / 6.0) *
                  (FOUR - SIX * SQR(di - HALF) + THREE * CUBE(di - HALF));
+          S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di - HALF);
           S[2] = ONE - S[0] - S[1] - S[3];
         }
       } // staggered
     } else if constexpr (O == 4u) {
-      //        1/25 * ( 5/2 - |x|)^4                           |x| < 3/2
-      // S(x) = 5/8 - |x|^2 + 32/45 * |x|^3 - 98/675 * |x|^4    3/2 ≤ |x| < 5/2
+      //        5/8 - |x|^2 + 32/45 * |x|^3 - 98/675 * |x|^4    |x| < 3/2
+      // S(x) = 1/25 * ( 5/2 - |x|)^4                           3/2 ≤ |x| < 5/2
       //        0.0                                             |x| ≥ 5/2
       if constexpr (not STAGGERED) { // compute at i positions
         if (di < HALF) {
           i_min = i - 2;
           S[0]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(HALF - di));
-          S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(HALF + di));
           S[1]  = static_cast<real_t>(5.0 / 8.0) - SQR(ONE + di) +
                  static_cast<real_t>(32.0 / 45.0) * CUBE(ONE + di) -
                  static_cast<real_t>(98.0 / 675.0) * SQR(SQR(ONE + di));
-          S[2] = static_cast<real_t>(5.0 / 8.0) - SQR(di) +
+          S[2]  = static_cast<real_t>(5.0 / 8.0) - SQR(di) +
                  static_cast<real_t>(32.0 / 45.0) * CUBE(di) -
                  static_cast<real_t>(98.0 / 675.0) * SQR(SQR(di));
-          S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+          S[3]  = static_cast<real_t>(5.0 / 8.0) - SQR(ONE - di) +
+                 static_cast<real_t>(32.0 / 45.0) * CUBE(ONE - di) -
+                 static_cast<real_t>(98.0 / 675.0) * SQR(SQR(ONE - di));
+          S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(HALF + di));
+          S[2] = ONE - S[0] - S[1] - S[3] - S[4];
         } else {
           i_min = i - 1;
-          S[0]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(THREE * HALF - di));
-          S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(di - HALF));
+          S[0]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(static_cast<real_t>(1.5) - di));
           S[1]  = static_cast<real_t>(5.0 / 8.0) - SQR(di) +
                  static_cast<real_t>(32.0 / 45.0) * CUBE(di) -
                  static_cast<real_t>(98.0 / 675.0) * SQR(SQR(di));
-          S[2] = static_cast<real_t>(5.0 / 8.0) - SQR(ONE - di) +
-                 static_cast<real_t>(32.0 / 45.0) * CUBE(ONE - di) -
-                 static_cast<real_t>(98.0 / 675.0) * SQR(SQR(ONE - di));
-          S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+          S[3]  = static_cast<real_t>(5.0 / 8.0) - SQR(TWO - di) +
+                 static_cast<real_t>(32.0 / 45.0) * CUBE(TWO - di) -
+                 static_cast<real_t>(98.0 / 675.0) * SQR(SQR(TWO - di));
+          S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(di - HALF));
+          S[2] = ONE - S[0] - S[1] - S[3] - S[4];
         }
       } else { // compute at i + 1/2 positions
-        i_min = i - 2;
-        S[0]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(ONE - di));
-        S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(di));
-        S[1]  = static_cast<real_t>(5.0 / 8.0) - SQR(HALF + di) +
-               static_cast<real_t>(32.0 / 45.0) * CUBE(HALF + di) -
-               static_cast<real_t>(98.0 / 675.0) * SQR(SQR(HALF + di));
-        S[2] = static_cast<real_t>(5.0 / 8.0) - SQR(HALF - di) +
-               static_cast<real_t>(32.0 / 45.0) * CUBE(HALF - di) -
-               static_cast<real_t>(98.0 / 675.0) * SQR(SQR(HALF - di));
-        S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+          i_min = i - 2;
+          S[0]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(ONE - di));
+          S[1]  = static_cast<real_t>(5.0 / 8.0) - SQR(HALF + di) +
+                 static_cast<real_t>(32.0 / 45.0) * CUBE(HALF + di) -
+                 static_cast<real_t>(98.0 / 675.0) * SQR(SQR(HALF + di));
+          S[3]  = static_cast<real_t>(5.0 / 8.0) - SQR(TWO - di) +
+                 static_cast<real_t>(32.0 / 45.0) * CUBE(TWO - di) -
+                 static_cast<real_t>(98.0 / 675.0) * SQR(SQR(TWO - di));
+          S[4]  = static_cast<real_t>(1.0 / 25.0) * SQR(SQR(di));
+          S[2] = ONE - S[0] - S[1] - S[3] - S[4];
       } // staggered
     } else if constexpr (O == 5u) {
       //        3/5 - |x|^2 + 5/6 * |x|^3 - 19/72 * |x|^4 + 13/432 * |x|^5   |x| < 2
@@ -133,65 +136,59 @@ namespace prtl_shape {
       //        0.0 |x| ≥ 3
       if constexpr (not STAGGERED) { // compute at i positions
         i_min = i - 2;
-        S[0]  = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(ONE - di)); //
+        S[0]  = static_cast<real_t>(1.0 / 135.0) * SQR(SQR(ONE + di))*(ONE - di);
         S[1]  = static_cast<real_t>(3.0 / 5.0) - SQR(ONE + di) +
                static_cast<real_t>(5.0 / 6.0) * CUBE(ONE + di) -
                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(ONE + di)) +
-               static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(ONE + di));
-        S[2] = static_cast<real_t>(3.0 / 5.0) - SQR(di) +
+               static_cast<real_t>(13.0 / 432.0) * SQR(SQR(ONE + di))*(ONE + di);
+        S[2]  = static_cast<real_t>(3.0 / 5.0) - SQR(di) +
                static_cast<real_t>(5.0 / 6.0) * CUBE(di) -
                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(di)) +
-               static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(di));
-        S[3] = static_cast<real_t>(3.0 / 5.0) - SQR(ONE - di) +
+               static_cast<real_t>(13.0 / 432.0) * SQR(SQR(di)) * di;
+        S[3]  = static_cast<real_t>(3.0 / 5.0) - SQR(ONE - di) +
                static_cast<real_t>(5.0 / 6.0) * CUBE(ONE - di) -
                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(ONE - di)) +
-               static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(ONE - di));
-        S[5] = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(di));
-        S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+               static_cast<real_t>(13.0 / 432.0) * SQR(SQR(ONE - di))*(ONE - di);
+        S[4]  = static_cast<real_t>(3.0 / 5.0) - SQR(TWO - di) +
+               static_cast<real_t>(5.0 / 6.0) * CUBE(TWO - di) -
+               static_cast<real_t>(19.0 / 72.0) * SQR(SQR(TWO - di)) +
+               static_cast<real_t>(13.0 / 432.0) * SQR(SQR(TWO - di))*(TWO - di);
+        S[5]  = static_cast<real_t>(1.0 / 135.0) * SQR(SQR(di))*di;
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 3;
           S[0]  = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(HALF - di));
-          S[1]  = static_cast<real_t>(3.0 / 5.0) -
-                 SQR(static_cast<real_t>(3 / 2) + di) +
-                 static_cast<real_t>(5.0 / 6.0) *
-                   CUBE(static_cast<real_t>(3 / 2) + di) -
-                 static_cast<real_t>(19.0 / 72.0) *
-                   SQR(SQR(static_cast<real_t>(3 / 2) + di)) +
-                 static_cast<real_t>(13.0 / 432.0) *
-                   SQR(CUBE(static_cast<real_t>(3 / 2) + di));
-          S[2] = static_cast<real_t>(3.0 / 5.0) - SQR(HALF + di) +
-                 static_cast<real_t>(5.0 / 6.0) * CUBE(HALF + di) -
-                 static_cast<real_t>(19.0 / 72.0) * SQR(SQR(HALF + di)) +
-                 static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(HALF + di));
-          S[3] = static_cast<real_t>(3.0 / 5.0) - SQR(HALF - di) +
-                 static_cast<real_t>(5.0 / 6.0) * CUBE(HALF - di) -
-                 static_cast<real_t>(19.0 / 72.0) * SQR(SQR(HALF - di)) +
-                 static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(HALF - di));
-          S[5] = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(HALF + di));
-          S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+          S[1]  = static_cast<real_t>(3.0 / 5.0) - SQR(static_cast<real_t>(1.5) + di) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(static_cast<real_t>(1.5) + di) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(static_cast<real_t>(1.5) + di)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(static_cast<real_t>(1.5) + di));
+          S[2]  = static_cast<real_t>(3.0 / 5.0) - SQR(HALF + di) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(HALF + di) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(HALF + di)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(HALF + di));
+          S[4]  = static_cast<real_t>(3.0 / 5.0) - SQR(static_cast<real_t>(1.5) - di) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(static_cast<real_t>(1.5) - di) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(static_cast<real_t>(1.5) - di)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(static_cast<real_t>(1.5) - di));
+          S[5]  = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(HALF + di));
+          S[3] = ONE - S[0] - S[1] - S[2] - S[4] - S[5];
         } else {
           i_min = i - 2;
-          S[0]  = static_cast<real_t>(1.0 / 135.0) *
-                 SQR(CUBE(static_cast<real_t>(3 / 2) - di));
-          S[1] = static_cast<real_t>(3.0 / 5.0) - SQR(HALF + di) +
-                 static_cast<real_t>(5.0 / 6.0) * CUBE(HALF + di) -
-                 static_cast<real_t>(19.0 / 72.0) * SQR(SQR(HALF + di)) +
-                 static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(HALF + di));
-          S[2] = static_cast<real_t>(3.0 / 5.0) - SQR(di - HALF) +
-                 static_cast<real_t>(5.0 / 6.0) * CUBE(di - HALF) -
-                 static_cast<real_t>(19.0 / 72.0) * SQR(SQR(di - HALF)) +
-                 static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(di - HALF));
-          S[3] = static_cast<real_t>(3.0 / 5.0) -
-                 SQR(static_cast<real_t>(3 / 2) - di) +
-                 static_cast<real_t>(5.0 / 6.0) *
-                   CUBE(static_cast<real_t>(3 / 2) - di) -
-                 static_cast<real_t>(19.0 / 72.0) *
-                   SQR(SQR(static_cast<real_t>(3 / 2) - di)) +
-                 static_cast<real_t>(13.0 / 432.0) *
-                   SQR(CUBE(static_cast<real_t>(3 / 2) - di));
-          S[5] = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(di - HALF));
-          S[3] = ONE - S[0] - S[1] - S[2] - S[4];
+          S[0]  = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(static_cast<real_t>(1.5) - di));
+          S[1]  = static_cast<real_t>(3.0 / 5.0) - SQR(HALF + di) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(HALF + di) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(HALF + di)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(HALF + di));
+          S[2]  = static_cast<real_t>(3.0 / 5.0) - SQR(di - HALF) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(di - HALF) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(di - HALF)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(di - HALF));
+          S[4]  = static_cast<real_t>(3.0 / 5.0) - SQR(static_cast<real_t>(2.5) - di) +
+                static_cast<real_t>(5.0 / 6.0) * CUBE(static_cast<real_t>(2.5) - di) -
+                static_cast<real_t>(19.0 / 72.0) * SQR(SQR(static_cast<real_t>(2.5) - di)) +
+                static_cast<real_t>(13.0 / 432.0) * SQR(CUBE(static_cast<real_t>(2.5) - di));
+          S[5]  = static_cast<real_t>(1.0 / 135.0) * SQR(CUBE(di - HALF));
+          S[3] = ONE - S[0] - S[1] - S[2] - S[4] - S[5];
         }
       } // staggered
     }
