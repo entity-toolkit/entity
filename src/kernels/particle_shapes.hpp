@@ -266,9 +266,6 @@ namespace prtl_shape {
           for (int n = 0; n < 5; n++) {
             S[n] = S4(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
           }
-
-          Kokkos::printf("S: %e %e %e %e %e\n", S[0], S[1], S[2], S[3], S[4]);
-          Kokkos::printf("Sum: %e\n", S[0] + S[1] + S[2] + S[3] + S[4]);
         } else {
           i_min = i - 1;
 
@@ -276,9 +273,6 @@ namespace prtl_shape {
           for (int n = 0; n < 5; n++) {
             S[n] = S4(Kokkos::fabs(ONE + di - static_cast<real_t>(n)));
           }
-
-          Kokkos::printf("S: %e %e %e %e %e\n", S[0], S[1], S[2], S[3], S[4]);
-          Kokkos::printf("Sum: %e\n", S[0] + S[1] + S[2] + S[3] + S[4]);
         }
       } else { // compute at i + 1/2 positions
           i_min = i - 2;
@@ -287,10 +281,6 @@ namespace prtl_shape {
           for (int n = 0; n < 5; n++) {
             S[i] = S4(Kokkos::fabs(static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
           }
-
-          Kokkos::printf("S: %e %e %e %e %e\n", S[0], S[1], S[2], S[3], S[4]);
-          Kokkos::printf("Sum: %e\n", S[0] + S[1] + S[2] + S[3] + S[4]);
-
       } // staggered
     } else if constexpr (O == 5u) {
       //        3/5 - |x|^2 + 5/6 * |x|^3 - 19/72 * |x|^4 + 13/432 * |x|^5   |x| < 2
@@ -303,9 +293,6 @@ namespace prtl_shape {
         for (int n = 0; n < 6; n++) {
             S[n] = S5(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
         }
-
-        Kokkos::printf("S: %e %e %e %e %e %e\n", S[0], S[1], S[2], S[3], S[4], S[5]);
-        Kokkos::printf("Sum: %e\n", S[0] + S[1] + S[2] + S[3] + S[4] + S[5]);
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 3;
