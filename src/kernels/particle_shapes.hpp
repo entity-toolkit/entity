@@ -98,38 +98,38 @@ namespace prtl_shape {
   Inline real_t S7(const real_t x)
   {
     if (x < ONE) {
-      return static_cast<real_t>(151.0) / static_cast<real_t>(315.0) - 
+      return static_cast<real_t>(151.0/315.0) - 
              THIRD * SQR(x) +
-             static_cast<real_t>(1.0) / static_cast<real_t>(9.0) * SQR(SQR(x)) - 
-             static_cast<real_t>(1.0) / static_cast<real_t>(36.0) * SQR(SQR(x)) * SQR(x) +
-             static_cast<real_t>(1.0) / static_cast<real_t>(144.0) * SQR(SQR(x)) * CUBE(x);
+             static_cast<real_t>(1.0/9.0) * SQR(SQR(x)) - 
+             static_cast<real_t>(1.0/36.0) * SQR(SQR(x)) * SQR(x) +
+             static_cast<real_t>(1.0/144.0) * SQR(SQR(x)) * CUBE(x);
     } else if (x <= TWO) {
-      return static_cast<real_t>(103.0)/static_cast<real_t>(210.0) - 
-             static_cast<real_t>(7.0)/static_cast<real_t>(90.0) * x -
-             static_cast<real_t>(1.0)/static_cast<real_t>(10.0) * SQR(x) - 
-             static_cast<real_t>(7.0)/static_cast<real_t>(18.0) * CUBE(x) +
+      return static_cast<real_t>(103.0/210.0) - 
+             static_cast<real_t>(7.0/90.0) * x -
+             static_cast<real_t>(1.0/10.0) * SQR(x) - 
+             static_cast<real_t>(7.0/18.0) * CUBE(x) +
              HALF * SQR(SQR(x)) - 
-             static_cast<real_t>(7.0) / static_cast<real_t>(30.0) * CUBE(x) * SQR(x) +
-             static_cast<real_t>(1.0) / static_cast<real_t>(20.0) * SQR(SQR(x)) * SQR(x) -
-             static_cast<real_t>(1.0) / static_cast<real_t>(240.0) * SQR(SQR(x)) * CUBE(x);
+             static_cast<real_t>(7.0/30.0) * CUBE(x) * SQR(x) +
+             static_cast<real_t>(1.0/20.0) * SQR(SQR(x)) * SQR(x) -
+             static_cast<real_t>(1.0/240.0) * SQR(SQR(x)) * CUBE(x);
     } else if (x < THREE) {
-      return static_cast<real_t>(217.0)/static_cast<real_t>(90.0) * x -
-             static_cast<real_t>(23.0)/static_cast<real_t>(6.0) * SQR(x) +
-             static_cast<real_t>(49.0)/static_cast<real_t>(18.0) * CUBE(x) -
-             static_cast<real_t>(19.0)/static_cast<real_t>(18.0) * SQR(SQR(x)) + 
-             static_cast<real_t>(7.0)/static_cast<real_t>(30.0) * CUBE(x) * SQR(x) -
-             static_cast<real_t>(1.0)/static_cast<real_t>(36.0) * SQR(SQR(x)) * SQR(x) +
-             static_cast<real_t>(1.0)/static_cast<real_t>(720.0) * SQR(SQR(x)) * CUBE(x) -
-             static_cast<real_t>(139.0)/static_cast<real_t>(630.0);
+      return static_cast<real_t>(217.0/90.0) * x -
+             static_cast<real_t>(23.0/6.0) * SQR(x) +
+             static_cast<real_t>(49.0/18.0) * CUBE(x) -
+             static_cast<real_t>(19.0/18.0) * SQR(SQR(x)) + 
+             static_cast<real_t>(7.0/30.0) * CUBE(x) * SQR(x) -
+             static_cast<real_t>(1.0/36.0) * SQR(SQR(x)) * SQR(x) +
+             static_cast<real_t>(1.0/720.0) * SQR(SQR(x)) * CUBE(x) -
+             static_cast<real_t>(139.0/630.0);
     } else if (x < FOUR) {
-      return static_cast<real_t>(1024.0)/static_cast<real_t>(315.0) - 
-             static_cast<real_t>(256.0)/static_cast<real_t>(45.0) * x +
-             static_cast<real_t>(64.0)/static_cast<real_t>(15.0) * SQR(x) - 
-             static_cast<real_t>(16.0)/static_cast<real_t>(9.0) * CUBE(x) +
-             static_cast<real_t>(4.0)/static_cast<real_t>(9.0) * SQR(SQR(x)) - 
-             static_cast<real_t>(1.0)/static_cast<real_t>(15.0) * CUBE(x) * SQR(x) +
-             static_cast<real_t>(1.0)/static_cast<real_t>(180.0) * SQR(SQR(x)) * SQR(x) -
-             static_cast<real_t>(1.0)/static_cast<real_t>(5040.0) * SQR(SQR(x)) * CUBE(x);
+      return static_cast<real_t>(1024.0/315.0) - 
+             static_cast<real_t>(256.0/45.0) * x +
+             static_cast<real_t>(64.0/15.0) * SQR(x) - 
+             static_cast<real_t>(16.0/9.0) * CUBE(x) +
+             static_cast<real_t>(4.0/9.0) * SQR(SQR(x)) - 
+             static_cast<real_t>(1.0/15.0) * CUBE(x) * SQR(x) +
+             static_cast<real_t>(1.0/180.0) * SQR(SQR(x)) * SQR(x) -
+             static_cast<real_t>(1.0/5040.0) * SQR(SQR(x)) * CUBE(x);
     } else {
       return ZERO;
     }
@@ -183,6 +183,64 @@ namespace prtl_shape {
              static_cast<real_t>(9.0 / 640.0) * SQR(CUBE(x)) -
              static_cast<real_t>(1.0 / 1120.0) * SQR(SQR(x)) * CUBE(x) +
              static_cast<real_t>(1.0 / 40320.0) * SQR(SQR(SQR(x)));
+    } else {
+      return ZERO;
+    }
+  }
+
+  Inline real_t S9(const real_t x)
+  {
+    if (x <= ONE) {
+      return static_cast<real_t>(15619.0 / 36288.0) - 
+             static_cast<real_t>(35.0 / 144.0) * SQR(x) +
+             static_cast<real_t>(19.0 / 288.0) * SQR(SQR(x)) - 
+             static_cast<real_t>(5.0 / 432.0) * SQR(CUBE(x)) +
+             static_cast<real_t>(1.0 / 576.0) * SQR(SQR(SQR(x))) -
+             static_cast<real_t>(1.0 / 2880.0) * SQR(SQR(SQR(x))) * x;
+    } else if (x < TWO) {
+      return static_cast<real_t>(7799.0/18144.0) + 
+             static_cast<real_t>(1.0/192.0) * x -
+             static_cast<real_t>(19.0/72.0) * SQR(x) + 
+             static_cast<real_t>(7.0/144.0) * CUBE(x) -
+             static_cast<real_t>(1.0/144.0) * SQR(SQR(x)) +
+             static_cast<real_t>(7.0 / 96.0) * CUBE(x) * SQR(x) -
+             static_cast<real_t>(13.0 / 216.0) * SQR(CUBE(x)) +
+             static_cast<real_t>(1.0 / 48.0) * SQR(SQR(x)) * CUBE(x) -
+             static_cast<real_t>(1.0 / 288.0) * SQR(SQR(SQR(x))) +
+             static_cast<real_t>(1.0 / 4320.0) * CUBE(CUBE(x));
+    } else if (x <= THREE) {
+      return static_cast<real_t>(1553.0/2592.0) - 
+             static_cast<real_t>(339.0/448.0) * x +
+             static_cast<real_t>(635.0/504.0) * SQR(x) - 
+             static_cast<real_t>(83.0/48.0) * CUBE(x) +
+             static_cast<real_t>(191.0/144.0) * SQR(SQR(x)) -
+             static_cast<real_t>(19.0 / 32.0) * CUBE(x) * SQR(x) +
+             static_cast<real_t>(35.0 / 216.0) * SQR(CUBE(x)) -
+             static_cast<real_t>(3.0 / 112.0) * SQR(SQR(x)) * CUBE(x) +
+             static_cast<real_t>(5.0 / 2016.0) * SQR(SQR(SQR(x))) -
+             static_cast<real_t>(1.0 / 10080.0) * CUBE(CUBE(x));
+    } else if (x < FOUR) {
+      return static_cast<real_t>(5883.0/896.0) * x -
+             static_cast<real_t>(2449.0/288.0) * SQR(x) + 
+             static_cast<real_t>(563.0/96.0) * CUBE(x) -
+             static_cast<real_t>(1423.0/576.0) * SQR(SQR(x)) +
+             static_cast<real_t>(43.0/64.0) * CUBE(x) * SQR(x) -
+             static_cast<real_t>(103.0/864.0) * SQR(CUBE(x)) +
+             static_cast<real_t>(3.0 / 224.0) * SQR(SQR(x)) * CUBE(x) -
+             static_cast<real_t>(1.0 / 1152.0) * SQR(SQR(SQR(x))) +
+             static_cast<real_t>(1.0 / 40320.0) * CUBE(CUBE(x)) -
+             static_cast<real_t>(133663.0/72576.0);
+    } else if (x < FIVE) {
+      return static_cast<real_t>(390625.0/72576.0) - 
+             static_cast<real_t>(78125.0/8064.0) * x +
+             static_cast<real_t>(15625.0/2016.0) * SQR(x) - 
+             static_cast<real_t>(3125.0/864.0) * CUBE(x) +
+             static_cast<real_t>(625.0/576.0) * SQR(SQR(x)) -
+             static_cast<real_t>(125.0 / 576.0) * CUBE(x) * SQR(x) +
+             static_cast<real_t>(25.0 / 864.0) * SQR(CUBE(x)) -
+             static_cast<real_t>(5.0 / 2016.0) * SQR(SQR(x)) * CUBE(x) +
+             static_cast<real_t>(1.0 / 8064.0) * SQR(SQR(SQR(x))) -
+             static_cast<real_t>(1.0 / 362880.0) * CUBE(CUBE(x));
     } else {
       return ZERO;
     }
@@ -389,6 +447,30 @@ namespace prtl_shape {
           for (int n = 0; n < 9; n++) {
             S[n] = S8(Kokkos::fabs(static_cast<real_t>(3.5) + di - static_cast<real_t>(n)));
           }
+      } // staggered
+    } else if constexpr (O == 9u) {
+      if constexpr (not STAGGERED) { // compute at i positions
+        i_min = i - 4;
+        
+        #pragma unroll
+        for (int n = 0; n < 10; n++) {
+            S[n] = S9(Kokkos::fabs(FOUR + di - static_cast<real_t>(n)));
+        }
+      } else { // compute at i + 1/2 positions
+        if (di < HALF) {
+          i_min = i - 5;
+
+          for (int n = 0; n < 10; n++) {
+            S[n] = S9(Kokkos::fabs(static_cast<real_t>(4.5) + di - static_cast<real_t>(n)));
+          }
+        } else {
+          i_min = i - 4;
+
+          #pragma unroll
+          for (int n = 0; n < 10; n++) {
+            S[n] = S9(Kokkos::fabs(static_cast<real_t>(3.5) + di - static_cast<real_t>(n)));
+          }
+        }
       } // staggered
     } else {
       raise::KernelError(HERE, "Unsupported interpolation order");
