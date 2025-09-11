@@ -82,6 +82,19 @@ if("KOKKOS" IN_LIST MODES)
   target_link_libraries(${exec} ${libs})
 endif()
 
+if("KOKKOS_RAND" IN_LIST MODES)
+  set(libs "")
+  set(exec kokkos_rand.xc)
+  set(src ${CMAKE_CURRENT_SOURCE_DIR}/kokkos_rand.cpp)
+
+  find_kokkos()
+  list(APPEND libs Kokkos::kokkos)
+
+  add_executable(${exec} ${src})
+
+  target_link_libraries(${exec} ${libs})
+endif()
+
 if("ADIOS2_NOMPI" IN_LIST MODES)
   set(libs stdc++fs)
   set(exec adios2-nompi.xc)
