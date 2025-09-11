@@ -449,12 +449,12 @@ namespace kernel {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
               // Esirkepov 2001, Eq. 38 (simplified)
-                Wx1[i][j] = HALF * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] + iS_x2[j]);
+              Wx1[i][j] = HALF * (fS_x1[i] - iS_x1[i]) * (fS_x2[j] + iS_x2[j]);
 
-                Wx2[i][j] = HALF * (fS_x1[i] + iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
+              Wx2[i][j] = HALF * (fS_x1[i] + iS_x1[i]) * (fS_x2[j] - iS_x2[j]);
 
-                Wx3[i][j] = THIRD * (fS_x2[j] * (HALF * iS_x1[i] + fS_x1[i]) +
-                                     iS_x2[j] * (HALF * fS_x1[i] + iS_x1[i]));
+              Wx3[i][j] = THIRD * (fS_x2[j] * (HALF * iS_x1[i] + fS_x1[i]) +
+                                   iS_x2[j] * (HALF * fS_x1[i] + iS_x1[i]));
             }
           }
 
@@ -701,12 +701,12 @@ namespace kernel {
           }
         }
 
-        } else { // order
-          raise::KernelError(HERE, "Unsupported interpolation order");
-        }
+      } else { // order
+        raise::KernelError(HERE, "Unsupported interpolation order. O > 9 not supported. Seriously. What are you even doing here?");
       }
-    };
-  } // namespace kernel
+    }
+  };
+} // namespace kernel
 
 #undef i_di_to_Xi
 
