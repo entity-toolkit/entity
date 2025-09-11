@@ -16,19 +16,14 @@ function(set_precision precision_name)
   endif()
 endfunction()
 
-# -------------------------------- Shape function ------------------------------- #
-function(set_shapefunction shapefunction)
-  list(FIND shapefunctions ${shapefunction} SHAPEFUNCTION_FOUND)
-
-  if(${SHAPEFUNCTION_FOUND} EQUAL -1)
-    message(
-      FATAL_ERROR
-        "Invalid shape function order: ${shapefunction}\nValid options are: ${shapefunctions}"
-    )
+# ------------------------------- Shape function --------------------------- #
+function(set_shape_order shape_order)
+  if(${deposit} STREQUAL "esirkepov")
+    if(${shape_order} GREATER 9)
+      message(FATAL_ERROR "Shape order must be between 1 and 9")
+    endif()
+    add_compile_options("-DSHAPE_ORDER=${shape_order}")
   endif()
-
-  add_compile_options("-DN_ORDER=${shapefunction}")
-
 endfunction()
 
 # ---------------------------- Problem generator --------------------------- #

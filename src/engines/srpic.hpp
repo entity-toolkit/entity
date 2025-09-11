@@ -543,9 +543,8 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        
-        deposit_with<N_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
 
+        deposit_with<SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }

@@ -38,11 +38,11 @@ printchoices(
   PRECISION_REPORT
   46)
 printchoices(
-  "Shapefunction Order"
-  "shapefunction"
-  "${shapefunctions}"
-  ${shapefunction}
-  ${default_shapefunction}
+  "Shape order"
+  "shape_order"
+  ""
+  ${shape_order}
+  "1"
   "${Blue}"
   SHAPEFUNCTION_REPORT
   46)

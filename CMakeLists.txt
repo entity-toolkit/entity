@@ -80,13 +80,15 @@ set(precisions
     "single" "double"
     CACHE STRING "Precisions")
 
-set(shapefunctions
-    "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"
-    CACHE STRING "Shape functions")
-
-set(deposits
-    "Zig-zag" "Esirkepov"
+set(deposit
+    "zigzag" "esirkepov"
     CACHE STRING "Deposits")
+
+if(${deposit} STREQUAL "esirkepov")
+  set(shape_order
+      1
+      CACHE INTEGER "Shape functions")
+endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
@@ -105,7 +107,7 @@ include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
-set_shapefunction(${shapefunction})
+set_shape_order(${shape_order})
 if("${Kokkos_DEVICES}" MATCHES "CUDA")
   add_compile_options("-D CUDA_ENABLED")
   set(DEVICE_ENABLED ON)
