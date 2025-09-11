@@ -555,6 +555,12 @@ namespace ntt {
           deposit_with<4u>(species, domain.mesh.metric, scatter_cur, dt);
         } else if (shape_order == 5) {
           deposit_with<5u>(species, domain.mesh.metric, scatter_cur, dt);
+        } else if (shape_order == 6) {
+          deposit_with<6u>(species, domain.mesh.metric, scatter_cur, dt);
+        } else if (shape_order == 7) {
+          deposit_with<7u>(species, domain.mesh.metric, scatter_cur, dt);
+        } else if (shape_order == 8) {
+          deposit_with<8u>(species, domain.mesh.metric, scatter_cur, dt);
         } else {
           raise::Error("Invalid shape order for current deposition", HERE);
         }

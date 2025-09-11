@@ -401,7 +401,7 @@ namespace kernel {
                   cur::jx3) += Fx3_2 * Wx1_2 * Wx2_2;
           }
         }
-      } else if constexpr ((O >= 1u) and (O <= 5u)) {
+      } else if constexpr ((O >= 1u) and (O <= 8u)) {
 
         // shape function in dim1 -> always required
         real_t iS_x1[O + 2], fS_x1[O + 2];
