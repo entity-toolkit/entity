@@ -19,6 +19,9 @@ set(default_engine
 set(default_precision
     "single"
     CACHE INTERNAL "Default precision")
+set(default_shapefunction
+    0
+    CACHE INTERNAL "Default shape function")
 set(default_pgen
     "."
     CACHE INTERNAL "Default problem generator")

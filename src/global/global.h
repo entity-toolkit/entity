@@ -113,7 +113,13 @@ namespace files {
 
 namespace ntt {
 
-  inline constexpr std::size_t N_GHOSTS = 2;
+#ifndef N_ORDER
+#define N_ORDER 0
+inline constexpr std::size_t N_GHOSTS = 2;
+#else // N_ORDER
+  inline constexpr std::size_t N_GHOSTS = static_cast<std::size_t>((N_ORDER + 1)/2) + 1;
+#endif // N_ORDER
+
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))

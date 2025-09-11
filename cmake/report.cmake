@@ -38,6 +38,15 @@ printchoices(
   PRECISION_REPORT
   46)
 printchoices(
+  "Shapefunction Order"
+  "shapefunction"
+  "${shapefunctions}"
+  ${shapefunction}
+  ${default_shapefunction}
+  "${Blue}"
+  SHAPEFUNCTION_REPORT
+  46)
+printchoices(
   "Output"
   "output"
   "${ON_OFF_VALUES}"
@@ -111,6 +120,9 @@ string(
   REPORT_TEXT
   "  "
   ${PRECISION_REPORT}
+  "\n"
+  "  "
+  ${SHAPEFUNCTION_REPORT}
   "\n"
   "  "
   ${OUTPUT_REPORT}

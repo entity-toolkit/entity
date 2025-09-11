@@ -34,6 +34,11 @@ set(DEBUG
 set(precision
     ${default_precision}
     CACHE STRING "Precision")
+
+set(shapefunction
+    ${default_shapefunction}
+    CACHE STRING "Shape function")
+
 set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
@@ -75,6 +80,14 @@ set(precisions
     "single" "double"
     CACHE STRING "Precisions")
 
+set(shapefunctions
+    "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"
+    CACHE STRING "Shape functions")
+
+set(deposits
+    "Zig-zag" "Esirkepov"
+    CACHE STRING "Deposits")
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
 # ------------------------- Third-Party Tests ------------------------------ #
@@ -92,6 +105,7 @@ include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+set_shapefunction(${shapefunction})
 if("${Kokkos_DEVICES}" MATCHES "CUDA")
   add_compile_options("-D CUDA_ENABLED")
   set(DEVICE_ENABLED ON)

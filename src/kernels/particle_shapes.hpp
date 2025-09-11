@@ -612,7 +612,6 @@ namespace prtl_shape {
     The N-th order shape function per particle is a N+2 element array
     where the shape function contributes to only N+1 elements.
     We need to find which indices are contributing to the shape function
-    For this we first compute the indices of the particle position
 
     Let * be the particle position at the current timestep
     Let x be the particle position at the previous timestep

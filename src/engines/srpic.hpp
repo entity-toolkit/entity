@@ -543,29 +543,9 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        if (shape_order == 0) {
-          deposit_with<0u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 1) {
-          deposit_with<1u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 2) {
-          deposit_with<2u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 3) {
-          deposit_with<3u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 4) {
-          deposit_with<4u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 5) {
-          deposit_with<5u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 6) {
-          deposit_with<6u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 7) {
-          deposit_with<7u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 8) {
-          deposit_with<8u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else if (shape_order == 9) {
-          deposit_with<9u>(species, domain.mesh.metric, scatter_cur, dt);
-        } else {
-          raise::Error("Invalid shape order for current deposition", HERE);
-        }
+        
+        deposit_with<N_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
+
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }

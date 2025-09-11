@@ -16,6 +16,21 @@ function(set_precision precision_name)
   endif()
 endfunction()
 
+# -------------------------------- Shape function ------------------------------- #
+function(set_shapefunction shapefunction)
+  list(FIND shapefunctions ${shapefunction} SHAPEFUNCTION_FOUND)
+
+  if(${SHAPEFUNCTION_FOUND} EQUAL -1)
+    message(
+      FATAL_ERROR
+        "Invalid shape function order: ${shapefunction}\nValid options are: ${shapefunctions}"
+    )
+  endif()
+
+  add_compile_options("-DN_ORDER=${shapefunction}")
+
+endfunction()
+
 # ---------------------------- Problem generator --------------------------- #
 function(set_problem_generator pgen_name)
   if(pgen_name STREQUAL ".")

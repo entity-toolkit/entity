@@ -477,8 +477,8 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      // field interpolation 1st-6th order
-      getInterpFlds(p, ei, bi);
+      // field interpolation 0th-9th order
+      getInterpFlds<N_ORDER>(p, ei, bi);
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
@@ -830,14 +830,12 @@ namespace kernel::sr {
       }
     }
 
+    template <unsigned short O>
     Inline void getInterpFlds(index_t&         p,
                               vec_t<Dim::_3D>& e0,
                               vec_t<Dim::_3D>& b0) const {
 
-      // ToDo: implement template in srpic.hpp
-      const unsigned int O = 1u;
-
-      // ToDo: change to 1u!
+      // Zig-zag interpolation
       if constexpr (O == 0u) {
 
         if constexpr (D == Dim::_1D) {
@@ -1099,7 +1097,7 @@ namespace kernel::sr {
           c1    = c01 * ponpmy + c11 * ponppy;
           b0[2] = c0 * ponpmz + c1 * ponppz;
         }
-      } else if constexpr ((O >= 1u) and (O <= 5u)) {
+      } else if constexpr (O >= 1u) {
 
         if constexpr (D == Dim::_1D) {
           const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
