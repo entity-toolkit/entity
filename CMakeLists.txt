@@ -35,8 +35,12 @@ set(precision
     ${default_precision}
     CACHE STRING "Precision")
 
-set(shapefunction
-    ${default_shapefunction}
+set(deposit
+    ${default_deposit}
+    CACHE STRING "Deposit")
+
+set(shape_order
+    ${default_shape_order}
     CACHE STRING "Shape function")
 
 set(pgen
@@ -80,15 +84,19 @@ set(precisions
     "single" "double"
     CACHE STRING "Precisions")
 
-set(deposit
+set(deposits
     "zigzag" "esirkepov"
     CACHE STRING "Deposits")
 
-if(${deposit} STREQUAL "esirkepov")
+if(${deposit} STREQUAL "zigzag")
   set(shape_order
-      1
-      CACHE INTEGER "Shape functions")
+      ${default_shape_order}
+      CACHE STRING "Shape functions")
 endif()
+
+set(shape_orders
+    "1" "2" "3" "4" "5" "6" "7" "8" "9"
+    CACHE STRING "Shape orders")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 

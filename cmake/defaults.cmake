@@ -19,9 +19,12 @@ set(default_engine
 set(default_precision
     "single"
     CACHE INTERNAL "Default precision")
-set(default_shapefunction
-    0
-    CACHE INTERNAL "Default shape function")
+set(default_deposit
+    "zigzag"
+    CACHE INTERNAL "Default deposit")
+set(default_shape_order
+    1
+    CACHE INTERNAL "Default shape function order")
 set(default_pgen
     "."
     CACHE INTERNAL "Default problem generator")

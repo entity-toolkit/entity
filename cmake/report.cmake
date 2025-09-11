@@ -38,11 +38,20 @@ printchoices(
   PRECISION_REPORT
   46)
 printchoices(
+  "Deposit"
+  "deposit"
+  "${deposits}"
+  ${deposit}
+  ${default_deposit}
+  "${Blue}"
+  DEPOSIT_REPORT
+  46)
+printchoices(
   "Shape order"
   "shape_order"
-  ""
+  "${shape_orders}"
   ${shape_order}
-  "1"
+  ${default_shape_order}
   "${Blue}"
   SHAPEFUNCTION_REPORT
   46)
@@ -120,6 +129,9 @@ string(
   REPORT_TEXT
   "  "
   ${PRECISION_REPORT}
+  "\n"
+  "  "
+  ${DEPOSIT_REPORT}
   "\n"
   "  "
   ${SHAPEFUNCTION_REPORT}

@@ -478,7 +478,7 @@ namespace kernel::sr {
       bool            is_gca { false };
 
       // field interpolation 0th-9th order
-      getInterpFlds<N_ORDER>(p, ei, bi);
+      getInterpFlds<SHAPE_ORDER>(p, ei, bi);
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
