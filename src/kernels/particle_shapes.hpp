@@ -262,6 +262,7 @@ namespace prtl_shape {
         if (di < HALF) {
           i_min = i - 2;
 
+          #pragma unroll
           for (int n = 0; n < 5; n++) {
             S[n] = S4(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
           }
@@ -271,6 +272,7 @@ namespace prtl_shape {
         } else {
           i_min = i - 1;
 
+          #pragma unroll
           for (int n = 0; n < 5; n++) {
             S[n] = S4(Kokkos::fabs(ONE + di - static_cast<real_t>(n)));
           }
@@ -281,6 +283,7 @@ namespace prtl_shape {
       } else { // compute at i + 1/2 positions
           i_min = i - 2;
 
+          #pragma unroll
           for (int n = 0; n < 5; n++) {
             S[i] = S4(Kokkos::fabs(static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
           }
@@ -296,6 +299,7 @@ namespace prtl_shape {
       if constexpr (not STAGGERED) { // compute at i positions
         i_min = i - 2;
         
+        #pragma unroll
         for (int n = 0; n < 6; n++) {
             S[n] = S5(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
         }
@@ -306,11 +310,14 @@ namespace prtl_shape {
         if (di < HALF) {
           i_min = i - 3;
 
+          #pragma unroll
           for (int n = 0; n < 6; n++) {
             S[n] = S5(Kokkos::fabs(static_cast<real_t>(2.5) + di - static_cast<real_t>(n)));
           }
         } else {
           i_min = i - 2;
+
+          #pragma unroll
           for (int n = 0; n < 6; n++) {
             S[n] = S5(Kokkos::fabs(static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
           }
@@ -322,12 +329,14 @@ namespace prtl_shape {
         if (di < HALF) {
           i_min = i - 3;
 
+          #pragma unroll
           for (int n = 0; n < 7; n++) {
             S[n] = S6(Kokkos::fabs(THREE + di - static_cast<real_t>(n)));
           }
         } else {
           i_min = i - 2;
 
+          #pragma unroll
           for (int n = 0; n < 5; n++) {
             S[i] = S6(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
           }
@@ -335,6 +344,7 @@ namespace prtl_shape {
       } else { // compute at i + 1/2 positions
           i_min = i - 3;
 
+          #pragma unroll
           for (int n = 0; n < 5; n++) {
             S[n] = S6(Kokkos::fabs(static_cast<real_t>(2.5) + di - static_cast<real_t>(n)));
           }
@@ -343,6 +353,7 @@ namespace prtl_shape {
       if constexpr (not STAGGERED) { // compute at i positions
         i_min = i - 3;
         
+        #pragma unroll
         for (int n = 0; n < 8; n++) {
             S[n] = S7(Kokkos::fabs(THREE + di - static_cast<real_t>(n)));
         }
@@ -354,7 +365,9 @@ namespace prtl_shape {
             S[n] = S7(Kokkos::fabs(static_cast<real_t>(3.5) + di - static_cast<real_t>(n)));
           }
         } else {
-          i_min = i - 2;
+          i_min = i - 3;
+
+          #pragma unroll
           for (int n = 0; n < 8; n++) {
             S[n] = S7(Kokkos::fabs(static_cast<real_t>(2.5) + di - static_cast<real_t>(n)));
           }
@@ -365,12 +378,14 @@ namespace prtl_shape {
         if (di < HALF) {
           i_min = i - 4;
 
+          #pragma unroll
           for (int n = 0; n < 9; n++) {
             S[n] = S8(Kokkos::fabs(FOUR + di - static_cast<real_t>(n)));
           }
         } else {
           i_min = i - 3;
 
+          #pragma unroll
           for (int n = 0; n < 9; n++) {
             S[n] = S8(Kokkos::fabs(THREE + di - static_cast<real_t>(n)));
           }
@@ -378,12 +393,13 @@ namespace prtl_shape {
       } else { // compute at i + 1/2 positions
           i_min = i - 4;
 
+          #pragma unroll
           for (int n = 0; n < 9; n++) {
             S[n] = S8(Kokkos::fabs(static_cast<real_t>(3.5) + di - static_cast<real_t>(n)));
           }
       } // staggered
     } else {
-      //ERROR("Interpolation order not implemented");
+      raise::KernelError(HERE, "Unsupported interpolation order");
     }
   }
 
