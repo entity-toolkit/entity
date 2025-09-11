@@ -67,7 +67,6 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -82,6 +81,8 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
+    const Metadomain<S, M>& global_domain;
+
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
@@ -95,6 +96,7 @@ namespace user {
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
@@ -116,8 +118,8 @@ namespace user {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&,
+                        const em& comp) const -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
@@ -176,7 +178,7 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         local_domain.mesh.metric,
         local_domain.random_pool,
-        { temperature_ratio * temperature * local_domain.species[1].mass() ,
+        { temperature_ratio * temperature * local_domain.species[1].mass(),
           temperature },
         { 1, 2 },
         -drift_ux,
@@ -266,6 +268,7 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
+      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
 
       /*
         tag particles inside the injection zone as dead
@@ -318,8 +321,7 @@ namespace user {
       const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
         domain.mesh.metric,
         domain.random_pool,
-        { temperature_ratio * temperature * domain.species[1].mass(),
-          temperature },
+        { temperature_ratio * temperature * domain.species[1].mass(), temperature },
         { 1, 2 },
         -drift_ux,
         in::x1);
