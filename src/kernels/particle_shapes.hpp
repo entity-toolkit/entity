@@ -17,7 +17,7 @@
 
 namespace prtl_shape {
 
-  Inline real_t S4(real_t x)
+  Inline real_t S4(const real_t x)
   {
     if (x < HALF)
     {
@@ -38,7 +38,7 @@ namespace prtl_shape {
     }
   }
 
-  Inline real_t S5(real_t x)
+  Inline real_t S5(const real_t x)
   {
     if (x <= ONE)
     {
@@ -59,16 +59,21 @@ namespace prtl_shape {
     }
   }
 
-  Inline real_t S6(real_t x)
+  Inline real_t S6(const real_t x)
   {
     if (x <= HALF) {
-      return static_cast<real_t>(5887.0 / 11520.0) - static_cast<real_t>(77.0 / 192.0) * SQR(x) +
-             static_cast<real_t>(7.0 / 48.0) * SQR(SQR(x)) - static_cast<real_t>(1.0 / 36.0) * SQR(SQR(x)) * SQR(x);
+      return static_cast<real_t>(5887.0 / 11520.0) - 
+             static_cast<real_t>(77.0 / 192.0) * SQR(x) +
+             static_cast<real_t>(7.0 / 48.0) * SQR(SQR(x)) - 
+             static_cast<real_t>(1.0 / 36.0) * SQR(CUBE(x));
     } else if (x < static_cast<real_t>(1.5)) {
-      return static_cast<real_t>(7861.0/15360.0) - static_cast<real_t>(7.0/768.0) * x -
-             static_cast<real_t>(91.0/256.0) * SQR(x) - static_cast<real_t>(35.0/288.0) * CUBE(x) +
-             static_cast<real_t>(21.0/64.0) * SQR(SQR(x)) - static_cast<real_t>(7.0 / 48.0) * CUBE(x) * SQR(x) +
-             static_cast<real_t>(1.0 / 48.0) * SQR(SQR(x)) * SQR(x);
+      return static_cast<real_t>(7861.0/15360.0) - 
+             static_cast<real_t>(7.0/768.0) * x -
+             static_cast<real_t>(91.0/256.0) * SQR(x) - 
+             static_cast<real_t>(35.0/288.0) * CUBE(x) +
+             static_cast<real_t>(21.0/64.0) * SQR(SQR(x)) - 
+             static_cast<real_t>(7.0 / 48.0) * CUBE(x) * SQR(x) +
+             static_cast<real_t>(1.0 / 48.0) * SQR(CUBE(x));
     } else if (x < static_cast<real_t>(2.5)) {
       return static_cast<real_t>(1379.0/7680.0) + 
              static_cast<real_t>(1267.0/960.0) * x -
@@ -76,7 +81,7 @@ namespace prtl_shape {
              static_cast<real_t>(133.0/72.0) * CUBE(x) -
              static_cast<real_t>(21.0/32.0) * SQR(SQR(x)) + 
              static_cast<real_t>(7.0 / 60.0) * CUBE(x) * SQR(x) -
-             static_cast<real_t>(1.0 / 120.0) * SQR(SQR(x)) * SQR(x);
+             static_cast<real_t>(1.0 / 120.0) * SQR(CUBE(x));
     } else if (x < static_cast<real_t>(3.5)) {
       return static_cast<real_t>(117649.0/46080.0) - 
              static_cast<real_t>(16807.0/3840.0) * x +
@@ -84,13 +89,13 @@ namespace prtl_shape {
              static_cast<real_t>(343.0/288.0) * CUBE(x) +
              static_cast<real_t>(49.0/192.0) * SQR(SQR(x)) - 
              static_cast<real_t>(7.0 / 240.0) * CUBE(x) * SQR(x) +
-             static_cast<real_t>(1.0 / 720.0) * SQR(SQR(x)) * SQR(x);
+             static_cast<real_t>(1.0 / 720.0) * SQR(CUBE(x));
     } else {
       return ZERO;
     }
   }
 
-  Inline real_t S7(real_t x)
+  Inline real_t S7(const real_t x)
   {
     if (x < ONE) {
       return static_cast<real_t>(151.0) / static_cast<real_t>(315.0) - 
@@ -106,7 +111,7 @@ namespace prtl_shape {
              HALF * SQR(SQR(x)) - 
              static_cast<real_t>(7.0) / static_cast<real_t>(30.0) * CUBE(x) * SQR(x) +
              static_cast<real_t>(1.0) / static_cast<real_t>(20.0) * SQR(SQR(x)) * SQR(x) -
-             static_cast<real_t>(1.0) / static_cast<real_t>(270.0) * SQR(SQR(x)) * CUBE(x);
+             static_cast<real_t>(1.0) / static_cast<real_t>(240.0) * SQR(SQR(x)) * CUBE(x);
     } else if (x < THREE) {
       return static_cast<real_t>(217.0)/static_cast<real_t>(90.0) * x -
              static_cast<real_t>(23.0)/static_cast<real_t>(6.0) * SQR(x) +
@@ -130,7 +135,7 @@ namespace prtl_shape {
     }
   }
 
-  Inline real_t S8(real_t x)
+  Inline real_t S8(const real_t x)
   {
     if (x < HALF) {
       return static_cast<real_t>(259723.0 / 573440.0) - 
@@ -324,15 +329,15 @@ namespace prtl_shape {
           i_min = i - 2;
 
           #pragma unroll
-          for (int n = 0; n < 5; n++) {
-            S[i] = S6(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
+          for (int n = 0; n < 7; n++) {
+            S[n] = S6(Kokkos::fabs(TWO + di - static_cast<real_t>(n)));
           }
         }
       } else { // compute at i + 1/2 positions
           i_min = i - 3;
 
           #pragma unroll
-          for (int n = 0; n < 5; n++) {
+          for (int n = 0; n < 7; n++) {
             S[n] = S6(Kokkos::fabs(static_cast<real_t>(2.5) + di - static_cast<real_t>(n)));
           }
       } // staggered
