@@ -81,7 +81,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const Metadomain<S, M>& global_domain;
+    Metadomain<S, M>& global_domain;
 
     // domain properties
     const real_t  global_xmin, global_xmax;
@@ -94,7 +94,7 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
