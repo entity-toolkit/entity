@@ -6,6 +6,29 @@
 #include <iostream>
 #include <stdexcept>
 
+template <typename T>
+void create_histogram(Kokkos::View<T*>& histogram,
+                      T                 min,
+                      T                 max,
+                      Kokkos::View<T*>  values) {
+  deep_copy(histogram, static_cast<T>(0));
+  Kokkos::View<T*, Kokkos::MemoryTraits<Kokkos::Atomic>> histogram_atomic = histogram;
+  Kokkos::parallel_for(
+    "histogram",
+    values.extent(0),
+    KOKKOS_LAMBDA(std::size_t i) {
+      if (values(i) < min || values(i) >= max) {
+        return;
+      }
+      const std::size_t index = (1.0 * (values(i) - min) / (max - min)) *
+                                histogram.extent(0);
+      if (index >= histogram.extent(0)) {
+        return;
+      }
+      histogram_atomic(index)++;
+    });
+}
+
 auto main(int argc, char** argv) -> int {
   try {
     MPI_Init(&argc, &argv);
@@ -39,6 +62,21 @@ auto main(int argc, char** argv) -> int {
 
     std::cout << "Rank " << rank << " finished\n" << std::flush;
     Kokkos::fence();
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) {
+      const int            histogram_bins = 10;
+      float                min            = 0.0f;
+      float                max            = 0.1f;
+      Kokkos::View<float*> histogram("histogram", histogram_bins);
+      create_histogram(histogram, min, max, view);
+      auto h_histogram = Kokkos::create_mirror_view(histogram);
+      Kokkos::deep_copy(h_histogram, histogram);
+      std::cout << "hist: (" << min << ", " << max << ")\n";
+      for (int i = 0; i < histogram_bins; ++i) {
+        std::cout << h_histogram(i) << " ";
+      }
+      std::cout << std::endl;
+    }
 
   } catch (const std::exception& e) {
     if (Kokkos::is_initialized()) {
