@@ -87,8 +87,9 @@ if("KOKKOS_RAND" IN_LIST MODES)
   set(exec kokkos_rand.xc)
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/kokkos_rand.cpp)
 
+  find_package(MPI REQUIRED)
   find_kokkos()
-  list(APPEND libs Kokkos::kokkos)
+  list(APPEND libs MPI::MPI_CXX Kokkos::kokkos)
 
   add_executable(${exec} ${src})
 
