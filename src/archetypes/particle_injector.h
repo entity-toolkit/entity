@@ -482,6 +482,13 @@ namespace arch {
       const auto xi_min     = std::get<2>(result);
       const auto xi_max     = std::get<3>(result);
 
+      for (const auto sp : { injector.species.first, injector.species.second }) {
+        rase::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
+                        domain.species[sp - 1].maxnpart(),
+                      "Trying to inject more particles than maxnpart",
+                      HERE);
+      }
+
       Kokkos::parallel_for(
         "InjectUniform",
         nparticles,
@@ -595,6 +602,13 @@ namespace arch {
         const auto nparticles = std::get<1>(result);
         const auto xi_min     = std::get<2>(result);
         const auto xi_max     = std::get<3>(result);
+
+        for (const auto sp : { injector.species.first, injector.species.second }) {
+          rase::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
+                          domain.species[sp - 1].maxnpart(),
+                        "Trying to inject more particles than maxnpart",
+                        HERE);
+        }
 
         Kokkos::parallel_for(
           "InjectUniform",
