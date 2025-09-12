@@ -323,9 +323,9 @@ namespace prtl_shape {
         }
       } // staggered
     } else if constexpr (O == 2u) {
-      //        3/4 - |x|^2              |x| < 1/2
+      //        3/4 - |x|^2                   |x| < 1/2
       // S(x) = 1/2 * (3/2 - |x|)^2     1/2 ≤ |x| < 3/2
-      //        0.0                      |x| ≥ 3/2
+      //        0.0                           |x| ≥ 3/2
       if constexpr (not STAGGERED) { // compute at i positions
         if (di < HALF) {
           i_min = i - 1;
@@ -345,30 +345,29 @@ namespace prtl_shape {
         S[1]  = ONE - S[0] - S[2];
       } // staggered
     } else if constexpr (O == 3u) {
-      //        1/6 * ( 4 - 6 * |x|^2 + 3 * |x|^3)    |x| < 1
-      // S(x) = 1/6 * ( 2 - |x|)^3                    1 ≤ |x| < 2
-      //        0.0                                   |x| ≥ 2
+      //        2/3 - x^2 + 1/2 * x^3      |x| < 1
+      // S(x) = 1/6 * (2 - |x|)^3      1 ≤ |x| < 2
+      //        0.0                        |x| ≥ 2
       if constexpr (not STAGGERED) { // compute at i positions
-        i_min = i - 2;
+        i_min = i - 1;
         S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
-        S[1]  = static_cast<real_t>(1.0 / 6.0) *
-               (FOUR - SIX * SQR(di) + THREE * CUBE(di));
-        S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
-        S[2] = ONE - S[0] - S[1] - S[3];
+        S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di) + HALF * CUBE(di);
+        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
+        S[2]  = ONE - S[0] - S[1] - S[3];
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 2;
           S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[1]  = static_cast<real_t>(1.0 / 6.0) *
-                 (FOUR - SIX * SQR(HALF + di) + THREE * CUBE(HALF + di));
+          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(HALF + di) +
+                 HALF * CUBE(HALF + di);
           S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
           S[2] = ONE - S[0] - S[1] - S[3];
         } else {
           i_min = i - 1;
           S[0]  = static_cast<real_t>(1.0 / 6.0) *
                  CUBE(static_cast<real_t>(1.5) - di);
-          S[1] = static_cast<real_t>(1.0 / 6.0) *
-                 (FOUR - SIX * SQR(di - HALF) + THREE * CUBE(di - HALF));
+          S[1] = static_cast<real_t>(2.0 / 3.0) - SQR(HALF - di) +
+                 HALF * CUBE(HALF - di);
           S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(di - HALF);
           S[2] = ONE - S[0] - S[1] - S[3];
         }
@@ -527,7 +526,7 @@ namespace prtl_shape {
       //                  + (131/320) * |x|^5 - (1/16) * |x|^6 + (3/560) * |x|^7 - (1/5040) * |x|^8 - (122729/143360)  if 2.5 ≤ |x| < 3.5
       //   4782969/1146880 - (531441/71680) * |x| + (59049/10240) * |x|^2 - (6561/2560) * |x|^3 + (729/1024) * |x|^4 
       //                  - (81/640) * |x|^5 + (9/640) * |x|^6 - (1/1120) * |x|^7 + (1/40320) * |x|^8                  if 3.5 ≤ |x| < 4.5
-      //   0.0  
+      //   0.0
       // clang-format on
       if constexpr (not STAGGERED) { // compute at i positions
         if (di < HALF) {
