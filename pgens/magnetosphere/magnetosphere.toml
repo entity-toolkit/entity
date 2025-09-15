@@ -58,8 +58,9 @@
     pusher   = "Boris,GCA"
 
 [setup]
-  Bsurf  = 1.0
-  period = 60.0
+  Bsurf          = 1.0
+  field_geometry = "dipole" # can be "dipole" or "monopole" (default: dipole)
+  period         = 60.0
 
 [output]
   format = "hdf5"
