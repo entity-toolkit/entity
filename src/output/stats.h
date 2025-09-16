@@ -182,6 +182,7 @@ namespace stats {
         tot_value = value;
       }
 #else
+      (void)communicate;
       tot_value = value;
 #endif
       CallOnce(
