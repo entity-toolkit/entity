@@ -201,8 +201,8 @@ namespace ntt {
     }
     auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     logger::Checkpoint("Writing stats", HERE);
-    g_stats_writer.write(current_step);
-    g_stats_writer.write(current_time);
+    g_stats_writer.write(current_step, false);
+    g_stats_writer.write(current_time, false);
     for (const auto& stat : g_stats_writer.statsWriters()) {
       if (stat.id() == StatsID::Custom) {
         if (CustomStat != nullptr) {

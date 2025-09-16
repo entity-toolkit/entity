@@ -167,16 +167,20 @@ namespace stats {
     auto shouldWrite(timestep_t, simtime_t) -> bool;
 
     template <typename T>
-    inline void write(const T& value) const {
+    inline void write(const T& value, bool communicate = true) const {
       auto tot_value { static_cast<T>(0) };
 #if defined(MPI_ENABLED)
-      MPI_Reduce(&value,
-                 &tot_value,
-                 1,
-                 mpi::get_type<T>(),
-                 MPI_SUM,
-                 MPI_ROOT_RANK,
-                 MPI_COMM_WORLD);
+      if (communicate) {
+        MPI_Reduce(&value,
+                   &tot_value,
+                   1,
+                   mpi::get_type<T>(),
+                   MPI_SUM,
+                   MPI_ROOT_RANK,
+                   MPI_COMM_WORLD);
+      } else {
+        tot_value = value;
+      }
 #else
       tot_value = value;
 #endif
