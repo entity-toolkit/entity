@@ -43,6 +43,8 @@ namespace kernel {
     const M                  metric;
     const real_t             charge, inv_dt;
 
+    const bool use_weights;
+
   public:
     /**
      * @brief explicit constructor.
@@ -90,7 +92,8 @@ namespace kernel {
       , tag { tag }
       , metric { metric }
       , charge { charge }
-      , inv_dt { ONE / dt } {}
+      , inv_dt { ONE / dt }
+      , use_weights { weight.extent(0) > 0 } {}
 
     /**
      * @brief Iteration of the loop over particles.
@@ -155,7 +158,7 @@ namespace kernel {
         vp[2] *= inv_energy;
       }
 
-      const real_t coeff { weight(p) * charge };
+      const real_t coeff { (use_weights ? weight(p) : ONE) * charge };
 
       const auto dxp_r_1 { static_cast<prtldx_t>(i1(p) == i1_prev(p)) *
                            (dx1(p) + dx1_prev(p)) * static_cast<prtldx_t>(INV_2) };

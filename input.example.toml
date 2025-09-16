@@ -264,7 +264,7 @@
   ppc0 = ""
   # Toggle for using particle weights
   #   @type: bool
-  #   @default: false
+  #   @default: false [Cartesian]; true [otherwise]
   use_weights = ""
   # Timesteps between particle re-sorting (removing dead particles)
   #   @type: uint

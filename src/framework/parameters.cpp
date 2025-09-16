@@ -173,8 +173,11 @@ namespace ntt {
     const auto ppc0 = toml::find<real_t>(toml_data, "particles", "ppc0");
     set("particles.ppc0", ppc0);
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
-    set("particles.use_weights",
-        toml::find_or(toml_data, "particles", "use_weights", false));
+    const auto use_weights = toml::find_or(toml_data,
+                                           "particles",
+                                           "use_weights",
+                                           coord_enum != Coord::Cart);
+    set("particles.use_weights", use_weights);
 
     /* [particles.species] -------------------------------------------------- */
     std::vector<ParticleSpecies> species;
@@ -241,6 +244,7 @@ namespace ntt {
                                            charge,
                                            maxnpart,
                                            pusher_enum,
+                                           use_weights,
                                            use_gca,
                                            cooling_enum,
                                            npayloads));

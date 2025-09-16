@@ -1,0 +1,3 @@
+- [ ] optional weights in communications
+- [ ] make weight buffers for computing moments optional
+- [ ] make writing (outputting) of weights optional
