@@ -23,11 +23,28 @@ namespace prtl_shape {
   //        625/384 - (125/48) * |x| + (25/16) * |x|^2 - (5/12) * |x|^3 + (1/24) * |x|^4       3/2 ≤ |x| < 5/2
   //        0.0                                                                                      |x| ≥ 5/2
   // clang-format on
+  Inline real_t S3(const real_t x) {
+    if (x < ONE) {
+      return static_cast<real_t>(2.0 / 3.0) - SQR(x) + HALF * CUBE(x);
+    } else if (x < TWO) {
+      return static_cast<real_t>(4.0 / 3.0) - TWO * x + SQR(x) -
+             static_cast<real_t>(1.0 / 6.0) * CUBE(x);
+    } else {
+      return ZERO;
+    }
+  }
+
+  // clang-format off
+  //        115/192 - (5/8) * |x|^2 + (1/4) * |x|^4                                                  |x| < 1/2
+  // S(x) = 55/96 + (5/24) * |x| - (5/4) * |x|^2 + (5/6) * |x|^3 - (1/6) * |x|^4               1/2 ≤ |x| < 3/2
+  //        625/384 - (125/48) * |x| + (25/16) * |x|^2 - (5/12) * |x|^3 + (1/24) * |x|^4       3/2 ≤ |x| < 5/2
+  //        0.0                                                                                      |x| ≥ 5/2
+  // clang-format on
   Inline real_t S4(const real_t x) {
     if (x < HALF) {
       return static_cast<real_t>(115.0 / 192.0) -
              static_cast<real_t>(5.0 / 8.0) * SQR(x) + INV_4 * SQR(SQR(x));
-    } else if (x < static_cast<real_t>(1.5)) {
+    } else if (x < THREE_HALFS) {
       return static_cast<real_t>(55.0 / 96.0) +
              static_cast<real_t>(5.0 / 24.0) * x -
              static_cast<real_t>(5.0 / 4.0) * SQR(x) +
@@ -51,6 +68,7 @@ namespace prtl_shape {
       //   81/40 - (27/8) * |x| + (9/4) * |x|^2 - (3/4) * |x|^3 + (1/8) * |x|^4 - (1/120) * |x|^5    if 2 ≤ |x| < 3
       //   0.0                                                                                           if |x| > 3
   // clang-format on
+
   Inline real_t S5(const real_t x) {
     if (x <= ONE) {
       return static_cast<real_t>(11.0 / 20.0) - HALF * SQR(x) +
@@ -90,7 +108,7 @@ namespace prtl_shape {
              static_cast<real_t>(77.0 / 192.0) * SQR(x) +
              static_cast<real_t>(7.0 / 48.0) * SQR(SQR(x)) -
              static_cast<real_t>(1.0 / 36.0) * SQR(CUBE(x));
-    } else if (x < static_cast<real_t>(1.5)) {
+    } else if (x < THREE_HALFS) {
       return static_cast<real_t>(7861.0 / 15360.0) -
              static_cast<real_t>(7.0 / 768.0) * x -
              static_cast<real_t>(91.0 / 256.0) * SQR(x) -
@@ -187,7 +205,7 @@ namespace prtl_shape {
              static_cast<real_t>(43.0 / 512.0) * SQR(SQR(x)) -
              static_cast<real_t>(1.0 / 64.0) * SQR(SQR(x)) * SQR(x) +
              static_cast<real_t>(1.0 / 576.0) * SQR(SQR(SQR(x)));
-    } else if (x <= static_cast<real_t>(1.5)) {
+    } else if (x <= THREE_HALFS) {
       return static_cast<real_t>(64929.0 / 143360.0) +
              static_cast<real_t>(1.0 / 5120.0) * x -
              static_cast<real_t>(363.0 / 1280.0) * SQR(x) +
@@ -318,7 +336,7 @@ namespace prtl_shape {
           S[1]  = ONE - S[0];
         } else {
           i_min = i;
-          S[0]  = static_cast<real_t>(1.5) - di;
+          S[0]  = THREE_HALFS - di;
           S[1]  = ONE - S[0];
         }
       } // staggered
@@ -334,7 +352,7 @@ namespace prtl_shape {
           S[2]  = ONE - S[0] - S[1];
         } else {
           i_min = i;
-          S[0]  = HALF * SQR(static_cast<real_t>(3.0 / 2.0) - di);
+          S[0]  = HALF * SQR(THREE_HALFS - di);
           S[1]  = THREE_FOURTHS - SQR(ONE - di);
           S[2]  = ONE - S[0] - S[1];
         }
@@ -352,26 +370,49 @@ namespace prtl_shape {
         i_min = i - 1;
         S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
         S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di) + HALF * CUBE(di);
-        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
+        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(FOUR - di);
         S[2]  = ONE - S[0] - S[1] - S[3];
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 2;
           S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(HALF + di) +
-                 HALF * CUBE(HALF + di);
-          S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
+          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(THREE_HALFS + di) +
+                 HALF * CUBE(THREE_HALFS + di);
+          S[3] = static_cast<real_t>(1.0 / 6.0) *
+                 CUBE(static_cast<real_t>(3.5) - di);
           S[2] = ONE - S[0] - S[1] - S[3];
         } else {
           i_min = i - 1;
-          S[0]  = static_cast<real_t>(1.0 / 6.0) *
-                 CUBE(static_cast<real_t>(1.5) - di);
-          S[1] = static_cast<real_t>(2.0 / 3.0) - SQR(HALF - di) +
+          S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(THREE_HALFS - di);
+          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di - HALF) +
                  HALF * CUBE(HALF - di);
-          S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(di - HALF);
+          S[3] = static_cast<real_t>(1.0 / 6.0) *
+                 CUBE(static_cast<real_t>(2.5) - di);
           S[2] = ONE - S[0] - S[1] - S[3];
         }
       } // staggered
+
+      //       if constexpr (not STAGGERED) { // compute at i positions
+      //         i_min = i - 1;
+      // #pragma unroll
+      //         for (int n = 0; n < 4; n++) {
+      //           S[n] = S3(Kokkos::fabs(ONE + di - static_cast<real_t>(n)));
+      //         }
+      //       } else { // compute at i + 1/2 positions
+      //         if (di < HALF) {
+      //           i_min = i - 2;
+      // #pragma unroll
+      //           for (int n = 0; n < 4; n++) {
+      //             S[n] = S3(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
+      //           }
+      //         } else {
+      //           i_min = i - 1;
+      // #pragma unroll
+      //           for (int n = 0; n < 4; n++) {
+      //             S[n] = S3(Kokkos::fabs(HALF + di - static_cast<real_t>(n)));
+      //           }
+      //         }
+      //       } // staggered
     } else if constexpr (O == 4u) {
       // clang-format off
       //        115/192 - (5/8) * |x|^2 + (1/4) * |x|^4                                                  |x| < 1/2
@@ -401,8 +442,7 @@ namespace prtl_shape {
 
 #pragma unroll
         for (int n = 0; n < 5; n++) {
-          S[i] = S4(
-            Kokkos::fabs(static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
+          S[i] = S4(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
         }
       } // staggered
     } else if constexpr (O == 5u) {
@@ -434,8 +474,7 @@ namespace prtl_shape {
 
 #pragma unroll
           for (int n = 0; n < 6; n++) {
-            S[n] = S5(Kokkos::fabs(
-              static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
+            S[n] = S5(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
           }
         }
       } // staggered
