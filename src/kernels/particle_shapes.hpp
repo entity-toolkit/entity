@@ -370,49 +370,27 @@ namespace prtl_shape {
         i_min = i - 1;
         S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
         S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di) + HALF * CUBE(di);
-        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(FOUR - di);
+        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
         S[2]  = ONE - S[0] - S[1] - S[3];
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 2;
           S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(THREE_HALFS + di) +
-                 HALF * CUBE(THREE_HALFS + di);
+          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(HALF + di) +
+                 HALF * CUBE(HALF + di);
           S[3] = static_cast<real_t>(1.0 / 6.0) *
-                 CUBE(static_cast<real_t>(3.5) - di);
+                 CUBE(HALF + di);
           S[2] = ONE - S[0] - S[1] - S[3];
         } else {
           i_min = i - 1;
           S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(THREE_HALFS - di);
           S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di - HALF) +
-                 HALF * CUBE(HALF - di);
+                 HALF * CUBE(di - HALF);
           S[3] = static_cast<real_t>(1.0 / 6.0) *
-                 CUBE(static_cast<real_t>(2.5) - di);
+                 CUBE(HALF - di);
           S[2] = ONE - S[0] - S[1] - S[3];
         }
       } // staggered
-
-      //       if constexpr (not STAGGERED) { // compute at i positions
-      //         i_min = i - 1;
-      // #pragma unroll
-      //         for (int n = 0; n < 4; n++) {
-      //           S[n] = S3(Kokkos::fabs(ONE + di - static_cast<real_t>(n)));
-      //         }
-      //       } else { // compute at i + 1/2 positions
-      //         if (di < HALF) {
-      //           i_min = i - 2;
-      // #pragma unroll
-      //           for (int n = 0; n < 4; n++) {
-      //             S[n] = S3(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
-      //           }
-      //         } else {
-      //           i_min = i - 1;
-      // #pragma unroll
-      //           for (int n = 0; n < 4; n++) {
-      //             S[n] = S3(Kokkos::fabs(HALF + di - static_cast<real_t>(n)));
-      //           }
-      //         }
-      //       } // staggered
     } else if constexpr (O == 4u) {
       // clang-format off
       //        115/192 - (5/8) * |x|^2 + (1/4) * |x|^4                                                  |x| < 1/2
