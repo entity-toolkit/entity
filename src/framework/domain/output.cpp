@@ -202,12 +202,12 @@ namespace ntt {
           const ncells_t k_max = (i2 - (N_GHOSTS));
           real_t         A3    = ZERO;
           for (auto k { k_min }; k <= k_max; ++k) {
-            real_t k_ = static_cast<real_t>(k);
-            real_t sqrt_detH_ij1 { metric.sqrt_det_h({ i1_, k_ - HALF }) };
-            real_t sqrt_detH_ij2 { metric.sqrt_det_h({ i1_, k_ + HALF }) };
-            auto   k1 { k + N_GHOSTS };
-            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k + N_GHOSTS - 1, em::bx1) +
-                          sqrt_detH_ij2 * EM(i1, k + N_GHOSTS, em::bx1));
+            const real_t k_ = static_cast<real_t>(k);
+            const real_t sqrt_detH_ij1 { metric.sqrt_det_h({ i1_, k_ - HALF }) };
+            const real_t sqrt_detH_ij2 { metric.sqrt_det_h({ i1_, k_ + HALF }) };
+            const auto k1 { k + N_GHOSTS };
+            A3 += HALF * (sqrt_detH_ij1 * EM(i1, k1 - 1, em::bx1) +
+                          sqrt_detH_ij2 * EM(i1, k1, em::bx1));
           }
           buffer(i1, i2, buff_idx) = A3;
         });

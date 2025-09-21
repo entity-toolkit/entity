@@ -500,6 +500,35 @@ namespace ntt {
     /* [particles] ---------------------------------------------------------- */
     set("particles.clear_interval",
         toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
+    const auto species_tab               = toml::find_or<toml::array>(toml_data,
+                                                        "particles",
+                                                        "species",
+                                                        toml::array {});
+    std::vector<ParticleSpecies> species = get<std::vector<ParticleSpecies>>(
+      "particles.species");
+    raise::ErrorIf(species_tab.size() != species.size(),
+                   "number of species changed after restart",
+                   HERE);
+
+    std::vector<ParticleSpecies> new_species;
+
+    spidx_t idxM1 = 0;
+    for (const auto& sp : species_tab) {
+      const auto maxnpart_real    = toml::find<double>(sp, "maxnpart");
+      const auto maxnpart         = static_cast<npart_t>(maxnpart_real);
+      const auto particle_species = species[idxM1];
+      new_species.emplace_back(particle_species.index(),
+                               particle_species.label(),
+                               particle_species.mass(),
+                               particle_species.charge(),
+                               maxnpart,
+                               particle_species.pusher(),
+                               particle_species.use_gca(),
+                               particle_species.cooling(),
+                               particle_species.npld());
+      idxM1++;
+    }
+    set("particles.species", new_species);
 
     /* [output] ------------------------------------------------------------- */
     // fields

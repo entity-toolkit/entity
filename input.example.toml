@@ -482,8 +482,9 @@
     # Field quantities to output
     #   @type: array<string>
     #   @default: ["B^2", "E^2", "ExB", "Rho", "T00"]
-    #   @enum: "B^2", "E^2", "ExB", "N", "Charge", "Rho", "T00", "T0i", "Tij"
-    #   @note: Same notation as for `output.fields.quantities`
+    #   @enum: "B^2", "E^2", "ExB", "N", "Npart", "Charge", "Rho", "T00", "T0i", "Tij"
+    #   @note: For particle moments, ...
+    #   @note: ... same notation is used as for `output.fields.quantities`
     quantities = ""
     # Custom (user-defined) stats
     #   @type: array<string>

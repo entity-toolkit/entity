@@ -39,6 +39,7 @@ venv/
 *.png
 *.mov
 *.mp4
+!pgens/**/*.png
 
 # Accidental files
 *.xc
