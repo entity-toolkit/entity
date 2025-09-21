@@ -13,6 +13,7 @@
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
+#include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
 #include "kernels/particle_moments.hpp"
@@ -205,17 +206,11 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       // background
-      const auto energy_dist = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      bg_temperature);
-      const auto injector    = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
-        params,
-        local_domain,
-        injector,
-        ONE);
+      arch::InjectUniformMaxwellian<S, M>(params,
+                                          local_domain,
+                                          ONE,
+                                          bg_temperature,
+                                          { 1, 2 });
 
       const auto sigma = params.template get<real_t>("scales.sigma0");
       const auto c_omp = params.template get<real_t>("scales.skindepth0");
