@@ -82,19 +82,24 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    // domain properties
-    const real_t  global_xmin, global_xmax;
-    // gas properties
-    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
-    // injector properties
-    const real_t  injector_velocity, injection_start, dt;
-    const int     injection_frequency;
-    // magnetic field properties
-    real_t        Btheta, Bphi, Bmag;
-    InitFields<D> init_flds;
+    Metadomain<S, M>& global_domain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    // domain properties
+    const real_t    global_xmin, global_xmax;
+    // gas properties
+    const real_t    drift_ux, temperature, temperature_ratio, filling_fraction;
+    // injector properties
+    const real_t    injector_velocity;
+    const simtime_t injection_start;
+    const real_t    dt;
+    const int       injection_frequency;
+    // magnetic field properties
+    real_t          Btheta, Bphi, Bmag;
+    InitFields<D>   init_flds;
+
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
@@ -106,7 +111,8 @@ namespace user {
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
       , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
-      , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
+      , injection_start { static_cast<simtime_t>(
+          p.template get<real_t>("setup.injection_start", 0.0)) }
       , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
 
@@ -206,7 +212,7 @@ namespace user {
        */
 
       // check if the injector should be active
-      if (step % injection_frequency != 0) {
+      if (step % injection_frequency != 0 and time < injection_start) {
         return;
       }
 
@@ -222,7 +228,7 @@ namespace user {
       }
 
       // compute the beginning of the injected region
-      auto xmin = xmax - injection_frequency * dt;
+      auto xmin = xmax - injector_velocity * injection_frequency * dt;
       if (xmin <= global_xmin) {
         xmin = global_xmin;
       }
@@ -257,6 +263,8 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
+
+      global_domain.CommunicateFields(domain, Comm::B | Comm::E);
 
       /*
         tag particles inside the injection zone as dead
