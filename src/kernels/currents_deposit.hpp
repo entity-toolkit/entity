@@ -606,13 +606,13 @@ namespace kernel {
               jx1[0][j][k] = -Qdxdt * Wx1[0][j][k];
             }
           }
-
+          
 #pragma unroll
           for (int i = 1; i < O + 2; ++i) {
 #pragma unroll
             for (int j = 0; j < O + 2; ++j) {
 #pragma unroll
-              for (int k = 0; j < O + 2; ++k) {
+              for (int k = 0; k < O + 2; ++k) {
                 jx1[i][j][k] = jx1[i - 1][j][k] - Qdxdt * Wx1[i][j][k];
               }
             }
@@ -699,8 +699,8 @@ namespace kernel {
               }
             }
           }
-        }
 
+        } // dim
       } else { // order
         raise::KernelError(HERE, "Unsupported interpolation order. O > 9 not supported. Seriously. What are you even doing here?");
       }
