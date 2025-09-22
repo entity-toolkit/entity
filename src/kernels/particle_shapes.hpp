@@ -420,7 +420,7 @@ namespace prtl_shape {
 
 #pragma unroll
         for (int n = 0; n < 5; n++) {
-          S[i] = S4(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
+          S[n] = S4(Kokkos::fabs(THREE_HALFS + di - static_cast<real_t>(n)));
         }
       } // staggered
     } else if constexpr (O == 5u) {
