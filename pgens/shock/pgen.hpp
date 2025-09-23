@@ -118,12 +118,12 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> InitFields<D> {
+    auto MatchFields(real_t) const -> InitFields<D> {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&,
+                        const em& comp) const -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
@@ -228,75 +228,75 @@ namespace user {
       }
 
       // compute the beginning of the injected region
-      auto xmin = xmax - injector_velocity * injection_frequency * dt;
+      auto xmin = xmax - 1.1 * injection_frequency * dt;
       if (xmin <= global_xmin) {
         xmin = global_xmin;
       }
 
-      // define indice range to reset fields
-      boundaries_t<bool> incl_ghosts;
-      for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ false, false });
-      }
+      // // define indice range to reset fields
+      // boundaries_t<bool> incl_ghosts;
+      // for (auto d = 0; d < M::Dim; ++d) {
+      //   incl_ghosts.push_back({ false, false });
+      // }
 
-      // define box to reset fields
-      boundaries_t<real_t> purge_box;
-      // loop over all dimension
-      for (auto d = 0u; d < M::Dim; ++d) {
-        if (d == 0) {
-          purge_box.push_back({ xmin, global_xmax });
-        } else {
-          purge_box.push_back(Range::All);
-        }
-      }
+      // // define box to reset fields
+      // boundaries_t<real_t> purge_box;
+      // // loop over all dimension
+      // for (auto d = 0u; d < M::Dim; ++d) {
+      //   if (d == 0) {
+      //     purge_box.push_back({ xmin, global_xmax });
+      //   } else {
+      //     purge_box.push_back(Range::All);
+      //   }
+      // }
+      //
+      // const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
+      // tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
+      // for (auto d = 0; d < M::Dim; ++d) {
+      //   x_min[d] = extent[d].first;
+      //   x_max[d] = extent[d].second;
+      // }
+      //
+      // Kokkos::parallel_for("ResetFields",
+      //                      CreateRangePolicy<M::Dim>(x_min, x_max),
+      //                      arch::SetEMFields_kernel<decltype(init_flds), S, M> {
+      //                        domain.fields.em,
+      //                        init_flds,
+      //                        domain.mesh.metric });
+      //
+      // global_domain.CommunicateFields(domain, Comm::B | Comm::E);
 
-      const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
-      for (auto d = 0; d < M::Dim; ++d) {
-        x_min[d] = extent[d].first;
-        x_max[d] = extent[d].second;
-      }
-
-      Kokkos::parallel_for("ResetFields",
-                           CreateRangePolicy<M::Dim>(x_min, x_max),
-                           arch::SetEMFields_kernel<decltype(init_flds), S, M> {
-                             domain.fields.em,
-                             init_flds,
-                             domain.mesh.metric });
-
-      global_domain.CommunicateFields(domain, Comm::B | Comm::E);
-
-      /*
-        tag particles inside the injection zone as dead
-      */
-      const auto& mesh = domain.mesh;
-
-      // loop over particle species
-      for (auto s { 0u }; s < 2; ++s) {
-        // get particle properties
-        auto& species = domain.species[s];
-        auto  i1      = species.i1;
-        auto  dx1     = species.dx1;
-        auto  tag     = species.tag;
-
-        Kokkos::parallel_for(
-          "RemoveParticles",
-          species.rangeActiveParticles(),
-          Lambda(index_t p) {
-            // check if the particle is already dead
-            if (tag(p) == ParticleTag::dead) {
-              return;
-            }
-            const auto x_Cd = static_cast<real_t>(i1(p)) +
-                              static_cast<real_t>(dx1(p));
-            const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
-              x_Cd);
-
-            if (x_Ph > xmin) {
-              tag(p) = ParticleTag::dead;
-            }
-          });
-      }
+      // /*
+      //   tag particles inside the injection zone as dead
+      // */
+      // const auto& mesh = domain.mesh;
+      //
+      // // loop over particle species
+      // for (auto s { 0u }; s < 2; ++s) {
+      //   // get particle properties
+      //   auto& species = domain.species[s];
+      //   auto  i1      = species.i1;
+      //   auto  dx1     = species.dx1;
+      //   auto  tag     = species.tag;
+      //
+      //   Kokkos::parallel_for(
+      //     "RemoveParticles",
+      //     species.rangeActiveParticles(),
+      //     Lambda(index_t p) {
+      //       // check if the particle is already dead
+      //       if (tag(p) == ParticleTag::dead) {
+      //         return;
+      //       }
+      //       const auto x_Cd = static_cast<real_t>(i1(p)) +
+      //                         static_cast<real_t>(dx1(p));
+      //       const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+      //         x_Cd);
+      //
+      //       if (x_Ph > xmin) {
+      //         tag(p) = ParticleTag::dead;
+      //       }
+      //     });
+      // }
 
       /*
           Inject slab of fresh plasma
@@ -314,20 +314,80 @@ namespace user {
       }
 
       // same maxwell distribution as above
-      const auto temperatures = std::make_pair(temperature,
-                                               temperature_ratio * temperature);
-      const auto drifts       = std::make_pair(
-        std::vector<real_t> { -drift_ux, ZERO, ZERO },
-        std::vector<real_t> { -drift_ux, ZERO, ZERO });
-      arch::InjectUniformMaxwellians<S, M>(params,
-                                           domain,
-                                           ONE,
-                                           temperatures,
-                                           { 1, 2 },
-                                           drifts,
-                                           false,
-                                           inj_box);
+      const auto mass_1        = domain.species[0].mass();
+      const auto mass_2        = domain.species[1].mass();
+      const auto temperature_1 = temperature / mass_1;
+      const auto temperature_2 = temperature * temperature_ratio / mass_2;
+
+      const auto maxwellian_1 = arch::experimental::Maxwellian<S, M>(
+        domain.mesh.metric,
+        domain.random_pool,
+        temperature_1,
+        { -drift_ux, ZERO, ZERO });
+      const auto maxwellian_2 = arch::experimental::Maxwellian<S, M>(
+        domain.mesh.metric,
+        domain.random_pool,
+        temperature_2,
+        { -drift_ux, ZERO, ZERO });
+
+      const auto& mesh = domain.mesh;
+      for (auto& s : { 1u, 2u }) {
+        auto& species = domain.species[s - 1];
+        auto  i1      = species.i1;
+        auto  dx1     = species.dx1;
+        auto  ux1     = species.ux1;
+        auto  ux2     = species.ux2;
+        auto  ux3     = species.ux3;
+        auto  tag     = species.tag;
+
+        Kokkos::parallel_for(
+          "ResetParticles",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (tag(p) == ParticleTag::dead) {
+              return;
+            }
+            const auto x_Cd = static_cast<real_t>(i1(p)) +
+                              static_cast<real_t>(dx1(p));
+            const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+              x_Cd);
+
+            const coord_t<M::Dim> x_dummy { ZERO };
+            if (x_Ph > xmin and x_Ph <= xmax) {
+              vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
+              if (s == 1u) {
+                maxwellian_1(x_dummy, v_T, s);
+              } else {
+                maxwellian_2(x_dummy, v_T, s);
+              }
+              mesh.metric.template transform_xyz<Idx::T, Idx::XYZ>(x_dummy, v_T, v_Cd);
+              ux1(p) = v_Cd[0];
+              ux2(p) = v_Cd[1];
+              ux3(p) = v_Cd[2];
+            } else if (x_Ph > xmax) {
+              if (injector_velocity < 0.9) {
+                ux1(p) = TWO * injector_velocity /
+                         math::sqrt(ONE - SQR(injector_velocity));
+              } else {
+                ux1(p) = TWO * injector_velocity /
+                         math::sqrt(ONE - SQR(injector_velocity) + 0.001);
+              }
+              ux2(p) = ZERO;
+              ux3(p) = ZERO;
+            }
+          });
+      }
+
+      arch::InjectReplenishConst<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
+        params,
+        domain,
+        ONE,
+        { 1, 2 },
+        maxwellian_1,
+        maxwellian_2,
+        inj_box);
     }
   };
+
 } // namespace user
 #endif
