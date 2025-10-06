@@ -2,7 +2,8 @@
  * @file kernels/reduced_stats.hpp
  * @brief Compute reduced field/moment quantities for stats output
  * @implements
- *   - kernel::PrtlToPhys_kernel<>
+ *   - kernel::ReducedFields_kernel<>
+ *   - kernel::ReducedParticleMoments_kernel<>
  * @namespaces:
  *   - kernel::
  */
