@@ -186,24 +186,24 @@ namespace ntt {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         const auto deltax = m_params.template get<real_t>(
-          "algorithms.fieldsolver.deltax");
+          "algorithms.fieldsolver.delta_x");
         const auto deltay = m_params.template get<real_t>(
-          "algorithms.fieldsolver.deltay");
+          "algorithms.fieldsolver.delta_y");
         const auto betaxy = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betaxy");
+          "algorithms.fieldsolver.beta_xy");
         const auto betayx = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betayx");
+          "algorithms.fieldsolver.beta_yx");
         const auto deltaz = m_params.template get<real_t>(
-          "algorithms.fieldsolver.deltaz");
+          "algorithms.fieldsolver.delta_z");
         const auto betaxz = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betaxz");
+          "algorithms.fieldsolver.beta_xz");
         const auto betazx = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betazx");
+          "algorithms.fieldsolver.beta_zx");
         const auto betayz = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betayz");
+          "algorithms.fieldsolver.beta_yz");
         const auto betazy = m_params.template get<real_t>(
-          "algorithms.fieldsolver.betazy");
-        real_t     coeff1, coeff2;
+          "algorithms.fieldsolver.beta_zy");
+        real_t coeff1, coeff2;
         if constexpr (M::Dim == Dim::_2D) {
           coeff1 = dT / SQR(dx);
           coeff2 = dT;

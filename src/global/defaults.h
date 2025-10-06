@@ -27,17 +27,17 @@ namespace ntt::defaults {
   const timestep_t  clear_interval = 100;
 
   namespace fieldsolver {
-    const real_t deltax = 0.0;
+    const real_t delta_x = 0.0;
 
-    const real_t deltay = 0.0;
-    const real_t betaxy = 0.0;
-    const real_t betayx = 0.0;
+    const real_t delta_y = 0.0;
+    const real_t beta_xy = 0.0;
+    const real_t beta_yx = 0.0;
 
-    const real_t deltaz = 0.0;
-    const real_t betaxz = 0.0;
-    const real_t betazx = 0.0;
-    const real_t betayz = 0.0;
-    const real_t betazy = 0.0;
+    const real_t delta_z = 0.0;
+    const real_t beta_xz = 0.0;
+    const real_t beta_zx = 0.0;
+    const real_t beta_yz = 0.0;
+    const real_t beta_zy = 0.0;
   } // namespace fieldsolver
 
   namespace qsph {
