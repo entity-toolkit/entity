@@ -14,6 +14,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 
 namespace kernel::mink {
   using namespace ntt;
@@ -42,13 +43,21 @@ namespace kernel::mink {
      * ! 2D: coeff1 = dt / dx^2, coeff2 = dt
      * ! 3D: coeff1 = dt / dx
      */
-    Faraday_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2
-                  , real_t deltax, real_t deltay, real_t betaxy, real_t betayx
-                  , real_t deltaz, real_t betaxz, real_t betazx, real_t betayz
-                  , real_t betazy)
+    Faraday_kernel(const ndfield_t<D, 6>& EB,
+                   real_t                 coeff1,
+                   real_t                 coeff2,
+                   real_t                 deltax = ZERO,
+                   real_t                 deltay = ZERO,
+                   real_t                 betaxy = ZERO,
+                   real_t                 betayx = ZERO,
+                   real_t                 deltaz = ZERO,
+                   real_t                 betaxz = ZERO,
+                   real_t                 betazx = ZERO,
+                   real_t                 betayz = ZERO,
+                   real_t                 betazy = ZERO)
       : EB { EB }
       , coeff1 { coeff1 }
-      , coeff2 { coeff2 } 
+      , coeff2 { coeff2 }
       , deltax { deltax }
       , deltay { deltay }
       , betaxy { betaxy }
@@ -58,8 +67,6 @@ namespace kernel::mink {
       , betazx { betazx }
       , betayz { betayz }
       , betazy { betazy } {}
-
-
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {

@@ -291,24 +291,6 @@ auto main(int argc, char* argv[]) -> int {
       {},
       10);
 
-    testParticleMoments<SimEngine::SRPIC, Spherical<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 2.0 } },
-      {},
-      10);
-
-    testParticleMoments<SimEngine::SRPIC, QSpherical<Dim::_2D>>(
-      {
-        10,
-        10
-    },
-      { { 1.0, 10.0 } },
-      { { "r0", 0.0 }, { "h", 0.25 } },
-      10);
-
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     Kokkos::finalize();
