@@ -659,8 +659,9 @@ namespace metric {
         return ONE;
       } else {
         return (ONE + TWO * h0 +
-                static_cast<real_t>(12.0) * h0 * (eta * constant::INV_PI) *
-                  ((eta * constant::INV_PI) - ONE));
+                static_cast<real_t>(12.0) * h0 *
+                  (eta * static_cast<real_t>(constant::INV_PI)) *
+                  ((eta * static_cast<real_t>(constant::INV_PI)) - ONE));
       }
     }
 
@@ -671,8 +672,10 @@ namespace metric {
       if (cmp::AlmostZero(h0)) {
         return eta;
       } else {
-        return eta + TWO * h0 * eta * (constant::PI - TWO * eta) *
-                       (constant::PI - eta) * constant::INV_PI_SQR;
+        return eta + TWO * h0 * eta *
+                       (static_cast<real_t>(constant::PI) - TWO * eta) *
+                       (static_cast<real_t>(constant::PI) - eta) *
+                       static_cast<real_t>(constant::INV_PI_SQR);
       }
     }
 
@@ -684,9 +687,10 @@ namespace metric {
         return deta;
       } else {
         return deta *
-               (ONE + TWO * h0 * constant::INV_PI_SQR *
+               (ONE + TWO * h0 * static_cast<real_t>(constant::INV_PI_SQR) *
                         (TWO * THREE * SQR(eta) -
-                         TWO * THREE * constant::PI * eta + constant::PI_SQR));
+                         TWO * THREE * static_cast<real_t>(constant::PI) * eta +
+                         static_cast<real_t>(constant::PI_SQR)));
       }
     }
 

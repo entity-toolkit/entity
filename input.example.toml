@@ -257,6 +257,54 @@
     #   @note: [required] if one of the species has `cooling = "synchrotron"`
     gamma_rad = ""
 
+  # Stencil coefficients for the field solver [notation as in Blinne+ (2018)]
+  #   @note: Standard Yee solver: `delta_i = beta_ij = 0.0`
+  [algorithms.fieldsolver]
+    # delta_x coefficient (for `F_{i +/- 3/2, j, k}`)
+    #   @type: float
+    #   @default: 0.0
+    delta_x = ""
+    # delta_y coefficient (for `F_{i, j +/- 3/2, k}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 2D and 3D
+    delta_y = ""
+    # delta_z coefficient (for `F_{i, j, k +/- 3/2}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 3D
+    delta_z = ""
+    # beta_xy coefficient (for `F_{i +/- 1/2, j +/- 1, k}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 2D and 3D
+    beta_xy = ""
+    # beta_yx coefficient (for `F_{i +/- 1, j +/- 1/2, k}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 2D and 3D
+    beta_yx = ""
+    # beta_xz coefficient (for `F_{i +/- 1/2, j, k +/- 1}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 3D
+    beta_xz = ""
+    # beta_zx coefficient (for `F_{i +/- 1, j, k +/- 1/2}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 3D
+    beta_zx = ""
+    # beta_yz coefficient (for `F_{i, j +/- 1/2, k +/- 1}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 3D
+    beta_yz = ""
+    # beta_zy coefficient (for `F_{i, j +/- 1, k +/- 1/2}`)
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Used only for 3D
+    beta_zy = ""
+
 [particles]
   # Fiducial number of particles per cell
   #   @required

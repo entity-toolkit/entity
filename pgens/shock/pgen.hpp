@@ -82,6 +82,8 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
+    Metadomain<S, M>& global_domain;
+
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
@@ -93,8 +95,9 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
@@ -116,8 +119,8 @@ namespace user {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&,
+                        const em& comp) const -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
@@ -169,15 +172,15 @@ namespace user {
         }
       }
 
-      // species #1 -> e^-
-      // species #2 -> protons
-
-      // energy distribution of the particles
+      // define temperatures of species
       const auto temperatures = std::make_pair(temperature,
                                                temperature_ratio * temperature);
+      // define drift speed of species
       const auto drifts       = std::make_pair(
         std::vector<real_t> { -drift_ux, ZERO, ZERO },
         std::vector<real_t> { -drift_ux, ZERO, ZERO });
+      
+      // inject particles
       arch::InjectUniformMaxwellians<S, M>(params,
                                            domain,
                                            ONE,
@@ -257,6 +260,7 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
+      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
 
       /*
         tag particles inside the injection zone as dead

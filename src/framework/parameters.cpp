@@ -31,10 +31,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -415,6 +415,61 @@ namespace ntt {
     set("algorithms.toggles.deposit",
         toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
 
+    /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.delta_x",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_x",
+                      defaults::fieldsolver::delta_x));
+    set("algorithms.fieldsolver.delta_y",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_y",
+                      defaults::fieldsolver::delta_y));
+    set("algorithms.fieldsolver.delta_z",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_z",
+                      defaults::fieldsolver::delta_z));
+    set("algorithms.fieldsolver.beta_xy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xy",
+                      defaults::fieldsolver::beta_xy));
+    set("algorithms.fieldsolver.beta_yx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yx",
+                      defaults::fieldsolver::beta_yx));
+    set("algorithms.fieldsolver.beta_xz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xz",
+                      defaults::fieldsolver::beta_xz));
+    set("algorithms.fieldsolver.beta_zx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zx",
+                      defaults::fieldsolver::beta_zx));
+    set("algorithms.fieldsolver.beta_yz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yz",
+                      defaults::fieldsolver::beta_yz));
+    set("algorithms.fieldsolver.beta_zy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zy",
+                      defaults::fieldsolver::beta_zy));
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));

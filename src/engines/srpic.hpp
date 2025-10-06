@@ -185,7 +185,25 @@ namespace ntt {
       if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
-        real_t     coeff1, coeff2;
+        const auto deltax = m_params.template get<real_t>(
+          "algorithms.fieldsolver.delta_x");
+        const auto deltay = m_params.template get<real_t>(
+          "algorithms.fieldsolver.delta_y");
+        const auto betaxy = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_xy");
+        const auto betayx = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_yx");
+        const auto deltaz = m_params.template get<real_t>(
+          "algorithms.fieldsolver.delta_z");
+        const auto betaxz = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_xz");
+        const auto betazx = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_zx");
+        const auto betayz = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_yz");
+        const auto betazy = m_params.template get<real_t>(
+          "algorithms.fieldsolver.beta_zy");
+        real_t coeff1, coeff2;
         if constexpr (M::Dim == Dim::_2D) {
           coeff1 = dT / SQR(dx);
           coeff2 = dT;
@@ -193,10 +211,20 @@ namespace ntt {
           coeff1 = dT / dx;
           coeff2 = ZERO;
         }
-        Kokkos::parallel_for(
-          "Faraday",
-          domain.mesh.rangeActiveCells(),
-          kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em, coeff1, coeff2));
+        Kokkos::parallel_for("Faraday",
+                             domain.mesh.rangeActiveCells(),
+                             kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em,
+                                                                  coeff1,
+                                                                  coeff2,
+                                                                  deltax,
+                                                                  deltay,
+                                                                  betaxy,
+                                                                  betayx,
+                                                                  deltaz,
+                                                                  betaxz,
+                                                                  betazx,
+                                                                  betayz,
+                                                                  betazy));
       } else {
         Kokkos::parallel_for("Faraday",
                              domain.mesh.rangeActiveCells(),
