@@ -92,7 +92,7 @@ namespace out {
                           Coord);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineParticleOutputs(Dimension, const std::vector<spidx_t>&);
+    void defineParticleOutputs(Dimension, const std::vector<spidx_t>&, const std::vector<unsigned short>&);
     void defineSpectraOutputs(const std::vector<spidx_t>&);
 
     void writeMesh(unsigned short,

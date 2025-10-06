@@ -564,6 +564,11 @@ namespace ntt {
                                         "particles",
                                         "species",
                                         all_specs);
+    const auto plds_out = toml::find_or(toml_data,
+                                        "output",
+                                        "particles",
+                                        "payloads",
+                                         false);
     set("output.particles.species", prtl_out);
     set("output.particles.stride",
         toml::find_or(toml_data,
@@ -571,6 +576,7 @@ namespace ntt {
                       "particles",
                       "stride",
                       defaults::output::prtl_stride));
+    set("output.particles.payloads", plds_out);
 
     // spectra
     set("output.spectra.e_min",

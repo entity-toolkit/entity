@@ -39,11 +39,13 @@ namespace kernel {
     array_t<real_t*>         buff_ux2;
     array_t<real_t*>         buff_ux3;
     array_t<real_t*>         buff_wei;
+    array_t<real_t**>        buff_pld;
     const array_t<int*>      i1, i2, i3;
     const array_t<prtldx_t*> dx1, dx2, dx3;
     const array_t<real_t*>   ux1, ux2, ux3;
     const array_t<real_t*>   phi;
     const array_t<real_t*>   weight;
+    const array_t<real_t**>  pld;
     const M                  metric;
 
   public:
@@ -55,6 +57,7 @@ namespace kernel {
                       array_t<real_t*>&         buff_ux2,
                       array_t<real_t*>&         buff_ux3,
                       array_t<real_t*>&         buff_wei,
+                      array_t<real_t**>&         buff_pld,
                       const array_t<int*>&      i1,
                       const array_t<int*>&      i2,
                       const array_t<int*>&      i3,
@@ -66,6 +69,7 @@ namespace kernel {
                       const array_t<real_t*>&   ux3,
                       const array_t<real_t*>&   phi,
                       const array_t<real_t*>&   weight,
+                      const array_t<real_t**>&  pld,
                       const M&                  metric)
       : stride { stride }
       , buff_x1 { buff_x1 }
@@ -75,6 +79,7 @@ namespace kernel {
       , buff_ux2 { buff_ux2 }
       , buff_ux3 { buff_ux3 }
       , buff_wei { buff_wei }
+      , buff_pld { buff_pld }
       , i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
@@ -86,6 +91,7 @@ namespace kernel {
       , ux3 { ux3 }
       , phi { phi }
       , weight { weight }
+      , pld { pld }
       , metric { metric } {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x1.extent(0) == 0, "Invalid buffer size", HERE);
@@ -100,12 +106,19 @@ namespace kernel {
       raise::ErrorIf(buff_ux1.extent(0) == 0, "Invalid buffer size", HERE);
       raise::ErrorIf(buff_ux2.extent(0) == 0, "Invalid buffer size", HERE);
       raise::ErrorIf(buff_ux3.extent(0) == 0, "Invalid buffer size", HERE);
+      raise::ErrorIf(buff_pld.extent(0) != 0 and pld.extent(0) == 0, "Invalid buffer size", HERE);
+      raise::ErrorIf(buff_pld.extent(0) != 0 and buff_pld.extent(1) == 0, "Invalid buffer size", HERE);
     }
 
     Inline void operator()(index_t p) const {
       bufferX(p);
       bufferU(p);
       buff_wei(p) = weight(p * stride);
+      if (buff_pld.extent(0) > 0) {
+        for (auto n = 0u; n < pld.extent(1); ++n) {
+          buff_pld(p, n) = pld(p * stride, n);
+        }
+      }
     }
 
     Inline void bufferX(index_t& p) const {

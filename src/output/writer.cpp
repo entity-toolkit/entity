@@ -164,8 +164,10 @@ namespace out {
   }
 
   void Writer::defineParticleOutputs(Dimension                   dim,
-                                     const std::vector<spidx_t>& specs) {
+                                     const std::vector<spidx_t>& specs,
+                                     const std::vector<unsigned short>& n_plds) {
     m_prtl_writers.clear();
+    size_t i_plds = 0;
     for (const auto& s : specs) {
       m_prtl_writers.emplace_back(s);
     }
@@ -186,6 +188,14 @@ namespace out {
                                   { adios2::UnknownDim },
                                   { adios2::UnknownDim },
                                   { adios2::UnknownDim });
+      for (auto n {0u}; n < n_plds[i_plds]; ++n) { 
+        m_io.DefineVariable<real_t>(prtl.name("PLD", n + 1),
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim },
+                                    { adios2::UnknownDim });
+      }
+      i_plds++;
+        
     }
   }
 

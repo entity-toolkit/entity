@@ -86,13 +86,25 @@ namespace ntt {
                std::back_inserter(all_fields_to_write));
     const auto species_to_write = params.template get<std::vector<spidx_t>>(
       "output.particles.species");
+    const auto write_payloads = params.template get<bool>(
+        "output.particles.payloads");
+    std::vector<spidx_t> n_payloads_to_write(species_to_write.size());
+    for (size_t i = 0; i < species_to_write.size(); ++i) {
+      auto sp = species_to_write[i];
+      if (write_payloads) {
+        n_payloads_to_write[i] = local_domain->species[i].npld();
+      }
+      else{
+        n_payloads_to_write[i] = 0;
+      } 
+    }
     g_writer.defineFieldOutputs(S, all_fields_to_write);
 
     Dimension dim = M::PrtlDim;
     if constexpr (M::CoordType != Coord::Cart) {
       dim = Dim::_3D;
     }
-    g_writer.defineParticleOutputs(dim, species_to_write);
+    g_writer.defineParticleOutputs(dim, species_to_write, n_payloads_to_write);
 
     // spectra write all particle species
     std::vector<spidx_t> spectra_species {};
@@ -708,6 +720,7 @@ namespace ntt {
     } // end shouldWrite("fields", step, time)
 
     if (write_particles) {
+      const auto write_plds = params.template get<bool>("output.particles.payloads");
       g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
       const auto prtl_stride = params.template get<npart_t>(
         "output.particles.stride");
@@ -718,10 +731,14 @@ namespace ntt {
         }
         const npart_t    nout = species.npart() / prtl_stride;
         array_t<real_t*> buff_x1, buff_x2, buff_x3;
-        array_t<real_t*> buff_ux1 { "u1", nout };
+        array_t<real_t*> buff_ux1 { "ux1", nout };
         array_t<real_t*> buff_ux2 { "ux2", nout };
         array_t<real_t*> buff_ux3 { "ux3", nout };
         array_t<real_t*> buff_wei { "w", nout };
+        array_t<real_t**> buff_pld;
+        if (write_plds and species.npld() > 0) {
+          buff_pld = array_t<real_t**>("pld", nout, species.npld());
+        }
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
           buff_x1 = array_t<real_t*> { "x1", nout };
@@ -741,11 +758,11 @@ namespace ntt {
             kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
                                             buff_x1, buff_x2, buff_x3,
                                             buff_ux1, buff_ux2, buff_ux3,
-                                            buff_wei,
+                                            buff_wei, buff_pld,
                                             species.i1, species.i2, species.i3,
                                             species.dx1, species.dx2, species.dx3,
                                             species.ux1, species.ux2, species.ux3,
-                                            species.phi, species.weight,
+                                            species.phi, species.weight, species.pld,
                                             local_domain->mesh.metric));
           // clang-format on
         }
@@ -782,6 +799,11 @@ namespace ntt {
         if constexpr (M::Dim == Dim::_3D or
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
+        }
+        if (write_plds and species.npld() > 0) {
+          for (auto n = 0u; n < species.npld(); ++n) {
+            g_writer.writeParticleQuantity(Kokkos::subview(buff_pld, Kokkos::ALL, n), glob_tot, offset, prtl.name("PLD", n + 1));
+          }
         }
       }
       g_writer.endWriting(WriteMode::Particles);
