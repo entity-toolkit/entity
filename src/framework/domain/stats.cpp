@@ -70,6 +70,7 @@ namespace ntt {
   template <SimEngine::type S, class M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
+                      const M&                global_metric,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
                       const std::vector<spidx_t>&        species,
                       const std::vector<unsigned short>& components) -> real_t {
@@ -99,6 +100,7 @@ namespace ntt {
       if (P == StatsID::Rho and cmp::AlmostZero_host(prtl_spec.mass())) {
         continue;
       }
+      real_t temp_buff = ZERO;
       Kokkos::parallel_reduce(
         "ComputeMoments",
         prtl_spec.rangeActiveParticles(),
@@ -111,9 +113,15 @@ namespace ntt {
                                                        prtl_spec.mass(), prtl_spec.charge(),
                                                        use_weights, mesh.metric),
         // clang-format on
-        buffer);
+        temp_buff);
+      buffer += temp_buff;
     }
-    return buffer;
+    if (P != StatsID::Npart) {
+      return buffer / (global_metric.totVolume() *
+                       params.template get<real_t>("particles.ppc0"));
+    } else {
+      return buffer;
+    }
   }
 
   template <SimEngine::type S, class M, StatsID::type F>
@@ -193,8 +201,8 @@ namespace ntt {
     }
     auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
     logger::Checkpoint("Writing stats", HERE);
-    g_stats_writer.write(current_step);
-    g_stats_writer.write(current_time);
+    g_stats_writer.write(current_step, false);
+    g_stats_writer.write(current_time, false);
     for (const auto& stat : g_stats_writer.statsWriters()) {
       if (stat.id() == StatsID::Custom) {
         if (CustomStat != nullptr) {
@@ -206,6 +214,7 @@ namespace ntt {
       } else if (stat.id() == StatsID::N) {
         g_stats_writer.write(ComputeMoments<S, M, StatsID::N>(params,
                                                               local_domain->mesh,
+                                                              g_mesh.metric,
                                                               local_domain->species,
                                                               stat.species,
                                                               {}));
@@ -213,6 +222,7 @@ namespace ntt {
         g_stats_writer.write(
           ComputeMoments<S, M, StatsID::Npart>(params,
                                                local_domain->mesh,
+                                               g_mesh.metric,
                                                local_domain->species,
                                                stat.species,
                                                {}));
@@ -220,6 +230,7 @@ namespace ntt {
         g_stats_writer.write(
           ComputeMoments<S, M, StatsID::Rho>(params,
                                              local_domain->mesh,
+                                             g_mesh.metric,
                                              local_domain->species,
                                              stat.species,
                                              {}));
@@ -227,6 +238,7 @@ namespace ntt {
         g_stats_writer.write(
           ComputeMoments<S, M, StatsID::Charge>(params,
                                                 local_domain->mesh,
+                                                g_mesh.metric,
                                                 local_domain->species,
                                                 stat.species,
                                                 {}));
@@ -235,6 +247,7 @@ namespace ntt {
           g_stats_writer.write(
             ComputeMoments<S, M, StatsID::T>(params,
                                              local_domain->mesh,
+                                             g_mesh.metric,
                                              local_domain->species,
                                              stat.species,
                                              comp));

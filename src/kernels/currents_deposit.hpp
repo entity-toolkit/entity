@@ -137,11 +137,12 @@ namespace kernel {
         } else {
           coord_t<Dim::_2D> xp_ { ZERO };
           xp_[0] = xp[0];
-          real_t       theta_Cd { xp[1] };
-          const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(
+          real_t     theta_Cd { xp[1] };
+          const auto theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(
             theta_Cd) };
-          const real_t small_angle { static_cast<real_t>(constant::SMALL_ANGLE_GR) };
-          const auto large_angle { static_cast<real_t>(constant::PI) - small_angle };
+          const auto small_angle { static_cast<real_t>(constant::SMALL_ANGLE_GR) };
+          const auto large_angle { static_cast<real_t>(
+            constant::PI - constant::SMALL_ANGLE_GR) };
           if (theta_Ph < small_angle) {
             theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
           } else if (theta_Ph >= large_angle) {

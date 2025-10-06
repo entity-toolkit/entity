@@ -31,7 +31,8 @@ namespace stats {
     // determine the stats ID
     const auto pos = name.find("_");
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
-    if ((name_raw[0] != 'E') and (name_raw[0] != 'B') and (name_raw[0] != 'J')) {
+    if ((name_raw[0] != 'E') and (name_raw[0] != 'B') and
+        (name_raw[0] != 'J') and (name_raw[0] != 'N')) {
       name_raw = name_raw.substr(0, name_raw.find_first_of("0123ijxyzt"));
     }
     if (StatsID::contains(fmt::toLower(name_raw).c_str())) {
