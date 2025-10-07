@@ -483,7 +483,7 @@ namespace arch {
       const auto xi_max     = std::get<3>(result);
 
       for (const auto sp : { injector.species.first, injector.species.second }) {
-        rase::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
+        raise::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
                         domain.species[sp - 1].maxnpart(),
                       "Trying to inject more particles than maxnpart",
                       HERE);
@@ -604,7 +604,7 @@ namespace arch {
         const auto xi_max     = std::get<3>(result);
 
         for (const auto sp : { injector.species.first, injector.species.second }) {
-          rase::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
+          raise::ErrorIf(domain.species[sp - 1].npart() + nparticles >=
                           domain.species[sp - 1].maxnpart(),
                         "Trying to inject more particles than maxnpart",
                         HERE);
