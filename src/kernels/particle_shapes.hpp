@@ -320,6 +320,79 @@ namespace prtl_shape {
     }
   }
 
+  inline real_t S10(const real_t x) {
+  if (x < HALF) {
+    return static_cast<real_t>(381773117.0 / 928972800.0)
+         - static_cast<real_t>(156409.0 / 737280.0) * SQR(x)
+         + static_cast<real_t>(14597.0 / 276480.0) * SQR(SQR(x))
+         - static_cast<real_t>(583.0 / 69120.0) * SQR(CUBE(x))
+         + static_cast<real_t>(11.0 / 11520.0) * SQR(SQR(SQR(x)))
+         - static_cast<real_t>(1.0 / 14400.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else if (x < THREE_HALFS) {
+    return static_cast<real_t>(152709293.0 / 371589120.0)
+         - static_cast<real_t>(11.0 / 4423680.0) * x
+         - static_cast<real_t>(62557.0 / 294912.0) * SQR(x)
+         - static_cast<real_t>(11.0 / 92160.0) * CUBE(x)
+         + static_cast<real_t>(5885.0 / 110592.0) * SQR(SQR(x))
+         - static_cast<real_t>(77.0 / 76800.0) * CUBE(x) * SQR(x)
+         - static_cast<real_t>(187.0 / 27648.0) * SQR(CUBE(x))
+         - static_cast<real_t>(11.0 / 5760.0) * SQR(CUBE(x)) * x
+         + static_cast<real_t>(11.0 / 4608.0) * SQR(SQR(SQR(x)))
+         - static_cast<real_t>(11.0 / 17280.0) * SQR(SQR(SQR(x))) * x
+         + static_cast<real_t>(1.0 / 17280.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else if (x <= static_cast<real_t>(2.5)) {
+    return static_cast<real_t>(37690169.0 / 92897280.0)
+         + static_cast<real_t>(135311.0 / 3870720.0) * x
+         - static_cast<real_t>(163603.0 / 516096.0) * SQR(x)
+         + static_cast<real_t>(7513.0 / 40320.0) * CUBE(x)
+         - static_cast<real_t>(4543.0 / 27648.0) * SQR(SQR(x))
+         + static_cast<real_t>(1661.0 / 9600.0) * CUBE(x) * SQR(x)
+         - static_cast<real_t>(715.0 / 6912.0) * SQR(CUBE(x))
+         + static_cast<real_t>(11.0 / 315.0) * SQR(CUBE(x)) * x
+         - static_cast<real_t>(55.0 / 8064.0) * SQR(SQR(SQR(x)))
+         + static_cast<real_t>(11.0 / 15120.0) * SQR(SQR(SQR(x))) * x
+         - static_cast<real_t>(1.0 / 30240.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else if (x < static_cast<real_t>(3.5)) {
+    return static_cast<real_t>(623786977.0 / 743178240.0)
+         - static_cast<real_t>(11695211.0 / 6881280.0) * x
+         + static_cast<real_t>(1654543.0 / 589824.0) * SQR(x)
+         - static_cast<real_t>(1352153.0 / 430080.0) * CUBE(x)
+         + static_cast<real_t>(479281.0 / 221184.0) * SQR(SQR(x))
+         - static_cast<real_t>(48433.0 / 51200.0) * CUBE(x) * SQR(x)
+         + static_cast<real_t>(14905.0 / 55296.0) * SQR(CUBE(x))
+         - static_cast<real_t>(451.0 / 8960.0) * SQR(CUBE(x)) * x
+         + static_cast<real_t>(55.0 / 9216.0) * SQR(SQR(SQR(x)))
+         - static_cast<real_t>(11.0 / 26880.0) * SQR(SQR(SQR(x))) * x
+         + static_cast<real_t>(1.0 / 80640.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else if (x < static_cast<real_t>(4.5)) {
+    return static_cast<real_t>(-1241720381.0 / 371589120.0)
+         + static_cast<real_t>(237959711.0 / 23224320.0) * x
+         - static_cast<real_t>(3702215.0 / 294912.0) * SQR(x)
+         + static_cast<real_t>(2070343.0 / 241920.0) * CUBE(x)
+         - static_cast<real_t>(407429.0 / 110592.0) * SQR(SQR(x))
+         + static_cast<real_t>(61061.0 / 57600.0) * CUBE(x) * SQR(x)
+         - static_cast<real_t>(5753.0 / 27648.0) * SQR(CUBE(x))
+         + static_cast<real_t>(209.0 / 7560.0) * SQR(CUBE(x)) * x
+         - static_cast<real_t>(11.0 / 4608.0) * SQR(SQR(SQR(x)))
+         + static_cast<real_t>(11.0 / 90720.0) * SQR(SQR(SQR(x))) * x
+         - static_cast<real_t>(1.0 / 362880.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else if (x < static_cast<real_t>(5.5)) {
+    return static_cast<real_t>(25937424601.0 / 3715891200.0)
+         - static_cast<real_t>(2357947691.0 / 185794560.0) * x
+         + static_cast<real_t>(214358881.0 / 20643840.0) * SQR(x)
+         - static_cast<real_t>(19487171.0 / 3870720.0) * CUBE(x)
+         + static_cast<real_t>(1771561.0 / 1105920.0) * SQR(SQR(x))
+         - static_cast<real_t>(161051.0 / 460800.0) * CUBE(x) * SQR(x)
+         + static_cast<real_t>(14641.0 / 276480.0) * SQR(CUBE(x))
+         - static_cast<real_t>(1331.0 / 241920.0) * SQR(CUBE(x)) * x
+         + static_cast<real_t>(121.0 / 322560.0) * SQR(SQR(SQR(x)))
+         - static_cast<real_t>(11.0 / 725760.0) * SQR(SQR(SQR(x))) * x
+         + static_cast<real_t>(1.0 / 3628800.0) * SQR(SQR(SQR(x))) * SQR(x);
+  } else {
+    return ZERO;
+  }
+}
+
   template <bool STAGGERED, unsigned short O>
   Inline void order(const int& i, const real_t& di, int& i_min, real_t S[O + 1]) {
     if constexpr (O == 1u) {
@@ -609,8 +682,49 @@ namespace prtl_shape {
           }
         }
       } // staggered
+    } else if constexpr (O == 10u) {
+      // clang-format off
+      // S10(x) =
+      //   381773117/928972800 - (156409/737280) * |x|^2 + (14597/276480) * |x|^4 - (583/69120) * |x|^6 + (11/11520) * |x|^8 - (1/14400) * |x|^10                     if |x| ≤ 0.5
+      //   152709293/371589120 - (11/4423680) * |x| - (62557/294912) * |x|^2 - (11/92160) * |x|^3 + (5885/110592) * |x|^4 - (77/76800) * |x|^5 - 
+      //              (187/27648) * |x|^6 - (11/5760) * |x|^7 + (11/4608) * |x|^8 - (11/17280) * |x|^9 + (1/17280) * |x|^10                                           if 0.5 < |x| ≤ 1.5
+      //   37690169/92897280 + (135311/3870720) * |x| - (163603/516096) * |x|^2 + (7513/40320) * |x|^3  - (4543/27648) * |x|^4  
+      //              + (1661/9600) * |x|^5 - (715/6912) * |x|^6 + (11/315) * |x|^7 - (55/8064) * |x|^8 + (11/15120) * |x|^9 - (1/30240) * |x|^10                     if 1.5 < |x| ≤ 2.5
+      //   623786977/743178240 - (11695211/6881280) * |x| + (1654543/589824) * |x|^2 - (1352153/430080) * |x|^3 + (479281/221184) * |x|^4 
+      //              - (48433/51200) * |x|^5 + (14905/55296) * |x|^6 - (451/8960) * |x|^7 + (55/9216) * |x|^8 - (11/26880) * |x|^9 + (1/80640) * |x|^10              if 2.5 < |x| ≤ 3.5
+      //   -1241720381/371589120 + (237959711/23224320) * |x| - (3702215/294912) * |x|^2 + (2070343/241920) * |x|^3 - (407429/110592) * |x|^4 
+      //              + (61061/57600) * |x|^5 - (5753/27648) * |x|^6 + (209/7560) * |x|^7 - (11/4608) * |x|^8 + (11/90720) * |x|^9 - (1/362880) * |x|^10              if 3.5 < |x| ≤ 4.5
+      //   25937424601/3715891200 - (2357947691/185794560) * |x| + (214358881/20643840) * |x|^2 - (19487171/3870720) * |x|^3 + (1771561/1105920) * |x|^4 
+      //              - (161051/460800) * |x|^5 + (14641/276480) * |x|^6 - (1331/241920) * |x|^7 + (121/322560) * |x|^8 - (11/725760) * |x|^9 + (1/3628800) * |x|^10  if 4.5 < |x| ≤ 5.5
+      //   0.0                                                                                                                                                        otherwise
+      // clang-format on
+      if constexpr (not STAGGERED) { // compute at i positions
+        if (di < HALF) {
+          i_min = i - 5;
+
+#pragma unroll
+          for (int n = 0; n < 10; n++) {
+            S[n] = S10(Kokkos::fabs(FIVE + di - static_cast<real_t>(n)));
+          }
+        } else {
+          i_min = i - 4;
+
+#pragma unroll
+          for (int n = 0; n < 10; n++) {
+            S[n] = S10(Kokkos::fabs(FOUR + di - static_cast<real_t>(n)));
+          }
+        }
+      } else { // compute at i + 1/2 positions
+        i_min = i - 5;
+
+#pragma unroll
+        for (int n = 0; n < 10; n++) {
+          S[n] = S10(Kokkos::fabs(static_cast<real_t>(4.5) + 
+                        di - static_cast<real_t>(n)));
+        }
+      } // staggered
     } else {
-      raise::KernelError(HERE, "Unsupported interpolation order. O > 9 not supported. Seriously. What are you even doing here?");
+      raise::KernelError(HERE, "Unsupported interpolation order. O > 10 not supported. Seriously. What are you even doing here?");
     }
   }
 
