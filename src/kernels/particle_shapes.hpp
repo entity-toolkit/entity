@@ -518,27 +518,52 @@ namespace prtl_shape {
       //        2/3 - x^2 + 1/2 * x^3      |x| < 1
       // S(x) = 1/6 * (2 - |x|)^3      1 ≤ |x| < 2
       //        0.0                        |x| ≥ 2
+      // if constexpr (not STAGGERED) { // compute at i positions
+      //   i_min = i - 1;
+      //   S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
+      //   S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di) + HALF * CUBE(di);
+      //   S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
+      //   S[2]  = ONE - S[0] - S[1] - S[3];
+      // } else { // compute at i + 1/2 positions
+      //   if (di < HALF) {
+      //     i_min = i - 2;
+      //     S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
+      //     S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(HALF + di) +
+      //            HALF * CUBE(HALF + di);
+      //     S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
+      //     S[2] = ONE - S[0] - S[1] - S[3];
+      //   } else {
+      //     i_min = i - 1;
+      //     S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(THREE_HALFS - di);
+      //     S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di - HALF) +
+      //            HALF * CUBE(di - HALF);
+      //     S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
+      //     S[2] = ONE - S[0] - S[1] - S[3];
+      //   }
+      // } // staggered
       if constexpr (not STAGGERED) { // compute at i positions
         i_min = i - 1;
-        S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(ONE - di);
-        S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di) + HALF * CUBE(di);
-        S[3]  = static_cast<real_t>(1.0 / 6.0) * CUBE(di);
-        S[2]  = ONE - S[0] - S[1] - S[3];
+
+#pragma unroll
+        for (int n = 0; n < 4; n++) {
+          S[n] = S3(Kokkos::fabs(ONE + di - static_cast<real_t>(n)));
+        }
       } else { // compute at i + 1/2 positions
         if (di < HALF) {
           i_min = i - 2;
-          S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(HALF + di) +
-                 HALF * CUBE(HALF + di);
-          S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF + di);
-          S[2] = ONE - S[0] - S[1] - S[3];
+
+#pragma unroll
+          for (int n = 0; n < 4; n++) {
+            S[n] = S3(Kokkos::fabs(
+              static_cast<real_t>(1.5) + di - static_cast<real_t>(n)));
+          }
         } else {
           i_min = i - 1;
-          S[0]  = static_cast<real_t>(1.0 / 6.0) * CUBE(THREE_HALFS - di);
-          S[1]  = static_cast<real_t>(2.0 / 3.0) - SQR(di - HALF) +
-                 HALF * CUBE(di - HALF);
-          S[3] = static_cast<real_t>(1.0 / 6.0) * CUBE(HALF - di);
-          S[2] = ONE - S[0] - S[1] - S[3];
+
+#pragma unroll
+          for (int n = 0; n < 4; n++) {
+            S[n] = S3(Kokkos::fabs(HALF + di - static_cast<real_t>(n)));
+          }
         }
       } // staggered
     } else if constexpr (O == 4u) {
