@@ -703,7 +703,10 @@ namespace kernel {
 
         } // dim
       } else { // order
-        raise::KernelError(HERE, "Unsupported interpolation order. O > 10 not supported. Seriously. What are you even doing here?");
+        raise::KernelError(
+          HERE,
+          "Unsupported interpolation order. O > 11 not supported. Seriously. "
+          "What are you even doing here? Entity already goes to 11!");
       }
     }
   };
