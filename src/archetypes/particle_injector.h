@@ -745,7 +745,8 @@ namespace arch {
                             const std::pair<spidx_t, spidx_t>& species,
                             const ED1&                         energy_dist_1,
                             const ED2&                         energy_dist_2,
-                            const boundaries_t<real_t>&        box = {}) {
+                            real_t                      density_tolerance = 0.9,
+                            const boundaries_t<real_t>& box = {}) {
     static_assert(M::is_metric, "M must be a metric class");
     static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
     static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
@@ -787,7 +788,7 @@ namespace arch {
         Kokkos::parallel_for(
           "ComputeMoments",
           prtl_spec.rangeActiveParticles(),
-          kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, buff_idx,
+          kernel::ParticleMoments_kernel<S, M, FldsID::Nppc, 3>({}, scatter_buff, buff_idx,
                                                              prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
                                                              prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
                                                              prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
@@ -800,17 +801,17 @@ namespace arch {
       }
       Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
     }
-    const auto spatial_dist = ReplenishConst<S, M, 3> { domain.mesh.metric,
-                                                        domain.fields.buff,
-                                                        buff_idx,
-                                                        target_tot_ndens,
-                                                        1.0 };
+    // const auto spatial_dist = ReplenishConst<S, M, 3> { domain.mesh.metric,
+    //                                                     domain.fields.buff,
+    //                                                     buff_idx,
+    //                                                     target_tot_ndens,
+    //                                                     density_tolerance };
 
     const auto ppc = target_tot_ndens *
                      params.template get<real_t>("particles.ppc0") * HALF;
 
     auto injector_kernel =
-      kernel::experimental::NonUniformInjector_kernel<S, M, ED1, ED2, decltype(spatial_dist)>(
+      kernel::experimental::ConstNPPCInjector_kernel<S, M, ED1, ED2, 3>(
         ppc,
         species.first,
         species.second,
@@ -821,9 +822,25 @@ namespace arch {
         domain.mesh.metric,
         energy_dist_1,
         energy_dist_2,
-        spatial_dist,
+        domain.fields.buff,
+        buff_idx,
         ONE / params.template get<real_t>("scales.V0"),
         domain.random_pool);
+    // auto injector_kernel =
+    //   kernel::experimental::NonUniformInjector_kernel<S, M, ED1, ED2, decltype(spatial_dist)>(
+    //     ppc,
+    //     species.first,
+    //     species.second,
+    //     domain.species[species.first - 1],
+    //     domain.species[species.second - 1],
+    //     domain.species[species.first - 1].npart(),
+    //     domain.species[species.second - 1].npart(),
+    //     domain.mesh.metric,
+    //     energy_dist_1,
+    //     energy_dist_2,
+    //     spatial_dist,
+    //     ONE / params.template get<real_t>("scales.V0"),
+    //     domain.random_pool);
 
     Kokkos::parallel_for("InjectReplenishConst", cell_range, injector_kernel);
 

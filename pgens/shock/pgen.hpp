@@ -91,7 +91,6 @@ namespace user {
     // injector properties
     const real_t    injector_velocity;
     const simtime_t injection_start;
-    const real_t    dt;
     const int       injection_frequency;
     // magnetic field properties
     real_t          Btheta, Bphi, Bmag;
@@ -113,8 +112,8 @@ namespace user {
       , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
       , injection_start { static_cast<simtime_t>(
           p.template get<real_t>("setup.injection_start", 0.0)) }
-      , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
-      , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
+      , injection_frequency { p.template get<int>("setup.injection_frequency",
+                                                  100) } {}
 
     inline PGen() {}
 
@@ -159,39 +158,58 @@ namespace user {
        */
 
       // minimum and maximum position of particles
-      real_t xg_min = global_xmin;
-      real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
-
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimensions
-      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
-        // compute the range for the x-direction
-        if (d == static_cast<decltype(d)>(in::x1)) {
-          box.push_back({ xg_min, xg_max });
-        } else {
-          // inject into full range in other directions
-          box.push_back(Range::All);
-        }
-      }
+      // real_t xg_min = global_xmin;
+      // real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
+      //
+      // // define box to inject into
+      // boundaries_t<real_t> box;
+      // // loop over all dimensions
+      // for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
+      //   // compute the range for the x-direction
+      //   if (d == static_cast<decltype(d)>(in::x1)) {
+      //     box.push_back({ xg_min, xg_max });
+      //   } else {
+      //     // inject into full range in other directions
+      //     box.push_back(Range::All);
+      //   }
+      // }
 
       // species #1 -> e^-
       // species #2 -> protons
 
       // energy distribution of the particles
-      const auto temperatures = std::make_pair(temperature,
-                                               temperature_ratio * temperature);
-      const auto drifts       = std::make_pair(
-        std::vector<real_t> { -drift_ux, ZERO, ZERO },
-        std::vector<real_t> { -drift_ux, ZERO, ZERO });
-      arch::InjectUniformMaxwellians<S, M>(params,
-                                           domain,
-                                           ONE,
-                                           temperatures,
-                                           { 1, 2 },
-                                           drifts,
-                                           false,
-                                           box);
+      // const auto temperatures = std::make_pair(temperature,
+      //                                          temperature_ratio * temperature);
+      // const auto drifts       = std::make_pair(
+      //   std::vector<real_t> { -drift_ux, ZERO, ZERO },
+      //   std::vector<real_t> { -drift_ux, ZERO, ZERO });
+      // arch::InjectUniformMaxwellians<S, M>(params,
+      //                                      domain,
+      //                                      ONE,
+      //                                      temperatures,
+      //                                      { 1, 2 },
+      //                                      drifts,
+      //                                      false,
+      //                                      box);
+      // const auto maxwellian_1 = arch::experimental::Maxwellian<S, M>(
+      //   domain.mesh.metric,
+      //   domain.random_pool,
+      //   temperatures.first,
+      //   { -drift_ux, ZERO, ZERO });
+      // const auto maxwellian_2 = arch::experimental::Maxwellian<S, M>(
+      //   domain.mesh.metric,
+      //   domain.random_pool,
+      //   temperatures.second,
+      //   { -drift_ux, ZERO, ZERO });
+      // arch::InjectReplenishConst<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
+      //   params,
+      //   domain,
+      //   ONE,
+      //   { 1, 2 },
+      //   maxwellian_1,
+      //   maxwellian_2,
+      //   0.95,
+      //   box);
     }
 
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
@@ -212,91 +230,31 @@ namespace user {
        */
 
       // check if the injector should be active
-      if (step % injection_frequency != 0 and time < injection_start) {
+      if ((step % injection_frequency) != 0 or
+          ((time < injection_start) and (step != 0))) {
         return;
       }
+
+      const auto dt = params.template get<real_t>("algorithms.timestep.dt");
 
       // initial position of injector
       const auto x_init = global_xmin +
                           filling_fraction * (global_xmax - global_xmin);
 
       // compute the position of the injector after the current timestep
-      auto xmax = x_init + injector_velocity *
-                             (std::max<real_t>(time - injection_start, ZERO) + dt);
+      auto xmax = x_init + injector_velocity * (time + dt - injection_start);
       if (xmax >= global_xmax) {
         xmax = global_xmax;
       }
 
       // compute the beginning of the injected region
-      auto xmin = xmax - 1.1 * injection_frequency * dt;
+      auto xmin = xmax - 2.2 * static_cast<real_t>(injection_frequency) * dt;
       if (xmin <= global_xmin) {
         xmin = global_xmin;
       }
-
-      // // define indice range to reset fields
-      // boundaries_t<bool> incl_ghosts;
-      // for (auto d = 0; d < M::Dim; ++d) {
-      //   incl_ghosts.push_back({ false, false });
-      // }
-
-      // // define box to reset fields
-      // boundaries_t<real_t> purge_box;
-      // // loop over all dimension
-      // for (auto d = 0u; d < M::Dim; ++d) {
-      //   if (d == 0) {
-      //     purge_box.push_back({ xmin, global_xmax });
-      //   } else {
-      //     purge_box.push_back(Range::All);
-      //   }
-      // }
-      //
-      // const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-      // tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
-      // for (auto d = 0; d < M::Dim; ++d) {
-      //   x_min[d] = extent[d].first;
-      //   x_max[d] = extent[d].second;
-      // }
-      //
-      // Kokkos::parallel_for("ResetFields",
-      //                      CreateRangePolicy<M::Dim>(x_min, x_max),
-      //                      arch::SetEMFields_kernel<decltype(init_flds), S, M> {
-      //                        domain.fields.em,
-      //                        init_flds,
-      //                        domain.mesh.metric });
-      //
-      // global_domain.CommunicateFields(domain, Comm::B | Comm::E);
-
-      // /*
-      //   tag particles inside the injection zone as dead
-      // */
-      // const auto& mesh = domain.mesh;
-      //
-      // // loop over particle species
-      // for (auto s { 0u }; s < 2; ++s) {
-      //   // get particle properties
-      //   auto& species = domain.species[s];
-      //   auto  i1      = species.i1;
-      //   auto  dx1     = species.dx1;
-      //   auto  tag     = species.tag;
-      //
-      //   Kokkos::parallel_for(
-      //     "RemoveParticles",
-      //     species.rangeActiveParticles(),
-      //     Lambda(index_t p) {
-      //       // check if the particle is already dead
-      //       if (tag(p) == ParticleTag::dead) {
-      //         return;
-      //       }
-      //       const auto x_Cd = static_cast<real_t>(i1(p)) +
-      //                         static_cast<real_t>(dx1(p));
-      //       const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
-      //         x_Cd);
-      //
-      //       if (x_Ph > xmin) {
-      //         tag(p) = ParticleTag::dead;
-      //       }
-      //     });
-      // }
+      if (step == 0) {
+        xmin = global_xmin;
+      }
 
       /*
           Inject slab of fresh plasma
@@ -330,7 +288,9 @@ namespace user {
         temperature_2,
         { -drift_ux, ZERO, ZERO });
 
-      const auto& mesh = domain.mesh;
+      const auto& mesh    = domain.mesh;
+      const auto  inj_vel = injector_velocity;
+
       for (auto& s : { 1u, 2u }) {
         auto& species = domain.species[s - 1];
         auto  i1      = species.i1;
@@ -365,13 +325,9 @@ namespace user {
               ux2(p) = v_Cd[1];
               ux3(p) = v_Cd[2];
             } else if (x_Ph > xmax) {
-              if (injector_velocity < 0.9) {
-                ux1(p) = TWO * injector_velocity /
-                         math::sqrt(ONE - SQR(injector_velocity));
-              } else {
-                ux1(p) = TWO * injector_velocity /
-                         math::sqrt(ONE - SQR(injector_velocity) + 0.001);
-              }
+              ux1(p) = TWO * inj_vel /
+                       math::max(static_cast<real_t>(1e-2),
+                                 math::sqrt(ONE - SQR(inj_vel)));
               ux2(p) = ZERO;
               ux3(p) = ZERO;
             }
@@ -385,6 +341,7 @@ namespace user {
         { 1, 2 },
         maxwellian_1,
         maxwellian_2,
+        1.0,
         inj_box);
     }
   };
