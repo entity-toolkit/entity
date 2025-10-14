@@ -747,7 +747,7 @@ namespace kernel {
         //   Kokkos::abort("Error: ConstNPPCInjector_kernel::get_inj_ppc(): "
         //                 "ppc_real too small compared to ppc0");
         // }
-        return static_cast<npart_t>(math::max(ppc0 - ppc_real, ZERO));
+        return static_cast<npart_t>(math::max(ppc0 - ppc_real, static_cast<real_t>(0.0)));
       }
 
       Inline void operator()(index_t i1) const {
