@@ -481,7 +481,12 @@ namespace arch {
       const auto nparticles = std::get<1>(result);
       const auto xi_min     = std::get<2>(result);
       const auto xi_max     = std::get<3>(result);
-
+      
+#if defined(MPI_ENABLED)
+      const int mpi_rank = domain.mpi_rank();
+#else 
+      const int mpi_rank = 0;
+#endif //MPI ENABLED
       Kokkos::parallel_for(
         "InjectUniform",
         nparticles,
@@ -497,11 +502,14 @@ namespace arch {
           xi_max,
           injector.energy_dist,
           ONE / params.template get<real_t>("scales.V0"),
-          domain.random_pool));
+          domain.random_pool,
+          mpi_rank,
+          nparticles));
       domain.species[injector.species.first - 1].set_npart(
         domain.species[injector.species.first - 1].npart() + nparticles);
       domain.species[injector.species.second - 1].set_npart(
         domain.species[injector.species.second - 1].npart() + nparticles);
+      printf("particle_injector.h 512\n");
     }
   }
 
@@ -595,7 +603,11 @@ namespace arch {
         const auto nparticles = std::get<1>(result);
         const auto xi_min     = std::get<2>(result);
         const auto xi_max     = std::get<3>(result);
-
+  #if defined(MPI_ENABLED)
+        const int mpi_rank = domain.mpi_rank();
+  #else 
+        const int mpi_rank = 0;
+  #endif //MPI ENABLED
         Kokkos::parallel_for(
           "InjectUniform",
           nparticles,
@@ -613,7 +625,9 @@ namespace arch {
               injector.energy_dist_1,
               injector.energy_dist_2,
               ONE / params.template get<real_t>("scales.V0"),
-              domain.random_pool));
+              domain.random_pool,
+              mpi_rank,
+              nparticles));
         domain.species[injector.species.first - 1].set_npart(
           domain.species[injector.species.first - 1].npart() + nparticles);
         domain.species[injector.species.second - 1].set_npart(
@@ -735,6 +749,7 @@ namespace arch {
         domain.species[injector.species.first - 1].npart() + n_inj);
       domain.species[injector.species.second - 1].set_npart(
         domain.species[injector.species.second - 1].npart() + n_inj);
+        printf("particle_injector.h 752\n");
     }
   }
 

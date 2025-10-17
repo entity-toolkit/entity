@@ -24,7 +24,8 @@ namespace ntt {
                              const PrtlPusher&  pusher,
                              bool               use_gca,
                              const Cooling&     cooling,
-                             unsigned short     npld)
+                             unsigned short     npld,
+                             unsigned int       max_part_id_)
     : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
 
     if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
@@ -63,6 +64,13 @@ namespace ntt {
     if ((D == Dim::_2D) && (C != Coord::Cart)) {
       phi = array_t<real_t*> { label + "_phi", maxnpart };
     }
+
+    ids      = array_t<unsigned int*> {label + "_ids", maxnpart};
+    ranks    = array_t<int*> {label + "_ranks", maxnpart};
+    max_part_id = array_t<unsigned int>("max_part_id");
+    printf("particles.cpp 71\n");
+    Kokkos::deep_copy(max_part_id, max_part_id_);
+    printf("particles.cpp 73\n");
   }
 
   template <Dimension D, Coord::type C>

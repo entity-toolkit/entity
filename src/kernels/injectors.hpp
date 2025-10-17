@@ -38,6 +38,10 @@ namespace kernel {
     array_t<real_t*>   phis_1;
     array_t<real_t*>   weights_1;
     array_t<short*>    tags_1;
+    array_t<int *>     ranks_1;
+    array_t<unsigned int *> ids_1;
+    array_t<unsigned int> max_part_id1;
+    unsigned int old_max_part_id1;
 
     array_t<int*>      i1s_2, i2s_2, i3s_2;
     array_t<prtldx_t*> dx1s_2, dx2s_2, dx3s_2;
@@ -45,6 +49,10 @@ namespace kernel {
     array_t<real_t*>   phis_2;
     array_t<real_t*>   weights_2;
     array_t<short*>    tags_2;
+    array_t<int *>     ranks_2;
+    array_t<unsigned int *> ids_2;
+    array_t<unsigned int> max_part_id2;
+    unsigned int old_max_part_id2;
 
     npart_t                offset1, offset2;
     const M                metric;
@@ -52,6 +60,9 @@ namespace kernel {
     const ED               energy_dist;
     const real_t           inv_V0;
     random_number_pool_t   random_pool;
+    int mpi_rank;
+    int n_part_injected;
+    
 
     UniformInjector_kernel(spidx_t                          spidx1,
                            spidx_t                          spidx2,
@@ -64,7 +75,9 @@ namespace kernel {
                            const array_t<real_t*>&          xi_max,
                            const ED&                        energy_dist,
                            real_t                           inv_V0,
-                           random_number_pool_t&            random_pool)
+                           random_number_pool_t&            random_pool,
+                           int mpi_rank,
+                           int n_part_injected)
       : spidx1 { spidx1 }
       , spidx2 { spidx2 }
       , i1s_1 { species1.i1 }
@@ -79,6 +92,9 @@ namespace kernel {
       , phis_1 { species1.phi }
       , weights_1 { species1.weight }
       , tags_1 { species1.tag }
+      , ids_1 { species1.ids }
+      , ranks_1 { species1.ranks }
+      , max_part_id1 { species1.max_part_id }
       , i1s_2 { species2.i1 }
       , i2s_2 { species2.i2 }
       , i3s_2 { species2.i3 }
@@ -91,6 +107,9 @@ namespace kernel {
       , phis_2 { species2.phi }
       , weights_2 { species2.weight }
       , tags_2 { species2.tag }
+      , ids_2 { species2.ids }
+      , ranks_2 { species2.ranks }
+      , max_part_id2 { species2.max_part_id }
       , offset1 { offset1 }
       , offset2 { offset2 }
       , metric { metric }
@@ -98,7 +117,18 @@ namespace kernel {
       , xi_max { xi_max }
       , energy_dist { energy_dist }
       , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {}
+      , random_pool { random_pool }
+      , mpi_rank { mpi_rank }
+      , n_part_injected { n_part_injected } {
+                                              printf("injectors.cpp 123\n");
+                                              Kokkos::deep_copy(old_max_part_id1, max_part_id1);
+                                              Kokkos::deep_copy(old_max_part_id2, max_part_id2);
+                                              printf("injectors.cpp 126\n");
+                                              unsigned int new1 = old_max_part_id1 + n_part_injected;
+                                              unsigned int new2 = old_max_part_id2 + n_part_injected;
+                                              Kokkos::deep_copy(max_part_id1, new1);
+                                              Kokkos::deep_copy(max_part_id2, new2);
+                                              printf("injectors.cpp 132\n");}
 
     Inline void operator()(index_t p) const {
       coord_t<M::Dim> x_Cd { ZERO };
@@ -180,6 +210,17 @@ namespace kernel {
         weights_1(p + offset1) = sqrt_det_h * inv_V0;
         weights_2(p + offset2) = sqrt_det_h * inv_V0;
       }
+      //updating particle indices and the maximum particle counter
+      ranks_1(p + offset1) = mpi_rank;
+      ranks_2(p + offset2) = mpi_rank;
+      ids_1(p + offset1) = old_max_part_id1 + p; //Kokkos::atomic_fetch_add(&max_part_id1(), static_cast<unsigned int>(1));
+      ids_2(p + offset2) = old_max_part_id2 + p; //Kokkos::atomic_fetch_add(&max_part_id2(), static_cast<unsigned int>(1));
+      if(i1s_1(p + offset1) == 100 and i2s_1(p + offset1) == 100)
+      {
+        printf("p = %zu,idx = %u, x=%d, y=%d\n", p, ids_1(p+offset1), i1s_1(p+offset1), i2s_1(p+offset1));
+      }
+      //printf("sp1: (%zu) = (%u,%d)\n", p, ids_1(p + offset1),ranks_1(p + offset1));
+      //printf("sp2: (%zu) = (%u,%d)\n", p, ids_2(p + offset2),ranks_2(p + offset2));
     }
   }; // struct UniformInjector_kernel
 

@@ -32,6 +32,9 @@ namespace kernel {
 
   protected:
     const npart_t            stride;
+    bool                     track;
+    unsigned int             nout;
+    unsigned int             ntot;
     array_t<real_t*>         buff_x1;
     array_t<real_t*>         buff_x2;
     array_t<real_t*>         buff_x3;
@@ -39,15 +42,24 @@ namespace kernel {
     array_t<real_t*>         buff_ux2;
     array_t<real_t*>         buff_ux3;
     array_t<real_t*>         buff_wei;
+    array_t<unsigned int*>   buff_ids;
+    array_t<int*>         buff_ranks;
+    array_t<unsigned int*> tracked_ids;
     const array_t<int*>      i1, i2, i3;
     const array_t<prtldx_t*> dx1, dx2, dx3;
     const array_t<real_t*>   ux1, ux2, ux3;
     const array_t<real_t*>   phi;
     const array_t<real_t*>   weight;
+    const array_t<unsigned int*> ids;
+    const array_t<int*> ranks; 
+    array_t<int> count {"buff_count"};
     const M                  metric;
 
   public:
     PrtlToPhys_kernel(npart_t                   stride,
+                      bool                      track,
+                      unsigned int              nout,
+                      unsigned int              ntot,
                       array_t<real_t*>&         buff_x1,
                       array_t<real_t*>&         buff_x2,
                       array_t<real_t*>&         buff_x3,
@@ -55,6 +67,8 @@ namespace kernel {
                       array_t<real_t*>&         buff_ux2,
                       array_t<real_t*>&         buff_ux3,
                       array_t<real_t*>&         buff_wei,
+                      array_t<unsigned int*>&   buff_ids,
+                      array_t<int*>&            buff_ranks,
                       const array_t<int*>&      i1,
                       const array_t<int*>&      i2,
                       const array_t<int*>&      i3,
@@ -66,8 +80,13 @@ namespace kernel {
                       const array_t<real_t*>&   ux3,
                       const array_t<real_t*>&   phi,
                       const array_t<real_t*>&   weight,
+                      const array_t<unsigned int*>& ids,
+                      const array_t<int *>&     ranks,
                       const M&                  metric)
       : stride { stride }
+      , track  { track }
+      , nout {nout}
+      , ntot {ntot}
       , buff_x1 { buff_x1 }
       , buff_x2 { buff_x2 }
       , buff_x3 { buff_x3 }
@@ -75,6 +94,8 @@ namespace kernel {
       , buff_ux2 { buff_ux2 }
       , buff_ux3 { buff_ux3 }
       , buff_wei { buff_wei }
+      , buff_ids { buff_ids }
+      , buff_ranks { buff_ranks }
       , i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
@@ -86,7 +107,31 @@ namespace kernel {
       , ux3 { ux3 }
       , phi { phi }
       , weight { weight }
+      , ids { ids }
+      , ranks { ranks }
       , metric { metric } {
+
+      if (track){
+        logger::Checkpoint("kernel builder",HERE);
+        tracked_ids = array_t<unsigned int*>("tracked_ids", nout);
+
+        auto ids_view        = ids;
+        auto tracked_ids_view = tracked_ids;
+        auto stride_val      = stride;
+        //count = array_t<int>("ids_count",1);
+        //Kokkos::deep_copy(count, 0);
+        //array_t<int*> count;
+        /*Kokkos::parallel_for("GthrTrckdPrtlInd", ntot, Lambda(const int p){
+          if (ids_view(p)%stride_val==0){
+            int idx = Kokkos::atomic_fetch_add(&count(0), 1);
+            tracked_ids_view(idx) = p;
+          }
+    
+        });*/
+        logger::Checkpoint("done building",HERE);
+
+        }
+
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x1.extent(0) == 0, "Invalid buffer size", HERE);
       }
@@ -97,46 +142,75 @@ namespace kernel {
                     (D == Dim::_3D)) {
         raise::ErrorIf(buff_x3.extent(0) == 0, "Invalid buffer size", HERE);
       }
+      raise::ErrorIf(buff_ranks.extent(0) == 0, "Invalid buffer size", HERE);
+      raise::ErrorIf(buff_ids.extent(0) == 0, "Invalid buffer size", HERE);
       raise::ErrorIf(buff_ux1.extent(0) == 0, "Invalid buffer size", HERE);
       raise::ErrorIf(buff_ux2.extent(0) == 0, "Invalid buffer size", HERE);
       raise::ErrorIf(buff_ux3.extent(0) == 0, "Invalid buffer size", HERE);
     }
 
     Inline void operator()(index_t p) const {
-      bufferX(p);
-      bufferU(p);
-      buff_wei(p) = weight(p * stride);
+      if (track){
+        //printf("hello\n");
+        //auto p_in = 1;//tracked_ids(p);
+        if (ids(p)%stride==0){
+          
+          int idx = Kokkos::atomic_fetch_add(&count(), 1);
+          bufferX(p,idx);
+          bufferU(p,idx);
+          buff_wei(idx) = weight(p);
+          buff_ranks(idx) = ranks(p);
+          buff_ids(idx) = ids(p);
+          if(i1(p) == 100 and i2(p)==100)
+          {
+            printf("prtl_to_phys: p = %zu,idx = %d, ids = %u, x=%d, y=%d\n", p, idx, ids(p), i1(p), i2(p));
+          }
+        }
+        //bufferX(p_in,p);
+        //bufferU(p_in,p);
+        //buff_wei(p) = weight(p_in);
+        //buff_ranks(p) = ranks(p_in);
+        //buff_ids(p) = ids(p_in);
+        
+      }
+      else {
+        auto p_in = p * stride; 
+        bufferX(p_in, p);
+        bufferU(p_in, p);
+        buff_wei(p) = weight(p_in);
+      }
+        
     }
 
-    Inline void bufferX(index_t& p) const {
+    Inline void bufferX(index_t& p_in, index_t& p_out) const {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
-        buff_x1(p) = metric.template convert<1, Crd::Cd, Crd::Ph>(
-          static_cast<real_t>(i1(p * stride)) +
-          static_cast<real_t>(dx1(p * stride)));
+        buff_x1(p_out) = metric.template convert<1, Crd::Cd, Crd::Ph>(
+          static_cast<real_t>(i1(p_in)) +
+          static_cast<real_t>(dx1(p_in)));
       }
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-        buff_x2(p) = metric.template convert<2, Crd::Cd, Crd::Ph>(
-          static_cast<real_t>(i2(p * stride)) +
-          static_cast<real_t>(dx2(p * stride)));
+        buff_x2(p_out) = metric.template convert<2, Crd::Cd, Crd::Ph>(
+          static_cast<real_t>(i2(p_in)) +
+          static_cast<real_t>(dx2(p_in)));
       }
       if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cart)) {
-        buff_x3(p) = phi(p * stride);
+        buff_x3(p_out) = phi(p_in);
       }
       if constexpr (D == Dim::_3D) {
-        buff_x3(p) = metric.template convert<3, Crd::Cd, Crd::Ph>(
-          static_cast<real_t>(i3(p * stride)) +
-          static_cast<real_t>(dx3(p * stride)));
+        buff_x3(p_out) = metric.template convert<3, Crd::Cd, Crd::Ph>(
+          static_cast<real_t>(i3(p_in)) +
+          static_cast<real_t>(dx3(p_in)));
       }
     }
 
-    Inline void bufferU(index_t& p) const {
+    Inline void bufferU(index_t& p_in, index_t& p_out) const {
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (D == Dim::_1D) {
         if constexpr (M::CoordType == Coord::Cart) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p * stride)) +
-              static_cast<real_t>(dx1(p * stride)) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+              static_cast<real_t>(dx1(p_in)) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else {
           raise::KernelError(HERE, "Unsupported coordinate system in 1D");
@@ -144,28 +218,28 @@ namespace kernel {
       } else if constexpr (D == Dim::_2D) {
         if constexpr (M::CoordType == Coord::Cart) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p * stride)) +
-                static_cast<real_t>(dx1(p * stride)),
-              static_cast<real_t>(i2(p * stride)) +
-                static_cast<real_t>(dx2(p * stride)) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+                static_cast<real_t>(dx1(p_in)),
+              static_cast<real_t>(i2(p_in)) +
+                static_cast<real_t>(dx2(p_in)) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else if constexpr (S == SimEngine::SRPIC) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p * stride)) +
-                static_cast<real_t>(dx1(p * stride)),
-              static_cast<real_t>(i2(p * stride)) +
-                static_cast<real_t>(dx2(p * stride)),
-              phi(p * stride) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+                static_cast<real_t>(dx1(p_in)),
+              static_cast<real_t>(i2(p_in)) +
+                static_cast<real_t>(dx2(p_in)),
+              phi(p_in) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else if constexpr (S == SimEngine::GRPIC) {
           metric.template transform<Idx::D, Idx::PD>(
-            { static_cast<real_t>(i1(p * stride)) +
-                static_cast<real_t>(dx1(p * stride)),
-              static_cast<real_t>(i2(p * stride)) +
-                static_cast<real_t>(dx2(p * stride)) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+                static_cast<real_t>(dx1(p_in)),
+              static_cast<real_t>(i2(p_in)) +
+                static_cast<real_t>(dx2(p_in)) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else {
           raise::KernelError(HERE, "Unrecognized simulation engine");
@@ -173,31 +247,31 @@ namespace kernel {
       } else if constexpr (D == Dim::_3D) {
         if constexpr (S == SimEngine::SRPIC) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p * stride)) +
-                static_cast<real_t>(dx1(p * stride)),
-              static_cast<real_t>(i2(p * stride)) +
-                static_cast<real_t>(dx2(p * stride)),
-              static_cast<real_t>(i3(p * stride)) +
-                static_cast<real_t>(dx3(p * stride)) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+                static_cast<real_t>(dx1(p_in)),
+              static_cast<real_t>(i2(p_in)) +
+                static_cast<real_t>(dx2(p_in)),
+              static_cast<real_t>(i3(p_in)) +
+                static_cast<real_t>(dx3(p_in)) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else if constexpr (S == SimEngine::GRPIC) {
           metric.template transform<Idx::D, Idx::PD>(
-            { static_cast<real_t>(i1(p * stride)) +
-                static_cast<real_t>(dx1(p * stride)),
-              static_cast<real_t>(i2(p * stride)) +
-                static_cast<real_t>(dx2(p * stride)),
-              static_cast<real_t>(i3(p * stride)) +
-                static_cast<real_t>(dx3(p * stride)) },
-            { ux1(p * stride), ux2(p * stride), ux3(p * stride) },
+            { static_cast<real_t>(i1(p_in)) +
+                static_cast<real_t>(dx1(p_in)),
+              static_cast<real_t>(i2(p_in)) +
+                static_cast<real_t>(dx2(p_in)),
+              static_cast<real_t>(i3(p_in)) +
+                static_cast<real_t>(dx3(p_in)) },
+            { ux1(p_in), ux2(p_in), ux3(p_in) },
             u_Phys);
         } else {
           raise::KernelError(HERE, "Unrecognized simulation engine");
         }
       }
-      buff_ux1(p) = u_Phys[0];
-      buff_ux2(p) = u_Phys[1];
-      buff_ux3(p) = u_Phys[2];
+      buff_ux1(p_out) = u_Phys[0];
+      buff_ux2(p_out) = u_Phys[1];
+      buff_ux3(p_out) = u_Phys[2];
     }
   };
 } // namespace kernel

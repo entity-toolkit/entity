@@ -622,7 +622,13 @@ namespace ntt {
                                         "particles",
                                         "species",
                                         all_specs);
+    const auto prtl_track = toml::find_or(toml_data,
+                                          "output",
+                                          "particles",
+                                          "track",
+                                          false);
     set("output.particles.species", prtl_out);
+    set("output.particles.track", prtl_track);
     set("output.particles.stride",
         toml::find_or(toml_data,
                       "output",

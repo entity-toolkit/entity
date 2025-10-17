@@ -92,22 +92,28 @@ namespace ntt {
     if constexpr (M::CoordType != Coord::Cart) {
       dim = Dim::_3D;
     }
+    printf("output.cpp 95\n");
     g_writer.defineParticleOutputs(dim, species_to_write);
-
+    printf("output.cpp 97\n");
     // spectra write all particle species
     std::vector<spidx_t> spectra_species {};
     for (const auto& sp : species_params()) {
       spectra_species.push_back(sp.index());
     }
+    printf("output.cpp 103\n");
     g_writer.defineSpectraOutputs(spectra_species);
+    printf("output.cpp 105\n");
     for (const auto& type : { "fields", "particles", "spectra" }) {
+      printf("output.cpp 107\n");
       g_writer.addTracker(type,
                           params.template get<timestep_t>(
                             "output." + std::string(type) + ".interval"),
                           params.template get<simtime_t>(
                             "output." + std::string(type) + ".interval_time"));
     }
+    printf("output.cpp 114\n");
     g_writer.writeAttrs(params);
+    printf("output.cpp 116\n");
   }
 
   template <SimEngine::type S, class M, FldsID::type F>
@@ -333,6 +339,7 @@ namespace ntt {
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
+      printf("output.cpp 342\n");
     const auto write_fields = params.template get<bool>(
                                 "output.fields.enable") and
                               g_writer.shouldWrite("fields",
@@ -343,6 +350,7 @@ namespace ntt {
                                  g_writer.shouldWrite("particles",
                                                       finished_step,
                                                       finished_time);
+    printf("output.cpp 352\n");
     const auto write_spectra = params.template get<bool>(
                                  "output.spectra.enable") and
                                g_writer.shouldWrite("spectra",
@@ -359,6 +367,7 @@ namespace ntt {
                    HERE);
     logger::Checkpoint("Writing output", HERE);
     if (write_fields) {
+      printf("output.cpp 709\n");
       g_writer.beginWriting(WriteMode::Fields, current_step, current_time);
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
       const auto dwn         = params.template get<std::vector<unsigned int>>(
@@ -705,23 +714,50 @@ namespace ntt {
         g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
       }
       g_writer.endWriting(WriteMode::Fields);
+      printf("output.cpp 709\n");
     } // end shouldWrite("fields", step, time)
 
     if (write_particles) {
+      logger::Checkpoint("Writing particles", HERE);
+      printf("output.cpp 711\n");
       g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
       const auto prtl_stride = params.template get<npart_t>(
         "output.particles.stride");
+      const auto prtl_track = params.template get<bool>("output.particles.track");
+      npart_t nout = 0;
+      
       for (const auto& prtl : g_writer.speciesWriters()) {
         auto& species = local_domain->species[prtl.species() - 1];
         if (not species.is_sorted()) {
           species.RemoveDead();
         }
-        const npart_t    nout = species.npart() / prtl_stride;
+        if (prtl_track) {
+          logger::Checkpoint("Writing particles if tracking", HERE);
+          auto tags = species.tag;
+          auto ids = species.ids;
+          printf("output.cpp 725\n");
+          Kokkos::parallel_reduce("TrackedPartCount",species.npart(), Lambda(const int p, npart_t& sum) {
+            //parallel reduce for counter check
+            if (tags(p) == ParticleTag::alive and ids(p)%prtl_stride==0){
+              sum += 1;
+            }
+          }, nout);
+          printf("tracked particle count = %lu\n", nout);
+          //nout = species.npart() / prtl_stride;
+        }
+        else {
+          nout = species.npart() / prtl_stride;
+        }
+        
         array_t<real_t*> buff_x1, buff_x2, buff_x3;
         array_t<real_t*> buff_ux1 { "u1", nout };
         array_t<real_t*> buff_ux2 { "ux2", nout };
         array_t<real_t*> buff_ux3 { "ux3", nout };
         array_t<real_t*> buff_wei { "w", nout };
+        //redo into single number via cantor function
+        array_t<unsigned int *>   buff_ids { "id", nout };
+        array_t<int *>   buff_ranks { "rnk", nout };
+        array_t<npart_t *> buffs_unique_ids { "uids", nout };
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
           buff_x1 = array_t<real_t*> { "x1", nout };
@@ -735,18 +771,39 @@ namespace ntt {
         }
         if (nout > 0) {
           // clang-format off
-          Kokkos::parallel_for(
-            "PrtlToPhys",
-            nout,
-            kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                            buff_x1, buff_x2, buff_x3,
-                                            buff_ux1, buff_ux2, buff_ux3,
-                                            buff_wei,
-                                            species.i1, species.i2, species.i3,
-                                            species.dx1, species.dx2, species.dx3,
-                                            species.ux1, species.ux2, species.ux3,
-                                            species.phi, species.weight,
-                                            local_domain->mesh.metric));
+          logger::Checkpoint("nout>0", HERE);
+          if(prtl_track) {
+            printf("output.cpp 759\n");
+            Kokkos::parallel_for(
+              "PrtlToPhys",
+              species.npart(),
+              kernel::PrtlToPhys_kernel<S, M>(prtl_stride, prtl_track, nout, species.npart(),  
+                                              buff_x1, buff_x2, buff_x3,
+                                              buff_ux1, buff_ux2, buff_ux3,
+                                              buff_wei, buff_ids, buff_ranks,
+                                              species.i1, species.i2, species.i3,
+                                              species.dx1, species.dx2, species.dx3,
+                                              species.ux1, species.ux2, species.ux3,
+                                              species.phi, species.weight, species.ids, species.ranks, 
+                                              local_domain->mesh.metric));
+          }
+          else {
+            Kokkos::parallel_for(
+              "PrtlToPhys",
+              nout,
+              kernel::PrtlToPhys_kernel<S, M>(prtl_stride, prtl_track, nout, species.npart(),  
+                                              buff_x1, buff_x2, buff_x3,
+                                              buff_ux1, buff_ux2, buff_ux3,
+                                              buff_wei, buff_ids, buff_ranks,
+                                              species.i1, species.i2, species.i3,
+                                              species.dx1, species.dx2, species.dx3,
+                                              species.ux1, species.ux2, species.ux3,
+                                              species.phi, species.weight, species.ids, species.ranks, 
+                                              local_domain->mesh.metric));
+          }
+
+  
+          logger::Checkpoint("PrtlToPhys_kernel done", HERE);
           // clang-format on
         }
         npart_t offset   = 0;
@@ -783,6 +840,25 @@ namespace ntt {
                       ((D == Dim::_2D) and (M::CoordType != Coord::Cart))) {
           g_writer.writeParticleQuantity(buff_x3, glob_tot, offset, prtl.name("X", 3));
         }
+        logger::Checkpoint("wrote everything", HERE);
+        if (prtl_track){
+          logger::Checkpoint("trying to write uids", HERE);
+          printf("output.cpp 809\n");
+          auto _ids = buff_ids; 
+          auto _ranks = buff_ranks;
+          array_t<real_t*>   buff_uids { "uids", nout };
+          Kokkos::parallel_for("CantorFunc", nout, Lambda(const int p){
+            //auto x = static_cast<real_t>(_ids(p));
+            //auto y = static_cast<real_t>(_ranks(p));
+            buff_uids(p) = static_cast<real_t>(_ids(p));//(x + y) * (x + y + 1) / 2 + y;
+          });
+          logger::Checkpoint("finished cantor", HERE);
+          printf("output.cpp 818\n");
+          g_writer.writeParticleQuantity(buff_uids, glob_tot, offset, prtl.name("IDS", 0));
+          logger::Checkpoint("wrote ids", HERE);
+          printf("output.cpp 820\n");
+        }
+      
       }
       g_writer.endWriting(WriteMode::Particles);
     } // end shouldWrite("particles", step, time)

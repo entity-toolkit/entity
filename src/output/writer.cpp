@@ -170,6 +170,7 @@ namespace out {
       m_prtl_writers.emplace_back(s);
     }
     for (const auto& prtl : m_prtl_writers) {
+      printf("writer.cpp 173\n");
       for (auto d { 0u }; d < dim; ++d) {
         m_io.DefineVariable<real_t>(prtl.name("X", d + 1),
                                     { adios2::UnknownDim },
@@ -186,6 +187,12 @@ namespace out {
                                   { adios2::UnknownDim },
                                   { adios2::UnknownDim },
                                   { adios2::UnknownDim });
+
+      m_io.DefineVariable<real_t>(prtl.name("IDS", 0),
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim });
+      printf("writer.cpp 195\n");
     }
   }
 
@@ -350,6 +357,7 @@ namespace out {
                                      npart_t                 glob_total,
                                      npart_t                 loc_offset,
                                      const std::string&      varname) {
+    printf("writer.cpp 359\n");
     auto var = m_io.InquireVariable<real_t>(varname);
     var.SetShape({ glob_total });
     var.SetSelection(

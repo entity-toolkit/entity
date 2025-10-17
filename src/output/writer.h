@@ -106,9 +106,10 @@ namespace out {
                     const std::vector<std::size_t>&);
 
     void writeParticleQuantity(const array_t<real_t*>&,
-                               npart_t,
-                               npart_t,
-                               const std::string&);
+                                npart_t,
+                                npart_t,
+                                const std::string&);
+
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 

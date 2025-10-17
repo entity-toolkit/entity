@@ -64,6 +64,12 @@ namespace ntt {
     array_t<real_t**>  pld;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>   phi;
+    // id of a given particle needed for tracking
+    array_t<unsigned int*> ids;
+    // rank of domain where the particle was originally injected (needed for tracking)
+    array_t<int*> ranks;
+    // max id for a particle in a local domain
+    array_t<unsigned int> max_part_id;
 
     // for empty allocation
     Particles() {}
@@ -88,7 +94,8 @@ namespace ntt {
               const PrtlPusher&  pusher,
               bool               use_gca,
               const Cooling&     cooling,
-              unsigned short     npld = 0);
+              unsigned short     npld = 0,
+              unsigned int       max_part_id = 0);
 
     /**
      * @brief Constructor for the particle container
@@ -104,7 +111,8 @@ namespace ntt {
                   spec.pusher(),
                   spec.use_gca(),
                   spec.cooling(),
-                  spec.npld()) {}
+                  spec.npld(),
+                  0) {}
 
     Particles(const Particles&)            = delete;
     Particles& operator=(const Particles&) = delete;
@@ -171,6 +179,8 @@ namespace ntt {
       footprint             += sizeof(short) * tag.extent(0);
       footprint             += sizeof(real_t) * pld.extent(0) * pld.extent(1);
       footprint             += sizeof(real_t) * phi.extent(0);
+      //footprint             += sizeof(int) * ranks.extent(0);
+     // footprint             += sizeof(unsigned int) * ids.extent(0);
       return footprint;
     }
 
