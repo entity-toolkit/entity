@@ -6,6 +6,7 @@
  *   - out::ReadVariable<> -> void
  *   - out::Read1DArray<> -> void
  *   - out::Read2DArray<> -> void
+ *   - out::ReadNDField<> -> void
  * @cpp:
  *   - readers.cpp
  * @namespaces:
@@ -42,6 +43,13 @@ namespace out {
                    unsigned short,
                    std::size_t,
                    std::size_t);
+
+  template <Dimension D, int N>
+  void ReadNDField(adios2::IO&,
+                   adios2::Engine&,
+                   const std::string&,
+                   ndfield_t<D, N>&,
+                   const adios2::Box<adios2::Dims>&);
 
 } // namespace out
 

@@ -6,6 +6,7 @@
  *  - out::WriteVariable<> -> void
  *  - out::Write1DArray<> -> void
  *  - out::Write2DArray<> -> void
+ *  - out::WriteNDField<> -> void
  * @cpp:
  *   - writers.cpp
  * @namespaces:
@@ -49,6 +50,12 @@ namespace out {
                     std::size_t,
                     std::size_t,
                     std::size_t);
+
+  template <Dimension D, int N>
+  void WriteNDField(adios2::IO&,
+                    adios2::Engine&,
+                    const std::string&,
+                    const ndfield_t<D, N>&);
 
 } // namespace out
 
