@@ -23,6 +23,8 @@
   #include <mpi.h>
 #endif
 
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
 #include <utility>
@@ -31,10 +33,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -1031,4 +1033,16 @@ namespace ntt {
                    "Have not defined all the necessary variables",
                    HERE);
   }
+
+  void SimulationParams::saveTOML(const std::string& path, simtime_t time) const {
+    CallOnce([&]() {
+      std::ofstream metadata;
+      metadata.open(path);
+      metadata << "[metadata]\n"
+               << "  time = " << time << "\n\n"
+               << data() << std::endl;
+      metadata.close();
+    });
+  }
+
 } // namespace ntt

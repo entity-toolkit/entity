@@ -22,6 +22,7 @@ namespace ntt {
     logger::Checkpoint(
       fmt::format("Declaring particle checkpoint for species #%d", index()),
       HERE);
+
     io.DefineVariable<npart_t>(fmt::format("s%d_npart", index()),
                                { adios2::UnknownDim },
                                { adios2::UnknownDim },
@@ -97,24 +98,20 @@ namespace ntt {
                    "Particles already initialized before reading checkpoint",
                    HERE);
     npart_t npart_offset = 0u;
+    npart_t npart_read;
 
     out::ReadVariable<npart_t>(io,
                                reader,
                                fmt::format("s%d_npart", index()),
-                               m_npart,
+                               npart_read,
                                domains_offset);
-
-    raise::ErrorIf(
-      npart() > maxnpart(),
-      fmt::format("npart %d > maxnpart %d after reading checkpoint",
-                  npart(),
-                  maxnpart()),
-      HERE);
+    set_npart(npart_read);
 
 #if defined(MPI_ENABLED)
     {
+      const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);
-      MPI_Allgather(&m_npart,
+      MPI_Allgather(&npart_send,
                     1,
                     mpi::get_type<npart_t>(),
                     glob_nparts.data(),
@@ -324,24 +321,28 @@ namespace ntt {
                              writer,
                              fmt::format("s%d_i1", index()),
                              i1,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx1", index()),
                                   dx1,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
       out::Write1DArray<int>(io,
                              writer,
                              fmt::format("s%d_i1_prev", index()),
                              i1_prev,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx1_prev", index()),
                                   dx1_prev,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
     }
@@ -351,24 +352,28 @@ namespace ntt {
                              writer,
                              fmt::format("s%d_i2", index()),
                              i2,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx2", index()),
                                   dx2,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
       out::Write1DArray<int>(io,
                              writer,
                              fmt::format("s%d_i2_prev", index()),
                              i2_prev,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx2_prev", index()),
                                   dx2_prev,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
     }
@@ -378,24 +383,28 @@ namespace ntt {
                              writer,
                              fmt::format("s%d_i3", index()),
                              i3,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx3", index()),
                                   dx3,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
       out::Write1DArray<int>(io,
                              writer,
                              fmt::format("s%d_i3_prev", index()),
                              i3_prev,
+                             npart(),
                              npart_total,
                              npart_offset);
       out::Write1DArray<prtldx_t>(io,
                                   writer,
                                   fmt::format("s%d_dx3_prev", index()),
                                   dx3_prev,
+                                  npart(),
                                   npart_total,
                                   npart_offset);
     }
@@ -405,6 +414,7 @@ namespace ntt {
                                 writer,
                                 fmt::format("s%d_phi", index()),
                                 phi,
+                                npart(),
                                 npart_total,
                                 npart_offset);
     }
@@ -413,30 +423,35 @@ namespace ntt {
                               writer,
                               fmt::format("s%d_ux1", index()),
                               ux1,
+                              npart(),
                               npart_total,
                               npart_offset);
     out::Write1DArray<real_t>(io,
                               writer,
                               fmt::format("s%d_ux2", index()),
                               ux2,
+                              npart(),
                               npart_total,
                               npart_offset);
     out::Write1DArray<real_t>(io,
                               writer,
                               fmt::format("s%d_ux3", index()),
                               ux3,
+                              npart(),
                               npart_total,
                               npart_offset);
     out::Write1DArray<short>(io,
                              writer,
                              fmt::format("s%d_tag", index()),
                              tag,
+                             npart(),
                              npart_total,
                              npart_offset);
     out::Write1DArray<real_t>(io,
                               writer,
                               fmt::format("s%d_weight", index()),
                               weight,
+                              npart(),
                               npart_total,
                               npart_offset);
     if (npld_r() > 0) {
@@ -444,9 +459,10 @@ namespace ntt {
                                 writer,
                                 fmt::format("s%d_pld_r", index()),
                                 pld_r,
+                                npld_r(),
+                                npart(),
                                 npart_total,
-                                npart_offset,
-                                npld_r());
+                                npart_offset);
     }
 
     if (npld_i() > 0) {
@@ -454,29 +470,31 @@ namespace ntt {
                                  writer,
                                  fmt::format("s%d_pld_i", index()),
                                  pld_i,
+                                 npld_i(),
+                                 npart(),
                                  npart_total,
-                                 npart_offset,
-                                 npld_i());
+                                 npart_offset);
     }
   }
 
 #define PARTICLES_CHECKPOINTS(D, C)                                            \
-  template void Particles<D, C>::CheckpointDeclare(adios2::ADIOS&) const;      \
-  template void Particles<D, C>::CheckpointRead(adios2::ADIOS&,                \
+  template void Particles<D, C>::CheckpointDeclare(adios2::IO&) const;         \
+  template void Particles<D, C>::CheckpointRead(adios2::IO&,                   \
                                                 adios2::Engine&,               \
                                                 std::size_t,                   \
                                                 std::size_t);                  \
   template void Particles<D, C>::CheckpointWrite(adios2::IO&,                  \
                                                  adios2::Engine&,              \
                                                  std::size_t,                  \
-                                                 std::size_t) const;           \
-  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cart)                                 \
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cart)                                 \
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cart)                                 \
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Sph)                                  \
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::QSph)                                 \
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Sph)                                  \
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::QSph)
+                                                 std::size_t) const;
+
+  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cart)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cart)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cart)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Sph)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Qsph)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Sph)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qsph)
 #undef PARTICLES_CHECKPOINTS
 
 } // namespace ntt

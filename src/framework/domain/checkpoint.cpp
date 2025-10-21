@@ -1,3 +1,5 @@
+#include "output/checkpoint.h"
+
 #include "enums.h"
 #include "global.h"
 
@@ -12,8 +14,6 @@
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
 
-#include "checkpoint/reader.h"
-#include "checkpoint/writer.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
 
@@ -59,11 +59,11 @@ namespace ntt {
       params.template get<int>("checkpoint.keep"),
       params.template get<std::string>("checkpoint.walltime"));
     if (g_checkpoint_writer.enabled()) {
-      g_checkpoint_writer.defineFieldVariables(S,
-                                               glob_shape_with_ghosts,
-                                               off_ncells_with_ghosts,
-                                               loc_shape_with_ghosts);
-      for (auto& species : local_domain->species) {
+      local_domain->fields.CheckpointDeclare(g_checkpoint_writer.io(),
+                                             loc_shape_with_ghosts,
+                                             glob_shape_with_ghosts,
+                                             off_ncells_with_ghosts);
+      for (const auto& species : local_domain->species) {
         species.CheckpointDeclare(g_checkpoint_writer.io());
       }
     }
@@ -90,16 +90,17 @@ namespace ntt {
     logger::Checkpoint("Writing checkpoint", HERE);
     g_checkpoint_writer.beginSaving(current_step, current_time);
     {
-      g_checkpoint_writer.saveAttrs(params, current_time);
-      g_checkpoint_writer.saveField<M::Dim, 6>("em", local_domain->fields.em);
-      if constexpr (S == SimEngine::GRPIC) {
-        g_checkpoint_writer.saveField<M::Dim, 6>("em0", local_domain->fields.em0);
-        g_checkpoint_writer.saveField<M::Dim, 3>("cur0", local_domain->fields.cur0);
+      if (g_checkpoint_writer.written().empty()) {
+        raise::Fatal("No checkpoint file to save metadata", HERE);
       }
-      std::size_t dom_tot = 1, dom_offset = 0;
-#if defined(MPI_ENABLED)
-      dom_tot    = g_mpi_size;
-      dom_offset = g_mpi_rank;
+      params.saveTOML(g_checkpoint_writer.written().back().second, current_time);
+
+      local_domain->fields.CheckpointWrite(g_checkpoint_writer.io(),
+                                           g_checkpoint_writer.writer());
+#if !defined(MPI_ENABLED)
+      const std::size_t dom_tot = 1, dom_offset = 0;
+#else
+      const std::size_t dom_tot = g_mpi_size, dom_offset = g_mpi_rank;
 #endif // MPI_ENABLED
 
       for (const auto& species : local_domain->species) {
@@ -124,6 +125,7 @@ namespace ntt {
                        fmt::format("step-%08lu.bp",
                                    params.template get<timestep_t>(
                                      "checkpoint.start_step"));
+
     logger::Checkpoint(fmt::format("Reading checkpoint from %s", fname.c_str()),
                        HERE);
 
@@ -137,45 +139,25 @@ namespace ntt {
 
     reader.BeginStep();
     for (const auto local_domain_idx : l_subdomain_indices()) {
-      auto&                     domain = g_subdomains[local_domain_idx];
+      auto local_domain = subdomain_ptr(local_domain_idx);
+
       adios2::Box<adios2::Dims> range;
       for (auto d { 0u }; d < M::Dim; ++d) {
-        range.first.push_back(domain.offset_ncells()[d] +
-                              2 * N_GHOSTS * domain.offset_ndomains()[d]);
-        range.second.push_back(domain.mesh.n_all()[d]);
+        range.first.push_back(local_domain->offset_ncells()[d] +
+                              2 * N_GHOSTS * local_domain->offset_ndomains()[d]);
+        range.second.push_back(local_domain->mesh.n_all()[d]);
       }
-      range.first.push_back(0);
-      range.second.push_back(6);
-      checkpoint::ReadFields<M::Dim, 6>(io, reader, "em", range, domain.fields.em);
-      if constexpr (S == ntt::SimEngine::GRPIC) {
-        checkpoint::ReadFields<M::Dim, 6>(io,
-                                          reader,
-                                          "em0",
-                                          range,
-                                          domain.fields.em0);
-        adios2::Box<adios2::Dims> range3;
-        for (auto d { 0u }; d < M::Dim; ++d) {
-          range3.first.push_back(domain.offset_ncells()[d] +
-                                 2 * N_GHOSTS * domain.offset_ndomains()[d]);
-          range3.second.push_back(domain.mesh.n_all()[d]);
-        }
-        range3.first.push_back(0);
-        range3.second.push_back(3);
-        checkpoint::ReadFields<M::Dim, 3>(io,
-                                          reader,
-                                          "cur0",
-                                          range3,
-                                          domain.fields.cur0);
-      }
+      local_domain->fields.CheckpointRead(io, reader, range);
 
-      for (auto& species : domain.species) {
-        species.CheckpointRead(io, reader, local_domain_idx, ndomains());
+      for (auto& species : local_domain->species) {
+        species.CheckpointRead(io, reader, ndomains(), local_domain_idx);
       }
 
     } // local subdomain loop
 
     reader.EndStep();
     reader.Close();
+
     logger::Checkpoint(
       fmt::format("Checkpoint reading done from %s", fname.c_str()),
       HERE);

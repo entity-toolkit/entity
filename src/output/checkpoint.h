@@ -1,23 +1,20 @@
 /**
- * @file checkpoint/writer.h
- * @brief Class that dumps checkpoints
+ * @file output/checkpoint.h
+ * @brief Class that handles checkpoint writing
  * @implements
  *   - checkpoint::Writer
  * @cpp:
- *   - writer.cpp
+ *   - checkpoint.cpp
  * @namespaces:
  *   - checkpoint::
  */
 
-#ifndef CHECKPOINT_WRITER_H
-#define CHECKPOINT_WRITER_H
+#ifndef OUTPUT_CHECKPOINT_H
+#define OUTPUT_CHECKPOINT_H
 
-#include "enums.h"
 #include "global.h"
 
 #include "utils/tools.h"
-
-#include "framework/parameters.h"
 
 #include <adios2.h>
 
@@ -60,16 +57,6 @@ namespace checkpoint {
     void beginSaving(timestep_t, simtime_t);
     void endSaving();
 
-    void saveAttrs(const ntt::SimulationParams&, simtime_t);
-
-    template <Dimension D, int N>
-    void saveField(const std::string&, const ndfield_t<D, N>&);
-
-    void defineFieldVariables(const ntt::SimEngine&,
-                              const std::vector<ncells_t>&,
-                              const std::vector<ncells_t>&,
-                              const std::vector<ncells_t>&);
-
     [[nodiscard]]
     auto io() -> adios2::IO& {
       return m_io;
@@ -81,6 +68,11 @@ namespace checkpoint {
     }
 
     [[nodiscard]]
+    auto written() const -> const std::vector<std::pair<std::string, std::string>>& {
+      return m_written;
+    }
+
+    [[nodiscard]]
     auto enabled() const -> bool {
       return m_enabled;
     }
@@ -88,4 +80,4 @@ namespace checkpoint {
 
 } // namespace checkpoint
 
-#endif // CHECKPOINT_WRITER_H
+#endif // OUTPUT_CHECKPOINT_H
