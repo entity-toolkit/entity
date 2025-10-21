@@ -51,7 +51,7 @@ namespace ntt::defaults {
   } // namespace bc
 
   namespace output {
-    const std::string              format           = "hdf5";
+    const std::string              format           = "BPFile";
     const timestep_t               interval         = 100;
     const unsigned short           mom_smooth       = 0;
     const npart_t                  prtl_stride      = 100;
