@@ -15,6 +15,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
@@ -252,6 +253,24 @@ namespace ntt {
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
+
+#if defined(MPI_ENABLED)
+    /**
+     * @brief Communicate particles across neighboring meshblocks
+     * @param dirs_to_comm The directions requiring communication
+     * @param shifts_in_x1 The coordinate shifts in x1 direction per each communicated particle
+     * @param shifts_in_x2 The coordinate shifts in x2 direction per each communicated particle
+     * @param shifts_in_x3 The coordinate shifts in x3 direction per each communicated particle
+     * @param send_ranks The map of ranks per each send direction
+     * @param recv_ranks The map of ranks per each recv direction
+     */
+    void Communicate(const dir::dirs_t<D>&,
+                     const array_t<int*>&,
+                     const array_t<int*>&,
+                     const array_t<int*>&,
+                     const dir::map_t<D, int>&,
+                     const dir::map_t<D, int>&);
+#endif
 
 #if defined(OUTPUT_ENABLED)
     void CheckpointDeclare(adios2::IO&) const;
