@@ -302,10 +302,19 @@
     #   @default: "Boris" [massive]; "Photon" [massless]
     #   @enum: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
     pusher = ""
-    # Number of additional (payload) variables for each particle of the given species
+    # Number of additional real-valued variables (payloads) for each particle of the given species
     #   @type: ushort
     #   @default: 0
-    n_payloads = ""
+    n_payloads_real = ""
+    # Number of additional integer-valued variables (payloads) for each particle of the given species
+    #   @type: ushort
+    #   @default: 0
+    #   @note: If tracking is enabled, one or two extra integer payloads are reserved (depending on whether MPI is enabled)
+    n_payloads_int = ""
+    # Enable tracking of particles using indices for the given species
+    #   @type: bool
+    #   @default: false
+    tracking = ""
     # Radiation reaction to use for the species
     #   @type: string
     #   @default: "None"

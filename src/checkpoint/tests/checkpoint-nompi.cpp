@@ -50,6 +50,11 @@ auto main(int argc, char* argv[]) -> int {
     array_t<int*>    i2 { "i_2", npart2 };
     array_t<real_t*> u2 { "u_2", npart2 };
 
+    array_t<real_t**> pldr_2 { "pldr_2", npart2, 2 };
+
+    array_t<npart_t**> pldi_1 { "pldi_1", npart1, 1 };
+    array_t<npart_t**> pldi_2 { "pldi_2", npart2, 2 };
+
     {
       // fill data
       Kokkos::parallel_for(
@@ -77,15 +82,20 @@ auto main(int argc, char* argv[]) -> int {
         "fillPrtl1",
         npart1,
         Lambda(index_t p) {
-          u1(p) = static_cast<real_t>(p);
-          i1(p) = static_cast<int>(p);
+          u1(p)        = static_cast<real_t>(p);
+          i1(p)        = static_cast<int>(p);
+          pldi_1(p, 0) = static_cast<npart_t>(p * 10);
         });
       Kokkos::parallel_for(
         "fillPrtl2",
         npart2,
         Lambda(index_t p) {
-          u2(p) = -static_cast<real_t>(p);
-          i2(p) = -static_cast<int>(p);
+          u2(p)        = -static_cast<real_t>(p);
+          i2(p)        = -static_cast<int>(p);
+          pldr_2(p, 0) = static_cast<real_t>(p);
+          pldr_2(p, 1) = static_cast<real_t>(p * 2);
+          pldi_2(p, 0) = static_cast<npart_t>(p * 3);
+          pldi_2(p, 1) = static_cast<npart_t>(p * 4);
         });
     }
 
@@ -101,7 +111,7 @@ auto main(int argc, char* argv[]) -> int {
                                   { nx1_gh, nx2_gh, nx3_gh },
                                   { 0, 0, 0 },
                                   { nx1_gh, nx2_gh, nx3_gh });
-      writer.defineParticleVariables(Coord::Sph, Dim::_3D, 2, { 0, 2 });
+      writer.defineParticleVariables(Coord::Sph, Dim::_3D, 2, { 0, 2 }, { 1, 2 });
 
       writer.beginSaving(0, 0.0);
 
@@ -116,6 +126,11 @@ auto main(int argc, char* argv[]) -> int {
       writer.saveParticleQuantity<int>("s2_i1", npart2, 0, npart2, i2);
       writer.saveParticleQuantity<real_t>("s2_ux1", npart2, 0, npart2, u2);
 
+      writer.saveParticlePayloads<real_t>("s2_pld_r", 2, npart2, 0, npart2, pldr_2);
+
+      writer.saveParticlePayloads<npart_t>("s1_pld_i", 1, npart1, 0, npart1, pldi_1);
+      writer.saveParticlePayloads<npart_t>("s2_pld_i", 2, npart2, 0, npart2, pldi_2);
+
       writer.endSaving();
     }
 
@@ -128,6 +143,11 @@ auto main(int argc, char* argv[]) -> int {
       array_t<real_t*> u1_read { "u_1", npart1 };
       array_t<int*>    i2_read { "i_2", npart2 };
       array_t<real_t*> u2_read { "u_2", npart2 };
+
+      array_t<real_t**> pldr_2_read { "pldr_2", npart2, 2 };
+
+      array_t<npart_t**> pldi_1_read { "pldi_1", npart1, 1 };
+      array_t<npart_t**> pldi_2_read { "pldi_2", npart2, 2 };
 
       adios2::IO     io     = adios.DeclareIO("checkpointRead");
       adios2::Engine reader = io.Open(checkpoint_path / "step-00000000.bp",
@@ -146,6 +166,11 @@ auto main(int argc, char* argv[]) -> int {
       ReadParticleData<real_t>(io, reader, "ux1", 1, u2_read, nprtl2, noff2);
       ReadParticleData<int>(io, reader, "i1", 0, i1_read, nprtl1, noff1);
       ReadParticleData<int>(io, reader, "i1", 1, i2_read, nprtl2, noff2);
+
+      ReadParticlePayloads<real_t>(io, reader, "r", 1, pldr_2_read, 2, nprtl2, noff2);
+
+      ReadParticlePayloads<npart_t>(io, reader, "i", 0, pldi_1_read, 1, nprtl1, noff1);
+      ReadParticlePayloads<npart_t>(io, reader, "i", 1, pldi_2_read, 2, nprtl2, noff2);
 
       reader.EndStep();
       reader.Close();
@@ -182,6 +207,9 @@ auto main(int argc, char* argv[]) -> int {
           if (i1(p) != i1_read(p)) {
             raise::KernelError(HERE, "i1 read failed");
           }
+          if (pldi_1(p, 0) != pldi_1_read(p, 0)) {
+            raise::KernelError(HERE, "pldi_1 read failed");
+          }
         });
       Kokkos::parallel_for(
         "checkPrtl2",
@@ -192,6 +220,18 @@ auto main(int argc, char* argv[]) -> int {
           }
           if (i2(p) != i2_read(p)) {
             raise::KernelError(HERE, "i2 read failed");
+          }
+          if (not cmp::AlmostEqual(pldr_2(p, 0), pldr_2_read(p, 0))) {
+            raise::KernelError(HERE, "pldr_2(0) read failed");
+          }
+          if (not cmp::AlmostEqual(pldr_2(p, 1), pldr_2_read(p, 1))) {
+            raise::KernelError(HERE, "pldr_2(1) read failed");
+          }
+          if (pldi_2(p, 0) != pldi_2_read(p, 0)) {
+            raise::KernelError(HERE, "pldi_2(0) read failed");
+          }
+          if (pldi_2(p, 1) != pldi_2_read(p, 1)) {
+            raise::KernelError(HERE, "pldi_2(1) read failed");
           }
         });
     }

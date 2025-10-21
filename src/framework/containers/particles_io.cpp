@@ -1,0 +1,482 @@
+#include "enums.h"
+#include "global.h"
+
+#include "utils/error.h"
+#include "utils/formatting.h"
+#include "utils/log.h"
+
+#include "framework/containers/particles.h"
+#include "output/utils/readers.h"
+#include "output/utils/writers.h"
+
+#include <adios2.h>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
+
+namespace ntt {
+
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::CheckpointDeclare(adios2::IO& io) const {
+    logger::Checkpoint(
+      fmt::format("Declaring particle checkpoint for species #%d", index()),
+      HERE);
+    io.DefineVariable<npart_t>(fmt::format("s%d_npart", index()),
+                               { adios2::UnknownDim },
+                               { adios2::UnknownDim },
+                               { adios2::UnknownDim });
+    io.DefineVariable<npart_t>(fmt::format("s%d_counter", index()),
+                               { adios2::UnknownDim },
+                               { adios2::UnknownDim },
+                               { adios2::UnknownDim });
+    for (auto d { 0u }; d < static_cast<unsigned short>(D); ++d) {
+      io.DefineVariable<int>(fmt::format("s%d_i%d", index(), d + 1),
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim });
+      io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d", index(), d + 1),
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim });
+      io.DefineVariable<int>(fmt::format("s%d_i%d_prev", index(), d + 1),
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim });
+      io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d_prev", index(), d + 1),
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim });
+    }
+
+    if constexpr (D == Dim::_2D and C != ntt::Coord::Cart) {
+      io.DefineVariable<real_t>(fmt::format("s%d_phi", index()),
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim });
+    }
+
+    for (auto d { 0u }; d < 3; ++d) {
+      io.DefineVariable<real_t>(fmt::format("s%d_ux%d", index(), d + 1),
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim });
+    }
+
+    io.DefineVariable<short>(fmt::format("s%d_tag", index()),
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim },
+                             { adios2::UnknownDim });
+    io.DefineVariable<real_t>(fmt::format("s%d_weight", index()),
+                              { adios2::UnknownDim },
+                              { adios2::UnknownDim },
+                              { adios2::UnknownDim });
+    if (npld_r() > 0) {
+      io.DefineVariable<real_t>(fmt::format("s%d_pld_r", index()),
+                                { adios2::UnknownDim, npld_r() },
+                                { adios2::UnknownDim, 0 },
+                                { adios2::UnknownDim, npld_r() });
+    }
+    if (npld_i() > 0) {
+      io.DefineVariable<npart_t>(fmt::format("s%d_pld_i", index()),
+                                 { adios2::UnknownDim, npld_i() },
+                                 { adios2::UnknownDim, 0 },
+                                 { adios2::UnknownDim, npld_i() });
+    }
+  }
+
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::CheckpointRead(adios2::IO&     io,
+                                       adios2::Engine& reader,
+                                       std::size_t     domains_total,
+                                       std::size_t     domains_offset) {
+    logger::Checkpoint(
+      fmt::format("Reading particle checkpoint for species #%d", index()),
+      HERE);
+    raise::ErrorIf(npart() > 0,
+                   "Particles already initialized before reading checkpoint",
+                   HERE);
+    npart_t npart_offset = 0u;
+
+    out::ReadVariable<npart_t>(io,
+                               reader,
+                               fmt::format("s%d_npart", index()),
+                               m_npart,
+                               domains_offset);
+
+    raise::ErrorIf(
+      npart() > maxnpart(),
+      fmt::format("npart %d > maxnpart %d after reading checkpoint",
+                  npart(),
+                  maxnpart()),
+      HERE);
+
+#if defined(MPI_ENABLED)
+    {
+      std::vector<npart_t> glob_nparts(domains_total);
+      MPI_Allgather(&m_npart,
+                    1,
+                    mpi::get_type<npart_t>(),
+                    glob_nparts.data(),
+                    1,
+                    mpi::get_type<npart_t>(),
+                    MPI_COMM_WORLD);
+      for (auto d { 0u }; d < domains_offset; ++d) {
+        npart_offset += glob_nparts[d];
+      }
+    }
+#endif
+    out::ReadVariable<npart_t>(io,
+                               reader,
+                               fmt::format("s%d_counter", index()),
+                               m_counter,
+                               domains_offset);
+
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i1", index()),
+                            i1,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx1", index()),
+                                 dx1,
+                                 npart(),
+                                 npart_offset);
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i1_prev", index()),
+                            i1_prev,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx1_prev", index()),
+                                 dx1_prev,
+                                 npart(),
+                                 npart_offset);
+    }
+
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i2", index()),
+                            i2,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx2", index()),
+                                 dx2,
+                                 npart(),
+                                 npart_offset);
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i2_prev", index()),
+                            i2_prev,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx2_prev", index()),
+                                 dx2_prev,
+                                 npart(),
+                                 npart_offset);
+    }
+
+    if constexpr (D == Dim::_3D) {
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i3", index()),
+                            i3,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx3", index()),
+                                 dx3,
+                                 npart(),
+                                 npart_offset);
+      out::Read1DArray<int>(io,
+                            reader,
+                            fmt::format("s%d_i3_prev", index()),
+                            i3_prev,
+                            npart(),
+                            npart_offset);
+      out::Read1DArray<prtldx_t>(io,
+                                 reader,
+                                 fmt::format("s%d_dx3_prev", index()),
+                                 dx3_prev,
+                                 npart(),
+                                 npart_offset);
+    }
+
+    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      out::Read1DArray<real_t>(io,
+                               reader,
+                               fmt::format("s%d_phi", index()),
+                               phi,
+                               npart(),
+                               npart_offset);
+    }
+
+    out::Read1DArray<real_t>(io,
+                             reader,
+                             fmt::format("s%d_ux1", index()),
+                             ux1,
+                             npart(),
+                             npart_offset);
+    out::Read1DArray<real_t>(io,
+                             reader,
+                             fmt::format("s%d_ux2", index()),
+                             ux2,
+                             npart(),
+                             npart_offset);
+    out::Read1DArray<real_t>(io,
+                             reader,
+                             fmt::format("s%d_ux3", index()),
+                             ux3,
+                             npart(),
+                             npart_offset);
+    out::Read1DArray<short>(io,
+                            reader,
+                            fmt::format("s%d_tag", index()),
+                            tag,
+                            npart(),
+                            npart_offset);
+    out::Read1DArray<real_t>(io,
+                             reader,
+                             fmt::format("s%d_weight", index()),
+                             weight,
+                             npart(),
+                             npart_offset);
+
+    if (npld_r() > 0) {
+      out::Read2DArray<real_t>(io,
+                               reader,
+                               fmt::format("s%d_pld_r", index()),
+                               pld_r,
+                               npld_r(),
+                               npart(),
+                               npart_offset);
+    }
+
+    if (npld_i() > 0) {
+      out::Read2DArray<npart_t>(io,
+                                reader,
+                                fmt::format("s%d_pld_i", index()),
+                                pld_i,
+                                npld_i(),
+                                npart(),
+                                npart_offset);
+    }
+  }
+
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::CheckpointWrite(adios2::IO&     io,
+                                        adios2::Engine& writer,
+                                        std::size_t     domains_total,
+                                        std::size_t     domains_offset) const {
+    logger::Checkpoint(
+      fmt::format("Writing particle checkpoint for species #%d", index()),
+      HERE);
+
+    npart_t npart_offset = 0u;
+    npart_t npart_total  = npart();
+
+#if defined(MPI_ENABLED)
+    {
+      std::vector<npart_t> glob_nparts(domains_total);
+      MPI_Allgather(&m_npart,
+                    1,
+                    mpi::get_type<npart_t>(),
+                    glob_nparts.data(),
+                    1,
+                    mpi::get_type<npart_t>(),
+                    MPI_COMM_WORLD);
+      npart_total = 0u;
+      for (auto r = 0; r < domains_total; ++r) {
+        if (r < domains_offset) {
+          npart_offset += glob_nparts[r];
+        }
+        npart_total += glob_nparts[r];
+      }
+    }
+#endif
+
+    out::WriteVariable<npart_t>(io,
+                                writer,
+                                fmt::format("s%d_npart", index()),
+                                npart(),
+                                domains_total,
+                                domains_offset);
+    out::WriteVariable<npart_t>(io,
+                                writer,
+                                fmt::format("s%d_counter", index()),
+                                npart(),
+                                domains_total,
+                                domains_offset);
+
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i1", index()),
+                             i1,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx1", index()),
+                                  dx1,
+                                  npart_total,
+                                  npart_offset);
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i1_prev", index()),
+                             i1_prev,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx1_prev", index()),
+                                  dx1_prev,
+                                  npart_total,
+                                  npart_offset);
+    }
+
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i2", index()),
+                             i2,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx2", index()),
+                                  dx2,
+                                  npart_total,
+                                  npart_offset);
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i2_prev", index()),
+                             i2_prev,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx2_prev", index()),
+                                  dx2_prev,
+                                  npart_total,
+                                  npart_offset);
+    }
+
+    if constexpr (D == Dim::_3D) {
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i3", index()),
+                             i3,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx3", index()),
+                                  dx3,
+                                  npart_total,
+                                  npart_offset);
+      out::Write1DArray<int>(io,
+                             writer,
+                             fmt::format("s%d_i3_prev", index()),
+                             i3_prev,
+                             npart_total,
+                             npart_offset);
+      out::Write1DArray<prtldx_t>(io,
+                                  writer,
+                                  fmt::format("s%d_dx3_prev", index()),
+                                  dx3_prev,
+                                  npart_total,
+                                  npart_offset);
+    }
+
+    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      out::Write1DArray<real_t>(io,
+                                writer,
+                                fmt::format("s%d_phi", index()),
+                                phi,
+                                npart_total,
+                                npart_offset);
+    }
+
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("s%d_ux1", index()),
+                              ux1,
+                              npart_total,
+                              npart_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("s%d_ux2", index()),
+                              ux2,
+                              npart_total,
+                              npart_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("s%d_ux3", index()),
+                              ux3,
+                              npart_total,
+                              npart_offset);
+    out::Write1DArray<short>(io,
+                             writer,
+                             fmt::format("s%d_tag", index()),
+                             tag,
+                             npart_total,
+                             npart_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("s%d_weight", index()),
+                              weight,
+                              npart_total,
+                              npart_offset);
+    if (npld_r() > 0) {
+      out::Write2DArray<real_t>(io,
+                                writer,
+                                fmt::format("s%d_pld_r", index()),
+                                pld_r,
+                                npart_total,
+                                npart_offset,
+                                npld_r());
+    }
+
+    if (npld_i() > 0) {
+      out::Write2DArray<npart_t>(io,
+                                 writer,
+                                 fmt::format("s%d_pld_i", index()),
+                                 pld_i,
+                                 npart_total,
+                                 npart_offset,
+                                 npld_i());
+    }
+  }
+
+#define PARTICLES_CHECKPOINTS(D, C)                                            \
+  template void Particles<D, C>::CheckpointDeclare(adios2::ADIOS&) const;      \
+  template void Particles<D, C>::CheckpointRead(adios2::ADIOS&,                \
+                                                adios2::Engine&,               \
+                                                std::size_t,                   \
+                                                std::size_t);                  \
+  template void Particles<D, C>::CheckpointWrite(adios2::IO&,                  \
+                                                 adios2::Engine&,              \
+                                                 std::size_t,                  \
+                                                 std::size_t) const;           \
+  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cart)                                 \
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cart)                                 \
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cart)                                 \
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Sph)                                  \
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::QSph)                                 \
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Sph)                                  \
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::QSph)
+#undef PARTICLES_CHECKPOINTS
+
+} // namespace ntt

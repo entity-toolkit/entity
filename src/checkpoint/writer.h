@@ -62,35 +62,23 @@ namespace checkpoint {
 
     void saveAttrs(const ntt::SimulationParams&, simtime_t);
 
-    template <typename T>
-    void savePerDomainVariable(const std::string&, std::size_t, std::size_t, T);
-
     template <Dimension D, int N>
     void saveField(const std::string&, const ndfield_t<D, N>&);
-
-    template <typename T>
-    void saveParticleQuantity(const std::string&,
-                              npart_t,
-                              npart_t,
-                              npart_t,
-                              const array_t<T*>&);
-
-    void saveParticlePayloads(const std::string&,
-                              std::size_t,
-                              npart_t,
-                              npart_t,
-                              npart_t,
-                              const array_t<real_t**>&);
 
     void defineFieldVariables(const ntt::SimEngine&,
                               const std::vector<ncells_t>&,
                               const std::vector<ncells_t>&,
                               const std::vector<ncells_t>&);
 
-    void defineParticleVariables(const ntt::Coord&,
-                                 Dimension,
-                                 std::size_t,
-                                 const std::vector<unsigned short>&);
+    [[nodiscard]]
+    auto io() -> adios2::IO& {
+      return m_io;
+    }
+
+    [[nodiscard]]
+    auto writer() -> adios2::Engine& {
+      return m_writer;
+    }
 
     [[nodiscard]]
     auto enabled() const -> bool {

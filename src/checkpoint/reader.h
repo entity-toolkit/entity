@@ -30,11 +30,8 @@ namespace checkpoint {
                   const adios2::Box<adios2::Dims>&,
                   ndfield_t<D, N>&);
 
-  auto ReadParticleCount(adios2::IO&,
-                         adios2::Engine&,
-                         spidx_t,
-                         std::size_t,
-                         std::size_t) -> std::pair<npart_t, npart_t>;
+  auto ReadParticleCount(adios2::IO&, adios2::Engine&, spidx_t, std::size_t, std::size_t)
+    -> std::pair<npart_t, npart_t>;
 
   template <typename T>
   void ReadParticleData(adios2::IO&,
@@ -45,10 +42,12 @@ namespace checkpoint {
                         npart_t,
                         npart_t);
 
+  template <typename T>
   void ReadParticlePayloads(adios2::IO&,
                             adios2::Engine&,
+                            const std::string&,
                             spidx_t,
-                            array_t<real_t**>&,
+                            array_t<T**>&,
                             std::size_t,
                             npart_t,
                             npart_t);

@@ -12,7 +12,6 @@
 #include <stdio.h>
 
 #include <iostream>
-#include <stdexcept>
 
 using namespace toml::literals::toml_literals;
 const auto mink_1d = u8R"(
@@ -55,7 +54,8 @@ const auto mink_1d = u8R"(
     charge = -1.0
     maxnpart = 1e2
     pusher = "boris"
-    n_payloads = 3
+    n_payloads_real = 3
+    tracking = true
 
   [[particles.species]]
     label = "p+"
@@ -139,7 +139,7 @@ const auto sph_2d = u8R"(
     charge = -1.0
     maxnpart = 1e2
     pusher = "boris,gca"
-    n_payloads = 3
+    n_payloads_real = 3
     cooling = "synchrotron"
 
   [[particles.species]]
@@ -149,6 +149,7 @@ const auto sph_2d = u8R"(
     maxnpart = 1e2
     pusher = "boris,gca"
     cooling = "synchrotron"
+    n_payloads_int = 2
 
   [[particles.species]]
     label = "ph"
@@ -297,7 +298,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<PrtlPusher>(species[0].pusher(),
                                PrtlPusher::BORIS,
                                "species[0].pusher");
-      assert_equal<unsigned short>(species[0].npld(), 3, "species[0].npld");
+      assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
+      assert_equal<unsigned short>(species[0].npld_i(), 1, "species[0].npld_i");
+      assert_equal<bool>(species[0].use_tracking(), true, "species[0].tracking");
 
       assert_equal<std::string>(species[1].label(), "p+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
@@ -306,7 +309,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<PrtlPusher>(species[1].pusher(),
                                PrtlPusher::VAY,
                                "species[1].pusher");
-      assert_equal<unsigned short>(species[1].npld(), 0, "species[1].npld");
+      assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
 
       assert_equal<real_t>(params_mink_1d.get<real_t>("setup.myfloat"),
                            (real_t)(1e-2),
@@ -417,7 +420,7 @@ auto main(int argc, char* argv[]) -> int {
                                PrtlPusher::BORIS,
                                "species[0].pusher");
       assert_equal<PrtlPusher>(species[0].use_gca(), true, "species[0].use_gca");
-      assert_equal<unsigned short>(species[0].npld(), 3, "species[0].npld");
+      assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
       assert_equal<Cooling>(species[0].cooling(),
                             Cooling::SYNCHROTRON,
                             "species[0].cooling");
@@ -430,10 +433,12 @@ auto main(int argc, char* argv[]) -> int {
                                PrtlPusher::BORIS,
                                "species[1].pusher");
       assert_equal<PrtlPusher>(species[1].use_gca(), true, "species[1].use_gca");
-      assert_equal<unsigned short>(species[1].npld(), 0, "species[1].npld");
+      assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
       assert_equal<Cooling>(species[1].cooling(),
                             Cooling::SYNCHROTRON,
                             "species[1].cooling");
+      assert_equal<unsigned short>(species[1].npld_i(), 2, "species[1].npld_i");
+      assert_equal<bool>(species[1].use_tracking(), false, "species[1].tracking");
 
       assert_equal<std::string>(species[2].label(), "ph", "species[2].label");
       assert_equal(species[2].mass(), 0.0f, "species[2].mass");
@@ -442,7 +447,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<PrtlPusher>(species[2].pusher(),
                                PrtlPusher::PHOTON,
                                "species[2].pusher");
-      assert_equal<unsigned short>(species[2].npld(), 0, "species[2].npld");
+      assert_equal<unsigned short>(species[2].npld_r(), 0, "species[2].npld_r");
     }
 
     {
@@ -551,7 +556,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<PrtlPusher>(species[0].pusher(),
                                PrtlPusher::BORIS,
                                "species[0].pusher");
-      assert_equal<unsigned short>(species[0].npld(), 0, "species[0].npld");
+      assert_equal<unsigned short>(species[0].npld_r(), 0, "species[0].npld_r");
 
       assert_equal<std::string>(species[1].label(), "e+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
@@ -560,7 +565,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<PrtlPusher>(species[1].pusher(),
                                PrtlPusher::BORIS,
                                "species[1].pusher");
-      assert_equal<unsigned short>(species[1].npld(), 0, "species[1].npld");
+      assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
     }
 
   } catch (std::exception& err) {

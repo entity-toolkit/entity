@@ -75,68 +75,84 @@ namespace checkpoint {
     }
   }
 
-  void Writer::defineParticleVariables(const ntt::Coord& C,
-                                       Dimension         dim,
-                                       std::size_t       nspec,
-                                       const std::vector<unsigned short>& nplds) {
-    raise::ErrorIf(nplds.size() != nspec,
-                   "Number of payloads does not match the number of species",
-                   HERE);
-    for (auto s { 0u }; s < nspec; ++s) {
-      m_io.DefineVariable<npart_t>(fmt::format("s%d_npart", s + 1),
-                                   { adios2::UnknownDim },
-                                   { adios2::UnknownDim },
-                                   { adios2::UnknownDim });
-
-      for (auto d { 0u }; d < dim; ++d) {
-        m_io.DefineVariable<int>(fmt::format("s%d_i%d", s + 1, d + 1),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
-        m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d", s + 1, d + 1),
-                                      { adios2::UnknownDim },
-                                      { adios2::UnknownDim },
-                                      { adios2::UnknownDim });
-        m_io.DefineVariable<int>(fmt::format("s%d_i%d_prev", s + 1, d + 1),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
-        m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d_prev", s + 1, d + 1),
-                                      { adios2::UnknownDim },
-                                      { adios2::UnknownDim },
-                                      { adios2::UnknownDim });
-      }
-
-      if (dim == Dim::_2D and C != ntt::Coord::Cart) {
-        m_io.DefineVariable<real_t>(fmt::format("s%d_phi", s + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
-      }
-
-      for (auto d { 0u }; d < 3; ++d) {
-        m_io.DefineVariable<real_t>(fmt::format("s%d_ux%d", s + 1, d + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
-      }
-
-      m_io.DefineVariable<short>(fmt::format("s%d_tag", s + 1),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
-      m_io.DefineVariable<real_t>(fmt::format("s%d_weight", s + 1),
-                                  { adios2::UnknownDim },
-                                  { adios2::UnknownDim },
-                                  { adios2::UnknownDim });
-      if (nplds[s] > 0) {
-        m_io.DefineVariable<real_t>(fmt::format("s%d_plds", s + 1),
-                                    { adios2::UnknownDim, nplds[s] },
-                                    { adios2::UnknownDim, 0 },
-                                    { adios2::UnknownDim, nplds[s] });
-      }
-    }
-  }
+  // void Writer::defineParticleVariables(const ntt::Coord& C,
+  //                                      Dimension         dim,
+  //                                      std::size_t       nspec,
+  //                                      const std::vector<unsigned short>& npld_r,
+  //                                      const std::vector<unsigned short>& npld_i) {
+  //   raise::ErrorIf(
+  //     npld_r.size() != nspec,
+  //     "Number of real payloads does not match the number of species",
+  //     HERE);
+  //   raise::ErrorIf(
+  //     npld_i.size() != nspec,
+  //     "Number of int payloads does not match the number of species",
+  //     HERE);
+  //   for (auto s { 0u }; s < nspec; ++s) {
+  //     m_io.DefineVariable<npart_t>(fmt::format("s%d_npart", s + 1),
+  //                                  { adios2::UnknownDim },
+  //                                  { adios2::UnknownDim },
+  //                                  { adios2::UnknownDim });
+  //     m_io.DefineVariable<npart_t>(fmt::format("s%d_counter", s + 1),
+  //                                  { adios2::UnknownDim },
+  //                                  { adios2::UnknownDim },
+  //                                  { adios2::UnknownDim });
+  //
+  //     for (auto d { 0u }; d < dim; ++d) {
+  //       m_io.DefineVariable<int>(fmt::format("s%d_i%d", s + 1, d + 1),
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim });
+  //       m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d", s + 1, d + 1),
+  //                                     { adios2::UnknownDim },
+  //                                     { adios2::UnknownDim },
+  //                                     { adios2::UnknownDim });
+  //       m_io.DefineVariable<int>(fmt::format("s%d_i%d_prev", s + 1, d + 1),
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim });
+  //       m_io.DefineVariable<prtldx_t>(fmt::format("s%d_dx%d_prev", s + 1, d + 1),
+  //                                     { adios2::UnknownDim },
+  //                                     { adios2::UnknownDim },
+  //                                     { adios2::UnknownDim });
+  //     }
+  //
+  //     if (dim == Dim::_2D and C != ntt::Coord::Cart) {
+  //       m_io.DefineVariable<real_t>(fmt::format("s%d_phi", s + 1),
+  //                                   { adios2::UnknownDim },
+  //                                   { adios2::UnknownDim },
+  //                                   { adios2::UnknownDim });
+  //     }
+  //
+  //     for (auto d { 0u }; d < 3; ++d) {
+  //       m_io.DefineVariable<real_t>(fmt::format("s%d_ux%d", s + 1, d + 1),
+  //                                   { adios2::UnknownDim },
+  //                                   { adios2::UnknownDim },
+  //                                   { adios2::UnknownDim });
+  //     }
+  //
+  //     m_io.DefineVariable<short>(fmt::format("s%d_tag", s + 1),
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim },
+  //                                { adios2::UnknownDim });
+  //     m_io.DefineVariable<real_t>(fmt::format("s%d_weight", s + 1),
+  //                                 { adios2::UnknownDim },
+  //                                 { adios2::UnknownDim },
+  //                                 { adios2::UnknownDim });
+  //     if (npld_r[s] > 0) {
+  //       m_io.DefineVariable<real_t>(fmt::format("s%d_pld_r", s + 1),
+  //                                   { adios2::UnknownDim, npld_r[s] },
+  //                                   { adios2::UnknownDim, 0 },
+  //                                   { adios2::UnknownDim, npld_r[s] });
+  //     }
+  //     if (npld_i[s] > 0) {
+  //       m_io.DefineVariable<npart_t>(fmt::format("s%d_pld_i", s + 1),
+  //                                    { adios2::UnknownDim, npld_i[s] },
+  //                                    { adios2::UnknownDim, 0 },
+  //                                    { adios2::UnknownDim, npld_i[s] });
+  //     }
+  //   }
+  // }
 
   auto Writer::shouldSave(timestep_t step, simtime_t time) -> bool {
     return m_enabled and m_tracker.shouldWrite(step, time);
@@ -193,17 +209,6 @@ namespace checkpoint {
     });
   }
 
-  template <typename T>
-  void Writer::savePerDomainVariable(const std::string& varname,
-                                     std::size_t        total,
-                                     std::size_t        offset,
-                                     T                  data) {
-    auto var = m_io.InquireVariable<T>(varname);
-    var.SetShape({ total });
-    var.SetSelection(adios2::Box<adios2::Dims>({ offset }, { 1 }));
-    m_writer.Put(var, &data);
-  }
-
   void Writer::saveAttrs(const ntt::SimulationParams& params, simtime_t time) {
     CallOnce([&]() {
       std::ofstream metadata;
@@ -228,53 +233,43 @@ namespace checkpoint {
                  adios2::Mode::Sync);
   }
 
-  template <typename T>
-  void Writer::saveParticleQuantity(const std::string& quantity,
-                                    npart_t            glob_total,
-                                    npart_t            loc_offset,
-                                    npart_t            loc_size,
-                                    const array_t<T*>& data) {
-    const auto slice = range_tuple_t(0, loc_size);
-    auto       var   = m_io.InquireVariable<T>(quantity);
-
-    var.SetShape({ glob_total });
-    var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
-
-    auto data_h = Kokkos::create_mirror_view(data);
-    Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice);
-    m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
-  }
-
-  void Writer::saveParticlePayloads(const std::string&       quantity,
-                                    std::size_t              nplds,
-                                    npart_t                  glob_total,
-                                    npart_t                  loc_offset,
-                                    npart_t                  loc_size,
-                                    const array_t<real_t**>& data) {
-    const auto slice = range_tuple_t(0, loc_size);
-    auto       var   = m_io.InquireVariable<real_t>(quantity);
-
-    var.SetShape({ glob_total, nplds });
-    var.SetSelection(
-      adios2::Box<adios2::Dims>({ loc_offset, 0 }, { loc_size, nplds }));
-
-    auto data_h = Kokkos::create_mirror_view(data);
-    Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, nplds));
-    m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
-  }
-
-#define CHECKPOINT_PERDOMAIN_VARIABLE(T)                                       \
-  template void Writer::savePerDomainVariable<T>(const std::string&,           \
-                                                 std::size_t,                  \
-                                                 std::size_t,                  \
-                                                 T);
-  CHECKPOINT_PERDOMAIN_VARIABLE(int)
-  CHECKPOINT_PERDOMAIN_VARIABLE(float)
-  CHECKPOINT_PERDOMAIN_VARIABLE(double)
-  CHECKPOINT_PERDOMAIN_VARIABLE(npart_t)
-#undef CHECKPOINT_PERDOMAIN_VARIABLE
+  // template <typename T>
+  // void Writer::saveParticleQuantity(const std::string& quantity,
+  //                                   npart_t            glob_total,
+  //                                   npart_t            loc_offset,
+  //                                   npart_t            loc_size,
+  //                                   const array_t<T*>& data) {
+  //   const auto slice = range_tuple_t(0, loc_size);
+  //   auto       var   = m_io.InquireVariable<T>(quantity);
+  //
+  //   var.SetShape({ glob_total });
+  //   var.SetSelection(adios2::Box<adios2::Dims>({ loc_offset }, { loc_size }));
+  //
+  //   auto data_h = Kokkos::create_mirror_view(data);
+  //   Kokkos::deep_copy(data_h, data);
+  //   auto data_sub = Kokkos::subview(data_h, slice);
+  //   m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+  // }
+  //
+  // template <typename T>
+  // void Writer::saveParticlePayloads(const std::string&  quantity,
+  //                                   std::size_t         nplds,
+  //                                   npart_t             glob_total,
+  //                                   npart_t             loc_offset,
+  //                                   npart_t             loc_size,
+  //                                   const array_t<T**>& data) {
+  //   const auto slice = range_tuple_t(0, loc_size);
+  //   auto       var   = m_io.InquireVariable<T>(quantity);
+  //
+  //   var.SetShape({ glob_total, nplds });
+  //   var.SetSelection(
+  //     adios2::Box<adios2::Dims>({ loc_offset, 0 }, { loc_size, nplds }));
+  //
+  //   auto data_h = Kokkos::create_mirror_view(data);
+  //   Kokkos::deep_copy(data_h, data);
+  //   auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, nplds));
+  //   m_writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+  // }
 
 #define CHECKPOINT_FIELD(D, N)                                                 \
   template void Writer::saveField<D, N>(const std::string&,                    \
@@ -286,17 +281,5 @@ namespace checkpoint {
   CHECKPOINT_FIELD(Dim::_3D, 3)
   CHECKPOINT_FIELD(Dim::_3D, 6)
 #undef CHECKPOINT_FIELD
-
-#define CHECKPOINT_PARTICLE_QUANTITY(T)                                        \
-  template void Writer::saveParticleQuantity<T>(const std::string&,            \
-                                                npart_t,                       \
-                                                npart_t,                       \
-                                                npart_t,                       \
-                                                const array_t<T*>&);
-  CHECKPOINT_PARTICLE_QUANTITY(int)
-  CHECKPOINT_PARTICLE_QUANTITY(float)
-  CHECKPOINT_PARTICLE_QUANTITY(double)
-  CHECKPOINT_PARTICLE_QUANTITY(short)
-#undef CHECKPOINT_PARTICLE_QUANTITY
 
 } // namespace checkpoint

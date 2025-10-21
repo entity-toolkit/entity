@@ -47,6 +47,7 @@ set(SOURCES
 if(${output})
   list(APPEND SOURCES ${SRC_DIR}/domain/output.cpp)
   list(APPEND SOURCES ${SRC_DIR}/domain/checkpoint.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/containers/particles_io.cpp)
 endif()
 add_library(ntt_framework ${SOURCES})
 

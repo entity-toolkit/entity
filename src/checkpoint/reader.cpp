@@ -108,15 +108,20 @@ namespace checkpoint {
     }
   }
 
+  template <typename T>
   void ReadParticlePayloads(adios2::IO&        io,
                             adios2::Engine&    reader,
+                            const std::string& suffix,
                             spidx_t            s,
-                            array_t<real_t**>& array,
+                            array_t<T**>&      array,
                             std::size_t        nplds,
                             npart_t            count,
                             npart_t            offset) {
-    logger::Checkpoint(fmt::format("Reading quantity: s%d_plds", s + 1), HERE);
-    auto var = io.InquireVariable<real_t>(fmt::format("s%d_plds", s + 1));
+    logger::Checkpoint(
+      fmt::format("Reading quantity: s%d_pld_%s", s + 1, suffix.c_str()),
+      HERE);
+    auto var = io.InquireVariable<T>(
+      fmt::format("s%d_pld_%s", s + 1, suffix.c_str()));
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ offset, 0 }, { count, nplds }));
       const auto slice   = range_tuple_t(0, count);
@@ -126,7 +131,9 @@ namespace checkpoint {
                  adios2::Mode::Sync);
       Kokkos::deep_copy(array, array_h);
     } else {
-      raise::Error(fmt::format("Variable: s%d_plds not found", s + 1), HERE);
+      raise::Error(
+        fmt::format("Variable: s%d_pld_%s not found", s + 1, suffix.c_str()),
+        HERE);
     }
   }
 
@@ -156,6 +163,21 @@ namespace checkpoint {
   CHECKPOINT_PARTICLE_DATA(float)
   CHECKPOINT_PARTICLE_DATA(double)
   CHECKPOINT_PARTICLE_DATA(short)
+#undef CHECKPOINT_PARTICLE_DATA
+
+#define CHECKPOINT_PARTICLE_PAYLOADS(T)                                        \
+  template void ReadParticlePayloads<T>(adios2::IO&,                           \
+                                        adios2::Engine&,                       \
+                                        const std::string&,                    \
+                                        spidx_t,                               \
+                                        array_t<T**>&,                         \
+                                        std::size_t,                           \
+                                        npart_t,                               \
+                                        npart_t);
+  CHECKPOINT_PARTICLE_PAYLOADS(int)
+  CHECKPOINT_PARTICLE_PAYLOADS(float)
+  CHECKPOINT_PARTICLE_PAYLOADS(double)
+  CHECKPOINT_PARTICLE_PAYLOADS(npart_t)
 #undef CHECKPOINT_PARTICLE_DATA
 
 } // namespace checkpoint
