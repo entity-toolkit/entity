@@ -420,8 +420,64 @@ namespace kernel {
                                    fS_x1);
 
         if constexpr (D == Dim::_1D) {
-          // ToDo
-          raise::KernelNotImplementedError(HERE);
+          // define weight vectors
+          real_t Wx1[O + 2];
+          real_t Wx23[O + 2];
+
+          // first seperate
+          Wx1[0]      = fS_x1[0];
+          Wx23[0]     = HALF * fS_x1[0];
+          // last seperate
+          Wx1[O + 1]  = -iS_x1[O + 1];
+          Wx23[O + 1] = HALF * iS_x1[O + 1];
+
+          // Calculate weight function
+#pragma unroll
+          for (int i = 1; i < O + 1; ++i) {
+            // Esirkepov 2001, Eq. 38 for 1D case
+            Wx1[i]  = fS_x1[i] - iS_x1[i - 1];
+            Wx23[i] = HALF * (fS_x1[i] + iS_x1[i - 1]);
+          }
+
+          // contribution within the shape function stencil
+          real_t jx1[O + 2];
+
+          // prefactors for j update
+          const real_t Qdx1dt = coeff * inv_dt;
+          const real_t QVx2   = coeff * vp[1];
+          const real_t QVx3   = coeff * vp[2];
+
+          // Calculate current contribution
+          jx1[0] = -Qdx1dt * Wx1[0];
+#pragma unroll
+          for (int i = 1; i < O + 2; ++i) {
+            jx1[i] = jx1[i - 1] - Qdx1dt * Wx1[i];
+          }
+
+          // account for ghost cells
+          i1_min += N_GHOSTS;
+          i1_max += N_GHOSTS;
+
+          // get number of update indices for asymmetric movement
+          const int di_x1 = i1_max - i1_min;
+
+          /*
+              Current update
+          */
+          auto J_acc = J.access();
+
+          for (int i = 0; i < di_x1; ++i) {
+            J_acc(i1_min + i, cur::jx1) += jx1[i];
+          }
+
+          for (int i = 0; i <= di_x1; ++i) {
+            J_acc(i1_min + i, cur::jx2) += QVx2 * Wx23[i];
+          }
+
+          for (int i = 0; i <= di_x1; ++i) {
+            J_acc(i1_min + i, cur::jx3) += QVx3 * Wx23[i];
+          }
+
         } else if constexpr (D == Dim::_2D) {
 
           // shape function in dim1 -> always required
@@ -607,7 +663,7 @@ namespace kernel {
               jx1[0][j][k] = -Qdxdt * Wx1[0][j][k];
             }
           }
-          
+
 #pragma unroll
           for (int i = 1; i < O + 2; ++i) {
 #pragma unroll
