@@ -416,6 +416,9 @@ namespace ntt {
         toml::find_or(toml_data, "algorithms", "deposit", "order", 1));
 
     /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.enable",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "enable", true));
+        
     set("algorithms.fieldsolver.delta_x",
         toml::find_or(toml_data,
                       "algorithms",
