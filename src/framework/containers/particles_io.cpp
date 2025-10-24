@@ -5,10 +5,20 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
+#include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
+#include "metrics/minkowski.h"
+#include "metrics/qkerr_schild.h"
+#include "metrics/qspherical.h"
+#include "metrics/spherical.h"
+
 #include "framework/containers/particles.h"
 #include "output/utils/readers.h"
 #include "output/utils/writers.h"
 
+#include "kernels/prtls_to_phys.hpp"
+
+#include <Kokkos_Core.hpp>
 #include <adios2.h>
 
 #if defined(MPI_ENABLED)
@@ -16,6 +26,275 @@
 #endif
 
 namespace ntt {
+  /* * * * * * * * *
+   * Output
+   * * * * * * * * */
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::OutputDeclare(adios2::IO& io) const {
+    for (auto d { 0u }; d < D; ++d) {
+      io.DefineVariable<real_t>(fmt::format("pX%d_%d", d + 1, index()),
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim });
+    }
+    for (auto d { 0u }; d < Dim::_3D; ++d) {
+      io.DefineVariable<real_t>(fmt::format("pU%d_%d", d + 1, index()),
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim },
+                                { adios2::UnknownDim });
+    }
+    io.DefineVariable<real_t>(fmt::format("pW_%d", index()),
+                              { adios2::UnknownDim },
+                              { adios2::UnknownDim },
+                              { adios2::UnknownDim });
+    if (npld_r() > 0) {
+      for (auto pr { 0 }; pr < npld_r(); ++pr) {
+        io.DefineVariable<real_t>(fmt::format("pPLDR%d_%d", pr, index()),
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim },
+                                  { adios2::UnknownDim });
+      }
+    }
+    auto num_track_plds = 0;
+    if (use_tracking()) {
+#if !defined(MPI_ENABLED)
+      num_track_plds = 1;
+      io.DefineVariable<npart_t>(fmt::format("pIDX_%d", index()),
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim });
+#else
+      num_track_plds = 2;
+      io.DefineVariable<npart_t>(fmt::format("pIDX_%d", index()),
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim });
+      io.DefineVariable<npart_t>(fmt::format("pRNK_%d", index()),
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim });
+#endif
+    }
+    if (npld_i() > num_track_plds) {
+      for (auto pr { num_track_plds }; pr < npld_i(); ++pr) {
+        io.DefineVariable<npart_t>(
+          fmt::format("pPLDI%d_%d", pr - num_track_plds, index()),
+          { adios2::UnknownDim },
+          { adios2::UnknownDim },
+          { adios2::UnknownDim });
+      }
+    }
+  }
+
+  template <Dimension D, Coord::type C>
+  template <SimEngine::type S, class M>
+  void Particles<D, C>::OutputWrite(adios2::IO&     io,
+                                    adios2::Engine& writer,
+                                    npart_t         prtl_stride,
+                                    std::size_t     domains_total,
+                                    std::size_t     domains_offset,
+                                    const M&        metric) {
+    if (not is_sorted()) {
+      RemoveDead();
+    }
+    const npart_t    nout = npart() / prtl_stride;
+    array_t<real_t*> buff_x1, buff_x2, buff_x3;
+    array_t<real_t*> buff_ux1 { "ux1", nout };
+    array_t<real_t*> buff_ux2 { "ux2", nout };
+    array_t<real_t*> buff_ux3 { "ux3", nout };
+    array_t<real_t*> buff_wei { "w", nout };
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      buff_x1 = array_t<real_t*> { "x1", nout };
+    }
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      buff_x2 = array_t<real_t*> { "x2", nout };
+    }
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+      buff_x3 = array_t<real_t*> { "x3", nout };
+    }
+    array_t<real_t**>  buff_pldr;
+    array_t<npart_t**> buff_pldi;
+
+    if (npld_r() > 0) {
+      buff_pldr = array_t<real_t**> { "pldr", nout, npld_r() };
+    }
+    if (npld_i() > 0) {
+      buff_pldi = array_t<npart_t**> { "pldi", nout, npld_i() };
+    }
+
+    if (nout > 0) {
+      // clang-format off
+      Kokkos::parallel_for(
+        "PrtlToPhys",
+        nout,
+        kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
+                                        buff_x1, buff_x2, buff_x3,
+                                        buff_ux1, buff_ux2, buff_ux3,
+                                        buff_wei, 
+                                        buff_pldr, buff_pldi,
+                                        i1, i2, i3,
+                                        dx1, dx2, dx3,
+                                        ux1, ux2, ux3,
+                                        phi, weight, 
+                                        pld_r, pld_i,
+                                        metric));
+      // clang-format on
+    }
+    npart_t nout_offset = 0;
+    npart_t nout_total  = nout;
+#if defined(MPI_ENABLED)
+    auto nout_total_vec = std::vector<npart_t>(domains_total);
+    MPI_Allgather(&nout,
+                  1,
+                  mpi::get_type<npart_t>(),
+                  nout_total_vec.data(),
+                  1,
+                  mpi::get_type<npart_t>(),
+                  MPI_COMM_WORLD);
+    nout_total = 0;
+    for (auto r = 0; r < domains_total; ++r) {
+      if (r < domains_offset) {
+        nout_offset += nout_total_vec[r];
+      }
+      nout_total += nout_total_vec[r];
+    }
+#endif // MPI_ENABLED
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("pW_%d", index()),
+                              buff_wei,
+                              nout,
+                              nout_total,
+                              nout_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("pU1_%d", index()),
+                              buff_ux1,
+                              nout,
+                              nout_total,
+                              nout_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("pU2_%d", index()),
+                              buff_ux2,
+                              nout,
+                              nout_total,
+                              nout_offset);
+    out::Write1DArray<real_t>(io,
+                              writer,
+                              fmt::format("pU3_%d", index()),
+                              buff_ux3,
+                              nout,
+                              nout_total,
+                              nout_offset);
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      out::Write1DArray<real_t>(io,
+                                writer,
+                                fmt::format("pX1_%d", index()),
+                                buff_x1,
+                                nout,
+                                nout_total,
+                                nout_offset);
+    }
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      out::Write1DArray<real_t>(io,
+                                writer,
+                                fmt::format("pX2_%d", index()),
+                                buff_x2,
+                                nout,
+                                nout_total,
+                                nout_offset);
+    }
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+      out::Write1DArray<real_t>(io,
+                                writer,
+                                fmt::format("pX3_%d", index()),
+                                buff_x3,
+                                nout,
+                                nout_total,
+                                nout_offset);
+    }
+
+    if (npld_r() > 0) {
+      for (auto pr { 0 }; pr < npld_r(); ++pr) {
+        auto buff_sub = Kokkos::subview(buff_pldr, Kokkos::ALL, pr);
+        out::Write1DSubArray<real_t, decltype(buff_sub)>(
+          io,
+          writer,
+          fmt::format("pPLDR%d_%d", pr, index()),
+          buff_sub,
+          nout,
+          nout_total,
+          nout_offset);
+      }
+    }
+    auto num_track_plds = 0;
+    if (use_tracking()) {
+#if !defined(MPI_ENABLED)
+      num_track_plds = 1;
+      {
+        auto buff_sub = Kokkos::subview(buff_pldi,
+                                        Kokkos::ALL,
+                                        static_cast<std::size_t>(pldi::spcCtr));
+        out::Write1DSubArray<npart_t, decltype(buff_sub)>(
+          io,
+          writer,
+          fmt::format("pIDX_%d", pr, index()),
+          buff_sub,
+          nout,
+          nout_total,
+          nout_offset);
+      }
+#else
+      num_track_plds = 2;
+      {
+        auto buff_sub = Kokkos::subview(buff_pldi,
+                                        Kokkos::ALL,
+                                        static_cast<std::size_t>(pldi::spcCtr));
+        out::Write1DSubArray<npart_t, decltype(buff_sub)>(
+          io,
+          writer,
+          fmt::format("pIDX_%d", index()),
+          buff_sub,
+          nout,
+          nout_total,
+          nout_offset);
+      }
+      {
+        auto buff_sub = Kokkos::subview(buff_pldi,
+                                        Kokkos::ALL,
+                                        static_cast<std::size_t>(pldi::domIdx));
+        out::Write1DSubArray<npart_t, decltype(buff_sub)>(
+          io,
+          writer,
+          fmt::format("pRNK_%d", index()),
+          buff_sub,
+          nout,
+          nout_total,
+          nout_offset);
+      }
+#endif
+    }
+    if (npld_i() > num_track_plds) {
+      for (auto pr { num_track_plds }; pr < npld_i(); ++pr) {
+        auto buff_sub = Kokkos::subview(buff_pldi,
+                                        Kokkos::ALL,
+                                        static_cast<std::size_t>(pr));
+        out::Write1DSubArray<npart_t, decltype(buff_sub)>(
+          io,
+          writer,
+          fmt::format("pPLDI%d_%d", pr - num_track_plds, index()),
+          buff_sub,
+          nout,
+          nout_total,
+          nout_offset);
+      }
+    }
+  }
+
+  /* * * * * * * * *
+   * Checkpoints
+   * * * * * * * * */
 
   template <Dimension D, Coord::type C>
   void Particles<D, C>::CheckpointDeclare(adios2::IO& io) const {
@@ -476,6 +755,35 @@ namespace ntt {
                                  npart_offset);
     }
   }
+
+#define PARTICLES_OUTPUT_DECLARE(D, C)                                         \
+  template void Particles<D, C>::OutputDeclare(adios2::IO&) const;
+
+  PARTICLES_OUTPUT_DECLARE(Dim::_1D, Coord::Cart)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Cart)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cart)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Sph)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qsph)
+#undef PARTICLES_OUTPUT_DECLARE
+
+#define PARTICLES_OUTPUT_WRITE(S, M)                                           \
+  template void Particles<M::Dim, M::CoordType>::OutputWrite<S, M>(            \
+    adios2::IO&,                                                               \
+    adios2::Engine&,                                                           \
+    npart_t,                                                                   \
+    std::size_t,                                                               \
+    std::size_t,                                                               \
+    const M&);
+
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+#undef PARTICLES_OUTPUT_WRITE
 
 #define PARTICLES_CHECKPOINTS(D, C)                                            \
   template void Particles<D, C>::CheckpointDeclare(adios2::IO&) const;         \

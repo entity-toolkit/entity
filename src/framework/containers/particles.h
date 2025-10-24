@@ -273,6 +273,16 @@ namespace ntt {
 #endif
 
 #if defined(OUTPUT_ENABLED)
+    void OutputDeclare(adios2::IO&) const;
+
+    template <SimEngine::type S, class M>
+    void OutputWrite(adios2::IO&,
+                     adios2::Engine&,
+                     npart_t,
+                     std::size_t,
+                     std::size_t,
+                     const M&);
+
     void CheckpointDeclare(adios2::IO&) const;
     void CheckpointRead(adios2::IO&, adios2::Engine&, std::size_t, std::size_t);
     void CheckpointWrite(adios2::IO&, adios2::Engine&, std::size_t, std::size_t) const;
