@@ -234,8 +234,8 @@ auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
 template <Dimension D>
-auto CreateRangePolicy(const tuple_t<ncells_t, D>&,
-                       const tuple_t<ncells_t, D>&) -> range_t<D>;
+auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
+  -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy on the host.
