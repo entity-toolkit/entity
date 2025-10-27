@@ -97,7 +97,56 @@ namespace ntt {
     if (not is_sorted()) {
       RemoveDead();
     }
-    const npart_t    nout = npart() / prtl_stride;
+    npart_t           nout;
+    array_t<npart_t*> out_indices;
+    if (!use_tracking()) {
+      nout = npart() / prtl_stride;
+    } else {
+      nout = 0u;
+      Kokkos::parallel_reduce(
+        "CountOutputParticles",
+        npart(),
+        Lambda(index_t p, npart_t & l_nout) {
+          if ((tag(p) == ParticleTag::alive) and
+              (pld_i(p, pldi::spcCtr) % prtl_stride == 0)) {
+            l_nout += 1;
+          }
+        },
+        nout);
+      out_indices = array_t<npart_t*> { "out_indices", nout };
+      array_t<npart_t> out_counter { "out_counter" };
+      Kokkos::parallel_for(
+        "RecordOutputIndices",
+        npart(),
+        Lambda(index_t p) {
+          if ((tag(p) == ParticleTag::alive) and
+              (pld_i(p, pldi::spcCtr) % prtl_stride == 0)) {
+            const auto p_out   = Kokkos::atomic_fetch_add(&out_counter(), 1);
+            out_indices(p_out) = p;
+          }
+        });
+    }
+
+    npart_t nout_offset = 0;
+    npart_t nout_total  = nout;
+#if defined(MPI_ENABLED)
+    auto nout_total_vec = std::vector<npart_t>(domains_total);
+    MPI_Allgather(&nout,
+                  1,
+                  mpi::get_type<npart_t>(),
+                  nout_total_vec.data(),
+                  1,
+                  mpi::get_type<npart_t>(),
+                  MPI_COMM_WORLD);
+    nout_total = 0;
+    for (auto r = 0; r < domains_total; ++r) {
+      if (r < domains_offset) {
+        nout_offset += nout_total_vec[r];
+      }
+      nout_total += nout_total_vec[r];
+    }
+#endif // MPI_ENABLED
+
     array_t<real_t*> buff_x1, buff_x2, buff_x3;
     array_t<real_t*> buff_ux1 { "ux1", nout };
     array_t<real_t*> buff_ux2 { "ux2", nout };
@@ -123,42 +172,42 @@ namespace ntt {
     }
 
     if (nout > 0) {
-      // clang-format off
-      Kokkos::parallel_for(
-        "PrtlToPhys",
-        nout,
-        kernel::PrtlToPhys_kernel<S, M>(prtl_stride,
-                                        buff_x1, buff_x2, buff_x3,
-                                        buff_ux1, buff_ux2, buff_ux3,
-                                        buff_wei, 
-                                        buff_pldr, buff_pldi,
-                                        i1, i2, i3,
-                                        dx1, dx2, dx3,
-                                        ux1, ux2, ux3,
-                                        phi, weight, 
-                                        pld_r, pld_i,
-                                        metric));
-      // clang-format on
-    }
-    npart_t nout_offset = 0;
-    npart_t nout_total  = nout;
-#if defined(MPI_ENABLED)
-    auto nout_total_vec = std::vector<npart_t>(domains_total);
-    MPI_Allgather(&nout,
-                  1,
-                  mpi::get_type<npart_t>(),
-                  nout_total_vec.data(),
-                  1,
-                  mpi::get_type<npart_t>(),
-                  MPI_COMM_WORLD);
-    nout_total = 0;
-    for (auto r = 0; r < domains_total; ++r) {
-      if (r < domains_offset) {
-        nout_offset += nout_total_vec[r];
+      if (!use_tracking()) {
+        // clang-format off
+        Kokkos::parallel_for(
+          "PrtlToPhys",
+          nout,
+          kernel::PrtlToPhys_kernel<S, M, false>(prtl_stride, out_indices,
+                                                 buff_x1, buff_x2, buff_x3,
+                                                 buff_ux1, buff_ux2, buff_ux3,
+                                                 buff_wei, 
+                                                 buff_pldr, buff_pldi,
+                                                 i1, i2, i3,
+                                                 dx1, dx2, dx3,
+                                                 ux1, ux2, ux3,
+                                                 phi, weight, 
+                                                 pld_r, pld_i,
+                                                 metric));
+        // clang-format on
+      } else {
+        // clang-format off
+        Kokkos::parallel_for(
+          "PrtlToPhys",
+          nout,
+          kernel::PrtlToPhys_kernel<S, M, true>(prtl_stride, out_indices,
+                                                buff_x1, buff_x2, buff_x3,
+                                                buff_ux1, buff_ux2, buff_ux3,
+                                                buff_wei, 
+                                                buff_pldr, buff_pldi,
+                                                i1, i2, i3,
+                                                dx1, dx2, dx3,
+                                                ux1, ux2, ux3,
+                                                phi, weight, 
+                                                pld_r, pld_i,
+                                                metric));
+        // clang-format on
       }
-      nout_total += nout_total_vec[r];
     }
-#endif // MPI_ENABLED
     out::Write1DArray<real_t>(io,
                               writer,
                               fmt::format("pW_%d", index()),
