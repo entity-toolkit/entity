@@ -424,19 +424,12 @@ namespace kernel {
           real_t Wx1[O + 2];
           real_t Wx23[O + 2];
 
-          // first seperate
-          Wx1[0]      = fS_x1[0];
-          Wx23[0]     = HALF * fS_x1[0];
-          // last seperate
-          Wx1[O + 1]  = -iS_x1[O + 1];
-          Wx23[O + 1] = HALF * iS_x1[O + 1];
-
           // Calculate weight function
 #pragma unroll
-          for (int i = 1; i < O + 1; ++i) {
+          for (int i = 0; i < O + 2; ++i) {
             // Esirkepov 2001, Eq. 38 for 1D case
-            Wx1[i]  = fS_x1[i] - iS_x1[i - 1];
-            Wx23[i] = HALF * (fS_x1[i] + iS_x1[i - 1]);
+            Wx1[i]  = fS_x1[i] - iS_x1[i];
+            Wx23[i] = HALF * (fS_x1[i] + iS_x1[i]);
           }
 
           // contribution within the shape function stencil
