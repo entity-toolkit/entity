@@ -12,6 +12,7 @@
 #include "archetypes/field_setter.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
+#include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
 #include <algorithm>
@@ -67,7 +68,6 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
@@ -82,6 +82,8 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
+    Metadomain<S, M>& global_domain;
+
     // domain properties
     const real_t  global_xmin, global_xmax;
     // gas properties
@@ -93,8 +95,9 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
       , drift_ux { p.template get<real_t>("setup.drift_ux") }
@@ -116,8 +119,8 @@ namespace user {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&,
+                        const em& comp) const -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {
@@ -136,7 +139,7 @@ namespace user {
       }
     }
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    inline void InitPrtls(Domain<S, M>& domain) {
 
       /*
        *  Plasma setup as partially filled box
@@ -169,32 +172,23 @@ namespace user {
         }
       }
 
-      // species #1 -> e^-
-      // species #2 -> protons
-
-      // energy distribution of the particles
-      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
-        local_domain.mesh.metric,
-        local_domain.random_pool,
-        { temperature_ratio * temperature * local_domain.species[1].mass() ,
-          temperature },
-        { 1, 2 },
-        -drift_ux,
-        in::x1);
-
-      // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
-        energy_dist,
-        { 1, 2 });
-
-      // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
-        params,
-        local_domain,
-        injector,
-        1.0,   // target density
-        false, // no weights
-        box);
+      // define temperatures of species
+      const auto temperatures = std::make_pair(temperature,
+                                               temperature_ratio * temperature);
+      // define drift speed of species
+      const auto drifts       = std::make_pair(
+        std::vector<real_t> { -drift_ux, ZERO, ZERO },
+        std::vector<real_t> { -drift_ux, ZERO, ZERO });
+      
+      // inject particles
+      arch::InjectUniformMaxwellians<S, M>(params,
+                                           domain,
+                                           ONE,
+                                           temperatures,
+                                           { 1, 2 },
+                                           drifts,
+                                           false,
+                                           box);
     }
 
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
@@ -266,6 +260,7 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
+      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
 
       /*
         tag particles inside the injection zone as dead
@@ -315,28 +310,19 @@ namespace user {
       }
 
       // same maxwell distribution as above
-      const auto energy_dist = arch::TwoTemperatureMaxwellian<S, M>(
-        domain.mesh.metric,
-        domain.random_pool,
-        { temperature_ratio * temperature * domain.species[1].mass(),
-          temperature },
-        { 1, 2 },
-        -drift_ux,
-        in::x1);
-
-      // we want to set up a uniform density distribution
-      const auto injector = arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>(
-        energy_dist,
-        { 1, 2 });
-
-      // inject uniformly within the defined box
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::TwoTemperatureMaxwellian>>(
-        params,
-        domain,
-        injector,
-        1.0,   // target density
-        false, // no weights
-        inj_box);
+      const auto temperatures = std::make_pair(temperature,
+                                               temperature_ratio * temperature);
+      const auto drifts       = std::make_pair(
+        std::vector<real_t> { -drift_ux, ZERO, ZERO },
+        std::vector<real_t> { -drift_ux, ZERO, ZERO });
+      arch::InjectUniformMaxwellians<S, M>(params,
+                                           domain,
+                                           ONE,
+                                           temperatures,
+                                           { 1, 2 },
+                                           drifts,
+                                           false,
+                                           inj_box);
     }
   };
 } // namespace user

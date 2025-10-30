@@ -45,6 +45,17 @@ const auto mink_1d = u8R"(
   [algorithms.timestep]
     CFL = 0.45
 
+  [algorithms.fieldsolver]
+    delta_x = 1.0
+    delta_y = 2.0
+    delta_z = 3.0
+    beta_xy = 4.0
+    beta_yx = 5.0
+    beta_xz = 6.0
+    beta_zx = 7.0
+    beta_yz = 8.0
+    beta_zy = 9.0
+
 [particles]
   ppc0 = 10.0
   clear_interval = 100
@@ -331,6 +342,43 @@ auto main(int argc, char* argv[]) -> int {
                                 1,
                                 "output.fields.downsampling.size()");
       assert_equal<unsigned int>(output_stride[0], 4, "output.fields.downsampling[0]");
+
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.delta_x"),
+        (real_t)(1.0),
+        "algorithms.fieldsolver.delta_x");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.delta_y"),
+        (real_t)(2.0),
+        "algorithms.fieldsolver.delta_y");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.delta_z"),
+        (real_t)(3.0),
+        "algorithms.fieldsolver.delta_z");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_xy"),
+        (real_t)(4.0),
+        "algorithms.fieldsolver.beta_xy");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_yx"),
+        (real_t)(5.0),
+        "algorithms.fieldsolver.beta_yx");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_xz"),
+        (real_t)(6.0),
+        "algorithms.fieldsolver.beta_xz");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_zx"),
+        (real_t)(7.0),
+        "algorithms.fieldsolver.beta_zx");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_yz"),
+        (real_t)(8.0),
+        "algorithms.fieldsolver.beta_yz");
+      assert_equal<real_t>(
+        params_mink_1d.get<real_t>("algorithms.fieldsolver.beta_zy"),
+        (real_t)(9.0),
+        "algorithms.fieldsolver.beta_zy");
     }
 
     {

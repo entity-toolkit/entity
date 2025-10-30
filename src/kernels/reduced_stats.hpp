@@ -2,7 +2,8 @@
  * @file kernels/reduced_stats.hpp
  * @brief Compute reduced field/moment quantities for stats output
  * @implements
- *   - kernel::PrtlToPhys_kernel<>
+ *   - kernel::ReducedFields_kernel<>
+ *   - kernel::ReducedParticleMoments_kernel<>
  * @namespaces:
  *   - kernel::
  */
@@ -466,82 +467,97 @@ namespace kernel {
     }
 
     Inline void operator()(index_t p, real_t& buff) const {
-      if (tag(p) == ParticleTag::dead) {
+      if (tag(p) != ParticleTag::alive) {
         return;
       }
+      auto dV = ONE;
+
       if constexpr (P == StatsID::Npart) {
         buff += ONE;
         return;
-      } else if constexpr (P == StatsID::N or P == StatsID::Rho or
-                           P == StatsID::Charge) {
-        buff += use_weights ? weight(p) : contrib;
-        return;
       } else {
-        // for stress-energy tensor
-        real_t          energy { ZERO };
-        vec_t<Dim::_3D> u_Phys { ZERO };
-        if constexpr (S == SimEngine::SRPIC) {
-          // SR
-          // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-          if constexpr (M::CoordType == Coord::Cart) {
-            u_Phys[0] = ux1(p);
-            u_Phys[1] = ux2(p);
-            u_Phys[2] = ux3(p);
+        coord_t<D> x_Code { ZERO };
+        if constexpr ((D == Dim::_1D) or (D == Dim::_2D) or (D == Dim::_3D)) {
+          x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+        }
+        if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
+          x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+        }
+        if constexpr (D == Dim::_3D) {
+          x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+        }
+        dV = metric.sqrt_det_h(x_Code);
+        if constexpr (P == StatsID::N or P == StatsID::Rho or P == StatsID::Charge) {
+          buff += dV * (use_weights ? weight(p) : contrib);
+        } else {
+          // for stress-energy tensor
+          real_t          energy { ZERO };
+          vec_t<Dim::_3D> u_Phys { ZERO };
+          if constexpr (S == SimEngine::SRPIC) {
+            // SR
+            // stress-energy tensor for SR is computed in the tetrad (hatted) basis
+            if constexpr (M::CoordType == Coord::Cart) {
+              u_Phys[0] = ux1(p);
+              u_Phys[1] = ux2(p);
+              u_Phys[2] = ux3(p);
+            } else {
+              static_assert(D != Dim::_1D, "non-Cartesian SRPIC 1D");
+              coord_t<M::PrtlDim> x_Code { ZERO };
+              x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+              x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+              if constexpr (D == Dim::_3D) {
+                x_Code[2] = static_cast<real_t>(i3(p)) +
+                            static_cast<real_t>(dx3(p));
+              } else {
+                x_Code[2] = phi(p);
+              }
+              metric.template transform_xyz<Idx::XYZ, Idx::T>(
+                x_Code,
+                { ux1(p), ux2(p), ux3(p) },
+                u_Phys);
+            }
+            if (mass == ZERO) {
+              energy = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+            } else {
+              energy = mass * math::sqrt(
+                                ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+            }
           } else {
-            static_assert(D != Dim::_1D, "non-Cartesian SRPIC 1D");
-            coord_t<M::PrtlDim> x_Code { ZERO };
+            // GR
+            // stress-energy tensor for GR is computed in contravariant basis
+            static_assert(D != Dim::_1D, "GRPIC 1D");
+            coord_t<D> x_Code { ZERO };
             x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
             x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
             if constexpr (D == Dim::_3D) {
               x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
-            } else {
-              x_Code[2] = phi(p);
             }
-            metric.template transform_xyz<Idx::XYZ, Idx::T>(
-              x_Code,
-              { ux1(p), ux2(p), ux3(p) },
-              u_Phys);
+            vec_t<Dim::_3D> u_Cntrv { ZERO };
+            // compute u_i u^i for energy
+            metric.template transform<Idx::D, Idx::U>(x_Code,
+                                                      { ux1(p), ux2(p), ux3(p) },
+                                                      u_Cntrv);
+            energy = u_Cntrv[0] * ux1(p) + u_Cntrv[1] * ux2(p) +
+                     u_Cntrv[2] * ux3(p);
+            if (mass == ZERO) {
+              energy = math::sqrt(energy);
+            } else {
+              energy = mass * math::sqrt(ONE + energy);
+            }
+            metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
           }
-          if (mass == ZERO) {
-            energy = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
-          } else {
-            energy = mass *
-                     math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
-          }
-        } else {
-          // GR
-          // stress-energy tensor for GR is computed in contravariant basis
-          static_assert(D != Dim::_1D, "GRPIC 1D");
-          coord_t<D> x_Code { ZERO };
-          x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
-          x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
-          if constexpr (D == Dim::_3D) {
-            x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
-          }
-          vec_t<Dim::_3D> u_Cntrv { ZERO };
-          // compute u_i u^i for energy
-          metric.template transform<Idx::D, Idx::U>(x_Code,
-                                                    { ux1(p), ux2(p), ux3(p) },
-                                                    u_Cntrv);
-          energy = u_Cntrv[0] * ux1(p) + u_Cntrv[1] * ux2(p) + u_Cntrv[2] * ux3(p);
-          if (mass == ZERO) {
-            energy = math::sqrt(energy);
-          } else {
-            energy = mass * math::sqrt(ONE + energy);
-          }
-          metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
-        }
-        // compute the corresponding moment
-        real_t coeff = ONE;
+          // compute the corresponding moment
+          real_t coeff = ONE;
 #pragma unroll
-        for (const auto& c : { c1, c2 }) {
-          if (c == 0) {
-            coeff *= energy;
-          } else {
-            coeff *= u_Phys[c - 1];
+          for (const auto& c : { c1, c2 }) {
+            if (c == 0) {
+              coeff *= energy;
+            } else {
+              coeff *= u_Phys[c - 1];
+            }
           }
+          buff += dV * coeff / energy;
         }
-        buff += coeff / energy;
       }
     }
   };

@@ -415,6 +415,61 @@ namespace ntt {
     set("algorithms.toggles.deposit",
         toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
 
+    /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.delta_x",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_x",
+                      defaults::fieldsolver::delta_x));
+    set("algorithms.fieldsolver.delta_y",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_y",
+                      defaults::fieldsolver::delta_y));
+    set("algorithms.fieldsolver.delta_z",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_z",
+                      defaults::fieldsolver::delta_z));
+    set("algorithms.fieldsolver.beta_xy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xy",
+                      defaults::fieldsolver::beta_xy));
+    set("algorithms.fieldsolver.beta_yx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yx",
+                      defaults::fieldsolver::beta_yx));
+    set("algorithms.fieldsolver.beta_xz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xz",
+                      defaults::fieldsolver::beta_xz));
+    set("algorithms.fieldsolver.beta_zx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zx",
+                      defaults::fieldsolver::beta_zx));
+    set("algorithms.fieldsolver.beta_yz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yz",
+                      defaults::fieldsolver::beta_yz));
+    set("algorithms.fieldsolver.beta_zy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zy",
+                      defaults::fieldsolver::beta_zy));
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));
@@ -445,6 +500,35 @@ namespace ntt {
     /* [particles] ---------------------------------------------------------- */
     set("particles.clear_interval",
         toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
+    const auto species_tab               = toml::find_or<toml::array>(toml_data,
+                                                        "particles",
+                                                        "species",
+                                                        toml::array {});
+    std::vector<ParticleSpecies> species = get<std::vector<ParticleSpecies>>(
+      "particles.species");
+    raise::ErrorIf(species_tab.size() != species.size(),
+                   "number of species changed after restart",
+                   HERE);
+
+    std::vector<ParticleSpecies> new_species;
+
+    spidx_t idxM1 = 0;
+    for (const auto& sp : species_tab) {
+      const auto maxnpart_real    = toml::find<double>(sp, "maxnpart");
+      const auto maxnpart         = static_cast<npart_t>(maxnpart_real);
+      const auto particle_species = species[idxM1];
+      new_species.emplace_back(particle_species.index(),
+                               particle_species.label(),
+                               particle_species.mass(),
+                               particle_species.charge(),
+                               maxnpart,
+                               particle_species.pusher(),
+                               particle_species.use_gca(),
+                               particle_species.cooling(),
+                               particle_species.npld());
+      idxM1++;
+    }
+    set("particles.species", new_species);
 
     /* [output] ------------------------------------------------------------- */
     // fields
