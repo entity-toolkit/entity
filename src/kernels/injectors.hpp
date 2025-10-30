@@ -286,23 +286,29 @@ namespace kernel {
           coord_t<M::Dim> x_Ph { ZERO };
           metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
           if constexpr (M::CoordType == Coord::Cart) {
-            energy_dist_1(x_Ph, v1, spidx1);
-            energy_dist_2(x_Ph, v2, spidx2);
+            auto rand_gen = random_pool.get_state();
+            energy_dist_1(x_Ph, v1, spidx1, rand_gen);
+            energy_dist_2(x_Ph, v2, spidx2, rand_gen);
+            random_pool.free_state(rand_gen);
           } else if constexpr (S == SimEngine::SRPIC) {
             coord_t<M::PrtlDim> x_Cd_ { ZERO };
             x_Cd_[0] = x_Cd[0];
             x_Cd_[1] = x_Cd[1];
             x_Cd_[2] = ZERO; // phi = 0
             vec_t<Dim::_3D> v_Ph { ZERO };
-            energy_dist_1(x_Ph, v_Ph, spidx1);
+            auto            rand_gen = random_pool.get_state();
+            energy_dist_1(x_Ph, v_Ph, spidx1, rand_gen);
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v1);
-            energy_dist_2(x_Ph, v_Ph, spidx2);
+            energy_dist_2(x_Ph, v_Ph, spidx2, rand_gen);
+            random_pool.free_state(rand_gen);
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v2);
           } else if constexpr (S == SimEngine::GRPIC) {
             vec_t<Dim::_3D> v_Ph { ZERO };
-            energy_dist_1(x_Ph, v_Ph, spidx1);
+            auto            rand_gen = random_pool.get_state();
+            energy_dist_1(x_Ph, v_Ph, spidx1, rand_gen);
             metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v1);
-            energy_dist_2(x_Ph, v_Ph, spidx2);
+            energy_dist_2(x_Ph, v_Ph, spidx2, rand_gen);
+            random_pool.free_state(rand_gen);
             metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v2);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
@@ -690,12 +696,12 @@ namespace kernel {
           dx1s_2(index + offset2) = dx1;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          // energy_dist(x_Ph, v_T, spidx1);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
           ux1s_1(index + offset1) = v_XYZ[0];
           ux2s_1(index + offset1) = v_XYZ[1];
           ux3s_1(index + offset1) = v_XYZ[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          // energy_dist(x_Ph, v_T, spidx2);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
           ux1s_2(index + offset2) = v_XYZ[0];
           ux2s_2(index + offset2) = v_XYZ[1];
@@ -752,7 +758,7 @@ namespace kernel {
           dx2s_2(index + offset2) = dx2;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          // energy_dist(x_Ph, v_T, spidx1);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -761,7 +767,7 @@ namespace kernel {
           ux1s_1(index + offset1) = v_Cd[0];
           ux2s_1(index + offset1) = v_Cd[1];
           ux3s_1(index + offset1) = v_Cd[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          // energy_dist(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -825,7 +831,7 @@ namespace kernel {
           dx3s_2(index + offset2) = dx3;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          // energy_dist(x_Ph, v_T, spidx1);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -834,7 +840,7 @@ namespace kernel {
           ux1s_1(index + offset1) = v_Cd[0];
           ux2s_1(index + offset1) = v_Cd[1];
           ux3s_1(index + offset1) = v_Cd[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          // energy_dist(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {

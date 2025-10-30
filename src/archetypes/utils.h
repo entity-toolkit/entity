@@ -53,12 +53,10 @@ namespace arch {
 
     const auto maxwellian_1 = arch::experimental::Maxwellian<S, M>(
       domain.mesh.metric,
-      domain.random_pool,
       temperature_1,
       drift_four_vels.first);
     const auto maxwellian_2 = arch::experimental::Maxwellian<S, M>(
       domain.mesh.metric,
-      domain.random_pool,
       temperature_2,
       drift_four_vels.second);
 
