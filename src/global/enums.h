@@ -4,7 +4,7 @@
  * @implements
  *   - enum ntt::Coord             // Cart, Sph, Qsph
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
- *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0
+ *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0, Box
  *   - enum ntt::SimEngine         // SRPIC, GRPIC
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
@@ -156,16 +156,19 @@ namespace ntt {
       Kerr_Schild   = 4,
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
+      Box           = 7,
     };
 
     constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
 
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
-                                                QKerr_Schild, Kerr_Schild_0 };
+                                                QKerr_Schild, Kerr_Schild_0,
+                                                Box }; 
     static constexpr const char* lookup[]   = { "minkowski",    "spherical",
                                                 "qspherical",   "kerr_schild",
-                                                "qkerr_schild", "kerr_schild_0" };
+                                                "qkerr_schild", "kerr_schild_0",
+                                                "box" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

@@ -9,6 +9,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"  // CG
 
 #include "framework/domain/domain.h"
 
@@ -43,6 +44,18 @@ namespace ntt {
 
       // main algorithm loop
       while (step < max_steps) {
+      // CG: mid-step update for time-dependent Box metric ---
+      // Use compile-time gating if the metric exposes metric_type.
+      if constexpr (M::MetricType == Metric::Box) {
+        const auto t_mid = time + static_cast<simtime_t>(0.5) * dt;
+        // Update every local domain's metric to mid-step time.
+        m_metadomain.runOnLocalDomains([&](auto& dom) {
+          // If the Domain stores the metric as dom.mesh.metric, keep the next line.
+          // Otherwise, if it's dom.metric, replace 'dom.mesh.metric' with 'dom.metric'.
+          dom.mesh.metric.update(t_mid);
+        });
+      }
+      // --- END CG ---
         // run the engine-dependent algorithm step
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           step_forward(timers, dom);
@@ -151,5 +164,8 @@ namespace ntt {
   template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::run();
   template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::run();
-
+  // --- CG: SRPIC + Box metric instantiations ---
+  template void Engine<SimEngine::SRPIC, metric::Box<Dim::_2D>>::run();
+  template void Engine<SimEngine::SRPIC, metric::Box<Dim::_3D>>::run();
+  // --- END CG ---
 } // namespace ntt

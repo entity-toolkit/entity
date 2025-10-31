@@ -474,6 +474,14 @@ namespace kernel::sr {
       bool            is_gca { false };
 
       getInterpFlds(p, ei, bi);
+      // --- CG: convert primed fields (stored on grid) to physical ---
+      // We store E', B' on the grid: E'_i = E_i / a_i, B'_i = B_i / a_i.
+      // The particle pusher must use physical fields, so multiply by a_i here.
+      //if constexpr (M::MetricType == Box) {
+      //ei[0] *= metric.Li(0);  ei[1] *= metric.Li(1);  ei[2] *= metric.Li(2);
+      //bi[0] *= metric.Li(0);  bi[1] *= metric.Li(1);  bi[2] *= metric.Li(2);
+      //}
+      // -------------------------------------------------------------------------
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
       if (cooling != 0) {
