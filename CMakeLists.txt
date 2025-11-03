@@ -95,7 +95,7 @@ if(${deposit} STREQUAL "zigzag")
 endif()
 
 set(shape_orders
-    "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11"
+    "1;2;3;4;5;6;7;8;9;10;11"
     CACHE STRING "Shape orders")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
