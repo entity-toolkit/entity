@@ -5,7 +5,6 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
-#include "utils/timer.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -20,7 +19,6 @@
   #include "arch/mpi_tags.h"
 
   #include "framework/domain/comm_mpi.hpp"
-  #include "kernels/comm.hpp"
 #else
   #include "framework/domain/comm_nompi.hpp"
 #endif
@@ -587,45 +585,30 @@ namespace ntt {
     for (auto& species : domain.species) {
       const auto ntags = species.ntags();
 
-      // at this point particles should already be tagged in the pusher
-      auto [npptag_vec, tag_offsets] = species.NpartsPerTagAndOffsets();
-      const auto npart_dead          = npptag_vec[ParticleTag::dead];
-      const auto npart_alive         = npptag_vec[ParticleTag::alive];
-
-      const auto npart = species.npart();
-
-      // # of particles to receive per each tag (direction)
-      std::vector<npart_t> npptag_recv_vec(ntags - 2, 0);
       // coordinate shifts per each direction
-      array_t<int*>        shifts_in_x1 { "shifts_in_x1", ntags - 2 };
-      array_t<int*>        shifts_in_x2 { "shifts_in_x2", ntags - 2 };
-      array_t<int*>        shifts_in_x3 { "shifts_in_x3", ntags - 2 };
-      auto shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
-      auto shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
-      auto shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
+      array_t<int*> shifts_in_x1 { "shifts_in_x1", ntags - 2 };
+      array_t<int*> shifts_in_x2 { "shifts_in_x2", ntags - 2 };
+      array_t<int*> shifts_in_x3 { "shifts_in_x3", ntags - 2 };
+      auto          shifts_in_x1_h = Kokkos::create_mirror_view(shifts_in_x1);
+      auto          shifts_in_x2_h = Kokkos::create_mirror_view(shifts_in_x2);
+      auto          shifts_in_x3_h = Kokkos::create_mirror_view(shifts_in_x3);
 
       // all directions requiring communication
       dir::dirs_t<D> dirs_to_comm;
 
       // ranks & indices of meshblock to send/recv from
-      std::vector<int> send_ranks, send_inds;
-      std::vector<int> recv_ranks, recv_inds;
-
-      // total # of reaceived particles from all directions
-      npart_t npart_recv = 0u;
+      dir::map_t<D, int> send_ranks;
+      dir::map_t<D, int> recv_ranks;
 
       for (const auto& direction : dir::Directions<D>::all) {
         // tags corresponding to the direction (both send & recv)
-        const auto tag_recv = mpi::PrtlSendTag<D>::dir2tag(-direction);
         const auto tag_send = mpi::PrtlSendTag<D>::dir2tag(direction);
 
         // get indices & ranks of send/recv meshblocks
         const auto [send_params,
-                    recv_params] = GetSendRecvParams(this, domain, direction, true);
-        const auto [send_indrank, send_slice] = send_params;
-        const auto [recv_indrank, recv_slice] = recv_params;
-        const auto [send_ind, send_rank]      = send_indrank;
-        const auto [recv_ind, recv_rank]      = recv_indrank;
+                    recv_params] = GetSendRecvRanks(this, domain, direction);
+        const auto [send_ind, send_rank] = send_params;
+        const auto [recv_ind, recv_rank] = recv_params;
 
         // skip if no communication is necessary
         const auto is_sending   = (send_rank >= 0);
@@ -634,24 +617,8 @@ namespace ntt {
           continue;
         }
         dirs_to_comm.push_back(direction);
-        send_ranks.push_back(send_rank);
-        recv_ranks.push_back(recv_rank);
-        send_inds.push_back(send_ind);
-        recv_inds.push_back(recv_ind);
-
-        // record the # of particles to-be-sent
-        const auto nsend = npptag_vec[tag_send];
-
-        // request the # of particles to-be-received ...
-        // ... and send the # of particles to-be-sent
-        npart_t nrecv = 0;
-        comm::ParticleSendRecvCount(send_rank, recv_rank, nsend, nrecv);
-        npart_recv                    += nrecv;
-        npptag_recv_vec[tag_recv - 2]  = nrecv;
-
-        raise::ErrorIf((npart + npart_recv) >= species.maxnpart(),
-                       "Too many particles to receive (cannot fit into maxptl)",
-                       HERE);
+        send_ranks[direction] = send_rank;
+        recv_ranks[direction] = recv_rank;
 
         // if sending, record displacements to apply before
         // ... tag_send - 2: because we only shift tags > 2 (i.e. no dead/alive)
@@ -689,31 +656,13 @@ namespace ntt {
       Kokkos::deep_copy(shifts_in_x2, shifts_in_x2_h);
       Kokkos::deep_copy(shifts_in_x3, shifts_in_x3_h);
 
-      array_t<npart_t*> outgoing_indices { "outgoing_indices", npart - npart_alive };
-      // clang-format off
-      Kokkos::parallel_for(
-        "PrepareOutgoingPrtls",
-        species.rangeActiveParticles(),
-        kernel::comm::PrepareOutgoingPrtls_kernel<M::Dim>(
-            shifts_in_x1, shifts_in_x2, shifts_in_x3,
-            outgoing_indices,
-            npart, npart_alive, npart_dead, ntags,
-            species.i1, species.i1_prev, 
-            species.i2, species.i2_prev,
-            species.i3, species.i3_prev,
-            species.tag, tag_offsets)
-      );
-      // clang-format on
+      species.Communicate(dirs_to_comm,
+                          shifts_in_x1,
+                          shifts_in_x2,
+                          shifts_in_x3,
+                          send_ranks,
+                          recv_ranks);
 
-      comm::CommunicateParticles<M::Dim, M::CoordType>(species,
-                                                       outgoing_indices,
-                                                       tag_offsets,
-                                                       npptag_vec,
-                                                       npptag_recv_vec,
-                                                       send_ranks,
-                                                       recv_ranks,
-                                                       dirs_to_comm);
-      species.set_unsorted();
     } // end species loop
 #else
     (void)domain;

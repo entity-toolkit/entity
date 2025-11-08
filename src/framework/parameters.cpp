@@ -23,6 +23,8 @@
   #include <mpi.h>
 #endif
 
+#include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
 #include <utility>
@@ -31,10 +33,10 @@
 namespace ntt {
 
   template <typename M>
-  auto get_dx0_V0(const std::vector<ncells_t>&         resolution,
-                  const boundaries_t<real_t>&          extent,
-                  const std::map<std::string, real_t>& params)
-    -> std::pair<real_t, real_t> {
+  auto get_dx0_V0(
+    const std::vector<ncells_t>&         resolution,
+    const boundaries_t<real_t>&          extent,
+    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
     const auto      metric = M(resolution, extent, params);
     const auto      dx0    = metric.dxMin();
     coord_t<M::Dim> x_corner { ZERO };
@@ -200,10 +202,21 @@ namespace ntt {
       const auto maxnpart_real = toml::find<double>(sp, "maxnpart");
       const auto maxnpart      = static_cast<npart_t>(maxnpart_real);
       auto       pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
-      const auto npayloads = toml::find_or(sp,
-                                           "n_payloads",
-                                           static_cast<unsigned short>(0));
-      const auto cooling   = toml::find_or(sp, "cooling", std::string("None"));
+      const auto npayloads_real = toml::find_or(sp,
+                                                "n_payloads_real",
+                                                static_cast<unsigned short>(0));
+      const auto use_tracking   = toml::find_or(sp, "tracking", false);
+      auto       npayloads_int  = toml::find_or(sp,
+                                         "n_payloads_int",
+                                         static_cast<unsigned short>(0));
+      if (use_tracking) {
+#if !defined(MPI_ENABLED)
+        npayloads_int += 1;
+#else
+        npayloads_int += 2;
+#endif
+      }
+      const auto cooling = toml::find_or(sp, "cooling", std::string("None"));
       raise::ErrorIf((fmt::toLower(cooling) != "none") && is_massless,
                      "cooling is only applicable to massive particles",
                      HERE);
@@ -241,9 +254,11 @@ namespace ntt {
                                            charge,
                                            maxnpart,
                                            pusher_enum,
+                                           use_tracking,
                                            use_gca,
                                            cooling_enum,
-                                           npayloads));
+                                           npayloads_real,
+                                           npayloads_int));
       idx += 1;
     }
     set("particles.species", species);
@@ -415,6 +430,61 @@ namespace ntt {
     set("algorithms.toggles.deposit",
         toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
 
+    /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.delta_x",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_x",
+                      defaults::fieldsolver::delta_x));
+    set("algorithms.fieldsolver.delta_y",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_y",
+                      defaults::fieldsolver::delta_y));
+    set("algorithms.fieldsolver.delta_z",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "delta_z",
+                      defaults::fieldsolver::delta_z));
+    set("algorithms.fieldsolver.beta_xy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xy",
+                      defaults::fieldsolver::beta_xy));
+    set("algorithms.fieldsolver.beta_yx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yx",
+                      defaults::fieldsolver::beta_yx));
+    set("algorithms.fieldsolver.beta_xz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_xz",
+                      defaults::fieldsolver::beta_xz));
+    set("algorithms.fieldsolver.beta_zx",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zx",
+                      defaults::fieldsolver::beta_zx));
+    set("algorithms.fieldsolver.beta_yz",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_yz",
+                      defaults::fieldsolver::beta_yz));
+    set("algorithms.fieldsolver.beta_zy",
+        toml::find_or(toml_data,
+                      "algorithms",
+                      "fieldsolver",
+                      "beta_zy",
+                      defaults::fieldsolver::beta_zy));
     /* [algorithms.timestep] ------------------------------------------------ */
     set("algorithms.timestep.CFL",
         toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));
@@ -468,9 +538,11 @@ namespace ntt {
                                particle_species.charge(),
                                maxnpart,
                                particle_species.pusher(),
+                               particle_species.use_tracking(),
                                particle_species.use_gca(),
                                particle_species.cooling(),
-                               particle_species.npld());
+                               particle_species.npld_r(),
+                               particle_species.npld_i());
       idxM1++;
     }
     set("particles.species", new_species);
@@ -1016,4 +1088,16 @@ namespace ntt {
                    "Have not defined all the necessary variables",
                    HERE);
   }
+
+  void SimulationParams::saveTOML(const std::string& path, simtime_t time) const {
+    CallOnce([&]() {
+      std::ofstream metadata;
+      metadata.open(path);
+      metadata << "[metadata]\n"
+               << "  time = " << time << "\n\n"
+               << data() << std::endl;
+      metadata.close();
+    });
+  }
+
 } // namespace ntt

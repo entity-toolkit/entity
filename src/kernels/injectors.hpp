@@ -40,6 +40,7 @@ namespace kernel {
     array_t<real_t*>   phis_1;
     array_t<real_t*>   weights_1;
     array_t<short*>    tags_1;
+    array_t<npart_t**> pldis_1;
 
     array_t<int*>      i1s_2, i2s_2, i3s_2;
     array_t<prtldx_t*> dx1s_2, dx2s_2, dx3s_2;
@@ -47,8 +48,11 @@ namespace kernel {
     array_t<real_t*>   phis_2;
     array_t<real_t*>   weights_2;
     array_t<short*>    tags_2;
+    array_t<npart_t**> pldis_2;
 
     npart_t                offset1, offset2;
+    npart_t                domain_idx, cntr1, cntr2;
+    bool                   use_tracking_1, use_tracking_2;
     const M                metric;
     const array_t<real_t*> xi_min, xi_max;
     const ED1              energy_dist_1;
@@ -60,6 +64,8 @@ namespace kernel {
                            spidx_t                          spidx2,
                            Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
+                           npart_t                          inject_npart,
+                           npart_t                          domain_idx,
                            npart_t                          offset1,
                            npart_t                          offset2,
                            const M&                         metric,
@@ -83,6 +89,7 @@ namespace kernel {
       , phis_1 { species1.phi }
       , weights_1 { species1.weight }
       , tags_1 { species1.tag }
+      , pldis_1 { species1.pld_i }
       , i1s_2 { species2.i1 }
       , i2s_2 { species2.i2 }
       , i3s_2 { species2.i3 }
@@ -95,27 +102,80 @@ namespace kernel {
       , phis_2 { species2.phi }
       , weights_2 { species2.weight }
       , tags_2 { species2.tag }
+      , pldis_2 { species2.pld_i }
       , offset1 { offset1 }
       , offset2 { offset2 }
+      , use_tracking_1 { species1.use_tracking() }
+      , use_tracking_2 { species2.use_tracking() }
+      , domain_idx { domain_idx }
+      , cntr1 { species1.counter() }
+      , cntr2 { species2.counter() }
       , metric { metric }
       , xi_min { xi_min }
       , xi_max { xi_max }
       , energy_dist_1 { energy_dist_1 }
       , energy_dist_2 { energy_dist_2 }
       , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {}
+      , random_pool { random_pool } {
+      if (use_tracking_1) {
+        printf("using tracking for  species #1\n");
+        species1.set_counter(cntr1 + inject_npart);
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(species1.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(species1.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+      if (use_tracking_2) {
+        printf("using tracking for  species #2\n");
+        species2.set_counter(cntr2 + inject_npart);
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(species2.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(species2.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+    }
 
     Inline void operator()(index_t p) const {
-      coord_t<M::Dim> x_Cd { ZERO };
-      vec_t<Dim::_3D> v1 { ZERO }, v2 { ZERO };
+      coord_t<M::Dim>           x_Cd { ZERO };
+      tuple_t<int, M::Dim>      xi_Cd { 0 };
+      tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
+      vec_t<Dim::_3D>           v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
         auto rand_gen = random_pool.get_state();
-        x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+          xi_Cd[0]  = static_cast<int>(x_Cd[0]);
+          dxi_Cd[0] = static_cast<prtldx_t>(x_Cd[0] - xi_Cd[0]);
+        }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
           x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          dxi_Cd[1] = static_cast<prtldx_t>(x_Cd[1] - xi_Cd[1]);
         }
         if constexpr (M::Dim == Dim::_3D) {
           x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+          xi_Cd[2]  = static_cast<int>(x_Cd[2]);
+          dxi_Cd[2] = static_cast<prtldx_t>(x_Cd[2] - xi_Cd[2]);
         }
         random_pool.free_state(rand_gen);
       }
@@ -145,46 +205,47 @@ namespace kernel {
           raise::KernelError(HERE, "Unknown simulation engine");
         }
       }
-      // inject
-      i1s_1(p + offset1)  = static_cast<int>(x_Cd[0]);
-      dx1s_1(p + offset1) = static_cast<prtldx_t>(
-        x_Cd[0] - static_cast<real_t>(i1s_1(p + offset1)));
-      i1s_2(p + offset2)  = i1s_1(p + offset1);
-      dx1s_2(p + offset2) = dx1s_1(p + offset1);
-      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-        i2s_1(p + offset1)  = static_cast<int>(x_Cd[1]);
-        dx2s_1(p + offset1) = static_cast<prtldx_t>(
-          x_Cd[1] - static_cast<real_t>(i2s_1(p + offset1)));
-        i2s_2(p + offset2)  = i2s_1(p + offset1);
-        dx2s_2(p + offset2) = dx2s_1(p + offset1);
-        if constexpr (S == SimEngine::SRPIC && M::CoordType != Coord::Cart) {
-          phis_1(p + offset1) = ZERO;
-          phis_2(p + offset2) = ZERO;
-        }
-      }
-      if constexpr (M::Dim == Dim::_3D) {
-        i3s_1(p + offset1)  = static_cast<int>(x_Cd[2]);
-        dx3s_1(p + offset1) = static_cast<prtldx_t>(
-          x_Cd[2] - static_cast<real_t>(i3s_1(p + offset1)));
-        i3s_2(p + offset2)  = i3s_1(p + offset1);
-        dx3s_2(p + offset2) = dx3s_1(p + offset1);
-      }
-      ux1s_1(p + offset1) = v1[0];
-      ux2s_1(p + offset1) = v1[1];
-      ux3s_1(p + offset1) = v1[2];
-      ux1s_2(p + offset2) = v2[0];
-      ux2s_2(p + offset2) = v2[1];
-      ux3s_2(p + offset2) = v2[2];
-      tags_1(p + offset1) = ParticleTag::alive;
-      tags_2(p + offset2) = ParticleTag::alive;
-      if constexpr (M::CoordType == Coord::Cart) {
-        weights_1(p + offset1) = ONE;
-        weights_2(p + offset2) = ONE;
-      } else {
+      // clang-format off
+      real_t weight = ONE;
+      if constexpr (M::CoordType != Coord::Cart) {
         const auto sqrt_det_h  = metric.sqrt_det_h(x_Cd);
-        weights_1(p + offset1) = sqrt_det_h * inv_V0;
-        weights_2(p + offset2) = sqrt_det_h * inv_V0;
+        weight = sqrt_det_h * inv_V0;
       }
+      if (not use_tracking_1) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset1, 
+          i1s_1, i2s_1, i3s_1,
+          dx1s_1, dx2s_1, dx3s_1,
+          ux1s_1, ux2s_1, ux3s_1,
+          phis_1, weights_1, tags_1, pldis_1,
+          xi_Cd, dxi_Cd, v1, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset1, 
+          i1s_1, i2s_1, i3s_1,
+          dx1s_1, dx2s_1, dx3s_1,
+          ux1s_1, ux2s_1, ux3s_1,
+          phis_1, weights_1, tags_1, pldis_1,
+          xi_Cd, dxi_Cd, v1, weight, ZERO, domain_idx, cntr1 + p);
+      }
+      if (not use_tracking_2) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset2, 
+          i1s_2, i2s_2, i3s_2,
+          dx1s_2, dx2s_2, dx3s_2,
+          ux1s_2, ux2s_2, ux3s_2,
+          phis_2, weights_2, tags_2, pldis_2,
+          xi_Cd, dxi_Cd, v2, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset2, 
+          i1s_2, i2s_2, i3s_2,
+          dx1s_2, dx2s_2, dx3s_2,
+          ux1s_2, ux2s_2, ux3s_2,
+          phis_2, weights_2, tags_2, pldis_2,
+          xi_Cd, dxi_Cd, v2, weight, ZERO, domain_idx, cntr2 + p);
+      }
+      // clang-format on
     }
   }; // struct UniformInjector_kernel
 

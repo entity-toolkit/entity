@@ -139,6 +139,11 @@ namespace ntt {
     jx3 = 2
   };
 
+  enum pldi {
+    spcCtr = 0,
+    domIdx = 1
+  };
+
   enum ParticleTag : short {
     dead = 0,
     alive

@@ -19,7 +19,7 @@ let
     BUILD_TESTING = "OFF";
     ADIOS2_BUILD_EXAMPLES = "OFF";
     ADIOS2_USE_MPI = if mpi then "ON" else "OFF";
-    ADIOS2_HAVE_HDF5_VOL = if mpi then "ON" else "OFF";
+    ADIOS2_HAVE_HDF5_VOL = if (mpi && hdf5) then "ON" else "OFF";
     CMAKE_BUILD_TYPE = "Release";
   };
   stdenv = pkgs.gcc13Stdenv;
@@ -40,8 +40,27 @@ stdenv.mkDerivation {
 
   propagatedBuildInputs = [
     pkgs.gcc13
-  ] ++ (if hdf5 then (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5-cpp ]) else [ ]);
-  # ++ (if mpi then [ pkgs.openmpi ] else [ ]);
+  ]
+  ++ (
+    if hdf5 then
+      (
+        if mpi then
+          [
+            pkgs.hdf5-mpi
+          ]
+        else
+          [ pkgs.hdf5-cpp ]
+      )
+    else
+      (
+        if mpi then
+          [
+            pkgs.mpi
+          ]
+        else
+          [ ]
+      )
+  );
 
   configurePhase = ''
     cmake -B build $src ${

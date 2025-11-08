@@ -33,10 +33,6 @@ add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
 add_subdirectory(${SRC_DIR}/engines ${CMAKE_CURRENT_BINARY_DIR}/engines)
 add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
 
-if(${output})
-  add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
-endif()
-
 set(ENTITY ${PROJECT_NAME}.xc)
 set(SOURCES ${SRC_DIR}/entity.cpp)
 

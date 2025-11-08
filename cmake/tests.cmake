@@ -9,9 +9,6 @@ add_subdirectory(${SRC_DIR}/kernels ${CMAKE_CURRENT_BINARY_DIR}/kernels)
 add_subdirectory(${SRC_DIR}/archetypes ${CMAKE_CURRENT_BINARY_DIR}/archetypes)
 add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
 add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
-if(${output})
-  add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
-endif()
 
 set(TEST_DIRECTORIES "")
 
@@ -26,10 +23,6 @@ elseif(${mpi} AND ${output})
 endif()
 
 list(APPEND TEST_DIRECTORIES output)
-
-if(${output})
-  list(APPEND TEST_DIRECTORIES checkpoint)
-endif()
 
 foreach(test_dir IN LISTS TEST_DIRECTORIES)
   add_subdirectory(${SRC_DIR}/${test_dir}/tests

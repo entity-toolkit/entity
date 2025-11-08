@@ -26,6 +26,20 @@ namespace ntt::defaults {
   const std::string ph_pusher      = "Photon";
   const timestep_t  clear_interval = 100;
 
+  namespace fieldsolver {
+    const real_t delta_x = 0.0;
+
+    const real_t delta_y = 0.0;
+    const real_t beta_xy = 0.0;
+    const real_t beta_yx = 0.0;
+
+    const real_t delta_z = 0.0;
+    const real_t beta_xz = 0.0;
+    const real_t beta_zx = 0.0;
+    const real_t beta_yz = 0.0;
+    const real_t beta_zy = 0.0;
+  } // namespace fieldsolver
+
   namespace qsph {
     const real_t r0 = 0.0;
     const real_t h  = 0.0;
@@ -51,7 +65,7 @@ namespace ntt::defaults {
   } // namespace bc
 
   namespace output {
-    const std::string              format           = "hdf5";
+    const std::string              format           = "BPFile";
     const timestep_t               interval         = 100;
     const unsigned short           mom_smooth       = 0;
     const npart_t                  prtl_stride      = 100;

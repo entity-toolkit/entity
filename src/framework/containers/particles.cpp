@@ -22,10 +22,22 @@ namespace ntt {
                              float              ch,
                              npart_t            maxnpart,
                              const PrtlPusher&  pusher,
+                             bool               use_tracking,
                              bool               use_gca,
                              const Cooling&     cooling,
-                             unsigned short     npld)
-    : ParticleSpecies(index, label, m, ch, maxnpart, pusher, use_gca, cooling, npld) {
+                             unsigned short     npld_r,
+                             unsigned short     npld_i)
+    : ParticleSpecies(index,
+                      label,
+                      m,
+                      ch,
+                      maxnpart,
+                      pusher,
+                      use_tracking,
+                      use_gca,
+                      cooling,
+                      npld_r,
+                      npld_i) {
 
     if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
       i1       = array_t<int*> { label + "_i1", maxnpart };
@@ -56,8 +68,11 @@ namespace ntt {
 
     tag = array_t<short*> { label + "_tag", maxnpart };
 
-    if (npld > 0) {
-      pld = array_t<real_t**> { label + "_pld", maxnpart, npld };
+    if (npld_r > 0) {
+      pld_r = array_t<real_t**> { label + "_pld_r", maxnpart, npld_r };
+    }
+    if (npld_i > 0) {
+      pld_i = array_t<npart_t**> { label + "_pld_i", maxnpart, npld_i };
     }
 
     if ((D == Dim::_2D) && (C != Coord::Cart)) {
@@ -206,8 +221,12 @@ namespace ntt {
       RemoveDeadInArray(phi, indices_alive);
     }
 
-    if (npld() > 0) {
-      RemoveDeadInArray(pld, indices_alive);
+    if (npld_r() > 0) {
+      RemoveDeadInArray(pld_r, indices_alive);
+    }
+
+    if (npld_i() > 0) {
+      RemoveDeadInArray(pld_i, indices_alive);
     }
 
     Kokkos::Experimental::fill(
