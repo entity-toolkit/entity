@@ -40,8 +40,12 @@ namespace arch {
   struct Uniform : public SpatialDistribution<S, M> {
     Uniform(const M& metric) : SpatialDistribution<S, M> { metric } {}
 
-    Inline auto operator()(const coord_t<M::Dim>&) const -> real_t {
-      return ONE;
+    Inline auto operator()(const coord_t<M::Dim>&,
+                           real_t& nppc_distribution,
+                           real_t& weight_distribution) const {
+      nppc_distribution = ONE;
+      weight_distribution = ONE;
+      // return nppc_distribution;
     }
   };
 
@@ -65,7 +69,9 @@ namespace arch {
       , target_density { target_density }
       , target_max_density { target_max_density } {}
 
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph,
+                           real_t& nppc_distribution,
+                           real_t& weight_distribution) const {
       coord_t<M::Dim> x_Cd { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd);
       real_t dens { ZERO };
@@ -85,9 +91,13 @@ namespace arch {
       }
       const auto target = target_density(x_Ph);
       if (0.9 * target > dens) {
-        return (target - dens) / target_max_density;
+        nppc_distribution = (target - dens) / target_max_density;
+        weight_distribution = ONE;
+        // return nppc_distribution;
       } else {
-        return ZERO;
+        nppc_distribution = ZERO;
+        weight_distribution = ONE;
+        // return nppc_distribution;
       }
     }
   };

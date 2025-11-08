@@ -675,7 +675,9 @@ namespace kernel {
         coord_t<Dim::_1D> x_Cd { i1_ + HALF };
         coord_t<Dim::_1D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        spatial_dist(x_Ph, ppc_dist, weight_dist);
+        const auto ppc = static_cast<npart_t>(ppc0 * ppc_dist);
         if (ppc == 0) {
           return;
         }
@@ -704,10 +706,10 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            weights_1(index + offset1) = ONE * weight_dist;
+            weights_2(index + offset2) = ONE * weight_dist;
           } else {
-            const auto wei = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+            const auto wei = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0 * weight_dist;
             weights_1(index + offset1) = wei;
             weights_2(index + offset2) = wei;
           }
@@ -731,7 +733,9 @@ namespace kernel {
           x_Cd_[2] = ZERO;
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        spatial_dist(x_Ph, ppc_dist, weight_dist);
+        const auto ppc = static_cast<npart_t>(ppc0 * ppc_dist);
         if (ppc == 0) {
           return;
         }
@@ -774,10 +778,10 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            weights_1(index + offset1) = ONE * weight_dist;
+            weights_2(index + offset2) = ONE * weight_dist;
           } else {
-            const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
+            const auto wei = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0 * weight_dist;
             weights_1(index + offset1) = wei;
             weights_2(index + offset2) = wei;
           }
@@ -798,7 +802,9 @@ namespace kernel {
         coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
         coord_t<Dim::_3D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        const auto ppc = static_cast<npart_t>(ppc0 * spatial_dist(x_Ph));
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        spatial_dist(x_Ph, ppc_dist, weight_dist);
+        const auto ppc = static_cast<npart_t>(ppc0 * ppc_dist);
         if (ppc == 0) {
           return;
         }
@@ -847,12 +853,12 @@ namespace kernel {
           tags_1(index + offset1) = ParticleTag::alive;
           tags_2(index + offset2) = ParticleTag::alive;
           if (M::CoordType == Coord::Cart) {
-            weights_1(index + offset1) = ONE;
-            weights_2(index + offset2) = ONE;
+            weights_1(index + offset1) = ONE * weight_dist;
+            weights_2(index + offset2) = ONE * weight_dist;
           } else {
             const auto wei = metric.sqrt_det_h(
                                { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
-                             inv_V0;
+                             inv_V0 * weight_dist;
             weights_1(index + offset1) = wei;
             weights_2(index + offset2) = wei;
           }
