@@ -16,6 +16,16 @@ function(set_precision precision_name)
   endif()
 endfunction()
 
+# ------------------------------- Shape function --------------------------- #
+function(set_shape_order shape_order)
+  if(${deposit} STREQUAL "esirkepov")
+    if(${shape_order} GREATER 11)
+      message(FATAL_ERROR "Shape order must be between 1 and 11.")
+    endif()
+    add_compile_options("-DSHAPE_ORDER=${shape_order}")
+  endif()
+endfunction()
+
 # ---------------------------- Problem generator --------------------------- #
 function(set_problem_generator pgen_name)
   if(pgen_name STREQUAL ".")
