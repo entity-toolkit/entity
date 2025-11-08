@@ -17,8 +17,8 @@
 
 void cleanup() {
   namespace fs = std::filesystem;
-  fs::path tempfile_path { "test.h5" };
-  fs::remove(tempfile_path);
+  fs::path tempfile_path { "test.bp" };
+  fs::remove_all(tempfile_path);
 }
 
 #define CEILDIV(a, b)                                                          \
@@ -61,7 +61,7 @@ auto main(int argc, char* argv[]) -> int {
     {
       // write
       auto writer = out::Writer();
-      writer.init(&adios, "hdf5", "test", false);
+      writer.init(&adios, "BPFile", "test", false);
       writer.defineMeshLayout({ static_cast<ncells_t>(mpi_size) * nx1 },
                               { static_cast<ncells_t>(mpi_rank) * nx1 },
                               { nx1 },
@@ -91,16 +91,16 @@ auto main(int argc, char* argv[]) -> int {
     {
       // read
       adios2::IO io = adios.DeclareIO("read-test");
-      io.SetEngine("HDF5");
-      adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read);
-      raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
-                     "NGhosts is not correct",
-                     HERE);
-      raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 1,
-                     "Dimension is not correct",
-                     HERE);
-      for (std::size_t step = 0; reader.BeginStep() == adios2::StepStatus::OK;
-           ++step) {
+      io.SetEngine("BPFile");
+      adios2::Engine reader = io.Open("test.bp", adios2::Mode::Read);
+      for (auto step = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++step) {
+        raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
+                       "NGhosts is not correct",
+                       HERE);
+        raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 1,
+                       "Dimension is not correct",
+                       HERE);
+
         timestep_t step_read;
         simtime_t  time_read;
 
@@ -173,6 +173,7 @@ auto main(int argc, char* argv[]) -> int {
           }
           ++cntr;
         }
+        reader.EndStep();
       }
       reader.Close();
     }
@@ -186,7 +187,9 @@ auto main(int argc, char* argv[]) -> int {
     Kokkos::finalize();
     return 1;
   }
-  cleanup();
+  CallOnce([]() {
+    cleanup();
+  });
   MPI_Finalize();
   Kokkos::finalize();
   return 0;
