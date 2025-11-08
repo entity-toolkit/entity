@@ -9,13 +9,10 @@
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
-#include "archetypes/field_setter.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
-#include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
-#include <algorithm>
 #include <utility>
 
 namespace user {
@@ -141,76 +138,7 @@ namespace user {
       }
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
-
-      /*
-       *  Plasma setup as partially filled box
-       *
-       *  Plasma setup:
-       *
-       * global_xmin                            global_xmax
-       * |                                      |
-       * V                                      V
-       * |:::::::::::|..........................|
-       *             ^
-       *             |
-       *        filling_fraction
-       */
-
-      // minimum and maximum position of particles
-      // real_t xg_min = global_xmin;
-      // real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
-      //
-      // // define box to inject into
-      // boundaries_t<real_t> box;
-      // // loop over all dimensions
-      // for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
-      //   // compute the range for the x-direction
-      //   if (d == static_cast<decltype(d)>(in::x1)) {
-      //     box.push_back({ xg_min, xg_max });
-      //   } else {
-      //     // inject into full range in other directions
-      //     box.push_back(Range::All);
-      //   }
-      // }
-
-      // species #1 -> e^-
-      // species #2 -> protons
-
-      // energy distribution of the particles
-      // const auto temperatures = std::make_pair(temperature,
-      //                                          temperature_ratio * temperature);
-      // const auto drifts       = std::make_pair(
-      //   std::vector<real_t> { -drift_ux, ZERO, ZERO },
-      //   std::vector<real_t> { -drift_ux, ZERO, ZERO });
-      // arch::InjectUniformMaxwellians<S, M>(params,
-      //                                      domain,
-      //                                      ONE,
-      //                                      temperatures,
-      //                                      { 1, 2 },
-      //                                      drifts,
-      //                                      false,
-      //                                      box);
-      // const auto maxwellian_1 = arch::experimental::Maxwellian<S, M>(
-      //   domain.mesh.metric,
-      //   domain.random_pool,
-      //   temperatures.first,
-      //   { -drift_ux, ZERO, ZERO });
-      // const auto maxwellian_2 = arch::experimental::Maxwellian<S, M>(
-      //   domain.mesh.metric,
-      //   domain.random_pool,
-      //   temperatures.second,
-      //   { -drift_ux, ZERO, ZERO });
-      // arch::InjectReplenishConst<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
-      //   params,
-      //   domain,
-      //   ONE,
-      //   { 1, 2 },
-      //   maxwellian_1,
-      //   maxwellian_2,
-      //   0.95,
-      //   box);
-    }
+    inline void InitPrtls(Domain<S, M>&) {}
 
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
 
