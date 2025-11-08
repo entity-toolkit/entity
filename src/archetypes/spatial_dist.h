@@ -5,6 +5,7 @@
  *   - arch::SpatialDistribution<>
  *   - arch::Uniform<> : arch::SpatialDistribution<>
  *   - arch::Replenish<> : arch::SpatialDistribution<>
+ *   - arch::ReplenishConst<> : arch::SpatialDistribution<>
  * @namespace
  *   - arch::
  * @note
@@ -45,7 +46,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, class M, class T>
+  template <SimEngine::type S, class M, class T, int N = 6>
   struct Replenish : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, 6> density;
@@ -54,16 +55,28 @@ namespace arch {
     const T      target_density;
     const real_t target_max_density;
 
+    const real_t fill_ratio;
+
     Replenish(const M&                    metric,
-              const ndfield_t<M::Dim, 6>& density,
+              const ndfield_t<M::Dim, N>& density,
               idx_t                       idx,
               const T&                    target_density,
-              real_t                      target_max_density)
+              real_t                      target_max_density,
+              real_t                      fill_ratio = 0.9)
       : SpatialDistribution<S, M> { metric }
       , density { density }
       , idx { idx }
       , target_density { target_density }
-      , target_max_density { target_max_density } {}
+      , target_max_density { target_max_density }
+      , fill_ratio { fill_ratio } {
+      raise::ErrorIf(target_max_density <= ZERO,
+                     "Target max density must be positive",
+                     HERE);
+      raise::ErrorIf(fill_ratio <= ZERO or fill_ratio > ONE,
+                     "Fill ratio must be in (0, 1]",
+                     HERE);
+      raise::ErrorIf(idx >= N, "Index for density field is out of bounds", HERE);
+    }
 
     Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
       coord_t<M::Dim> x_Cd { ZERO };
@@ -84,8 +97,60 @@ namespace arch {
         raise::KernelError(HERE, "Invalid dimension");
       }
       const auto target = target_density(x_Ph);
-      if (0.9 * target > dens) {
+      if (fill_ratio * target > dens) {
         return (target - dens) / target_max_density;
+      } else {
+        return ZERO;
+      }
+    }
+  };
+
+  template <SimEngine::type S, class M, int N = 6>
+  struct ReplenishConst : public SpatialDistribution<S, M> {
+    using SpatialDistribution<S, M>::metric;
+    const ndfield_t<M::Dim, N> density;
+    const idx_t                idx;
+
+    const real_t target_density;
+    const real_t fill_ratio;
+
+    ReplenishConst(const M&                    metric,
+                   const ndfield_t<M::Dim, N>& density,
+                   idx_t                       idx,
+                   real_t                      target_density,
+                   real_t                      fill_ratio = 0.9)
+      : SpatialDistribution<S, M> { metric }
+      , density { density }
+      , idx { idx }
+      , target_density { target_density }
+      , fill_ratio { fill_ratio } {
+      raise::ErrorIf(target_density <= ZERO, "Target density must be positive", HERE);
+      raise::ErrorIf(fill_ratio <= ZERO or fill_ratio > ONE,
+                     "Fill ratio must be in (0, 1]",
+                     HERE);
+      raise::ErrorIf(idx >= N, "Index for density field is out of bounds", HERE);
+    }
+
+    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
+      coord_t<M::Dim> x_Cd { ZERO };
+      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd);
+      real_t dens { ZERO };
+      if constexpr (M::Dim == Dim::_1D) {
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS, idx);
+      } else if constexpr (M::Dim == Dim::_2D) {
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[1]) + N_GHOSTS,
+                       idx);
+      } else if constexpr (M::Dim == Dim::_3D) {
+        dens = density(static_cast<ncells_t>(x_Cd[0]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[1]) + N_GHOSTS,
+                       static_cast<ncells_t>(x_Cd[2]) + N_GHOSTS,
+                       idx);
+      } else {
+        raise::KernelError(HERE, "Invalid dimension");
+      }
+      if (fill_ratio * target_density > dens) {
+        return (target_density - dens) / target_density;
       } else {
         return ZERO;
       }

@@ -360,67 +360,67 @@ namespace arch {
     ~AtmosphereInjector() = default;
   };
 
-  template <SimEngine::type S, class M, in O>
-  struct MovingInjector {
-    struct TargetDensityProfile {
-      const real_t nmax, xinj, xdrift;
-
-      TargetDensityProfile(real_t xinj, real_t xdrift, real_t nmax)
-        : xinj { xinj }
-        , xdrift { xdrift }
-        , nmax { nmax } {}
-
-      Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
-        if constexpr ((O == in::x1) or
-                      (O == in::x2 and (M::Dim == Dim::_2D or M::Dim == Dim::_3D)) or
-                      (O == in::x3 and M::Dim == Dim::_3D)) {
-          const auto xi = x_Ph[static_cast<dim_t>(O)];
-          // + direction
-          if (xi < xdrift or xi >= xinj) {
-            return ZERO;
-          } else {
-            if constexpr (M::CoordType == Coord::Cart) {
-              return nmax;
-            } else {
-              raise::KernelError(
-                HERE,
-                "Moving injector in +x cannot be applied for non-cartesian");
-              return ZERO;
-            }
-          }
-        } else {
-          raise::KernelError(HERE, "Wrong direction");
-          return ZERO;
-        }
-      }
-    };
-
-    using energy_dist_t  = Maxwellian<S, M>;
-    using spatial_dist_t = Replenish<S, M, TargetDensityProfile>;
-    static_assert(M::is_metric, "M must be a metric class");
-    static constexpr bool      is_nonuniform_injector { true };
-    static constexpr Dimension D { M::Dim };
-    static constexpr Coord     C { M::CoordType };
-
-    const energy_dist_t               energy_dist;
-    const TargetDensityProfile        target_density;
-    const spatial_dist_t              spatial_dist;
-    const std::pair<spidx_t, spidx_t> species;
-
-    MovingInjector(const M&                           metric,
-                   const ndfield_t<M::Dim, 6>&        density,
-                   const energy_dist_t&               energy_dist,
-                   real_t                             xinj,
-                   real_t                             xdrift,
-                   real_t                             nmax,
-                   const std::pair<spidx_t, spidx_t>& species)
-      : energy_dist { energy_dist }
-      , target_density { xinj, xdrift, nmax }
-      , spatial_dist { metric, density, 0, target_density, nmax }
-      , species { species } {}
-
-    ~MovingInjector() = default;
-  };
+  // template <SimEngine::type S, class M, in O>
+  // struct MovingInjector {
+  //   struct TargetDensityProfile {
+  //     const real_t nmax, xinj, xdrift;
+  //
+  //     TargetDensityProfile(real_t xinj, real_t xdrift, real_t nmax)
+  //       : xinj { xinj }
+  //       , xdrift { xdrift }
+  //       , nmax { nmax } {}
+  //
+  //     Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
+  //       if constexpr ((O == in::x1) or
+  //                     (O == in::x2 and (M::Dim == Dim::_2D or M::Dim ==
+  //                     Dim::_3D)) or (O == in::x3 and M::Dim == Dim::_3D)) {
+  //         const auto xi = x_Ph[static_cast<dim_t>(O)];
+  //         // + direction
+  //         if (xi < xdrift or xi >= xinj) {
+  //           return ZERO;
+  //         } else {
+  //           if constexpr (M::CoordType == Coord::Cart) {
+  //             return nmax;
+  //           } else {
+  //             raise::KernelError(
+  //               HERE,
+  //               "Moving injector in +x cannot be applied for non-cartesian");
+  //             return ZERO;
+  //           }
+  //         }
+  //       } else {
+  //         raise::KernelError(HERE, "Wrong direction");
+  //         return ZERO;
+  //       }
+  //     }
+  //   };
+  //
+  //   using energy_dist_t  = Maxwellian<S, M>;
+  //   using spatial_dist_t = Replenish<S, M, TargetDensityProfile>;
+  //   static_assert(M::is_metric, "M must be a metric class");
+  //   static constexpr bool      is_nonuniform_injector { true };
+  //   static constexpr Dimension D { M::Dim };
+  //   static constexpr Coord     C { M::CoordType };
+  //
+  //   const energy_dist_t               energy_dist;
+  //   const TargetDensityProfile        target_density;
+  //   const spatial_dist_t              spatial_dist;
+  //   const std::pair<spidx_t, spidx_t> species;
+  //
+  //   MovingInjector(const M&                           metric,
+  //                  const ndfield_t<M::Dim, 6>&        density,
+  //                  const energy_dist_t&               energy_dist,
+  //                  real_t                             xinj,
+  //                  real_t                             xdrift,
+  //                  real_t                             nmax,
+  //                  const std::pair<spidx_t, spidx_t>& species)
+  //     : energy_dist { energy_dist }
+  //     , target_density { xinj, xdrift, nmax }
+  //     , spatial_dist { metric, density, 0, target_density, nmax }
+  //     , species { species } {}
+  //
+  //   ~MovingInjector() = default;
+  // };
 
   // /**
   //  * @brief Injects uniform number density of particles everywhere in the domain
@@ -730,6 +730,119 @@ namespace arch {
       domain.species[injector.species.second - 1].set_npart(
         domain.species[injector.species.second - 1].npart() + n_inj);
     }
+  }
+
+  template <SimEngine::type S, class M, class ED1, class ED2>
+  void InjectReplenishConst(const SimulationParams&            params,
+                            Domain<S, M>&                      domain,
+                            real_t                             target_tot_ndens,
+                            const std::pair<spidx_t, spidx_t>& species,
+                            const ED1&                         energy_dist_1,
+                            const ED2&                         energy_dist_2,
+                            real_t                      density_tolerance = 0.9,
+                            const boundaries_t<real_t>& box = {}) {
+    static_assert(M::is_metric, "M must be a metric class");
+    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
+    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
+
+    range_t<M::Dim> cell_range;
+    if (box.size() == 0) {
+      cell_range = domain.mesh.rangeActiveCells();
+    } else {
+      raise::ErrorIf(box.size() != M::Dim,
+                     "Box must have the same dimension as the mesh",
+                     HERE);
+      boundaries_t<bool> incl_ghosts;
+      for (auto d = 0; d < M::Dim; ++d) {
+        incl_ghosts.push_back({ false, false });
+      }
+      const auto extent = domain.mesh.ExtentToRange(box, incl_ghosts);
+      tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
+      for (auto d = 0; d < M::Dim; ++d) {
+        x_min[d] = extent[d].first;
+        x_max[d] = extent[d].second;
+      }
+      cell_range = CreateRangePolicy<M::Dim>(x_min, x_max);
+    }
+
+    const idx_t buff_idx = 0u;
+    {
+      // compute total number density of the species
+      const auto use_weights = params.template get<bool>(
+        "particles.use_weights");
+      const auto ni2    = domain.mesh.n_active(in::x2);
+      const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
+
+      auto scatter_buff = Kokkos::Experimental::create_scatter_view(
+        domain.fields.buff);
+      Kokkos::deep_copy(domain.fields.buff, ZERO);
+      for (const auto sp : std::vector<spidx_t> { species.first, species.second }) {
+        const auto& prtl_spec = domain.species[sp - 1];
+        // clang-format off
+        Kokkos::parallel_for(
+          "ComputeMoments",
+          prtl_spec.rangeActiveParticles(),
+          kernel::ParticleMoments_kernel<S, M, FldsID::Nppc, 3>({}, scatter_buff, buff_idx,
+                                                             prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                             prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                             prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                             prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                             prtl_spec.mass(), prtl_spec.charge(),
+                                                             use_weights,
+                                                             domain.mesh.metric, domain.mesh.flds_bc(),
+                                                             ni2, inv_n0, 0u));
+        // clang-format on
+      }
+      Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
+    }
+    // const auto spatial_dist = ReplenishConst<S, M, 3> { domain.mesh.metric,
+    //                                                     domain.fields.buff,
+    //                                                     buff_idx,
+    //                                                     target_tot_ndens,
+    //                                                     density_tolerance };
+
+    const auto ppc = target_tot_ndens *
+                     params.template get<real_t>("particles.ppc0") * HALF;
+
+    auto injector_kernel =
+      kernel::experimental::ConstNPPCInjector_kernel<S, M, ED1, ED2, 3>(
+        ppc,
+        species.first,
+        species.second,
+        domain.species[species.first - 1],
+        domain.species[species.second - 1],
+        domain.species[species.first - 1].npart(),
+        domain.species[species.second - 1].npart(),
+        domain.mesh.metric,
+        energy_dist_1,
+        energy_dist_2,
+        domain.fields.buff,
+        buff_idx,
+        ONE / params.template get<real_t>("scales.V0"),
+        domain.random_pool);
+    // auto injector_kernel =
+    //   kernel::experimental::NonUniformInjector_kernel<S, M, ED1, ED2, decltype(spatial_dist)>(
+    //     ppc,
+    //     species.first,
+    //     species.second,
+    //     domain.species[species.first - 1],
+    //     domain.species[species.second - 1],
+    //     domain.species[species.first - 1].npart(),
+    //     domain.species[species.second - 1].npart(),
+    //     domain.mesh.metric,
+    //     energy_dist_1,
+    //     energy_dist_2,
+    //     spatial_dist,
+    //     ONE / params.template get<real_t>("scales.V0"),
+    //     domain.random_pool);
+
+    Kokkos::parallel_for("InjectReplenishConst", cell_range, injector_kernel);
+
+    const auto n_inj = injector_kernel.number_injected();
+    domain.species[species.first - 1].set_npart(
+      domain.species[species.first - 1].npart() + n_inj);
+    domain.species[species.second - 1].set_npart(
+      domain.species[species.second - 1].npart() + n_inj);
   }
 
 } // namespace arch
