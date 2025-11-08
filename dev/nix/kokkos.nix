@@ -7,7 +7,7 @@
 
 let
   name = "kokkos";
-  pversion = "4.6.01";
+  pversion = "4.7.01";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       llvm.rocm-merged-llvm
@@ -56,7 +56,7 @@ pkgs.stdenv.mkDerivation rec {
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
     rev = "${pversion}";
-    sha256 = "sha256-+yszUbdHqhIkJZiGLZ9Ln4DYUosuJWKhO8FkbrY0/tY=";
+    sha256 = "sha256-MgphOsKE8umgYxVQZzex+elgvDDC09JaMCoU5YXaLco=";
   };
 
   nativeBuildInputs = with pkgs; [
@@ -92,15 +92,4 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     cmake --install build
   '';
-
-  # cmakeFlags = [
-  #   "-D CMAKE_CXX_STANDARD=17"
-  #   "-D CMAKE_CXX_EXTENSIONS=OFF"
-  #   "-D CMAKE_POSITION_INDEPENDENT_CODE=TRUE"
-  #   "-D Kokkos_ARCH_${getArch { }}=ON"
-  #   (if gpu != "none" then "-D Kokkos_ENABLE_${gpu}=ON" else "")
-  #   "-D CMAKE_BUILD_TYPE=Release"
-  # ] ++ (cmakeExtraFlags.${gpu} src);
-
-  # enableParallelBuilding = true;
 }

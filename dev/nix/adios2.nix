@@ -43,9 +43,23 @@ stdenv.mkDerivation {
   ]
   ++ (
     if hdf5 then
-      (if mpi then [ pkgs.hdf5-mpi ] else [ pkgs.hdf5-cpp ])
+      (
+        if mpi then
+          [
+            pkgs.hdf5-mpi
+          ]
+        else
+          [ pkgs.hdf5-cpp ]
+      )
     else
-      (if mpi then [ pkgs.mpi ] else [ ])
+      (
+        if mpi then
+          [
+            pkgs.mpi
+          ]
+        else
+          [ ]
+      )
   );
 
   configurePhase = ''
