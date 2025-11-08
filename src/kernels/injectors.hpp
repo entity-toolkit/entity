@@ -737,24 +737,12 @@ namespace kernel {
       }
 
       Inline auto get_inj_ppc(real_t& ppc_real) const -> npart_t {
-        // const auto delta_ppc = ;
-        // if (delta_ppc > 100.0) {
-        //   Kokkos::printf(
-        //     "Warning: ConstNPPCInjector_kernel::get_inj_ppc(): "
-        //     "ppc_real too small compared to ppc0: ppc0=%f, ppc_real=%f\n",
-        //     ppc0,
-        //     ppc_real);
-        //   Kokkos::abort("Error: ConstNPPCInjector_kernel::get_inj_ppc(): "
-        //                 "ppc_real too small compared to ppc0");
-        // }
-        return static_cast<npart_t>(math::max(ppc0 - ppc_real, static_cast<real_t>(0.0)));
+        return static_cast<npart_t>(
+          math::max(ppc0 - ppc_real, static_cast<real_t>(0.0)));
       }
 
       Inline void operator()(index_t i1) const {
         if constexpr (M::Dim == Dim::_1D) {
-          // coord_t<Dim::_1D> x_Cd { i1_ + HALF };
-          // coord_t<Dim::_1D> x_Ph { ZERO };
-          // metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
           const auto ppc = get_inj_ppc(nppc_array(i1, nppc_idx));
           const auto i1_ = COORD(i1);
           for (auto p { 0u }; p < ppc; ++p) {
@@ -872,77 +860,78 @@ namespace kernel {
       }
 
       Inline void operator()(index_t i1, index_t i2, index_t i3) const {
-        // if constexpr (M::Dim == Dim::_3D) {
-        //   const auto        i1_ = COORD(i1);
-        //   const auto        i2_ = COORD(i2);
-        //   const auto        i3_ = COORD(i3);
-        //   coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
-        //   coord_t<Dim::_3D> x_Ph { ZERO };
-        //   metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        //   const auto ppc_real = static_cast<real_t>(ppc0) * spatial_dist(x_Ph);
-        //   auto       ppc      = static_cast<npart_t>(ppc_real);
-        //   auto       rand_gen = random_pool.get_state();
-        //   if (Random<real_t>(rand_gen) < (ppc_real - math::floor(ppc_real))) {
-        //     ++ppc;
-        //   }
-        //   for (auto p { 0u }; p < ppc; ++p) {
-        //     const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
-        //     const auto dx1   = Random<prtldx_t>(rand_gen);
-        //     const auto dx2   = Random<prtldx_t>(rand_gen);
-        //     const auto dx3   = Random<prtldx_t>(rand_gen);
-        //
-        //     i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
-        //     dx1s_1(index + offset1) = dx1;
-        //     i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
-        //     dx1s_2(index + offset2) = dx1;
-        //
-        //     i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
-        //     dx2s_1(index + offset1) = dx2;
-        //     i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
-        //     dx2s_2(index + offset2) = dx2;
-        //
-        //     i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
-        //     dx3s_1(index + offset1) = dx3;
-        //     i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
-        //     dx3s_2(index + offset2) = dx3;
-        //
-        //     vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-        //     energy_dist_1(x_Ph, v_T, spidx1);
-        //     if constexpr (S == SimEngine::SRPIC) {
-        //       metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-        //     } else if constexpr (S == SimEngine::GRPIC) {
-        //       metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
-        //     }
-        //     ux1s_1(index + offset1) = v_Cd[0];
-        //     ux2s_1(index + offset1) = v_Cd[1];
-        //     ux3s_1(index + offset1) = v_Cd[2];
-        //     energy_dist_2(x_Ph, v_T, spidx2);
-        //     if constexpr (S == SimEngine::SRPIC) {
-        //       metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-        //     } else if constexpr (S == SimEngine::GRPIC) {
-        //       metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
-        //     }
-        //     ux1s_2(index + offset2) = v_Cd[0];
-        //     ux2s_2(index + offset2) = v_Cd[1];
-        //     ux3s_2(index + offset2) = v_Cd[2];
-        //
-        //     tags_1(index + offset1) = ParticleTag::alive;
-        //     tags_2(index + offset2) = ParticleTag::alive;
-        //     if (M::CoordType == Coord::Cart) {
-        //       weights_1(index + offset1) = ONE;
-        //       weights_2(index + offset2) = ONE;
-        //     } else {
-        //       const auto wei = metric.sqrt_det_h(
-        //                          { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
-        //                        inv_V0;
-        //       weights_1(index + offset1) = wei;
-        //       weights_2(index + offset2) = wei;
-        //     }
-        //   }
-        //   random_pool.free_state(rand_gen);
-        // } else {
-        //   raise::KernelError(HERE, "NonUniformInjector_kernel 3D called for 1D/2D");
-        // }
+        if constexpr (M::Dim == Dim::_3D) {
+          const auto ppc = get_inj_ppc(nppc_array(i1, i2, i3, nppc_idx));
+          const auto i1_ = COORD(i1);
+          const auto i2_ = COORD(i2);
+          const auto i3_ = COORD(i3);
+          for (auto p { 0u }; p < ppc; ++p) {
+            const auto index    = Kokkos::atomic_fetch_add(&idx(), 1);
+            auto       rand_gen = random_pool.get_state();
+            const auto dx1      = Random<prtldx_t>(rand_gen);
+            const auto dx2      = Random<prtldx_t>(rand_gen);
+            const auto dx3      = Random<prtldx_t>(rand_gen);
+            random_pool.free_state(rand_gen);
+
+            coord_t<Dim::_3D>   x_Cd { i1_ + dx1, i2_ + dx2, i3_ + dx3 };
+            coord_t<Dim::_3D>   x_Ph { ZERO };
+            coord_t<M::PrtlDim> x_Cd_ { ZERO };
+            x_Cd_[0] = x_Cd[0];
+            x_Cd_[1] = x_Cd[1];
+            x_Cd_[2] = x_Cd[2];
+            metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+
+            i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
+            dx1s_1(index + offset1) = dx1;
+            i1s_2(index + offset2)  = static_cast<int>(i1) - N_GHOSTS;
+            dx1s_2(index + offset2) = dx1;
+
+            i2s_1(index + offset1)  = static_cast<int>(i2) - N_GHOSTS;
+            dx2s_1(index + offset1) = dx2;
+            i2s_2(index + offset2)  = static_cast<int>(i2) - N_GHOSTS;
+            dx2s_2(index + offset2) = dx2;
+
+            i3s_1(index + offset1)  = static_cast<int>(i3) - N_GHOSTS;
+            dx3s_1(index + offset1) = dx3;
+            i3s_2(index + offset2)  = static_cast<int>(i3) - N_GHOSTS;
+            dx3s_2(index + offset2) = dx3;
+
+            vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
+            energy_dist_1(x_Ph, v_T, spidx1);
+            if constexpr (S == SimEngine::SRPIC) {
+              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
+            } else if constexpr (S == SimEngine::GRPIC) {
+              metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+            }
+            ux1s_1(index + offset1) = v_Cd[0];
+            ux2s_1(index + offset1) = v_Cd[1];
+            ux3s_1(index + offset1) = v_Cd[2];
+            energy_dist_2(x_Ph, v_T, spidx2);
+            if constexpr (S == SimEngine::SRPIC) {
+              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
+            } else if constexpr (S == SimEngine::GRPIC) {
+              metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+            }
+            ux1s_2(index + offset2) = v_Cd[0];
+            ux2s_2(index + offset2) = v_Cd[1];
+            ux3s_2(index + offset2) = v_Cd[2];
+
+            tags_1(index + offset1) = ParticleTag::alive;
+            tags_2(index + offset2) = ParticleTag::alive;
+            if (M::CoordType == Coord::Cart) {
+              weights_1(index + offset1) = ONE;
+              weights_2(index + offset2) = ONE;
+            } else {
+              const auto wei = metric.sqrt_det_h(
+                                 { i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
+                               inv_V0;
+              weights_1(index + offset1) = wei;
+              weights_2(index + offset2) = wei;
+            }
+          }
+        } else {
+          raise::KernelError(HERE, "NonUniformInjector_kernel 3D called for 1D/2D");
+        }
       }
     }; // struct NonUniformInjector_kernel
 
