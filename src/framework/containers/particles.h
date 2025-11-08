@@ -15,6 +15,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
@@ -22,6 +23,10 @@
 #include "framework/containers/species.h"
 
 #include <Kokkos_Core.hpp>
+
+#if defined(OUTPUT_ENABLED)
+  #include <adios2.h>
+#endif
 
 #include <string>
 #include <vector>
@@ -38,6 +43,7 @@ namespace ntt {
   private:
     // Number of currently active (used) particles
     npart_t m_npart { 0 };
+    npart_t m_counter { 0 };
     bool    m_is_sorted { false };
 
 #if !defined(MPI_ENABLED)
@@ -60,8 +66,10 @@ namespace ntt {
     array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
     // Array to tag the particles
     array_t<short*>    tag;
-    // Array to store the particle payloads
-    array_t<real_t**>  pld;
+    // Array to store real-valued payloads
+    array_t<real_t**>  pld_r;
+    // Array to store integer-valued payloads
+    array_t<npart_t**> pld_i;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>   phi;
 
@@ -76,9 +84,11 @@ namespace ntt {
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
      * @param pusher The pusher assigned for the species
+     * @param use_tracking Use particle tracking for the species
      * @param use_gca Use hybrid GCA pusher for the species
      * @param cooling The cooling mechanism assigned for the species
-     * @param npld The number of payloads for the species
+     * @param npld_r The number of real-valued payloads for the species
+     * @param npld_i The number of integer-valued payloads for the species
      */
     Particles(spidx_t            index,
               const std::string& label,
@@ -87,8 +97,10 @@ namespace ntt {
               npart_t            maxnpart,
               const PrtlPusher&  pusher,
               bool               use_gca,
+              bool               use_tracking,
               const Cooling&     cooling,
-              unsigned short     npld = 0);
+              unsigned short     npld_r = 0,
+              unsigned short     npld_i = 0);
 
     /**
      * @brief Constructor for the particle container
@@ -102,9 +114,11 @@ namespace ntt {
                   spec.charge(),
                   spec.maxnpart(),
                   spec.pusher(),
+                  spec.use_tracking(),
                   spec.use_gca(),
                   spec.cooling(),
-                  spec.npld()) {}
+                  spec.npld_r(),
+                  spec.npld_i()) {}
 
     Particles(const Particles&)            = delete;
     Particles& operator=(const Particles&) = delete;
@@ -136,6 +150,17 @@ namespace ntt {
       return m_npart;
     }
 
+    /**
+     * @brief Get the particle counter
+     */
+    [[nodiscard]]
+    auto counter() const -> npart_t {
+      return m_counter;
+    }
+
+    /**
+     * @brief Check if particles are sorted by tag
+     */
     [[nodiscard]]
     auto is_sorted() const -> bool {
       return m_is_sorted;
@@ -169,8 +194,9 @@ namespace ntt {
       footprint             += sizeof(prtldx_t) * dx2_prev.extent(0);
       footprint             += sizeof(prtldx_t) * dx3_prev.extent(0);
       footprint             += sizeof(short) * tag.extent(0);
-      footprint             += sizeof(real_t) * pld.extent(0) * pld.extent(1);
-      footprint             += sizeof(real_t) * phi.extent(0);
+      footprint += sizeof(real_t) * pld_r.extent(0) * pld_r.extent(1);
+      footprint += sizeof(npart_t) * pld_i.extent(0) * pld_i.extent(1);
+      footprint += sizeof(real_t) * phi.extent(0);
       return footprint;
     }
 
@@ -206,6 +232,14 @@ namespace ntt {
       m_npart = n;
     }
 
+    /**
+     * @brief Set the particle counter
+     * @param n The counter value as a npart_t
+     */
+    void set_counter(npart_t n) {
+      m_counter = n;
+    }
+
     void set_unsorted() {
       m_is_sorted = false;
     }
@@ -220,7 +254,39 @@ namespace ntt {
      */
     void SyncHostDevice();
 
-    // void PrintTags();
+#if defined(MPI_ENABLED)
+    /**
+     * @brief Communicate particles across neighboring meshblocks
+     * @param dirs_to_comm The directions requiring communication
+     * @param shifts_in_x1 The coordinate shifts in x1 direction per each communicated particle
+     * @param shifts_in_x2 The coordinate shifts in x2 direction per each communicated particle
+     * @param shifts_in_x3 The coordinate shifts in x3 direction per each communicated particle
+     * @param send_ranks The map of ranks per each send direction
+     * @param recv_ranks The map of ranks per each recv direction
+     */
+    void Communicate(const dir::dirs_t<D>&,
+                     const array_t<int*>&,
+                     const array_t<int*>&,
+                     const array_t<int*>&,
+                     const dir::map_t<D, int>&,
+                     const dir::map_t<D, int>&);
+#endif
+
+#if defined(OUTPUT_ENABLED)
+    void OutputDeclare(adios2::IO&) const;
+
+    template <SimEngine::type S, class M>
+    void OutputWrite(adios2::IO&,
+                     adios2::Engine&,
+                     npart_t,
+                     std::size_t,
+                     std::size_t,
+                     const M&);
+
+    void CheckpointDeclare(adios2::IO&) const;
+    void CheckpointRead(adios2::IO&, adios2::Engine&, std::size_t, std::size_t);
+    void CheckpointWrite(adios2::IO&, adios2::Engine&, std::size_t, std::size_t) const;
+#endif
   };
 
 } // namespace ntt

@@ -18,8 +18,8 @@ using namespace ntt;
 
 void cleanup() {
   namespace fs = std::filesystem;
-  fs::path tempfile_path { "test.h5" };
-  fs::remove(tempfile_path);
+  fs::path tempfile_path { "test.bp" };
+  fs::remove_all(tempfile_path);
 }
 
 #define CEILDIV(a, b)                                                          \
@@ -71,7 +71,7 @@ auto main(int argc, char* argv[]) -> int {
     {
       // write
       auto writer = out::Writer();
-      writer.init(&adios, "hdf5", "test", false);
+      writer.init(&adios, "bpfile", "test", false);
       writer.defineMeshLayout({ nx1, nx2, nx3 },
                               { 0, 0, 0 },
                               { nx1, nx2, nx3 },
@@ -100,19 +100,20 @@ auto main(int argc, char* argv[]) -> int {
     {
       // read
       adios2::IO io = adios.DeclareIO("read-test");
-      io.SetEngine("hdf5");
-      adios2::Engine reader = io.Open("test.h5", adios2::Mode::Read);
-      const auto layoutRight = io.InquireAttribute<int>("LayoutRight").Data()[0] ==
-                               1;
-
-      raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
-                     "NGhosts is not correct",
-                     HERE);
-      raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 3,
-                     "Dimension is not correct",
-                     HERE);
+      io.SetEngine("BPFile");
+      adios2::Engine reader = io.Open("test.bp", adios2::Mode::Read);
 
       for (auto step = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++step) {
+        const auto layoutRight = io.InquireAttribute<int>("LayoutRight").Data()[0] ==
+                                 1;
+
+        raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
+                       "NGhosts is not correct",
+                       HERE);
+        raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 3,
+                       "Dimension is not correct",
+                       HERE);
+
         timestep_t step_read;
         simtime_t  time_read;
 

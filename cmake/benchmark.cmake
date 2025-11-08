@@ -20,7 +20,7 @@ add_executable(${exec} ${src})
 
 set(libs ntt_global ntt_metrics ntt_kernels ntt_archetypes ntt_framework)
 if(${output})
-  list(APPEND libs ntt_output ntt_checkpoint)
+  list(APPEND libs ntt_output)
 endif()
 add_dependencies(${exec} ${libs})
 target_link_libraries(${exec} PRIVATE ${libs} stdc++fs)
