@@ -4,7 +4,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 #include "utils/numeric.h"
@@ -140,15 +139,6 @@ namespace user {
 
   // constant particle density for particle boundaries
   template <SimEngine::type S, class M>
-  struct ConstDens {
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
-      return ONE;
-    }
-  };
-  template <SimEngine::type S, class M>
-  using spatial_dist_t = arch::Replenish<S, M, ConstDens<S, M>>;
-
-  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines { traits::compatible_with<SimEngine::SRPIC>::value };
@@ -224,21 +214,18 @@ namespace user {
       auto       edist_cs = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                              local_domain.random_pool,
                                              cs_temperature,
-                                             cs_drift_u,
-                                             in::x3,
-                                             false);
+                                                   { ZERO, ZERO, cs_drift_u });
       const auto sdist_cs = CurrentLayer<S, M>(local_domain.mesh.metric,
                                                cs_width,
                                                cs_x,
                                                cs_y);
-      const auto inj_cs = arch::NonUniformInjector<S, M, arch::Maxwellian, CurrentLayer>(
-        edist_cs,
+      arch::InjectNonUniform<S, M, decltype(edist_cs), decltype(edist_cs), decltype(sdist_cs)>(
+        params,
+        local_domain,
+        { 1, 2 },
+        { edist_cs, edist_cs },
         sdist_cs,
-        { 1, 2 });
-      arch::InjectNonUniform<S, M, decltype(inj_cs)>(params,
-                                                     local_domain,
-                                                     inj_cs,
-                                                     cs_overdensity);
+        cs_overdensity);
     }
 
     void CustomPostStep(timestep_t, simtime_t time, Domain<S, M>& domain) {
@@ -303,28 +290,26 @@ namespace user {
         Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
       }
 
-      const auto injector_up = arch::KeepConstantInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 },
+      const auto replenish_sdist = arch::ReplenishUniform<S, M, 3>(
+        domain.mesh.metric,
+        domain.fields.buff,
         0u,
-        probe_box_up);
-      const auto injector_down = arch::KeepConstantInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 },
-        0u,
-        probe_box_down);
-
-      arch::InjectUniform<S, M, decltype(injector_up)>(
+        ONE);
+      arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(replenish_sdist)>(
         params,
         domain,
-        injector_up,
+        { 1, 2 },
+        { energy_dist, energy_dist },
+        replenish_sdist,
         ONE,
         params.template get<bool>("particles.use_weights"),
         inj_box_up);
-      arch::InjectUniform<S, M, decltype(injector_down)>(
+      arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(replenish_sdist)>(
         params,
         domain,
-        injector_down,
+        { 1, 2 },
+        { energy_dist, energy_dist },
+        replenish_sdist,
         ONE,
         params.template get<bool>("particles.use_weights"),
         inj_box_down);

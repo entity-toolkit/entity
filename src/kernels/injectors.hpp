@@ -529,11 +529,12 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine::type S, class M, class ED, class SD>
+  template <SimEngine::type S, class M, class ED1, class ED2, class SD>
   struct NonUniformInjector_kernel {
-    static_assert(ED::is_energy_dist, "ED must be an energy distribution class");
-    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
     static_assert(M::is_metric, "M must be a metric class");
+    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
+    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
+    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
 
     const real_t  ppc0;
     const spidx_t spidx1, spidx2;
@@ -556,7 +557,8 @@ namespace kernel {
 
     npart_t              offset1, offset2;
     M                    metric;
-    const ED             energy_dist;
+    const ED1            energy_dist_1;
+    const ED2            energy_dist_2;
     const SD             spatial_dist;
     const real_t         inv_V0;
     random_number_pool_t random_pool;
@@ -569,7 +571,8 @@ namespace kernel {
                               npart_t                          offset1,
                               npart_t                          offset2,
                               const M&                         metric,
-                              const ED&                        energy_dist,
+                              const ED1&                       energy_dist_1,
+                              const ED2&                       energy_dist_2,
                               const SD&                        spatial_dist,
                               real_t                           inv_V0,
                               random_number_pool_t&            random_pool)
@@ -603,7 +606,8 @@ namespace kernel {
       , offset1 { offset1 }
       , offset2 { offset2 }
       , metric { metric }
-      , energy_dist { energy_dist }
+      , energy_dist_1 { energy_dist_1 }
+      , energy_dist_2 { energy_dist_2 }
       , spatial_dist { spatial_dist }
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {}
@@ -635,12 +639,12 @@ namespace kernel {
           dx1s_2(index + offset2) = dx1;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_XYZ { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          energy_dist_1(x_Ph, v_T, spidx1);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
           ux1s_1(index + offset1) = v_XYZ[0];
           ux2s_1(index + offset1) = v_XYZ[1];
           ux3s_1(index + offset1) = v_XYZ[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          energy_dist_2(x_Ph, v_T, spidx2);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
           ux1s_2(index + offset2) = v_XYZ[0];
           ux2s_2(index + offset2) = v_XYZ[1];
@@ -697,7 +701,7 @@ namespace kernel {
           dx2s_2(index + offset2) = dx2;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          energy_dist_1(x_Ph, v_T, spidx1);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -706,7 +710,7 @@ namespace kernel {
           ux1s_1(index + offset1) = v_Cd[0];
           ux2s_1(index + offset1) = v_Cd[1];
           ux3s_1(index + offset1) = v_Cd[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          energy_dist_2(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -770,7 +774,7 @@ namespace kernel {
           dx3s_2(index + offset2) = dx3;
 
           vec_t<Dim::_3D> v_T { ZERO }, v_Cd { ZERO };
-          energy_dist(x_Ph, v_T, spidx1);
+          energy_dist_1(x_Ph, v_T, spidx1);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -779,7 +783,7 @@ namespace kernel {
           ux1s_1(index + offset1) = v_Cd[0];
           ux2s_1(index + offset1) = v_Cd[1];
           ux3s_1(index + offset1) = v_Cd[2];
-          energy_dist(x_Ph, v_T, spidx2);
+          energy_dist_2(x_Ph, v_T, spidx2);
           if constexpr (S == SimEngine::SRPIC) {
             metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {

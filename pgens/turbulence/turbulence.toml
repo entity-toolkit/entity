@@ -42,12 +42,12 @@
 [setup]
   temperature = 1e0
   dB          = 1.0
-  omega_0 = 0.0156
-  gamma_0 = 0.0078
-     
+  omega_0     = 0.0156
+  gamma_0     = 0.0078
+
 
 [output]
-  format        = "hdf5"
+  format        = "BPFile"
   interval_time = 12.0
 
   [output.fields]
