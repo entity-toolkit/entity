@@ -244,14 +244,10 @@ namespace arch {
       Kokkos::parallel_for("InjectUniform",
                            nparticles,
                            kernel::UniformInjector_kernel<S, M, ED1, ED2>(
-                             species.first,
-                             species.second,
                              domain.species[species.first - 1],
                              domain.species[species.second - 1],
                              nparticles,
                              domain.index(),
-                             domain.species[species.first - 1].npart(),
-                             domain.species[species.second - 1].npart(),
                              domain.mesh.metric,
                              xi_min,
                              xi_max,
@@ -368,12 +364,9 @@ namespace arch {
                        params.template get<real_t>("particles.ppc0") * HALF;
       auto injector_kernel = kernel::NonUniformInjector_kernel<S, M, ED1, ED2, SD>(
         ppc,
-        species.first,
-        species.second,
         domain.species[species.first - 1],
         domain.species[species.second - 1],
-        domain.species[species.first - 1].npart(),
-        domain.species[species.second - 1].npart(),
+        domain.index(),
         domain.mesh.metric,
         energy_dists.first,
         energy_dists.second,
@@ -384,10 +377,10 @@ namespace arch {
                            cell_range,
                            injector_kernel);
       const auto n_inj = injector_kernel.number_injected();
-      domain.species[species.first - 1].set_npart(
-        domain.species[species.first - 1].npart() + n_inj);
-      domain.species[species.second - 1].set_npart(
-        domain.species[species.second - 1].npart() + n_inj);
+      for (auto sp : { species.first, species.second }) {
+        domain.species[sp - 1].set_npart(domain.species[sp - 1].npart() + n_inj);
+        domain.species[sp - 1].set_counter(domain.species[sp - 1].counter() + n_inj);
+      }
     }
   }
 
