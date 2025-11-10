@@ -1,0 +1,86 @@
+[simulation]
+  name    = "bell"
+  engine  = "srpic"
+  runtime = 1000.0
+
+[grid]
+  resolution = [1024, 1024]
+  extent     = [[-10.0, 10.0], [-10.0, 10.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 16.0
+
+  [[particles.species]]
+    label    = "e-Px"
+    mass     = 100.0
+    charge   = -1.0
+    maxnpart = 1e8
+
+  [[particles.species]]
+    label    = "e+bg1"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e8
+    pusher   = "None"
+
+  [[particles.species]]
+    label    = "e-Mx"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e8
+
+  [[particles.species]]
+    label    = "e+bg2"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e0
+    pusher   = "None"
+
+[setup]
+  # Drift 4-velocities for each species in all 3 directions
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  drifts_in_x = [0.1, 0.0, 0.1, 0.0]
+  drifts_in_y = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_z = [0.0, 0.0, 0.0, 0.0]
+  # Pair-wise species densities in units of n0
+  #   @type: array of floats (length = nspec/2)
+  #   @default: [ 2 / nspec, ... ]
+  densities = [0.5, 0.5]
+  # Species temperatures in units of m0 (c^2)
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  temperatures = [1e-4, 1e-4, 1e-4, 1e-4]
+  # Magnetic field 
+  B0 = [1.0, 0.0, 0.0]
+
+[output]
+  interval_time = 10.0
+  format = "BPFile"
+
+  [output.fields]
+    quantities = ["N_1", "N_3", "E", "B"]
+
+  [output.particles]
+    species = [1, 3]
+    stride  = 10
+
+  [output.spectra]
+    enable = false
