@@ -7,10 +7,9 @@
  *   - metric::
  *
  * @details
- * Spatial map (Cartesian): x_phys = L(t) x_code,  L(t) = diag(a_x(t), a_y(t), a_z(t))
- * with a_i(t) = (1 + q_i t)^{s_i}. We expose mid-step a_i(t) via update(t_mid).
+ * Spatial map: x_phys = L(t) x_code,  L(t) = diag(a_x(t), a_y(t), a_z(t))
+ * with a_i(t) = (1 + q_i t)^{s_i}. 
  *
- * Style and API intentionally mirror metrics/minkowski.h to minimize integration issues.
  */
 
 #ifndef METRICS_METRIC_BOX_H
@@ -35,7 +34,6 @@ namespace metric {
 
   template <Dimension D>
   class Box : public MetricBase<D> {
-    // per-axis code cell sizes
     const real_t dx1, dx2, dx3;
     const real_t dx1_inv, dx2_inv, dx3_inv;
 
@@ -113,7 +111,6 @@ namespace metric {
 
     /**
      * minimum effective cell size (in physical units)
-     * match Minkowski’s style: take the smallest code spacing, divide by sqrt(D)
      */
     [[nodiscard]]
     auto find_dxMin() const -> real_t override {
@@ -144,8 +141,7 @@ namespace metric {
     }
 
     /**
-    * metric component with lower indices: h_ij
-    * For dimensions beyond D (e.g., i=3 in 2D), return Cartesian identity.
+    * metric components: h_ij
     */
     template <idx_t i, idx_t j>
     Inline auto h_(const coord_t<D>&) const -> real_t {
@@ -165,7 +161,7 @@ namespace metric {
     }
 
     /**
-    * sqrt(h_ij). Same out-of-plane identity fallback.
+    * sqrt(h_ij). 
     */
     template <idx_t i, idx_t j>
     Inline auto sqrt_h_(const coord_t<D>&) const -> real_t {
@@ -197,8 +193,7 @@ namespace metric {
     }
 
     /**
-     * component-wise coordinate conversions (code <-> cart/phys)
-     * identical style to Minkowski, but per-axis dx_i
+     *$ identical style to Minkowski
      */
     template <idx_t i, Crd in, Crd out>
     Inline auto convert(const real_t& x_in) const -> real_t {
@@ -237,7 +232,6 @@ namespace metric {
           x_out[2] = convert<3, in, out>(x_in[2]);
         }
       } else {
-        // no Sph support in this Cartesian metric
         raise::Error("Invalid coordinate conversion for Box metric", HERE);
       }
     }
@@ -256,7 +250,7 @@ namespace metric {
     }
 
     /**
-     * component-wise vector transformations
+     * vector transformations
      * tetrad/cart <-> cntrv <-> cov
      * Same structure as Minkowski; use per-axis sqrt_h_ and h_
      */
@@ -322,7 +316,7 @@ namespace metric {
     }
 
     /**
-     * full vector transformations to cartesian (compatibility, like Minkowski)
+     * full vector transformations to cartesian (like Minkowski metric)
      */
     template <Idx in, Idx out>
     Inline void transform_xyz(const coord_t<PrtlDim>& xi,
