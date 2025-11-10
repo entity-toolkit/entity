@@ -4,6 +4,7 @@
 
 #include "utils/colors.h"
 #include "utils/formatting.h"
+#include "utils/log.h"
 #include "utils/progressbar.h"
 #include "utils/timer.h"
 
@@ -241,7 +242,6 @@ namespace diag {
       ss << std::setw(80) << std::setfill('.') << "" << std::endl << std::endl;
     });
 
-    std::cout << ((diag_flags & Diag::Colorful) ? ss.str()
-                                                : color::strip(ss.str()));
+    info::Print(ss.str(), diag_flags & Diag::Colorful, true, true, false);
   }
 } // namespace diag
