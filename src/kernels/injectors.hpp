@@ -25,6 +25,11 @@
 namespace kernel {
   using namespace ntt;
 
+  Inline auto randf(index_t p) -> real_t {
+    const index_t n = (1664525 * p + 1013904223);
+    return (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+  }
+
   template <Dimension D, Coord::type C, bool T>
   Inline void InjectParticle(const npart_t&              p,
                              const array_t<int*>&        i1_arr,
@@ -107,7 +112,8 @@ namespace kernel {
     const ED1              energy_dist_1;
     const ED2              energy_dist_2;
     const real_t           inv_V0;
-    random_number_pool_t   random_pool;
+
+    // random_number_pool_t   random_pool;
 
     UniformInjector_kernel(spidx_t                          spidx1,
                            spidx_t                          spidx2,
@@ -122,8 +128,7 @@ namespace kernel {
                            const array_t<real_t*>&          xi_max,
                            const ED1&                       energy_dist_1,
                            const ED2&                       energy_dist_2,
-                           real_t                           inv_V0,
-                           random_number_pool_t&            random_pool)
+                           real_t                           inv_V0)
       : spidx1 { spidx1 }
       , spidx2 { spidx2 }
       , i1s_1 { species1.i1 }
@@ -164,8 +169,7 @@ namespace kernel {
       , xi_max { xi_max }
       , energy_dist_1 { energy_dist_1 }
       , energy_dist_2 { energy_dist_2 }
-      , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {
+      , inv_V0 { inv_V0 } {
       if (use_tracking_1) {
         printf("using tracking for  species #1\n");
         species1.set_counter(cntr1 + inject_npart);
@@ -208,25 +212,23 @@ namespace kernel {
       tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
       vec_t<Dim::_3D>           v1 { ZERO }, v2 { ZERO };
       { // generate a random coordinate
-        auto rand_gen = random_pool.get_state();
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
-          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+          x_Cd[0]   = xi_min(0) + randf(p) * (xi_max(0) - xi_min(0));
           xi_Cd[0]  = static_cast<int>(x_Cd[0]);
           dxi_Cd[0] = static_cast<prtldx_t>(x_Cd[0] - xi_Cd[0]);
         }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+          x_Cd[1]   = xi_min(1) + randf(p + 12345) * (xi_max(1) - xi_min(1));
           xi_Cd[1]  = static_cast<int>(x_Cd[1]);
           xi_Cd[1]  = static_cast<int>(x_Cd[1]);
           dxi_Cd[1] = static_cast<prtldx_t>(x_Cd[1] - xi_Cd[1]);
         }
         if constexpr (M::Dim == Dim::_3D) {
-          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+          x_Cd[2]   = xi_min(2) + randf(p + 4356) * (xi_max(2) - xi_min(2));
           xi_Cd[2]  = static_cast<int>(x_Cd[2]);
           dxi_Cd[2] = static_cast<prtldx_t>(x_Cd[2] - xi_Cd[2]);
         }
-        random_pool.free_state(rand_gen);
       }
       { // generate the velocity
         coord_t<M::Dim> x_Ph { ZERO };

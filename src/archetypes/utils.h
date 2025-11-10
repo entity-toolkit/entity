@@ -23,6 +23,24 @@
 
 namespace arch {
 
+  template <SimEngine::type S, class M>
+  class FakeMaxwellian : public arch::EnergyDistribution<S, M> {
+    const real_t vx, vy, vz;
+
+  public:
+    FakeMaxwellian(const M& metric, const std::vector<real_t>& drift_four_vel)
+      : EnergyDistribution<S, M> { metric }
+      , vx { drift_four_vel[0] }
+      , vy { drift_four_vel[1] }
+      , vz { drift_four_vel[2] } {}
+
+    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v, spidx_t) const {
+      v[0] = vx;
+      v[1] = vy;
+      v[2] = vz;
+    }
+  };
+
   /**
    * @brief Injects uniform number density of particles everywhere in the domain
    * following two Maxwellian distributions
@@ -52,14 +70,18 @@ namespace arch {
     const auto temperature_1 = temperatures.first / mass_1;
     const auto temperature_2 = temperatures.second / mass_2;
 
-    const auto maxwellian_1 = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                     domain.random_pool,
-                                                     temperature_1,
-                                                     drift_four_vels.first);
-    const auto maxwellian_2 = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                     domain.random_pool,
-                                                     temperature_2,
-                                                     drift_four_vels.second);
+    // const auto maxwellian_1 = arch::Maxwellian<S, M>(domain.mesh.metric,
+    //                                                  domain.random_pool,
+    //                                                  temperature_1,
+    //                                                  drift_four_vels.first);
+    // const auto maxwellian_2 = arch::Maxwellian<S, M>(domain.mesh.metric,
+    //                                                  domain.random_pool,
+    //                                                  temperature_2,
+    //                                                  drift_four_vels.second);
+    const auto maxwellian_1 = FakeMaxwellian<S, M>(domain.mesh.metric,
+                                                   drift_four_vels.first);
+    const auto maxwellian_2 = FakeMaxwellian<S, M>(domain.mesh.metric,
+                                                   drift_four_vels.second);
 
     arch::InjectUniform<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
       params,
