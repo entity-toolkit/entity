@@ -9,6 +9,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"
 
 #include "framework/simulation.h"
 
@@ -39,6 +40,7 @@ auto main(int argc, char* argv[]) -> int {
   const auto is_qspherical = sim.requested_metric() == ntt::Metric::QSpherical;
   const auto is_kerr_schild = sim.requested_metric() == ntt::Metric::Kerr_Schild;
   const auto is_qkerr_schild = sim.requested_metric() == ntt::Metric::QKerr_Schild;
+  const auto is_box = sim.requested_metric() == ntt::Metric::Box;   // CG
   const auto is_kerr_schild_0 = sim.requested_metric() ==
                                 ntt::Metric::Kerr_Schild_0;
   const auto is_1d = sim.requested_dimension() == Dim::_1D;
@@ -51,7 +53,8 @@ auto main(int argc, char* argv[]) -> int {
   }
 
   if (not is_minkowski and not is_spherical and not is_qspherical and
-      not is_kerr_schild and not is_qkerr_schild and not is_kerr_schild_0) {
+      not is_kerr_schild and not is_qkerr_schild and not is_kerr_schild_0 and 
+      not is_box) {
     raise::Fatal("Invalid metric", HERE);
   }
 
@@ -59,7 +62,7 @@ auto main(int argc, char* argv[]) -> int {
     raise::Fatal("Invalid dimension", HERE);
   }
 
-  if (is_srpic and not(is_minkowski or is_spherical or is_qspherical)) {
+  if (is_srpic and not(is_minkowski or is_spherical or is_qspherical or is_box)) {
     raise::Fatal("Invalid metric for SRPIC", HERE);
   }
 
@@ -107,6 +110,23 @@ auto main(int argc, char* argv[]) -> int {
     shouldCompile<ntt::GRPICEngine, metric::QKerrSchild, Dim::_2D>(sim);
     return 0;
   }
+
+  // CG Expanding boc
+  if (is_srpic and is_box and is_1d) {
+    shouldCompile<ntt::SRPICEngine, metric::Box, Dim::_1D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_box and is_2d) {
+    shouldCompile<ntt::SRPICEngine, metric::Box, Dim::_2D>(sim);
+    return 0;
+  }
+
+  if (is_srpic and is_box and is_3d) {
+    shouldCompile<ntt::SRPICEngine, metric::Box, Dim::_3D>(sim);
+    return 0;
+  }
+  // CG end
 
   if (is_grpic and is_kerr_schild_0 and is_2d) {
     shouldCompile<ntt::GRPICEngine, metric::KerrSchild0, Dim::_2D>(sim);

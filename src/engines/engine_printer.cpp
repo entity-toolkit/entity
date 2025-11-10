@@ -12,6 +12,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"
 
 #include "engines/engine.hpp"
 
@@ -496,5 +497,7 @@ namespace ntt {
   template void Engine<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>::print_report() const;
   template void Engine<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>::print_report() const;
   template void Engine<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>::print_report() const;
+  template void Engine<SimEngine::SRPIC, metric::Box<Dim::_2D>>::print_report() const;
+  template void Engine<SimEngine::SRPIC, metric::Box<Dim::_3D>>::print_report() const;
 
 } // namespace ntt

@@ -11,6 +11,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h" // CG
 
 #include "checkpoint/reader.h"
 #include "checkpoint/writer.h"
@@ -500,6 +501,8 @@ namespace ntt {
   METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
   METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
   METADOMAIN_CHECKPOINTS(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Box<Dim::_2D>)
+  METADOMAIN_CHECKPOINTS(SimEngine::SRPIC, metric::Box<Dim::_3D>)
 #undef METADOMAIN_CHECKPOINTS
 
 } // namespace ntt

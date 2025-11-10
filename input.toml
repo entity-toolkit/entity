@@ -1,0 +1,143 @@
+# Expanding/Compressing Box 2D
+
+[simulation]
+name    = "expanding_box_test"
+engine  = "srpic"
+runtime = 10.0
+
+  [simulation.domain]
+  number        = 1
+  decomposition = [-1, -1]     # auto for 2D
+
+[grid]
+resolution = [256, 256]        # 2D
+extent     = [[0.0, 1.0], [0.0, 1.0]]  # dx=dy required by code
+
+  [grid.metric]
+  metric = "box"               # <= Box metric (Cart coords under the hood)
+
+  [grid.boundaries]
+  # Periodic in x and y
+  fields    = [["PERIODIC"], ["PERIODIC"]]
+  particles = [["PERIODIC"], ["PERIODIC"]]
+
+[metric_box]
+# a_i(t) = (1 + q_i * t)^(s_i)
+# Set your expansion/compression rates (q*) and exponents (s*) here.
+qx = 0.10
+qy = 0.00
+qz = 0.00
+sx = 0.00
+sy = 0.00
+sz = 0.00
+
+[scales]
+# Required base scales
+larmor0    = 1.0
+skindepth0 = 0.1
+
+[algorithms]
+current_filters = 0
+
+  [algorithms.toggles]
+  fieldsolver = true
+  deposit     = true
+
+  [algorithms.timestep]
+  CFL        = 0.95
+  correction = 1.0
+  # dt is inferred as CFL * dx0
+
+  # Standard Yee-like defaults (all zeros)
+  [algorithms.fieldsolver]
+  delta_x = 0.0
+  delta_y = 0.0
+  delta_z = 0.0
+  beta_xy = 0.0
+  beta_yx = 0.0
+  beta_xz = 0.0
+  beta_zx = 0.0
+  beta_yz = 0.0
+  beta_zy = 0.0
+
+[particles]
+ppc0          = 16
+use_weights   = false
+clear_interval = 100
+
+  [[particles.species]]
+  label    = "e-"
+  mass     = 1.0
+  charge   = -1.0
+  maxnpart = 200000
+  pusher   = "Boris"
+  n_payloads = 0
+  cooling    = "None"
+
+  [[particles.species]]
+  label    = "e+"
+  mass     = 1.0
+  charge   = 1.0
+  maxnpart = 200000
+  pusher   = "Boris"
+  n_payloads = 0
+  cooling    = "None"
+
+[setup]
+# (leave empty or add problem-generator specific knobs if your pgen expects them)
+
+[output]
+format         = "hdf5"
+interval       = 10           # default interval (overridden by section-specific if set)
+interval_time  = -1.0
+separate_files = true
+
+  [output.fields]
+  enable       = true
+  # "E" and "B" are the usual; you can add "J","Rho","N","Tij","A" etc.
+  quantities   = ["E", "B"]
+  mom_smooth   = 0
+  interval     = 10           # write fields every 10 steps
+  interval_time = -1.0
+  downsampling = [1, 1]       # no downsampling in 2D
+
+  [output.particles]
+  enable       = true
+  species      = []           # empty => dump all species
+  stride       = 100
+  interval     = 0            # 0 => inherit from [output].interval
+  interval_time = -1.0
+
+  [output.spectra]
+  enable      = true
+  e_min       = 1e-3
+  e_max       = 1e3
+  log_bins    = true
+  n_bins      = 200
+  interval    = 0
+  interval_time = -1.0
+
+  [output.debug]
+  as_is  = false              # keep false so E'/B' -> physical conversion runs
+  ghosts = false
+
+[output.stats]
+enable        = true
+interval      = 100
+interval_time = -1.0
+quantities    = ["B^2", "E^2", "ExB", "Rho", "T00"]
+custom        = []
+
+[checkpoint]
+interval       = 1000
+interval_time  = -1.0
+keep           = 2
+walltime       = "00:00:00"
+write_path     = "expanding_box_test.ckpt"
+# read_path    = "expanding_box_test.ckpt"   # set when resuming
+
+[diagnostics]
+interval        = 50
+blocking_timers = false
+colored_stdout  = true
+log_level       = "VERBOSE"

@@ -16,6 +16,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"   // CG
 
 #include "framework/containers/species.h"
 
@@ -111,10 +112,31 @@ namespace ntt {
         .c_str());
     promiseToDefine("grid.metric.metric");
     std::string coord;
+        // Ensure expanding/compressing box params are always present in the store,
+    // even if someone queries them before the metric block runs.
+    set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
+    set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
+    set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
+    set("metric_box.sx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sx", 0.0)));
+    set("metric_box.sy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sy", 0.0)));
+    set("metric_box.sz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sz", 0.0)));
     if (metric_enum == Metric::Minkowski) {
       raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                      "minkowski metric is only supported for SRPIC",
                      HERE);
+      coord = "cart";
+    } else if (metric_enum == Metric::Box) {             // CG EXPANDING BOX
+      raise::ErrorIf(engine_enum != SimEngine::SRPIC,
+                     "exp box metric is only supported for SRPIC",
+                     HERE);
+      set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
+      set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
+      set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
+      set("metric_box.sx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sx", 0.0)));
+      set("metric_box.sy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sy", 0.0)));
+      set("metric_box.sz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sz", 0.0)));
+      // CG  end
+
       coord = "cart";
     } else if (metric_enum == Metric::QKerr_Schild or
                metric_enum == Metric::QSpherical) {
@@ -288,6 +310,15 @@ namespace ntt {
           (metric_enum != Metric::Kerr_Schild_0)) {
         params["a"] = get<real_t>("grid.metric.ks_a");
       }
+      // CG: pass exp box params to the metric
+      if (metric_enum == Metric::Box) {
+        params["qx"] = toml::find_or(toml_data, "metric_box", "qx", 0.0);
+        params["qy"] = toml::find_or(toml_data, "metric_box", "qy", 0.0);
+        params["qz"] = toml::find_or(toml_data, "metric_box", "qz", 0.0);
+        params["sx"] = toml::find_or(toml_data, "metric_box", "sx", 0.0);
+        params["sy"] = toml::find_or(toml_data, "metric_box", "sy", 0.0);
+        params["sz"] = toml::find_or(toml_data, "metric_box", "sz", 0.0);
+      }
       set("grid.metric.params", params);
 
       std::pair<real_t, real_t> dx0_V0;
@@ -310,6 +341,19 @@ namespace ntt {
       } else if (metric_enum == Metric::QKerr_Schild) {
         dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(res, ext, params);
       }
+      // CG expanding box
+      else if (metric_enum == Metric::Box) {
+        // Compute dx0 directly from extent & resolution; V0 = 1 at t=0
+        real_t dx0_calc = std::numeric_limits<real_t>::max();
+        for (std::size_t d = 0; d < (std::size_t)dim; ++d) {
+          const real_t Ld  = ext[d].second - ext[d].first;           // physical length
+          const real_t dxd = Ld / static_cast<real_t>(res[d]);       // cell size along dim d
+          dx0_calc = std::min(dx0_calc, dxd);
+        }
+        const real_t V0_calc = ONE;  // expanding-box is Cartesian at t=0: sqrt(det h) = 1
+        dx0_V0 = { dx0_calc, V0_calc };
+      }
+      // CG end
       auto [dx0, V0] = dx0_V0;
       set("scales.dx0", dx0);
       set("scales.V0", V0);
@@ -329,8 +373,18 @@ namespace ntt {
     const auto engine_enum     = get<SimEngine>("simulation.engine");
     const auto coord_enum      = get<Coord>("grid.metric.coord");
     const auto dim             = get<Dimension>("grid.dim");
+    const auto metric_enum     = get<Metric>("grid.metric.metric");   // CG
     const auto extent_pairwise = get<boundaries_t<real_t>>("grid.extent");
 
+    // CG expanding box parameters if changed after restart
+    if (metric_enum == Metric::Box) {
+      set("metric_box.qx", toml::find_or(toml_data, "metric_box", "qx", 0.0));
+      set("metric_box.qy", toml::find_or(toml_data, "metric_box", "qy", 0.0));
+      set("metric_box.qz", toml::find_or(toml_data, "metric_box", "qz", 0.0));
+      set("metric_box.sx", toml::find_or(toml_data, "metric_box", "sx", 0.0));
+      set("metric_box.sy", toml::find_or(toml_data, "metric_box", "sy", 0.0));
+      set("metric_box.sz", toml::find_or(toml_data, "metric_box", "sz", 0.0));
+    }
     /* [simulation] --------------------------------------------------------- */
     set("simulation.name",
         toml::find<std::string>(toml_data, "simulation", "name"));

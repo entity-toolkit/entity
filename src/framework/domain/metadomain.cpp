@@ -14,6 +14,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"
 
 #include "framework/domain/domain.h"
 
@@ -543,5 +544,7 @@ namespace ntt {
   template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>>;
   template struct Metadomain<SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>>;
   template struct Metadomain<SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>>;
+  template class ntt::Metadomain<ntt::SimEngine::SRPIC, metric::Box<Dim::_2D>>;
+  template class ntt::Metadomain<ntt::SimEngine::SRPIC, metric::Box<Dim::_3D>>;
 
 } // namespace ntt

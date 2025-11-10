@@ -12,6 +12,7 @@
 #include "metrics/qkerr_schild.h"
 #include "metrics/qspherical.h"
 #include "metrics/spherical.h"
+#include "metrics/metric_box.h"   // CG
 
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
@@ -882,6 +883,8 @@ namespace ntt {
   METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
   METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
   METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Box<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Box<Dim::_3D>)
 
 #undef METADOMAIN_OUTPUT
 
