@@ -11,6 +11,7 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
+#include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
@@ -38,22 +39,24 @@ namespace user {
 
     Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t {
       auto bx1_0 = ZERO;
-      if constexpr(D==Dim::_2D){
+      if constexpr (D == Dim::_2D) {
         for (auto i = 0; i < n_modes; i++) {
           auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1];
           bx1_0        -= TWO * k(1, i) *
-                 (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+                   (a_real(i) * math::sin(k_dot_r) +
+                    a_imag(i) * math::cos(k_dot_r));
           bx1_0 -= TWO * k(1, i) *
-                 (a_real_inv(i) * math::sin(k_dot_r) +
-                  a_imag_inv(i) * math::cos(k_dot_r));
+                   (a_real_inv(i) * math::sin(k_dot_r) +
+                    a_imag_inv(i) * math::cos(k_dot_r));
         }
         return bx1_0;
       }
-      if constexpr (D==Dim::_3D){
-      for (auto i = 0; i < n_modes; i++) {
-        auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
+      if constexpr (D == Dim::_3D) {
+        for (auto i = 0; i < n_modes; i++) {
+          auto k_dot_r = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
           bx1_0 -= TWO * k(1, i) *
-                   (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+                   (a_real(i) * math::sin(k_dot_r) +
+                    a_imag(i) * math::cos(k_dot_r));
         }
         return bx1_0;
       }
@@ -61,22 +64,24 @@ namespace user {
 
     Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t {
       auto bx2_0 = ZERO;
-      if constexpr (D==Dim::_2D){
+      if constexpr (D == Dim::_2D) {
         for (auto i = 0; i < n_modes; i++) {
           auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1];
           bx2_0        += TWO * k(0, i) *
-                   (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+                   (a_real(i) * math::sin(k_dot_r) +
+                    a_imag(i) * math::cos(k_dot_r));
           bx2_0 += TWO * k(0, i) *
                    (a_real_inv(i) * math::sin(k_dot_r) +
                     a_imag_inv(i) * math::cos(k_dot_r));
         }
         return bx2_0;
       }
-      if constexpr (D==Dim::_3D){
+      if constexpr (D == Dim::_3D) {
         for (auto i = 0; i < n_modes; i++) {
-          auto k_dot_r  = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
+          auto k_dot_r = k(0, i) * x_Ph[0] + k(1, i) * x_Ph[1] + k(2, i) * x_Ph[2];
           bx2_0 += TWO * k(0, i) *
-                   (a_real(i) * math::sin(k_dot_r) + a_imag(i) * math::cos(k_dot_r));
+                   (a_real(i) * math::sin(k_dot_r) +
+                    a_imag(i) * math::cos(k_dot_r));
         }
         return bx2_0;
       }
@@ -94,8 +99,8 @@ namespace user {
     std::size_t       n_modes;
   };
 
-  inline auto init_pool(int seed) -> unsigned int {
-    if (seed < 0) {
+  inline auto init_pool(unsigned int seed) -> unsigned int {
+    if (seed == 0) {
       unsigned int new_seed = static_cast<unsigned int>(rand());
 #if defined(MPI_ENABLED)
       MPI_Bcast(&new_seed, 1, MPI_UNSIGNED, MPI_ROOT_RANK, MPI_COMM_WORLD);
@@ -117,14 +122,14 @@ namespace user {
       };
     } else if constexpr (D == Dim::_3D) {
       return {
-          {  1,  0, 1 },
-          {  0,  1, 1 },
-          { -1,  0, 1 },
-          {  0, -1, 1 },
-          {  1,  0,-1 },
-          {  0,  1,-1 },
-          { -1,  0,-1 },
-          {  0, -1,-1 }
+        {  1,  0,  1 },
+        {  0,  1,  1 },
+        { -1,  0,  1 },
+        {  0, -1,  1 },
+        {  1,  0, -1 },
+        {  0,  1, -1 },
+        { -1,  0, -1 },
+        {  0, -1, -1 }
       };
     } else {
       raise::Error("Invalid dimension", HERE);
@@ -158,7 +163,7 @@ namespace user {
       , a_real_inv { "a_real_inv", n_modes }
       , a_imag_inv { "a_imag_inv", n_modes }
       , A0 { "A0", n_modes } {
-      // initializing random generator 
+      // initializing random generator
       srand(seed);
       // initializing wavevectors
       auto k_host = Kokkos::create_mirror_view(k);
@@ -191,11 +196,13 @@ namespace user {
       for (auto i = 0u; i < n_modes; i++) {
         auto k_perp = math::sqrt(
           k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
-	real_t phase = static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX) * constant::TWO_PI;
-        A0_host(i)         = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
-        a_real_host(i)     = A0_host(i) * math::cos(phase);
-        a_imag_host(i)     = A0_host(i) * math::sin(phase);
-	phase = static_cast <real_t> (rand()) / static_cast <real_t> (RAND_MAX) * constant::TWO_PI;
+        real_t phase = static_cast<real_t>(rand()) /
+                       static_cast<real_t>(RAND_MAX) * constant::TWO_PI;
+        A0_host(i)     = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
+        a_real_host(i) = A0_host(i) * math::cos(phase);
+        a_imag_host(i) = A0_host(i) * math::sin(phase);
+        phase = static_cast<real_t>(rand()) / static_cast<real_t>(RAND_MAX) *
+                constant::TWO_PI;
         a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
         a_real_inv_host(i) = A0_host(i) * math::sin(phase);
       }
@@ -270,7 +277,7 @@ namespace user {
     const std::vector<std::vector<real_t>> wavenumbers;
     const std::size_t                      n_modes;
     const real_t                           dB, Lx, Ly, Lz;
-    const int                              seed; 
+    const unsigned int                     seed;
 
   public:
     const real_t      omega_0, gamma_0;
@@ -297,7 +304,7 @@ namespace user {
 
     const real_t                     temperature, dB, omega_0, gamma_0;
     const real_t                     Lx, Ly, Lz, escape_dist;
-    const int                        random_seed;
+    const unsigned int               random_seed;
     std::vector<std::vector<real_t>> wavenumbers;
     random_number_pool_t             random_pool;
 
@@ -316,7 +323,7 @@ namespace user {
       , omega_0 { p.template get<real_t>("setup.omega_0") }
       , gamma_0 { p.template get<real_t>("setup.gamma_0") }
       , wavenumbers { init_wavenumbers<D>() }
-      , random_seed { p.template get<int>("setup.seed", -1) }
+      , random_seed { p.template get<unsigned int>("setup.seed", 0) }
       , random_pool { init_pool(random_seed) }
       , Lx { global_domain.mesh().extent(in::x1).second -
              global_domain.mesh().extent(in::x1).first }
@@ -325,32 +332,23 @@ namespace user {
       , Lz { global_domain.mesh().extent(in::x3).second -
              global_domain.mesh().extent(in::x3).first }
       , escape_dist { p.template get<real_t>("setup.escape_dist", HALF * Lx) }
-      , ext_current { dB, omega_0, gamma_0, wavenumbers, init_pool(random_seed), Lx, Ly, Lz }
+      , ext_current { dB, omega_0, gamma_0, wavenumbers, init_pool(random_seed),
+                      Lx, Ly,      Lz }
       , init_flds { ext_current.k,
                     ext_current.a_real,
                     ext_current.a_imag,
                     ext_current.a_real_inv,
                     ext_current.a_imag_inv } {};
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
-                                                      temperature);
-      const auto spatial_dist = arch::UniformInjector<S, M, arch::Maxwellian>(
-        energy_dist,
-        { 1, 2 });
-      arch::InjectUniform<S, M, arch::UniformInjector<S, M, arch::Maxwellian>>(
-        params,
-        local_domain,
-        spatial_dist,
-        ONE);
-    };
+    inline void InitPrtls(Domain<S, M>& domain) {
+      arch::InjectUniformMaxwellian<S, M>(params, domain, ONE, temperature, { 1, 2 });
+    }
 
     void CustomPostStep(timestep_t, simtime_t, Domain<S, M>& domain) {
-	#if defined(MPI_ENABLED)
-	    int rank;
-	    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	#endif
+#if defined(MPI_ENABLED)
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
       // update amplitudes of antenna
       const auto  dt = params.template get<real_t>("algorithms.timestep.dt");
       const auto& ext_curr = ext_current;
@@ -403,13 +401,13 @@ namespace user {
                                                       domain.random_pool,
                                                       temperature);
       for (const auto& sp : { 0, 1 }) {
-        if (domain.species[sp].npld() > 1) {
-          const auto& ux1 = domain.species[sp].ux1;
-          const auto& ux2 = domain.species[sp].ux2;
-          const auto& ux3 = domain.species[sp].ux3;
-          const auto& pld = domain.species[sp].pld;
-          const auto& tag = domain.species[sp].tag;
-          const auto  L   = escape_dist;
+        if (domain.species[sp].npld_r() > 1) {
+          const auto& ux1   = domain.species[sp].ux1;
+          const auto& ux2   = domain.species[sp].ux2;
+          const auto& ux3   = domain.species[sp].ux3;
+          const auto& pld_r = domain.species[sp].pld_r;
+          const auto& tag   = domain.species[sp].tag;
+          const auto  L     = escape_dist;
           Kokkos::parallel_for(
             "UpdatePld",
             domain.species[sp].npart(),
@@ -419,18 +417,18 @@ namespace user {
               }
               const auto gamma = math::sqrt(
                 ONE + ux1(p) * ux1(p) + ux2(p) * ux2(p) + ux3(p) * ux3(p));
-              pld(p, 0) += ux1(p) * dt / gamma;
-              pld(p, 1) += ux2(p) * dt / gamma;
+              pld_r(p, 0) += ux1(p) * dt / gamma;
+              pld_r(p, 1) += ux2(p) * dt / gamma;
 
-              if ((math::abs(pld(p, 0)) > L) or (math::abs(pld(p, 1)) > L)) {
+              if ((math::abs(pld_r(p, 0)) > L) or (math::abs(pld_r(p, 1)) > L)) {
                 coord_t<D>      x_Ph { ZERO };
                 vec_t<Dim::_3D> u_Mxw { ZERO };
                 energy_dist(x_Ph, u_Mxw);
-                ux1(p)    = u_Mxw[0];
-                ux2(p)    = u_Mxw[1];
-                ux3(p)    = u_Mxw[2];
-                pld(p, 0) = ZERO;
-                pld(p, 1) = ZERO;
+                ux1(p)      = u_Mxw[0];
+                ux2(p)      = u_Mxw[1];
+                ux3(p)      = u_Mxw[2];
+                pld_r(p, 0) = ZERO;
+                pld_r(p, 1) = ZERO;
               }
             });
         }

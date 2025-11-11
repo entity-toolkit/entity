@@ -234,8 +234,8 @@ auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
 template <Dimension D>
-auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
-  -> range_t<D>;
+auto CreateRangePolicy(const tuple_t<ncells_t, D>&,
+                       const tuple_t<ncells_t, D>&) -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy on the host.
@@ -249,7 +249,7 @@ auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
 // Random number pool/generator type alias
-using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<Kokkos::DefaultExecutionSpace>;
+using random_number_pool_t = Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace>;
 using random_generator_t = typename random_number_pool_t::generator_type;
 
 // Random number generator functions

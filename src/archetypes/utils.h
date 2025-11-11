@@ -17,6 +17,7 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
+#include "framework/parameters.h"
 
 #include <utility>
 
@@ -60,17 +61,14 @@ namespace arch {
                                                      temperature_2,
                                                      drift_four_vels.second);
 
-    const auto injector = arch::UniformInjector<S, M, arch::Maxwellian, arch::Maxwellian>(
-      maxwellian_1,
-      maxwellian_2,
-      species);
-
-    arch::InjectUniform<S, M, decltype(injector)>(params,
-                                                  domain,
-                                                  injector,
-                                                  tot_number_density,
-                                                  use_weights,
-                                                  box);
+    arch::InjectUniform<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
+      params,
+      domain,
+      species,
+      { maxwellian_1, maxwellian_2 },
+      tot_number_density,
+      use_weights,
+      box);
   }
 
   /**

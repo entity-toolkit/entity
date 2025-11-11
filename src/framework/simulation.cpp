@@ -35,6 +35,7 @@ namespace ntt {
                                                       "log_level",
                                                       defaults::diag::log_level);
     logger::initPlog<files::LogFile, files::InfoFile, files::ErrFile>(sim_name,
+                                                                      sim_name,
                                                                       log_level);
 
     m_requested_engine = SimEngine::pick(

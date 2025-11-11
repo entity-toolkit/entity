@@ -48,9 +48,7 @@ namespace arch {
   struct Cold : public EnergyDistribution<S, M> {
     Cold(const M& metric) : EnergyDistribution<S, M> { metric } {}
 
-    Inline void operator()(const coord_t<M::Dim>&,
-                           vec_t<Dim::_3D>& v,
-                           spidx_t = 0) const {
+    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
 
       v[0] = ZERO;
       v[1] = ZERO;
@@ -73,9 +71,7 @@ namespace arch {
       , pl_ind { pl_ind }
       , pool { pool } {}
 
-    Inline void operator()(const coord_t<M::Dim>&,
-                           vec_t<Dim::_3D>& v,
-                           spidx_t = 0) const {
+    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -254,9 +250,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code,
-                           vec_t<Dim::_3D>&       v,
-                           spidx_t = 0) const {
+    Inline void operator()(const coord_t<M::Dim>& x_Code, vec_t<Dim::_3D>& v) const {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;

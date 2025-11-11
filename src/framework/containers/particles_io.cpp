@@ -31,7 +31,9 @@ namespace ntt {
    * * * * * * * * */
   template <Dimension D, Coord::type C>
   void Particles<D, C>::OutputDeclare(adios2::IO& io) const {
-    for (auto d { 0u }; d < D; ++d) {
+    const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cart)) ? 1
+                                                                            : 0;
+    for (auto d { 0u }; d < D + n_addition_coords; ++d) {
       io.DefineVariable<real_t>(fmt::format("pX%d_%d", d + 1, index()),
                                 { adios2::UnknownDim },
                                 { adios2::UnknownDim },

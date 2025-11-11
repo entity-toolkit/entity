@@ -39,8 +39,9 @@ namespace ntt {
     raise::ErrorIf(local_domain->is_placeholder(),
                    "local_domain is a placeholder",
                    HERE);
-    const auto filename = params.template get<std::string>("simulation.name") +
-                          "_stats.csv";
+    const auto simname  = params.template get<std::string>("simulation.name");
+    const auto filename = std::filesystem::path(simname) /
+                          (simname + "_stats.csv");
     const auto enable_stats = params.template get<bool>("output.stats.enable");
     if (enable_stats and (not is_resuming)) {
       CallOnce(

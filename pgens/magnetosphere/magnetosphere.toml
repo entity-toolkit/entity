@@ -63,7 +63,7 @@
   period         = 60.0
 
 [output]
-  format = "hdf5"
+  format = "BPFile"
 
   [output.fields]
     interval_time = 0.1
@@ -74,6 +74,3 @@
 
   [output.spectra]
     enable = false
-
-[diagnostics]
-  interval = 50

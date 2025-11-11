@@ -43,8 +43,7 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -62,8 +61,7 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -242,16 +240,14 @@ namespace user {
                                                         params,
                                                         &local_domain);
 
-      const auto injector =
-        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-          energy_dist,
-          spatial_dist,
-          { 1, 2 });
-      arch::InjectNonUniform<S, M, decltype(injector)>(params,
-                                                       local_domain,
-                                                       injector,
-                                                       1.0,
-                                                       true);
+      arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(spatial_dist)>(
+        params,
+        local_domain,
+        { 1, 2 },
+        { energy_dist, energy_dist },
+        spatial_dist,
+        ONE,
+        true);
     }
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
@@ -264,17 +260,14 @@ namespace user {
                                                         multiplicity * nGJ,
                                                         params,
                                                         &local_domain);
-
-      const auto injector =
-        arch::NonUniformInjector<S, M, arch::Maxwellian, PointDistribution>(
-          energy_dist,
-          spatial_dist,
-          { 1, 2 });
-      arch::InjectNonUniform<S, M, decltype(injector)>(params,
-                                                       local_domain,
-                                                       injector,
-                                                       1.0,
-                                                       true);
+      arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(spatial_dist)>(
+        params,
+        local_domain,
+        { 1, 2 },
+        { energy_dist, energy_dist },
+        spatial_dist,
+        ONE,
+        true);
     }
   };
 
