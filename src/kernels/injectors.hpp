@@ -25,11 +25,6 @@
 namespace kernel {
   using namespace ntt;
 
-  Inline auto randf(index_t p) -> real_t {
-    const index_t n = (1664525 * p + 1013904223);
-    return (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
-  }
-
   template <Dimension D, Coord::type C, bool T>
   Inline void InjectParticle(const npart_t&              p,
                              const array_t<int*>&        i1_arr,
@@ -557,13 +552,14 @@ namespace kernel {
 
     array_t<npart_t> idx { "idx" };
 
-    npart_t              offset1, offset2;
-    M                    metric;
-    const ED1            energy_dist_1;
-    const ED2            energy_dist_2;
-    const SD             spatial_dist;
-    const real_t         inv_V0;
-    random_number_pool_t random_pool;
+    npart_t      offset1, offset2;
+    M            metric;
+    const ED1    energy_dist_1;
+    const ED2    energy_dist_2;
+    const SD     spatial_dist;
+    const real_t inv_V0;
+
+    // random_number_pool_t random_pool;
 
     NonUniformInjector_kernel(real_t                           ppc0,
                               spidx_t                          spidx1,
@@ -576,8 +572,8 @@ namespace kernel {
                               const ED1&                       energy_dist_1,
                               const ED2&                       energy_dist_2,
                               const SD&                        spatial_dist,
-                              real_t                           inv_V0,
-                              random_number_pool_t&            random_pool)
+                              real_t                           inv_V0)
+      // random_number_pool_t&            random_pool)
       : ppc0 { ppc0 }
       , spidx1 { spidx1 }
       , spidx2 { spidx2 }
@@ -611,8 +607,9 @@ namespace kernel {
       , energy_dist_1 { energy_dist_1 }
       , energy_dist_2 { energy_dist_2 }
       , spatial_dist { spatial_dist }
-      , inv_V0 { inv_V0 }
-      , random_pool { random_pool } {}
+      , inv_V0 { inv_V0 } {}
+
+    // , random_pool { random_pool } {}
 
     auto number_injected() const -> npart_t {
       auto idx_h = Kokkos::create_mirror_view(idx);
@@ -630,10 +627,11 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        auto rand_gen = random_pool.get_state();
+        // auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
-          const auto dx1   = Random<prtldx_t>(rand_gen);
+          const auto dx1   = randf(i1 + p * 123);
+          // const auto dx1   = Random<prtldx_t>(rand_gen);
 
           i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
           dx1s_1(index + offset1) = dx1;
@@ -663,7 +661,7 @@ namespace kernel {
             weights_2(index + offset2) = wei;
           }
         }
-        random_pool.free_state(rand_gen);
+        // random_pool.free_state(rand_gen);
       } else {
         raise::KernelError(HERE, "NonUniformInjector_kernel 1D called for 2D/3D");
       }
@@ -686,11 +684,13 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        auto rand_gen = random_pool.get_state();
+        // auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
-          const auto dx1   = Random<prtldx_t>(rand_gen);
-          const auto dx2   = Random<prtldx_t>(rand_gen);
+          // const auto dx1   = Random<prtldx_t>(rand_gen);
+          // const auto dx2   = Random<prtldx_t>(rand_gen);
+          const auto dx1   = randf(i1 + i2 * 123 + p * 456);
+          const auto dx2   = randf(i2 + i1 * 321 + p * 654);
 
           i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
           dx1s_1(index + offset1) = dx1;
@@ -733,7 +733,7 @@ namespace kernel {
             weights_2(index + offset2) = wei;
           }
         }
-        random_pool.free_state(rand_gen);
+        // random_pool.free_state(rand_gen);
       }
 
       else {
@@ -753,12 +753,15 @@ namespace kernel {
         if (ppc == 0) {
           return;
         }
-        auto rand_gen = random_pool.get_state();
+        // auto rand_gen = random_pool.get_state();
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
-          const auto dx1   = Random<prtldx_t>(rand_gen);
-          const auto dx2   = Random<prtldx_t>(rand_gen);
-          const auto dx3   = Random<prtldx_t>(rand_gen);
+          const auto dx1   = randf(i1 + i2 * 123 + i3 * 456 + p * 789);
+          const auto dx2   = randf(i2 + i3 * 321 + i1 * 654 + p * 987);
+          const auto dx3   = randf(i3 + i1 * 213 + i2 * 546 + p * 879);
+          // const auto dx1   = Random<prtldx_t>(rand_gen);
+          // const auto dx2   = Random<prtldx_t>(rand_gen);
+          // const auto dx3   = Random<prtldx_t>(rand_gen);
 
           i1s_1(index + offset1)  = static_cast<int>(i1) - N_GHOSTS;
           dx1s_1(index + offset1) = dx1;
@@ -808,7 +811,7 @@ namespace kernel {
             weights_2(index + offset2) = wei;
           }
         }
-        random_pool.free_state(rand_gen);
+        // random_pool.free_state(rand_gen);
       } else {
         raise::KernelError(HERE, "NonUniformInjector_kernel 3D called for 1D/2D");
       }

@@ -1270,9 +1270,7 @@ namespace ntt {
         m_metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
       }
 
-      const auto maxwellian = arch::Maxwellian<S, M> { domain.mesh.metric,
-                                                       domain.random_pool,
-                                                       temp };
+      const auto maxwellian = arch::Maxwellian<S, M> { domain.mesh.metric, temp };
 
       if (dim == in::x1) {
         if (sign > 0) {

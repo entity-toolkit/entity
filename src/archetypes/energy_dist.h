@@ -1,3 +1,7 @@
+/*****
+ * THIS FILE IS A TOTAL HACK!!!! THIS SHOULD NOT BE FOUND IN THE STABLE RELEASE
+ *****/
+
 /**
  * @file archetypes/energy_dist.hpp
  * @brief Defines an archetype for energy distributions
@@ -27,7 +31,6 @@
 #include "utils/numeric.h"
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Random.hpp>
 
 namespace arch {
   using namespace ntt;
@@ -62,22 +65,22 @@ namespace arch {
   struct Powerlaw : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 
-    Powerlaw(const M&              metric,
-             random_number_pool_t& pool,
-             real_t                g_min,
-             real_t                g_max,
-             real_t                pl_ind)
+    Powerlaw(const M& metric,
+             // random_number_pool_t& pool,
+             real_t   g_min,
+             real_t   g_max,
+             real_t   pl_ind)
       : EnergyDistribution<S, M> { metric }
       , g_min { g_min }
       , g_max { g_max }
-      , pl_ind { pl_ind }
-      , pool { pool } {}
+      , pl_ind { pl_ind } {}
 
     Inline void operator()(const coord_t<M::Dim>&,
                            vec_t<Dim::_3D>& v,
                            spidx_t = 0) const {
-      auto rand_gen = pool.get_state();
-      auto rand_X1  = Random<real_t>(rand_gen);
+      // auto rand_gen = pool.get_state();
+      // auto rand_X1  = Random<real_t>(rand_gen);
+      auto rand_X1  = randf(0);
       auto rand_gam = ONE;
 
       // Power-law distribution from uniform (see https://mathworld.wolfram.com/RandomNumber.html)
@@ -91,93 +94,95 @@ namespace arch {
         rand_gam += math::pow(g_min, ONE - rand_X1) * math::pow(g_max, rand_X1);
       }
       auto rand_u  = math::sqrt(SQR(rand_gam) - ONE);
-      auto rand_X2 = Random<real_t>(rand_gen);
-      auto rand_X3 = Random<real_t>(rand_gen);
+      auto rand_X2 = randf(1);
+      auto rand_X3 = randf(2);
+      // auto rand_X2 = Random<real_t>(rand_gen);
+      // auto rand_X3 = Random<real_t>(rand_gen);
       v[0]         = rand_u * (TWO * rand_X2 - ONE);
       v[2]         = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
       v[1]         = v[2] * math::cos(constant::TWO_PI * rand_X3);
       v[2]         = v[2] * math::sin(constant::TWO_PI * rand_X3);
 
-      pool.free_state(rand_gen);
+      // pool.free_state(rand_gen);
     }
 
   private:
-    const real_t         g_min, g_max, pl_ind;
-    random_number_pool_t pool;
+    const real_t g_min, g_max, pl_ind;
+    // random_number_pool_t pool;
   };
 
-  Inline void JuttnerSinge(vec_t<Dim::_3D>&            v,
-                           const real_t&               temp,
-                           const random_number_pool_t& pool) {
-    auto   rand_gen = pool.get_state();
+  Inline void JuttnerSinge(vec_t<Dim::_3D>& v, const real_t& temp) {
+    // auto   rand_gen = pool.get_state();
     real_t randX1, randX2;
     if (temp < static_cast<real_t>(0.5)) {
       // Juttner-Synge distribution using the Box-Muller method - non-relativistic
-      randX1 = Random<real_t>(rand_gen);
+      auto randX1 = randf(0);
+      // randX1 = Random<real_t>(rand_gen);
       while (cmp::AlmostZero(randX1)) {
-        randX1 = Random<real_t>(rand_gen);
+        randX1 = randf(1);
+        // randX1 = Random<real_t>(rand_gen);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = constant::TWO_PI * randf(2);
       v[0]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
-      randX1 = Random<real_t>(rand_gen);
+      randX1 = randf(3);
+      // randX1 = Random<real_t>(rand_gen);
       while (cmp::AlmostZero(randX1)) {
-        randX1 = Random<real_t>(rand_gen);
+        randX1 = randf(4);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = constant::TWO_PI * randf(5);
       v[1]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
-      randX1 = Random<real_t>(rand_gen);
+      randX1 = randf(6);
+      // randX1 = Random<real_t>(rand_gen);
       while (cmp::AlmostZero(randX1)) {
-        randX1 = Random<real_t>(rand_gen);
+        randX1 = randf(7);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = constant::TWO_PI * randf(8);
+      // randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
       v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
     } else {
       // Juttner-Synge distribution using the Sobol method - relativistic
       auto randu   = ONE;
-      auto randeta = Random<real_t>(rand_gen);
+      auto randeta = randf(0);
+      // auto randeta = Random<real_t>(rand_gen);
       while (SQR(randeta) <= SQR(randu) + ONE) {
-        randX1 = Random<real_t>(rand_gen) * Random<real_t>(rand_gen) *
-                 Random<real_t>(rand_gen);
+        randX1 = randf(0) * randf(0) * randf(0);
         while (cmp::AlmostZero(randX1)) {
-          randX1 = Random<real_t>(rand_gen) * Random<real_t>(rand_gen) *
-                   Random<real_t>(rand_gen);
+          randX1 = randf(0) * randf(0) * randf(0);
         }
         randu  = -temp * math::log(randX1);
-        randX2 = Random<real_t>(rand_gen);
+        randX2 = randf(0);
         while (cmp::AlmostZero(randX2)) {
-          randX2 = Random<real_t>(rand_gen);
+          randX2 = randf(0);
         }
         randeta = -temp * math::log(randX1 * randX2);
       }
-      randX1 = Random<real_t>(rand_gen);
-      randX2 = Random<real_t>(rand_gen);
+      randX1 = randf(0);
+      randX2 = randf(0);
       v[0]   = randu * (TWO * randX1 - ONE);
       v[2]   = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
       v[1]   = v[2] * math::cos(constant::TWO_PI * randX2);
       v[2]   = v[2] * math::sin(constant::TWO_PI * randX2);
     }
-    pool.free_state(rand_gen);
   }
 
   template <SimEngine::type S, bool CanBoost>
   Inline void SampleFromMaxwellian(
-    vec_t<Dim::_3D>&            v,
-    const random_number_pool_t& pool,
-    const real_t&               temperature,
-    const real_t&               boost_velocity  = static_cast<real_t>(0),
-    const in&                   boost_direction = in::x1,
-    bool                        flip_velocity   = false) {
+    vec_t<Dim::_3D>& v,
+    const real_t&    temperature,
+    const real_t&    boost_velocity  = static_cast<real_t>(0),
+    const in&        boost_direction = in::x1,
+    bool             flip_velocity   = false) {
     if (cmp::AlmostZero(temperature)) {
       v[0] = ZERO;
       v[1] = ZERO;
       v[2] = ZERO;
     } else {
-      JuttnerSinge(v, temperature, pool);
+      JuttnerSinge(v, temperature);
     }
     if constexpr (CanBoost) {
       // Boost a symmetric distribution to a relativistic speed using flipping
@@ -188,11 +193,9 @@ namespace arch {
         const auto boost_beta { boost_velocity /
                                 math::sqrt(ONE + SQR(boost_velocity)) };
         const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
-        auto       rand_gen = pool.get_state();
-        if (-boost_beta * v[boost_dir] > gamma * Random<real_t>(rand_gen)) {
+        if (-boost_beta * v[boost_dir] > gamma * randf(0)) {
           v[boost_dir] = -v[boost_dir];
         }
-        pool.free_state(rand_gen);
         v[boost_dir] = math::sqrt(ONE + SQR(boost_velocity)) *
                        (v[boost_dir] + boost_beta * gamma);
         if (flip_velocity) {
@@ -209,11 +212,9 @@ namespace arch {
     using EnergyDistribution<S, M>::metric;
 
     Maxwellian(const M&                   metric,
-               random_number_pool_t&      pool,
                real_t                     temperature,
                const std::vector<real_t>& drift_four_vel = { ZERO, ZERO, ZERO })
       : EnergyDistribution<S, M> { metric }
-      , pool { pool }
       , temperature { temperature } {
       raise::ErrorIf(drift_four_vel.size() != 3,
                      "Maxwellian: Drift velocity must be a 3D vector",
@@ -262,7 +263,7 @@ namespace arch {
         v[1] = ZERO;
         v[2] = ZERO;
       } else {
-        JuttnerSinge(v, temperature, pool);
+        JuttnerSinge(v, temperature);
       }
       // @note: boost only when using cartesian coordinates
       if constexpr (M::CoordType == Coord::Cart) {
@@ -271,11 +272,9 @@ namespace arch {
           // flipping method https://arxiv.org/pdf/1504.03910.pdf
           // 1. apply drift in X1 direction
           const auto gamma { U2GAMMA(v[0], v[1], v[2]) };
-          auto       rand_gen = pool.get_state();
-          if (-drift_3vel * v[0] > gamma * Random<real_t>(rand_gen)) {
+          if (-drift_3vel * v[0] > gamma * randf(0)) {
             v[0] = -v[0];
           }
-          pool.free_state(rand_gen);
           v[0] = math::sqrt(ONE + SQR(drift_4vel)) * (v[0] + drift_3vel * gamma);
           // 2. rotate to desired orientation
           if (drift_dir == -1) {
@@ -311,8 +310,6 @@ namespace arch {
     }
 
   private:
-    random_number_pool_t pool;
-
     const real_t temperature;
 
     real_t drift_3vel { ZERO }, drift_4vel { ZERO };

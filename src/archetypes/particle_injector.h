@@ -377,8 +377,7 @@ namespace arch {
         energy_dists.first,
         energy_dists.second,
         spatial_dist,
-        ONE / params.template get<real_t>("scales.V0"),
-        domain.random_pool);
+        ONE / params.template get<real_t>("scales.V0"));
       Kokkos::parallel_for("InjectNonUniformNumberDensity",
                            cell_range,
                            injector_kernel);

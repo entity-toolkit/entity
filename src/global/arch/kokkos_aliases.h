@@ -22,7 +22,6 @@
 #include "global.h"
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Random.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_Sort.hpp>
 
@@ -234,8 +233,8 @@ auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
 template <Dimension D>
-auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
-  -> range_t<D>;
+auto CreateRangePolicy(const tuple_t<ncells_t, D>&,
+                       const tuple_t<ncells_t, D>&) -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy on the host.
@@ -248,22 +247,27 @@ template <Dimension D>
 auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
+Inline auto randf(index_t p) -> real_t {
+  const index_t n = (1664525 * p + 1013904223);
+  return (n & 0xFFFFFF) / static_cast<real_t>(0x1000000);
+}
+
 // Random number pool/generator type alias
-using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<Kokkos::DefaultExecutionSpace>;
-using random_generator_t = typename random_number_pool_t::generator_type;
-
-// Random number generator functions
-template <typename T>
-Inline auto Random(random_generator_t&) -> T;
-
-template <>
-Inline auto Random<float>(random_generator_t& gen) -> float {
-  return gen.frand();
-}
-
-template <>
-Inline auto Random<double>(random_generator_t& gen) -> double {
-  return gen.drand();
-}
+// using random_number_pool_t = Kokkos::Random_XorShift1024_Pool<Kokkos::DefaultExecutionSpace>;
+// using random_generator_t = typename random_number_pool_t::generator_type;
+//
+// // Random number generator functions
+// template <typename T>
+// Inline auto Random(random_generator_t&) -> T;
+//
+// template <>
+// Inline auto Random<float>(random_generator_t& gen) -> float {
+//   return gen.frand();
+// }
+//
+// template <>
+// Inline auto Random<double>(random_generator_t& gen) -> double {
+//   return gen.drand();
+// }
 
 #endif // GLOBAL_ARCH_KOKKOS_ALIASES_H
