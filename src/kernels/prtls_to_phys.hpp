@@ -142,8 +142,7 @@ namespace kernel {
       }
       if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cart)) {
         buff_x3(p_to) = phi(p_from);
-      }
-      if constexpr (D == Dim::_3D) {
+      } else if constexpr (D == Dim::_3D) {
         buff_x3(p_to) = metric.template convert<3, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i3(p_from)) + static_cast<real_t>(dx3(p_from)));
       }
