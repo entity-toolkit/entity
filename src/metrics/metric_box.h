@@ -7,10 +7,9 @@
  *   - metric::
  *
  * @details
- * Spatial map: x_phys = L(t) x_code,  L(t) = diag(a_x(t), a_y(t), a_z(t))
- * with a_i(t) = (1 + q_i t)^{s_i}. 
- *
- */
+ * Spatial map (Cartesian): x_phys = L(t) x_code,  L(t) = diag(a_x(t), a_y(t), a_z(t))
+ * with a_i(t) = (1 + q_i t)^{s_i}
+ * */
 
 #ifndef METRICS_METRIC_BOX_H
 #define METRICS_METRIC_BOX_H
@@ -28,33 +27,35 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <array>
 
 namespace metric {
 
   template <Dimension D>
   class Box : public MetricBase<D> {
+    // per-axis code cell sizes
     const real_t dx1, dx2, dx3;
     const real_t dx1_inv, dx2_inv, dx3_inv;
 
-    // time-dependent scale factors a_i(t_mid) and their Hubble rates H_i = (da_i/dt)/a_i
-    std::array<real_t, 3> a { ONE, ONE, ONE };
-    std::array<real_t, 3> H { ZERO, ZERO, ZERO };
+    // time-dependent scale factors and Hubble rates H_i = (d a_i/dt)/a_i
+    real_t ax{ONE}, ay{ONE}, az{ONE};
+    real_t Hx{ZERO}, Hy{ZERO}, Hz{ZERO};
 
     // parameters for a_i(t) = (1 + q_i t)^{s_i}
     const real_t qx, qy, qz;
     const real_t sx, sy, sz;
-
-    Inline real_t ax(int i) const { return a[i-1]; }     // 1-based for i=1..3
-    Inline real_t dxi(int i) const {                     // 1-based for i=1..3
-      if (i == 1) return dx1; if (i == 2) return dx2; return dx3;
-    }
 
   public:
     static constexpr const char*       Label { "box" };
     static constexpr Dimension         PrtlDim { D };
     static constexpr ntt::Metric::type MetricType { ntt::Metric::Box };
     static constexpr ntt::Coord::type  CoordType { ntt::Coord::Cart };
+
+    Inline real_t get_ax() const { return ax; }
+    Inline real_t get_ay() const { return ay; }
+    Inline real_t get_az() const { return az; }
+    Inline real_t get_Hx() const { return Hx; }
+    Inline real_t get_Hy() const { return Hy; }
+    Inline real_t get_Hz() const { return Hz; }
 
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
@@ -67,10 +68,27 @@ namespace metric {
     using MetricBase<D>::nx3;
     using MetricBase<D>::set_dxMin;
 
-    Inline real_t Li(int i)   const { return a[i-1]; }      // primed -> physical 
-    Inline real_t Linv(int i) const { return ONE / a[i-1]; } // physical -> primed
-    Inline real_t Li(idx_t i, const coord_t<D>&) const   { return a[i]; }
-    Inline real_t Linv(idx_t i, const coord_t<D>&) const { return ONE / a[i]; }
+    // scale factors L and L^{-1}
+    Inline real_t Li(int i) const {
+      if (i == 1) return ax;
+      if (i == 2) return ay;
+      return az;
+    }
+    Inline real_t Linv(int i) const {
+      if (i == 1) return ONE / ax;
+      if (i == 2) return ONE / ay;
+      return ONE / az;
+    }
+    Inline real_t Li(idx_t i, const coord_t<D>&) const {
+      if (i == 1) return ax;
+      if (i == 2) return ay;
+      return az;
+    }
+    Inline real_t Linv(idx_t i, const coord_t<D>&) const {
+      if (i == 1) return ONE / ax;
+      if (i == 2) return ONE / ay;
+      return ONE / az;
+    }
 
     Box(const std::vector<ncells_t>&         res,
         const boundaries_t<real_t>&          ext,
@@ -100,17 +118,21 @@ namespace metric {
       const real_t fx = ONE + qx * t_mid;
       const real_t fy = ONE + qy * t_mid;
       const real_t fz = ONE + qz * t_mid;
-      a[0] = math::pow(fx, sx);  H[0] = (sx * qx) / fx;
-      if constexpr (D != Dim::_1D) { a[1] = math::pow(fy, sy);  H[1] = (sy * qy) / fy; }
-      if constexpr (D == Dim::_3D) { a[2] = math::pow(fz, sz);  H[2] = (sz * qz) / fz; }
+
+      ax = math::pow(fx, sx);  Hx = (sx * qx) / fx;
+      if constexpr (D != Dim::_1D) { ay = math::pow(fy, sy);  Hy = (sy * qy) / fy; }
+      if constexpr (D == Dim::_3D) { az = math::pow(fz, sz);  Hz = (sz * qz) / fz; }
     }
+
     Inline void update(simtime_t t_mid) { update(static_cast<real_t>(t_mid)); }
 
     // expose H_i if something needs it
-    Inline real_t Hi(int i) const { return H[i-1]; }
-
+    Inline real_t Hi(int i) const {
+      return (i == 1 ? Hx : (i == 2 ? Hy : Hz));
+    }
     /**
      * minimum effective cell size (in physical units)
+     * match Minkowski’s style: take the smallest code spacing, divide by sqrt(D)
      */
     [[nodiscard]]
     auto find_dxMin() const -> real_t override {
@@ -127,73 +149,63 @@ namespace metric {
      */
     [[nodiscard]]
     auto totVolume() const -> real_t override {
-      const real_t L1 = (x1_max - x1_min) * a[0];
+      const real_t L1 = (x1_max - x1_min) * ax;
       if constexpr (D == Dim::_1D) {
         return L1;
       } else if constexpr (D == Dim::_2D) {
-        const real_t L2 = (x2_max - x2_min) * a[1];
+        const real_t L2 = (x2_max - x2_min) * ay;
         return L1 * L2;
       } else {
-        const real_t L2 = (x2_max - x2_min) * a[1];
-        const real_t L3 = (x3_max - x3_min) * a[2];
+        const real_t L2 = (x2_max - x2_min) * ay;
+        const real_t L3 = (x3_max - x3_min) * az;
         return L1 * L2 * L3;
       }
     }
 
     /**
-    * metric components: h_ij
+    * metric component with lower indices: h_ij
     */
     template <idx_t i, idx_t j>
     Inline auto h_(const coord_t<D>&) const -> real_t {
-      static_assert(i >= 1 && i <= 3, "Invalid index i");
-      static_assert(j >= 1 && j <= 3, "Invalid index j");
-
-      // Out-of-plane components behave like identity in reduced-D runs
+      static_assert(i >= 1 && i <= 3 && j >= 1 && j <= 3, "Invalid index");
       if constexpr (i > static_cast<idx_t>(D) || j > static_cast<idx_t>(D)) {
         return (i == j) ? ONE : ZERO;
       }
-
       if constexpr (i == j) {
-        return SQR(a[i - 1]);   // h_ii = a_i^2
-      } else {
-        return ZERO;
+        if constexpr (i == 1) return SQR(dx1 * ax);
+        if constexpr (i == 2) return SQR(dx2 * ay);
+        if constexpr (i == 3) return SQR(dx3 * az);
       }
+      return ZERO;
     }
-
     /**
-    * sqrt(h_ij). 
+    * sqrt(h_ij)
     */
     template <idx_t i, idx_t j>
     Inline auto sqrt_h_(const coord_t<D>&) const -> real_t {
-      static_assert(i >= 1 && i <= 3, "Invalid index i");
-      static_assert(j >= 1 && j <= 3, "Invalid index j");
-
+      static_assert(i >= 1 && i <= 3 && j >= 1 && j <= 3, "Invalid index");
       if constexpr (i > static_cast<idx_t>(D) || j > static_cast<idx_t>(D)) {
         return (i == j) ? ONE : ZERO;
       }
-
       if constexpr (i == j) {
-        return a[i - 1];        // sqrt(h_ii) = a_i
-      } else {
-        return ZERO;
+        if constexpr (i == 1) return dx1 * ax;
+        if constexpr (i == 2) return dx2 * ay;
+        if constexpr (i == 3) return dx3 * az;
       }
+      return ZERO;
     }
 
     /**
      * sqrt(det(h_ij))
      */
     Inline auto sqrt_det_h(const coord_t<D>&) const -> real_t {
-      if constexpr (D == Dim::_1D) {
-        return dx1 * a[0];
-      } else if constexpr (D == Dim::_2D) {
-        return (dx1 * a[0]) * (dx2 * a[1]);
-      } else {
-        return (dx1 * a[0]) * (dx2 * a[1]) * (dx3 * a[2]);
-      }
+      if constexpr (D == Dim::_1D)   return (dx1 * ax);
+      if constexpr (D == Dim::_2D)   return (dx1 * ax) * (dx2 * ay);
+      /* Dim::_3D */                 return (dx1 * ax) * (dx2 * ay) * (dx3 * az);
     }
 
     /**
-     *$ identical style to Minkowski
+     * identical style to Minkowski
      */
     template <idx_t i, Crd in, Crd out>
     Inline auto convert(const real_t& x_in) const -> real_t {
@@ -232,6 +244,7 @@ namespace metric {
           x_out[2] = convert<3, in, out>(x_in[2]);
         }
       } else {
+        // no Sph support in this Cartesian metric
         raise::Error("Invalid coordinate conversion for Box metric", HERE);
       }
     }
@@ -250,7 +263,7 @@ namespace metric {
     }
 
     /**
-     * vector transformations
+     * component-wise vector transformations
      * tetrad/cart <-> cntrv <-> cov
      * Same structure as Minkowski; use per-axis sqrt_h_ and h_
      */
@@ -260,8 +273,11 @@ namespace metric {
       if constexpr (i > static_cast<idx_t>(D)) {
         return v_in;
       }
-      const real_t dxa     = dxi(i) * ax(i);
-      const real_t dxa_inv = ONE / dxa;
+        const real_t dxa =
+          (i == 1 ? dx1 * ax :
+          (i == 2 ? dx2 * ay :
+                    dx3 * az));
+        const real_t dxa_inv = ONE / dxa;
 
       if constexpr ((in == Idx::T && out == Idx::XYZ) ||
                     (in == Idx::XYZ && out == Idx::T)) {
@@ -316,7 +332,7 @@ namespace metric {
     }
 
     /**
-     * full vector transformations to cartesian (like Minkowski metric)
+     * full vector transformations to cartesian (compatibility, like Minkowski)
      */
     template <Idx in, Idx out>
     Inline void transform_xyz(const coord_t<PrtlDim>& xi,

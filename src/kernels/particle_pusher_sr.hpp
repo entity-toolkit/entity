@@ -1,3 +1,4 @@
+
 /**
  * @file kernels/particle_pusher_sr.h
  * @brief Particle pusher for the SR
@@ -30,7 +31,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -474,13 +477,6 @@ namespace kernel::sr {
       bool            is_gca { false };
 
       getInterpFlds(p, ei, bi);
-      // CG - FOR EXPANDING-BOX: comoving -> physical fields
-      if constexpr (M::MetricType == ntt::Metric::Box) {
-        ei[0] *= metric.Li(0);  ei[1] *= metric.Li(1);  ei[2] *= metric.Li(2);
-        bi[0] *= metric.Li(0);  bi[1] *= metric.Li(1);  bi[2] *= metric.Li(2);
-      }
-      // CG - END
-
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
       if (cooling != 0) {
@@ -698,73 +694,64 @@ namespace kernel::sr {
         ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
         ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
         ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+      // CG: with modification for the inertial force
       } else if (pusher == PrtlPusher::BORIS) {
         real_t COEFF { coeff };
 
+        // implicit inertial term: lambda_i = (H_i * dt / 4)
+        real_t lambda_x { ZERO }, lambda_y { ZERO }, lambda_z { ZERO };
+        if constexpr (M::MetricType == Metric::Box) {
+          const real_t quarter_dt { dt * HALF * HALF };
+          lambda_x = metric.H[0] * quarter_dt;
+          lambda_y = metric.H[1] * quarter_dt;
+          lambda_z = metric.H[2] * quarter_dt;
+        }
+        const real_t denom_x { ONE + lambda_x };
+        const real_t denom_y { ONE + lambda_y };
+        const real_t denom_z { ONE + lambda_z };
+        const real_t numer_x { ONE - lambda_x };
+        const real_t numer_y { ONE - lambda_y };
+        const real_t numer_z { ONE - lambda_z };
+
+        // first E half–kick with inertia
         e0[0] *= COEFF;
         e0[1] *= COEFF;
         e0[2] *= COEFF;
 
-        // CG - EXPANDING BOX do the first half electric kick with the expanding-box force
-        // There is an inertial term to be added in the pusher.
-        // we treat it with a tiny CN step, which looks like:
-        //   u_i <- a_i * u_i + s_i * (q E_i Delta t/2),  where
-        //   h_i = (H_i Delta t)/4,a_i = (1 - h_i)/(1 + h_i), s_i = 1/(1 + h_i).
-        // NOTE: previously we had this line:
-        //   vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
-        // I’m commenting it out because it adds the qE half-step unconditionally
-        // if left uncomented, it would double-count E
+        vec_t<Dim::_3D> u0 {
+          (numer_x * ux1(p) + e0[0]) / denom_x,
+          (numer_y * ux2(p) + e0[1]) / denom_y,
+          (numer_z * ux3(p) + e0[2]) / denom_z
+        };
 
-        real_t a1 { ONE }, a2 { ONE }, a3 { ONE };
-        real_t s1 { ONE }, s2 { ONE }, s3 { ONE };
-        if constexpr (M::MetricType == ntt::Metric::Box) {
-        // use mid-step H_i stored in the metric
-        const real_t h1 = (HALF * HALF) * dt * metric.Hi(0);
-        const real_t h2 = (HALF * HALF) * dt * metric.Hi(1);
-        const real_t h3 = (HALF * HALF) * dt * metric.Hi(2);
-        a1 = (ONE - h1) / (ONE + h1);
-        a2 = (ONE - h2) / (ONE + h2);
-        a3 = (ONE - h3) / (ONE + h3);
-        s1 = ONE / (ONE + h1);
-        s2 = ONE / (ONE + h2);
-        s3 = ONE / (ONE + h3);
-      }
-        ux1(p) = a1 * ux1(p) + s1 * e0[0];
-        ux2(p) = a2 * ux2(p) + s2 * e0[1];
-        ux3(p) = a3 * ux3(p) + s3 * e0[2];
-        vec_t<Dim::_3D> u0 { ux1(p), ux2(p), ux3(p) };
-        // CG END 
-
-
-        
+        // B rotation (unchanged)
         COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
         b0[0] *= COEFF;
         b0[1] *= COEFF;
         b0[2] *= COEFF;
         COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-        // rotation with B (same as before)
         vec_t<Dim::_3D> u1 {
           (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
           (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
           (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
         };
 
-        u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
-        u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
-        u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
+        // second E half–kick with inertia
+        vec_t<Dim::_3D> u_rot {
+          u0[0] + CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]),
+          u0[1] + CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]),
+          u0[2] + CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2])
+        };
 
-        // CG - previous code:
-        // vec_t<Dim::_3D> u0 += e0;  
+        u0[0] = (numer_x * u_rot[0] + e0[0]) / denom_x;
+        u0[1] = (numer_y * u_rot[1] + e0[1]) / denom_y;
+        u0[2] = (numer_z * u_rot[2] + e0[2]) / denom_z;
 
-        // CG - EXPANDING BOX: post half-step with inertial force
-        // we apply the -H_i u_i term symmetrically
-        // this reduces to the usual “+ e0” second half-kick
-        ux1(p) = a1 * u0[0] + s1 * e0[0];
-        ux2(p) = a2 * u0[1] + s2 * e0[1];
-        ux3(p) = a3 * u0[2] + s3 * e0[2];
+        ux1(p) = u0[0];
+        ux2(p) = u0[1];
+        ux3(p) = u0[2]; 
         // CG END
-      
       } else if (pusher == PrtlPusher::VAY) {
         auto COEFF { coeff };
         e0[0] *= COEFF;

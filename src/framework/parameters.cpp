@@ -112,8 +112,7 @@ namespace ntt {
         .c_str());
     promiseToDefine("grid.metric.metric");
     std::string coord;
-        // Ensure expanding/compressing box params are always present in the store,
-    // even if someone queries them before the metric block runs.
+    // Ensure expanding/compressing box params are always present ??
     set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
     set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
     set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
@@ -129,12 +128,12 @@ namespace ntt {
       raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                      "exp box metric is only supported for SRPIC",
                      HERE);
-      set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
-      set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
-      set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
-      set("metric_box.sx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sx", 0.0)));
-      set("metric_box.sy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sy", 0.0)));
-      set("metric_box.sz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sz", 0.0)));
+    set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
+    set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
+    set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
+    set("metric_box.sx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sx", 0.0)));
+    set("metric_box.sy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sy", 0.0)));
+    set("metric_box.sz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sz", 0.0)));
       // CG  end
 
       coord = "cart";
@@ -312,12 +311,12 @@ namespace ntt {
       }
       // CG: pass exp box params to the metric
       if (metric_enum == Metric::Box) {
-        params["qx"] = toml::find_or(toml_data, "metric_box", "qx", 0.0);
-        params["qy"] = toml::find_or(toml_data, "metric_box", "qy", 0.0);
-        params["qz"] = toml::find_or(toml_data, "metric_box", "qz", 0.0);
-        params["sx"] = toml::find_or(toml_data, "metric_box", "sx", 0.0);
-        params["sy"] = toml::find_or(toml_data, "metric_box", "sy", 0.0);
-        params["sz"] = toml::find_or(toml_data, "metric_box", "sz", 0.0);
+        params["qx"] = get<real_t>("metric_box.qx");
+        params["qy"] = get<real_t>("metric_box.qy");
+        params["qz"] = get<real_t>("metric_box.qz");
+        params["sx"] = get<real_t>("metric_box.sx");
+        params["sy"] = get<real_t>("metric_box.sy");
+        params["sz"] = get<real_t>("metric_box.sz");
       }
       set("grid.metric.params", params);
 
@@ -378,12 +377,12 @@ namespace ntt {
 
     // CG expanding box parameters if changed after restart
     if (metric_enum == Metric::Box) {
-      set("metric_box.qx", toml::find_or(toml_data, "metric_box", "qx", 0.0));
-      set("metric_box.qy", toml::find_or(toml_data, "metric_box", "qy", 0.0));
-      set("metric_box.qz", toml::find_or(toml_data, "metric_box", "qz", 0.0));
-      set("metric_box.sx", toml::find_or(toml_data, "metric_box", "sx", 0.0));
-      set("metric_box.sy", toml::find_or(toml_data, "metric_box", "sy", 0.0));
-      set("metric_box.sz", toml::find_or(toml_data, "metric_box", "sz", 0.0));
+      set("metric_box.qx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qx", 0.0)));
+      set("metric_box.qy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qy", 0.0)));
+      set("metric_box.qz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "qz", 0.0)));
+      set("metric_box.sx", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sx", 0.0)));
+      set("metric_box.sy", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sy", 0.0)));
+      set("metric_box.sz", static_cast<real_t>(toml::find_or(toml_data, "metric_box", "sz", 0.0)));
     }
     /* [simulation] --------------------------------------------------------- */
     set("simulation.name",
