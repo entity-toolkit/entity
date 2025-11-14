@@ -698,14 +698,13 @@ namespace kernel::sr {
       } else if (pusher == PrtlPusher::BORIS) {
         real_t COEFF { coeff };
 
-        // implicit inertial term: lambda_i = (H_i * dt / 4)
-        real_t lambda_x { ZERO }, lambda_y { ZERO }, lambda_z { ZERO };
-        if constexpr (M::MetricType == Metric::Box) {
-          const real_t quarter_dt { dt * HALF * HALF };
-          lambda_x = metric.H[0] * quarter_dt;
-          lambda_y = metric.H[1] * quarter_dt;
-          lambda_z = metric.H[2] * quarter_dt;
-        }
+        // implicit inertial term coefficients lambda_i
+        // currently set to ZERO because metric::Box does not expose H here.
+        // Once you know how to access H = (dot a / a), replace these three lines.
+        real_t lambda_x { ZERO };
+        real_t lambda_y { ZERO };
+        real_t lambda_z { ZERO };
+
         const real_t denom_x { ONE + lambda_x };
         const real_t denom_y { ONE + lambda_y };
         const real_t denom_z { ONE + lambda_z };
@@ -713,7 +712,7 @@ namespace kernel::sr {
         const real_t numer_y { ONE - lambda_y };
         const real_t numer_z { ONE - lambda_z };
 
-        // first E half–kick with inertia
+        // first E half–kick with (future) inertia
         e0[0] *= COEFF;
         e0[1] *= COEFF;
         e0[2] *= COEFF;
@@ -724,7 +723,7 @@ namespace kernel::sr {
           (numer_z * ux3(p) + e0[2]) / denom_z
         };
 
-        // B rotation (unchanged)
+        // B rotation (standard Boris part, unchanged)
         COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
         b0[0] *= COEFF;
         b0[1] *= COEFF;
@@ -737,7 +736,7 @@ namespace kernel::sr {
           (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
         };
 
-        // second E half–kick with inertia
+        // second E half–kick with (future) inertia
         vec_t<Dim::_3D> u_rot {
           u0[0] + CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]),
           u0[1] + CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]),
@@ -750,7 +749,7 @@ namespace kernel::sr {
 
         ux1(p) = u0[0];
         ux2(p) = u0[1];
-        ux3(p) = u0[2]; 
+        ux3(p) = u0[2];
         // CG END
       } else if (pusher == PrtlPusher::VAY) {
         auto COEFF { coeff };
