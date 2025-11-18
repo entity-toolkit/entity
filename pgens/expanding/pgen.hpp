@@ -108,6 +108,10 @@ namespace user {
     }
     
     // maybe we'll put it outside
+//    inline void CustomPostStep(timestep_t dt, simtime_t t, Domain<S, M>& domain) {
+    // Update the metric at the mid‑point of the next time interval
+//    domain.mesh.metric.update(static_cast<real_t>(t) + 0.5 * static_cast<real_t>(dt));
+//}
     inline void CustomPostStep(timestep_t, simtime_t t, Domain<S, M>& domain) {
       domain.mesh.metric.update(t);  // not HALF time
     }

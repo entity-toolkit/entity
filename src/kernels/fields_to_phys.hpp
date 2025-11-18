@@ -165,18 +165,18 @@ namespace kernel {
           f_fin[2] = f_int[2];
         }
         // CG E' -> E 
-        if constexpr (M::MetricType == ntt::Metric::Box) {
-          if ((flags & PrepareOutput::ConvertToPhysCntrv) ||
-              (flags & PrepareOutput::ConvertToPhysCov) ||
-              (flags & PrepareOutput::ConvertToHat)) {
-            const real_t L1 = metric.Li(1, xi_field);
-            const real_t L2 = metric.Li(2, xi_field);
-            const real_t L3 = metric.Li(3, xi_field);
-            f_fin[0] *= L1;
-            f_fin[1] *= L2;
-            f_fin[2] *= L3;
-          }
-        }
+        //if constexpr (M::MetricType == ntt::Metric::Box) {
+        //  if ((flags & PrepareOutput::ConvertToPhysCntrv) ||
+        //      (flags & PrepareOutput::ConvertToPhysCov) ||
+        //      (flags & PrepareOutput::ConvertToHat)) {
+        //    const real_t L1 = metric.Li(1, xi_field);
+        //    const real_t L2 = metric.Li(2, xi_field);
+        //    const real_t L3 = metric.Li(3, xi_field);
+        //    f_fin[0] *= L1;
+        //    f_fin[1] *= L2;
+        //    f_fin[2] *= L3;
+        //  }
+        //}
         // CG end
         Fto(i1, i2, ct1) = f_fin[0];
         Fto(i1, i2, ct2) = f_fin[1];
@@ -241,18 +241,18 @@ namespace kernel {
           f_fin[2] = f_int[2];
         }
         // CG  E' -> E 
-        if constexpr (M::MetricType == ntt::Metric::Box) {
-          if ((flags & PrepareOutput::ConvertToPhysCntrv) ||
-              (flags & PrepareOutput::ConvertToPhysCov) ||
-              (flags & PrepareOutput::ConvertToHat)) {
-            const real_t L1 = metric.Li(1, xi_field);
-            const real_t L2 = metric.Li(2, xi_field);
-            const real_t L3 = metric.Li(3, xi_field);
-            f_fin[0] *= L1;
-            f_fin[1] *= L2;
-            f_fin[2] *= L3;
-          }
-        }
+        //if constexpr (M::MetricType == ntt::Metric::Box) {
+        //  if ((flags & PrepareOutput::ConvertToPhysCntrv) ||
+        //      (flags & PrepareOutput::ConvertToPhysCov) ||
+        //      (flags & PrepareOutput::ConvertToHat)) {
+        //    const real_t L1 = metric.Li(1, xi_field);
+        //    const real_t L2 = metric.Li(2, xi_field);
+        //    const real_t L3 = metric.Li(3, xi_field);
+        //    f_fin[0] *= L1;
+        //    f_fin[1] *= L2;
+        //    f_fin[2] *= L3;
+        //  }
+        //}
         // CG end
         Fto(i1, i2, i3, ct1) = f_fin[0];
         Fto(i1, i2, i3, ct2) = f_fin[1];
