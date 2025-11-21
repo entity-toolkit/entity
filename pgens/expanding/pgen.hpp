@@ -85,8 +85,14 @@ namespace user {
       PLOGI << fmt::format(
         "PGen<Box>: q=({}, {}, {}), s=({}, {}, {}), n0={}, T={}, B=({}, {}, {})",
         qx, qy, qz, sx, sy, sz, n0_bg, T_bg, B0_x, B0_y, B0_z);
+      
+      PLOGI << "PGen<Box>: EB on the mesh is treated as E' and B' (grid variables); "
+         "physical E,B for the pusher are obtained via metric.transform_xyz.";
+
       (void) mdom;
     }
+
+
 
 
     inline void InitPrtls(Domain<S, M>& local_domain) {

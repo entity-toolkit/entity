@@ -182,7 +182,7 @@ namespace ntt {
                       m_params.template get<real_t>(
                         "algorithms.timestep.correction") *
                       dt;
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         const auto deltax = m_params.template get<real_t>(
@@ -242,7 +242,7 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = range_with_axis_BCs(domain);
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         real_t     coeff1, coeff2;
@@ -543,7 +543,7 @@ namespace ntt {
       const auto q0 = m_params.template get<real_t>("scales.q0");
       const auto n0 = m_params.template get<real_t>("scales.n0");
       const auto B0 = m_params.template get<real_t>("scales.B0");
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
         // minkowski case
         const auto V0    = m_params.template get<real_t>("scales.V0");
         const auto ppc0  = m_params.template get<real_t>("particles.ppc0");

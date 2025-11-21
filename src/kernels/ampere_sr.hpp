@@ -66,6 +66,7 @@ namespace kernel::sr {
         const real_t h3_mHpH { metric.template h_<3, 3>({ i1_ - HALF, i2_ + HALF }) };
         const real_t h3_pHpH { metric.template h_<3, 3>({ i1_ + HALF, i2_ + HALF }) };
 
+	if constexpr (M::MetricType != Metric::Box) {
         if ((i2 == i2min) && is_axis_i2min) {
           // theta = 0
           const real_t inv_polar_area_pH0 { ONE / metric.polar_area(i1_ + HALF) };
@@ -103,6 +104,28 @@ namespace kernel::sr {
                                   h2_pH0 * EB(i1, i2, em::bx2) -
                                   h2_mH0 * EB(i1 - 1, i2, em::bx2));
         }
+      } else {
+        const real_t inv_sqrt_detH_00 { ONE / metric.sqrt_det_h({ i1_, i2_ }) };
+        const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
+                                                   { i1_ + HALF, i2_ }) };
+        const real_t h1_0mH { metric.template h_<1, 1>({ i1_, i2_ - HALF }) };
+        const real_t h1_0pH { metric.template h_<1, 1>({ i1_, i2_ + HALF }) };
+        const real_t h2_pH0 { metric.template h_<2, 2>({ i1_ + HALF, i2_ }) };
+        const real_t h2_mH0 { metric.template h_<2, 2>({ i1_ - HALF, i2_ }) };
+        const real_t h3_pHmH { metric.template h_<3, 3>(
+            { i1_ + HALF, i2_ - HALF }) };
+        EB(i1, i2, em::ex1) += coeff * inv_sqrt_detH_pH0 *
+                                 (h3_pHpH * EB(i1, i2, em::bx3) -
+                                  h3_pHmH * EB(i1, i2 - 1, em::bx3));
+        EB(i1, i2, em::ex2) += coeff * inv_sqrt_detH_0pH *
+                                 (h3_mHpH * EB(i1 - 1, i2, em::bx3) -
+                                  h3_pHpH * EB(i1, i2, em::bx3));
+        EB(i1, i2, em::ex3) += coeff * inv_sqrt_detH_00 *
+                                 (h1_0mH * EB(i1, i2 - 1, em::bx1) -
+                                  h1_0pH * EB(i1, i2, em::bx1) +
+                                  h2_pH0 * EB(i1, i2, em::bx2) -
+                                  h2_mH0 * EB(i1 - 1, i2, em::bx2));
+	}
       } else {
         raise::KernelError(HERE, "Ampere_kernel: 2D implementation called for D != 2");
       }
@@ -168,6 +191,7 @@ namespace kernel::sr {
         // convert the "curly" current, to contravariant, normalized to
         // `J0=n0*q0` then add "curly" current with the right coefficient
 
+	if constexpr (M::MetricType != Metric::Box) {
         if ((i2 == i2min) && is_axis_i2min) {
           // theta = 0 (first active cell)
           // r
@@ -201,7 +225,23 @@ namespace kernel::sr {
         }
 
         E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
-      } else {
+	} else { 
+	   // 0 < theta < pi
+          // r
+          J(i1, i2, cur::jx1) *= inv_n0 / metric.sqrt_det_h({ i1_ + HALF, i2_ });
+
+          // theta
+          J(i1, i2, cur::jx2) *= inv_n0 / metric.sqrt_det_h({ i1_, i2_ + HALF });
+          E(i1, i2, em::ex2) += J(i1, i2, cur::jx2) * coeff;
+
+          // phi
+          J(i1, i2, cur::jx3) *= inv_n0 / metric.sqrt_det_h({ i1_, i2_ });
+          E(i1, i2, em::ex3)  += J(i1, i2, cur::jx3) * coeff;
+       
+
+        E(i1, i2, em::ex1) += J(i1, i2, cur::jx1) * coeff;
+	
+	} } else {
         raise::KernelError(
           HERE,
           "CurrentsAmpere_kernel: 2D implementation called for D != 2");

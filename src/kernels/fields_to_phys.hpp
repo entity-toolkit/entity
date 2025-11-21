@@ -164,20 +164,35 @@ namespace kernel {
           f_fin[1] = f_int[1];
           f_fin[2] = f_int[2];
         }
-        // CG E' -> E 
-        //if constexpr (M::MetricType == ntt::Metric::Box) {
-        //  if ((flags & PrepareOutput::ConvertToPhysCntrv) ||
-        //      (flags & PrepareOutput::ConvertToPhysCov) ||
-        //      (flags & PrepareOutput::ConvertToHat)) {
-        //    const real_t L1 = metric.Li(1, xi_field);
-        //    const real_t L2 = metric.Li(2, xi_field);
-        //    const real_t L3 = metric.Li(3, xi_field);
-        //    f_fin[0] *= L1;
-        //    f_fin[1] *= L2;
-        //    f_fin[2] *= L3;
-        //  }
-        //}
-        // CG end
+
+       // ============================
+      // DEBUG PRINT: one probe cell
+       // ============================
+       if (i1 == N_GHOSTS && i2 == N_GHOSTS) {
+         Kokkos::printf(
+           "[fields_to_phys] (i1,i2)=(%d,%d) flags=%d cell_center=%d\n",
+           (int)i1, (int)i2, (int)flags, (int)cell_center);
+
+         Kokkos::printf(
+           "[fields_to_phys]   xi_field=(%e,%e)\n",
+           (double)xi_field[0], (double)xi_field[1]);
+
+         Kokkos::printf(
+           "[fields_to_phys]   Ffrom=(%e,%e,%e) (cf=(%d,%d,%d))\n",
+           (double)Ffrom(i1, i2, cf1),
+           (double)Ffrom(i1, i2, cf2),
+           (double)Ffrom(i1, i2, cf3),
+           (int)cf1, (int)cf2, (int)cf3);
+
+         Kokkos::printf(
+           "[fields_to_phys]   f_int=(%e,%e,%e)\n",
+           (double)f_int[0], (double)f_int[1], (double)f_int[2]);
+
+         Kokkos::printf(
+           "[fields_to_phys]   f_fin=(%e,%e,%e)\n",
+           (double)f_fin[0], (double)f_fin[1], (double)f_fin[2]);
+        }
+    // --- END DEBUG ---
         Fto(i1, i2, ct1) = f_fin[0];
         Fto(i1, i2, ct2) = f_fin[1];
         Fto(i1, i2, ct3) = f_fin[2];

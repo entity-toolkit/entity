@@ -86,6 +86,9 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
+	if (i1 == N_GHOSTS && i2 == N_GHOSTS) {
+          Kokkos::printf("[DEBUG] faraday_mink ACTIVE (D=2)\n");
+        }
         const auto alphax = ONE - TWO * betaxy - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - THREE * deltay;
         // clang-format off

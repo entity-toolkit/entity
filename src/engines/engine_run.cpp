@@ -45,12 +45,22 @@ namespace ntt {
       // main algorithm loop
       while (step < max_steps) {
         // CG - EXPANDING BOX mid-step update
-        if constexpr (std::is_same_v<M, metric::Box<Dim::_2D>> ||
+	        if constexpr (std::is_same_v<M, metric::Box<Dim::_2D>> ||
                       std::is_same_v<M, metric::Box<Dim::_3D>>) {
           const auto t_mid = time + static_cast<simtime_t>(0.5) * dt;
           m_metadomain.runOnLocalDomains([&](auto& dom) {
             dom.mesh.metric.update(t_mid);
           });
+
+          // 🔎 DEBUG: print Hubble factors once at the first step
+          if (true) {
+            m_metadomain.runOnLocalDomains([&](auto& dom) {
+              std::cout << "DEBUG engine Box: Hx=" << dom.mesh.metric.get_Hx()
+                        << " Hy=" << dom.mesh.metric.get_Hy()
+                        << " Hz=" << dom.mesh.metric.get_Hz()
+                        << std::endl;
+            });
+          }
         }
         // CG END
 

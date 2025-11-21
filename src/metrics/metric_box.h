@@ -279,6 +279,31 @@ namespace metric {
                     dx3 * az));
         const real_t dxa_inv = ONE / dxa;
 
+  	// ===============================================
+  	// DEBUG PRINT — fires ONLY for one probe location
+  	// ===============================================
+	if (xi[0] == 0 && xi[1] == 0 && i == 1) {
+    	  Kokkos::printf(
+            "[transform] i=%d  in=%d  out=%d  v_in=%e\n",
+            (int)i, (int)in, (int)out, (double)v_in
+          );
+          Kokkos::printf(
+            "[transform] ax=%e ay=%e  Hx=%e Hy=%e\n",
+            (double)get_ax(), (double)get_ay(),
+            (double)get_Hx(), (double)get_Hy()
+          );
+          Kokkos::printf(
+            "[transform] dx1=%e  dxa=%e  sqrt_h11=%e  h11=%e\n",
+            (double)dx1,
+            (double)dxa,
+            (double)sqrt_h_<1,1>(xi),
+            (double)h_<1,1>(xi)
+          );
+        }
+  	// ===============================================	
+
+	
+
       if constexpr ((in == Idx::T && out == Idx::XYZ) ||
                     (in == Idx::XYZ && out == Idx::T)) {
         return v_in;
