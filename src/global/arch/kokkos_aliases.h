@@ -36,6 +36,9 @@ namespace math = Kokkos;
 template <typename T>
 using array_t = Kokkos::View<T>;
 
+template <typename T>
+using array_h_t = Kokkos::View<T, Kokkos::HostSpace>;
+
 // Array mirror alias of arbitrary type
 template <typename T>
 using array_mirror_t = typename array_t<T>::HostMirror;

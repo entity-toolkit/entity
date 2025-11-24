@@ -59,18 +59,14 @@ namespace ntt {
     }
     auto num_track_plds = 0;
     if (use_tracking()) {
+      io.DefineVariable<npart_t>(fmt::format("pIDX_%d", index()),
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim },
+                                 { adios2::UnknownDim });
 #if !defined(MPI_ENABLED)
       num_track_plds = 1;
-      io.DefineVariable<npart_t>(fmt::format("pIDX_%d", index()),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
 #else
       num_track_plds = 2;
-      io.DefineVariable<npart_t>(fmt::format("pIDX_%d", index()),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
       io.DefineVariable<npart_t>(fmt::format("pRNK_%d", index()),
                                  { adios2::UnknownDim },
                                  { adios2::UnknownDim },
@@ -109,7 +105,7 @@ namespace ntt {
       const auto pld_i_d = this->pld_i;
       Kokkos::parallel_reduce(
         "CountOutputParticles",
-        npart(),
+        rangeActiveParticles(),
         Lambda(index_t p, npart_t & l_nout) {
           if ((tag_d(p) == ParticleTag::alive) and
               (pld_i_d(p, pldi::spcCtr) % prtl_stride == 0)) {
@@ -121,7 +117,7 @@ namespace ntt {
       array_t<npart_t> out_counter { "out_counter" };
       Kokkos::parallel_for(
         "RecordOutputIndices",
-        npart(),
+        rangeActiveParticles(),
         Lambda(index_t p) {
           if ((tag_d(p) == ParticleTag::alive) and
               (pld_i_d(p, pldi::spcCtr) % prtl_stride == 0)) {

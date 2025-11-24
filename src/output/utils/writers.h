@@ -58,14 +58,19 @@ namespace out {
                        std::size_t        local_size,
                        std::size_t        global_size,
                        std::size_t        local_offset) {
-    const auto slice = range_tuple_t(0, local_size);
-    auto       var   = io.InquireVariable<T>(name);
+    auto var = io.InquireVariable<T>(name);
     var.SetShape({ global_size });
     var.SetSelection(adios2::Box<adios2::Dims>({ local_offset }, { local_size }));
 
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
-    writer.Put(var, data_h.data(), adios2::Mode::Sync);
+    if (!data_h.span_is_contiguous()) {
+      array_h_t<T*> data_contig_h { "data_contig_h", local_size };
+      Kokkos::deep_copy(data_contig_h, data_h);
+      writer.Put(var, data_contig_h.data(), adios2::Mode::Sync);
+    } else {
+      writer.Put(var, data_h.data(), adios2::Mode::Sync);
+    }
   }
 
   template <typename T>
