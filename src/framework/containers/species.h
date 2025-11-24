@@ -33,6 +33,8 @@ namespace ntt {
     // Pusher assigned for the species
     const PrtlPusher m_pusher;
 
+    // Use particle weights
+    const bool m_use_weights;
     // Use byrid gca pusher for the species
     const bool m_use_gca;
 
@@ -50,6 +52,7 @@ namespace ntt {
       , m_charge { 0.0 }
       , m_maxnpart { 0 }
       , m_pusher { PrtlPusher::INVALID }
+      , m_use_weights { false }
       , m_use_gca { false }
       , m_cooling { Cooling::INVALID }
       , m_npld { 0 } {}
@@ -70,6 +73,7 @@ namespace ntt {
                     float              ch,
                     npart_t            maxnpart,
                     const PrtlPusher&  pusher,
+                    bool               use_weights,
                     bool               use_gca,
                     const Cooling&     cooling,
                     unsigned short     npld = 0)
@@ -79,6 +83,7 @@ namespace ntt {
       , m_charge { ch }
       , m_maxnpart { maxnpart }
       , m_pusher { pusher }
+      , m_use_weights { use_weights }
       , m_use_gca { use_gca }
       , m_cooling { cooling }
       , m_npld { npld } {}
@@ -118,6 +123,11 @@ namespace ntt {
     [[nodiscard]]
     auto pusher() const -> PrtlPusher {
       return m_pusher;
+    }
+
+    [[nodiscard]]
+    auto use_weights() const -> bool {
+      return m_use_weights;
     }
 
     [[nodiscard]]

@@ -46,6 +46,8 @@ namespace kernel {
     const array_t<real_t*>   weight;
     const M                  metric;
 
+    const bool use_weights;
+
   public:
     PrtlToPhys_kernel(npart_t                   stride,
                       array_t<real_t*>&         buff_x1,
@@ -86,7 +88,8 @@ namespace kernel {
       , ux3 { ux3 }
       , phi { phi }
       , weight { weight }
-      , metric { metric } {
+      , metric { metric }
+      , use_weights { weight.extent(0) > 0 } {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x1.extent(0) == 0, "Invalid buffer size", HERE);
       }
@@ -105,7 +108,9 @@ namespace kernel {
     Inline void operator()(index_t p) const {
       bufferX(p);
       bufferU(p);
-      buff_wei(p) = weight(p * stride);
+      if (use_weights) {
+        buff_wei(p) = weight(p * stride);
+      }
     }
 
     Inline void bufferX(index_t& p) const {
