@@ -245,15 +245,10 @@ namespace user {
       const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
 
       boundaries_t<real_t> inj_box_up, inj_box_down;
-      boundaries_t<real_t> probe_box_up, probe_box_down;
       inj_box_up.push_back(Range::All);
       inj_box_down.push_back(Range::All);
-      probe_box_up.push_back(Range::All);
-      probe_box_down.push_back(Range::All);
       inj_box_up.push_back({ ymax - inj_ypad - 10 * dx, ymax - inj_ypad });
       inj_box_down.push_back({ ymin + inj_ypad, ymin + inj_ypad + 10 * dx });
-      probe_box_up.push_back({ ymax - inj_ypad - 10 * dx, ymax - inj_ypad });
-      probe_box_down.push_back({ ymin + inj_ypad, ymin + inj_ypad + 10 * dx });
 
       if constexpr (M::Dim == Dim::_3D) {
         inj_box_up.push_back(Range::All);
