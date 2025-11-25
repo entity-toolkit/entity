@@ -8,9 +8,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "archetypes/energy_dist.h"
 #include "archetypes/field_setter.h"
-#include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
@@ -179,7 +177,7 @@ namespace user {
       const auto drifts       = std::make_pair(
         std::vector<real_t> { -drift_ux, ZERO, ZERO },
         std::vector<real_t> { -drift_ux, ZERO, ZERO });
-      
+
       // inject particles
       arch::InjectUniformMaxwellians<S, M>(params,
                                            domain,

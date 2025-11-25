@@ -118,7 +118,7 @@ namespace kernel {
     }
 
     Inline void operator()(index_t p) const {
-      if constexpr (!T) { // no tracking enabled
+      if constexpr (not T) { // no tracking enabled
         bufferX(p * stride, p);
         bufferU(p * stride, p);
         buff_wei(p) = weight(p * stride);
@@ -131,7 +131,7 @@ namespace kernel {
       }
     }
 
-    Inline void bufferX(index_t& p_from, index_t& p_to) const {
+    Inline void bufferX(const index_t& p_from, const index_t& p_to) const {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         buff_x1(p_to) = metric.template convert<1, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)));
@@ -142,14 +142,13 @@ namespace kernel {
       }
       if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cart)) {
         buff_x3(p_to) = phi(p_from);
-      }
-      if constexpr (D == Dim::_3D) {
+      } else if constexpr (D == Dim::_3D) {
         buff_x3(p_to) = metric.template convert<3, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i3(p_from)) + static_cast<real_t>(dx3(p_from)));
       }
     }
 
-    Inline void bufferU(index_t& p_from, index_t& p_to) const {
+    Inline void bufferU(const index_t& p_from, const index_t& p_to) const {
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (D == Dim::_1D) {
         if constexpr (M::CoordType == Coord::Cart) {
@@ -207,16 +206,12 @@ namespace kernel {
       buff_ux3(p_to) = u_Phys[2];
     }
 
-    Inline void bufferPlds(index_t& p_from, index_t& p_to) const {
-      if (buff_pldr.extent(0) > 0) {
-        for (auto pr { 0u }; pr < buff_pldr.extent(1); ++pr) {
-          buff_pldr(p_to, pr) = pld_r(p_from, pr);
-        }
+    Inline void bufferPlds(const index_t& p_from, const index_t& p_to) const {
+      for (auto pr { 0u }; pr < buff_pldr.extent(1); ++pr) {
+        buff_pldr(p_to, pr) = pld_r(p_from, pr);
       }
-      if (buff_pldi.extent(0) > 0) {
-        for (auto pi { 0u }; pi < buff_pldi.extent(1); ++pi) {
-          buff_pldi(p_to, pi) = pld_i(p_from, pi);
-        }
+      for (auto pi { 0u }; pi < buff_pldi.extent(1); ++pi) {
+        buff_pldi(p_to, pi) = pld_i(p_from, pi);
       }
     }
   };

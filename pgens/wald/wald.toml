@@ -41,7 +41,7 @@
   init_field = "wald" # or "vertical"
 
 [output]
-  format = "hdf5"
+  format = "BPFile"
 
   [output.fields]
     interval_time = 1.0
