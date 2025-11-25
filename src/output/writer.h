@@ -14,7 +14,6 @@
 #include "utils/tools.h"
 
 #include "output/fields.h"
-#include "output/particles.h"
 #include "output/spectra.h"
 
 #include <adios2.h>
@@ -62,8 +61,9 @@ namespace out {
     std::map<std::string, tools::Tracker> m_trackers;
 
     std::vector<OutputField>   m_flds_writers;
-    std::vector<OutputSpecies> m_prtl_writers;
     std::vector<OutputSpectra> m_spectra_writers;
+
+    std::vector<spidx_t> m_species_indices;
 
     WriteModeTags m_active_mode { WriteMode::None };
 
@@ -92,7 +92,6 @@ namespace out {
                           Coord);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineParticleOutputs(Dimension, const std::vector<spidx_t>&);
     void defineSpectraOutputs(const std::vector<spidx_t>&);
 
     void writeMesh(unsigned short,
@@ -115,19 +114,41 @@ namespace out {
     void beginWriting(WriteModeTags, timestep_t, simtime_t);
     void endWriting(WriteModeTags);
 
+    void addSpeciesIndex(spidx_t idx) {
+      m_species_indices.push_back(idx);
+    }
+
+    void clearSpeciesIndex() {
+      m_species_indices.clear();
+    }
+
     /* getters -------------------------------------------------------------- */
+    [[nodiscard]]
+    auto io() -> adios2::IO& {
+      return m_io;
+    }
+
+    [[nodiscard]]
+    auto writer() -> adios2::Engine& {
+      return m_writer;
+    }
+
+    [[nodiscard]]
+    auto speciesIndices() const -> const std::vector<spidx_t>& {
+      return m_species_indices;
+    }
+
+    [[nodiscard]]
     auto root() const -> const path_t& {
       return m_root;
     }
 
+    [[nodiscard]]
     auto fieldWriters() const -> const std::vector<OutputField>& {
       return m_flds_writers;
     }
 
-    auto speciesWriters() const -> const std::vector<OutputSpecies>& {
-      return m_prtl_writers;
-    }
-
+    [[nodiscard]]
     auto spectraWriters() const -> const std::vector<OutputSpectra>& {
       return m_spectra_writers;
     }

@@ -16,8 +16,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 
-#include "framework/domain/domain.h"
-
 #include <Kokkos_Core.hpp>
 
 namespace comm {

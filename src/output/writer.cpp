@@ -48,9 +48,8 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type,
-                           timestep_t         step,
-                           simtime_t          time) -> bool {
+  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
+    -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -160,32 +159,6 @@ namespace out {
                                       adios2::ConstantDims);
         }
       }
-    }
-  }
-
-  void Writer::defineParticleOutputs(Dimension                   dim,
-                                     const std::vector<spidx_t>& specs) {
-    m_prtl_writers.clear();
-    for (const auto& s : specs) {
-      m_prtl_writers.emplace_back(s);
-    }
-    for (const auto& prtl : m_prtl_writers) {
-      for (auto d { 0u }; d < dim; ++d) {
-        m_io.DefineVariable<real_t>(prtl.name("X", d + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
-      }
-      for (auto d { 0u }; d < Dim::_3D; ++d) {
-        m_io.DefineVariable<real_t>(prtl.name("U", d + 1),
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim },
-                                    { adios2::UnknownDim });
-      }
-      m_io.DefineVariable<real_t>(prtl.name("W", 0),
-                                  { adios2::UnknownDim },
-                                  { adios2::UnknownDim },
-                                  { adios2::UnknownDim });
     }
   }
 

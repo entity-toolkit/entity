@@ -19,9 +19,7 @@
 
 #include <iostream>
 #include <map>
-#include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 using namespace ntt;
@@ -39,13 +37,15 @@ struct Checker {
           const array_t<real_t*>&   ux2,
           const array_t<real_t*>&   ux3,
           const array_t<real_t*>&   weight,
+          const array_t<npart_t**>& pld_i,
           const array_t<real_t*>&   buff_x1,
           const array_t<real_t*>&   buff_x2,
           const array_t<real_t*>&   buff_x3,
           const array_t<real_t*>&   buff_ux1,
           const array_t<real_t*>&   buff_ux2,
           const array_t<real_t*>&   buff_ux3,
-          const array_t<real_t*>&   buff_wei)
+          const array_t<real_t*>&   buff_wei,
+          const array_t<npart_t**>& buff_pld_i)
     : metric { metric }
     , stride { stride }
     , i1 { i1 }
@@ -57,13 +57,15 @@ struct Checker {
     , ux2 { ux2 }
     , ux3 { ux3 }
     , weight { weight }
+    , pld_i { pld_i }
     , buff_x1 { buff_x1 }
     , buff_x2 { buff_x2 }
     , buff_x3 { buff_x3 }
     , buff_ux1 { buff_ux1 }
     , buff_ux2 { buff_ux2 }
     , buff_ux3 { buff_ux3 }
-    , buff_wei { buff_wei } {}
+    , buff_wei { buff_wei }
+    , buff_pld_i { buff_pld_i } {}
 
   Inline void operator()(index_t p) const {
     std::size_t pold = p * stride;
@@ -97,6 +99,9 @@ struct Checker {
     if (not cmp::AlmostEqual(weight(pold), buff_wei(p))) {
       raise::KernelError(HERE, "weight != buff_wei");
     }
+    if (pld_i(pold, pldi::spcCtr) != buff_pld_i(p, pldi::spcCtr)) {
+      raise::KernelError(HERE, "weight != buff_wei");
+    }
   }
 
 private:
@@ -111,13 +116,15 @@ private:
   const array_t<real_t*>   ux2;
   const array_t<real_t*>   ux3;
   const array_t<real_t*>   weight;
-  array_t<real_t*>         buff_x1;
-  array_t<real_t*>         buff_x2;
-  array_t<real_t*>         buff_x3;
-  array_t<real_t*>         buff_ux1;
-  array_t<real_t*>         buff_ux2;
-  array_t<real_t*>         buff_ux3;
-  array_t<real_t*>         buff_wei;
+  const array_t<npart_t**> pld_i;
+  const array_t<real_t*>   buff_x1;
+  const array_t<real_t*>   buff_x2;
+  const array_t<real_t*>   buff_x3;
+  const array_t<real_t*>   buff_ux1;
+  const array_t<real_t*>   buff_ux2;
+  const array_t<real_t*>   buff_ux3;
+  const array_t<real_t*>   buff_wei;
+  const array_t<npart_t**> buff_pld_i;
 };
 
 template <typename M>
@@ -148,10 +155,14 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
   array_t<real_t*>   ux2 { "ux2", nprtl };
   array_t<real_t*>   ux3 { "ux3", nprtl };
   array_t<real_t*>   weight { "weight", nprtl };
+  array_t<real_t**>  pldr;
+  array_t<npart_t**> pld_i { "pld_i", nprtl, 1 };
 
   array_t<int*>      i3;
   array_t<prtldx_t*> dx3;
 
+  const std::size_t stride = 2;
+  array_t<npart_t*> out_indices { "out_indices", nprtl / stride };
   Kokkos::parallel_for(
     "Init",
     nprtl,
@@ -166,40 +177,50 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
       ux2(p)    = ((real_t)(p) - (real_t)(nprtl) / 4) / (real_t)(9 * nprtl);
       ux3(p)    = ((real_t)(p) - (real_t)(nprtl) / 2) / (real_t)(5 * nprtl);
       weight(p) = (real_t)(25) + (real_t)(p) / (real_t)(nprtl);
+      pld_i(p, pldi::spcCtr) = p;
+      if (p % stride == 0) {
+        out_indices(p / stride) = p;
+      }
     });
 
-  const std::size_t stride = 2;
-  array_t<real_t*>  buff_x1 { "buff_x1", nprtl / stride };
-  array_t<real_t*>  buff_x2 { "buff_x2", nprtl / stride };
-  array_t<real_t*>  buff_x3 { "buff_x3", nprtl / stride };
-  array_t<real_t*>  buff_ux1 { "buff_ux1", nprtl / stride };
-  array_t<real_t*>  buff_ux2 { "buff_ux2", nprtl / stride };
-  array_t<real_t*>  buff_ux3 { "buff_ux3", nprtl / stride };
-  array_t<real_t*>  buff_wei { "buff_wei", nprtl / stride };
+  array_t<real_t*>   buff_x1 { "buff_x1", nprtl / stride };
+  array_t<real_t*>   buff_x2 { "buff_x2", nprtl / stride };
+  array_t<real_t*>   buff_x3 { "buff_x3", nprtl / stride };
+  array_t<real_t*>   buff_ux1 { "buff_ux1", nprtl / stride };
+  array_t<real_t*>   buff_ux2 { "buff_ux2", nprtl / stride };
+  array_t<real_t*>   buff_ux3 { "buff_ux3", nprtl / stride };
+  array_t<real_t*>   buff_wei { "buff_wei", nprtl / stride };
+  array_t<real_t**>  buff_pldr;
+  array_t<npart_t**> buff_pld_i { "pld_i", nprtl / stride, 1 };
 
   Kokkos::parallel_for(
     "Init",
     Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(0, nprtl / stride),
-    kernel::PrtlToPhys_kernel<SimEngine::SRPIC, M>(stride,
-                                                   buff_x1,
-                                                   buff_x2,
-                                                   buff_x3,
-                                                   buff_ux1,
-                                                   buff_ux2,
-                                                   buff_ux3,
-                                                   buff_wei,
-                                                   i1,
-                                                   i2,
-                                                   i3,
-                                                   dx1,
-                                                   dx2,
-                                                   dx3,
-                                                   ux1,
-                                                   ux2,
-                                                   ux3,
-                                                   phi,
-                                                   weight,
-                                                   metric));
+    kernel::PrtlToPhys_kernel<SimEngine::SRPIC, M, true>(stride,
+                                                         out_indices,
+                                                         buff_x1,
+                                                         buff_x2,
+                                                         buff_x3,
+                                                         buff_ux1,
+                                                         buff_ux2,
+                                                         buff_ux3,
+                                                         buff_wei,
+                                                         buff_pldr,
+                                                         buff_pld_i,
+                                                         i1,
+                                                         i2,
+                                                         i3,
+                                                         dx1,
+                                                         dx2,
+                                                         dx3,
+                                                         ux1,
+                                                         ux2,
+                                                         ux3,
+                                                         phi,
+                                                         weight,
+                                                         pldr,
+                                                         pld_i,
+                                                         metric));
   Kokkos::parallel_for("Check",
                        nprtl / stride,
                        Checker<M>(metric,
@@ -213,13 +234,15 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
                                   ux2,
                                   ux3,
                                   weight,
+                                  pld_i,
                                   buff_x1,
                                   buff_x2,
                                   buff_x3,
                                   buff_ux1,
                                   buff_ux2,
                                   buff_ux3,
-                                  buff_wei));
+                                  buff_wei,
+                                  buff_pld_i));
 }
 
 auto main(int argc, char* argv[]) -> int {

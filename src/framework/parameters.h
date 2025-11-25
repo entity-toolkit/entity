@@ -20,6 +20,8 @@
 #include "utils/param_container.h"
 #include "utils/toml.h"
 
+#include <string>
+
 namespace ntt {
 
   struct SimulationParams : public prm::Parameters {
@@ -51,6 +53,8 @@ namespace ntt {
     void setRawData(const toml::value& data) {
       raw_data = data;
     }
+
+    void saveTOML(const std::string&, simtime_t) const;
 
   private:
     toml::value raw_data;

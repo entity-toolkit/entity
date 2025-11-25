@@ -110,15 +110,17 @@ namespace kernel::comm {
     array_t<int*>      send_buff_int;
     array_t<real_t*>   send_buff_real;
     array_t<prtldx_t*> send_buff_prtldx;
-    array_t<real_t*>   send_buff_pld;
+    array_t<real_t*>   send_buff_pld_r;
+    array_t<npart_t*>  send_buff_pld_i;
 
-    const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
+    const unsigned short NINTS, NREALS, NPRTLDX, NPLDS_R, NPLDS_I;
     const npart_t        idx_offset;
 
     const array_t<int*>      i1, i1_prev, i2, i2_prev, i3, i3_prev;
     const array_t<prtldx_t*> dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
     const array_t<real_t*>   ux1, ux2, ux3, weight, phi;
-    const array_t<real_t**>  pld;
+    const array_t<real_t**>  pld_r;
+    const array_t<npart_t**> pld_i;
     array_t<short*>          tag;
     const array_t<npart_t*>  outgoing_indices;
 
@@ -126,11 +128,13 @@ namespace kernel::comm {
     PopulatePrtlSendBuffer_kernel(array_t<int*>&            send_buff_int,
                                   array_t<real_t*>&         send_buff_real,
                                   array_t<prtldx_t*>&       send_buff_prtldx,
-                                  array_t<real_t*>&         send_buff_pld,
+                                  array_t<real_t*>&         send_buff_pld_r,
+                                  array_t<npart_t*>&        send_buff_pld_i,
                                   unsigned short            NINTS,
                                   unsigned short            NREALS,
                                   unsigned short            NPRTLDX,
-                                  unsigned short            NPLDS,
+                                  unsigned short            NPLDS_R,
+                                  unsigned short            NPLDS_I,
                                   npart_t                   idx_offset,
                                   const array_t<int*>&      i1,
                                   const array_t<int*>&      i1_prev,
@@ -149,17 +153,20 @@ namespace kernel::comm {
                                   const array_t<real_t*>&   ux3,
                                   const array_t<real_t*>&   weight,
                                   const array_t<real_t*>&   phi,
-                                  const array_t<real_t**>&  pld,
+                                  const array_t<real_t**>&  pld_r,
+                                  const array_t<npart_t**>& pld_i,
                                   array_t<short*>&          tag,
                                   const array_t<npart_t*>&  outgoing_indices)
       : send_buff_int { send_buff_int }
       , send_buff_real { send_buff_real }
       , send_buff_prtldx { send_buff_prtldx }
-      , send_buff_pld { send_buff_pld }
+      , send_buff_pld_r { send_buff_pld_r }
+      , send_buff_pld_i { send_buff_pld_i }
       , NINTS { NINTS }
       , NREALS { NREALS }
       , NPRTLDX { NPRTLDX }
-      , NPLDS { NPLDS }
+      , NPLDS_R { NPLDS_R }
+      , NPLDS_I { NPLDS_I }
       , idx_offset { idx_offset }
       , i1 { i1 }
       , i1_prev { i1_prev }
@@ -178,7 +185,8 @@ namespace kernel::comm {
       , ux3 { ux3 }
       , weight { weight }
       , phi { phi }
-      , pld { pld }
+      , pld_r { pld_r }
+      , pld_i { pld_i }
       , tag { tag }
       , outgoing_indices { outgoing_indices } {}
 
@@ -209,9 +217,14 @@ namespace kernel::comm {
       if constexpr (D == Dim::_2D and C != Coord::Cart) {
         send_buff_real(NREALS * p + 4) = phi(idx);
       }
-      if (NPLDS > 0) {
-        for (auto l { 0u }; l < NPLDS; ++l) {
-          send_buff_pld(NPLDS * p + l) = pld(idx, l);
+      if (NPLDS_R > 0) {
+        for (auto l { 0u }; l < NPLDS_R; ++l) {
+          send_buff_pld_r(NPLDS_R * p + l) = pld_r(idx, l);
+        }
+      }
+      if (NPLDS_I > 0) {
+        for (auto l { 0u }; l < NPLDS_I; ++l) {
+          send_buff_pld_i(NPLDS_I * p + l) = pld_i(idx, l);
         }
       }
       tag(idx) = ParticleTag::dead;
@@ -223,15 +236,17 @@ namespace kernel::comm {
     const array_t<int*>      recv_buff_int;
     const array_t<real_t*>   recv_buff_real;
     const array_t<prtldx_t*> recv_buff_prtldx;
-    const array_t<real_t*>   recv_buff_pld;
+    const array_t<real_t*>   recv_buff_pld_r;
+    const array_t<npart_t*>  recv_buff_pld_i;
 
-    const unsigned short NINTS, NREALS, NPRTLDX, NPLDS;
+    const unsigned short NINTS, NREALS, NPRTLDX, NPLDS_R, NPLDS_I;
     const npart_t        npart, npart_holes;
 
     array_t<int*>           i1, i1_prev, i2, i2_prev, i3, i3_prev;
     array_t<prtldx_t*>      dx1, dx1_prev, dx2, dx2_prev, dx3, dx3_prev;
     array_t<real_t*>        ux1, ux2, ux3, weight, phi;
-    array_t<real_t**>       pld;
+    array_t<real_t**>       pld_r;
+    array_t<npart_t**>      pld_i;
     array_t<short*>         tag;
     const array_t<npart_t*> outgoing_indices;
 
@@ -239,11 +254,13 @@ namespace kernel::comm {
     ExtractReceivedPrtls_kernel(const array_t<int*>&      recv_buff_int,
                                 const array_t<real_t*>&   recv_buff_real,
                                 const array_t<prtldx_t*>& recv_buff_prtldx,
-                                const array_t<real_t*>&   recv_buff_pld,
+                                const array_t<real_t*>&   recv_buff_pld_r,
+                                const array_t<npart_t*>&  recv_buff_pld_i,
                                 unsigned short            NINTS,
                                 unsigned short            NREALS,
                                 unsigned short            NPRTLDX,
-                                unsigned short            NPLDS,
+                                unsigned short            NPLDS_R,
+                                unsigned short            NPLDS_I,
                                 npart_t                   npart,
                                 array_t<int*>&            i1,
                                 array_t<int*>&            i1_prev,
@@ -262,17 +279,20 @@ namespace kernel::comm {
                                 array_t<real_t*>&         ux3,
                                 array_t<real_t*>&         weight,
                                 array_t<real_t*>&         phi,
-                                array_t<real_t**>&        pld,
+                                array_t<real_t**>&        pld_r,
+                                array_t<npart_t**>&       pld_i,
                                 array_t<short*>&          tag,
                                 const array_t<npart_t*>&  outgoing_indices)
       : recv_buff_int { recv_buff_int }
       , recv_buff_real { recv_buff_real }
       , recv_buff_prtldx { recv_buff_prtldx }
-      , recv_buff_pld { recv_buff_pld }
+      , recv_buff_pld_r { recv_buff_pld_r }
+      , recv_buff_pld_i { recv_buff_pld_i }
       , NINTS { NINTS }
       , NREALS { NREALS }
       , NPRTLDX { NPRTLDX }
-      , NPLDS { NPLDS }
+      , NPLDS_R { NPLDS_R }
+      , NPLDS_I { NPLDS_I }
       , npart { npart }
       , npart_holes { outgoing_indices.extent(0) }
       , i1 { i1 }
@@ -292,7 +312,8 @@ namespace kernel::comm {
       , ux3 { ux3 }
       , weight { weight }
       , phi { phi }
-      , pld { pld }
+      , pld_r { pld_r }
+      , pld_i { pld_i }
       , tag { tag }
       , outgoing_indices { outgoing_indices } {}
 
@@ -328,9 +349,14 @@ namespace kernel::comm {
       if constexpr (D == Dim::_2D and C != Coord::Cart) {
         phi(idx) = recv_buff_real(NREALS * p + 4);
       }
-      if (NPLDS > 0) {
-        for (auto l { 0u }; l < NPLDS; ++l) {
-          pld(idx, l) = recv_buff_pld(NPLDS * p + l);
+      if (NPLDS_R > 0) {
+        for (auto l { 0u }; l < NPLDS_R; ++l) {
+          pld_r(idx, l) = recv_buff_pld_r(NPLDS_R * p + l);
+        }
+      }
+      if (NPLDS_I > 0) {
+        for (auto l { 0u }; l < NPLDS_I; ++l) {
+          pld_i(idx, l) = recv_buff_pld_i(NPLDS_I * p + l);
         }
       }
       tag(idx) = ParticleTag::alive;

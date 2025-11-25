@@ -7,6 +7,7 @@
  * @namespaces:
  *   - out::
  */
+
 #ifndef OUTPUT_UTILS_ATTR_WRITER_H
 #define OUTPUT_UTILS_ATTR_WRITER_H
 

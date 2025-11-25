@@ -31,7 +31,7 @@
 #endif // MPI_ENABLED
 
 #if defined(OUTPUT_ENABLED)
-  #include "checkpoint/writer.h"
+  #include "output/checkpoint.h"
   #include "output/writer.h"
 
   #include <adios2.h>

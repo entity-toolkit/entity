@@ -4,24 +4,33 @@
 #include "global.h"
 
 #include "utils/error.h"
-#include "utils/formatting.h"
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
-#include <vector>
 
 template <Dimension D, ntt::Coord::type C>
-void testParticles(const int&             index,
+void testParticles(int                    index,
                    const std::string&     label,
-                   const float&           m,
-                   const float&           ch,
-                   const std::size_t&     maxnpart,
+                   float                  m,
+                   float                  ch,
+                   std::size_t            maxnpart,
                    const ntt::PrtlPusher& pusher,
+                   bool                   use_tracking,
                    const ntt::Cooling&    cooling,
-                   const unsigned short&  npld = 0) {
+                   unsigned short         npld_r = 0,
+                   unsigned short         npld_i = 0) {
   using namespace ntt;
-  auto p = Particles<D, C>(index, label, m, ch, maxnpart, pusher, false, cooling, npld);
+  auto p = Particles<D, C>(index,
+                           label,
+                           m,
+                           ch,
+                           maxnpart,
+                           pusher,
+                           use_tracking,
+                           false,
+                           cooling,
+                           npld_r,
+                           npld_i);
   raise::ErrorIf(p.index() != index, "Index mismatch", HERE);
   raise::ErrorIf(p.label() != label, "Label mismatch", HERE);
   raise::ErrorIf(p.mass() != m, "Mass mismatch", HERE);
@@ -46,9 +55,13 @@ void testParticles(const int&             index,
   raise::ErrorIf(p.tag.extent(0) != maxnpart, "tag incorrectly allocated", HERE);
   raise::ErrorIf(p.weight.extent(0) != maxnpart, "weight incorrectly allocated", HERE);
 
-  if (npld > 0) {
-    raise::ErrorIf(p.pld.extent(0) != maxnpart, "pld incorrectly allocated", HERE);
-    raise::ErrorIf(p.pld.extent(1) != npld, "pld incorrectly allocated", HERE);
+  if (npld_r > 0) {
+    raise::ErrorIf(p.pld_r.extent(0) != maxnpart, "pld_r incorrectly allocated", HERE);
+    raise::ErrorIf(p.pld_r.extent(1) != npld_r, "pld_r incorrectly allocated", HERE);
+  }
+  if (npld_i > 0) {
+    raise::ErrorIf(p.pld_i.extent(0) != maxnpart, "pld_i incorrectly allocated", HERE);
+    raise::ErrorIf(p.pld_i.extent(1) != npld_i, "pld_i incorrectly allocated", HERE);
   }
 
   if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
@@ -103,6 +116,7 @@ auto main(int argc, char** argv) -> int {
                                          -1.0,
                                          100,
                                          PrtlPusher::BORIS,
+                                         false,
                                          Cooling::SYNCHROTRON);
     testParticles<Dim::_2D, Coord::Cart>(2,
                                          "p+",
@@ -110,13 +124,17 @@ auto main(int argc, char** argv) -> int {
                                          -1.0,
                                          1000,
                                          PrtlPusher::VAY,
-                                         Cooling::SYNCHROTRON);
+                                         true,
+                                         Cooling::SYNCHROTRON,
+                                         2,
+                                         1);
     testParticles<Dim::_3D, Coord::Cart>(3,
                                          "ph",
                                          0.0,
                                          0.0,
                                          100,
                                          PrtlPusher::PHOTON,
+                                         false,
                                          Cooling::NONE,
                                          5);
     testParticles<Dim::_2D, Coord::Sph>(4,
@@ -125,15 +143,20 @@ auto main(int argc, char** argv) -> int {
                                         1.0,
                                         100,
                                         PrtlPusher::BORIS,
-                                        Cooling::NONE);
+                                        true,
+                                        Cooling::NONE,
+                                        2,
+                                        3);
     testParticles<Dim::_2D, Coord::Qsph>(5,
                                          "e+",
                                          1.0,
                                          1.0,
                                          100,
                                          PrtlPusher::BORIS,
+                                         false,
                                          Cooling::NONE,
-                                         1);
+                                         1,
+                                         2);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     Kokkos::finalize();

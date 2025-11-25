@@ -21,6 +21,10 @@
 
 #include "arch/kokkos_aliases.h"
 
+#if defined(OUTPUT_ENABLED)
+  #include <adios2.h>
+#endif
+
 #include <vector>
 
 namespace ntt {
@@ -161,6 +165,18 @@ namespace ntt {
              (em_footprint + bckp_footprint + cur_footprint + buff_footprint +
               aux_footprint + em0_footprint + cur0_footprint);
     }
+
+/* helpers ---------------------------------------------------------------- */
+#if defined(OUTPUT_ENABLED)
+    void CheckpointDeclare(adios2::IO&,
+                           const std::vector<ncells_t>&,
+                           const std::vector<ncells_t>&,
+                           const std::vector<ncells_t>&) const;
+    void CheckpointRead(adios2::IO&,
+                        adios2::Engine&,
+                        const adios2::Box<adios2::Dims>&);
+    void CheckpointWrite(adios2::IO&, adios2::Engine&) const;
+#endif
   };
 
 } // namespace ntt
