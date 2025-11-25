@@ -34,16 +34,32 @@ namespace kernel::mink {
     const real_t    coeff1;
     const real_t    coeff2;
 
+    // CG
+    const real_t    bx1_scale;   // scales Bx1 in the curl
+    const real_t    bx2_scale;   // scales Bx2 in the curl
+    const real_t    bx3_scale;   // scales Bx3 in the curl
+
   public:
     /**
      * ! 1D: coeff1 = dt / dx
      * ! 2D: coeff1 = dt / dx^2, coeff2 = dt
      * ! 3D: coeff1 = dt / dx
      */
-    Ampere_kernel(const ndfield_t<D, 6>& EB, real_t coeff1, real_t coeff2)
+    Ampere_kernel(const ndfield_t<D, 6>& EB,
+                  real_t                 coeff1,
+                  real_t                 coeff2,
+                  // NEW: scaling factors for Bx1, Bx2, Bx3 (default 1: pure Minkowski)
+                  real_t                 bx1_scale = ONE,
+                  real_t                 bx2_scale = ONE,
+                  real_t                 bx3_scale = ONE)
       : EB { EB }
       , coeff1 { coeff1 }
-      , coeff2 { coeff2 } {}
+      , coeff2 { coeff2 }
+      , bx1_scale { bx1_scale }   // NEW
+      , bx2_scale { bx2_scale }   // NEW
+      , bx3_scale { bx3_scale }   // NEW
+    {}
+
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -56,13 +72,37 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
+
+        // DEBUG: print coefficients once per timestep (for a single probe cell)
+        if ((i1 == 1) && (i2 == 1)) {
+          Kokkos::printf(
+            "[Ampere-Minkowski] i1=%d i2=%d "
+            "bx1_scale=%e bx2_scale=%e bx3_scale=%e coeff1=%e coeff2=%e\n",
+            (int)i1, (int)i2,
+            (double)bx1_scale, (double)bx2_scale, (double)bx3_scale,
+            (double)coeff1, (double)coeff2
+          );
+        }
+
+        // E1 update: curl_y(F_B,z), with F_B,z = bx3_scale * Bx3
         EB(i1, i2, em::ex1) += coeff1 *
-                               (EB(i1, i2, em::bx3) - EB(i1, i2 - 1, em::bx3));
+                              (bx3_scale *
+                                (EB(i1, i2,     em::bx3) - EB(i1, i2 - 1, em::bx3)));
+
+        // E2 update: -curl_x(F_B,z), same bx3_scale
         EB(i1, i2, em::ex2) += coeff1 *
-                               (EB(i1 - 1, i2, em::bx3) - EB(i1, i2, em::bx3));
+                              (bx3_scale *
+                                (EB(i1 - 1, i2, em::bx3) - EB(i1, i2,     em::bx3)));
+
+        // E3 update: curl_x,y(F_B), with
+        //   F_B,x = bx1_scale * Bx1
+        //   F_B,y = bx2_scale * Bx2
         EB(i1, i2, em::ex3) += coeff2 *
-                               (EB(i1, i2 - 1, em::bx1) - EB(i1, i2, em::bx1) +
-                                EB(i1, i2, em::bx2) - EB(i1 - 1, i2, em::bx2));
+                              (bx1_scale *
+                                  (EB(i1,     i2 - 1, em::bx1) - EB(i1,     i2,     em::bx1)) +
+                                bx2_scale *
+                                  (EB(i1,     i2,     em::bx2) - EB(i1 - 1, i2,     em::bx2)));
+
       } else {
         raise::KernelError(HERE, "Ampere_kernel: 2D implementation called for D != 2");
       }

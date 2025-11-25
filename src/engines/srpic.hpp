@@ -182,7 +182,7 @@ namespace ntt {
                       m_params.template get<real_t>(
                         "algorithms.timestep.correction") *
                       dt;
-      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
+      if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         const auto deltax = m_params.template get<real_t>(
@@ -211,6 +211,26 @@ namespace ntt {
           coeff1 = dT / dx;
           coeff2 = ZERO;
         }
+
+        // CG: metric-dependent scaling of E (expanding box)
+        real_t ex1_scale = ONE;
+        real_t ex2_scale = ONE;
+        real_t ex3_scale = ONE;
+        if constexpr (M::MetricType == Metric::Box) {
+          ex1_scale = domain.mesh.metric.get_ex1_scale();
+          ex2_scale = domain.mesh.metric.get_ex2_scale();
+          ex3_scale = domain.mesh.metric.get_ex3_scale();
+
+          if (step % 100 == 0) {
+            std::cout << "[Faraday-Minkowski host] step=" << step
+                      << " time=" << time
+                      << " ex1_scale=" << ex1_scale
+                      << " ex2_scale=" << ex2_scale
+                      << " ex3_scale=" << ex3_scale
+                      << std::endl;
+          }
+        }
+
         Kokkos::parallel_for("Faraday",
                              domain.mesh.rangeActiveCells(),
                              kernel::mink::Faraday_kernel<M::Dim>(domain.fields.em,
@@ -224,7 +244,11 @@ namespace ntt {
                                                                   betaxz,
                                                                   betazx,
                                                                   betayz,
-                                                                  betazy));
+                                                                  betazy,
+                                                                  // CG scales:
+                                                                  ex1_scale,
+                                                                  ex2_scale,
+                                                                  ex3_scale));
       } else {
         Kokkos::parallel_for("Faraday",
                              domain.mesh.rangeActiveCells(),
@@ -242,7 +266,7 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = range_with_axis_BCs(domain);
-      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
+      if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         real_t     coeff1, coeff2;
@@ -253,11 +277,33 @@ namespace ntt {
           coeff1 = dT / dx;
           coeff2 = ZERO;
         }
+        real_t ex1_scale = ONE;
+        real_t ex2_scale = ONE;
+        real_t ex3_scale = ONE;
+        if constexpr (M::MetricType == Metric::Box) {
+          ex1_scale = domain.mesh.metric.get_ex1_scale();
+          ex2_scale = domain.mesh.metric.get_ex2_scale();
+          ex3_scale = domain.mesh.metric.get_ex3_scale();
+
+          if (step % 100 == 0) {
+            std::cout << "[Ampere-Minkowski host] step=" << step
+                      << " time=" << time
+                      << " ex1_scale=" << ex1_scale
+                      << " ex2_scale=" << ex2_scale
+                      << " ex3_scale=" << ex3_scale
+                      << std::endl;
+          }
+        }
 
         Kokkos::parallel_for(
           "Ampere",
           range,
-          kernel::mink::Ampere_kernel<M::Dim>(domain.fields.em, coeff1, coeff2));
+          kernel::mink::Ampere_kernel<M::Dim>(domain.fields.em,
+                                      coeff1,
+                                      coeff2,
+                                      ex1_scale,
+                                      ex2_scale,
+                                      ex3_scale));
       } else {
         const auto ni2 = domain.mesh.n_active(in::x2);
         Kokkos::parallel_for("Ampere",
@@ -543,7 +589,7 @@ namespace ntt {
       const auto q0 = m_params.template get<real_t>("scales.q0");
       const auto n0 = m_params.template get<real_t>("scales.n0");
       const auto B0 = m_params.template get<real_t>("scales.B0");
-      if constexpr (M::CoordType == Coord::Cart and M::MetricType != Metric::Box) {
+      if constexpr (M::CoordType == Coord::Cart) {
         // minkowski case
         const auto V0    = m_params.template get<real_t>("scales.V0");
         const auto ppc0  = m_params.template get<real_t>("particles.ppc0");

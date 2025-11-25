@@ -533,6 +533,7 @@ namespace kernel::sr {
       getInterpFlds(p, ei, bi);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
+
       // DEBUG: show E', B' on the grid vs physical E,B at the same point
       if (p < 4) {
         const double step_est = static_cast<double>(time / dt + 0.5);

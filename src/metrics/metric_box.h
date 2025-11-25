@@ -56,6 +56,9 @@ namespace metric {
     Inline real_t get_Hx() const { return Hx; }
     Inline real_t get_Hy() const { return Hy; }
     Inline real_t get_Hz() const { return Hz; }
+    Inline real_t get_ex1_scale() const { return ax; }
+    Inline real_t get_ex2_scale() const { return ay; }
+    Inline real_t get_ex3_scale() const { return az; }
 
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;

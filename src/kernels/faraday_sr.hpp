@@ -67,55 +67,6 @@ namespace kernel::sr {
         const real_t h3_00 { metric.template h_<3, 3>({ i1_, i2_ }) };
         const real_t h3_0p1 { metric.template h_<3, 3>({ i1_, i2_ + ONE }) };
 
-	// DEBUG: probe one cell near the center to see how Faraday uses metric
-        if (i1 == N_GHOSTS + 10 && i2 == N_GHOSTS + 10) {
-          Kokkos::printf(
-            "[faraday_sr] i=(%d,%d) inv_sqrt_detH_0pH=%e inv_sqrt_detH_pHpH=%e\n",
-            (int)i1, (int)i2,
-            (double)inv_sqrt_detH_0pH, (double)inv_sqrt_detH_pHpH);
-          Kokkos::printf(
-            "[faraday_sr]   h1_pHp1=%e h1_pH0=%e h2_p1pH=%e h2_0pH=%e h3_00=%e h3_0p1=%e\n",
-            (double)h1_pHp1, (double)h1_pH0,
-            (double)h2_p1pH, (double)h2_0pH,
-            (double)h3_00,   (double)h3_0p1);
-          Kokkos::printf(
-            "[faraday_sr]   Bx1'=(%e) Bx2'=(%e) Bx3'=(%e) before update\n",
-            (double)EB(i1, i2, em::bx1),
-            (double)EB(i1, i2, em::bx2),
-            (double)EB(i1, i2, em::bx3));
-        }
-	// ===========================================
-        // DEBUG: print metric values at ONE probe cell
-        // ===========================================
-        if (i1 == N_GHOSTS && i2 == N_GHOSTS) {
-          Kokkos::printf(
-            "[faraday_sr] cell=(%d,%d)\n", (int)i1, (int)i2);
-
-          Kokkos::printf(
-            "[faraday_sr]   sqrt_det_h(0+H)   = %e\n",
-            (double)inv_sqrt_detH_0pH);
-
-          Kokkos::printf(
-            "[faraday_sr]   sqrt_det_h(pH+pH) = %e\n",
-            (double)inv_sqrt_detH_pHpH);
-
-          Kokkos::printf(
-            "[faraday_sr]   h1_pHp1=%e  h1_pH0=%e\n",
-            (double)h1_pHp1, (double)h1_pH0);
-
-          Kokkos::printf(
-            "[faraday_sr]   h2_p1pH=%e  h2_0pH=%e\n",
-            (double)h2_p1pH, (double)h2_0pH);
-
-          Kokkos::printf(
-            "[faraday_sr]   h3_00=%e    h3_0p1=%e\n",
-            (double)h3_00, (double)h3_0p1);
-
-          Kokkos::printf(
-            "[faraday_sr]   ax=%e ay=%e\n",
-            (double)metric.get_ax(), (double)metric.get_ay());
-        }
-
         EB(i1, i2, em::bx1) += coeff * inv_sqrt_detH_0pH *
                                (h3_00 * EB(i1, i2, em::ex3) -
                                 h3_0p1 * EB(i1, i2 + 1, em::ex3));

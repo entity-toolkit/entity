@@ -37,6 +37,11 @@ namespace kernel::mink {
     const real_t    betayz;
     const real_t    betazy;
 
+      // CG 
+    const real_t    ex1_scale;   
+    const real_t    ex2_scale;   
+    const real_t    ex3_scale;   
+
   public:
     /**
      * ! 1D: coeff1 = dt / dx
@@ -54,7 +59,11 @@ namespace kernel::mink {
                    real_t                 betaxz = ZERO,
                    real_t                 betazx = ZERO,
                    real_t                 betayz = ZERO,
-                   real_t                 betazy = ZERO)
+                   real_t                 betazy = ZERO,
+                   // CG
+                   real_t                 ex1_scale = ONE,
+                   real_t                 ex2_scale = ONE,
+                   real_t                 ex3_scale = ONE)
       : EB { EB }
       , coeff1 { coeff1 }
       , coeff2 { coeff2 }
@@ -66,7 +75,11 @@ namespace kernel::mink {
       , betaxz { betaxz }
       , betazx { betazx }
       , betayz { betayz }
-      , betazy { betazy } {}
+      , betazy { betazy } 
+      , ex1_scale { ex1_scale }
+      , ex2_scale { ex2_scale }
+      , ex3_scale { ex3_scale }
+    {}
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -86,33 +99,54 @@ namespace kernel::mink {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-	if (i1 == N_GHOSTS && i2 == N_GHOSTS) {
-          Kokkos::printf("[DEBUG] faraday_mink ACTIVE (D=2)\n");
-        }
         const auto alphax = ONE - TWO * betaxy - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - THREE * deltay;
+        // DEBUG: print the coefficients once per timestep (for a single probe cell)
+        if ((i1 == 1) && (i2 == 1)) {
+          Kokkos::printf(
+            "[Faraday-Minkowski] i1=%d i2=%d "
+            "ex1_scale=%e ex2_scale=%e ex3_scale=%e coeff1=%e coeff2=%e\n",
+            (int)i1, (int)i2,
+            (double)ex1_scale, (double)ex2_scale, (double)ex3_scale,
+            (double)coeff1, (double)coeff2
+          );
+        }
+
         // clang-format off
-        EB(i1, i2, em::bx1) += coeff1 * (
+
+        // CG Bx1 update: curl of F_E,z = ex3_scale * Ex3
+        EB(i1, i2, em::bx1) += coeff1 * ex3_scale * (
                             - alphay * (EB(i1    , i2 + 1, em::ex3) - EB(i1    , i2    , em::ex3))
                             - deltay * (EB(i1    , i2 + 2, em::ex3) - EB(i1    , i2 - 1, em::ex3))
                             - betayx * (EB(i1 + 1, i2 + 1, em::ex3) - EB(i1 + 1, i2    , em::ex3))
                             - betayx * (EB(i1 - 1, i2 + 1, em::ex3) - EB(i1 - 1, i2    , em::ex3)));
-        EB(i1, i2, em::bx2) += coeff1 * (
+
+        // Bx2 update: curl of F_E,z 
+        EB(i1, i2, em::bx2) += coeff1 * ex3_scale * (
                             + alphax * (EB(i1 + 1, i2    , em::ex3) - EB(i1    , i2    , em::ex3))
                             + deltax * (EB(i1 + 2, i2    , em::ex3) - EB(i1 - 1, i2    , em::ex3))
                             + betaxy * (EB(i1 + 1, i2 + 1, em::ex3) - EB(i1    , i2 + 1, em::ex3))
                             + betaxy * (EB(i1 + 1, i2 - 1, em::ex3) - EB(i1    , i2 - 1, em::ex3)));
-        EB(i1, i2, em::bx3) += coeff2 * (
-                            + alphay * (EB(i1    , i2 + 1, em::ex1) - EB(i1    , i2    , em::ex1))
-                            + deltay * (EB(i1    , i2 + 2, em::ex1) - EB(i1    , i2 - 1, em::ex1))
-                            + betayx * (EB(i1 + 1, i2 + 1, em::ex1) - EB(i1 + 1, i2    , em::ex1))
-                            + betayx * (EB(i1 - 1, i2 + 1, em::ex1) - EB(i1 - 1, i2    , em::ex1))
-                            - alphax * (EB(i1 + 1, i2    , em::ex2) - EB(i1    , i2    , em::ex2))
-                            - deltax * (EB(i1 + 2, i2    , em::ex2) - EB(i1 - 1, i2    , em::ex2))
-                            - betaxy * (EB(i1 + 1, i2 + 1, em::ex2) - EB(i1    , i2 + 1, em::ex2))
-                            - betaxy * (EB(i1 + 1, i2 - 1, em::ex2) - EB(i1    , i2 - 1, em::ex2)));
-        // clang-format on
 
+        // Bx3 update: curl of F_E,x and F_E,y
+        // F_E,x = ex1_scale * Ex1, F_E,y = ex2_scale * Ex2
+        EB(i1, i2, em::bx3) += coeff2 * (
+                            // + curl_y(F_E,x)
+                            + ex1_scale * (
+                                  + alphay * (EB(i1    , i2 + 1, em::ex1) - EB(i1    , i2    , em::ex1))
+                                  + deltay * (EB(i1    , i2 + 2, em::ex1) - EB(i1    , i2 - 1, em::ex1))
+                                  + betayx * (EB(i1 + 1, i2 + 1, em::ex1) - EB(i1 + 1, i2    , em::ex1))
+                                  + betayx * (EB(i1 - 1, i2 + 1, em::ex1) - EB(i1 - 1, i2    , em::ex1))
+                              )
+                            // - curl_x(F_E,y)
+                            - ex2_scale * (
+                                  + alphax * (EB(i1 + 1, i2    , em::ex2) - EB(i1    , i2    , em::ex2))
+                                  + deltax * (EB(i1 + 2, i2    , em::ex2) - EB(i1 - 1, i2    , em::ex2))
+                                  + betaxy * (EB(i1 + 1, i2 + 1, em::ex2) - EB(i1    , i2 + 1, em::ex2))
+                                  + betaxy * (EB(i1 + 1, i2 - 1, em::ex2) - EB(i1    , i2 - 1, em::ex2))
+                              )
+                            );
+        // clang-format on
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }

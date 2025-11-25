@@ -44,20 +44,30 @@ namespace ntt {
 
       // main algorithm loop
       while (step < max_steps) {
-        // CG - EXPANDING BOX mid-step update
-	        if constexpr (std::is_same_v<M, metric::Box<Dim::_2D>> ||
+        // CG
+        if constexpr (std::is_same_v<M, metric::Box<Dim::_2D>> ||
                       std::is_same_v<M, metric::Box<Dim::_3D>>) {
           const auto t_mid = time + static_cast<simtime_t>(0.5) * dt;
           m_metadomain.runOnLocalDomains([&](auto& dom) {
             dom.mesh.metric.update(t_mid);
           });
 
-          // 🔎 DEBUG: print Hubble factors once at the first step
-          if (true) {
+          // DEBUG: print Hubble factors and ex-scales 
+          if (step < 5) {
             m_metadomain.runOnLocalDomains([&](auto& dom) {
-              std::cout << "DEBUG engine Box: Hx=" << dom.mesh.metric.get_Hx()
-                        << " Hy=" << dom.mesh.metric.get_Hy()
-                        << " Hz=" << dom.mesh.metric.get_Hz()
+              const auto Hx  = dom.mesh.metric.get_Hx();
+              const auto Hy  = dom.mesh.metric.get_Hy();
+              const auto Hz  = dom.mesh.metric.get_Hz();
+              const auto ex1 = dom.mesh.metric.get_ex1_scale();
+              const auto ex2 = dom.mesh.metric.get_ex2_scale();
+              const auto ex3 = dom.mesh.metric.get_ex3_scale();
+
+              std::cout << "[Engine-Box] step=" << step
+                        << " t_mid=" << t_mid
+                        << " Hx=" << Hx << " Hy=" << Hy << " Hz=" << Hz
+                        << " ex1_scale=" << ex1
+                        << " ex2_scale=" << ex2
+                        << " ex3_scale=" << ex3
                         << std::endl;
             });
           }
