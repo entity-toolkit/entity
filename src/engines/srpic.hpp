@@ -348,6 +348,7 @@ namespace ntt {
                                              : ZERO;
         // cooling
         const auto has_synchrotron = (cooling == Cooling::SYNCHROTRON);
+        const auto has_compton = (cooling == Cooling::COMPTON);
         const auto sync_grad       = has_synchrotron
                                        ? m_params.template get<real_t>(
                                      "algorithms.synchrotron.gamma_rad")
@@ -358,7 +359,15 @@ namespace ntt {
                                         "scales.omegaB0") /
                                       (SQR(sync_grad) * species.mass())
                                        : ZERO;
-
+        const auto comp_grad       = has_compton
+                                      ? m_params.template get<real_t>(
+                                     "algorithms.compton.gamma_rad")
+                                      : ZERO; 
+        const auto comp_coeff      = has_compton
+                                      ? (real_t)(0.1) * dt * 
+                                      m_params.template get<real_t>(
+                                          "scales.omegaB0") / (SQR(comp_grad) * species.mass())
+                                      : ZERO;
         // toggle to indicate whether pgen defines the external force
         bool has_extforce = false;
         if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
@@ -375,6 +384,9 @@ namespace ntt {
         kernel::sr::CoolingTags cooling_tags = 0;
         if (cooling == Cooling::SYNCHROTRON) {
           cooling_tags = kernel::sr::Cooling::Synchrotron;
+        }
+        if (cooling == Cooling::COMPTON) {
+          cooling_tags = kernel::sr::Cooling::Compton;
         }
         // clang-format off
         if (not has_atmosphere and not has_extforce) {
@@ -398,7 +410,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
                 domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff
+                gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
             ));
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
@@ -428,7 +440,7 @@ namespace ntt {
                 domain.mesh.n_active(in::x2),
                 domain.mesh.n_active(in::x3),
                 domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff
+                gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
             ));
         } else if (not has_atmosphere and has_extforce) {
           if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
@@ -457,7 +469,7 @@ namespace ntt {
                   domain.mesh.n_active(in::x2),
                   domain.mesh.n_active(in::x3),
                   domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff
+                  gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
               ));
           } else {
             raise::Error("External force not implemented", HERE);
@@ -489,7 +501,7 @@ namespace ntt {
                   domain.mesh.n_active(in::x2),
                   domain.mesh.n_active(in::x3),
                   domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff
+                  gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
               ));
           } else {
             raise::Error("External force not implemented", HERE);
