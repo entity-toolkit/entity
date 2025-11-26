@@ -67,7 +67,7 @@
   m_eps        = 1.0
 
 [output]
-  format = "hdf5"
+  format = "BPFile"
 
   [output.fields]
     interval_time = 1.0

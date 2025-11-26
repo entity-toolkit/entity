@@ -122,31 +122,37 @@ namespace info {
   inline void Print(const std::string& msg,
                     bool               colored = true,
                     bool               stdout  = true,
-                    bool               once    = true) {
+                    bool               once    = true,
+                    bool               info    = true) {
     auto msg_nocol = color::strip(msg);
     if (once) {
       CallOnce(
-        [](auto& msg, auto& msg_nocol, auto& stdout, auto& colored) {
-          PLOGN_(InfoFile) << msg_nocol << std::flush;
+        [](auto& msg, auto& msg_nocol, auto& stdout, auto& colored, auto& info) {
+          if (info) {
+            PLOGN_(InfoFile) << msg_nocol << std::flush;
+          }
           if (stdout) {
             if (colored) {
-              std::cout << msg << std::endl;
+              PLOG(plog::none) << msg << std::endl;
             } else {
-              std::cout << msg_nocol << std::endl;
+              PLOG(plog::none) << msg_nocol << std::endl;
             }
           }
         },
         msg,
         msg_nocol,
         stdout,
-        colored);
+        colored,
+        info);
     } else {
-      PLOGN_(InfoFile) << msg_nocol << std::flush;
+      if (info) {
+        PLOGN_(InfoFile) << msg_nocol << std::flush;
+      }
       if (stdout) {
         if (colored) {
-          std::cout << msg << std::endl;
+          PLOG(plog::none) << msg << std::endl;
         } else {
-          std::cout << msg_nocol << std::endl;
+          PLOG(plog::none) << msg_nocol << std::endl;
         }
       }
     }

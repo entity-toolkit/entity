@@ -53,6 +53,7 @@ namespace kernel::sr {
     enum CoolingTags_ {
       None        = 0,
       Synchrotron = 1 << 0,
+      Compton = 1 << 1,
     };
   } // namespace Cooling
 
@@ -227,8 +228,8 @@ namespace kernel::sr {
     bool         is_axis_i2min { false }, is_axis_i2max { false };
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
-    // synchrotron cooling parameters
-    const real_t coeff_sync;
+    // radiative cooling parameters
+    const real_t coeff_sync, coeff_comp;
 
   public:
     Pusher_kernel(const PrtlPusher::type&        pusher,
@@ -265,7 +266,8 @@ namespace kernel::sr {
                   const boundaries_t<PrtlBC>&    boundaries,
                   real_t                         gca_larmor_max,
                   real_t                         gca_eovrb_max,
-                  real_t                         coeff_sync)
+                  real_t                         coeff_sync,
+                  real_t                         coeff_comp)
       : pusher { pusher }
       , GCA { GCA }
       , ext_force { ext_force }
@@ -299,7 +301,8 @@ namespace kernel::sr {
       , ni3 { ni3 }
       , gca_larmor { gca_larmor_max }
       , gca_EovrB_sqr { SQR(gca_eovrb_max) }
-      , coeff_sync { coeff_sync } {
+      , coeff_sync { coeff_sync }
+      , coeff_comp { coeff_comp } {
       raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
       is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
                         (boundaries[0].first == PrtlBC::ABSORB);
@@ -368,7 +371,8 @@ namespace kernel::sr {
                   const boundaries_t<PrtlBC>& boundaries,
                   real_t                      gca_larmor_max,
                   real_t                      gca_eovrb_max,
-                  real_t                      coeff_sync)
+                  real_t                      coeff_sync,
+                  real_t                      coeff_comp)
       : Pusher_kernel(pusher,
                       GCA,
                       ext_force,
@@ -403,7 +407,8 @@ namespace kernel::sr {
                       boundaries,
                       gca_larmor_max,
                       gca_eovrb_max,
-                      coeff_sync) {}
+                      coeff_sync,
+                      coeff_comp) {}
 
     Inline void synchrotronDrag(index_t&               p,
                                 vec_t<Dim::_3D>&       u_prime,
@@ -454,6 +459,22 @@ namespace kernel::sr {
       ux1(p) += coeff_sync * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
       ux2(p) += coeff_sync * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
       ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+    }
+
+    Inline void inverseComptonDrag(index_t&               p,
+                                   vec_t<Dim::_3D>&       u_prime
+                                  ) const {
+      real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
+                                                               u_prime[1],
+                                                               u_prime[2]));
+      u_prime[0]             *= gamma_prime_sqr;
+      u_prime[1]             *= gamma_prime_sqr;
+      u_prime[2]             *= gamma_prime_sqr;
+      gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
+
+      ux1(p) -= coeff_comp * gamma_prime_sqr * u_prime[0];
+      ux2(p) -= coeff_comp * gamma_prime_sqr * u_prime[1];
+      ux3(p) -= coeff_comp * gamma_prime_sqr * u_prime[2];
     }
 
     Inline void operator()(index_t p) const {
@@ -560,6 +581,14 @@ namespace kernel::sr {
           u_prime[1] = HALF * (u_prime[1] + ux2(p));
           u_prime[2] = HALF * (u_prime[2] + ux3(p));
           synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
+        }
+      }
+      if (cooling & Cooling::Compton) {
+        if (!is_gca) {
+          u_prime[0] = HALF * (u_prime[0] + ux1(p));
+          u_prime[1] = HALF * (u_prime[1] + ux2(p));
+          u_prime[2] = HALF * (u_prime[2] + ux3(p));
+          inverseComptonDrag(p, u_prime);
         }
       }
       // update position

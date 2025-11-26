@@ -4,6 +4,7 @@
 
 #include "utils/colors.h"
 #include "utils/formatting.h"
+#include "utils/log.h"
 #include "utils/progressbar.h"
 #include "utils/timer.h"
 
@@ -25,11 +26,12 @@ namespace diag {
     npart_t npart,
     npart_t maxnpart) -> std::vector<std::pair<npart_t, unsigned short>> {
     auto stats = std::vector<std::pair<npart_t, unsigned short>>();
+    const auto percentage = [](npart_t part, npart_t maxpart) -> unsigned short {
+      return static_cast<unsigned short>(
+        100.0f * static_cast<float>(part) / static_cast<float>(maxpart));
+    };
 #if !defined(MPI_ENABLED)
-    stats.push_back(
-      { npart,
-        static_cast<unsigned short>(
-          100.0f * static_cast<float>(npart) / static_cast<float>(maxnpart)) });
+    stats.push_back({ npart, percentage(npart, maxnpart) });
 #else
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -55,22 +57,18 @@ namespace diag {
     if (rank != MPI_ROOT_RANK) {
       return stats;
     }
-    auto tot_npart     = std::accumulate(mpi_npart.begin(), mpi_npart.end(), 0);
-    const auto max_idx = std::distance(
+    const npart_t tot_npart = std::accumulate(mpi_npart.begin(), mpi_npart.end(), 0u);
+    const npart_t max_idx = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));
-    const auto min_idx = std::distance(
+    const npart_t min_idx = std::distance(
       mpi_npart.begin(),
       std::min_element(mpi_npart.begin(), mpi_npart.end()));
     stats.push_back({ tot_npart, 0u });
     stats.push_back({ mpi_npart[min_idx],
-                      static_cast<unsigned short>(
-                        100.0f * static_cast<float>(mpi_npart[min_idx]) /
-                        static_cast<float>(mpi_maxnpart[min_idx])) });
+                      percentage(mpi_npart[min_idx], mpi_maxnpart[min_idx]) });
     stats.push_back({ mpi_npart[max_idx],
-                      static_cast<unsigned short>(
-                        100.0f * static_cast<float>(mpi_npart[max_idx]) /
-                        static_cast<float>(mpi_maxnpart[max_idx])) });
+                      percentage(mpi_npart[max_idx], mpi_maxnpart[max_idx]) });
 #endif
     return stats;
   }
@@ -181,7 +179,7 @@ namespace diag {
         const auto max_pct   = part_stats[2].second;
         ss << fmt::alignedTable(
           {
-            fmt::format("species %2lu (%s)", i, species_labels[i].c_str()),
+            fmt::format("species %2lu (%s)", i + 1, species_labels[i].c_str()),
             tot_npart > 9999 ? fmt::format("%.2Le", (long double)tot_npart)
                              : std::to_string(tot_npart),
             std::to_string(min_pct) + "%",
@@ -207,7 +205,7 @@ namespace diag {
         const auto tot_pct = part_stats[0].second;
         ss << fmt::alignedTable(
           {
-            fmt::format("species %2lu (%s)", i, species_labels[i].c_str()),
+            fmt::format("species %2lu (%s)", i + 1, species_labels[i].c_str()),
             tot_npart > 9999 ? fmt::format("%.2Le", (long double)tot_npart)
                              : std::to_string(tot_npart),
             std::to_string(tot_pct) + "%",
@@ -241,7 +239,6 @@ namespace diag {
       ss << std::setw(80) << std::setfill('.') << "" << std::endl << std::endl;
     });
 
-    std::cout << ((diag_flags & Diag::Colorful) ? ss.str()
-                                                : color::strip(ss.str()));
+    info::Print(ss.str(), diag_flags & Diag::Colorful, true, true, false);
   }
 } // namespace diag
