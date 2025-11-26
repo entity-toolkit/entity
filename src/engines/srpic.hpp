@@ -78,9 +78,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.toggles.fieldsolver");
+        "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.toggles.deposit");
+        "algorithms.deposit.enable");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
@@ -519,9 +519,30 @@ namespace ntt {
       }
     }
 
+    template <unsigned short O>
+    void deposit_with(const Particles<M::Dim, M::CoordType>& species,
+                      const M&                               metric,
+                      const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
+                      real_t                                 dt) {
+      // clang-format off
+      Kokkos::parallel_for("CurrentsDeposit",
+                          species.rangeActiveParticles(),
+                          kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
+                            scatter_cur,
+                            species.i1, species.i2, species.i3,
+                            species.i1_prev, species.i2_prev, species.i3_prev,
+                            species.dx1, species.dx2, species.dx3,
+                            species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                            species.ux1, species.ux2, species.ux3,
+                            species.phi, species.weight, species.tag,
+                            metric, (real_t)(species.charge()), dt));
+      // clang-format on
+    }
+
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
+      auto shape_order = m_params.template get<int>("algorithms.deposit.order");
       for (auto& species : domain.species) {
         if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
             cmp::AlmostZero_host(species.charge())) {
@@ -534,20 +555,8 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        // clang-format off
-        Kokkos::parallel_for("CurrentsDeposit",
-                             species.rangeActiveParticles(),
-                             kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
-                               scatter_cur,
-                               species.i1, species.i2, species.i3,
-                               species.i1_prev, species.i2_prev, species.i3_prev,
-                               species.dx1, species.dx2, species.dx3,
-                               species.dx1_prev, species.dx2_prev, species.dx3_prev,
-                               species.ux1, species.ux2, species.ux3,
-                               species.phi, species.weight, species.tag,
-                               domain.mesh.metric,
-                               (real_t)(species.charge()), dt));
-        // clang-format on
+
+        deposit_with<SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }

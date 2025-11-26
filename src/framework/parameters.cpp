@@ -431,13 +431,16 @@ namespace ntt {
                       "current_filters",
                       defaults::current_filters));
 
-    /* [algorithms.toggles] ------------------------------------------------- */
-    set("algorithms.toggles.fieldsolver",
-        toml::find_or(toml_data, "algorithms", "toggles", "fieldsolver", true));
-    set("algorithms.toggles.deposit",
-        toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
+    /* [algorithms.deposit] ------------------------------------------------- */
+    set("algorithms.deposit.enable",
+        toml::find_or(toml_data, "algorithms", "deposit", "enable", true));
+    set("algorithms.deposit.order",
+        toml::find_or(toml_data, "algorithms", "deposit", "order", 1));
 
     /* [algorithms.fieldsolver] --------------------------------------------- */
+    set("algorithms.fieldsolver.enable",
+        toml::find_or(toml_data, "algorithms", "fieldsolver", "enable", true));
+        
     set("algorithms.fieldsolver.delta_x",
         toml::find_or(toml_data,
                       "algorithms",

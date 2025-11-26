@@ -34,6 +34,15 @@ set(DEBUG
 set(precision
     ${default_precision}
     CACHE STRING "Precision")
+
+set(deposit
+    ${default_deposit}
+    CACHE STRING "Deposit")
+
+set(shape_order
+    ${default_shape_order}
+    CACHE STRING "Shape function")
+
 set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
@@ -75,6 +84,20 @@ set(precisions
     "single" "double"
     CACHE STRING "Precisions")
 
+set(deposits
+    "zigzag" "esirkepov"
+    CACHE STRING "Deposits")
+
+if(${deposit} STREQUAL "zigzag")
+  set(shape_order
+      ${default_shape_order}
+      CACHE STRING "Shape functions")
+endif()
+
+set(shape_orders
+    "1;2;3;4;5;6;7;8;9;10;11"
+    CACHE STRING "Shape orders")
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
 # ------------------------- Third-Party Tests ------------------------------ #
@@ -92,6 +115,7 @@ include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+set_shape_order(${shape_order})
 if("${Kokkos_DEVICES}" MATCHES "CUDA")
   add_compile_options("-D CUDA_ENABLED")
   set(DEVICE_ENABLED ON)
