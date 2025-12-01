@@ -323,5 +323,96 @@ namespace user {
                                            inj_box);
     }
   };
+
+  // update domain if needed
+  // todo: implement in main code like CustomPostStep
+  void CustomUpdateDomain(const SimulationParams& params, Domain<S, M>& local_domain, Domain<S, M>& global_domain) {
+
+    // todo: check if update is needed at this time step
+
+    // compute size of local and global domains 
+    const auto local_size   = local_domain->mesh.n_active()[in::x1];
+    const auto local_offset = local_domain->offset_ncells()[in::x1];
+    const auto global_size  = global_domain->mesh.n_active()[in::x1];
+    const auto ni2          = global_domain->mesh.n_active(in::x2);
+
+    // compute number density field
+    // todo: define buffers properly
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
+    for (const auto& sp : specs) {
+      auto& prtl_spec = prtl_species[sp - 1];
+      // clang-format off
+      Kokkos::parallel_for(
+        "ComputeMoments",
+        prtl_spec.rangeActiveParticles(),
+        kernel::ParticleMoments_kernel<S, M, F, 6>({}, scatter_buff, buff_idx,
+                                                   prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+                                                   prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+                                                   prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+                                                   prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+                                                   prtl_spec.mass(), prtl_spec.charge(),
+                                                   false,
+                                                   mesh.metric, mesh.flds_bc(),
+                                                   ni2, ONE, 0));
+      // clang-format on
+    }
+    Kokkos::Experimental::contribute(buffer, scatter_buff);
+
+    // compute particle profile along x1
+    index_t Nx[global_size] = { 0 };
+    
+    for (auto i = 0; i < local_size; ++i) {
+        for (auto d = 0u; d < M::Dim; ++d) {          
+            // todo: sum over other dimensions  
+            Nx[local_offset + i] += buffer(i, j, buff_idx);
+        }
+    }
+    // todo: perform MPI allreduce to get global Nx
+    index_t Nx_global[global_size] = { 0 };
+    MPI_ALLREDUCE(MPI_SUM, Nx, Nx_global, global_size, MPI_TYPE_INT_T, MPI_COMM_WORLD);
+    
+    // compute mean particle load
+    int total_N = 0;
+    for (auto i = 0; i < global_size; ++i) {
+        total_N += Nx_global[i];
+    }
+
+    // get threshold number of particles
+    auto N_1_ranks += global_domain.ndomains_per_dim()[d]
+    auto N_23_ranks = 0;
+    for (auto d = 1u; d < M::Dim; ++d) {         
+        N_23ranks += global_domain.ndomains_per_dim()[d];
+    }
+    // todo: as parameter
+    real_t tolerance = 1.05; // allow 5% tolerance
+    index_t target_N = total_N / (N_1_ranks + N_23ranks) * tolerance;
+    // compute new domain boundaries
+    index_t bound_start[N_ranks];
+    index_t bound_end[N_ranks];
+
+    bound_start[0] = 0;
+    for (auto r = 0; r < N_ranks-1; ++r) {
+        real_t cum_N = 0;
+        for (auto i = bound_start[r]; i < global_size; ++i) {
+            cum_N += static_cast<real_t>(Nx_global[i]) / N_23_ranks;
+            if (cum_N >= target_N) {
+                bound_end[r] = i;
+                // check if we have more than 5 cells
+                index_t Ncells = bound_end[r] - bound_start[r] + 1;
+                if (Ncells < 5) {
+                    bound_end[r] = bound_start[r] + 5;
+                }
+                bound_start[r+1] = bound_end[r]+1;
+                break;
+            }
+        }
+    }
+    bound_end[N_ranks-1] = global_size - 1;
+
+    // todo: bounds in other directions
+
+    // todo: reshuffling of particles according to new domain boundaries
+
+  }
 } // namespace user
 #endif
