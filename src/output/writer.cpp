@@ -10,7 +10,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
+#include <adios2/cxx/KokkosView.h>
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"

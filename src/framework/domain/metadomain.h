@@ -35,7 +35,7 @@
   #include "output/writer.h"
 
   #include <adios2.h>
-  #include <adios2/cxx11/KokkosView.h>
+  #include <adios2/cxx/KokkosView.h>
 #endif // OUTPUT_ENABLED
 
 #include <functional>

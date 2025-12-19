@@ -45,8 +45,7 @@ pkgs.mkShell {
     adios2Pkg
     kokkosPkg
 
-    python312
-    python312Packages.jupyter
+    python314
 
     cmake-format
     cmake-lint

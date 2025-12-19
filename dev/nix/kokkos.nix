@@ -7,7 +7,7 @@
 
 let
   name = "kokkos";
-  pversion = "4.7.01";
+  pversion = "5.0.0";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       llvm.rocm-merged-llvm
@@ -56,7 +56,7 @@ pkgs.stdenv.mkDerivation rec {
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
     rev = "${pversion}";
-    sha256 = "sha256-MgphOsKE8umgYxVQZzex+elgvDDC09JaMCoU5YXaLco=";
+    sha256 = "sha256-C4DarqnEcdF3+19TPqcM0A9bcQSkKTJkB8b7OkzC7T8=";
   };
 
   nativeBuildInputs = with pkgs; [
@@ -78,7 +78,7 @@ pkgs.stdenv.mkDerivation rec {
 
   configurePhase = ''
     cmake -B build -D CMAKE_BUILD_TYPE=Release \
-      -D CMAKE_CXX_STANDARD=17 \
+      -D CMAKE_CXX_STANDARD=20 \
       -D CMAKE_CXX_EXTENSIONS=OFF \
       -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \
       ${pkgs.lib.concatStringsSep " " cmakeExtraFlags.${gpu}} \

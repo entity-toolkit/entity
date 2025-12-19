@@ -62,7 +62,7 @@ set(gpu_aware_mpi
     CACHE BOOL "Enable GPU-aware MPI")
 
 # -------------------------- Compilation settings -------------------------- #
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -162,9 +162,9 @@ if(${output})
   find_or_fetch_dependency(adios2 FALSE QUIET)
   add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx_mpi)
   else()
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx)
   endif()
 endif()
 
