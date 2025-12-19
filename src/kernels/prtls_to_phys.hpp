@@ -19,6 +19,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -26,8 +27,10 @@ namespace kernel {
   using namespace ntt;
 
   template <SimEngine::type S, class M, bool T>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert_i<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransformXYZ<M>) ||
+              S == SimEngine::GRPIC && traits::metric::HasTransform<M>)
   class PrtlToPhys_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr Dimension D = M::Dim;
 
   protected:

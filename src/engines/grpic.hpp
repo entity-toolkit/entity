@@ -696,17 +696,17 @@ namespace ntt {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em,
-                                                      i1_min,
-                                                      tags,
-                                                      nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M::Dim>(domain.fields.em,
+                                                           i1_min,
+                                                           tags,
+                                                           nfilter));
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em0,
-                                                      i1_min,
-                                                      tags,
-                                                      nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M::Dim>(domain.fields.em0,
+                                                           i1_min,
+                                                           tags,
+                                                           nfilter));
       }
     }
 
@@ -974,19 +974,19 @@ namespace ntt {
     }
 
     void TimeAverageDB(domain_t& domain) {
-      Kokkos::parallel_for("TimeAverageDB",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
-                                                               domain.fields.em0,
-                                                               domain.mesh.metric));
+      Kokkos::parallel_for(
+        "TimeAverageDB",
+        domain.mesh.rangeActiveCells(),
+        kernel::gr::TimeAverageDB_kernel<M::Dim>(domain.fields.em,
+                                                 domain.fields.em0));
     }
 
     void TimeAverageJ(domain_t& domain) {
-      Kokkos::parallel_for("TimeAverageJ",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
-                                                              domain.fields.cur0,
-                                                              domain.mesh.metric));
+      Kokkos::parallel_for(
+        "TimeAverageJ",
+        domain.mesh.rangeActiveCells(),
+        kernel::gr::TimeAverageJ_kernel<M::Dim>(domain.fields.cur,
+                                                domain.fields.cur0));
     }
 
     void CurrentsDeposit(domain_t& domain) {

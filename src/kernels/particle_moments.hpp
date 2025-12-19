@@ -14,6 +14,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -35,8 +36,10 @@ namespace kernel {
   }
 
   template <SimEngine::type S, class M, FldsID::type F, unsigned short N>
+    requires traits::metric::HasD<M> && traits::metric::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && traits::metric::HasTransform<M>))
   class ParticleMoments_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     static_assert(!((S == SimEngine::GRPIC) && (F == FldsID::V)),

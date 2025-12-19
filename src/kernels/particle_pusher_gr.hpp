@@ -18,6 +18,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -56,13 +57,21 @@ namespace kernel::gr {
 
   struct Massless_t {};
 
+  template <class M>
+  concept IsCompatibleWithPusherGR = traits::metric::HasD<M> &&
+                                     traits::metric::HasTransform<M> &&
+                                     traits::metric::HasHij<M> &&
+                                     traits::metric::HasAlpha<M> &&
+                                     traits::metric::HasBeta1<M> &&
+                                     traits::metric::HasMetricDerivatives<M>;
+
   /**
    * @brief Algorithm for the Particle pusher
    * @tparam M Metric
    */
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   class Pusher_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
   private:
@@ -97,7 +106,7 @@ namespace kernel::gr {
                   array_t<prtldx_t*>&         dx1,
                   array_t<prtldx_t*>&         dx2,
                   array_t<prtldx_t*>&         dx3,
-                  array_t<prtldx_t*>&         dx1_prev,
+                  array_t<prtldx_t*>&         dx1_pGev,
                   array_t<prtldx_t*>&         dx2_prev,
                   array_t<prtldx_t*>&         dx3_prev,
                   array_t<real_t*>&           ux1,
@@ -306,6 +315,7 @@ namespace kernel::gr {
   /* -------------------------------------------------------------------------- */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicMomentumPush(T,
                                                      const coord_t<D>&      xp,
@@ -379,6 +389,7 @@ namespace kernel::gr {
   }
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicCoordinatePush(T,
                                                        const coord_t<D>& xp,
@@ -414,6 +425,7 @@ namespace kernel::gr {
   }
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicFullPush(T,
                                                  const coord_t<D>&      xp,
@@ -488,6 +500,7 @@ namespace kernel::gr {
   /*                                 Phi pusher */
   /* -------------------------------------------------------------------------- */
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::UpdatePhi(T,
                                           const coord_t<D>&      xp,
@@ -511,6 +524,7 @@ namespace kernel::gr {
   }
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::interpolateFields(index_t          p,
                                                   vec_t<Dim::_3D>& e0,
                                                   vec_t<Dim::_3D>& b0) const {
@@ -591,6 +605,7 @@ namespace kernel::gr {
   /* ------------------------------ Photon pusher ----------------------------- */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D");
@@ -651,6 +666,7 @@ namespace kernel::gr {
   /* ------------------------- Massive particle pusher ------------------------ */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D");
@@ -743,6 +759,7 @@ namespace kernel::gr {
   // Boundary conditions
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::boundaryConditions(index_t p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < 0 && is_absorb_i1min) {

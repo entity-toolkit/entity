@@ -32,6 +32,8 @@
 #ifndef GLOBAL_ARCH_TRAITS_H
 #define GLOBAL_ARCH_TRAITS_H
 
+#include "global.h"
+
 #include <type_traits>
 #include <utility>
 
@@ -178,6 +180,141 @@ namespace traits {
 
   template <typename T, typename U>
   struct is_pair<std::pair<T, U>> : std::true_type {};
+
+  // c++20
+  namespace metric {
+
+    template <class M>
+    concept HasD = requires {
+      { M::Dim } -> std::convertible_to<Dimension>;
+    };
+
+    template <class M>
+    concept HasH_ij = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.template h_<1, 1>(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasHij = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.template h<1, 1>(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasSqrtDetH = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.sqrt_det_h(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasSqrtDetHTilde = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.sqrt_det_h_tilde(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasPolarArea = requires(const M& m, real_t xi_2) {
+      { m.polar_area(xi_2) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasTransform_i = requires(const M&               m,
+                                      const coord_t<M::Dim>& xi,
+                                      real_t                 v_in) {
+      {
+        m.template transform<1, Idx::U, Idx::D>(xi, v_in)
+      } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasTransform = requires(const M&               m,
+                                    const coord_t<M::Dim>& xi,
+                                    const vec_t<Dim::_3D>& v_in,
+                                    vec_t<Dim::_3D>&       v_out) {
+      {
+        m.template transform<Idx::U, Idx::D>(xi, v_in, v_out)
+      } -> std::same_as<void>;
+    };
+
+    template <class M>
+    concept HasTransformXYZ = requires(const M&                   m,
+                                       const coord_t<M::PrtlDim>& xi,
+                                       const vec_t<Dim::_3D>&     v_in,
+                                       vec_t<Dim::_3D>&           v_out) {
+      {
+        m.template transform_xyz<Idx::XYZ, Idx::D>(xi, v_in, v_out)
+      } -> std::same_as<void>;
+    };
+
+    template <class M>
+    concept HasConvert_i = requires(const M& m, real_t x) {
+      {
+        m.template convert<1, Crd::Cd, Crd::Ph>(x)
+      } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasConvert = requires(const M&               m,
+                                  const coord_t<M::Dim>& x_in,
+                                  coord_t<M::Dim>&       x_out) {
+      {
+        m.template convert<Crd::Cd, Crd::Ph>(x_in, x_out)
+      } -> std::same_as<void>;
+    };
+
+    template <class M>
+    concept HasConvertXYZ = requires(const M&                   m,
+                                     const coord_t<M::PrtlDim>& x_in,
+                                     coord_t<M::PrtlDim>&       x_out) {
+      {
+        m.template convert_xyz<Crd::Cd, Crd::XYZ>(x_in, x_out)
+      } -> std::same_as<void>;
+    };
+
+    template <class M>
+    concept HasAlpha = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.alpha(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasBeta1 = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.beta1(xi) } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
+    concept HasMetricDerivatives = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.dr_alpha(xi) } -> std::convertible_to<real_t>;
+      { m.dr_beta1(xi) } -> std::convertible_to<real_t>;
+      { m.dr_h11(xi) } -> std::convertible_to<real_t>;
+      { m.dr_h22(xi) } -> std::convertible_to<real_t>;
+      { m.dr_h33(xi) } -> std::convertible_to<real_t>;
+      { m.dr_h13(xi) } -> std::convertible_to<real_t>;
+      { m.dt_alpha(xi) } -> std::convertible_to<real_t>;
+      { m.dt_beta1(xi) } -> std::convertible_to<real_t>;
+      { m.dt_h11(xi) } -> std::convertible_to<real_t>;
+      { m.dt_h22(xi) } -> std::convertible_to<real_t>;
+      { m.dt_h33(xi) } -> std::convertible_to<real_t>;
+      { m.dt_h13(xi) } -> std::convertible_to<real_t>;
+    };
+
+  } // namespace metric
+
+  namespace energydist {
+
+    template <class ED>
+    concept IsValid = requires(const ED&             edist,
+                               const coord_t<ED::D>& x_Ph,
+                               vec_t<Dim::_3D>&      v) {
+      { edist(x_Ph, v) } -> std::same_as<void>;
+    };
+
+  } // namespace energydist
+
+  namespace spatialdist {
+
+    template <class SD>
+    concept IsValid = requires(const SD& sdist, const coord_t<SD::D>& x_Ph) {
+      { sdist(x_Ph) } -> std::convertible_to<real_t>;
+    };
+
+  } // namespace spatialdist
 
 } // namespace traits
 

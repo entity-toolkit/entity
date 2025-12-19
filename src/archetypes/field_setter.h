@@ -33,6 +33,10 @@ namespace arch {
   using namespace ntt;
 
   template <class I, SimEngine::type S, class M>
+    requires traits::metric::HasD<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasConvert<M> &&
+               traits::metric::HasTransform_i<M>) ||
+              (S == SimEngine::GRPIC && traits::metric::HasConvert_i<M>))
   class SetEMFields_kernel {
     static constexpr Dimension D = M::Dim;
     static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
@@ -53,7 +57,6 @@ namespace arch {
                     (defines_dx1 == defines_dx2 && defines_dx2 == defines_dx3 &&
                      defines_bx1 == defines_bx2 && defines_bx2 == defines_bx3),
                   "In GR mode, all components must be defined or none");
-    static_assert(M::is_metric, "M must be a metric class");
 
     ndfield_t<M::Dim, 6> EM;
     const I              finit;
@@ -271,69 +274,24 @@ namespace arch {
 
           if constexpr (defines_dx1 && defines_dx2 && defines_dx3) {
             { // dx1
-              vec_t<Dim::_3D> d_PU { finit.dx1({ x1_H, x2_0, x3_0 }),
-                                     finit.dx2({ x1_H, x2_0, x3_0 }),
-                                     finit.dx3({ x1_H, x2_0, x3_0 }) };
-              vec_t<Dim::_3D> d_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>({ i1_ + HALF, i2_, i3_ },
-                                                         d_PU,
-                                                         d_U);
-              EM(i1, i2, i3, em::dx1) = d_U[0];
+              EM(i1, i2, i3, em::dx1) = finit.dx1({ x1_H, x2_0, x3_0 });
             }
             { // dx2
-              vec_t<Dim::_3D> d_PU { finit.dx1({ x1_0, x2_H, x3_0 }),
-                                     finit.dx2({ x1_0, x2_H, x3_0 }),
-                                     finit.dx3({ x1_0, x2_H, x3_0 }) };
-              vec_t<Dim::_3D> d_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>({ i1_, i2_ + HALF, i3_ },
-                                                         d_PU,
-                                                         d_U);
-              EM(i1, i2, i3, em::dx2) = d_U[1];
+              EM(i1, i2, i3, em::dx2) = finit.dx2({ x1_0, x2_H, x3_0 });
             }
             { // dx3
-              vec_t<Dim::_3D> d_PU { finit.dx1({ x1_0, x2_0, x3_H }),
-                                     finit.dx2({ x1_0, x2_0, x3_H }),
-                                     finit.dx3({ x1_0, x2_0, x3_H }) };
-              vec_t<Dim::_3D> d_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>({ i1_, i2_, i3_ + HALF },
-                                                         d_PU,
-                                                         d_U);
-              EM(i1, i2, i3, em::dx3) = d_U[2];
+              EM(i1, i2, i3, em::dx3) = finit.dx3({ x1_0, x2_0, x3_H });
             }
           }
           if constexpr (defines_bx1 && defines_bx2 && defines_bx3) {
             { // bx1
-              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_0, x2_H, x3_H }),
-                                     finit.bx2({ x1_0, x2_H, x3_H }),
-                                     finit.bx3({ x1_0, x2_H, x3_H }) };
-              vec_t<Dim::_3D> b_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>(
-                { i1_, i2_ + HALF, i3_ + HALF },
-                b_PU,
-                b_U);
-              EM(i1, i2, i3, em::bx1) = b_U[0];
+              EM(i1, i2, i3, em::bx1) = finit.bx1({ x1_0, x2_H, x3_H });
             }
             { // bx2
-              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_0, x3_H }),
-                                     finit.bx2({ x1_H, x2_0, x3_H }),
-                                     finit.bx3({ x1_H, x2_0, x3_H }) };
-              vec_t<Dim::_3D> b_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>(
-                { i1_ + HALF, i2_, i3_ + HALF },
-                b_PU,
-                b_U);
-              EM(i1, i2, i3, em::bx2) = b_U[1];
+              EM(i1, i2, i3, em::bx2) = finit.bx2({ x1_H, x2_0, x3_H });
             }
             { // bx3
-              vec_t<Dim::_3D> b_PU { finit.bx1({ x1_H, x2_H, x3_0 }),
-                                     finit.bx2({ x1_H, x2_H, x3_0 }),
-                                     finit.bx3({ x1_H, x2_H, x3_0 }) };
-              vec_t<Dim::_3D> b_U { ZERO };
-              metric.template transform<Idx::PU, Idx::U>(
-                { i1_ + HALF, i2_ + HALF, i3_ },
-                b_PU,
-                b_U);
-              EM(i1, i2, i3, em::bx3) = b_U[2];
+              EM(i1, i2, i3, em::bx3) = finit.bx3({ x1_H, x2_H, x3_0 });
             }
           }
         } else {

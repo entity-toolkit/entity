@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -29,8 +30,9 @@ namespace kernel::gr {
    * @tparam M Metric.
    */
   template <class M>
+    requires traits::metric::HasD<M> && traits::metric::HasH_ij<M> &&
+             traits::metric::HasSqrtDetH<M> && traits::metric::HasPolarArea<M>
   class Ampere_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, 6> Din;
@@ -110,6 +112,8 @@ namespace kernel::gr {
    * @brief Add the currents to the D field with the appropriate conversion.
    */
   template <class M>
+    requires traits::metric::HasD<M> && traits::metric::HasH_ij<M> &&
+             traits::metric::HasSqrtDetH<M> && traits::metric::HasPolarArea<M>
   class CurrentsAmpere_kernel {
     static constexpr auto D = M::Dim;
 
