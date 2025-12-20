@@ -15,6 +15,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
       m_metadomain.InitStatsWriter(m_params, is_resuming);

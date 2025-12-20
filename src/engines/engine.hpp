@@ -49,9 +49,12 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+  concept IsCompatibleWithEngine = traits::metric::HasD<M> &&
+                                   user::PGen<S, M>::is_pgen;
+
+  template <SimEngine::type S, class M>
+    requires IsCompatibleWithEngine<S, M>
   class Engine {
-    static_assert(M::is_metric, "template arg for Engine class has to be a metric");
-    static_assert(user::PGen<S, M>::is_pgen, "unrecognized problem generator");
 
   protected:
 #if defined(OUTPUT_ENABLED)

@@ -49,6 +49,9 @@
 namespace ntt {
 
   template <class M>
+    requires IsCompatibleWithEngine<SimEngine::SRPIC, M> &&
+             traits::metric::HasH_ij<M> && traits::metric::HasConvert_i<M> &&
+             traits::metric::HasSqrtH_ij<M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;

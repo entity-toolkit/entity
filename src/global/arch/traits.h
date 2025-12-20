@@ -198,6 +198,10 @@ namespace traits {
     concept HasHij = requires(const M& m, const coord_t<M::Dim>& xi) {
       { m.template h<1, 1>(xi) } -> std::convertible_to<real_t>;
     };
+    template <class M>
+    concept HasSqrtH_ij = requires(const M& m, const coord_t<M::Dim>& xi) {
+      { m.template sqrt_h_<1, 1>(xi) } -> std::convertible_to<real_t>;
+    };
 
     template <class M>
     concept HasSqrtDetH = requires(const M& m, const coord_t<M::Dim>& xi) {

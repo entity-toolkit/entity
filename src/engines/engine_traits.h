@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: BSD-3-Clause
-
 #ifndef ENGINES_ENGINE_TRAITS_H
 #define ENGINES_ENGINE_TRAITS_H
 

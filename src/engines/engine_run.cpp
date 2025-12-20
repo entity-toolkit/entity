@@ -11,6 +11,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::run() {
     if constexpr (pgen_is_ok) {
       init();
