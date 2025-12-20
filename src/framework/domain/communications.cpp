@@ -197,6 +197,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain, CommTags tags) {
     // const auto comm_fields = (tags & Comm::E) or (tags & Comm::B) or
     //                          (tags & Comm::J) or (tags & Comm::D) or
@@ -417,6 +418,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&        domain,
                                            CommTags             tags,
                                            const range_tuple_t& components) {
@@ -573,6 +575,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) {
 #if defined(MPI_ENABLED)
     logger::Checkpoint("Communicating particles\n", HERE);
@@ -664,6 +667,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>& domain) {
     for (auto& species : domain.species) {
       species.RemoveDead();

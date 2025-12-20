@@ -215,6 +215,11 @@ namespace traits {
     };
 
     template <class M>
+    concept HasTotVolume = requires(const M& m) {
+      { m.totVolume() } -> std::convertible_to<real_t>;
+    };
+
+    template <class M>
     concept HasTransform_i = requires(const M&               m,
                                       const coord_t<M::Dim>& xi,
                                       real_t                 v_in) {
