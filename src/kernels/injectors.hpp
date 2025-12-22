@@ -615,8 +615,11 @@ namespace kernel {
       return idx_h();
     }
 
-    Inline auto injected_ppc(const coord_t<M::Dim>& x_Ph) const -> npart_t {
-      const auto ppc_real = ppc0 * spatial_dist(x_Ph);
+    Inline auto injected_ppc(const coord_t<M::Dim>& x_Ph,
+                             real_t& ppc_dist,
+                             real_t& weight_dist) const -> npart_t {
+      spatial_dist(x_Ph, ppc_dist, weight_dist);
+      const auto ppc_real = ppc0 * ppc_dist;
       auto       ppc      = static_cast<npart_t>(ppc_real);
       auto       rand_gen = random_pool.get_state();
       if (Random<real_t>(rand_gen) < (ppc_real - static_cast<real_t>(ppc))) {
@@ -682,15 +685,15 @@ namespace kernel {
         coord_t<Dim::_1D> x_Cd { i1_ + HALF };
         coord_t<Dim::_1D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-
-        const auto ppc = injected_ppc(x_Ph);
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        const auto ppc = injected_ppc(x_Ph, ppc_dist, weight_dist);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
+        auto weight = ONE * weight_dist;
         if constexpr (M::CoordType != Coord::Cart) {
-          weight = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+          weight = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0 * weight_dist;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
@@ -733,14 +736,15 @@ namespace kernel {
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
-        const auto ppc = injected_ppc(x_Ph);
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        const auto ppc = injected_ppc(x_Ph, ppc_dist, weight_dist);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
+        auto weight = ONE * weight_dist;
         if constexpr (M::CoordType != Coord::Cart) {
-          weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
+          weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0 * weight_dist;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
@@ -796,16 +800,16 @@ namespace kernel {
         coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
         coord_t<Dim::_3D> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-
-        const auto ppc = injected_ppc(x_Ph);
+        auto ppc_dist { ZERO }, weight_dist { ONE };
+        const auto ppc = injected_ppc(x_Ph, ppc_dist, weight_dist);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
+        auto weight = ONE * weight_dist;
         if constexpr (M::CoordType != Coord::Cart) {
           weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
-                   inv_V0;
+                   inv_V0 * weight_dist;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
