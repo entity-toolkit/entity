@@ -71,14 +71,6 @@ namespace traits {
   template <typename T>
   using dx3_t = decltype(&T::dx3);
 
-  // for simengine
-  template <typename T>
-  using run_t = decltype(&T::run);
-
-  // for params
-  template <typename T>
-  using to_string_t = decltype(&T::to_string);
-
   // for pgen extforce
   template <typename T>
   using species_t = decltype(&T::species);
@@ -109,6 +101,20 @@ namespace traits {
   struct is_pair<std::pair<T, U>> : std::true_type {};
 
   // c++20
+  namespace engine {
+    template <class E>
+    concept HasRun = requires(E& engine) {
+      { engine.run() } -> std::same_as<void>;
+    };
+  } // namespace engine
+
+  namespace params {
+    template <class P>
+    concept HasToString = requires(const P& params) {
+      { params.to_string() } -> std::convertible_to<std::string>;
+    };
+  } // namespace params
+
   namespace metric {
 
     template <class M>

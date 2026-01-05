@@ -85,7 +85,6 @@ namespace ntt {
     };
 
     static constexpr Dimension D { M::Dim };
-    static constexpr bool      is_engine { true };
 
     Engine(const SimulationParams& params)
       : m_params { params }

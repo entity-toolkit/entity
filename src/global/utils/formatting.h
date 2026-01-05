@@ -75,8 +75,8 @@ namespace fmt {
     oss << "[";
     if (!vec.empty()) {
       if constexpr (traits::is_pair<T>::value) {
-        if constexpr (
-          traits::has_method<traits::to_string_t, typename T::first_type>::value) {
+        if constexpr (traits::params::HasToString<typename T::first_type> and
+                      traits::params::HasToString<typename T::second_type>) {
           oss << "{" << vec[0].first.to_string() << ", "
               << vec[0].second.to_string() << "}";
           for (size_t i = 1; i < vec.size(); ++i) {
