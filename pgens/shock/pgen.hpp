@@ -113,7 +113,7 @@ namespace user {
 
     inline PGen() {}
 
-    auto MatchFields(real_t time) const -> InitFields<D> {
+    auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
     }
 

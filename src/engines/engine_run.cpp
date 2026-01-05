@@ -44,7 +44,7 @@ namespace ntt {
         });
         // poststep (if defined)
         if constexpr (
-          traits::has_method<traits::pgen::custom_poststep_t, decltype(m_pgen)>::value) {
+          traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
           timers.start("Custom");
           m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
             m_pgen.CustomPostStep(step, time, dom);
@@ -63,7 +63,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
         timers.start("Output");
         if constexpr (
-          traits::has_method<traits::pgen::custom_field_output_t, decltype(m_pgen)>::value) {
+          traits::pgen::HasCustomFieldOutput<decltype(m_pgen), Domain<S, M>, M::Dim>) {
           auto lambda_custom_field_output = [&](const std::string&    name,
                                                 ndfield_t<M::Dim, 6>& buff,
                                                 index_t               idx,
@@ -82,7 +82,7 @@ namespace ntt {
           print_output &= m_metadomain.Write(m_params, step, step - 1, time, time - dt);
         }
         if constexpr (
-          traits::has_method<traits::pgen::custom_stat_t, decltype(m_pgen)>::value) {
+          traits::pgen::HasCustomStatOutput<decltype(m_pgen), Domain<S, M>>) {
           auto lambda_custom_stat = [&](const std::string&  name,
                                         timestep_t          step,
                                         simtime_t           time,

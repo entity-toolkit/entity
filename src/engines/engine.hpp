@@ -49,8 +49,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  concept IsCompatibleWithEngine = traits::metric::HasD<M> &&
-                                   user::PGen<S, M>::is_pgen;
+  concept IsCompatibleWithEngine = traits::metric::HasD<M>;
 
   template <SimEngine::type S, class M>
     requires IsCompatibleWithEngine<S, M>

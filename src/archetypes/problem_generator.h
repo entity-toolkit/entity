@@ -33,7 +33,6 @@ namespace arch {
   template <SimEngine::type S, class M>
     requires traits::metric::HasD<M>
   struct ProblemGenerator {
-    static constexpr bool      is_pgen { true };
     static constexpr Dimension D { M::Dim };
     static constexpr Coord     C { M::CoordType };
 

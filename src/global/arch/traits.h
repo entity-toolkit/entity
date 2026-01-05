@@ -8,18 +8,6 @@
  *   - traits::bx1_t, ::bx2_t, ::bx3_t
  *   - traits::dx1_t, ::dx2_t, ::dx3_t
  *   - traits::run_t, traits::to_string_t
- *   - traits::pgen::init_flds_t
- *   - traits::pgen::ext_force_t
- *   - traits::pgen::ext_current_t
- *   - traits::pgen::atm_fields_t
- *   - traits::pgen::match_fields_const_t
- *   - traits::pgen::match_fields_t
- *   - traits::pgen::fix_fields_const_t
- *   - traits::pgen::fix_fields_t
- *   - traits::pgen::init_prtls_t
- *   - traits::pgen::custom_fields_t
- *   - traits::pgen::custom_field_output_t
- *   - traits::pgen::custom_poststep_t
  *   - traits::check_compatibility<>
  *   - traits::compatibility<>
  *   - traits::is_pair<>
@@ -33,6 +21,8 @@
 #define GLOBAL_ARCH_TRAITS_H
 
 #include "global.h"
+
+#include "arch/kokkos_aliases.h"
 
 #include <type_traits>
 #include <utility>
@@ -88,69 +78,6 @@ namespace traits {
   // for params
   template <typename T>
   using to_string_t = decltype(&T::to_string);
-
-  // for pgen
-  namespace pgen {
-    template <typename T>
-    using init_flds_t = decltype(&T::init_flds);
-
-    template <typename T>
-    using init_prtls_t = decltype(&T::InitPrtls);
-
-    template <typename T>
-    using ext_force_t = decltype(&T::ext_force);
-
-    template <typename T>
-    using ext_current_t = decltype(&T::ext_current);
-
-    template <typename T>
-    using atm_fields_t = decltype(&T::AtmFields);
-
-    template <typename T>
-    using match_fields_t = decltype(&T::MatchFields);
-
-    template <typename T>
-    using match_fields_in_x1_t = decltype(&T::MatchFieldsInX1);
-
-    template <typename T>
-    using match_fields_in_x2_t = decltype(&T::MatchFieldsInX2);
-
-    template <typename T>
-    using match_fields_in_x3_t = decltype(&T::MatchFieldsInX3);
-
-    template <typename T>
-    using match_fields_const_t = decltype(&T::MatchFieldsConst);
-
-    template <typename T>
-    using fix_fields_t = decltype(&T::FixFields);
-
-    template <typename T>
-    using fix_fields_const_t = decltype(&T::FixFieldsConst);
-
-    template <typename T>
-    using perfect_conductor_fields_t = decltype(&T::PerfectConductorFields);
-
-    template <typename T>
-    using perfect_conductor_fields_const_t = decltype(&T::PerfectConductorFieldsConst);
-
-    template <typename T>
-    using perfect_conductor_currents_t = decltype(&T::PerfectConductorCurrents);
-
-    template <typename T>
-    using perfect_conductor_currents_const_t = decltype(&T::PerfectConductorCurrentsConst);
-
-    template <typename T>
-    using custom_fields_t = decltype(&T::CustomFields);
-
-    template <typename T>
-    using custom_poststep_t = decltype(&T::CustomPostStep);
-
-    template <typename T>
-    using custom_field_output_t = decltype(&T::CustomFieldOutput);
-
-    template <typename T>
-    using custom_stat_t = decltype(&T::CustomStat);
-  } // namespace pgen
 
   // for pgen extforce
   template <typename T>
@@ -324,6 +251,84 @@ namespace traits {
     };
 
   } // namespace spatialdist
+
+  namespace pgen {
+
+    template <class PG>
+    concept HasInitFlds = requires(const PG& pgen) { pgen.init_flds; };
+
+    template <class PG, class D>
+    concept HasInitPrtls = requires(const PG& pgen, D& domain) {
+      pgen.InitPrtls(domain);
+    };
+
+    template <class PG>
+    concept HasExtForce = requires(const PG& pgen) { pgen.ext_force; };
+
+    template <class PG>
+    concept HasExtCurrent = requires(const PG& pgen) { pgen.ext_current; };
+
+    template <class PG>
+    concept HasAtmFields = requires(const PG& pgen, simtime_t time) {
+      pgen.AtmFields(time);
+    };
+
+    template <class PG>
+    concept HasMatchFields = requires(const PG& pgen, simtime_t time) {
+      pgen.MatchFields(time);
+    };
+
+    template <class PG>
+    concept HasMatchFieldsInX1 = requires(const PG& pgen, simtime_t time) {
+      pgen.MatchFieldsInX1(time);
+    };
+
+    template <class PG>
+    concept HasMatchFieldsInX2 = requires(const PG& pgen, simtime_t time) {
+      pgen.MatchFieldsInX2(time);
+    };
+
+    template <class PG>
+    concept HasMatchFieldsInX3 = requires(const PG& pgen, simtime_t time) {
+      pgen.MatchFieldsInX3(time);
+    };
+
+    template <class PG>
+    concept HasFixFieldsConst = requires(const PG&      pgen,
+                                         const bc_in&   bc,
+                                         const ntt::em& comp) {
+      pgen.FixFieldsConst(bc, comp);
+    };
+
+    template <class PG, class D>
+    concept HasCustomPostStep = requires(const PG&  pgen,
+                                         timestep_t s,
+                                         simtime_t  t,
+                                         D&         domain) {
+      pgen.CustomPostStep(s, t, domain);
+    };
+
+    template <class PG, class D, Dimension Dim>
+    concept HasCustomFieldOutput = requires(const PG&          pgen,
+                                            const std::string& name,
+                                            ndfield_t<Dim, 6>& buff,
+                                            index_t            idx,
+                                            timestep_t         step,
+                                            simtime_t          time,
+                                            const D&           dom) {
+      pgen.CustomFieldOutput(name, buff, idx, step, time, dom);
+    };
+
+    template <class PG, class D>
+    concept HasCustomStatOutput = requires(const PG&          pgen,
+                                           const std::string& name,
+                                           timestep_t         s,
+                                           simtime_t          t,
+                                           const D&           dom) {
+      pgen.CustomStat(name, s, t, dom);
+    };
+
+  } // namespace pgen
 
 } // namespace traits
 
