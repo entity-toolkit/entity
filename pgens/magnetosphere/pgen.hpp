@@ -113,7 +113,7 @@ namespace user {
 
     inline PGen() {}
 
-    auto AtmFields(simetime_t time) const -> DriveFields<D> {
+    auto AtmFields(simtime_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega, field_geom };
     }
 
