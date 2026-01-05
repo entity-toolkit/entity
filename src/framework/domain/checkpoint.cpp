@@ -14,6 +14,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
                                               const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
@@ -64,6 +65,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
                                          timestep_t              current_step,
                                          timestep_t              finished_step,
@@ -110,6 +112,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
                                                 const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);

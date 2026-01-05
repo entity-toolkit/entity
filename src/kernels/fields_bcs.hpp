@@ -38,8 +38,11 @@ namespace kernel::bc {
    * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
   template <SimEngine::type S, class I, class M, in o>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert_i<M> &&
+             traits::metric::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransform_i<M>) ||
+              S == SimEngine::GRPIC)
   struct MatchBoundaries_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
     static constexpr auto  D = M::Dim;
@@ -925,6 +928,9 @@ namespace kernel::bc {
   // };
 
   template <class I, class M, bool P, in O>
+    requires traits::metric::HasD<M> && traits::metric::HasTransform_i<M> &&
+             traits::metric::HasConvert<M> &&
+             (static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim))
   struct EnforcedBoundaries_kernel {
     static constexpr Dimension D = M::Dim;
     static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
@@ -937,9 +943,6 @@ namespace kernel::bc {
     static_assert(defines_ex1 or defines_ex2 or defines_ex3 or defines_bx1 or
                     defines_bx2 or defines_bx3,
                   "none of the components of E or B are specified in PGEN");
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim),
-                  "Invalid Orientation");
 
     ndfield_t<D, 6> Fld;
     const I         fset;
@@ -1245,17 +1248,17 @@ namespace kernel::bc {
 
   namespace gr {
 
-    template <class M>
+    template <Dimension D>
     struct HorizonBoundaries_kernel {
-      ndfield_t<M::Dim, 6> Fld;
-      const std::size_t    i1_min;
-      const bool           setE, setB;
-      const std::size_t    nfilter;
+      ndfield_t<D, 6>   Fld;
+      const std::size_t i1_min;
+      const bool        setE, setB;
+      const std::size_t nfilter;
 
-      HorizonBoundaries_kernel(ndfield_t<M::Dim, 6> Fld,
-                               std::size_t          i1_min,
-                               BCTags               tags,
-                               std::size_t          nfilter)
+      HorizonBoundaries_kernel(ndfield_t<D, 6> Fld,
+                               std::size_t     i1_min,
+                               BCTags          tags,
+                               std::size_t     nfilter)
         : Fld { Fld }
         , i1_min { i1_min }
         , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
@@ -1265,7 +1268,7 @@ namespace kernel::bc {
         , nfilter { nfilter } {}
 
       Inline void operator()(index_t i2) const {
-        if constexpr (M::Dim == Dim::_2D) {
+        if constexpr (D == Dim::_2D) {
           if (setE) {
             for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
               Fld(i1_min - N_GHOSTS + i,
@@ -1301,8 +1304,8 @@ namespace kernel::bc {
     };
 
     template <class M, idx_t i>
+      requires traits::metric::HasD<M> && traits::metric::HasConvert_i<M>
     struct AbsorbCurrents_kernel {
-      static_assert(M::is_metric, "M must be a metric class");
       static_assert(i <= static_cast<unsigned short>(M::Dim),
                     "Invalid component index");
 

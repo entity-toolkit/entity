@@ -19,6 +19,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -189,8 +190,10 @@ namespace kernel::sr {
    * @tparam F Additional force
    */
   template <class M, class F = NoForce_t>
+    requires traits::metric::HasD<M> && traits::metric::HasTransformXYZ<M> &&
+             traits::metric::HasConvertXYZ<M> &&
+             traits::metric::HasTransform_i<M> && traits::metric::HasConvert_i<M>
   struct Pusher_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D        = M::Dim;
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
 
