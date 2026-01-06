@@ -48,6 +48,34 @@ namespace ntt {
   }
 
   /*
+   * Auxiliary functions
+   */
+  auto getRadiativeDragFlags(
+    const std::string& radiative_drag_str) -> RadiativeDragFlags {
+    if (fmt::toLower(radiative_drag_str) == "none") {
+      return RadiativeDrag::NONE;
+    } else {
+      // separate comas
+      RadiativeDragFlags flags = RadiativeDrag::NONE;
+      std::string        token;
+      std::istringstream tokenStream(radiative_drag_str);
+      while (std::getline(tokenStream, token, ',')) {
+        const auto token_lower = fmt::toLower(token);
+        if (token_lower == "synchrotron") {
+          flags |= RadiativeDrag::SYNCHROTRON;
+        } else if (token_lower == "compton") {
+          flags |= RadiativeDrag::COMPTON;
+        } else {
+          raise::Error(
+            fmt::format("Invalid radiative_drag value: %s", radiative_drag_str),
+            HERE);
+        }
+      }
+      return flags;
+    }
+  }
+
+  /*
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
    * Parameters that must not be changed during the checkpoint restart
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -216,9 +244,11 @@ namespace ntt {
         npayloads_int += 2;
 #endif
       }
-      const auto cooling = toml::find_or(sp, "cooling", std::string("None"));
-      raise::ErrorIf((fmt::toLower(cooling) != "none") && is_massless,
-                     "cooling is only applicable to massive particles",
+      const auto radiative_drag_str = toml::find_or(sp,
+                                                    "radiative_drag",
+                                                    std::string("none"));
+      raise::ErrorIf((fmt::toLower(radiative_drag_str) != "none") && is_massless,
+                     "radiative drag is only applicable to massive particles",
                      HERE);
       raise::ErrorIf((fmt::toLower(pusher) == "photon") && !is_massless,
                      "photon pusher is only applicable to massless particles",
@@ -232,27 +262,27 @@ namespace ntt {
         use_gca = true;
         pusher  = pusher.substr(0, pusher.find(','));
       }
-      const auto pusher_enum  = PrtlPusher::pick(pusher.c_str());
-      const auto cooling_enum = Cooling::pick(cooling.c_str());
+      const auto pusher_enum = PrtlPusher::pick(pusher.c_str());
+      const auto radiative_drag_flags = getRadiativeDragFlags(radiative_drag_str);
+      if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
+        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
+                       "Synchrotron radiative drag is only supported for SRPIC",
+                       HERE);
+        promiseToDefine("algorithms.synchrotron.gamma_rad");
+      }
+      if (radiative_drag_flags & RadiativeDrag::COMPTON) {
+        raise::ErrorIf(
+          engine_enum != SimEngine::SRPIC,
+          "Inverse Compton radiative drag is only supported for SRPIC",
+          HERE);
+        promiseToDefine("algorithms.compton.gamma_rad");
+      }
       if (use_gca) {
         raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                        "GCA pushers are only supported for SRPIC",
                        HERE);
         promiseToDefine("algorithms.gca.e_ovr_b_max");
         promiseToDefine("algorithms.gca.larmor_max");
-      }
-      if (cooling_enum == Cooling::SYNCHROTRON) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "Synchrotron cooling is only supported for SRPIC",
-                       HERE);
-        promiseToDefine("algorithms.synchrotron.gamma_rad");
-      }
-
-      if (cooling_enum == Cooling::COMPTON) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "Inverse Compton cooling is only supported for SRPIC",
-                       HERE);
-        promiseToDefine("algorithms.compton.gamma_rad");
       }
 
       species.emplace_back(ParticleSpecies(idx,
@@ -263,7 +293,7 @@ namespace ntt {
                                            pusher_enum,
                                            use_tracking,
                                            use_gca,
-                                           cooling_enum,
+                                           radiative_drag_flags,
                                            npayloads_real,
                                            npayloads_int));
       idx += 1;
@@ -550,7 +580,7 @@ namespace ntt {
                                particle_species.pusher(),
                                particle_species.use_tracking(),
                                particle_species.use_gca(),
-                               particle_species.cooling(),
+                               particle_species.radiative_drag_flags(),
                                particle_species.npld_r(),
                                particle_species.npld_i());
       idxM1++;
@@ -1018,7 +1048,7 @@ namespace ntt {
           toml::find_or(toml_data, "algorithms", "gca", "larmor_max", ZERO));
     }
 
-    // cooling
+    // radiative drag parameters
     if (isPromised("algorithms.synchrotron.gamma_rad")) {
       set("algorithms.synchrotron.gamma_rad",
           toml::find_or(toml_data,

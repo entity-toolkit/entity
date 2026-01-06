@@ -39,8 +39,8 @@ namespace ntt {
     // Use byrid gca pusher for the species
     const bool m_use_gca;
 
-    // Cooling drag mechanism assigned for the species
-    const Cooling m_cooling;
+    // Radiative drag mechanism(s) assigned for the species
+    const RadiativeDragFlags m_radiative_drag_flags;
 
     // Number of payloads for the species
     const unsigned short m_npld_r;
@@ -56,7 +56,7 @@ namespace ntt {
       , m_pusher { PrtlPusher::INVALID }
       , m_use_tracking { false }
       , m_use_gca { false }
-      , m_cooling { Cooling::INVALID }
+      , m_radiative_drag_flags { RadiativeDrag::NONE }
       , m_npld_r { 0 }
       , m_npld_i { 0 } {}
 
@@ -71,7 +71,7 @@ namespace ntt {
      * @param pusher The pusher assigned for the species.
      * @param use_tracking Use particle tracking for the species.
      * @param use_gca Use hybrid GCA pusher for the species.
-     * @param cooling The cooling mechanism assigned for the species.
+     * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species.
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
@@ -83,7 +83,7 @@ namespace ntt {
                     const PrtlPusher&  pusher,
                     bool               use_tracking,
                     bool               use_gca,
-                    const Cooling&     cooling,
+                    RadiativeDragFlags radiative_drag_flags,
                     unsigned short     npld_r = 0,
                     unsigned short     npld_i = 0)
       : m_index { index }
@@ -94,7 +94,7 @@ namespace ntt {
       , m_pusher { pusher }
       , m_use_tracking { use_tracking }
       , m_use_gca { use_gca }
-      , m_cooling { cooling }
+      , m_radiative_drag_flags { radiative_drag_flags }
       , m_npld_r { npld_r }
       , m_npld_i { npld_i } {
       if (use_tracking) {
@@ -159,8 +159,8 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto cooling() const -> Cooling {
-      return m_cooling;
+    auto radiative_drag_flags() const -> RadiativeDragFlags {
+      return m_radiative_drag_flags;
     }
 
     [[nodiscard]]

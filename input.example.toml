@@ -254,7 +254,14 @@
     # Radiation reaction limit gamma-factor for synchrotron
     #   @type: float [> 0.0]
     #   @default: 1.0
-    #   @note: [required] if one of the species has `cooling = "synchrotron"`
+    #   @note: [required] if one of the species has `radiative_drag = "synchrotron"`
+    gamma_rad = ""
+
+  [algorithms.compton]
+    # Radiation reaction limit gamma-factor for Compton drag
+    #   @type: float [> 0.0]
+    #   @default: 1.0
+    #   @note: [required] if one of the species has `radiative_drag = "compton"`
     gamma_rad = ""
 
   # Stencil coefficients for the field solver [notation as in Blinne+ (2018)]
@@ -366,8 +373,9 @@
     # Radiation reaction to use for the species
     #   @type: string
     #   @default: "None"
-    #   @enum: "None", "Synchrotron"
-    cooling = ""
+    #   @enum: "None", "Synchrotron", "Compton"
+    #   @note: Can also be coma-separated combination, e.g., "Synchrotron,Compton"
+    radiative_drag = ""
 
 # Parameters for specific problem generators and setups
 [setup]

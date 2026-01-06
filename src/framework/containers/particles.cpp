@@ -24,7 +24,7 @@ namespace ntt {
                              const PrtlPusher&  pusher,
                              bool               use_tracking,
                              bool               use_gca,
-                             const Cooling&     cooling,
+                             RadiativeDragFlags radiative_drag_flags,
                              unsigned short     npld_r,
                              unsigned short     npld_i)
     : ParticleSpecies(index,
@@ -35,7 +35,7 @@ namespace ntt {
                       pusher,
                       use_tracking,
                       use_gca,
-                      cooling,
+                      radiative_drag_flags,
                       npld_r,
                       npld_i) {
 

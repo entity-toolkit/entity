@@ -86,7 +86,7 @@ namespace ntt {
      * @param pusher The pusher assigned for the species
      * @param use_tracking Use particle tracking for the species
      * @param use_gca Use hybrid GCA pusher for the species
-     * @param cooling The cooling mechanism assigned for the species
+     * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
@@ -98,7 +98,7 @@ namespace ntt {
               const PrtlPusher&  pusher,
               bool               use_gca,
               bool               use_tracking,
-              const Cooling&     cooling,
+              RadiativeDragFlags radiative_drag_flags,
               unsigned short     npld_r = 0,
               unsigned short     npld_i = 0);
 
@@ -116,7 +116,7 @@ namespace ntt {
                   spec.pusher(),
                   spec.use_tracking(),
                   spec.use_gca(),
-                  spec.cooling(),
+                  spec.radiative_drag_flags(),
                   spec.npld_r(),
                   spec.npld_i()) {}
 

@@ -11,11 +11,13 @@
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
  *                                    custom, horizon, axis, conductor, sync
  *   - enum ntt::PrtlPusher        // boris, vay, photon, none
- *   - enum ntt::Cooling           // compton, synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
  *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
  *                                    charge, n, npart
+ *
+ *   - enum ntt::RadiativeDrag     // compton, synchrotron, none
+ *
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -33,10 +35,10 @@
  * example: PrtlPusher::pick("vay") [returns PrtlPusher(PrtlPusher::VAY)]
  * @note
  * To get the total number of enum instances, use the total variable
- * example: Cooling::total == 2
+ * example: SimEngine::total == 2
  * @note
  * To iterate over all enum instances, use the variants array
- * example: for (Cooling c : Cooling::variants) { ... }
+ * example: for (auto s : SimEngine::variants) { ... }
  */
 
 #ifndef GLOBAL_ENUMS_H
@@ -259,23 +261,6 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct Cooling : public enums_hidden::BaseEnum<Cooling> {
-    static constexpr const char* label = "cooling";
-
-    enum type : uint8_t {
-      INVALID     = 0,
-      SYNCHROTRON = 1,
-      COMPTON     = 2,
-      NONE        = 3,
-    };
-
-    constexpr Cooling(uint8_t c) : enums_hidden::BaseEnum<Cooling> { c } {}
-
-    static constexpr type variants[] = { SYNCHROTRON, COMPTON, NONE };
-    static constexpr const char* lookup[] = { "synchrotron", "compton", "none" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
   struct FldsID : public enums_hidden::BaseEnum<FldsID> {
     static constexpr const char* label = "out_flds";
 
@@ -336,6 +321,34 @@ namespace ntt {
                                               "npart", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
+
+  namespace RadiativeDrag {
+    enum RadiativeDragFlags_ {
+      NONE        = 0,
+      SYNCHROTRON = 1 << 0,
+      COMPTON     = 1 << 1,
+    };
+
+    inline auto to_string(int flags) -> std::string {
+      if (flags == NONE) {
+        return "none";
+      } else {
+        std::string result = "";
+        if (flags & SYNCHROTRON) {
+          result += "synchrotron";
+        }
+        if (flags & COMPTON) {
+          if (!result.empty()) {
+            result += ",";
+          }
+          result += "compton";
+        }
+        return result;
+      }
+    }
+  } // namespace RadiativeDrag
+
+  typedef int RadiativeDragFlags;
 
 } // namespace ntt
 

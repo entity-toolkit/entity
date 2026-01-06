@@ -246,7 +246,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     Kokkos::parallel_for(
       "pusher", CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
       kernel::sr::Pusher_kernel<M>(PrtlPusher::BORIS,
-                                   NoGCA, NoExtForce, kernel::sr::Cooling::None,
+                                   NoGCA, NoExtForce, RadiativeDrag::NONE,
                                    emfield,
                                    sp_idx,
                                    i1, i2, i3,

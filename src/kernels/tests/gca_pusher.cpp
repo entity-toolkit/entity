@@ -160,7 +160,7 @@ void testPusher(const std::vector<std::size_t>& res) {
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {2}),
       kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     true, false, kernel::sr::Cooling::None,
+                                                     true, false, RadiativeDrag::NONE,
                                                      emfield,
                                                      sp,
                                                      i1, i2, i3,

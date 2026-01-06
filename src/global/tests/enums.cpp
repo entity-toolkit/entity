@@ -65,7 +65,6 @@ auto main() -> int {
                                   "atmosphere", "custom",    "horizon",
                                   "axis",       "conductor", "sync" };
   enum_str_t all_particle_pushers = { "boris", "vay", "photon", "none" };
-  enum_str_t all_coolings         = { "synchrotron", "compton", "none" };
 
   enum_str_t all_out_flds = { "e",      "dive", "d",    "divd", "b",
                               "h",      "j",    "a",    "t",    "rho",
@@ -80,7 +79,6 @@ auto main() -> int {
   checkEnum<PrtlBC>(all_particle_bcs);
   checkEnum<FldsBC>(all_fields_bcs);
   checkEnum<PrtlPusher>(all_particle_pushers);
-  checkEnum<Cooling>(all_coolings);
   checkEnum<FldsID>(all_out_flds);
   checkEnum<StatsID>(all_out_stats);
 

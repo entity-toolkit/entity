@@ -138,6 +138,9 @@ const auto sph_2d = u8R"(
   [algorithms.synchrotron]
     gamma_rad = 50.0
 
+  [algorithms.compton]
+    gamma_rad = 20.0
+
 [particles]
   ppc0 = 25.0
   use_weights = true
@@ -151,7 +154,7 @@ const auto sph_2d = u8R"(
     maxnpart = 1e2
     pusher = "boris,gca"
     n_payloads_real = 3
-    cooling = "synchrotron"
+    radiative_drag = "synchrotron,compton"
 
   [[particles.species]]
     label = "e+"
@@ -159,7 +162,7 @@ const auto sph_2d = u8R"(
     charge = 1.0
     maxnpart = 1e2
     pusher = "boris,gca"
-    cooling = "synchrotron"
+    radiative_drag = "synchrotron"
     n_payloads_int = 2
 
   [[particles.species]]
@@ -458,6 +461,10 @@ auto main(int argc, char* argv[]) -> int {
         (real_t)50.0,
         "algorithms.synchrotron.gamma_rad");
 
+      assert_equal(params_sph_2d.get<real_t>("algorithms.compton.gamma_rad"),
+                   (real_t)20.0,
+                   "algorithms.compton.gamma_rad");
+
       const auto species = params_sph_2d.get<std::vector<ParticleSpecies>>(
         "particles.species");
       assert_equal<std::string>(species[0].label(), "e-", "species[0].label");
@@ -469,9 +476,10 @@ auto main(int argc, char* argv[]) -> int {
                                "species[0].pusher");
       assert_equal<PrtlPusher>(species[0].use_gca(), true, "species[0].use_gca");
       assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
-      assert_equal<Cooling>(species[0].cooling(),
-                            Cooling::SYNCHROTRON,
-                            "species[0].cooling");
+      assert_equal<RadiativeDragFlags>(species[0].radiative_drag_flags(),
+                                       RadiativeDrag::SYNCHROTRON |
+                                         RadiativeDrag::COMPTON,
+                                       "species[0].radiative_drag_flags");
 
       assert_equal<std::string>(species[1].label(), "e+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
@@ -482,9 +490,9 @@ auto main(int argc, char* argv[]) -> int {
                                "species[1].pusher");
       assert_equal<PrtlPusher>(species[1].use_gca(), true, "species[1].use_gca");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
-      assert_equal<Cooling>(species[1].cooling(),
-                            Cooling::SYNCHROTRON,
-                            "species[1].cooling");
+      assert_equal<RadiativeDragFlags>(species[1].radiative_drag_flags(),
+                                       RadiativeDrag::SYNCHROTRON,
+                                       "species[1].radiative_drag_flags");
       assert_equal<unsigned short>(species[1].npld_i(), 2, "species[1].npld_i");
       assert_equal<bool>(species[1].use_tracking(), false, "species[1].tracking");
 

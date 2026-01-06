@@ -48,16 +48,6 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  namespace Cooling {
-    enum CoolingTags_ {
-      None        = 0,
-      Synchrotron = 1 << 0,
-      Compton     = 1 << 1,
-    };
-  } // namespace Cooling
-
-  typedef int CoolingTags;
-
   struct NoForce_t {
     NoForce_t() {}
   };
@@ -198,10 +188,10 @@ namespace kernel::sr {
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
 
   private:
-    const PrtlPusher::type pusher;
-    const bool             GCA;
-    const bool             ext_force;
-    const CoolingTags      cooling;
+    const PrtlPusher::type   pusher;
+    const bool               GCA;
+    const bool               ext_force;
+    const RadiativeDragFlags radiative_drag_flags;
 
     const randacc_ndfield_t<D, 6> EB;
     const spidx_t                 sp;
@@ -229,14 +219,14 @@ namespace kernel::sr {
     bool         is_axis_i2min { false }, is_axis_i2max { false };
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
-    // radiative cooling parameters
+    // radiative drag parameters
     const real_t coeff_sync, coeff_comp;
 
   public:
     Pusher_kernel(const PrtlPusher::type&        pusher,
                   bool                           GCA,
                   bool                           ext_force,
-                  CoolingTags                    cooling,
+                  RadiativeDragFlags             radiative_drag_flags,
                   const randacc_ndfield_t<D, 6>& EB,
                   spidx_t                        sp,
                   array_t<int*>&                 i1,
@@ -272,7 +262,7 @@ namespace kernel::sr {
       : pusher { pusher }
       , GCA { GCA }
       , ext_force { ext_force }
-      , cooling { cooling }
+      , radiative_drag_flags { radiative_drag_flags }
       , EB { EB }
       , sp { sp }
       , i1 { i1 }
@@ -342,7 +332,7 @@ namespace kernel::sr {
     Pusher_kernel(const PrtlPusher::type&     pusher,
                   bool                        GCA,
                   bool                        ext_force,
-                  CoolingTags                 cooling,
+                  RadiativeDragFlags          radiative_drag_flags,
                   const ndfield_t<D, 6>&      EB,
                   spidx_t                     sp,
                   array_t<int*>&              i1,
@@ -377,7 +367,7 @@ namespace kernel::sr {
       : Pusher_kernel(pusher,
                       GCA,
                       ext_force,
-                      cooling,
+                      radiative_drag_flags,
                       EB,
                       sp,
                       i1,
@@ -502,8 +492,8 @@ namespace kernel::sr {
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      if (cooling != 0) {
-        // backup fields & velocities to use later in cooling
+      if (radiative_drag_flags != RadiativeDrag::NONE) {
+        // backup fields & velocities to use later in radiative drag
         ei_Cart_rad[0] = ei_Cart[0];
         ei_Cart_rad[1] = ei_Cart[1];
         ei_Cart_rad[2] = ei_Cart[2];
@@ -573,8 +563,8 @@ namespace kernel::sr {
           ux3(p) += HALF * dt * force_Cart[2];
         }
       }
-      // cooling
-      if (cooling & Cooling::Synchrotron) {
+      // radiative drag
+      if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
         if (!is_gca) {
           u_prime[0] = HALF * (u_prime[0] + ux1(p));
           u_prime[1] = HALF * (u_prime[1] + ux2(p));
@@ -582,7 +572,7 @@ namespace kernel::sr {
           synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
         }
       }
-      if (cooling & Cooling::Compton) {
+      if (radiative_drag_flags & RadiativeDrag::COMPTON) {
         if (!is_gca) {
           u_prime[0] = HALF * (u_prime[0] + ux1(p));
           u_prime[1] = HALF * (u_prime[1] + ux2(p));

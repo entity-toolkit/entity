@@ -401,7 +401,12 @@ namespace ntt {
           if (species.mass() != 0.0) {
             add_param(report, 6, "GCA", "%s", species.use_gca() ? "ON" : "OFF");
           }
-          add_param(report, 6, "Cooling", "%s", species.cooling().to_string());
+          add_param(
+            report,
+            6,
+            "Radiative drag",
+            "%s",
+            RadiativeDrag::to_string(species.radiative_drag_flags()).c_str());
           add_param(report, 6, "# of real-value payloads", "%d", species.npld_r());
           add_param(report, 6, "# of integer-value payloads", "%d", species.npld_i());
         }
