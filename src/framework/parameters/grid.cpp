@@ -285,5 +285,131 @@ namespace ntt {
       return { flds_bc_pairwise, prtl_bc_pairwise };
     }
 
+    void Boundaries::read(Dimension                   dim,
+                          const Coord&                coord_enum,
+                          const boundaries_t<real_t>& extent_pairwise,
+                          const toml::value&          toml_data) {
+      if (needs_match_boundaries) {
+        if (coord_enum == Coord::Cart) {
+          auto min_extent = std::numeric_limits<real_t>::max();
+          for (const auto& e : extent_pairwise) {
+            min_extent = std::min(min_extent, e.second - e.first);
+          }
+          const auto default_ds = min_extent * defaults::bc::match::ds_frac;
+          try {
+            auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
+            for (auto d = 0u; d < dim; ++d) {
+              match_ds_array.push_back({ ds, ds });
+            }
+          } catch (...) {
+            try {
+              const auto ds = toml::find<std::vector<std::vector<real_t>>>(
+                toml_data,
+                "grid",
+                "boundaries",
+                "match",
+                "ds");
+              raise::ErrorIf(ds.size() != dim,
+                             "invalid # in `grid.boundaries.match.ds`",
+                             HERE);
+              for (auto d = 0u; d < dim; ++d) {
+                if (ds[d].size() == 1) {
+                  match_ds_array.push_back({ ds[d][0], ds[d][0] });
+                } else if (ds[d].size() == 2) {
+                  match_ds_array.push_back({ ds[d][0], ds[d][1] });
+                } else if (ds[d].size() == 0) {
+                  match_ds_array.push_back({});
+                } else {
+                  raise::Error("invalid `grid.boundaries.match.ds`", HERE);
+                }
+              }
+            } catch (...) {
+              for (auto d = 0u; d < dim; ++d) {
+                match_ds_array.push_back({ default_ds, default_ds });
+              }
+            }
+          }
+        } else {
+          auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
+          const auto ds = toml::find_or<real_t>(
+            toml_data,
+            "grid",
+            "boundaries",
+            "match",
+            "ds",
+            r_extent * defaults::bc::match::ds_frac);
+          match_ds_array.push_back({ ds, ds });
+        }
+      }
+
+      if (needs_absorb_boundaries) {
+        if (coord_enum == Coord::Cart) {
+          auto min_extent = std::numeric_limits<real_t>::max();
+          for (const auto& e : extent_pairwise) {
+            min_extent = std::min(min_extent, e.second - e.first);
+          }
+          absorb_ds = toml::find_or(toml_data,
+                                    "grid",
+                                    "boundaries",
+                                    "absorb",
+                                    "ds",
+                                    min_extent * defaults::bc::absorb::ds_frac);
+        } else {
+          auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
+          absorb_ds     = toml::find_or(toml_data,
+                                    "grid",
+                                    "boundaries",
+                                    "absorb",
+                                    "ds",
+                                    r_extent * defaults::bc::absorb::ds_frac);
+        }
+      }
+
+      if (needs_atmosphere_boundaries) {
+        atmosphere_temperature = toml::find<real_t>(toml_data,
+                                                    "grid",
+                                                    "boundaries",
+                                                    "atmosphere",
+                                                    "temperature");
+        atmosphere_height      = toml::find<real_t>(toml_data,
+                                               "grid",
+                                               "boundaries",
+                                               "atmosphere",
+                                               "height");
+        atmosphere_density     = toml::find<real_t>(toml_data,
+                                                "grid",
+                                                "boundaries",
+                                                "atmosphere",
+                                                "density");
+        atmosphere_ds =
+          toml::find_or(toml_data, "grid", "boundaries", "atmosphere", "ds", ZERO);
+        atmosphere_g       = atmosphere_temperature / atmosphere_height;
+        atmosphere_species = toml::find<std::pair<spidx_t, spidx_t>>(
+          toml_data,
+          "grid",
+          "boundaries",
+          "atmosphere",
+          "species");
+      }
+    }
+
+    void Boundaries::setParams(SimulationParams* params) const {
+      if (needs_match_boundaries) {
+        params->set("grid.boundaries.match.ds", match_ds_array);
+      }
+      if (needs_absorb_boundaries) {
+        params->set("grid.boundaries.absorb.ds", absorb_ds);
+      }
+      if (needs_atmosphere_boundaries) {
+        params->set("grid.boundaries.atmosphere.temperature",
+                    atmosphere_temperature);
+        params->set("grid.boundaries.atmosphere.density", atmosphere_density);
+        params->set("grid.boundaries.atmosphere.height", atmosphere_height);
+        params->set("grid.boundaries.atmosphere.ds", atmosphere_ds);
+        params->set("grid.boundaries.atmosphere.g", atmosphere_g);
+        params->set("grid.boundaries.atmosphere.species", atmosphere_species);
+      }
+    }
+
   } // namespace params
 } // namespace ntt

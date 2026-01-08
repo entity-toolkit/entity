@@ -15,6 +15,33 @@
 namespace ntt {
   namespace params {
 
+    struct Boundaries {
+      const bool           needs_match_boundaries;
+      boundaries_t<real_t> match_ds_array;
+
+      const bool needs_absorb_boundaries;
+      real_t     absorb_ds;
+
+      const bool                  needs_atmosphere_boundaries;
+      real_t                      atmosphere_temperature;
+      real_t                      atmosphere_height;
+      real_t                      atmosphere_density;
+      real_t                      atmosphere_g;
+      real_t                      atmosphere_ds;
+      std::pair<spidx_t, spidx_t> atmosphere_species;
+
+      Boundaries(bool needs_match, bool needs_absorb, bool needs_atmosphere)
+        : needs_match_boundaries { needs_match }
+        , needs_absorb_boundaries { needs_absorb }
+        , needs_atmosphere_boundaries { needs_atmosphere } {}
+
+      void read(Dimension,
+                const Coord&,
+                const boundaries_t<real_t>&,
+                const toml::value&);
+      void setParams(SimulationParams*) const;
+    };
+
     auto GetGridParams(
       const toml::value&) -> std::tuple<std::vector<ncells_t>, Dimension>;
 

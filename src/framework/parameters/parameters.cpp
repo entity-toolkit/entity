@@ -6,7 +6,6 @@
 
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/toml.h"
 
@@ -19,6 +18,7 @@
 
 #include "framework/containers/species.h"
 #include "framework/parameters/grid.h"
+#include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
 
 #if defined(MPI_ENABLED)
@@ -382,157 +382,10 @@ namespace ntt {
     set("particles.species", new_species);
 
     /* [output] ------------------------------------------------------------- */
-    set("output.format",
-        toml::find_or(toml_data, "output", "format", defaults::output::format));
-    set("output.interval",
-        toml::find_or(toml_data, "output", "interval", defaults::output::interval));
-    set("output.interval_time",
-        toml::find_or<simtime_t>(toml_data, "output", "interval_time", -1.0));
-    set("output.separate_files",
-        toml::find_or<bool>(toml_data, "output", "separate_files", true));
 
-    promiseToDefine("output.fields.enable");
-    promiseToDefine("output.fields.interval");
-    promiseToDefine("output.fields.interval_time");
-    promiseToDefine("output.particles.enable");
-    promiseToDefine("output.particles.interval");
-    promiseToDefine("output.particles.interval_time");
-    promiseToDefine("output.spectra.enable");
-    promiseToDefine("output.spectra.interval");
-    promiseToDefine("output.spectra.interval_time");
-    promiseToDefine("output.stats.enable");
-    promiseToDefine("output.stats.interval");
-    promiseToDefine("output.stats.interval_time");
-
-    const auto flds_out        = toml::find_or(toml_data,
-                                        "output",
-                                        "fields",
-                                        "quantities",
-                                        std::vector<std::string> {});
-    const auto custom_flds_out = toml::find_or(toml_data,
-                                               "output",
-                                               "fields",
-                                               "custom",
-                                               std::vector<std::string> {});
-    if (flds_out.size() == 0) {
-      raise::Warning("No fields output specified", HERE);
-    }
-    set("output.fields.quantities", flds_out);
-    set("output.fields.custom", custom_flds_out);
-    set("output.fields.mom_smooth",
-        toml::find_or(toml_data,
-                      "output",
-                      "fields",
-                      "mom_smooth",
-                      defaults::output::mom_smooth));
-    std::vector<unsigned int> field_dwn;
-    try {
-      auto field_dwn_ = toml::find<std::vector<unsigned int>>(toml_data,
-                                                              "output",
-                                                              "fields",
-                                                              "downsampling");
-      for (auto i = 0u; i < field_dwn_.size(); ++i) {
-        field_dwn.push_back(field_dwn_[i]);
-      }
-    } catch (...) {
-      try {
-        auto field_dwn_ = toml::find<unsigned int>(toml_data,
-                                                   "output",
-                                                   "fields",
-                                                   "downsampling");
-        for (auto i = 0u; i < dim; ++i) {
-          field_dwn.push_back(field_dwn_);
-        }
-      } catch (...) {
-        for (auto i = 0u; i < dim; ++i) {
-          field_dwn.push_back(1u);
-        }
-      }
-    }
-    raise::ErrorIf(field_dwn.size() > 3, "invalid `output.fields.downsampling`", HERE);
-    if (field_dwn.size() > dim) {
-      field_dwn.erase(field_dwn.begin() + (std::size_t)(dim), field_dwn.end());
-    }
-    for (const auto& dwn : field_dwn) {
-      raise::ErrorIf(dwn == 0, "downsampling factor must be nonzero", HERE);
-    }
-    set("output.fields.downsampling", field_dwn);
-
-    // particles
-    auto       all_specs = std::vector<spidx_t> {};
-    const auto nspec     = get<std::size_t>("particles.nspec");
-    for (auto i = 0u; i < nspec; ++i) {
-      all_specs.push_back(static_cast<spidx_t>(i + 1));
-    }
-    const auto prtl_out = toml::find_or(toml_data,
-                                        "output",
-                                        "particles",
-                                        "species",
-                                        all_specs);
-    set("output.particles.species", prtl_out);
-    set("output.particles.stride",
-        toml::find_or(toml_data,
-                      "output",
-                      "particles",
-                      "stride",
-                      defaults::output::prtl_stride));
-
-    // spectra
-    set("output.spectra.e_min",
-        toml::find_or(toml_data, "output", "spectra", "e_min", defaults::output::spec_emin));
-    set("output.spectra.e_max",
-        toml::find_or(toml_data, "output", "spectra", "e_max", defaults::output::spec_emax));
-    set("output.spectra.log_bins",
-        toml::find_or(toml_data,
-                      "output",
-                      "spectra",
-                      "log_bins",
-                      defaults::output::spec_log));
-    set("output.spectra.n_bins",
-        toml::find_or(toml_data,
-                      "output",
-                      "spectra",
-                      "n_bins",
-                      defaults::output::spec_nbins));
-
-    // stats
-    set("output.stats.quantities",
-        toml::find_or(toml_data,
-                      "output",
-                      "stats",
-                      "quantities",
-                      defaults::output::stats_quantities));
-    set("output.stats.custom",
-        toml::find_or(toml_data,
-                      "output",
-                      "stats",
-                      "custom",
-                      std::vector<std::string> {}));
-
-    // intervals
-    for (const auto& type : { "fields", "particles", "spectra", "stats" }) {
-      const auto q_int      = toml::find_or<timestep_t>(toml_data,
-                                                   "output",
-                                                   std::string(type),
-                                                   "interval",
-                                                   0);
-      const auto q_int_time = toml::find_or<simtime_t>(toml_data,
-                                                       "output",
-                                                       std::string(type),
-                                                       "interval_time",
-                                                       -1.0);
-      set("output." + std::string(type) + ".enable",
-          toml::find_or(toml_data, "output", std::string(type), "enable", true));
-      if ((q_int == 0) and (q_int_time == -1.0)) {
-        set("output." + std::string(type) + ".interval",
-            get<timestep_t>("output.interval"));
-        set("output." + std::string(type) + ".interval_time",
-            get<simtime_t>("output.interval_time"));
-      } else {
-        set("output." + std::string(type) + ".interval", q_int);
-        set("output." + std::string(type) + ".interval_time", q_int_time);
-      }
-    }
+    params::Output output_params;
+    output_params.read(dim, get<std::size_t>("particles.nspec"), toml_data);
+    output_params.setParams(this);
 
     /* [output.debug] ------------------------------------------------------- */
     set("output.debug.as_is",
@@ -544,7 +397,7 @@ namespace ntt {
                                              false);
     set("output.debug.ghosts", output_ghosts);
     if (output_ghosts) {
-      for (const auto& dwn : field_dwn) {
+      for (const auto& dwn : output_params.fields_downsampling) {
         raise::ErrorIf(
           dwn != 1,
           "full resolution required when outputting with ghost cells",
@@ -592,116 +445,13 @@ namespace ntt {
         toml::find_or(toml_data, "diagnostics", "log_level", defaults::diag::log_level));
 
     /* inferred variables --------------------------------------------------- */
-
-    if (isPromised("grid.boundaries.match.ds")) {
-      if (coord_enum == Coord::Cart) {
-        auto min_extent = std::numeric_limits<real_t>::max();
-        for (const auto& e : extent_pairwise) {
-          min_extent = std::min(min_extent, e.second - e.first);
-        }
-        const auto default_ds = min_extent * defaults::bc::match::ds_frac;
-        boundaries_t<real_t> ds_array;
-        try {
-          auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
-          for (auto d = 0u; d < dim; ++d) {
-            ds_array.push_back({ ds, ds });
-          }
-        } catch (...) {
-          try {
-            const auto ds = toml::find<std::vector<std::vector<real_t>>>(
-              toml_data,
-              "grid",
-              "boundaries",
-              "match",
-              "ds");
-            raise::ErrorIf(ds.size() != dim,
-                           "invalid # in `grid.boundaries.match.ds`",
-                           HERE);
-            for (auto d = 0u; d < dim; ++d) {
-              if (ds[d].size() == 1) {
-                ds_array.push_back({ ds[d][0], ds[d][0] });
-              } else if (ds[d].size() == 2) {
-                ds_array.push_back({ ds[d][0], ds[d][1] });
-              } else if (ds[d].size() == 0) {
-                ds_array.push_back({});
-              } else {
-                raise::Error("invalid `grid.boundaries.match.ds`", HERE);
-              }
-            }
-          } catch (...) {
-            for (auto d = 0u; d < dim; ++d) {
-              ds_array.push_back({ default_ds, default_ds });
-            }
-          }
-        }
-        set("grid.boundaries.match.ds", ds_array);
-      } else {
-        auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
-        const auto ds = toml::find_or<real_t>(
-          toml_data,
-          "grid",
-          "boundaries",
-          "match",
-          "ds",
-          r_extent * defaults::bc::match::ds_frac);
-        boundaries_t<real_t> ds_array {
-          { ds, ds }
-        };
-        set("grid.boundaries.match.ds", ds_array);
-      }
-    }
-
-    if (isPromised("grid.boundaries.absorb.ds")) {
-      if (coord_enum == Coord::Cart) {
-        auto min_extent = std::numeric_limits<real_t>::max();
-        for (const auto& e : extent_pairwise) {
-          min_extent = std::min(min_extent, e.second - e.first);
-        }
-        set("grid.boundaries.absorb.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "absorb",
-                          "ds",
-                          min_extent * defaults::bc::absorb::ds_frac));
-      } else {
-        auto r_extent = extent_pairwise[0].second - extent_pairwise[0].first;
-        set("grid.boundaries.absorb.ds",
-            toml::find_or(toml_data,
-                          "grid",
-                          "boundaries",
-                          "absorb",
-                          "ds",
-                          r_extent * defaults::bc::absorb::ds_frac));
-      }
-    }
-
-    if (isPromised("grid.boundaries.atmosphere.temperature")) {
-      const auto atm_T = toml::find<real_t>(toml_data,
-                                            "grid",
-                                            "boundaries",
-                                            "atmosphere",
-                                            "temperature");
-      const auto atm_h = toml::find<real_t>(toml_data,
-                                            "grid",
-                                            "boundaries",
-                                            "atmosphere",
-                                            "height");
-      set("grid.boundaries.atmosphere.temperature", atm_T);
-      set("grid.boundaries.atmosphere.density",
-          toml::find<real_t>(toml_data, "grid", "boundaries", "atmosphere", "density"));
-      set("grid.boundaries.atmosphere.ds",
-          toml::find_or(toml_data, "grid", "boundaries", "atmosphere", "ds", ZERO));
-      set("grid.boundaries.atmosphere.height", atm_h);
-      set("grid.boundaries.atmosphere.g", atm_T / atm_h);
-      const auto atm_species = toml::find<std::pair<spidx_t, spidx_t>>(
-        toml_data,
-        "grid",
-        "boundaries",
-        "atmosphere",
-        "species");
-      set("grid.boundaries.atmosphere.species", atm_species);
-    }
+    params::Boundaries boundaries_params {
+      isPromised("grid.boundaries.match.ds"),
+      isPromised("grid.boundaries.absorb.ds"),
+      isPromised("grid.boundaries.atmosphere.temperature")
+    };
+    boundaries_params.read(dim, coord_enum, extent_pairwise, toml_data);
+    boundaries_params.setParams(this);
 
     // gca
     if (isPromised("algorithms.gca.e_ovr_b_max")) {
