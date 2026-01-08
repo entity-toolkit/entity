@@ -36,8 +36,10 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES
-    ${SRC_DIR}/parameters.cpp
     ${SRC_DIR}/simulation.cpp
+    ${SRC_DIR}/parameters/parameters.cpp
+    ${SRC_DIR}/parameters/particles.cpp
+    ${SRC_DIR}/parameters/grid.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
     ${SRC_DIR}/domain/communications.cpp

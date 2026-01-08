@@ -17,7 +17,7 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include <utility>
 

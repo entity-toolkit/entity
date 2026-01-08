@@ -20,7 +20,7 @@
 #include "utils/error.h"
 #include "utils/toml.h"
 
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 namespace ntt {
 

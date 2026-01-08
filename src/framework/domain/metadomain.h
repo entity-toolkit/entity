@@ -24,7 +24,7 @@
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)

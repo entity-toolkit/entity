@@ -1,4 +1,4 @@
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "defaults.h"
 #include "enums.h"
@@ -18,6 +18,8 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/species.h"
+#include "framework/parameters/grid.h"
+#include "framework/parameters/particles.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -45,34 +47,6 @@ namespace ntt {
     }
     const auto V0 = metric.sqrt_det_h(x_corner);
     return { dx0, V0 };
-  }
-
-  /*
-   * Auxiliary functions
-   */
-  auto getRadiativeDragFlags(
-    const std::string& radiative_drag_str) -> RadiativeDragFlags {
-    if (fmt::toLower(radiative_drag_str) == "none") {
-      return RadiativeDrag::NONE;
-    } else {
-      // separate comas
-      RadiativeDragFlags flags = RadiativeDrag::NONE;
-      std::string        token;
-      std::istringstream tokenStream(radiative_drag_str);
-      while (std::getline(tokenStream, token, ',')) {
-        const auto token_lower = fmt::toLower(token);
-        if (token_lower == "synchrotron") {
-          flags |= RadiativeDrag::SYNCHROTRON;
-        } else if (token_lower == "compton") {
-          flags |= RadiativeDrag::COMPTON;
-        } else {
-          raise::Error(
-            fmt::format("Invalid radiative_drag value: %s", radiative_drag_str),
-            HERE);
-        }
-      }
-      return flags;
-    }
   }
 
   /*
@@ -108,14 +82,8 @@ namespace ntt {
     promiseToDefine("simulation.domain.decomposition");
 
     /* [grid] --------------------------------------------------------------- */
-    const auto res = toml::find<std::vector<ncells_t>>(toml_data,
-                                                       "grid",
-                                                       "resolution");
-    raise::ErrorIf(res.size() < 1 || res.size() > 3,
-                   "invalid `grid.resolution`",
-                   HERE);
+    const auto [res, dim] = params::GetGridParams(toml_data);
     set("grid.resolution", res);
-    const auto dim = static_cast<Dimension>(res.size());
     set("grid.dim", dim);
 
     if (decomposition.size() > dim) {
@@ -136,52 +104,13 @@ namespace ntt {
     promiseToDefine("grid.extent");
 
     /* [grid.metric] -------------------------------------------------------- */
-    const auto metric_enum = Metric::pick(
-      fmt::toLower(toml::find<std::string>(toml_data, "grid", "metric", "metric"))
-        .c_str());
+    const auto [metric_enum, coord_enum, additional_params] =
+      params::GetMetricParams(engine_enum, dim, toml_data);
     promiseToDefine("grid.metric.metric");
-    std::string coord;
-    if (metric_enum == Metric::Minkowski) {
-      raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                     "minkowski metric is only supported for SRPIC",
-                     HERE);
-      coord = "cart";
-    } else if (metric_enum == Metric::QKerr_Schild or
-               metric_enum == Metric::QSpherical) {
-      // quasi-spherical geometry
-      raise::ErrorIf(dim == Dim::_1D,
-                     "not enough dimensions for qspherical geometry",
-                     HERE);
-      raise::ErrorIf(dim == Dim::_3D,
-                     "3D not implemented for qspherical geometry",
-                     HERE);
-      coord = "qsph";
-      set("grid.metric.qsph_r0",
-          toml::find_or(toml_data, "grid", "metric", "qsph_r0", defaults::qsph::r0));
-      set("grid.metric.qsph_h",
-          toml::find_or(toml_data, "grid", "metric", "qsph_h", defaults::qsph::h));
-    } else {
-      // spherical geometry
-      raise::ErrorIf(dim == Dim::_1D,
-                     "not enough dimensions for spherical geometry",
-                     HERE);
-      raise::ErrorIf(dim == Dim::_3D,
-                     "3D not implemented for spherical geometry",
-                     HERE);
-      coord = "sph";
-    }
-    if ((engine_enum == SimEngine::GRPIC) &&
-        (metric_enum != Metric::Kerr_Schild_0)) {
-      const auto ks_a = toml::find_or(toml_data,
-                                      "grid",
-                                      "metric",
-                                      "ks_a",
-                                      defaults::ks::a);
-      set("grid.metric.ks_a", ks_a);
-      set("grid.metric.ks_rh", ONE + math::sqrt(ONE - SQR(ks_a)));
-    }
-    const auto coord_enum = Coord::pick(coord.c_str());
     set("grid.metric.coord", coord_enum);
+    for (const auto& [key, value] : additional_params) {
+      set("grid.metric." + key, value);
+    }
 
     /* [scales] ------------------------------------------------------------- */
     const auto larmor0 = toml::find<real_t>(toml_data, "scales", "larmor0");
@@ -216,86 +145,7 @@ namespace ntt {
 
     spidx_t idx = 1;
     for (const auto& sp : species_tab) {
-      const auto label  = toml::find_or<std::string>(sp,
-                                                    "label",
-                                                    "s" + std::to_string(idx));
-      const auto mass   = toml::find<float>(sp, "mass");
-      const auto charge = toml::find<float>(sp, "charge");
-      raise::ErrorIf((charge != 0.0f) && (mass == 0.0f),
-                     "mass of the charged species must be non-zero",
-                     HERE);
-      const auto is_massless   = (mass == 0.0f) && (charge == 0.0f);
-      const auto def_pusher    = (is_massless ? defaults::ph_pusher
-                                              : defaults::em_pusher);
-      const auto maxnpart_real = toml::find<double>(sp, "maxnpart");
-      const auto maxnpart      = static_cast<npart_t>(maxnpart_real);
-      auto       pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
-      const auto npayloads_real = toml::find_or(sp,
-                                                "n_payloads_real",
-                                                static_cast<unsigned short>(0));
-      const auto use_tracking   = toml::find_or(sp, "tracking", false);
-      auto       npayloads_int  = toml::find_or(sp,
-                                         "n_payloads_int",
-                                         static_cast<unsigned short>(0));
-      if (use_tracking) {
-#if !defined(MPI_ENABLED)
-        npayloads_int += 1;
-#else
-        npayloads_int += 2;
-#endif
-      }
-      const auto radiative_drag_str = toml::find_or(sp,
-                                                    "radiative_drag",
-                                                    std::string("none"));
-      raise::ErrorIf((fmt::toLower(radiative_drag_str) != "none") && is_massless,
-                     "radiative drag is only applicable to massive particles",
-                     HERE);
-      raise::ErrorIf((fmt::toLower(pusher) == "photon") && !is_massless,
-                     "photon pusher is only applicable to massless particles",
-                     HERE);
-      bool use_gca = false;
-      if (pusher.find(',') != std::string::npos) {
-        raise::ErrorIf(fmt::toLower(pusher.substr(pusher.find(',') + 1,
-                                                  pusher.size())) != "gca",
-                       "invalid pusher syntax",
-                       HERE);
-        use_gca = true;
-        pusher  = pusher.substr(0, pusher.find(','));
-      }
-      const auto pusher_enum = PrtlPusher::pick(pusher.c_str());
-      const auto radiative_drag_flags = getRadiativeDragFlags(radiative_drag_str);
-      if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "Synchrotron radiative drag is only supported for SRPIC",
-                       HERE);
-        promiseToDefine("algorithms.synchrotron.gamma_rad");
-      }
-      if (radiative_drag_flags & RadiativeDrag::COMPTON) {
-        raise::ErrorIf(
-          engine_enum != SimEngine::SRPIC,
-          "Inverse Compton radiative drag is only supported for SRPIC",
-          HERE);
-        promiseToDefine("algorithms.compton.gamma_rad");
-      }
-      if (use_gca) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "GCA pushers are only supported for SRPIC",
-                       HERE);
-        promiseToDefine("algorithms.gca.e_ovr_b_max");
-        promiseToDefine("algorithms.gca.larmor_max");
-      }
-
-      species.emplace_back(ParticleSpecies(idx,
-                                           label,
-                                           mass,
-                                           charge,
-                                           maxnpart,
-                                           pusher_enum,
-                                           use_tracking,
-                                           use_gca,
-                                           radiative_drag_flags,
-                                           npayloads_real,
-                                           npayloads_int));
+      species.emplace_back(params::GetParticleSpecies(this, engine_enum, idx, sp));
       idx += 1;
     }
     set("particles.species", species);
@@ -390,69 +240,13 @@ namespace ntt {
         toml::find<simtime_t>(toml_data, "simulation", "runtime"));
 
     /* [grid.boundaraies] --------------------------------------------------- */
-    auto flds_bc = toml::find<std::vector<std::vector<std::string>>>(
-      toml_data,
-      "grid",
-      "boundaries",
-      "fields");
-    {
-      raise::ErrorIf(flds_bc.size() < 1 || flds_bc.size() > 3,
-                     "invalid `grid.boundaries.fields`",
-                     HERE);
-      promiseToDefine("grid.boundaries.fields");
-      auto atm_defined = false;
-      for (const auto& bcs : flds_bc) {
-        for (const auto& bc : bcs) {
-          if (fmt::toLower(bc) == "match") {
-            promiseToDefine("grid.boundaries.match.ds");
-          }
-          if (fmt::toLower(bc) == "atmosphere") {
-            raise::ErrorIf(atm_defined,
-                           "ATMOSPHERE is only allowed in one direction",
-                           HERE);
-            atm_defined = true;
-            promiseToDefine("grid.boundaries.atmosphere.temperature");
-            promiseToDefine("grid.boundaries.atmosphere.density");
-            promiseToDefine("grid.boundaries.atmosphere.height");
-            promiseToDefine("grid.boundaries.atmosphere.ds");
-            promiseToDefine("grid.boundaries.atmosphere.species");
-            promiseToDefine("grid.boundaries.atmosphere.g");
-          }
-        }
-      }
-    }
-
-    auto prtl_bc = toml::find<std::vector<std::vector<std::string>>>(
-      toml_data,
-      "grid",
-      "boundaries",
-      "particles");
-    {
-      raise::ErrorIf(prtl_bc.size() < 1 || prtl_bc.size() > 3,
-                     "invalid `grid.boundaries.particles`",
-                     HERE);
-      promiseToDefine("grid.boundaries.particles");
-      auto atm_defined = false;
-      for (const auto& bcs : prtl_bc) {
-        for (const auto& bc : bcs) {
-          if (fmt::toLower(bc) == "absorb") {
-            promiseToDefine("grid.boundaries.absorb.ds");
-          }
-          if (fmt::toLower(bc) == "atmosphere") {
-            raise::ErrorIf(atm_defined,
-                           "ATMOSPHERE is only allowed in one direction",
-                           HERE);
-            atm_defined = true;
-            promiseToDefine("grid.boundaries.atmosphere.temperature");
-            promiseToDefine("grid.boundaries.atmosphere.density");
-            promiseToDefine("grid.boundaries.atmosphere.height");
-            promiseToDefine("grid.boundaries.atmosphere.ds");
-            promiseToDefine("grid.boundaries.atmosphere.species");
-            promiseToDefine("grid.boundaries.atmosphere.g");
-          }
-        }
-      }
-    }
+    const auto [flds_bc, prtl_bc] = params::GetBoundaryConditions(this,
+                                                                  engine_enum,
+                                                                  dim,
+                                                                  coord_enum,
+                                                                  toml_data);
+    set("grid.boundaries.fields", flds_bc);
+    set("grid.boundaries.particles", prtl_bc);
 
     /* [algorithms] --------------------------------------------------------- */
     set("algorithms.current_filters",
@@ -588,7 +382,6 @@ namespace ntt {
     set("particles.species", new_species);
 
     /* [output] ------------------------------------------------------------- */
-    // fields
     set("output.format",
         toml::find_or(toml_data, "output", "format", defaults::output::format));
     set("output.interval",
@@ -799,132 +592,6 @@ namespace ntt {
         toml::find_or(toml_data, "diagnostics", "log_level", defaults::diag::log_level));
 
     /* inferred variables --------------------------------------------------- */
-    // fields/particle boundaries
-    std::vector<std::vector<FldsBC>> flds_bc_enum;
-    std::vector<std::vector<PrtlBC>> prtl_bc_enum;
-    if (coord_enum == Coord::Cart) {
-      raise::ErrorIf(flds_bc.size() != (std::size_t)dim,
-                     "invalid `grid.boundaries.fields`",
-                     HERE);
-      raise::ErrorIf(prtl_bc.size() != (std::size_t)dim,
-                     "invalid `grid.boundaries.particles`",
-                     HERE);
-      for (auto d { 0u }; d < (dim_t)dim; ++d) {
-        flds_bc_enum.push_back({});
-        prtl_bc_enum.push_back({});
-        const auto fbc = flds_bc[d];
-        const auto pbc = prtl_bc[d];
-        raise::ErrorIf(fbc.size() < 1 || fbc.size() > 2,
-                       "invalid `grid.boundaries.fields`",
-                       HERE);
-        raise::ErrorIf(pbc.size() < 1 || pbc.size() > 2,
-                       "invalid `grid.boundaries.particles`",
-                       HERE);
-        auto fbc_enum = FldsBC::pick(fmt::toLower(fbc[0]).c_str());
-        auto pbc_enum = PrtlBC::pick(fmt::toLower(pbc[0]).c_str());
-        if (fbc.size() == 1) {
-          raise::ErrorIf(fbc_enum != FldsBC::PERIODIC,
-                         "invalid `grid.boundaries.fields`",
-                         HERE);
-          flds_bc_enum.back().push_back(FldsBC(FldsBC::PERIODIC));
-          flds_bc_enum.back().push_back(FldsBC(FldsBC::PERIODIC));
-        } else {
-          raise::ErrorIf(fbc_enum == FldsBC::PERIODIC,
-                         "invalid `grid.boundaries.fields`",
-                         HERE);
-          flds_bc_enum.back().push_back(fbc_enum);
-          auto fbc_enum = FldsBC::pick(fmt::toLower(fbc[1]).c_str());
-          raise::ErrorIf(fbc_enum == FldsBC::PERIODIC,
-                         "invalid `grid.boundaries.fields`",
-                         HERE);
-          flds_bc_enum.back().push_back(fbc_enum);
-        }
-        if (pbc.size() == 1) {
-          raise::ErrorIf(pbc_enum != PrtlBC::PERIODIC,
-                         "invalid `grid.boundaries.particles`",
-                         HERE);
-          prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
-          prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
-        } else {
-          raise::ErrorIf(pbc_enum == PrtlBC::PERIODIC,
-                         "invalid `grid.boundaries.particles`",
-                         HERE);
-          prtl_bc_enum.back().push_back(pbc_enum);
-          auto pbc_enum = PrtlBC::pick(fmt::toLower(pbc[1]).c_str());
-          raise::ErrorIf(pbc_enum == PrtlBC::PERIODIC,
-                         "invalid `grid.boundaries.particles`",
-                         HERE);
-          prtl_bc_enum.back().push_back(pbc_enum);
-        }
-      }
-    } else {
-      raise::ErrorIf(flds_bc.size() > 1, "invalid `grid.boundaries.fields`", HERE);
-      raise::ErrorIf(prtl_bc.size() > 1, "invalid `grid.boundaries.particles`", HERE);
-      if (engine_enum == SimEngine::SRPIC) {
-        raise::ErrorIf(flds_bc[0].size() != 2,
-                       "invalid `grid.boundaries.fields`",
-                       HERE);
-        flds_bc_enum.push_back(
-          { FldsBC::pick(fmt::toLower(flds_bc[0][0]).c_str()),
-            FldsBC::pick(fmt::toLower(flds_bc[0][1]).c_str()) });
-        flds_bc_enum.push_back({ FldsBC::AXIS, FldsBC::AXIS });
-        if (dim == Dim::_3D) {
-          flds_bc_enum.push_back({ FldsBC::PERIODIC, FldsBC::PERIODIC });
-        }
-        raise::ErrorIf(prtl_bc[0].size() != 2,
-                       "invalid `grid.boundaries.particles`",
-                       HERE);
-        prtl_bc_enum.push_back(
-          { PrtlBC::pick(fmt::toLower(prtl_bc[0][0]).c_str()),
-            PrtlBC::pick(fmt::toLower(prtl_bc[0][1]).c_str()) });
-        prtl_bc_enum.push_back({ PrtlBC::AXIS, PrtlBC::AXIS });
-        if (dim == Dim::_3D) {
-          prtl_bc_enum.push_back({ PrtlBC::PERIODIC, PrtlBC::PERIODIC });
-        }
-      } else {
-        raise::ErrorIf(flds_bc[0].size() != 1,
-                       "invalid `grid.boundaries.fields`",
-                       HERE);
-        raise::ErrorIf(prtl_bc[0].size() != 1,
-                       "invalid `grid.boundaries.particles`",
-                       HERE);
-        flds_bc_enum.push_back(
-          { FldsBC::HORIZON, FldsBC::pick(fmt::toLower(flds_bc[0][0]).c_str()) });
-        flds_bc_enum.push_back({ FldsBC::AXIS, FldsBC::AXIS });
-        if (dim == Dim::_3D) {
-          flds_bc_enum.push_back({ FldsBC::PERIODIC, FldsBC::PERIODIC });
-        }
-        prtl_bc_enum.push_back(
-          { PrtlBC::HORIZON, PrtlBC::pick(fmt::toLower(prtl_bc[0][0]).c_str()) });
-        prtl_bc_enum.push_back({ PrtlBC::AXIS, PrtlBC::AXIS });
-        if (dim == Dim::_3D) {
-          prtl_bc_enum.push_back({ PrtlBC::PERIODIC, PrtlBC::PERIODIC });
-        }
-      }
-    }
-
-    raise::ErrorIf(flds_bc_enum.size() != (std::size_t)dim,
-                   "invalid inferred `grid.boundaries.fields`",
-                   HERE);
-    raise::ErrorIf(prtl_bc_enum.size() != (std::size_t)dim,
-                   "invalid inferred `grid.boundaries.particles`",
-                   HERE);
-    boundaries_t<FldsBC> flds_bc_pairwise;
-    boundaries_t<PrtlBC> prtl_bc_pairwise;
-    for (auto d { 0u }; d < (dim_t)dim; ++d) {
-      raise::ErrorIf(
-        flds_bc_enum[d].size() != 2,
-        fmt::format("invalid inferred `grid.boundaries.fields[%d]`", d),
-        HERE);
-      raise::ErrorIf(
-        prtl_bc_enum[d].size() != 2,
-        fmt::format("invalid inferred `grid.boundaries.particles[%d]`", d),
-        HERE);
-      flds_bc_pairwise.push_back({ flds_bc_enum[d][0], flds_bc_enum[d][1] });
-      prtl_bc_pairwise.push_back({ prtl_bc_enum[d][0], prtl_bc_enum[d][1] });
-    }
-    set("grid.boundaries.fields", flds_bc_pairwise);
-    set("grid.boundaries.particles", prtl_bc_pairwise);
 
     if (isPromised("grid.boundaries.match.ds")) {
       if (coord_enum == Coord::Cart) {

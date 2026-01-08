@@ -28,7 +28,7 @@
 
 #include "framework/containers/species.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "pgen.hpp"
 

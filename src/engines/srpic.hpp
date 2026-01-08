@@ -27,7 +27,7 @@
 #include "archetypes/particle_injector.h"
 #include "archetypes/spatial_dist.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "engines/engine.hpp"
 #include "kernels/ampere_mink.hpp"

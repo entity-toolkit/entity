@@ -25,7 +25,7 @@
 
 #include "arch/traits.h"
 
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 namespace arch {
   using namespace ntt;

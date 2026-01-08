@@ -22,7 +22,7 @@
 #include "utils/toml.h"
 
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "engines/engine.hpp"
 #include "kernels/ampere_gr.hpp"
