@@ -198,10 +198,10 @@ namespace ntt {
     /* [algorithms] --------------------------------------------------------- */
     ntt::params::Algorithms     alg_params {};
     std::map<std::string, bool> alg_extra_flags = {
-      {              "gr",                engine_enum == SimEngine::GRPIC },
-      {         "use_gca",       isPromised("algorithms.gca.e_ovr_b_max") },
-      { "use_synchrotron", isPromised("algorithms.synchrotron.gamma_rad") },
-      {     "use_compton",     isPromised("algorithms.compton.gamma_rad") }
+      {          "gr",                engine_enum == SimEngine::GRPIC },
+      {         "gca",       isPromised("algorithms.gca.e_ovr_b_max") },
+      { "synchrotron", isPromised("algorithms.synchrotron.gamma_rad") },
+      {     "compton",     isPromised("algorithms.compton.gamma_rad") }
     };
     alg_params.read(get<real_t>("scales.dx0"), alg_extra_flags, toml_data);
     alg_params.setParams(alg_extra_flags, this);
