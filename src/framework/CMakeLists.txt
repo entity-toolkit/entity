@@ -40,6 +40,7 @@ set(SOURCES
     ${SRC_DIR}/parameters/parameters.cpp
     ${SRC_DIR}/parameters/particles.cpp
     ${SRC_DIR}/parameters/grid.cpp
+    ${SRC_DIR}/parameters/output.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
     ${SRC_DIR}/domain/communications.cpp
