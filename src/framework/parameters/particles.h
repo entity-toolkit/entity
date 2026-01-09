@@ -1,3 +1,13 @@
+/**
+ * @file framework/parameters/particles.h
+ * @brief Auxiliary functions for reading in particle species parameters
+ * @implements
+ *   - ntt::params::GetParticleSpecies -> ParticleSpecies
+ * @cpp:
+ *   - particles.cpp
+ * @namespaces:
+ *   - ntt::params::
+ */
 #ifndef FRAMEWORK_PARAMETERS_PARTICLES_H
 #define FRAMEWORK_PARAMETERS_PARTICLES_H
 

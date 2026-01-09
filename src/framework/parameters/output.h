@@ -1,3 +1,14 @@
+/**
+ * @file framework/parameters/output.h
+ * @brief Auxiliary functions for reading in output parameters
+ * @implements
+ *   - ntt::params::Output
+ *   - ntt::params::OutputCategory
+ * @cpp:
+ *   - output.cpp
+ * @namespaces:
+ *   - ntt::params::
+ */
 #ifndef FRAMEWORK_PARAMETERS_OUTPUT_H
 #define FRAMEWORK_PARAMETERS_OUTPUT_H
 
