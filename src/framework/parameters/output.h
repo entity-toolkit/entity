@@ -55,6 +55,9 @@ namespace ntt {
       std::vector<std::string> stats_quantities;
       std::vector<std::string> stats_custom_quantities;
 
+      bool debug_as_is;
+      bool debug_ghosts;
+
       void read(Dimension, std::size_t, const toml::value&);
       void setParams(SimulationParams*) const;
     };

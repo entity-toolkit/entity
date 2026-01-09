@@ -154,6 +154,18 @@ namespace ntt {
                                               "stats",
                                               "custom",
                                               std::vector<std::string> {});
+
+      /* Debug ---------------------------------------------------------------- */
+      debug_as_is = toml::find_or(toml_data, "output", "debug", "as_is", false);
+      debug_ghosts = toml::find_or(toml_data, "output", "debug", "ghosts", false);
+      if (debug_ghosts) {
+        for (const auto& dwn : fields_downsampling) {
+          raise::ErrorIf(
+            dwn != 1,
+            "full resolution required when outputting with ghost cells",
+            HERE);
+        }
+      }
     }
 
     void Output::setParams(SimulationParams* params) const {
@@ -182,6 +194,9 @@ namespace ntt {
 
       params->set("output.stats.quantities", stats_quantities);
       params->set("output.stats.custom", stats_custom_quantities);
+
+      params->set("output.debug.as_is", debug_as_is);
+      params->set("output.debug.ghosts", debug_ghosts);
     }
 
   } // namespace params

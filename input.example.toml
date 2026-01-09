@@ -224,10 +224,12 @@
     #   @type: bool
     #   @default: true
     enable = ""
-    # Order of the particle shape function
-    #   @type: int
-    #   @default: 1
-    order = ""
+
+    # @inferred:
+    # - order
+    #     @brief: order of the particle shape function
+    #     @from: compile-time definition `shape_order`
+    #     @type: ushort [0 -> 10]
 
   [algorithms.gr]
     # Stepsize for numerical differentiation in GR pusher

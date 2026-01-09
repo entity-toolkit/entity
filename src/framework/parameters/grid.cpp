@@ -8,6 +8,13 @@
 #include "utils/numeric.h"
 #include "utils/toml.h"
 
+#include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
+#include "metrics/minkowski.h"
+#include "metrics/qkerr_schild.h"
+#include "metrics/qspherical.h"
+#include "metrics/spherical.h"
+
 #include "framework/parameters/parameters.h"
 
 #include <map>
@@ -18,74 +25,19 @@
 namespace ntt {
   namespace params {
 
-    auto GetGridParams(
-      const toml::value& toml_data) -> std::tuple<std::vector<ncells_t>, Dimension> {
-      const auto res = toml::find<std::vector<ncells_t>>(toml_data,
-                                                         "grid",
-                                                         "resolution");
-      raise::ErrorIf(res.size() < 1 || res.size() > 3,
-                     "invalid `grid.resolution`",
-                     HERE);
-      const auto dim = static_cast<Dimension>(res.size());
-      return { res, dim };
-    }
-
-    auto GetMetricParams(const SimEngine&   engine_enum,
-                         Dimension          dim,
-                         const toml::value& toml_data)
-      -> std::tuple<Metric, Coord, std::map<std::string, real_t>> {
-      const auto metric_enum = Metric::pick(
-        fmt::toLower(toml::find<std::string>(toml_data, "grid", "metric", "metric"))
-          .c_str());
-      std::map<std::string, real_t> additional_params;
-      std::string                   coord;
-      if (metric_enum == Metric::Minkowski) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "minkowski metric is only supported for SRPIC",
-                       HERE);
-        coord = "cart";
-      } else if (metric_enum == Metric::QKerr_Schild or
-                 metric_enum == Metric::QSpherical) {
-        // quasi-spherical geometry
-        raise::ErrorIf(dim == Dim::_1D,
-                       "not enough dimensions for qspherical geometry",
-                       HERE);
-        raise::ErrorIf(dim == Dim::_3D,
-                       "3D not implemented for qspherical geometry",
-                       HERE);
-        coord                        = "qsph";
-        additional_params["qsph_r0"] = toml::find_or(toml_data,
-                                                     "grid",
-                                                     "metric",
-                                                     "qsph_r0",
-                                                     defaults::qsph::r0);
-        additional_params["qsph_h"]  = toml::find_or(toml_data,
-                                                    "grid",
-                                                    "metric",
-                                                    "qsph_h",
-                                                    defaults::qsph::h);
-      } else {
-        // spherical geometry
-        raise::ErrorIf(dim == Dim::_1D,
-                       "not enough dimensions for spherical geometry",
-                       HERE);
-        raise::ErrorIf(dim == Dim::_3D,
-                       "3D not implemented for spherical geometry",
-                       HERE);
-        coord = "sph";
+    template <typename M>
+    auto get_dx0_V0(
+      const std::vector<ncells_t>& resolution,
+      const boundaries_t<real_t>&  extent,
+      const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
+      const auto      metric = M(resolution, extent, params);
+      const auto      dx0    = metric.dxMin();
+      coord_t<M::Dim> x_corner { ZERO };
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        x_corner[d] = HALF;
       }
-      if ((engine_enum == SimEngine::GRPIC) &&
-          (metric_enum != Metric::Kerr_Schild_0)) {
-        const auto ks_a            = toml::find_or(toml_data,
-                                        "grid",
-                                        "metric",
-                                        "ks_a",
-                                        defaults::ks::a);
-        additional_params["ks_a"]  = ks_a;
-        additional_params["ks_rh"] = ONE + math::sqrt(ONE - SQR(ks_a));
-      }
-      const auto coord_enum = Coord::pick(coord.c_str());
-      return { metric_enum, coord_enum, additional_params };
+      const auto V0 = metric.sqrt_det_h(x_corner);
+      return { dx0, V0 };
     }
 
     auto GetBoundaryConditions(SimulationParams*  params,
@@ -409,6 +361,190 @@ namespace ntt {
         params->set("grid.boundaries.atmosphere.g", atmosphere_g);
         params->set("grid.boundaries.atmosphere.species", atmosphere_species);
       }
+    }
+
+    void Grid::read(const SimEngine& engine_enum, const toml::value& toml_data) {
+      /* domain decomposition ------------------------------------------------ */
+      int default_ndomains = 1;
+#if defined(MPI_ENABLED)
+      raise::ErrorIf(MPI_Comm_size(MPI_COMM_WORLD, &default_ndomains) != MPI_SUCCESS,
+                     "MPI_Comm_size failed",
+                     HERE);
+#endif
+      number_of_domains = toml::find_or(toml_data,
+                                        "simulation",
+                                        "domain",
+                                        "number",
+                                        default_ndomains);
+
+      domain_decomposition = toml::find_or<std::vector<int>>(
+        toml_data,
+        "simulation",
+        "domain",
+        "decomposition",
+        std::vector<int> { -1, -1, -1 });
+
+      /* resolution and dimension ------------------------------------------- */
+      resolution = toml::find<std::vector<ncells_t>>(toml_data, "grid", "resolution");
+      raise::ErrorIf(resolution.size() < 1 || resolution.size() > 3,
+                     "invalid `grid.resolution`",
+                     HERE);
+      dim = static_cast<Dimension>(resolution.size());
+
+      if (domain_decomposition.size() > dim) {
+        domain_decomposition.erase(domain_decomposition.begin() + (std::size_t)(dim),
+                                   domain_decomposition.end());
+      }
+      raise::ErrorIf(domain_decomposition.size() != dim,
+                     "invalid `simulation.domain.decomposition`",
+                     HERE);
+
+      /* metric and coordinates -------------------------------------------- */
+      metric_enum = Metric::pick(
+        fmt::toLower(toml::find<std::string>(toml_data, "grid", "metric", "metric"))
+          .c_str());
+      std::string coord;
+      if (metric_enum == Metric::Minkowski) {
+        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
+                       "minkowski metric is only supported for SRPIC",
+                       HERE);
+        coord = "cart";
+      } else if (metric_enum == Metric::QKerr_Schild or
+                 metric_enum == Metric::QSpherical) {
+        // quasi-spherical geometry
+        raise::ErrorIf(dim == Dim::_1D,
+                       "not enough dimensions for qspherical geometry",
+                       HERE);
+        raise::ErrorIf(dim == Dim::_3D,
+                       "3D not implemented for qspherical geometry",
+                       HERE);
+        coord                    = "qsph";
+        metric_params["qsph_r0"] = toml::find_or(toml_data,
+                                                 "grid",
+                                                 "metric",
+                                                 "qsph_r0",
+                                                 defaults::qsph::r0);
+        metric_params["qsph_h"]  = toml::find_or(toml_data,
+                                                "grid",
+                                                "metric",
+                                                "qsph_h",
+                                                defaults::qsph::h);
+      } else {
+        // spherical geometry
+        raise::ErrorIf(dim == Dim::_1D,
+                       "not enough dimensions for spherical geometry",
+                       HERE);
+        raise::ErrorIf(dim == Dim::_3D,
+                       "3D not implemented for spherical geometry",
+                       HERE);
+        coord = "sph";
+      }
+      if ((engine_enum == SimEngine::GRPIC) &&
+          (metric_enum != Metric::Kerr_Schild_0)) {
+        const auto ks_a        = toml::find_or(toml_data,
+                                        "grid",
+                                        "metric",
+                                        "ks_a",
+                                        defaults::ks::a);
+        metric_params["ks_a"]  = ks_a;
+        metric_params["ks_rh"] = ONE + math::sqrt(ONE - SQR(ks_a));
+      }
+      coord_enum = Coord::pick(coord.c_str());
+
+      /* extent ------------------------------------------------------------- */
+      extent = toml::find<std::vector<std::vector<real_t>>>(toml_data,
+                                                            "grid",
+                                                            "extent");
+
+      if (extent.size() > dim) {
+        extent.erase(extent.begin() + (std::size_t)(dim), extent.end());
+      }
+      raise::ErrorIf(extent[0].size() != 2, "invalid `grid.extent[0]`", HERE);
+      if (coord_enum != Coord::Cart) {
+        raise::ErrorIf(extent.size() > 1,
+                       "invalid `grid.extent` for non-cartesian geometry",
+                       HERE);
+        extent.push_back({ ZERO, constant::PI });
+        if (dim == Dim::_3D) {
+          extent.push_back({ ZERO, TWO * constant::PI });
+        }
+      }
+      raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
+      for (auto d { 0u }; d < (dim_t)dim; ++d) {
+        raise::ErrorIf(extent[d].size() != 2,
+                       fmt::format("invalid inferred `grid.extent[%d]`", d),
+                       HERE);
+        extent_pairwise_.push_back({ extent[d][0], extent[d][1] });
+      }
+
+      /* metric parameters ------------------------------------------------------ */
+      if (coord_enum == Coord::Qsph) {
+        metric_params_short_["r0"] = metric_params["qsph_r0"];
+        metric_params_short_["h"]  = metric_params["qsph_h"];
+      }
+      if ((engine_enum == SimEngine::GRPIC) &&
+          (metric_enum != Metric::Kerr_Schild_0)) {
+        metric_params_short_["a"] = metric_params["ks_a"];
+      }
+      // set("grid.metric.params", params);
+
+      std::pair<real_t, real_t> dx0_V0;
+      if (metric_enum == Metric::Minkowski) {
+        if (dim == Dim::_1D) {
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_1D>>(resolution,
+                                                           extent_pairwise_,
+                                                           metric_params_short_);
+        } else if (dim == Dim::_2D) {
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_2D>>(resolution,
+                                                           extent_pairwise_,
+                                                           metric_params_short_);
+        } else {
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_3D>>(resolution,
+                                                           extent_pairwise_,
+                                                           metric_params_short_);
+        }
+      } else if (metric_enum == Metric::Spherical) {
+        dx0_V0 = get_dx0_V0<metric::Spherical<Dim::_2D>>(resolution,
+                                                         extent_pairwise_,
+                                                         metric_params_short_);
+      } else if (metric_enum == Metric::QSpherical) {
+        dx0_V0 = get_dx0_V0<metric::QSpherical<Dim::_2D>>(resolution,
+                                                          extent_pairwise_,
+                                                          metric_params_short_);
+      } else if (metric_enum == Metric::Kerr_Schild) {
+        dx0_V0 = get_dx0_V0<metric::KerrSchild<Dim::_2D>>(resolution,
+                                                          extent_pairwise_,
+                                                          metric_params_short_);
+      } else if (metric_enum == Metric::Kerr_Schild_0) {
+        dx0_V0 = get_dx0_V0<metric::KerrSchild0<Dim::_2D>>(resolution,
+                                                           extent_pairwise_,
+                                                           metric_params_short_);
+      } else if (metric_enum == Metric::QKerr_Schild) {
+        dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(resolution,
+                                                           extent_pairwise_,
+                                                           metric_params_short_);
+      }
+      auto [dx0, V0] = dx0_V0;
+      scale_dx0      = dx0;
+      scale_V0       = V0;
+    }
+
+    void Grid::setParams(SimulationParams* params) const {
+      params->set("simulation.domain.number", number_of_domains);
+      params->set("simulation.domain.decomposition", domain_decomposition);
+
+      params->set("grid.resolution", resolution);
+      params->set("grid.dim", dim);
+      params->set("grid.metric.metric", metric_enum);
+      params->set("grid.metric.coord", coord_enum);
+      for (const auto& [key, value] : metric_params) {
+        params->set("grid.metric." + key, value);
+      }
+      params->set("grid.metric.params", metric_params_short_);
+      params->set("grid.extent", extent_pairwise_);
+
+      params->set("scales.dx0", scale_dx0);
+      params->set("scales.V0", scale_V0);
     }
 
   } // namespace params

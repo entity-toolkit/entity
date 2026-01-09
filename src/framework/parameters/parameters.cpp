@@ -9,13 +9,6 @@
 #include "utils/numeric.h"
 #include "utils/toml.h"
 
-#include "metrics/kerr_schild.h"
-#include "metrics/kerr_schild_0.h"
-#include "metrics/minkowski.h"
-#include "metrics/qkerr_schild.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
-
 #include "framework/containers/species.h"
 #include "framework/parameters/grid.h"
 #include "framework/parameters/output.h"
@@ -27,27 +20,11 @@
 
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace ntt {
-
-  template <typename M>
-  auto get_dx0_V0(
-    const std::vector<ncells_t>&         resolution,
-    const boundaries_t<real_t>&          extent,
-    const std::map<std::string, real_t>& params) -> std::pair<real_t, real_t> {
-    const auto      metric = M(resolution, extent, params);
-    const auto      dx0    = metric.dxMin();
-    coord_t<M::Dim> x_corner { ZERO };
-    for (auto d { 0u }; d < M::Dim; ++d) {
-      x_corner[d] = HALF;
-    }
-    const auto V0 = metric.sqrt_det_h(x_corner);
-    return { dx0, V0 };
-  }
 
   /*
    * . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
@@ -60,57 +37,10 @@ namespace ntt {
       fmt::toLower(toml::find<std::string>(toml_data, "simulation", "engine")).c_str());
     set("simulation.engine", engine_enum);
 
-    int default_ndomains = 1;
-#if defined(MPI_ENABLED)
-    raise::ErrorIf(MPI_Comm_size(MPI_COMM_WORLD, &default_ndomains) != MPI_SUCCESS,
-                   "MPI_Comm_size failed",
-                   HERE);
-#endif
-    const auto ndoms = toml::find_or(toml_data,
-                                     "simulation",
-                                     "domain",
-                                     "number",
-                                     default_ndomains);
-    set("simulation.domain.number", (unsigned int)ndoms);
-
-    auto decomposition = toml::find_or<std::vector<int>>(
-      toml_data,
-      "simulation",
-      "domain",
-      "decomposition",
-      std::vector<int> { -1, -1, -1 });
-    promiseToDefine("simulation.domain.decomposition");
-
-    /* [grid] --------------------------------------------------------------- */
-    const auto [res, dim] = params::GetGridParams(toml_data);
-    set("grid.resolution", res);
-    set("grid.dim", dim);
-
-    if (decomposition.size() > dim) {
-      decomposition.erase(decomposition.begin() + (std::size_t)(dim),
-                          decomposition.end());
-    }
-    raise::ErrorIf(decomposition.size() != dim,
-                   "invalid `simulation.domain.decomposition`",
-                   HERE);
-    set("simulation.domain.decomposition", decomposition);
-
-    auto extent = toml::find<std::vector<std::vector<real_t>>>(toml_data,
-                                                               "grid",
-                                                               "extent");
-    raise::ErrorIf(extent.size() < 1 || extent.size() > 3,
-                   "invalid `grid.extent`",
-                   HERE);
-    promiseToDefine("grid.extent");
-
-    /* [grid.metric] -------------------------------------------------------- */
-    const auto [metric_enum, coord_enum, additional_params] =
-      params::GetMetricParams(engine_enum, dim, toml_data);
-    promiseToDefine("grid.metric.metric");
-    set("grid.metric.coord", coord_enum);
-    for (const auto& [key, value] : additional_params) {
-      set("grid.metric." + key, value);
-    }
+    /* grid and decomposition ------------------------------------------------ */
+    params::Grid grid_params {};
+    grid_params.read(engine_enum, toml_data);
+    grid_params.setParams(this);
 
     /* [scales] ------------------------------------------------------------- */
     const auto larmor0 = toml::find<real_t>(toml_data, "scales", "larmor0");
@@ -120,10 +50,6 @@ namespace ntt {
                    HERE);
     set("scales.larmor0", larmor0);
     set("scales.skindepth0", skindepth0);
-    promiseToDefine("scales.dx0");
-    promiseToDefine("scales.V0");
-    promiseToDefine("scales.n0");
-    promiseToDefine("scales.q0");
     set("scales.sigma0", SQR(skindepth0 / larmor0));
     set("scales.B0", ONE / larmor0);
     set("scales.omegaB0", ONE / larmor0);
@@ -134,6 +60,9 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(toml_data, "particles", "use_weights", false));
+
+    set("scales.n0", ppc0 / get<real_t>("scales.V0"));
+    set("scales.q0", get<real_t>("scales.V0") / (ppc0 * SQR(skindepth0)));
 
     /* [particles.species] -------------------------------------------------- */
     std::vector<ParticleSpecies> species;
@@ -149,77 +78,6 @@ namespace ntt {
       idx += 1;
     }
     set("particles.species", species);
-
-    /* inferred variables --------------------------------------------------- */
-    // extent
-    if (extent.size() > dim) {
-      extent.erase(extent.begin() + (std::size_t)(dim), extent.end());
-    }
-    raise::ErrorIf(extent[0].size() != 2, "invalid `grid.extent[0]`", HERE);
-    if (coord_enum != Coord::Cart) {
-      raise::ErrorIf(extent.size() > 1,
-                     "invalid `grid.extent` for non-cartesian geometry",
-                     HERE);
-      extent.push_back({ ZERO, constant::PI });
-      if (dim == Dim::_3D) {
-        extent.push_back({ ZERO, TWO * constant::PI });
-      }
-    }
-    raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
-    boundaries_t<real_t> extent_pairwise;
-    for (auto d { 0u }; d < (dim_t)dim; ++d) {
-      raise::ErrorIf(extent[d].size() != 2,
-                     fmt::format("invalid inferred `grid.extent[%d]`", d),
-                     HERE);
-      extent_pairwise.push_back({ extent[d][0], extent[d][1] });
-    }
-    set("grid.extent", extent_pairwise);
-
-    // metric, dx0, V0, n0, q0
-    {
-      boundaries_t<real_t> ext;
-      for (const auto& e : extent) {
-        ext.push_back({ e[0], e[1] });
-      }
-      std::map<std::string, real_t> params;
-      if (coord_enum == Coord::Qsph) {
-        params["r0"] = get<real_t>("grid.metric.qsph_r0");
-        params["h"]  = get<real_t>("grid.metric.qsph_h");
-      }
-      if ((engine_enum == SimEngine::GRPIC) &&
-          (metric_enum != Metric::Kerr_Schild_0)) {
-        params["a"] = get<real_t>("grid.metric.ks_a");
-      }
-      set("grid.metric.params", params);
-
-      std::pair<real_t, real_t> dx0_V0;
-      if (metric_enum == Metric::Minkowski) {
-        if (dim == Dim::_1D) {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_1D>>(res, ext, params);
-        } else if (dim == Dim::_2D) {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_2D>>(res, ext, params);
-        } else {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_3D>>(res, ext, params);
-        }
-      } else if (metric_enum == Metric::Spherical) {
-        dx0_V0 = get_dx0_V0<metric::Spherical<Dim::_2D>>(res, ext, params);
-      } else if (metric_enum == Metric::QSpherical) {
-        dx0_V0 = get_dx0_V0<metric::QSpherical<Dim::_2D>>(res, ext, params);
-      } else if (metric_enum == Metric::Kerr_Schild) {
-        dx0_V0 = get_dx0_V0<metric::KerrSchild<Dim::_2D>>(res, ext, params);
-      } else if (metric_enum == Metric::Kerr_Schild_0) {
-        dx0_V0 = get_dx0_V0<metric::KerrSchild0<Dim::_2D>>(res, ext, params);
-      } else if (metric_enum == Metric::QKerr_Schild) {
-        dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(res, ext, params);
-      }
-      auto [dx0, V0] = dx0_V0;
-      set("scales.dx0", dx0);
-      set("scales.V0", V0);
-      set("scales.n0", ppc0 / V0);
-      set("scales.q0", V0 / (ppc0 * SQR(skindepth0)));
-
-      set("grid.metric.metric", metric_enum);
-    }
   }
 
   /*
@@ -258,8 +116,7 @@ namespace ntt {
     /* [algorithms.deposit] ------------------------------------------------- */
     set("algorithms.deposit.enable",
         toml::find_or(toml_data, "algorithms", "deposit", "enable", true));
-    set("algorithms.deposit.order",
-        toml::find_or(toml_data, "algorithms", "deposit", "order", 1));
+    set("algorithms.deposit.order", static_cast<unsigned short>(SHAPE_ORDER));
 
     /* [algorithms.fieldsolver] --------------------------------------------- */
     set("algorithms.fieldsolver.enable",
@@ -382,28 +239,9 @@ namespace ntt {
     set("particles.species", new_species);
 
     /* [output] ------------------------------------------------------------- */
-
     params::Output output_params;
     output_params.read(dim, get<std::size_t>("particles.nspec"), toml_data);
     output_params.setParams(this);
-
-    /* [output.debug] ------------------------------------------------------- */
-    set("output.debug.as_is",
-        toml::find_or(toml_data, "output", "debug", "as_is", false));
-    const auto output_ghosts = toml::find_or(toml_data,
-                                             "output",
-                                             "debug",
-                                             "ghosts",
-                                             false);
-    set("output.debug.ghosts", output_ghosts);
-    if (output_ghosts) {
-      for (const auto& dwn : output_params.fields_downsampling) {
-        raise::ErrorIf(
-          dwn != 1,
-          "full resolution required when outputting with ghost cells",
-          HERE);
-      }
-    }
 
     /* [checkpoint] --------------------------------------------------------- */
     set("checkpoint.interval",

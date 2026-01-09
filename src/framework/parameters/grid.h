@@ -55,11 +55,27 @@ namespace ntt {
       void setParams(SimulationParams*) const;
     };
 
-    auto GetGridParams(
-      const toml::value&) -> std::tuple<std::vector<ncells_t>, Dimension>;
+    struct Grid {
+      int              number_of_domains;
+      std::vector<int> domain_decomposition;
 
-    auto GetMetricParams(const SimEngine&, Dimension, const toml::value&)
-      -> std::tuple<Metric, Coord, std::map<std::string, real_t>>;
+      std::vector<ncells_t> resolution;
+      Dimension             dim;
+
+      std::vector<std::vector<real_t>> extent;
+      boundaries_t<real_t>             extent_pairwise_;
+
+      Metric                        metric_enum = Metric::INVALID;
+      Coord                         coord_enum  = Coord::INVALID;
+      std::map<std::string, real_t> metric_params;
+      std::map<std::string, real_t> metric_params_short_;
+
+      real_t scale_dx0;
+      real_t scale_V0;
+
+      void read(const SimEngine&, const toml::value&);
+      void setParams(SimulationParams*) const;
+    };
 
     auto GetBoundaryConditions(
       SimulationParams* params,
