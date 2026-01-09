@@ -9,16 +9,16 @@
 #include <string>
 
 template <Dimension D, ntt::Coord::type C>
-void testParticles(int                     index,
-                   const std::string&      label,
-                   float                   m,
-                   float                   ch,
-                   std::size_t             maxnpart,
-                   const ntt::PrtlPusher&  pusher,
-                   bool                    use_tracking,
-                   ntt::RadiativeDragFlags radiative_drag_flags,
-                   unsigned short          npld_r = 0,
-                   unsigned short          npld_i = 0) {
+void testParticles(int                      index,
+                   const std::string&       label,
+                   float                    m,
+                   float                    ch,
+                   std::size_t              maxnpart,
+                   ntt::ParticlePusherFlags pusher,
+                   bool                     use_tracking,
+                   ntt::RadiativeDragFlags  radiative_drag_flags,
+                   unsigned short           npld_r = 0,
+                   unsigned short           npld_i = 0) {
   using namespace ntt;
   auto p = Particles<D, C>(index,
                            label,
@@ -27,7 +27,6 @@ void testParticles(int                     index,
                            maxnpart,
                            pusher,
                            use_tracking,
-                           false,
                            radiative_drag_flags,
                            npld_r,
                            npld_i);
@@ -117,7 +116,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         ParticlePusher::BORIS,
                                          false,
                                          RadiativeDrag::SYNCHROTRON);
     testParticles<Dim::_2D, Coord::Cart>(2,
@@ -125,7 +124,7 @@ auto main(int argc, char** argv) -> int {
                                          100.0,
                                          -1.0,
                                          1000,
-                                         PrtlPusher::VAY,
+                                         ParticlePusher::VAY,
                                          true,
                                          RadiativeDrag::SYNCHROTRON |
                                            RadiativeDrag::COMPTON,
@@ -136,7 +135,7 @@ auto main(int argc, char** argv) -> int {
                                          0.0,
                                          0.0,
                                          100,
-                                         PrtlPusher::PHOTON,
+                                         ParticlePusher::PHOTON,
                                          false,
                                          RadiativeDrag::NONE,
                                          5);
@@ -145,7 +144,7 @@ auto main(int argc, char** argv) -> int {
                                         1.0,
                                         1.0,
                                         100,
-                                        PrtlPusher::BORIS,
+                                        ParticlePusher::BORIS,
                                         true,
                                         RadiativeDrag::NONE,
                                         2,
@@ -155,7 +154,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         ParticlePusher::BORIS,
                                          false,
                                          RadiativeDrag::NONE,
                                          1,

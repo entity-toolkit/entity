@@ -50,7 +50,6 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   errorIf(M::CoordType != Coord::Cart, "M::CoordType != Coord::Cart");
   // aliases
-  const auto NoGCA      = false;
   const auto NoExtForce = false;
 
   real_t sx = ZERO, sy = ZERO, sz = ZERO;
@@ -245,8 +244,8 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     // clang-format off
     Kokkos::parallel_for(
       "pusher", CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M>(PrtlPusher::BORIS,
-                                   NoGCA, NoExtForce, RadiativeDrag::NONE,
+      kernel::sr::Pusher_kernel<M>(ParticlePusher::BORIS,
+                                   NoExtForce, RadiativeDrag::NONE,
                                    emfield,
                                    sp_idx,
                                    i1, i2, i3,

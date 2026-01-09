@@ -134,7 +134,6 @@ namespace ntt {
                                maxnpart,
                                particle_species.pusher(),
                                particle_species.use_tracking(),
-                               particle_species.use_gca(),
                                particle_species.radiative_drag_flags(),
                                particle_species.npld_r(),
                                particle_species.npld_i());

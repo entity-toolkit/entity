@@ -159,8 +159,8 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     true, false, RadiativeDrag::NONE,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(ParticlePusher::BORIS | ParticlePusher::GCA,
+                                                     false, RadiativeDrag::NONE,
                                                      emfield,
                                                      sp,
                                                      i1, i2, i3,

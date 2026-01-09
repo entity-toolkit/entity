@@ -161,8 +161,8 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {1}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     false, false, RadiativeDrag::NONE,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(ParticlePusher::BORIS,
+                                                     false, RadiativeDrag::NONE,
                                                      emfield,
                                                      sp,
                                                      i1, i2, i3,
@@ -180,8 +180,8 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({1}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::VAY,
-                                                     false, false, RadiativeDrag::NONE,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(ParticlePusher::VAY,
+                                                     false, RadiativeDrag::NONE,
                                                      emfield,
                                                      sp,
                                                      i1, i2, i3,

@@ -183,21 +183,23 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({0}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(force)>(PrtlPusher::BORIS,
-                                                     false, true, RadiativeDrag::NONE,
-                                                     emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric, force,
-                                                     (simtime_t)time, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     ZERO, ZERO, ZERO, ZERO));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(force)>(
+                                                    ParticlePusher::BORIS,
+                                                    true, RadiativeDrag::NONE,
+                                                    emfield,
+                                                    sp,
+                                                    i1, i2, i3,
+                                                    i1_prev, i2_prev, i3_prev,
+                                                    dx1, dx2, dx3,
+                                                    dx1_prev, dx2_prev, dx3_prev,
+                                                    ux1, ux2, ux3,
+                                                    phi, tag,
+                                                    metric, force,
+                                                    (simtime_t)time, coeff, dt,
+                                                    nx1, nx2, nx3,
+                                                    boundaries,
+                                                    ZERO, ZERO, ZERO, ZERO));
+    // clang-format on
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
@@ -236,16 +238,18 @@ void testPusher(const std::vector<std::size_t>& res) {
                  i1_(1),
                  i2_(1),
                  i3_(1),
-                 dx1_( 1),
-                 dx2_( 1),
-                 dx3_( 1),
-                 ux1_( 1),
-                 ux2_( 1),
-                 ux3_( 1));
+                 dx1_(1),
+                 dx2_(1),
+                 dx3_(1),
+                 ux1_(1),
+                 ux2_(1),
+                 ux3_(1));
 
     {
-      const real_t ux1_expect = ux1_0 + (time + dt) * f_mag * std::sin(ONE) * std::sin(ONE);
-      const real_t ux2_expect = ux2_0 + (time + dt) * f_mag * std::sin(ONE) * std::cos(ONE);
+      const real_t ux1_expect = ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
+                                          std::sin(ONE);
+      const real_t ux2_expect = ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
+                                          std::cos(ONE);
       const real_t ux3_expect = ux3_0 + (time + dt) * f_mag * std::cos(ONE);
 
       check_value(t, ux1_(0), ux1_expect, eps, "Particle #1 ux1");
@@ -254,15 +258,16 @@ void testPusher(const std::vector<std::size_t>& res) {
     }
 
     {
-      const real_t ux1_expect = -ux1_0 + (time + dt) * f_mag * std::sin(ONE) * std::sin(ONE);
-      const real_t ux2_expect = -ux2_0 + (time + dt) * f_mag * std::sin(ONE) * std::cos(ONE);
+      const real_t ux1_expect = -ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
+                                           std::sin(ONE);
+      const real_t ux2_expect = -ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
+                                           std::cos(ONE);
       const real_t ux3_expect = -ux3_0 + (time + dt) * f_mag * std::cos(ONE);
 
       check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
       check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
       check_value(t, ux3_(1), ux3_expect, eps, "Particle #2 ux3");
     }
-
   }
 }
 

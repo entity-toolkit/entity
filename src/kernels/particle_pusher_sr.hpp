@@ -188,10 +188,9 @@ namespace kernel::sr {
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
 
   private:
-    const PrtlPusher::type   pusher;
-    const bool               GCA;
-    const bool               ext_force;
-    const RadiativeDragFlags radiative_drag_flags;
+    const ParticlePusherFlags pusher;
+    const bool                ext_force;
+    const RadiativeDragFlags  radiative_drag_flags;
 
     const randacc_ndfield_t<D, 6> EB;
     const spidx_t                 sp;
@@ -223,8 +222,7 @@ namespace kernel::sr {
     const real_t coeff_sync, coeff_comp;
 
   public:
-    Pusher_kernel(const PrtlPusher::type&        pusher,
-                  bool                           GCA,
+    Pusher_kernel(ParticlePusherFlags            pusher,
                   bool                           ext_force,
                   RadiativeDragFlags             radiative_drag_flags,
                   const randacc_ndfield_t<D, 6>& EB,
@@ -260,7 +258,6 @@ namespace kernel::sr {
                   real_t                         coeff_sync,
                   real_t                         coeff_comp)
       : pusher { pusher }
-      , GCA { GCA }
       , ext_force { ext_force }
       , radiative_drag_flags { radiative_drag_flags }
       , EB { EB }
@@ -329,8 +326,7 @@ namespace kernel::sr {
       }
     }
 
-    Pusher_kernel(const PrtlPusher::type&     pusher,
-                  bool                        GCA,
+    Pusher_kernel(ParticlePusherFlags         pusher,
                   bool                        ext_force,
                   RadiativeDragFlags          radiative_drag_flags,
                   const ndfield_t<D, 6>&      EB,
@@ -365,7 +361,6 @@ namespace kernel::sr {
                   real_t                      coeff_sync,
                   real_t                      coeff_comp)
       : Pusher_kernel(pusher,
-                      GCA,
                       ext_force,
                       radiative_drag_flags,
                       EB,
@@ -475,7 +470,7 @@ namespace kernel::sr {
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getPrtlPos(p, xp_Cd);
-      if (pusher == PrtlPusher::PHOTON) {
+      if (pusher == ParticlePusher::PHOTON) {
         posUpd(false, p, xp_Cd);
         return;
       }
@@ -520,7 +515,7 @@ namespace kernel::sr {
             force.fx3(sp, time, ext_force, xp_Ph) },
           force_Cart);
       }
-      if (GCA) {
+      if (pusher & ParticlePusher::GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
         const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
         const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
@@ -715,7 +710,7 @@ namespace kernel::sr {
         ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
         ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
         ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
-      } else if (pusher == PrtlPusher::BORIS) {
+      } else if (pusher & ParticlePusher::BORIS) {
         real_t COEFF { coeff };
 
         e0[0] *= COEFF;
@@ -742,7 +737,7 @@ namespace kernel::sr {
         ux1(p) = u0[0];
         ux2(p) = u0[1];
         ux3(p) = u0[2];
-      } else if (pusher == PrtlPusher::VAY) {
+      } else if (pusher & ParticlePusher::VAY) {
         auto COEFF { coeff };
         e0[0] *= COEFF;
         e0[1] *= COEFF;

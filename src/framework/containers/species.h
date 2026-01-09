@@ -31,13 +31,10 @@ namespace ntt {
     npart_t           m_maxnpart;
 
     // Pusher assigned for the species
-    const PrtlPusher m_pusher;
+    const ParticlePusherFlags m_particle_pusher_flags;
 
     // Use particle tracking for the species
     const bool m_use_tracking;
-
-    // Use byrid gca pusher for the species
-    const bool m_use_gca;
 
     // Radiative drag mechanism(s) assigned for the species
     const RadiativeDragFlags m_radiative_drag_flags;
@@ -53,9 +50,8 @@ namespace ntt {
       , m_mass { 0.0 }
       , m_charge { 0.0 }
       , m_maxnpart { 0 }
-      , m_pusher { PrtlPusher::INVALID }
+      , m_particle_pusher_flags { ParticlePusher::NONE }
       , m_use_tracking { false }
-      , m_use_gca { false }
       , m_radiative_drag_flags { RadiativeDrag::NONE }
       , m_npld_r { 0 }
       , m_npld_i { 0 } {}
@@ -68,32 +64,29 @@ namespace ntt {
      * @param m The mass of the species.
      * @param ch The charge of the species.
      * @param maxnpart The maximum number of allocated particles for the species.
-     * @param pusher The pusher assigned for the species.
+     * @param particle_pusher_flags The pusher(s) assigned for the species.
      * @param use_tracking Use particle tracking for the species.
-     * @param use_gca Use hybrid GCA pusher for the species.
      * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species.
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
-    ParticleSpecies(spidx_t            index,
-                    const std::string& label,
-                    float              m,
-                    float              ch,
-                    npart_t            maxnpart,
-                    const PrtlPusher&  pusher,
-                    bool               use_tracking,
-                    bool               use_gca,
-                    RadiativeDragFlags radiative_drag_flags,
-                    unsigned short     npld_r = 0,
-                    unsigned short     npld_i = 0)
+    ParticleSpecies(spidx_t             index,
+                    const std::string&  label,
+                    float               m,
+                    float               ch,
+                    npart_t             maxnpart,
+                    ParticlePusherFlags particle_pusher_flags,
+                    bool                use_tracking,
+                    RadiativeDragFlags  radiative_drag_flags,
+                    unsigned short      npld_r = 0,
+                    unsigned short      npld_i = 0)
       : m_index { index }
       , m_label { std::move(label) }
       , m_mass { m }
       , m_charge { ch }
       , m_maxnpart { maxnpart }
-      , m_pusher { pusher }
+      , m_particle_pusher_flags { particle_pusher_flags }
       , m_use_tracking { use_tracking }
-      , m_use_gca { use_gca }
       , m_radiative_drag_flags { radiative_drag_flags }
       , m_npld_r { npld_r }
       , m_npld_i { npld_i } {
@@ -144,18 +137,13 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto pusher() const -> PrtlPusher {
-      return m_pusher;
+    auto pusher() const -> ParticlePusherFlags {
+      return m_particle_pusher_flags;
     }
 
     [[nodiscard]]
     auto use_tracking() const -> bool {
       return m_use_tracking;
-    }
-
-    [[nodiscard]]
-    auto use_gca() const -> bool {
-      return m_use_gca;
     }
 
     [[nodiscard]]

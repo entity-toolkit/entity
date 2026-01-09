@@ -312,7 +312,7 @@ namespace ntt {
         }
       }
       for (auto& species : domain.species) {
-        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0)) {
+        if ((species.pusher() == ParticlePusher::NONE) or (species.npart() == 0)) {
           continue;
         }
         species.set_unsorted();
@@ -328,21 +328,11 @@ namespace ntt {
         //  coeff = q / m (dt / 2) omegaB0
         const auto coeff   = q_ovr_m * HALF * dt *
                            m_params.template get<real_t>("scales.omegaB0");
-        PrtlPusher::type pusher;
-        if (species.pusher() == PrtlPusher::PHOTON) {
-          pusher = PrtlPusher::PHOTON;
-        } else if (species.pusher() == PrtlPusher::BORIS) {
-          pusher = PrtlPusher::BORIS;
-        } else if (species.pusher() == PrtlPusher::VAY) {
-          pusher = PrtlPusher::VAY;
-        } else {
-          raise::Fatal("Invalid particle pusher", HERE);
-        }
         const auto radiative_drag_flags = species.radiative_drag_flags();
 
         // coefficients to be forwarded to the dispatcher
         // gca
-        const auto has_gca         = species.use_gca();
+        const auto has_gca         = species.pusher() & ParticlePusher::GCA;
         const auto gca_larmor_max  = has_gca ? m_params.template get<real_t>(
                                                 "algorithms.gca.larmor_max")
                                              : ZERO;
@@ -392,7 +382,7 @@ namespace ntt {
             "ParticlePusher",
             species.rangeActiveParticles(),
             kernel::sr::Pusher_kernel<M>(
-                pusher, has_gca, false,
+                species.pusher(), false,
                 radiative_drag_flags,
                 domain.fields.em,
                 species.index(),
@@ -421,7 +411,7 @@ namespace ntt {
             "ParticlePusher",
             species.rangeActiveParticles(),
             kernel::sr::Pusher_kernel<M, decltype(force)>(
-                pusher, has_gca, false,
+                species.pusher(), false,
                 radiative_drag_flags,
                 domain.fields.em,
                 species.index(),
@@ -450,7 +440,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, true,
+                  species.pusher(), true,
                   radiative_drag_flags,
                   domain.fields.em,
                   species.index(),
@@ -482,7 +472,7 @@ namespace ntt {
               "ParticlePusher",
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, true,
+                  species.pusher(), true,
                   radiative_drag_flags,
                   domain.fields.em,
                   species.index(),
@@ -541,8 +531,8 @@ namespace ntt {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
       for (auto& species : domain.species) {
-        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
-            cmp::AlmostZero_host(species.charge())) {
+        if ((species.pusher() == ParticlePusher::NONE) or
+            (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {
           continue;
         }
         logger::Checkpoint(

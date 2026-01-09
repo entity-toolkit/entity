@@ -45,6 +45,38 @@ namespace ntt {
       }
     }
 
+    auto getPusherFlags(
+      const std::string& particle_pusher_str) -> ParticlePusherFlags {
+      if (fmt::toLower(particle_pusher_str) == "none") {
+        return ParticlePusher::NONE;
+      } else {
+        // separate comas
+        ParticlePusherFlags flags = ParticlePusher::NONE;
+        std::string         token;
+        std::istringstream  tokenStream(particle_pusher_str);
+        while (std::getline(tokenStream, token, ',')) {
+          const auto token_lower = fmt::toLower(token);
+          if (token_lower == "photon") {
+            flags |= ParticlePusher::PHOTON;
+          } else if (token_lower == "boris") {
+            flags |= ParticlePusher::BORIS;
+          } else if (token_lower == "vay") {
+            flags |= ParticlePusher::VAY;
+          } else if (token_lower == "gca") {
+            flags |= ParticlePusher::GCA;
+          } else {
+            raise::Error(
+              fmt::format("Invalid pusher value: %s", particle_pusher_str),
+              HERE);
+          }
+        }
+        if (flags & ParticlePusher::PHOTON and flags & ParticlePusher::GCA) {
+          raise::Error("Photon pusher cannot be used with GCA", HERE);
+        }
+        return flags;
+      }
+    }
+
     auto GetParticleSpecies(SimulationParams*  params,
                             const SimEngine&   engine_enum,
                             spidx_t            idx,
@@ -62,7 +94,7 @@ namespace ntt {
                                               : defaults::em_pusher);
       const auto maxnpart_real = toml::find<double>(sp, "maxnpart");
       const auto maxnpart      = static_cast<npart_t>(maxnpart_real);
-      auto       pusher = toml::find_or(sp, "pusher", std::string(def_pusher));
+      auto pusher_str = toml::find_or(sp, "pusher", std::string(def_pusher));
       const auto npayloads_real = toml::find_or(sp,
                                                 "n_payloads_real",
                                                 static_cast<unsigned short>(0));
@@ -83,19 +115,10 @@ namespace ntt {
       raise::ErrorIf((fmt::toLower(radiative_drag_str) != "none") && is_massless,
                      "radiative drag is only applicable to massive particles",
                      HERE);
-      raise::ErrorIf((fmt::toLower(pusher) == "photon") && !is_massless,
+      raise::ErrorIf((fmt::toLower(pusher_str) == "photon") && !is_massless,
                      "photon pusher is only applicable to massless particles",
                      HERE);
-      bool use_gca = false;
-      if (pusher.find(',') != std::string::npos) {
-        raise::ErrorIf(fmt::toLower(pusher.substr(pusher.find(',') + 1,
-                                                  pusher.size())) != "gca",
-                       "invalid pusher syntax",
-                       HERE);
-        use_gca = true;
-        pusher  = pusher.substr(0, pusher.find(','));
-      }
-      const auto pusher_enum = PrtlPusher::pick(pusher.c_str());
+      const auto particle_pusher_flags = getPusherFlags(pusher_str);
       const auto radiative_drag_flags = getRadiativeDragFlags(radiative_drag_str);
       if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
         raise::ErrorIf(engine_enum != SimEngine::SRPIC,
@@ -110,7 +133,7 @@ namespace ntt {
           HERE);
         params->promiseToDefine("algorithms.compton.gamma_rad");
       }
-      if (use_gca) {
+      if (particle_pusher_flags & ParticlePusher::GCA) {
         raise::ErrorIf(engine_enum != SimEngine::SRPIC,
                        "GCA pushers are only supported for SRPIC",
                        HERE);
@@ -122,9 +145,8 @@ namespace ntt {
                              mass,
                              charge,
                              maxnpart,
-                             pusher_enum,
+                             particle_pusher_flags,
                              use_tracking,
-                             use_gca,
                              radiative_drag_flags,
                              npayloads_real,
                              npayloads_int);

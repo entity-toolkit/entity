@@ -309,9 +309,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
       assert_equal<unsigned short>(species[0].npld_i(), 1, "species[0].npld_i");
       assert_equal<bool>(species[0].use_tracking(), true, "species[0].tracking");
@@ -320,9 +320,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 200.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::VAY,
-                               "species[1].pusher");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::VAY,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
 
       assert_equal<real_t>(params_mink_1d.get<real_t>("setup.myfloat"),
@@ -471,10 +471,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
-      assert_equal<PrtlPusher>(species[0].use_gca(), true, "species[0].use_gca");
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS | ParticlePusher::GCA,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
       assert_equal<RadiativeDragFlags>(species[0].radiative_drag_flags(),
                                        RadiativeDrag::SYNCHROTRON |
@@ -485,10 +484,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 1.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[1].pusher");
-      assert_equal<PrtlPusher>(species[1].use_gca(), true, "species[1].use_gca");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::BORIS | ParticlePusher::GCA,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
       assert_equal<RadiativeDragFlags>(species[1].radiative_drag_flags(),
                                        RadiativeDrag::SYNCHROTRON,
@@ -500,9 +498,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[2].mass(), 0.0f, "species[2].mass");
       assert_equal(species[2].charge(), 0.0f, "species[2].charge");
       assert_equal<std::size_t>(species[2].maxnpart(), 100, "species[2].maxnpart");
-      assert_equal<PrtlPusher>(species[2].pusher(),
-                               PrtlPusher::PHOTON,
-                               "species[2].pusher");
+      assert_equal<ParticlePusherFlags>(species[2].pusher(),
+                                        ParticlePusher::PHOTON,
+                                        "species[2].pusher");
       assert_equal<unsigned short>(species[2].npld_r(), 0, "species[2].npld_r");
     }
 
@@ -609,18 +607,18 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 0, "species[0].npld_r");
 
       assert_equal<std::string>(species[1].label(), "e+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 1.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[1].pusher");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
     }
 
