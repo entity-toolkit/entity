@@ -10,6 +10,7 @@
 #include "utils/toml.h"
 
 #include "framework/containers/species.h"
+#include "framework/parameters/algorithms.h"
 #include "framework/parameters/grid.h"
 #include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
@@ -106,103 +107,6 @@ namespace ntt {
     set("grid.boundaries.fields", flds_bc);
     set("grid.boundaries.particles", prtl_bc);
 
-    /* [algorithms] --------------------------------------------------------- */
-    set("algorithms.current_filters",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "current_filters",
-                      defaults::current_filters));
-
-    /* [algorithms.deposit] ------------------------------------------------- */
-    set("algorithms.deposit.enable",
-        toml::find_or(toml_data, "algorithms", "deposit", "enable", true));
-    set("algorithms.deposit.order", static_cast<unsigned short>(SHAPE_ORDER));
-
-    /* [algorithms.fieldsolver] --------------------------------------------- */
-    set("algorithms.fieldsolver.enable",
-        toml::find_or(toml_data, "algorithms", "fieldsolver", "enable", true));
-
-    set("algorithms.fieldsolver.delta_x",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "delta_x",
-                      defaults::fieldsolver::delta_x));
-    set("algorithms.fieldsolver.delta_y",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "delta_y",
-                      defaults::fieldsolver::delta_y));
-    set("algorithms.fieldsolver.delta_z",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "delta_z",
-                      defaults::fieldsolver::delta_z));
-    set("algorithms.fieldsolver.beta_xy",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_xy",
-                      defaults::fieldsolver::beta_xy));
-    set("algorithms.fieldsolver.beta_yx",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_yx",
-                      defaults::fieldsolver::beta_yx));
-    set("algorithms.fieldsolver.beta_xz",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_xz",
-                      defaults::fieldsolver::beta_xz));
-    set("algorithms.fieldsolver.beta_zx",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_zx",
-                      defaults::fieldsolver::beta_zx));
-    set("algorithms.fieldsolver.beta_yz",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_yz",
-                      defaults::fieldsolver::beta_yz));
-    set("algorithms.fieldsolver.beta_zy",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "fieldsolver",
-                      "beta_zy",
-                      defaults::fieldsolver::beta_zy));
-    /* [algorithms.timestep] ------------------------------------------------ */
-    set("algorithms.timestep.CFL",
-        toml::find_or(toml_data, "algorithms", "timestep", "CFL", defaults::cfl));
-    set("algorithms.timestep.dt",
-        get<real_t>("algorithms.timestep.CFL") * get<real_t>("scales.dx0"));
-    set("algorithms.timestep.correction",
-        toml::find_or(toml_data,
-                      "algorithms",
-                      "timestep",
-                      "correction",
-                      defaults::correction));
-
-    /* [algorithms.gr] ------------------------------------------------------ */
-    if (engine_enum == SimEngine::GRPIC) {
-      set("algorithms.gr.pusher_eps",
-          toml::find_or(toml_data,
-                        "algorithms",
-                        "gr",
-                        "pusher_eps",
-                        defaults::gr::pusher_eps));
-      set("algorithms.gr.pusher_niter",
-          toml::find_or(toml_data,
-                        "algorithms",
-                        "gr",
-                        "pusher_niter",
-                        defaults::gr::pusher_niter));
-    }
     /* [particles] ---------------------------------------------------------- */
     set("particles.clear_interval",
         toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
@@ -291,35 +195,16 @@ namespace ntt {
     boundaries_params.read(dim, coord_enum, extent_pairwise, toml_data);
     boundaries_params.setParams(this);
 
-    // gca
-    if (isPromised("algorithms.gca.e_ovr_b_max")) {
-      set("algorithms.gca.e_ovr_b_max",
-          toml::find_or(toml_data,
-                        "algorithms",
-                        "gca",
-                        "e_ovr_b_max",
-                        defaults::gca::EovrB_max));
-      set("algorithms.gca.larmor_max",
-          toml::find_or(toml_data, "algorithms", "gca", "larmor_max", ZERO));
-    }
-
-    // radiative drag parameters
-    if (isPromised("algorithms.synchrotron.gamma_rad")) {
-      set("algorithms.synchrotron.gamma_rad",
-          toml::find_or(toml_data,
-                        "algorithms",
-                        "synchrotron",
-                        "gamma_rad",
-                        defaults::synchrotron::gamma_rad));
-    }
-    if (isPromised("algorithms.compton.gamma_rad")) {
-      set("algorithms.compton.gamma_rad",
-          toml::find_or(toml_data,
-                        "algorithms",
-                        "compton",
-                        "gamma_rad",
-                        defaults::compton::gamma_rad));
-    }
+    /* [algorithms] --------------------------------------------------------- */
+    ntt::params::Algorithms     alg_params {};
+    std::map<std::string, bool> alg_extra_flags = {
+      {              "gr",                engine_enum == SimEngine::GRPIC },
+      {         "use_gca",       isPromised("algorithms.gca.e_ovr_b_max") },
+      { "use_synchrotron", isPromised("algorithms.synchrotron.gamma_rad") },
+      {     "use_compton",     isPromised("algorithms.compton.gamma_rad") }
+    };
+    alg_params.read(get<real_t>("scales.dx0"), alg_extra_flags, toml_data);
+    alg_params.setParams(alg_extra_flags, this);
 
     // @TODO: disabling stats for non-Cartesian
     if (coord_enum != Coord::Cart) {

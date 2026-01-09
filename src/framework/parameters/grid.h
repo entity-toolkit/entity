@@ -3,8 +3,6 @@
  * @brief Auxiliary functions for reading in grid/box parameters
  * @implements
  *   - ntt::params::Boundaries
- *   - ntt::params::GetGridParams -> (std::vector<ncells_t>, Dimension)
- *   - ntt::params::GetMetricParams -> (Metric, Coord, std::map<std::string, real_t>)
  *   - ntt::params::GetBoundaryConditions -> (boundaries_t<FldsBC>, boundaries_t<PrtlBC>)
  * @cpp:
  *   - grid.cpp
