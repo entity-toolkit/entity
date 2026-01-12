@@ -22,6 +22,7 @@
 #include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+#include "utils/param_container.h"
 
 #include "particle_shapes.hpp"
 
@@ -33,7 +34,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -175,6 +178,44 @@ namespace kernel::sr {
     }
   };
 
+  struct PusherParams {
+    // pusher algorithm(s) assigned to the species
+    ParticlePusherFlags pusher_flags { ParticlePusher::NONE };
+    // radiative drag force(s) enabled for the species
+    RadiativeDragFlags  radiative_drag_flags { RadiativeDrag::NONE };
+
+    // external force (other than the atmosphere)
+    bool ext_force { false };
+
+    // species parameters
+    float mass, charge;
+
+    // time variable
+    simtime_t time;
+
+    // global constants
+    real_t dt, omegaB0;
+
+    // grid parameters
+    int                  ni1, ni2, ni3;
+    boundaries_t<PrtlBC> boundaries;
+
+    // parameters for the advanced features
+    prm::Parameters gca_params;
+    prm::Parameters radiative_drag_params;
+  };
+
+  struct PusherArrays {
+    spidx_t            sp;
+    array_t<int*>      i1, i2, i3;
+    array_t<int*>      i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>   ux1, ux2, ux3;
+    array_t<real_t*>   phi;
+    array_t<short*>    tag;
+  };
+
   /**
    * @tparam M Metric
    * @tparam F Additional force
@@ -188,213 +229,150 @@ namespace kernel::sr {
     static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
 
   private:
-    const ParticlePusherFlags pusher;
-    const bool                ext_force;
+    const ParticlePusherFlags pusher_flags;
     const RadiativeDragFlags  radiative_drag_flags;
 
-    const randacc_ndfield_t<D, 6> EB;
-    const spidx_t                 sp;
-    array_t<int*>                 i1, i2, i3;
-    array_t<int*>                 i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*>            dx1, dx2, dx3;
-    array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>              ux1, ux2, ux3;
-    array_t<real_t*>              phi;
-    array_t<short*>               tag;
-    const M                       metric;
-    const F                       force;
+    const bool ext_force;
 
-    const real_t time, coeff, dt;
-    const int    ni1, ni2, ni3;
-    bool         is_absorb_i1min { false }, is_absorb_i1max { false };
-    bool         is_absorb_i2min { false }, is_absorb_i2max { false };
-    bool         is_absorb_i3min { false }, is_absorb_i3max { false };
-    bool         is_periodic_i1min { false }, is_periodic_i1max { false };
-    bool         is_periodic_i2min { false }, is_periodic_i2max { false };
-    bool         is_periodic_i3min { false }, is_periodic_i3max { false };
-    bool         is_reflect_i1min { false }, is_reflect_i1max { false };
-    bool         is_reflect_i2min { false }, is_reflect_i2max { false };
-    bool         is_reflect_i3min { false }, is_reflect_i3max { false };
-    bool         is_axis_i2min { false }, is_axis_i2max { false };
+    const randacc_ndfield_t<D, 6> EB;
+
+    const spidx_t      sp;
+    array_t<int*>      i1, i2, i3;
+    array_t<int*>      i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>   ux1, ux2, ux3;
+    array_t<real_t*>   phi;
+    array_t<short*>    tag;
+    const M            metric;
+    const F            force;
+
+    const simtime_t time;
+    const real_t    coeff, dt;
+
+    const int ni1, ni2, ni3;
+    bool      is_absorb_i1min { false }, is_absorb_i1max { false };
+    bool      is_absorb_i2min { false }, is_absorb_i2max { false };
+    bool      is_absorb_i3min { false }, is_absorb_i3max { false };
+    bool      is_periodic_i1min { false }, is_periodic_i1max { false };
+    bool      is_periodic_i2min { false }, is_periodic_i2max { false };
+    bool      is_periodic_i3min { false }, is_periodic_i3max { false };
+    bool      is_reflect_i1min { false }, is_reflect_i1max { false };
+    bool      is_reflect_i2min { false }, is_reflect_i2max { false };
+    bool      is_reflect_i3min { false }, is_reflect_i3max { false };
+    bool      is_axis_i2min { false }, is_axis_i2max { false };
+
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
     // radiative drag parameters
-    const real_t coeff_sync, coeff_comp;
+    const real_t raddrag_coeff_synchrotron, raddrag_coeff_compton;
 
   public:
-    Pusher_kernel(ParticlePusherFlags            pusher,
-                  bool                           ext_force,
-                  RadiativeDragFlags             radiative_drag_flags,
+    Pusher_kernel(const PusherParams&            pusher_params,
+                  PusherArrays&                  pusher_arrays,
                   const randacc_ndfield_t<D, 6>& EB,
-                  spidx_t                        sp,
-                  array_t<int*>&                 i1,
-                  array_t<int*>&                 i2,
-                  array_t<int*>&                 i3,
-                  array_t<int*>&                 i1_prev,
-                  array_t<int*>&                 i2_prev,
-                  array_t<int*>&                 i3_prev,
-                  array_t<prtldx_t*>&            dx1,
-                  array_t<prtldx_t*>&            dx2,
-                  array_t<prtldx_t*>&            dx3,
-                  array_t<prtldx_t*>&            dx1_prev,
-                  array_t<prtldx_t*>&            dx2_prev,
-                  array_t<prtldx_t*>&            dx3_prev,
-                  array_t<real_t*>&              ux1,
-                  array_t<real_t*>&              ux2,
-                  array_t<real_t*>&              ux3,
-                  array_t<real_t*>&              phi,
-                  array_t<short*>&               tag,
                   const M&                       metric,
-                  const F&                       force,
-                  real_t                         time,
-                  real_t                         coeff,
-                  real_t                         dt,
-                  int                            ni1,
-                  int                            ni2,
-                  int                            ni3,
-                  const boundaries_t<PrtlBC>&    boundaries,
-                  real_t                         gca_larmor_max,
-                  real_t                         gca_eovrb_max,
-                  real_t                         coeff_sync,
-                  real_t                         coeff_comp)
-      : pusher { pusher }
-      , ext_force { ext_force }
-      , radiative_drag_flags { radiative_drag_flags }
+                  const F&                       force = NoForce_t {})
+      : pusher_flags { pusher_params.pusher_flags }
+      , radiative_drag_flags { pusher_params.radiative_drag_flags }
+      , ext_force { pusher_params.ext_force }
       , EB { EB }
-      , sp { sp }
-      , i1 { i1 }
-      , i2 { i2 }
-      , i3 { i3 }
-      , i1_prev { i1_prev }
-      , i2_prev { i2_prev }
-      , i3_prev { i3_prev }
-      , dx1 { dx1 }
-      , dx2 { dx2 }
-      , dx3 { dx3 }
-      , dx1_prev { dx1_prev }
-      , dx2_prev { dx2_prev }
-      , dx3_prev { dx3_prev }
-      , ux1 { ux1 }
-      , ux2 { ux2 }
-      , ux3 { ux3 }
-      , phi { phi }
-      , tag { tag }
+      , sp { pusher_arrays.sp }
+      , i1 { pusher_arrays.i1 }
+      , i2 { pusher_arrays.i2 }
+      , i3 { pusher_arrays.i3 }
+      , i1_prev { pusher_arrays.i1_prev }
+      , i2_prev { pusher_arrays.i2_prev }
+      , i3_prev { pusher_arrays.i3_prev }
+      , dx1 { pusher_arrays.dx1 }
+      , dx2 { pusher_arrays.dx2 }
+      , dx3 { pusher_arrays.dx3 }
+      , dx1_prev { pusher_arrays.dx1_prev }
+      , dx2_prev { pusher_arrays.dx2_prev }
+      , dx3_prev { pusher_arrays.dx3_prev }
+      , ux1 { pusher_arrays.ux1 }
+      , ux2 { pusher_arrays.ux2 }
+      , ux3 { pusher_arrays.ux3 }
+      , phi { pusher_arrays.phi }
+      , tag { pusher_arrays.tag }
       , metric { metric }
       , force { force }
-      , time { time }
-      , coeff { coeff }
-      , dt { dt }
-      , ni1 { ni1 }
-      , ni2 { ni2 }
-      , ni3 { ni3 }
-      , gca_larmor { gca_larmor_max }
-      , gca_EovrB_sqr { SQR(gca_eovrb_max) }
-      , coeff_sync { coeff_sync }
-      , coeff_comp { coeff_comp } {
-      raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
-      is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
-                        (boundaries[0].first == PrtlBC::ABSORB);
-      is_absorb_i1max = (boundaries[0].second == PrtlBC::ATMOSPHERE) ||
-                        (boundaries[0].second == PrtlBC::ABSORB);
-      is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
-      is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
-      is_reflect_i1min  = (boundaries[0].first == PrtlBC::REFLECT);
-      is_reflect_i1max  = (boundaries[0].second == PrtlBC::REFLECT);
+      , time { pusher_params.time }
+      , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
+                pusher_params.omegaB0 * pusher_params.dt }
+      , dt { pusher_params.dt }
+      , ni1 { pusher_params.ni1 }
+      , ni2 { pusher_params.ni2 }
+      , ni3 { pusher_params.ni3 }
+      , gca_larmor { (pusher_flags & ParticlePusher::GCA)
+                       ? pusher_params.gca_params.get<real_t>("larmor_max")
+                       : ZERO }
+      , gca_EovrB_sqr { (pusher_flags & ParticlePusher::GCA)
+                          ? SQR(pusher_params.gca_params.get<real_t>(
+                              "e_ovr_b_max"))
+                          : ZERO }
+      , raddrag_coeff_synchrotron { (pusher_params.radiative_drag_flags &
+                                     RadiativeDrag::SYNCHROTRON)
+                                      ? static_cast<real_t>(0.1) *
+                                          pusher_params.dt * pusher_params.omegaB0 /
+                                          (SQR(pusher_params
+                                                 .radiative_drag_params.get<real_t>(
+                                                   "synchrotron_gamma_rad")) *
+                                           pusher_params.mass)
+                                      : ZERO }
+      , raddrag_coeff_compton {
+        (pusher_params.radiative_drag_flags & RadiativeDrag::COMPTON)
+          ? static_cast<real_t>(0.1) * pusher_params.dt * pusher_params.omegaB0 /
+              (SQR(pusher_params.radiative_drag_params.get<real_t>(
+                 "compton_gamma_rad")) *
+               pusher_params.mass)
+          : ZERO
+      } {
+      raise::ErrorIf(pusher_flags == ParticlePusher::NONE,
+                     "No particle pusher specified",
+                     HERE);
+      raise::ErrorIf(pusher_params.boundaries.size() < 1,
+                     "pusher_params.boundaries defined incorrectly",
+                     HERE);
+      is_absorb_i1min = (pusher_params.boundaries[0].first == PrtlBC::ATMOSPHERE) ||
+                        (pusher_params.boundaries[0].first == PrtlBC::ABSORB);
+      is_absorb_i1max = (pusher_params.boundaries[0].second == PrtlBC::ATMOSPHERE) ||
+                        (pusher_params.boundaries[0].second == PrtlBC::ABSORB);
+      is_periodic_i1min = (pusher_params.boundaries[0].first == PrtlBC::PERIODIC);
+      is_periodic_i1max = (pusher_params.boundaries[0].second == PrtlBC::PERIODIC);
+      is_reflect_i1min = (pusher_params.boundaries[0].first == PrtlBC::REFLECT);
+      is_reflect_i1max = (pusher_params.boundaries[0].second == PrtlBC::REFLECT);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-        raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_absorb_i2min = (boundaries[1].first == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[1].first == PrtlBC::ABSORB);
-        is_absorb_i2max = (boundaries[1].second == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[1].second == PrtlBC::ABSORB);
-        is_periodic_i2min = (boundaries[1].first == PrtlBC::PERIODIC);
-        is_periodic_i2max = (boundaries[1].second == PrtlBC::PERIODIC);
-        is_reflect_i2min  = (boundaries[1].first == PrtlBC::REFLECT);
-        is_reflect_i2max  = (boundaries[1].second == PrtlBC::REFLECT);
-        is_axis_i2min     = (boundaries[1].first == PrtlBC::AXIS);
-        is_axis_i2max     = (boundaries[1].second == PrtlBC::AXIS);
+        raise::ErrorIf(pusher_params.boundaries.size() < 2,
+                       "pusher_params.boundaries defined incorrectly",
+                       HERE);
+        is_absorb_i2min = (pusher_params.boundaries[1].first == PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[1].first == PrtlBC::ABSORB);
+        is_absorb_i2max = (pusher_params.boundaries[1].second ==
+                           PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[1].second == PrtlBC::ABSORB);
+        is_periodic_i2min = (pusher_params.boundaries[1].first == PrtlBC::PERIODIC);
+        is_periodic_i2max = (pusher_params.boundaries[1].second == PrtlBC::PERIODIC);
+        is_reflect_i2min = (pusher_params.boundaries[1].first == PrtlBC::REFLECT);
+        is_reflect_i2max = (pusher_params.boundaries[1].second == PrtlBC::REFLECT);
+        is_axis_i2min = (pusher_params.boundaries[1].first == PrtlBC::AXIS);
+        is_axis_i2max = (pusher_params.boundaries[1].second == PrtlBC::AXIS);
       }
       if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
-        is_absorb_i3min = (boundaries[2].first == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2].first == PrtlBC::ABSORB);
-        is_absorb_i3max = (boundaries[2].second == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2].second == PrtlBC::ABSORB);
-        is_periodic_i3min = (boundaries[2].first == PrtlBC::PERIODIC);
-        is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
-        is_reflect_i3min  = (boundaries[2].first == PrtlBC::REFLECT);
-        is_reflect_i3max  = (boundaries[2].second == PrtlBC::REFLECT);
+        raise::ErrorIf(pusher_params.boundaries.size() < 3,
+                       "pusher_params.boundaries defined incorrectly",
+                       HERE);
+        is_absorb_i3min = (pusher_params.boundaries[2].first == PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[2].first == PrtlBC::ABSORB);
+        is_absorb_i3max = (pusher_params.boundaries[2].second ==
+                           PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[2].second == PrtlBC::ABSORB);
+        is_periodic_i3min = (pusher_params.boundaries[2].first == PrtlBC::PERIODIC);
+        is_periodic_i3max = (pusher_params.boundaries[2].second == PrtlBC::PERIODIC);
+        is_reflect_i3min = (pusher_params.boundaries[2].first == PrtlBC::REFLECT);
+        is_reflect_i3max = (pusher_params.boundaries[2].second == PrtlBC::REFLECT);
       }
     }
-
-    Pusher_kernel(ParticlePusherFlags         pusher,
-                  bool                        ext_force,
-                  RadiativeDragFlags          radiative_drag_flags,
-                  const ndfield_t<D, 6>&      EB,
-                  spidx_t                     sp,
-                  array_t<int*>&              i1,
-                  array_t<int*>&              i2,
-                  array_t<int*>&              i3,
-                  array_t<int*>&              i1_prev,
-                  array_t<int*>&              i2_prev,
-                  array_t<int*>&              i3_prev,
-                  array_t<prtldx_t*>&         dx1,
-                  array_t<prtldx_t*>&         dx2,
-                  array_t<prtldx_t*>&         dx3,
-                  array_t<prtldx_t*>&         dx1_prev,
-                  array_t<prtldx_t*>&         dx2_prev,
-                  array_t<prtldx_t*>&         dx3_prev,
-                  array_t<real_t*>&           ux1,
-                  array_t<real_t*>&           ux2,
-                  array_t<real_t*>&           ux3,
-                  array_t<real_t*>&           phi,
-                  array_t<short*>&            tag,
-                  const M&                    metric,
-                  simtime_t                   time,
-                  real_t                      coeff,
-                  real_t                      dt,
-                  int                         ni1,
-                  int                         ni2,
-                  int                         ni3,
-                  const boundaries_t<PrtlBC>& boundaries,
-                  real_t                      gca_larmor_max,
-                  real_t                      gca_eovrb_max,
-                  real_t                      coeff_sync,
-                  real_t                      coeff_comp)
-      : Pusher_kernel(pusher,
-                      ext_force,
-                      radiative_drag_flags,
-                      EB,
-                      sp,
-                      i1,
-                      i2,
-                      i3,
-                      i1_prev,
-                      i2_prev,
-                      i3_prev,
-                      dx1,
-                      dx2,
-                      dx3,
-                      dx1_prev,
-                      dx2_prev,
-                      dx3_prev,
-                      ux1,
-                      ux2,
-                      ux3,
-                      phi,
-                      tag,
-                      metric,
-                      NoForce_t {},
-                      time,
-                      coeff,
-                      dt,
-                      ni1,
-                      ni2,
-                      ni3,
-                      boundaries,
-                      gca_larmor_max,
-                      gca_eovrb_max,
-                      coeff_sync,
-                      coeff_comp) {}
 
     Inline void synchrotronDrag(index_t                p,
                                 vec_t<Dim::_3D>&       u_prime,
@@ -442,9 +420,12 @@ namespace kernel::sr {
                                        e_plus_beta_cross_b[1],
                                        e_plus_beta_cross_b[2]) -
                               SQR(beta_dot_e) };
-      ux1(p) += coeff_sync * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
-      ux2(p) += coeff_sync * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
-      ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+      ux1(p) += raddrag_coeff_synchrotron *
+                (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
+      ux2(p) += raddrag_coeff_synchrotron *
+                (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
+      ux3(p) += raddrag_coeff_synchrotron *
+                (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
     }
 
     Inline void inverseComptonDrag(index_t p, vec_t<Dim::_3D>& u_prime) const {
@@ -456,9 +437,9 @@ namespace kernel::sr {
       u_prime[2]             *= gamma_prime_sqr;
       gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
 
-      ux1(p) -= coeff_comp * gamma_prime_sqr * u_prime[0];
-      ux2(p) -= coeff_comp * gamma_prime_sqr * u_prime[1];
-      ux3(p) -= coeff_comp * gamma_prime_sqr * u_prime[2];
+      ux1(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[0];
+      ux2(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[1];
+      ux3(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[2];
     }
 
     Inline void operator()(index_t p) const {
@@ -470,7 +451,7 @@ namespace kernel::sr {
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getPrtlPos(p, xp_Cd);
-      if (pusher == ParticlePusher::PHOTON) {
+      if (pusher_flags == ParticlePusher::PHOTON) {
         posUpd(false, p, xp_Cd);
         return;
       }
@@ -515,7 +496,7 @@ namespace kernel::sr {
             force.fx3(sp, time, ext_force, xp_Ph) },
           force_Cart);
       }
-      if (pusher & ParticlePusher::GCA) {
+      if (pusher_flags & ParticlePusher::GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
         const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
         const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
@@ -710,7 +691,7 @@ namespace kernel::sr {
         ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
         ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
         ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
-      } else if (pusher & ParticlePusher::BORIS) {
+      } else if (pusher_flags & ParticlePusher::BORIS) {
         real_t COEFF { coeff };
 
         e0[0] *= COEFF;
@@ -737,7 +718,7 @@ namespace kernel::sr {
         ux1(p) = u0[0];
         ux2(p) = u0[1];
         ux3(p) = u0[2];
-      } else if (pusher & ParticlePusher::VAY) {
+      } else if (pusher_flags & ParticlePusher::VAY) {
         auto COEFF { coeff };
         e0[0] *= COEFF;
         e0[1] *= COEFF;

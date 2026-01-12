@@ -322,49 +322,63 @@ namespace ntt {
                       species.label().c_str(),
                       species.npart()),
           HERE);
-        const auto q_ovr_m = species.mass() > ZERO
-                               ? species.charge() / species.mass()
-                               : ZERO;
-        //  coeff = q / m (dt / 2) omegaB0
-        const auto coeff   = q_ovr_m * HALF * dt *
-                           m_params.template get<real_t>("scales.omegaB0");
-        const auto radiative_drag_flags = species.radiative_drag_flags();
 
-        // coefficients to be forwarded to the dispatcher
-        // gca
-        const auto has_gca         = species.pusher() & ParticlePusher::GCA;
-        const auto gca_larmor_max  = has_gca ? m_params.template get<real_t>(
-                                                "algorithms.gca.larmor_max")
-                                             : ZERO;
-        const auto gca_eovrb_max   = has_gca ? m_params.template get<real_t>(
-                                               "algorithms.gca.e_ovr_b_max")
-                                             : ZERO;
-        // radiative drag
-        const auto has_synchrotron = (radiative_drag_flags &
-                                      RadiativeDrag::SYNCHROTRON);
-        const auto has_compton = (radiative_drag_flags & RadiativeDrag::COMPTON);
-        const auto sync_grad     = has_synchrotron
-                                     ? m_params.template get<real_t>(
-                                     "algorithms.synchrotron.gamma_rad")
-                                     : ZERO;
-        const auto sync_coeff    = has_synchrotron
-                                     ? (real_t)(0.1) * dt *
-                                      m_params.template get<real_t>(
-                                        "scales.omegaB0") /
-                                      (SQR(sync_grad) * species.mass())
-                                     : ZERO;
-        const auto compton_grad  = has_compton
-                                     ? m_params.template get<real_t>(
-                                        "algorithms.compton.gamma_rad")
-                                     : ZERO;
-        const auto compton_coeff = has_compton
-                                     ? (real_t)(0.1) * dt *
-                                         m_params.template get<real_t>(
-                                           "scales.omegaB0") /
-                                         (SQR(compton_grad) * species.mass())
-                                     : ZERO;
+        kernel::sr::PusherParams pusher_params {};
+        pusher_params.pusher_flags         = species.pusher();
+        pusher_params.radiative_drag_flags = species.radiative_drag_flags();
+        pusher_params.mass                 = species.mass();
+        pusher_params.charge               = species.charge();
+        pusher_params.time                 = time;
+        pusher_params.dt                   = dt;
+        pusher_params.omegaB0 = m_params.template get<real_t>("scales.omegaB0");
+        pusher_params.ni1     = domain.mesh.n_active(in::x1);
+        pusher_params.ni2     = domain.mesh.n_active(in::x2);
+        pusher_params.ni3     = domain.mesh.n_active(in::x3);
+        pusher_params.boundaries = domain.mesh.prtl_bc();
+
+        if (species.pusher() & ParticlePusher::GCA) {
+          pusher_params.gca_params.set(
+            "larmor_max",
+            m_params.template get<real_t>("algorithms.gca.larmor_max"));
+          pusher_params.gca_params.set(
+            "e_ovr_b_max",
+            m_params.template get<real_t>("algorithms.gca.e_ovr_b_max"));
+        }
+
+        if (species.radiative_drag_flags() & RadiativeDrag::SYNCHROTRON) {
+          pusher_params.radiative_drag_params.set(
+            "synchrotron_gamma_rad",
+            m_params.template get<real_t>("algorithms.synchrotron.gamma_rad"));
+        }
+
+        if (species.radiative_drag_flags() & RadiativeDrag::COMPTON) {
+          pusher_params.radiative_drag_params.set(
+            "compton_gamma_rad",
+            m_params.template get<real_t>("algorithms.compton.gamma_rad"));
+        }
+
+        kernel::sr::PusherArrays pusher_arrays {};
+        pusher_arrays.sp       = species.index();
+        pusher_arrays.i1       = species.i1;
+        pusher_arrays.i2       = species.i2;
+        pusher_arrays.i3       = species.i3;
+        pusher_arrays.i1_prev  = species.i1_prev;
+        pusher_arrays.i2_prev  = species.i2_prev;
+        pusher_arrays.i3_prev  = species.i3_prev;
+        pusher_arrays.dx1      = species.dx1;
+        pusher_arrays.dx2      = species.dx2;
+        pusher_arrays.dx3      = species.dx3;
+        pusher_arrays.dx1_prev = species.dx1_prev;
+        pusher_arrays.dx2_prev = species.dx2_prev;
+        pusher_arrays.dx3_prev = species.dx3_prev;
+        pusher_arrays.ux1      = species.ux1;
+        pusher_arrays.ux2      = species.ux2;
+        pusher_arrays.ux3      = species.ux3;
+        pusher_arrays.phi      = species.phi;
+        pusher_arrays.tag      = species.tag;
+
         // toggle to indicate whether pgen defines the external force
-        bool       has_extforce  = false;
+        bool has_extforce = false;
         if constexpr (traits::pgen::HasExtForce<pgen_t>) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
@@ -376,60 +390,30 @@ namespace ntt {
           }
         }
 
-        // clang-format off
+        pusher_params.ext_force = has_extforce;
+
         if (not has_atmosphere and not has_extforce) {
-          Kokkos::parallel_for(
-            "ParticlePusher",
-            species.rangeActiveParticles(),
-            kernel::sr::Pusher_kernel<M>(
-                species.pusher(), false,
-                radiative_drag_flags,
-                domain.fields.em,
-                species.index(),
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                time, coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff, compton_coeff
-            ));
+          Kokkos::parallel_for("ParticlePusher",
+                               species.rangeActiveParticles(),
+                               kernel::sr::Pusher_kernel<M>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric));
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
             kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
-              {gx1, gx2, gx3},
+              { gx1, gx2, gx3 },
               x_surf,
               ds
-            };
+          };
           Kokkos::parallel_for(
             "ParticlePusher",
             species.rangeActiveParticles(),
-            kernel::sr::Pusher_kernel<M, decltype(force)>(
-                species.pusher(), false,
-                radiative_drag_flags,
-                domain.fields.em,
-                species.index(),
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                force,
-                time, coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff, compton_coeff
-            ));
+            kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                          pusher_arrays,
+                                                          domain.fields.em,
+                                                          domain.mesh.metric,
+                                                          force));
         } else if (not has_atmosphere and has_extforce) {
           if constexpr (traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
@@ -439,26 +423,11 @@ namespace ntt {
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  species.pusher(), true,
-                  radiative_drag_flags,
-                  domain.fields.em,
-                  species.index(),
-                  species.i1,        species.i2,       species.i3,
-                  species.i1_prev,   species.i2_prev,  species.i3_prev,
-                  species.dx1,       species.dx2,      species.dx3,
-                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                  species.ux1,       species.ux2,      species.ux3,
-                  species.phi,       species.tag,
-                  domain.mesh.metric,
-                  force,
-                  time, coeff, dt,
-                  domain.mesh.n_active(in::x1),
-                  domain.mesh.n_active(in::x2),
-                  domain.mesh.n_active(in::x3),
-                  domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff, compton_coeff
-              ));
+              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric,
+                                                            force));
           } else {
             raise::Error("External force not implemented", HERE);
           }
@@ -466,36 +435,23 @@ namespace ntt {
           if constexpr (traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
-                m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
-              };
+                m_pgen.ext_force,
+                { gx1, gx2, gx3 },
+                x_surf,
+                ds
+            };
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  species.pusher(), true,
-                  radiative_drag_flags,
-                  domain.fields.em,
-                  species.index(),
-                  species.i1,        species.i2,       species.i3,
-                  species.i1_prev,   species.i2_prev,  species.i3_prev,
-                  species.dx1,       species.dx2,      species.dx3,
-                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                  species.ux1,       species.ux2,      species.ux3,
-                  species.phi,       species.tag,
-                  domain.mesh.metric,
-                  force,
-                  time, coeff, dt,
-                  domain.mesh.n_active(in::x1),
-                  domain.mesh.n_active(in::x2),
-                  domain.mesh.n_active(in::x3),
-                  domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff, compton_coeff
-              ));
+              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric,
+                                                            force));
           } else {
             raise::Error("External force not implemented", HERE);
-          }          
+          }
         }
-        // clang-format on
       }
     }
 
