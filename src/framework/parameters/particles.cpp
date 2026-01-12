@@ -37,7 +37,7 @@ namespace ntt {
             flags |= RadiativeDrag::COMPTON;
           } else {
             raise::Error(fmt::format("Invalid radiative_drag value: %s",
-                                     radiative_drag_str),
+                                     radiative_drag_str.c_str()),
                          HERE);
           }
         }
@@ -66,7 +66,7 @@ namespace ntt {
             flags |= ParticlePusher::GCA;
           } else {
             raise::Error(
-              fmt::format("Invalid pusher value: %s", particle_pusher_str),
+              fmt::format("Invalid pusher value: %s", particle_pusher_str.c_str()),
               HERE);
           }
         }
