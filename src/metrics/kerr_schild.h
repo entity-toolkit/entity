@@ -40,6 +40,7 @@ namespace metric {
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
+    const bool   small_angle;
 
     Inline auto Delta(real_t r) const -> real_t {
       return SQR(r) - TWO * r + SQR(a);
