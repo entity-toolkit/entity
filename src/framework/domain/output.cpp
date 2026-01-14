@@ -31,6 +31,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
                                     const SimulationParams& params) {
     raise::ErrorIf(
@@ -263,6 +264,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
     if constexpr (M::Dim == Dim::_2D) {
       auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -316,6 +318,7 @@ namespace ntt {
 #endif
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::Write(
     const SimulationParams&                  params,
     timestep_t                               current_step,

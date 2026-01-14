@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -76,10 +77,11 @@ namespace kernel {
   }
 
   template <SimEngine::type S, class M, class ED1, class ED2>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && traits::metric::HasTransform<M>)) &&
+             traits::energydist::IsValid<ED1> && traits::energydist::IsValid<ED2>
   struct UniformInjector_kernel {
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(M::is_metric, "M must be a metric class");
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
     array_t<prtldx_t*> dx1s_1, dx2s_1, dx3s_1;
@@ -291,8 +293,10 @@ namespace kernel {
   }; // struct UniformInjector_kernel
 
   template <SimEngine::type S, class M>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && traits::metric::HasTransform<M>))
   struct GlobalInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const bool use_weights;
@@ -522,11 +526,13 @@ namespace kernel {
   }; // struct GlobalInjector_kernel
 
   template <SimEngine::type S, class M, class ED1, class ED2, class SD>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert<M> &&
+             traits::metric::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && traits::metric::HasTransform<M>)) &&
+             traits::energydist::IsValid<ED1> &&
+             traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
   struct NonUniformInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
 
     const real_t ppc0;
 

@@ -15,6 +15,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::init() {
     if constexpr (pgen_is_ok) {
       m_metadomain.InitStatsWriter(m_params, is_resuming);
@@ -26,8 +27,7 @@ namespace ntt {
       if (not is_resuming) {
         // start a new simulation with initial conditions
         logger::Checkpoint("Loading initial conditions", HERE);
-        if constexpr (
-          traits::has_member<traits::pgen::init_flds_t, user::PGen<S, M>>::value) {
+        if constexpr (traits::pgen::HasInitFlds<user::PGen<S, M>>) {
           logger::Checkpoint("Initializing fields from problem generator", HERE);
           m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
             Kokkos::parallel_for(
@@ -39,8 +39,7 @@ namespace ntt {
                 loc_dom.mesh.metric });
           });
         }
-        if constexpr (
-          traits::has_member<traits::pgen::init_prtls_t, user::PGen<S, M>>::value) {
+        if constexpr (traits::pgen::HasInitPrtls<user::PGen<S, M>, Domain<S, M>>) {
           logger::Checkpoint("Initializing particles from problem generator", HERE);
           m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
             m_pgen.InitPrtls(loc_dom);

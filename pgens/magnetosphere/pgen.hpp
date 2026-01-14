@@ -52,13 +52,13 @@ namespace user {
 
   template <Dimension D>
   struct DriveFields : public InitFields<D> {
-    DriveFields(real_t             time,
+    DriveFields(simtime_t          time,
                 real_t             bsurf,
                 real_t             rstar,
                 real_t             omega,
                 const std::string& field_geometry)
       : InitFields<D> { bsurf, rstar, field_geometry }
-      , time { time }
+      , time { (real_t)time }
       , Omega { omega } {}
 
     using InitFields<D>::bx1;
@@ -113,11 +113,11 @@ namespace user {
 
     inline PGen() {}
 
-    auto AtmFields(real_t time) const -> DriveFields<D> {
+    auto AtmFields(simtime_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega, field_geom };
     }
 
-    auto MatchFields(real_t) const -> InitFields<D> {
+    auto MatchFields(simtime_t) const -> InitFields<D> {
       return InitFields<D> { Bsurf, Rstar, field_geom };
     }
   };

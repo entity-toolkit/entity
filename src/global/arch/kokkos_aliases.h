@@ -41,7 +41,7 @@ using array_h_t = Kokkos::View<T, Kokkos::HostSpace>;
 
 // Array mirror alias of arbitrary type
 template <typename T>
-using array_mirror_t = typename array_t<T>::HostMirror;
+using array_mirror_t = typename array_t<T>::host_mirror_type;
 
 // Scatter view alias of arbitrary type
 template <typename T>
@@ -107,7 +107,7 @@ using ndfield_t = typename kokkos_aliases_hidden::ndfield_impl<D, N>::type;
 
 // D x N dimensional array (host memspace) for storing fields on ND hypercube
 template <Dimension D, unsigned short N>
-using ndfield_mirror_t = typename ndfield_t<D, N>::HostMirror;
+using ndfield_mirror_t = typename ndfield_t<D, N>::host_mirror_type;
 
 // D x N dimensional scatter array for storing fields on ND hypercubes
 namespace kokkos_aliases_hidden {

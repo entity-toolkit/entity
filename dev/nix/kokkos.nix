@@ -10,7 +10,7 @@ let
   pversion = "5.0.0";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
-      llvm.rocm-merged-llvm
+      llvm.llvm
       rocm-core
       clr
       rocthrust
@@ -39,7 +39,7 @@ let
     "HIP" = [
       "-D Kokkos_ENABLE_HIP=ON"
       "-D Kokkos_ARCH_${getArch { }}=ON"
-      "-D AMDGPU_TARGETS=${builtins.replaceStrings [ "amd_" ] [ "" ] (pkgs.lib.toLower (getArch { }))}"
+      "-D GPU_TARGETS=${builtins.replaceStrings [ "amd_" ] [ "" ] (pkgs.lib.toLower (getArch { }))}"
       "-D CMAKE_CXX_COMPILER=hipcc"
     ];
     "CUDA" = [

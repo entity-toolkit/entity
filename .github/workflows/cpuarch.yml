@@ -2,6 +2,8 @@ name: CPU Compilation/Unit Tests
 
 on:
   push:
+  pull_request:
+    types: [ready_for_review] 
 
 jobs:
   check-commit:
@@ -14,6 +16,10 @@ jobs:
       - name: Check commit message
         id: check_message
         run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.action }}" == "ready_for_review" ]]; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if git log -1 --pretty=%B | grep -q "CPUTEST"; then
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
           else

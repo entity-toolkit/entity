@@ -43,6 +43,7 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "arch/traits.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 
@@ -57,9 +58,10 @@
 #include <vector>
 
 namespace ntt {
+
   template <SimEngine::type S, class M>
+    requires traits::metric::HasD<M>
   struct Domain {
-    static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
     Mesh<M>                                 mesh;

@@ -22,6 +22,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -33,10 +34,9 @@ namespace arch {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
+    requires traits::metric::HasD<M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
-    static constexpr bool is_energy_dist { true };
-    static_assert(M::is_metric, "M must be a metric class");
 
     EnergyDistribution(const M& metric) : metric { metric } {}
 

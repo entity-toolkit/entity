@@ -10,16 +10,20 @@
 #ifndef KERNELS_DIVERGENCES_HPP
 #define KERNELS_DIVERGENCES_HPP
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 
 namespace kernel {
   using namespace ntt;
 
   // @TODO: take care of boundaries
   template <class M, unsigned short N>
+    requires traits::metric::HasD<M> && traits::metric::HasSqrtDetH<M>
   class ComputeDivergence_kernel {
     const M metric;
 

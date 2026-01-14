@@ -27,9 +27,9 @@ namespace arch {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
+    requires traits::metric::HasD<M>
   struct SpatialDistribution {
-    static constexpr bool is_spatial_dist { true };
-    static_assert(M::is_metric, "M must be a metric class");
+    static constexpr auto D = M::Dim;
 
     SpatialDistribution(const M& metric) : metric { metric } {}
 

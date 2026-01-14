@@ -24,6 +24,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -31,10 +32,9 @@ namespace kernel {
   using namespace ntt;
 
   template <class M, int N1, int N2>
+    requires traits::metric::HasD<M> && traits::metric::HasTransform<M> &&
+             (N1 >= 3) && (N2 >= 3)
   class FieldsToPhys_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(N1 >= 3 && N2 >= 3, "Invalid N1 and/or N2");
-
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, N1>   Ffrom;

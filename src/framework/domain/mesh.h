@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "arch/traits.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -31,8 +32,8 @@
 namespace ntt {
 
   template <class M>
+    requires traits::metric::HasD<M> && traits::metric::HasConvert_i<M>
   struct Mesh : public Grid<M::Dim> {
-    static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
     static constexpr bool      is_mesh { true };
     static constexpr Dimension D { M::Dim };
 

@@ -49,6 +49,9 @@
 namespace ntt {
 
   template <class M>
+    requires IsCompatibleWithEngine<SimEngine::SRPIC, M> &&
+             traits::metric::HasH_ij<M> && traits::metric::HasConvert_i<M> &&
+             traits::metric::HasSqrtH_ij<M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;
@@ -369,7 +372,7 @@ namespace ntt {
                                               : ZERO;
         // toggle to indicate whether pgen defines the external force
         bool       has_extforce = false;
-        if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+        if constexpr (traits::pgen::HasExtForce<pgen_t>) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
           if (traits::has_member<traits::species_t, decltype(pgen_t::ext_force)>::value) {
@@ -442,7 +445,7 @@ namespace ntt {
                 gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
             ));
         } else if (not has_atmosphere and has_extforce) {
-          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+          if constexpr (traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
                 m_pgen.ext_force
@@ -474,7 +477,7 @@ namespace ntt {
             raise::Error("External force not implemented", HERE);
           }
         } else { // has_atmosphere and has_extforce
-          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+          if constexpr (traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
                 m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
@@ -570,8 +573,7 @@ namespace ntt {
         const auto V0    = m_params.template get<real_t>("scales.V0");
         const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
         const auto coeff = -dt * q0 / (B0 * V0);
-        if constexpr (
-          traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
+        if constexpr (traits::pgen::HasExtCurrent<pgen_t>) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };
@@ -720,8 +722,7 @@ namespace ntt {
       }
 
       if (dim == in::x1) {
-        if constexpr (
-          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+        if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
           auto match_fields = m_pgen.MatchFields(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -732,8 +733,7 @@ namespace ntt {
                                                             tags,
                                                             range_min,
                                                             range_max);
-        } else if constexpr (
-          traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
+        } else if constexpr (traits::pgen::HasMatchFieldsInX1<pgen_t>) {
           auto match_fields = m_pgen.MatchFieldsInX1(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -747,8 +747,7 @@ namespace ntt {
         }
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          if constexpr (
-            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -759,8 +758,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (
-            traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
+          } else if constexpr (traits::pgen::HasMatchFieldsInX2<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX2(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -777,8 +775,7 @@ namespace ntt {
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          if constexpr (
-            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -789,8 +786,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (
-            traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
+          } else if constexpr (traits::pgen::HasMatchFieldsInX3<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX3(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -900,22 +896,16 @@ namespace ntt {
       if (tags & BC::B) {
         comps.push_back(normal_b_comp);
       }
-      if constexpr (traits::has_member<traits::pgen::fix_fields_t, pgen_t>::value) {
-        raise::Error("Non-const fixed fields not implemented", HERE);
-      } else if constexpr (
-        traits::has_member<traits::pgen::fix_fields_const_t, pgen_t>::value) {
+      if constexpr (traits::pgen::HasFixFieldsConst<pgen_t>) {
         for (const auto& comp : comps) {
-          auto value     = ZERO;
-          bool shouldset = false;
-          if constexpr (
-            traits::has_member<traits::pgen::fix_fields_const_t, pgen_t>::value) {
-            // if fix field function present, read from it
-            const auto newset = m_pgen.FixFieldsConst(
-              (bc_in)(sign * ((short)dim + 1)),
-              (em)comp);
-            value     = newset.first;
-            shouldset = newset.second;
-          }
+          auto       value     = ZERO;
+          bool       shouldset = false;
+          // if fix field function present, read from it
+          const auto newset    = m_pgen.FixFieldsConst(
+            (bc_in)(sign * ((short)dim + 1)),
+            (em)comp);
+          value     = newset.first;
+          shouldset = newset.second;
           if (shouldset) {
             if constexpr (M::Dim == Dim::_1D) {
               Kokkos::deep_copy(
@@ -1078,7 +1068,7 @@ namespace ntt {
       /**
        * atmosphere field boundaries
        */
-      if constexpr (traits::has_member<traits::pgen::atm_fields_t, pgen_t>::value) {
+      if constexpr (traits::pgen::HasAtmFields<pgen_t>) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
         const auto           dd                = static_cast<dim_t>(dim);
         boundaries_t<real_t> box;
