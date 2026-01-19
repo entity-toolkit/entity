@@ -348,13 +348,14 @@ namespace ntt {
         if (species.radiative_drag_flags() & RadiativeDrag::SYNCHROTRON) {
           pusher_params.radiative_drag_params.set(
             "synchrotron_gamma_rad",
-            m_params.template get<real_t>("algorithms.synchrotron.gamma_rad"));
+            m_params.template get<real_t>(
+              "radiation.drag.synchrotron.gamma_rad"));
         }
 
         if (species.radiative_drag_flags() & RadiativeDrag::COMPTON) {
           pusher_params.radiative_drag_params.set(
             "compton_gamma_rad",
-            m_params.template get<real_t>("algorithms.compton.gamma_rad"));
+            m_params.template get<real_t>("radiation.drag.compton.gamma_rad"));
         }
 
         kernel::sr::PusherArrays pusher_arrays {};
