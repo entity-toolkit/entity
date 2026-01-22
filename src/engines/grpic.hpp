@@ -66,13 +66,11 @@ namespace ntt {
   };
 
   template <class M>
-    requires IsCompatibleWithEngine<SimEngine::GRPIC, M>
+  // requires IsCompatibleWithEngine<SimEngine::GRPIC, M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;
     using domain_t = Domain<SimEngine::GRPIC, M>;
-    // constexprs
-    using base_t::pgen_is_ok;
     // contents
     using base_t::m_metadomain;
     using base_t::m_params;

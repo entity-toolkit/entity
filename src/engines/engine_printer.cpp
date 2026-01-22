@@ -101,8 +101,8 @@ namespace ntt {
                             color::RESET);
     }
 
-    auto bytes_to_human_readable(
-      std::size_t bytes) -> std::pair<double, std::string> {
+    auto bytes_to_human_readable(std::size_t bytes)
+      -> std::pair<double, std::string> {
       const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
       idx_t                          unit_idx = 0;
       auto                           size     = static_cast<double>(bytes);
@@ -115,7 +115,7 @@ namespace ntt {
   } // namespace
 
   template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+  // requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");

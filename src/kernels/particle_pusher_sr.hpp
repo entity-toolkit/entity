@@ -21,10 +21,11 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
+
+#include "metrics/traits.h"
 
 #include "kernels/emission.hpp"
 #include "particle_shapes.hpp"
@@ -224,9 +225,9 @@ namespace kernel::sr {
    * @tparam F Additional force
    */
   template <class M, class F = NoForce_t, EmissionTypeFlag E = EmissionType::NONE>
-    requires traits::metric::HasD<M> && traits::metric::HasTransformXYZ<M> &&
-             traits::metric::HasConvertXYZ<M> &&
-             traits::metric::HasTransform_i<M> && traits::metric::HasConvert_i<M>
+    requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
+             metric::traits::HasConvertXYZ<M> &&
+             metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
   struct Pusher_kernel {
     static constexpr auto D           = M::Dim;
     static constexpr auto HasExtForce = not std::is_same<F, NoForce_t>::value;

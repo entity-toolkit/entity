@@ -21,11 +21,12 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/traits.h"
-#include "utils/error.h"
 #include "utils/timer.h"
 #include "utils/toml.h"
 
+#include "metrics/traits.h"
+
+#include "archetypes/traits.h"
 #include "framework/containers/species.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
@@ -49,10 +50,16 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  concept IsCompatibleWithEngine = traits::metric::HasD<M>;
+  concept IsCompatibleWithEngine =
+    metric::traits::HasD<M> and
+    arch::traits::pgen::check_compatibility<S>::value(user::PGen<S, M>::engines) and
+    arch::traits::pgen::check_compatibility<M::MetricType>::value(
+      user::PGen<S, M>::metrics) and
+    arch::traits::pgen::check_compatibility<M::Dim>::value(
+      user::PGen<S, M>::dimensions);
 
   template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+  // requires IsCompatibleWithEngine<S, M>
   class Engine {
 
   protected:
@@ -78,12 +85,6 @@ namespace ntt {
     timestep_t       step;
 
   public:
-    static constexpr bool pgen_is_ok {
-      traits::check_compatibility<S>::value(user::PGen<S, M>::engines) and
-      traits::check_compatibility<M::MetricType>::value(user::PGen<S, M>::metrics) and
-      traits::check_compatibility<M::Dim>::value(user::PGen<S, M>::dimensions)
-    };
-
     static constexpr Dimension D { M::Dim };
 
     Engine(const SimulationParams& params)
@@ -109,9 +110,7 @@ namespace ntt {
       , start_step { m_params.get<timestep_t>("checkpoint.start_step") }
       , start_time { m_params.get<simtime_t>("checkpoint.start_time") }
       , time { start_time }
-      , step { start_step } {
-      raise::ErrorIf(not pgen_is_ok, "Problem generator is not compatible with the picked engine/metric/dimension", HERE);
-    }
+      , step { start_step } {}
 
     ~Engine() = default;
 

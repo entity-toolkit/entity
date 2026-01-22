@@ -3,13 +3,31 @@
 #include "arch/traits.h"
 #include "utils/error.h"
 
-#include "engines/engine_traits.h"
 #include "framework/simulation.h"
 #include "framework/specialization_registry.h"
 
+#include "engines/grpic.hpp"
+#include "engines/srpic.hpp"
 #include "pgen.hpp"
- 
+
 #include <type_traits>
+
+namespace ntt {
+  template <SimEngine::type S>
+  struct EngineSelector;
+
+  template <>
+  struct EngineSelector<SimEngine::SRPIC> {
+    template <class M>
+    using type = SRPICEngine<M>;
+  };
+
+  template <>
+  struct EngineSelector<SimEngine::GRPIC> {
+    template <class M>
+    using type = GRPICEngine<M>;
+  };
+} // namespace ntt
 
 template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
 static constexpr bool should_compile {
