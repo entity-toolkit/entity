@@ -1108,9 +1108,8 @@ namespace ntt {
     CallOnce([&]() {
       std::ofstream metadata;
       metadata.open(path);
-      metadata << "[metadata]\n"
-               << "  time = " << time << "\n\n"
-               << data() << std::endl;
+      metadata << fmt::format("[metadata]\n  time = %f\n\n", time) << data()
+               << std::endl;
       metadata.close();
     });
   }
