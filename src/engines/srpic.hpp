@@ -383,7 +383,8 @@ namespace ntt {
         if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
-          if (traits::has_member<traits::species_t, decltype(pgen_t::ext_force)>::value) {
+          if (
+            ::traits::has_member<::traits::species_t, decltype(pgen_t::ext_force)>::value) {
             has_extforce &= std::find(m_pgen.ext_force.species.begin(),
                                       m_pgen.ext_force.species.end(),
                                       species.index()) !=
