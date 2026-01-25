@@ -16,6 +16,13 @@
 #include <algorithm>
 #include <utility>
 
+#ifndef NTT_FOREACH_PGEN_SPECIALIZATION
+  #define NTT_FOREACH_PGEN_SPECIALIZATION(MACRO)      \
+    MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D) \
+    MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D) \
+    MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_3D)
+#endif
+
 namespace user {
   using namespace ntt;
 

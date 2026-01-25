@@ -62,25 +62,14 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine::type S, template <Dimension> class M, Dimension D>
-  struct EngineInitInstantiator {
-    EngineInitInstantiator() {
-      if constexpr (IsCompatibleWithEngine<S, M<D>>) {
-        (void)&Engine<S, M<D>>::init;
-      }
-    }
-  };
+#ifndef NTT_FOREACH_PGEN_SPECIALIZATION
+  #define NTT_FOREACH_PGEN_SPECIALIZATION(MACRO) NTT_FOREACH_SPECIALIZATION(MACRO)
+#endif
 
-#define NTT_CONCAT_INNER(a, b) a##b
-#define NTT_CONCAT(a, b) NTT_CONCAT_INNER(a, b)
-#define ENGINE_INIT(S, M, D)                                                   \
-  static EngineInitInstantiator<S, M, D> NTT_CONCAT(engine_init_instantiator_, \
-                                                    __COUNTER__) {};
+#define ENGINE_INIT(S, M, D) template class Engine<S, M<D>>;
 
-  NTT_FOREACH_SPECIALIZATION(ENGINE_INIT)
+  NTT_FOREACH_PGEN_SPECIALIZATION(ENGINE_INIT)
 
 #undef ENGINE_INIT
-#undef NTT_CONCAT
-#undef NTT_CONCAT_INNER
 
 } // namespace ntt
