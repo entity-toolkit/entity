@@ -66,7 +66,7 @@ namespace ntt {
   };
 
   template <class M>
-    requires IsCompatibleWithEngine<SimEngine::GRPIC, M>
+    requires traits::engine::IsCompatibleWithGRPICEngine<M, user::PGen>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;

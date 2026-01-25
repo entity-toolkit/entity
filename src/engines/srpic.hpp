@@ -23,11 +23,10 @@
 #include "utils/timer.h"
 #include "utils/toml.h"
 
-#include "metrics/traits.h"
-
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/spatial_dist.h"
+#include "engines/traits.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 
@@ -51,9 +50,7 @@
 namespace ntt {
 
   template <class M>
-    requires IsCompatibleWithEngine<SimEngine::SRPIC, M> &&
-             metric::traits::HasH_ij<M> && metric::traits::HasConvert_i<M> &&
-             metric::traits::HasSqrtH_ij<M>
+    requires traits::engine::IsCompatibleWithSRPICEngine<M, user::PGen>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;

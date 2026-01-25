@@ -26,10 +26,9 @@
 #include "utils/timer.h"
 #include "utils/toml.h"
 
-#include "metrics/traits.h"
-
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
+#include "engines/traits.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -68,16 +67,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  concept IsCompatibleWithEngine =
-    metric::traits::HasD<M> and
-    arch::traits::pgen::check_compatibility<S>::value(user::PGen<S, M>::engines) and
-    arch::traits::pgen::check_compatibility<M::MetricType>::value(
-      user::PGen<S, M>::metrics) and
-    arch::traits::pgen::check_compatibility<M::Dim>::value(
-      user::PGen<S, M>::dimensions);
-
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
   class Engine {
 
   protected:
@@ -141,7 +131,7 @@ namespace ntt {
   };
 
   template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -278,7 +268,7 @@ namespace ntt {
   } // namespace
 
   template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
@@ -661,7 +651,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-    requires IsCompatibleWithEngine<S, M>
+    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
   void Engine<S, M>::run() {
     init();
 
