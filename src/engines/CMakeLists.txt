@@ -4,8 +4,6 @@
 #
 # @sources:
 #
-# * engine_impl.cpp
-#
 # @includes:
 #
 # * ../
@@ -29,9 +27,7 @@
 # * mpi [optional]
 # ------------------------------
 
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(SOURCES ${SRC_DIR}/engine_impl.cpp)
-add_library(ntt_engines ${SOURCES})
+add_library(ntt_engines INTERFACE)
 
 set(libs ntt_global ntt_framework ntt_metrics ntt_archetypes ntt_kernels
          ntt_pgen)
@@ -39,10 +35,9 @@ if(${output})
   list(APPEND libs ntt_output)
 endif()
 add_dependencies(ntt_engines ${libs})
-target_link_libraries(ntt_engines PUBLIC ${libs})
-target_compile_definitions(ntt_engines PRIVATE PGEN=\"${PGEN}\")
+target_link_libraries(ntt_engines INTERFACE ${libs})
+target_compile_definitions(ntt_engines INTERFACE PGEN=\"${PGEN}\")
 
 target_include_directories(
   ntt_engines
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../)
