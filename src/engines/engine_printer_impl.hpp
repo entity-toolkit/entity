@@ -1,3 +1,6 @@
+#ifndef ENGINES_ENGINE_PRINTER_IMPL_HPP
+#define ENGINES_ENGINE_PRINTER_IMPL_HPP
+
 #include "enums.h"
 #include "global.h"
 
@@ -5,10 +8,6 @@
 #include "arch/mpi_aliases.h"
 #include "utils/colors.h"
 #include "utils/formatting.h"
-
-#include "framework/specialization_registry.h"
-
-#include "engines/engine.hpp"
 
 #if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
@@ -497,14 +496,6 @@ namespace ntt {
     }
   }
 
-#ifndef NTT_FOREACH_PGEN_SPECIALIZATION
-  #define NTT_FOREACH_PGEN_SPECIALIZATION(MACRO) NTT_FOREACH_SPECIALIZATION(MACRO)
-#endif
-
-#define ENGINE_PRINTER(S, M, D) template void Engine<S, M<D>>::print_report() const;
-
-  NTT_FOREACH_PGEN_SPECIALIZATION(ENGINE_PRINTER)
-
-#undef ENGINE_PRINTER
-
 } // namespace ntt
+
+#endif // ENGINES_ENGINE_PRINTER_IMPL_HPP

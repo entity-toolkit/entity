@@ -1,12 +1,12 @@
+#ifndef ENGINES_ENGINE_RUN_IMPL_HPP
+#define ENGINES_ENGINE_RUN_IMPL_HPP
+
 #include "enums.h"
 
 #include "utils/diag.h"
 
 #include "archetypes/traits.h"
 #include "framework/domain/domain.h"
-#include "framework/specialization_registry.h"
-
-#include "engines/engine.hpp"
 
 namespace ntt {
 
@@ -136,14 +136,6 @@ namespace ntt {
     }
   }
 
-#ifndef NTT_FOREACH_PGEN_SPECIALIZATION
-  #define NTT_FOREACH_PGEN_SPECIALIZATION(MACRO) NTT_FOREACH_SPECIALIZATION(MACRO)
-#endif
-
-#define ENGINE_RUN(S, M, D) template void Engine<S, M<D>>::run();
-
-  NTT_FOREACH_PGEN_SPECIALIZATION(ENGINE_RUN)
-
-#undef ENGINE_RUN
-
 } // namespace ntt
+
+#endif // ENGINES_ENGINE_RUN_IMPL_HPP

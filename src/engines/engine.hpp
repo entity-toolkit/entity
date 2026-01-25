@@ -4,8 +4,9 @@
  * @implements
  *   - ntt::Engine<>
  * @cpp:
- *   - engine_init.cpp
- *   - engine_printer.cpp
+ *   - engine_init_impl.hpp
+ *   - engine_printer_impl.hpp
+ *   - engine_run_impl.hpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -123,5 +124,9 @@ namespace ntt {
   };
 
 } // namespace ntt
+
+#include "engines/engine_init_impl.hpp"
+#include "engines/engine_printer_impl.hpp"
+#include "engines/engine_run_impl.hpp"
 
 #endif // ENGINES_ENGINE_H

@@ -1,11 +1,11 @@
+#ifndef ENGINES_ENGINE_INIT_IMPL_HPP
+#define ENGINES_ENGINE_INIT_IMPL_HPP
+
 #include "enums.h"
 #include "global.h"
 
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
-#include "framework/specialization_registry.h"
-
-#include "engines/engine.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -62,14 +62,6 @@ namespace ntt {
     print_report();
   }
 
-#ifndef NTT_FOREACH_PGEN_SPECIALIZATION
-  #define NTT_FOREACH_PGEN_SPECIALIZATION(MACRO) NTT_FOREACH_SPECIALIZATION(MACRO)
-#endif
-
-#define ENGINE_INIT(S, M, D) template class Engine<S, M<D>>;
-
-  NTT_FOREACH_PGEN_SPECIALIZATION(ENGINE_INIT)
-
-#undef ENGINE_INIT
-
 } // namespace ntt
+
+#endif // ENGINES_ENGINE_INIT_IMPL_HPP
