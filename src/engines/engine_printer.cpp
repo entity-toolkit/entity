@@ -497,11 +497,25 @@ namespace ntt {
     }
   }
 
-#define ENGINE_PRINTER(S, M, D)                                                \
-  template void Engine<S, M<D>>::print_report() const;
+  template <SimEngine::type S, template <Dimension> class M, Dimension D>
+  struct EnginePrinterInstantiator {
+    EnginePrinterInstantiator() {
+      if constexpr (IsCompatibleWithEngine<S, M<D>>) {
+        (void)&Engine<S, M<D>>::print_report;
+      }
+    }
+  };
+
+#define NTT_CONCAT_INNER(a, b) a##b
+#define NTT_CONCAT(a, b) NTT_CONCAT_INNER(a, b)
+#define ENGINE_PRINTER(S, M, D)                                            \
+  static EnginePrinterInstantiator<S, M, D> NTT_CONCAT(                    \
+    engine_printer_instantiator_, __COUNTER__) {};
 
   NTT_FOREACH_SPECIALIZATION(ENGINE_PRINTER)
 
 #undef ENGINE_PRINTER
+#undef NTT_CONCAT
+#undef NTT_CONCAT_INNER
 
 } // namespace ntt

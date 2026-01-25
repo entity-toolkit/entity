@@ -136,10 +136,25 @@ namespace ntt {
     }
   }
 
-#define ENGINE_RUN(S, M, D) template void Engine<S, M<D>>::run();
+  template <SimEngine::type S, template <Dimension> class M, Dimension D>
+  struct EngineRunInstantiator {
+    EngineRunInstantiator() {
+      if constexpr (IsCompatibleWithEngine<S, M<D>>) {
+        (void)&Engine<S, M<D>>::run;
+      }
+    }
+  };
+
+#define NTT_CONCAT_INNER(a, b) a##b
+#define NTT_CONCAT(a, b) NTT_CONCAT_INNER(a, b)
+#define ENGINE_RUN(S, M, D)                                                  \
+  static EngineRunInstantiator<S, M, D> NTT_CONCAT(engine_run_instantiator_, \
+                                                   __COUNTER__) {};
 
   NTT_FOREACH_SPECIALIZATION(ENGINE_RUN)
 
 #undef ENGINE_RUN
+#undef NTT_CONCAT
+#undef NTT_CONCAT_INNER
 
 } // namespace ntt
