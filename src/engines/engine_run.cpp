@@ -11,7 +11,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  // requires IsCompatibleWithEngine<S, M>
+    requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::run() {
     init();
 

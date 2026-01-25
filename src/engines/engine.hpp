@@ -59,7 +59,7 @@ namespace ntt {
       user::PGen<S, M>::dimensions);
 
   template <SimEngine::type S, class M>
-  // requires IsCompatibleWithEngine<S, M>
+    requires IsCompatibleWithEngine<S, M>
   class Engine {
 
   protected:

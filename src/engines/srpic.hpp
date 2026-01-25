@@ -51,8 +51,8 @@
 namespace ntt {
 
   template <class M>
-  // requires IsCompatibleWithEngine<SimEngine::SRPIC, M> &&
-    requires metric::traits::HasH_ij<M> && metric::traits::HasConvert_i<M> &&
+    requires IsCompatibleWithEngine<SimEngine::SRPIC, M> &&
+             metric::traits::HasH_ij<M> && metric::traits::HasConvert_i<M> &&
              metric::traits::HasSqrtH_ij<M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
@@ -380,7 +380,7 @@ namespace ntt {
 
         // toggle to indicate whether pgen defines the external force
         bool has_extforce = false;
-        if constexpr (traits::pgen::HasExtForce<pgen_t>) {
+        if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
           if (traits::has_member<traits::species_t, decltype(pgen_t::ext_force)>::value) {
@@ -416,7 +416,7 @@ namespace ntt {
                                                           domain.mesh.metric,
                                                           force));
         } else if (not has_atmosphere and has_extforce) {
-          if constexpr (traits::pgen::HasExtForce<pgen_t>) {
+          if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
                 m_pgen.ext_force
@@ -433,7 +433,7 @@ namespace ntt {
             raise::Error("External force not implemented", HERE);
           }
         } else { // has_atmosphere and has_extforce
-          if constexpr (traits::pgen::HasExtForce<pgen_t>) {
+          if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
                 m_pgen.ext_force,
@@ -515,7 +515,7 @@ namespace ntt {
         const auto V0    = m_params.template get<real_t>("scales.V0");
         const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
         const auto coeff = -dt * q0 / (B0 * V0);
-        if constexpr (traits::pgen::HasExtCurrent<pgen_t>) {
+        if constexpr (arch::traits::pgen::HasExtCurrent<pgen_t>) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };
@@ -664,7 +664,7 @@ namespace ntt {
       }
 
       if (dim == in::x1) {
-        if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
+        if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
           auto match_fields = m_pgen.MatchFields(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -675,7 +675,7 @@ namespace ntt {
                                                             tags,
                                                             range_min,
                                                             range_max);
-        } else if constexpr (traits::pgen::HasMatchFieldsInX1<pgen_t>) {
+        } else if constexpr (arch::traits::pgen::HasMatchFieldsInX1<pgen_t>) {
           auto match_fields = m_pgen.MatchFieldsInX1(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -689,7 +689,7 @@ namespace ntt {
         }
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
+          if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -700,7 +700,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (traits::pgen::HasMatchFieldsInX2<pgen_t>) {
+          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX2<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX2(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -717,7 +717,7 @@ namespace ntt {
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          if constexpr (traits::pgen::HasMatchFields<pgen_t>) {
+          if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -728,7 +728,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (traits::pgen::HasMatchFieldsInX3<pgen_t>) {
+          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX3<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX3(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -838,7 +838,7 @@ namespace ntt {
       if (tags & BC::B) {
         comps.push_back(normal_b_comp);
       }
-      if constexpr (traits::pgen::HasFixFieldsConst<pgen_t>) {
+      if constexpr (arch::traits::pgen::HasFixFieldsConst<pgen_t>) {
         for (const auto& comp : comps) {
           auto       value     = ZERO;
           bool       shouldset = false;
@@ -1010,7 +1010,7 @@ namespace ntt {
       /**
        * atmosphere field boundaries
        */
-      if constexpr (traits::pgen::HasAtmFields<pgen_t>) {
+      if constexpr (arch::traits::pgen::HasAtmFields<pgen_t>) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
         const auto           dd                = static_cast<dim_t>(dim);
         boundaries_t<real_t> box;

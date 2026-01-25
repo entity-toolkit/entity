@@ -14,7 +14,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
-  // requires IsCompatibleWithEngine<S, M>
+    requires IsCompatibleWithEngine<S, M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
