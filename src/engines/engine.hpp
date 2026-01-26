@@ -23,6 +23,7 @@
 #include "utils/colors.h"
 #include "utils/diag.h"
 #include "utils/formatting.h"
+#include "utils/reporter.h"
 #include "utils/timer.h"
 #include "utils/toml.h"
 
@@ -49,7 +50,6 @@
 #include <Kokkos_Core.hpp>
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #if defined(OUTPUT_ENABLED)
@@ -179,93 +179,93 @@ namespace ntt {
     print_report();
   }
 
-  namespace {
-    void add_header(std::string&                    report,
-                    const std::vector<std::string>& lines,
-                    const std::vector<const char*>& colors) {
-      report += fmt::format("%s╔%s╗%s\n",
-                            color::BRIGHT_BLACK,
-                            fmt::repeat("═", 58).c_str(),
-                            color::RESET);
-      for (auto i { 0u }; i < lines.size(); ++i) {
-        report += fmt::format("%s║%s %s%s%s%s%s║%s\n",
-                              color::BRIGHT_BLACK,
-                              color::RESET,
-                              colors[i],
-                              lines[i].c_str(),
-                              color::RESET,
-                              fmt::repeat(" ", 57 - lines[i].size()).c_str(),
-                              color::BRIGHT_BLACK,
-                              color::RESET);
-      }
-      report += fmt::format("%s╚%s╝%s\n",
-                            color::BRIGHT_BLACK,
-                            fmt::repeat("═", 58).c_str(),
-                            color::RESET);
-    }
-
-    void add_category(std::string& report, unsigned short indent, const char* name) {
-      report += fmt::format("%s%s%s%s\n",
-                            std::string(indent, ' ').c_str(),
-                            color::BLUE,
-                            name,
-                            color::RESET);
-    }
-
-    void add_subcategory(std::string& report, unsigned short indent, const char* name) {
-      report += fmt::format("%s%s-%s %s:\n",
-                            std::string(indent, ' ').c_str(),
-                            color::BRIGHT_BLACK,
-                            color::RESET,
-                            name);
-    }
-
-    void add_label(std::string& report, unsigned short indent, const char* label) {
-      report += fmt::format("%s%s\n", std::string(indent, ' ').c_str(), label);
-    }
-
-    template <typename... Args>
-    void add_param(std::string&   report,
-                   unsigned short indent,
-                   const char*    name,
-                   const char*    format,
-                   Args... args) {
-      report += fmt::format("%s%s-%s %s: %s%s%s\n",
-                            std::string(indent, ' ').c_str(),
-                            color::BRIGHT_BLACK,
-                            color::RESET,
-                            name,
-                            color::BRIGHT_YELLOW,
-                            fmt::format(format, args...).c_str(),
-                            color::RESET);
-    }
-
-    template <typename... Args>
-    void add_unlabeled_param(std::string&   report,
-                             unsigned short indent,
-                             const char*    name,
-                             const char*    format,
-                             Args... args) {
-      report += fmt::format("%s%s: %s%s%s\n",
-                            std::string(indent, ' ').c_str(),
-                            name,
-                            color::BRIGHT_YELLOW,
-                            fmt::format(format, args...).c_str(),
-                            color::RESET);
-    }
-
-    auto bytes_to_human_readable(std::size_t bytes)
-      -> std::pair<double, std::string> {
-      const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
-      idx_t                          unit_idx = 0;
-      auto                           size     = static_cast<double>(bytes);
-      while ((size >= 1024.0) and (unit_idx < units.size() - 1)) {
-        size /= 1024.0;
-        ++unit_idx;
-      }
-      return { size, units[unit_idx] };
-    }
-  } // namespace
+  // namespace {
+  //   void reporter::AddHeader(std::string&                    report,
+  //                   const std::vector<std::string>& lines,
+  //                   const std::vector<const char*>& colors) {
+  //     report += fmt::format("%s╔%s╗%s\n",
+  //                           color::BRIGHT_BLACK,
+  //                           fmt::repeat("═", 58).c_str(),
+  //                           color::RESET);
+  //     for (auto i { 0u }; i < lines.size(); ++i) {
+  //       report += fmt::format("%s║%s %s%s%s%s%s║%s\n",
+  //                             color::BRIGHT_BLACK,
+  //                             color::RESET,
+  //                             colors[i],
+  //                             lines[i].c_str(),
+  //                             color::RESET,
+  //                             fmt::repeat(" ", 57 - lines[i].size()).c_str(),
+  //                             color::BRIGHT_BLACK,
+  //                             color::RESET);
+  //     }
+  //     report += fmt::format("%s╚%s╝%s\n",
+  //                           color::BRIGHT_BLACK,
+  //                           fmt::repeat("═", 58).c_str(),
+  //                           color::RESET);
+  //   }
+  //
+  //   void reporter::AddCategory(std::string& report, unsigned short indent, const char* name) {
+  //     report += fmt::format("%s%s%s%s\n",
+  //                           std::string(indent, ' ').c_str(),
+  //                           color::BLUE,
+  //                           name,
+  //                           color::RESET);
+  //   }
+  //
+  //   void reporter::AddSubcategory(std::string& report, unsigned short indent, const char* name) {
+  //     report += fmt::format("%s%s-%s %s:\n",
+  //                           std::string(indent, ' ').c_str(),
+  //                           color::BRIGHT_BLACK,
+  //                           color::RESET,
+  //                           name);
+  //   }
+  //
+  //   void reporter::AddLabel(std::string& report, unsigned short indent, const char* label) {
+  //     report += fmt::format("%s%s\n", std::string(indent, ' ').c_str(), label);
+  //   }
+  //
+  //   template <typename... Args>
+  //   void reporter::AddParam(std::string&   report,
+  //                  unsigned short indent,
+  //                  const char*    name,
+  //                  const char*    format,
+  //                  Args... args) {
+  //     report += fmt::format("%s%s-%s %s: %s%s%s\n",
+  //                           std::string(indent, ' ').c_str(),
+  //                           color::BRIGHT_BLACK,
+  //                           color::RESET,
+  //                           name,
+  //                           color::BRIGHT_YELLOW,
+  //                           fmt::format(format, args...).c_str(),
+  //                           color::RESET);
+  //   }
+  //
+  //   template <typename... Args>
+  //   void reporter::AddUnlabeledParam(std::string&   report,
+  //                            unsigned short indent,
+  //                            const char*    name,
+  //                            const char*    format,
+  //                            Args... args) {
+  //     report += fmt::format("%s%s: %s%s%s\n",
+  //                           std::string(indent, ' ').c_str(),
+  //                           name,
+  //                           color::BRIGHT_YELLOW,
+  //                           fmt::format(format, args...).c_str(),
+  //                           color::RESET);
+  //   }
+  //
+  //   auto reporter::Bytes2HumanReadable(std::size_t bytes)
+  //     -> std::pair<double, std::string> {
+  //     const std::vector<std::string> units { "B", "KB", "MB", "GB", "TB" };
+  //     idx_t                          unit_idx = 0;
+  //     auto                           size     = static_cast<double>(bytes);
+  //     while ((size >= 1024.0) and (unit_idx < units.size() - 1)) {
+  //       size /= 1024.0;
+  //       ++unit_idx;
+  //     }
+  //     return { size, units[unit_idx] };
+  //   }
+  // } // namespace
 
   template <SimEngine::type S, class M>
     requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
@@ -361,208 +361,228 @@ namespace ntt {
 #endif
 
         report += "\n\n";
-        add_header(report, { entity_version }, { color::BRIGHT_GREEN });
+        reporter::AddHeader(report, { entity_version }, { color::BRIGHT_GREEN });
         report += "\n";
 
         /*
          * Backend
          */
-        add_category(report, 4, "Backend");
-        add_param(report, 4, "Build hash", "%s", hash.c_str());
-        add_param(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
+        reporter::AddCategory(report, 4, "Backend");
+        reporter::AddParam(report, 4, "Build hash", "%s", hash.c_str());
+        reporter::AddParam(report,
+                           4,
+                           "CXX",
+                           "%s [%s]",
+                           ccx.c_str(),
+                           cpp_standard.c_str());
 #if defined(CUDA_ENABLED)
-        add_param(report, 4, "CUDA", "%s", cuda_version.c_str());
+        reporter::AddParam(report, 4, "CUDA", "%s", cuda_version.c_str());
 #elif defined(HIP_VERSION)
-        add_param(report, 4, "HIP", "%s", hip_version.c_str());
+        reporter::AddParam(report, 4, "HIP", "%s", hip_version.c_str());
 #endif
-        add_param(report, 4, "MPI", "%s", mpi_version.c_str());
+        reporter::AddParam(report, 4, "MPI", "%s", mpi_version.c_str());
 #if defined(MPI_ENABLED) && defined(DEVICE_ENABLED)
   #if defined(GPU_AWARE_MPI)
         const std::string gpu_aware_mpi = "ON";
   #else
         const std::string gpu_aware_mpi = "OFF";
   #endif
-        add_param(report, 4, "GPU-aware MPI", "%s", gpu_aware_mpi.c_str());
+        reporter::AddParam(report, 4, "GPU-aware MPI", "%s", gpu_aware_mpi.c_str());
 #endif
-        add_param(report, 4, "Kokkos", "%s", kokkos_version.c_str());
-        add_param(report, 4, "ADIOS2", "%s", adios2_version.c_str());
-        add_param(report, 4, "Precision", "%s", precision);
-        add_param(report, 4, "Debug", "%s", dbg.c_str());
+        reporter::AddParam(report, 4, "Kokkos", "%s", kokkos_version.c_str());
+        reporter::AddParam(report, 4, "ADIOS2", "%s", adios2_version.c_str());
+        reporter::AddParam(report, 4, "Precision", "%s", precision);
+        reporter::AddParam(report, 4, "Debug", "%s", dbg.c_str());
         report += "\n";
 
         /*
          * Compilation flags
          */
-        add_category(report, 4, "Compilation flags");
+        reporter::AddCategory(report, 4, "Compilation flags");
 #if defined(SINGLE_PRECISION)
-        add_param(report, 4, "SINGLE_PRECISION", "%s", "ON");
+        reporter::AddParam(report, 4, "SINGLE_PRECISION", "%s", "ON");
 #else
-        add_param(report, 4, "SINGLE_PRECISION", "%s", "OFF");
+        reporter::AddParam(report, 4, "SINGLE_PRECISION", "%s", "OFF");
 #endif
 
 #if defined(OUTPUT_ENABLED)
-        add_param(report, 4, "OUTPUT_ENABLED", "%s", "ON");
+        reporter::AddParam(report, 4, "OUTPUT_ENABLED", "%s", "ON");
 #else
-        add_param(report, 4, "OUTPUT_ENABLED", "%s", "OFF");
+        reporter::AddParam(report, 4, "OUTPUT_ENABLED", "%s", "OFF");
 #endif
 
 #if defined(DEBUG)
-        add_param(report, 4, "DEBUG", "%s", "ON");
+        reporter::AddParam(report, 4, "DEBUG", "%s", "ON");
 #else
-        add_param(report, 4, "DEBUG", "%s", "OFF");
+        reporter::AddParam(report, 4, "DEBUG", "%s", "OFF");
 #endif
 
 #if defined(CUDA_ENABLED)
-        add_param(report, 4, "CUDA_ENABLED", "%s", "ON");
+        reporter::AddParam(report, 4, "CUDA_ENABLED", "%s", "ON");
 #else
-        add_param(report, 4, "CUDA_ENABLED", "%s", "OFF");
+        reporter::AddParam(report, 4, "CUDA_ENABLED", "%s", "OFF");
 #endif
 
 #if defined(HIP_ENABLED)
-        add_param(report, 4, "HIP_ENABLED", "%s", "ON");
+        reporter::AddParam(report, 4, "HIP_ENABLED", "%s", "ON");
 #else
-        add_param(report, 4, "HIP_ENABLED", "%s", "OFF");
+        reporter::AddParam(report, 4, "HIP_ENABLED", "%s", "OFF");
 #endif
 
 #if defined(DEVICE_ENABLED)
-        add_param(report, 4, "DEVICE_ENABLED", "%s", "ON");
+        reporter::AddParam(report, 4, "DEVICE_ENABLED", "%s", "ON");
 #else
-        add_param(report, 4, "DEVICE_ENABLED", "%s", "OFF");
+        reporter::AddParam(report, 4, "DEVICE_ENABLED", "%s", "OFF");
 #endif
 
 #if defined(MPI_ENABLED)
-        add_param(report, 4, "MPI_ENABLED", "%s", "ON");
+        reporter::AddParam(report, 4, "MPI_ENABLED", "%s", "ON");
 #else
-        add_param(report, 4, "MPI_ENABLED", "%s", "OFF");
+        reporter::AddParam(report, 4, "MPI_ENABLED", "%s", "OFF");
 #endif
 
 #if defined(GPU_AWARE_MPI)
-        add_param(report, 4, "GPU_AWARE_MPI", "%s", "ON");
+        reporter::AddParam(report, 4, "GPU_AWARE_MPI", "%s", "ON");
 #else
-        add_param(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
+        reporter::AddParam(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
 #endif
         report += "\n";
 
         /*
          * Simulation configs
          */
-        add_category(report, 4, "Configuration");
-        add_param(report,
-                  4,
-                  "Name",
-                  "%s",
-                  params.template get<std::string>("simulation.name").c_str());
-        add_param(report, 4, "Problem generator", "%s", pgen.c_str());
-        add_param(report, 4, "Engine", "%s", SimEngine(S).to_string());
-        add_param(report, 4, "Metric", "%s", Metric(M::MetricType).to_string());
+        reporter::AddCategory(report, 4, "Configuration");
+        reporter::AddParam(
+          report,
+          4,
+          "Name",
+          "%s",
+          params.template get<std::string>("simulation.name").c_str());
+        reporter::AddParam(report, 4, "Problem generator", "%s", pgen.c_str());
+        reporter::AddParam(report, 4, "Engine", "%s", SimEngine(S).to_string());
+        reporter::AddParam(report, 4, "Metric", "%s", Metric(M::MetricType).to_string());
 #if SHAPE_ORDER == 0
-        add_param(report, 4, "Deposit", "%s", "zigzag");
+        reporter::AddParam(report, 4, "Deposit", "%s", "zigzag");
 #else
-        add_param(report, 4, "Deposit", "%s", "esirkepov");
-        add_param(report, 4, "Interpolation order", "%i", SHAPE_ORDER);
+        reporter::AddParam(report, 4, "Deposit", "%s", "esirkepov");
+        reporter::AddParam(report, 4, "Interpolation order", "%i", SHAPE_ORDER);
 #endif
-        add_param(report, 4, "Timestep [dt]", "%.3e", dt);
-        add_param(report, 4, "Runtime", "%.3e [%d steps]", runtime, max_steps);
+        reporter::AddParam(report, 4, "Timestep [dt]", "%.3e", dt);
+        reporter::AddParam(report, 4, "Runtime", "%.3e [%d steps]", runtime, max_steps);
         report += "\n";
-        add_category(report, 4, "Global domain");
-        add_param(report,
-                  4,
-                  "Resolution",
-                  "%s",
-                  params.template stringize<ncells_t>("grid.resolution").c_str());
-        add_param(report,
-                  4,
-                  "Extent",
-                  "%s",
-                  params.template stringize<real_t>("grid.extent").c_str());
-        add_param(report,
-                  4,
-                  "Fiducial cell size [dx0]",
-                  "%.3e",
-                  params.template get<real_t>("scales.dx0"));
-        add_subcategory(report, 4, "Boundary conditions");
-        add_param(
+        reporter::AddCategory(report, 4, "Global domain");
+        reporter::AddParam(
+          report,
+          4,
+          "Resolution",
+          "%s",
+          params.template stringize<ncells_t>("grid.resolution").c_str());
+        reporter::AddParam(
+          report,
+          4,
+          "Extent",
+          "%s",
+          params.template stringize<real_t>("grid.extent").c_str());
+        reporter::AddParam(report,
+                           4,
+                           "Fiducial cell size [dx0]",
+                           "%.3e",
+                           params.template get<real_t>("scales.dx0"));
+        reporter::AddSubcategory(report, 4, "Boundary conditions");
+        reporter::AddParam(
           report,
           6,
           "Fields",
           "%s",
           params.template stringize<FldsBC>("grid.boundaries.fields").c_str());
-        add_param(
+        reporter::AddParam(
           report,
           6,
           "Particles",
           "%s",
           params.template stringize<PrtlBC>("grid.boundaries.particles").c_str());
-        add_param(report,
-                  4,
-                  "Domain decomposition",
-                  "%s [%d total]",
-                  fmt::formatVector(m_metadomain.ndomains_per_dim()).c_str(),
-                  m_metadomain.ndomains());
+        reporter::AddParam(
+          report,
+          4,
+          "Domain decomposition",
+          "%s [%d total]",
+          fmt::formatVector(m_metadomain.ndomains_per_dim()).c_str(),
+          m_metadomain.ndomains());
         report += "\n";
-        add_category(report, 4, "Fiducial parameters");
-        add_param(report,
-                  4,
-                  "Particles per cell [ppc0]",
-                  "%.1f",
-                  params.template get<real_t>("particles.ppc0"));
-        add_param(report,
-                  4,
-                  "Larmor radius [larmor0]",
-                  "%.3e [%.3f dx0]",
-                  params.template get<real_t>("scales.larmor0"),
-                  params.template get<real_t>("scales.larmor0") /
-                    params.template get<real_t>("scales.dx0"));
-        add_param(report,
-                  4,
-                  "Larmor frequency [omegaB0 * dt]",
-                  "%.3e",
-                  params.template get<real_t>("scales.omegaB0") *
-                    params.template get<real_t>("algorithms.timestep.dt"));
-        add_param(report,
-                  4,
-                  "Skin depth [skindepth0]",
-                  "%.3e [%.3f dx0]",
-                  params.template get<real_t>("scales.skindepth0"),
-                  params.template get<real_t>("scales.skindepth0") /
-                    params.template get<real_t>("scales.dx0"));
-        add_param(report,
-                  4,
-                  "Plasma frequency [omp0 * dt]",
-                  "%.3e",
-                  params.template get<real_t>("algorithms.timestep.dt") /
-                    params.template get<real_t>("scales.skindepth0"));
-        add_param(report,
-                  4,
-                  "Magnetization [sigma0]",
-                  "%.3e",
-                  params.template get<real_t>("scales.sigma0"));
+        reporter::AddCategory(report, 4, "Fiducial parameters");
+        reporter::AddParam(report,
+                           4,
+                           "Particles per cell [ppc0]",
+                           "%.1f",
+                           params.template get<real_t>("particles.ppc0"));
+        reporter::AddParam(report,
+                           4,
+                           "Larmor radius [larmor0]",
+                           "%.3e [%.3f dx0]",
+                           params.template get<real_t>("scales.larmor0"),
+                           params.template get<real_t>("scales.larmor0") /
+                             params.template get<real_t>("scales.dx0"));
+        reporter::AddParam(
+          report,
+          4,
+          "Larmor frequency [omegaB0 * dt]",
+          "%.3e",
+          params.template get<real_t>("scales.omegaB0") *
+            params.template get<real_t>("algorithms.timestep.dt"));
+        reporter::AddParam(report,
+                           4,
+                           "Skin depth [skindepth0]",
+                           "%.3e [%.3f dx0]",
+                           params.template get<real_t>("scales.skindepth0"),
+                           params.template get<real_t>("scales.skindepth0") /
+                             params.template get<real_t>("scales.dx0"));
+        reporter::AddParam(
+          report,
+          4,
+          "Plasma frequency [omp0 * dt]",
+          "%.3e",
+          params.template get<real_t>("algorithms.timestep.dt") /
+            params.template get<real_t>("scales.skindepth0"));
+        reporter::AddParam(report,
+                           4,
+                           "Magnetization [sigma0]",
+                           "%.3e",
+                           params.template get<real_t>("scales.sigma0"));
 
         if (nspec > 0) {
           report += "\n";
-          add_category(report, 4, "Particles");
+          reporter::AddCategory(report, 4, "Particles");
         }
         for (const auto& species : metadomain.species_params()) {
-          add_subcategory(report,
-                          4,
-                          fmt::format("Species #%d", species.index()).c_str());
-          add_param(report, 6, "Label", "%s", species.label().c_str());
-          add_param(report, 6, "Mass", "%.1f", species.mass());
-          add_param(report, 6, "Charge", "%.1f", species.charge());
-          add_param(report, 6, "Max #", "%d [per domain]", species.maxnpart());
-          add_param(report,
-                    6,
-                    "Pusher",
-                    "%s",
-                    ParticlePusher::to_string(species.pusher()).c_str());
-          add_param(
+          reporter::AddSubcategory(
+            report,
+            4,
+            fmt::format("Species #%d", species.index()).c_str());
+          reporter::AddParam(report, 6, "Label", "%s", species.label().c_str());
+          reporter::AddParam(report, 6, "Mass", "%.1f", species.mass());
+          reporter::AddParam(report, 6, "Charge", "%.1f", species.charge());
+          reporter::AddParam(report, 6, "Max #", "%d [per domain]", species.maxnpart());
+          reporter::AddParam(report,
+                             6,
+                             "Pusher",
+                             "%s",
+                             ParticlePusher::to_string(species.pusher()).c_str());
+          reporter::AddParam(
             report,
             6,
             "Radiative drag",
             "%s",
             RadiativeDrag::to_string(species.radiative_drag_flags()).c_str());
-          add_param(report, 6, "# of real-value payloads", "%d", species.npld_r());
-          add_param(report, 6, "# of integer-value payloads", "%d", species.npld_i());
+          reporter::AddParam(report,
+                             6,
+                             "# of real-value payloads",
+                             "%d",
+                             species.npld_r());
+          reporter::AddParam(report,
+                             6,
+                             "# of integer-value payloads",
+                             "%d",
+                             species.npld_i());
         }
         report.pop_back();
       },
@@ -572,7 +592,7 @@ namespace ntt {
 
     report = "\n";
     CallOnce([&]() {
-      add_category(report, 4, "Domains");
+      reporter::AddCategory(report, 4, "Domains");
       report.pop_back();
     });
     info::Print(report, colored_stdout);
@@ -585,25 +605,25 @@ namespace ntt {
       if (is_local) {
         report             = "";
         const auto& domain = m_metadomain.subdomain(idx);
-        add_subcategory(report,
-                        4,
-                        fmt::format("Domain #%d", domain.index()).c_str());
+        reporter::AddSubcategory(report,
+                                 4,
+                                 fmt::format("Domain #%d", domain.index()).c_str());
 #if defined(MPI_ENABLED)
-        add_param(report, 6, "Rank", "%d", domain.mpi_rank());
+        reporter::AddParam(report, 6, "Rank", "%d", domain.mpi_rank());
 #endif
-        add_param(report,
-                  6,
-                  "Resolution",
-                  "%s",
-                  fmt::formatVector(domain.mesh.n_active()).c_str());
-        add_param(report,
-                  6,
-                  "Extent",
-                  "%s",
-                  fmt::formatVector(domain.mesh.extent()).c_str());
-        add_subcategory(report, 6, "Boundary conditions");
+        reporter::AddParam(report,
+                           6,
+                           "Resolution",
+                           "%s",
+                           fmt::formatVector(domain.mesh.n_active()).c_str());
+        reporter::AddParam(report,
+                           6,
+                           "Extent",
+                           "%s",
+                           fmt::formatVector(domain.mesh.extent()).c_str());
+        reporter::AddSubcategory(report, 6, "Boundary conditions");
 
-        add_label(
+        reporter::AddLabel(
           report,
           8 + 2 + 2 * M::Dim,
           fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
@@ -615,28 +635,29 @@ namespace ntt {
           if (flds_bc == FldsBC::SYNC || prtl_bc == PrtlBC::SYNC) {
             has_sync = true;
           }
-          add_unlabeled_param(report,
-                              8,
-                              direction.to_string().c_str(),
-                              "%-10s  %-10s  %-10s",
-                              flds_bc.to_string(),
-                              prtl_bc.to_string(),
-                              has_sync ? std::to_string(neighbor_idx).c_str()
-                                       : ".");
+          reporter::AddUnlabeledParam(
+            report,
+            8,
+            direction.to_string().c_str(),
+            "%-10s  %-10s  %-10s",
+            flds_bc.to_string(),
+            prtl_bc.to_string(),
+            has_sync ? std::to_string(neighbor_idx).c_str() : ".");
         }
-        add_subcategory(report, 6, "Memory footprint");
-        auto flds_footprint         = domain.fields.memory_footprint();
-        auto [flds_size, flds_unit] = bytes_to_human_readable(flds_footprint);
-        add_param(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
+        reporter::AddSubcategory(report, 6, "Memory footprint");
+        auto flds_footprint = domain.fields.memory_footprint();
+        auto [flds_size, flds_unit] = reporter::Bytes2HumanReadable(flds_footprint);
+        reporter::AddParam(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
         if (domain.species.size() > 0) {
-          add_subcategory(report, 8, "Particles");
+          reporter::AddSubcategory(report, 8, "Particles");
         }
         for (auto& species : domain.species) {
-          const auto str = fmt::format("Species #%d (%s)",
+          const auto str    = fmt::format("Species #%d (%s)",
                                        species.index(),
                                        species.label().c_str());
-          auto [size, unit] = bytes_to_human_readable(species.memory_footprint());
-          add_param(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
+          auto [size, unit] = reporter::Bytes2HumanReadable(
+            species.memory_footprint());
+          reporter::AddParam(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
         }
         report.pop_back();
         if (idx == m_metadomain.ndomains() - 1) {
