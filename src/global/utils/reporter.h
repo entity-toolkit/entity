@@ -51,6 +51,8 @@ namespace reporter {
 
   auto Bytes2HumanReadable(std::size_t) -> std::pair<double, std::string>;
 
+  auto Backend() -> std::string;
+
 } // namespace reporter
 
 #endif // GLOBAL_UTILS_REPORTER_H
