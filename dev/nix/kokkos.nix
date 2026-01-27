@@ -17,15 +17,16 @@ let
       rocprim
       rocminfo
       rocm-smi
+      pkgs.llvmPackages_19.clang-tools
     ];
     "CUDA" = with pkgs.cudaPackages; [
-      llvmPackages_18.clang-tools
+      llvmPackages_19.clang-tools
       cudatoolkit
       cuda_cudart
       pkgs.gcc13
     ];
     "NONE" = [
-      pkgs.llvmPackages_18.clang-tools
+      pkgs.llvmPackages_19.clang-tools
       pkgs.gcc13
     ];
   };

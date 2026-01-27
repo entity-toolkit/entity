@@ -9,7 +9,7 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 
 #include "kernels/divergences.hpp"
@@ -58,8 +58,7 @@ namespace ntt {
 
     g_writer.init(ptr_adios,
                   params.template get<std::string>("output.format"),
-                  params.template get<std::string>("simulation.name"),
-                  params.template get<bool>("output.separate_files"));
+                  params.template get<std::string>("simulation.name"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,

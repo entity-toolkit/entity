@@ -9,16 +9,18 @@
 #include <string>
 
 template <Dimension D, ntt::Coord::type C>
-void testParticles(int                    index,
-                   const std::string&     label,
-                   float                  m,
-                   float                  ch,
-                   std::size_t            maxnpart,
-                   const ntt::PrtlPusher& pusher,
-                   bool                   use_tracking,
-                   const ntt::Cooling&    cooling,
-                   unsigned short         npld_r = 0,
-                   unsigned short         npld_i = 0) {
+void testParticles(
+  int                      index,
+  const std::string&       label,
+  float                    m,
+  float                    ch,
+  std::size_t              maxnpart,
+  ntt::ParticlePusherFlags pusher,
+  bool                     use_tracking,
+  ntt::RadiativeDragFlags  radiative_drag_flags,
+  ntt::EmissionTypeFlag    emission_policy_flag = ntt::EmissionType::NONE,
+  unsigned short           npld_r               = 0,
+  unsigned short           npld_i               = 0) {
   using namespace ntt;
   auto p = Particles<D, C>(index,
                            label,
@@ -27,8 +29,8 @@ void testParticles(int                    index,
                            maxnpart,
                            pusher,
                            use_tracking,
-                           false,
-                           cooling,
+                           radiative_drag_flags,
+                           emission_policy_flag,
                            npld_r,
                            npld_i);
   raise::ErrorIf(p.index() != index, "Index mismatch", HERE);
@@ -37,7 +39,12 @@ void testParticles(int                    index,
   raise::ErrorIf(p.charge() != ch, "Charge mismatch", HERE);
   raise::ErrorIf(p.maxnpart() != maxnpart, "Max number of particles mismatch", HERE);
   raise::ErrorIf(p.pusher() != pusher, "Pusher mismatch", HERE);
-  raise::ErrorIf(p.cooling() != cooling, "Cooling mismatch", HERE);
+  raise::ErrorIf(p.radiative_drag_flags() != radiative_drag_flags,
+                 "Radiative drag mismatch",
+                 HERE);
+  raise::ErrorIf(p.emission_policy_flag() != emission_policy_flag,
+                 "Emission policy mismatch",
+                 HERE);
   raise::ErrorIf(p.npart() != 0, "Number of particles mismatch", HERE);
 
   raise::ErrorIf(p.i1.extent(0) != maxnpart, "i1 incorrectly allocated", HERE);
@@ -115,17 +122,19 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         ParticlePusher::BORIS,
                                          false,
-                                         Cooling::SYNCHROTRON);
+                                         RadiativeDrag::SYNCHROTRON);
     testParticles<Dim::_2D, Coord::Cart>(2,
                                          "p+",
                                          100.0,
                                          -1.0,
                                          1000,
-                                         PrtlPusher::VAY,
+                                         ParticlePusher::VAY,
                                          true,
-                                         Cooling::SYNCHROTRON,
+                                         RadiativeDrag::SYNCHROTRON |
+                                           RadiativeDrag::COMPTON,
+                                         EmissionType::SYNCHROTRON,
                                          2,
                                          1);
     testParticles<Dim::_3D, Coord::Cart>(3,
@@ -133,18 +142,20 @@ auto main(int argc, char** argv) -> int {
                                          0.0,
                                          0.0,
                                          100,
-                                         PrtlPusher::PHOTON,
+                                         ParticlePusher::PHOTON,
                                          false,
-                                         Cooling::NONE,
+                                         RadiativeDrag::NONE,
+                                         EmissionType::COMPTON,
                                          5);
     testParticles<Dim::_2D, Coord::Sph>(4,
                                         "e+",
                                         1.0,
                                         1.0,
                                         100,
-                                        PrtlPusher::BORIS,
+                                        ParticlePusher::BORIS,
                                         true,
-                                        Cooling::NONE,
+                                        RadiativeDrag::NONE,
+                                        EmissionType::NONE,
                                         2,
                                         3);
     testParticles<Dim::_2D, Coord::Qsph>(5,
@@ -152,9 +163,10 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         ParticlePusher::BORIS,
                                          false,
-                                         Cooling::NONE,
+                                         RadiativeDrag::NONE,
+                                         EmissionType::NONE,
                                          1,
                                          2);
   } catch (const std::exception& e) {

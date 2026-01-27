@@ -16,26 +16,26 @@
 
 namespace ntt {
   template <Dimension D, Coord::type C>
-  Particles<D, C>::Particles(spidx_t            index,
-                             const std::string& label,
-                             float              m,
-                             float              ch,
-                             npart_t            maxnpart,
-                             const PrtlPusher&  pusher,
-                             bool               use_tracking,
-                             bool               use_gca,
-                             const Cooling&     cooling,
-                             unsigned short     npld_r,
-                             unsigned short     npld_i)
+  Particles<D, C>::Particles(spidx_t             index,
+                             const std::string&  label,
+                             float               m,
+                             float               ch,
+                             npart_t             maxnpart,
+                             ParticlePusherFlags particle_pusher_flags,
+                             bool                use_tracking,
+                             RadiativeDragFlags  radiative_drag_flags,
+                             EmissionTypeFlag    emission_policy_flag,
+                             unsigned short      npld_r,
+                             unsigned short      npld_i)
     : ParticleSpecies(index,
                       label,
                       m,
                       ch,
                       maxnpart,
-                      pusher,
+                      particle_pusher_flags,
                       use_tracking,
-                      use_gca,
-                      cooling,
+                      radiative_drag_flags,
+                      emission_policy_flag,
                       npld_r,
                       npld_i) {
 

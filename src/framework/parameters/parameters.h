@@ -1,5 +1,5 @@
 /**
- * @file framework/parameters.h
+ * @file framework/parameters/parameters.h
  * @brief Structure for defining and holding initial simulation parameters
  * @implements
  *   - ntt::SimulationParams : ntt::Parameters
@@ -14,8 +14,8 @@
  * @note A proper metric is used to infer the minimum cell size/volume etc.
  */
 
-#ifndef FRAMEWORK_PARAMETERS_H
-#define FRAMEWORK_PARAMETERS_H
+#ifndef FRAMEWORK_PARAMETERS_PARAMETERS_H
+#define FRAMEWORK_PARAMETERS_PARAMETERS_H
 
 #include "utils/param_container.h"
 #include "utils/toml.h"
@@ -62,4 +62,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // FRAMEWORK_PARAMETERS_H
+#endif // FRAMEWORK_PARAMETERS_PARAMETERS_H

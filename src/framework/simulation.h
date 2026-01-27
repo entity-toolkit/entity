@@ -16,11 +16,11 @@
 
 #include "enums.h"
 
-#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/toml.h"
 
-#include "framework/parameters.h"
+#include "engines/traits.h"
+#include "framework/parameters/parameters.h"
 
 namespace ntt {
 

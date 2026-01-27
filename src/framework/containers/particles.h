@@ -83,24 +83,24 @@ namespace ntt {
      * @param m The mass of the species
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
-     * @param pusher The pusher assigned for the species
+     * @param particle_pusher_flags The pusher(s) assigned for the species
      * @param use_tracking Use particle tracking for the species
-     * @param use_gca Use hybrid GCA pusher for the species
-     * @param cooling The cooling mechanism assigned for the species
+     * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
+     * @param emission_policy_flag The emission policy assigned for the species
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
-    Particles(spidx_t            index,
-              const std::string& label,
-              float              m,
-              float              ch,
-              npart_t            maxnpart,
-              const PrtlPusher&  pusher,
-              bool               use_gca,
-              bool               use_tracking,
-              const Cooling&     cooling,
-              unsigned short     npld_r = 0,
-              unsigned short     npld_i = 0);
+    Particles(spidx_t             index,
+              const std::string&  label,
+              float               m,
+              float               ch,
+              npart_t             maxnpart,
+              ParticlePusherFlags particle_pusher_flags,
+              bool                use_tracking,
+              RadiativeDragFlags  radiative_drag_flags,
+              EmissionTypeFlag    emission_policy_flag,
+              unsigned short      npld_r,
+              unsigned short      npld_i);
 
     /**
      * @brief Constructor for the particle container
@@ -115,8 +115,8 @@ namespace ntt {
                   spec.maxnpart(),
                   spec.pusher(),
                   spec.use_tracking(),
-                  spec.use_gca(),
-                  spec.cooling(),
+                  spec.radiative_drag_flags(),
+                  spec.emission_policy_flag(),
                   spec.npld_r(),
                   spec.npld_i()) {}
 
