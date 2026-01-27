@@ -1,6 +1,7 @@
 #include "utils/reporter.h"
 
 #include "utils/colors.h"
+#include "utils/error.h"
 #include "utils/formatting.h"
 
 #if defined(CUDA_ENABLED)
