@@ -7,7 +7,7 @@
 
 let
   name = "kokkos";
-  pversion = "5.0.0";
+  pversion = "5.0.1";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       llvm.llvm
@@ -17,16 +17,16 @@ let
       rocprim
       rocminfo
       rocm-smi
-      pkgs.llvmPackages_19.clang-tools
+      pkgs.clang-tools
     ];
     "CUDA" = with pkgs.cudaPackages; [
-      llvmPackages_19.clang-tools
+      pkgs.clang-tools
       cudatoolkit
       cuda_cudart
       pkgs.gcc13
     ];
     "NONE" = [
-      pkgs.llvmPackages_19.clang-tools
+      pkgs.clang-tools
       pkgs.gcc13
     ];
   };
