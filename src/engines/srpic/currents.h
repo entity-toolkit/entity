@@ -22,10 +22,10 @@ namespace ntt {
 
     template <class M, unsigned short O>
       requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
-    void deposit_with(const Particles<M::Dim, M::CoordType>& species,
-                      const M&                               local_metric,
-                      const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
-                      real_t                                 dt) {
+    void CallDepositKernel(const Particles<M::Dim, M::CoordType>& species,
+                           const M&                               local_metric,
+                           const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
+                           real_t                                 dt) {
       Kokkos::parallel_for("CurrentsDeposit",
                            species.rangeActiveParticles(),
                            kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
@@ -73,7 +73,7 @@ namespace ntt {
                       (double)species.charge()),
           HERE);
 
-        deposit_with<M, SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
+        CallDepositKernel<M, SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }

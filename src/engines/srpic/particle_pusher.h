@@ -21,6 +21,19 @@
 namespace ntt {
   namespace srpic {
 
+    template <class M, class F = kernel::sr::NoForce_t>
+    void CallPusherWithExternalForce(const kernel::sr::PusherParams& pusher_params,
+                                     kernel::sr::PusherArrays&   pusher_arrays,
+                                     const range_t<Dim::_1D>&    range,
+                                     const ndfield_t<M::Dim, 6>& EB,
+                                     const M&                    metric,
+                                     const F&                    force) {
+      Kokkos::parallel_for(
+        "ParticlePusher",
+        range,
+        kernel::sr::Pusher_kernel<M, F>(pusher_params, pusher_arrays, EB, metric, force));
+    }
+
     template <class M, class PG>
       requires metric::traits::HasD<M>
     void ParticlePush(Domain<SimEngine::SRPIC, M>& domain,
@@ -151,12 +164,12 @@ namespace ntt {
         pusher_params.ext_force = has_extforce;
 
         if (not has_atmosphere and not has_extforce) {
-          Kokkos::parallel_for("ParticlePusher",
-                               species.rangeActiveParticles(),
-                               kernel::sr::Pusher_kernel<M>(pusher_params,
-                                                            pusher_arrays,
-                                                            domain.fields.em,
-                                                            domain.mesh.metric));
+          CallPusherWithExternalForce<M>(pusher_params,
+                                         pusher_arrays,
+                                         species.rangeActiveParticles(),
+                                         domain.fields.em,
+                                         domain.mesh.metric,
+                                         kernel::sr::NoForce_t {});
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
             kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
@@ -164,28 +177,26 @@ namespace ntt {
               x_surf,
               ds
           };
-          Kokkos::parallel_for(
-            "ParticlePusher",
+          CallPusherWithExternalForce<M, decltype(force)>(
+            pusher_params,
+            pusher_arrays,
             species.rangeActiveParticles(),
-            kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
-                                                          pusher_arrays,
-                                                          domain.fields.em,
-                                                          domain.mesh.metric,
-                                                          force));
+            domain.fields.em,
+            domain.mesh.metric,
+            force);
         } else if (not has_atmosphere and has_extforce) {
           if constexpr (arch::traits::pgen::HasExtForce<PG>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(pgen.ext_force), false> {
                 pgen.ext_force
               };
-            Kokkos::parallel_for(
-              "ParticlePusher",
+            CallPusherWithExternalForce<M, decltype(force)>(
+              pusher_params,
+              pusher_arrays,
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
-                                                            pusher_arrays,
-                                                            domain.fields.em,
-                                                            domain.mesh.metric,
-                                                            force));
+              domain.fields.em,
+              domain.mesh.metric,
+              force);
           } else {
             raise::Error("External force not implemented", HERE);
           }
@@ -198,14 +209,13 @@ namespace ntt {
                 x_surf,
                 ds
             };
-            Kokkos::parallel_for(
-              "ParticlePusher",
+            CallPusherWithExternalForce<M, decltype(force)>(
+              pusher_params,
+              pusher_arrays,
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
-                                                            pusher_arrays,
-                                                            domain.fields.em,
-                                                            domain.mesh.metric,
-                                                            force));
+              domain.fields.em,
+              domain.mesh.metric,
+              force);
           } else {
             raise::Error("External force not implemented", HERE);
           }
