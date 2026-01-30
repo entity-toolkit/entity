@@ -47,9 +47,6 @@ set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
 
-set(gui
-    ${default_gui}
-    CACHE BOOL "Use GUI [nttiny]")
 set(output
     ${default_output}
     CACHE BOOL "Enable output")
@@ -70,7 +67,7 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
 else()
   set(CMAKE_BUILD_TYPE
       Debug
@@ -177,11 +174,6 @@ elseif(BENCHMARK)
   # ------------------------------ Benchmark --------------------------------- #
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/benchmark.cmake)
 else()
-  # ----------------------------------- GUI ---------------------------------- #
-  if(${gui})
-    find_or_fetch_dependency(nttiny FALSE QUIET)
-  endif()
-
   # ------------------------------- Main source ------------------------------ #
   set_problem_generator(${pgen})
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
