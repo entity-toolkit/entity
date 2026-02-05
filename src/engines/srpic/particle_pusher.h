@@ -16,22 +16,67 @@
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
 
+#include "kernels/emission/emission.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
   namespace srpic {
 
     template <class M, class F = kernel::sr::NoForce_t>
-    void CallPusherWithExternalForce(const kernel::sr::PusherParams& pusher_params,
-                                     kernel::sr::PusherArrays&   pusher_arrays,
+    void CallPusherWithExternalForce(Domain<SimEngine::SRPIC, M>& domain,
+                                     const SimulationParams&      params,
+                                     const kernel::sr::PusherParams& pusher_params,
+                                     kernel::sr::PusherArrays& pusher_arrays,
+                                     EmissionTypeFlag emission_policy_flag,
                                      const range_t<Dim::_1D>&    range,
                                      const ndfield_t<M::Dim, 6>& EB,
                                      const M&                    metric,
                                      const F&                    force) {
-      Kokkos::parallel_for(
-        "ParticlePusher",
-        range,
-        kernel::sr::Pusher_kernel<M, F>(pusher_params, pusher_arrays, EB, metric, force));
+      if (emission_policy_flag == EmissionType::NONE) {
+        Kokkos::parallel_for("ParticlePusher",
+                             range,
+                             kernel::sr::Pusher_kernel<M, F>(pusher_params,
+                                                             pusher_arrays,
+                                                             EB,
+                                                             metric,
+                                                             force));
+      } else if (emission_policy_flag == EmissionType::SYNCHROTRON) {
+        // ...
+      } else if (emission_policy_flag == EmissionType::COMPTON) {
+        const auto photon_species = params.get<spidx_t>(
+          "radiation.emission.compton.photon_species");
+        raise::ErrorIf(photon_species > domain.species.size(),
+                       "Invalid photon_species for Compton emission",
+                       HERE);
+        auto& emitted_species = domain.species[photon_species - 1];
+        raise::ErrorIf(not cmp::AlmostEqual_host(emitted_species.mass(), ZERO),
+                       "Emitted photon species must have zero mass",
+                       HERE);
+        raise::ErrorIf(not cmp::AlmostEqual_host(emitted_species.charge(), ZERO),
+                       "Emitted photon species must have zero charge",
+                       HERE);
+        const auto emission_policy = kernel::EmissionPolicy<M, EmissionType::COMPTON>(
+          emitted_species,
+          pusher_params.mass,
+          pusher_params.dt,
+          domain.index(),
+          params,
+          domain.random_pool);
+        Kokkos::parallel_for(
+          "ParticlePusher",
+          range,
+          kernel::sr::Pusher_kernel<M, F, EmissionType::COMPTON>(pusher_params,
+                                                                 pusher_arrays,
+                                                                 EB,
+                                                                 metric,
+                                                                 force,
+                                                                 emission_policy));
+        const auto n_inj = emission_policy.number_injected();
+        domain.species[photon_species - 1].set_npart(
+          emitted_species.npart() + n_inj);
+        domain.species[photon_species - 1].set_counter(
+          emitted_species.counter() + n_inj);
+      }
     }
 
     template <class M, class PG>
@@ -146,6 +191,7 @@ namespace ntt {
         pusher_arrays.ux2      = species.ux2;
         pusher_arrays.ux3      = species.ux3;
         pusher_arrays.phi      = species.phi;
+        pusher_arrays.weight   = species.weight;
         pusher_arrays.tag      = species.tag;
 
         // toggle to indicate whether pgen defines the external force
@@ -164,8 +210,11 @@ namespace ntt {
         pusher_params.ext_force = has_extforce;
 
         if (not has_atmosphere and not has_extforce) {
-          CallPusherWithExternalForce<M>(pusher_params,
+          CallPusherWithExternalForce<M>(domain,
+                                         params,
+                                         pusher_params,
                                          pusher_arrays,
+                                         species.emission_policy_flag(),
                                          species.rangeActiveParticles(),
                                          domain.fields.em,
                                          domain.mesh.metric,
@@ -178,8 +227,11 @@ namespace ntt {
               ds
           };
           CallPusherWithExternalForce<M, decltype(force)>(
+            domain,
+            params,
             pusher_params,
             pusher_arrays,
+            species.emission_policy_flag(),
             species.rangeActiveParticles(),
             domain.fields.em,
             domain.mesh.metric,
@@ -191,8 +243,11 @@ namespace ntt {
                 pgen.ext_force
               };
             CallPusherWithExternalForce<M, decltype(force)>(
+              domain,
+              params,
               pusher_params,
               pusher_arrays,
+              species.emission_policy_flag(),
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
@@ -210,8 +265,11 @@ namespace ntt {
                 ds
             };
             CallPusherWithExternalForce<M, decltype(force)>(
+              domain,
+              params,
               pusher_params,
               pusher_arrays,
+              species.emission_policy_flag(),
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
