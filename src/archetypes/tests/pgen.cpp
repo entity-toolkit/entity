@@ -67,7 +67,7 @@ struct CustomPgen : public arch::ProblemGenerator<S, M> {
     return init_flds;
   }
 
-  auto FixFieldsConst(const bc_in&, const ntt::em&) const
+  auto FixFieldsConst(simtime_t, const bc_in&, ntt::em) const
     -> std::pair<real_t, bool> {
     return { ZERO, false };
   }
