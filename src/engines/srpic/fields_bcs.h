@@ -304,9 +304,6 @@ namespace ntt {
             } else {
               raise::Error("Invalid EM component", HERE);
             }
-            printf("Setting %f %f\n",
-                   static_cast<double>(value),
-                   static_cast<double>(value_U));
             if constexpr (M::Dim == Dim::_1D) {
               Kokkos::deep_copy(
                 Kokkos::subview(domain.fields.em,
