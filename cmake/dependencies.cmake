@@ -58,12 +58,12 @@ function(find_or_fetch_dependency package_name header_only mode)
         FetchContent_Declare(
           ${package_name}
           GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG 4.7.01)
+          GIT_TAG 5.0.0)
       elseif(${package_name} STREQUAL "adios2")
         FetchContent_Declare(
           ${package_name}
           GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG v2.10.2)
+          GIT_TAG v2.11.0)
       else()
         FetchContent_Declare(${package_name}
                              GIT_REPOSITORY ${${package_name}_REPOSITORY})

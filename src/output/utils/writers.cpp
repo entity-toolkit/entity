@@ -52,14 +52,24 @@ namespace out {
     const auto slice = range_tuple_t(0, local_size);
     auto       var   = io.InquireVariable<T>(name);
 
-    var.SetShape({ global_size, dim2_size });
-    var.SetSelection(
-      adios2::Box<adios2::Dims>({ local_offset, 0 }, { local_size, dim2_size }));
+    var.SetShape({ global_size * dim2_size });
+    var.SetSelection(adios2::Box<adios2::Dims>({ local_offset * dim2_size },
+                                               { local_size * dim2_size }));
 
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
     auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, dim2_size));
-    writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+    if (!data_sub.span_is_contiguous()) {
+      Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace> data_contig_h {
+        "data_contig_h",
+        local_size,
+        dim2_size
+      };
+      Kokkos::deep_copy(data_contig_h, data_sub);
+      writer.Put(var, data_contig_h.data(), adios2::Mode::Sync);
+    } else {
+      writer.Put(var, data_sub.data(), adios2::Mode::Sync);
+    }
   }
 
   template <Dimension D, int N>

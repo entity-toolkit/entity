@@ -136,17 +136,6 @@ void testPusher(const std::vector<std::size_t>& res) {
   put_value<short>(tag, ParticleTag::alive, 1);
 
   // Particle boundaries
-  auto boundaries = boundaries_t<PrtlBC> {};
-  boundaries      = {
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
-  };
-
-  const spidx_t sp { 1u };
-
-  const real_t coeff = HALF * dt * omegaB0;
-
   const auto u0_dot_b      = (ux1_0 * bx1 + ux2_0 * bx2 + ux3_0 * bx3) / b_mag;
   const auto u0_cross_b_x1 = (ux2_0 * bx3 - ux3_0 * bx2) / b_mag;
   const auto u0_cross_b_x2 = (ux3_0 * bx1 - ux1_0 * bx3) / b_mag;
@@ -154,47 +143,62 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-2 : 1e-3;
 
+  kernel::sr::PusherParams pusher_params {};
+  pusher_params.mass       = ONE;
+  pusher_params.charge     = ONE;
+  pusher_params.dt         = dt;
+  pusher_params.omegaB0    = omegaB0;
+  pusher_params.ni1        = nx1;
+  pusher_params.ni2        = nx2;
+  pusher_params.ni3        = nx3;
+  pusher_params.boundaries = {
+    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
+  };
+
+  kernel::sr::PusherArrays pusher_arrays {};
+  pusher_arrays.sp       = 1u;
+  pusher_arrays.i1       = i1;
+  pusher_arrays.i2       = i2;
+  pusher_arrays.i3       = i3;
+  pusher_arrays.i1_prev  = i1_prev;
+  pusher_arrays.i2_prev  = i2_prev;
+  pusher_arrays.i3_prev  = i3_prev;
+  pusher_arrays.dx1      = dx1;
+  pusher_arrays.dx2      = dx2;
+  pusher_arrays.dx3      = dx3;
+  pusher_arrays.dx1_prev = dx1_prev;
+  pusher_arrays.dx2_prev = dx2_prev;
+  pusher_arrays.dx3_prev = dx3_prev;
+  pusher_arrays.ux1      = ux1;
+  pusher_arrays.ux2      = ux2;
+  pusher_arrays.ux3      = ux3;
+  pusher_arrays.phi      = phi;
+  pusher_arrays.tag      = tag;
+
   for (auto t { 0u }; t < 2000; ++t) {
-    const real_t time = t * dt;
+    const real_t time  = t * dt;
+    pusher_params.time = time;
 
-    // clang-format off
+    pusher_params.pusher_flags = ParticlePusher::BORIS;
     Kokkos::parallel_for(
       "pusher",
-      CreateRangePolicy<Dim::_1D>({0}, {1}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::BORIS,
-                                                     false, false, kernel::sr::Cooling::None,
+      CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params,
+                                                     pusher_arrays,
                                                      emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     ZERO, ZERO, ZERO));
+                                                     metric));
+
+    pusher_params.pusher_flags = ParticlePusher::VAY;
 
     Kokkos::parallel_for(
       "pusher",
-      CreateRangePolicy<Dim::_1D>({1}, {2}),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(PrtlPusher::VAY,
-                                                     false, false, kernel::sr::Cooling::None,
+      CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params,
+                                                     pusher_arrays,
                                                      emfield,
-                                                     sp,
-                                                     i1, i2, i3,
-                                                     i1_prev, i2_prev, i3_prev,
-                                                     dx1, dx2, dx3,
-                                                     dx1_prev, dx2_prev, dx3_prev,
-                                                     ux1, ux2, ux3,
-                                                     phi, tag,
-                                                     metric,
-                                                     ZERO, coeff, dt,
-                                                     nx1, nx2, nx3,
-                                                     boundaries,
-                                                     ZERO, ZERO, ZERO));
+                                                     metric));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);
@@ -252,7 +256,6 @@ void testPusher(const std::vector<std::size_t>& res) {
     check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
     check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
     check_value(t, ux3_(1), ux3_expect, eps, "Particle #2 ux3");
-
   }
 }
 

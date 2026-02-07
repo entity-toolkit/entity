@@ -109,7 +109,6 @@ namespace kernel::mink {
                             - betaxy * (EB(i1 + 1, i2 + 1, em::ex2) - EB(i1    , i2 + 1, em::ex2))
                             - betaxy * (EB(i1 + 1, i2 - 1, em::ex2) - EB(i1    , i2 - 1, em::ex2)));
         // clang-format on
-
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }

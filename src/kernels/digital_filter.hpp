@@ -19,38 +19,35 @@
 
 #define FILTER2D_IN_I1(ARR, COMP, I, J)                                        \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I) - 1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
 #define FILTER2D_IN_I2(ARR, COMP, I, J)                                        \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I), (J) - 1, (COMP)) + (ARR)((I), (J) + 1, (COMP)))
+    INV_4*((ARR)((I), (J)-1, (COMP)) + (ARR)((I), (J) + 1, (COMP)))
 
-#define FILTER3D_IN_I1_I2(ARR, COMP, I, J, K)                                     \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
-    INV_8*((ARR)((I) - 1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
-           (ARR)((I), (J) - 1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP))) + \
-    INV_16*((ARR)((I) - 1, (J) - 1, (K), (COMP)) +                                \
-            (ARR)((I) + 1, (J) + 1, (K), (COMP)) +                                \
-            (ARR)((I) - 1, (J) + 1, (K), (COMP)) +                                \
-            (ARR)((I) + 1, (J) - 1, (K), (COMP)))
+#define FILTER3D_IN_I1_I2(ARR, COMP, I, J, K)                                   \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
+    INV_8*((ARR)((I)-1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
+           (ARR)((I), (J)-1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP))) + \
+    INV_16*(                                                                    \
+      (ARR)((I)-1, (J)-1, (K), (COMP)) + (ARR)((I) + 1, (J) + 1, (K), (COMP)) + \
+      (ARR)((I)-1, (J) + 1, (K), (COMP)) + (ARR)((I) + 1, (J)-1, (K), (COMP)))
 
-#define FILTER3D_IN_I2_I3(ARR, COMP, I, J, K)                                     \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
-    INV_8*((ARR)((I), (J) - 1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP)) +  \
-           (ARR)((I), (J), (K) - 1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
-    INV_16*((ARR)((I), (J) - 1, (K) - 1, (COMP)) +                                \
-            (ARR)((I), (J) + 1, (K) + 1, (COMP)) +                                \
-            (ARR)((I), (J) - 1, (K) + 1, (COMP)) +                                \
-            (ARR)((I), (J) + 1, (K) - 1, (COMP)))
+#define FILTER3D_IN_I2_I3(ARR, COMP, I, J, K)                                   \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
+    INV_8*((ARR)((I), (J)-1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP)) +  \
+           (ARR)((I), (J), (K)-1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
+    INV_16*(                                                                    \
+      (ARR)((I), (J)-1, (K)-1, (COMP)) + (ARR)((I), (J) + 1, (K) + 1, (COMP)) + \
+      (ARR)((I), (J)-1, (K) + 1, (COMP)) + (ARR)((I), (J) + 1, (K)-1, (COMP)))
 
-#define FILTER3D_IN_I1_I3(ARR, COMP, I, J, K)                                     \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
-    INV_8*((ARR)((I) - 1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
-           (ARR)((I), (J), (K) - 1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
-    INV_16*((ARR)((I) - 1, (J), (K) - 1, (COMP)) +                                \
-            (ARR)((I) + 1, (J), (K) + 1, (COMP)) +                                \
-            (ARR)((I) - 1, (J), (K) + 1, (COMP)) +                                \
-            (ARR)((I) + 1, (J), (K) - 1, (COMP)))
+#define FILTER3D_IN_I1_I3(ARR, COMP, I, J, K)                                   \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
+    INV_8*((ARR)((I)-1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
+           (ARR)((I), (J), (K)-1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
+    INV_16*(                                                                    \
+      (ARR)((I)-1, (J), (K)-1, (COMP)) + (ARR)((I) + 1, (J), (K) + 1, (COMP)) + \
+      (ARR)((I)-1, (J), (K) + 1, (COMP)) + (ARR)((I) + 1, (J), (K)-1, (COMP)))
 
 namespace kernel {
   using namespace ntt;

@@ -26,8 +26,9 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/spatial_dist.h"
+#include "engines/traits.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "engines/engine.hpp"
 #include "kernels/ampere_mink.hpp"
@@ -49,13 +50,12 @@
 namespace ntt {
 
   template <class M>
+    requires traits::engine::IsCompatibleWithSRPICEngine<M, user::PGen>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::SRPIC, M>;
     using domain_t = Domain<SimEngine::SRPIC, M>;
-    // constexprs
-    using base_t::pgen_is_ok;
     // contents
     using base_t::m_metadomain;
     using base_t::m_params;
@@ -78,9 +78,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.toggles.fieldsolver");
+        "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.toggles.deposit");
+        "algorithms.deposit.enable");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
@@ -309,7 +309,7 @@ namespace ntt {
         }
       }
       for (auto& species : domain.species) {
-        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0)) {
+        if ((species.pusher() == ParticlePusher::NONE) or (species.npart() == 0)) {
           continue;
         }
         species.set_unsorted();
@@ -319,61 +319,69 @@ namespace ntt {
                       species.label().c_str(),
                       species.npart()),
           HERE);
-        const auto q_ovr_m = species.mass() > ZERO
-                               ? species.charge() / species.mass()
-                               : ZERO;
-        //  coeff = q / m (dt / 2) omegaB0
-        const auto coeff   = q_ovr_m * HALF * dt *
-                           m_params.template get<real_t>("scales.omegaB0");
-        PrtlPusher::type pusher;
-        if (species.pusher() == PrtlPusher::PHOTON) {
-          pusher = PrtlPusher::PHOTON;
-        } else if (species.pusher() == PrtlPusher::BORIS) {
-          pusher = PrtlPusher::BORIS;
-        } else if (species.pusher() == PrtlPusher::VAY) {
-          pusher = PrtlPusher::VAY;
-        } else {
-          raise::Fatal("Invalid particle pusher", HERE);
-        }
-        const auto cooling = species.cooling();
 
-        // coefficients to be forwarded to the dispatcher
-        // gca
-        const auto has_gca         = species.use_gca();
-        const auto gca_larmor_max  = has_gca ? m_params.template get<real_t>(
-                                                "algorithms.gca.larmor_max")
-                                             : ZERO;
-        const auto gca_eovrb_max   = has_gca ? m_params.template get<real_t>(
-                                               "algorithms.gca.e_ovr_b_max")
-                                             : ZERO;
-        // cooling
-        const auto has_synchrotron = (cooling == Cooling::SYNCHROTRON);
-        const auto has_compton = (cooling == Cooling::COMPTON);
-        const auto sync_grad       = has_synchrotron
-                                       ? m_params.template get<real_t>(
-                                     "algorithms.synchrotron.gamma_rad")
-                                       : ZERO;
-        const auto sync_coeff      = has_synchrotron
-                                       ? (real_t)(0.1) * dt *
-                                      m_params.template get<real_t>(
-                                        "scales.omegaB0") /
-                                      (SQR(sync_grad) * species.mass())
-                                       : ZERO;
-        const auto comp_grad       = has_compton
-                                      ? m_params.template get<real_t>(
-                                     "algorithms.compton.gamma_rad")
-                                      : ZERO; 
-        const auto comp_coeff      = has_compton
-                                      ? (real_t)(0.1) * dt * 
-                                      m_params.template get<real_t>(
-                                          "scales.omegaB0") / (SQR(comp_grad) * species.mass())
-                                      : ZERO;
+        kernel::sr::PusherParams pusher_params {};
+        pusher_params.pusher_flags         = species.pusher();
+        pusher_params.radiative_drag_flags = species.radiative_drag_flags();
+        pusher_params.mass                 = species.mass();
+        pusher_params.charge               = species.charge();
+        pusher_params.time                 = time;
+        pusher_params.dt                   = dt;
+        pusher_params.omegaB0 = m_params.template get<real_t>("scales.omegaB0");
+        pusher_params.ni1     = domain.mesh.n_active(in::x1);
+        pusher_params.ni2     = domain.mesh.n_active(in::x2);
+        pusher_params.ni3     = domain.mesh.n_active(in::x3);
+        pusher_params.boundaries = domain.mesh.prtl_bc();
+
+        if (species.pusher() & ParticlePusher::GCA) {
+          pusher_params.gca_params.set(
+            "larmor_max",
+            m_params.template get<real_t>("algorithms.gca.larmor_max"));
+          pusher_params.gca_params.set(
+            "e_ovr_b_max",
+            m_params.template get<real_t>("algorithms.gca.e_ovr_b_max"));
+        }
+
+        if (species.radiative_drag_flags() & RadiativeDrag::SYNCHROTRON) {
+          pusher_params.radiative_drag_params.set(
+            "synchrotron_gamma_rad",
+            m_params.template get<real_t>(
+              "radiation.drag.synchrotron.gamma_rad"));
+        }
+
+        if (species.radiative_drag_flags() & RadiativeDrag::COMPTON) {
+          pusher_params.radiative_drag_params.set(
+            "compton_gamma_rad",
+            m_params.template get<real_t>("radiation.drag.compton.gamma_rad"));
+        }
+
+        kernel::sr::PusherArrays pusher_arrays {};
+        pusher_arrays.sp       = species.index();
+        pusher_arrays.i1       = species.i1;
+        pusher_arrays.i2       = species.i2;
+        pusher_arrays.i3       = species.i3;
+        pusher_arrays.i1_prev  = species.i1_prev;
+        pusher_arrays.i2_prev  = species.i2_prev;
+        pusher_arrays.i3_prev  = species.i3_prev;
+        pusher_arrays.dx1      = species.dx1;
+        pusher_arrays.dx2      = species.dx2;
+        pusher_arrays.dx3      = species.dx3;
+        pusher_arrays.dx1_prev = species.dx1_prev;
+        pusher_arrays.dx2_prev = species.dx2_prev;
+        pusher_arrays.dx3_prev = species.dx3_prev;
+        pusher_arrays.ux1      = species.ux1;
+        pusher_arrays.ux2      = species.ux2;
+        pusher_arrays.ux3      = species.ux3;
+        pusher_arrays.phi      = species.phi;
+        pusher_arrays.tag      = species.tag;
+
         // toggle to indicate whether pgen defines the external force
         bool has_extforce = false;
-        if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+        if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
-          if (traits::has_member<traits::species_t, decltype(pgen_t::ext_force)>::value) {
+          if (
+            ::traits::has_member<::traits::species_t, decltype(pgen_t::ext_force)>::value) {
             has_extforce &= std::find(m_pgen.ext_force.species.begin(),
                                       m_pgen.ext_force.species.end(),
                                       species.index()) !=
@@ -381,69 +389,32 @@ namespace ntt {
           }
         }
 
-        kernel::sr::CoolingTags cooling_tags = 0;
-        if (cooling == Cooling::SYNCHROTRON) {
-          cooling_tags = kernel::sr::Cooling::Synchrotron;
-        }
-        if (cooling == Cooling::COMPTON) {
-          cooling_tags = kernel::sr::Cooling::Compton;
-        }
-        // clang-format off
+        pusher_params.ext_force = has_extforce;
+
         if (not has_atmosphere and not has_extforce) {
-          Kokkos::parallel_for(
-            "ParticlePusher",
-            species.rangeActiveParticles(),
-            kernel::sr::Pusher_kernel<M>(
-                pusher, has_gca, false,
-                cooling_tags,
-                domain.fields.em,
-                species.index(),
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                time, coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
-            ));
+          Kokkos::parallel_for("ParticlePusher",
+                               species.rangeActiveParticles(),
+                               kernel::sr::Pusher_kernel<M>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric));
         } else if (has_atmosphere and not has_extforce) {
           const auto force =
             kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
-              {gx1, gx2, gx3},
+              { gx1, gx2, gx3 },
               x_surf,
               ds
-            };
+          };
           Kokkos::parallel_for(
             "ParticlePusher",
             species.rangeActiveParticles(),
-            kernel::sr::Pusher_kernel<M, decltype(force)>(
-                pusher, has_gca, false,
-                cooling_tags,
-                domain.fields.em,
-                species.index(),
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                force,
-                time, coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                domain.mesh.prtl_bc(),
-                gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
-            ));
+            kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                          pusher_arrays,
+                                                          domain.fields.em,
+                                                          domain.mesh.metric,
+                                                          force));
         } else if (not has_atmosphere and has_extforce) {
-          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+          if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), false> {
                 m_pgen.ext_force
@@ -451,63 +422,35 @@ namespace ntt {
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, true,
-                  cooling_tags,
-                  domain.fields.em,
-                  species.index(),
-                  species.i1,        species.i2,       species.i3,
-                  species.i1_prev,   species.i2_prev,  species.i3_prev,
-                  species.dx1,       species.dx2,      species.dx3,
-                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                  species.ux1,       species.ux2,      species.ux3,
-                  species.phi,       species.tag,
-                  domain.mesh.metric,
-                  force,
-                  time, coeff, dt,
-                  domain.mesh.n_active(in::x1),
-                  domain.mesh.n_active(in::x2),
-                  domain.mesh.n_active(in::x3),
-                  domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
-              ));
+              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric,
+                                                            force));
           } else {
             raise::Error("External force not implemented", HERE);
           }
         } else { // has_atmosphere and has_extforce
-          if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
+          if constexpr (arch::traits::pgen::HasExtForce<pgen_t>) {
             const auto force =
               kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(m_pgen.ext_force), true> {
-                m_pgen.ext_force, {gx1, gx2, gx3}, x_surf, ds
-              };
+                m_pgen.ext_force,
+                { gx1, gx2, gx3 },
+                x_surf,
+                ds
+            };
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, decltype(force)>(
-                  pusher, has_gca, true,
-                  cooling_tags,
-                  domain.fields.em,
-                  species.index(),
-                  species.i1,        species.i2,       species.i3,
-                  species.i1_prev,   species.i2_prev,  species.i3_prev,
-                  species.dx1,       species.dx2,      species.dx3,
-                  species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                  species.ux1,       species.ux2,      species.ux3,
-                  species.phi,       species.tag,
-                  domain.mesh.metric,
-                  force,
-                  time, coeff, dt,
-                  domain.mesh.n_active(in::x1),
-                  domain.mesh.n_active(in::x2),
-                  domain.mesh.n_active(in::x3),
-                  domain.mesh.prtl_bc(),
-                  gca_larmor_max, gca_eovrb_max, sync_coeff, comp_coeff
-              ));
+              kernel::sr::Pusher_kernel<M, decltype(force)>(pusher_params,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.mesh.metric,
+                                                            force));
           } else {
             raise::Error("External force not implemented", HERE);
-          }          
+          }
         }
-        // clang-format on
       }
     }
 
@@ -519,12 +462,32 @@ namespace ntt {
       }
     }
 
+    template <unsigned short O>
+    void deposit_with(const Particles<M::Dim, M::CoordType>& species,
+                      const M&                               metric,
+                      const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
+                      real_t                                 dt) {
+      // clang-format off
+      Kokkos::parallel_for("CurrentsDeposit",
+                          species.rangeActiveParticles(),
+                          kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
+                            scatter_cur,
+                            species.i1, species.i2, species.i3,
+                            species.i1_prev, species.i2_prev, species.i3_prev,
+                            species.dx1, species.dx2, species.dx3,
+                            species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                            species.ux1, species.ux2, species.ux3,
+                            species.phi, species.weight, species.tag,
+                            metric, (real_t)(species.charge()), dt));
+      // clang-format on
+    }
+
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
       for (auto& species : domain.species) {
-        if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
-            cmp::AlmostZero_host(species.charge())) {
+        if ((species.pusher() == ParticlePusher::NONE) or
+            (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {
           continue;
         }
         logger::Checkpoint(
@@ -534,20 +497,8 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-        // clang-format off
-        Kokkos::parallel_for("CurrentsDeposit",
-                             species.rangeActiveParticles(),
-                             kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
-                               scatter_cur,
-                               species.i1, species.i2, species.i3,
-                               species.i1_prev, species.i2_prev, species.i3_prev,
-                               species.dx1, species.dx2, species.dx3,
-                               species.dx1_prev, species.dx2_prev, species.dx3_prev,
-                               species.ux1, species.ux2, species.ux3,
-                               species.phi, species.weight, species.tag,
-                               domain.mesh.metric,
-                               (real_t)(species.charge()), dt));
-        // clang-format on
+
+        deposit_with<SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
@@ -562,8 +513,7 @@ namespace ntt {
         const auto V0    = m_params.template get<real_t>("scales.V0");
         const auto ppc0  = m_params.template get<real_t>("particles.ppc0");
         const auto coeff = -dt * q0 / (B0 * V0);
-        if constexpr (
-          traits::has_member<traits::pgen::ext_current_t, pgen_t>::value) {
+        if constexpr (arch::traits::pgen::HasExtCurrent<pgen_t>) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };
@@ -712,8 +662,7 @@ namespace ntt {
       }
 
       if (dim == in::x1) {
-        if constexpr (
-          traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+        if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
           auto match_fields = m_pgen.MatchFields(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -724,8 +673,7 @@ namespace ntt {
                                                             tags,
                                                             range_min,
                                                             range_max);
-        } else if constexpr (
-          traits::has_member<traits::pgen::match_fields_in_x1_t, pgen_t>::value) {
+        } else if constexpr (arch::traits::pgen::HasMatchFieldsInX1<pgen_t>) {
           auto match_fields = m_pgen.MatchFieldsInX1(time);
           call_match_fields<decltype(match_fields), in::x1>(domain.fields.em,
                                                             domain.mesh.flds_bc(),
@@ -739,8 +687,7 @@ namespace ntt {
         }
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          if constexpr (
-            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -751,8 +698,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (
-            traits::has_member<traits::pgen::match_fields_in_x2_t, pgen_t>::value) {
+          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX2<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX2(time);
             call_match_fields<decltype(match_fields), in::x2>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -769,8 +715,7 @@ namespace ntt {
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          if constexpr (
-            traits::has_member<traits::pgen::match_fields_t, pgen_t>::value) {
+          if constexpr (arch::traits::pgen::HasMatchFields<pgen_t>) {
             auto match_fields = m_pgen.MatchFields(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -781,8 +726,7 @@ namespace ntt {
                                                               tags,
                                                               range_min,
                                                               range_max);
-          } else if constexpr (
-            traits::has_member<traits::pgen::match_fields_in_x3_t, pgen_t>::value) {
+          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX3<pgen_t>) {
             auto match_fields = m_pgen.MatchFieldsInX3(time);
             call_match_fields<decltype(match_fields), in::x3>(domain.fields.em,
                                                               domain.mesh.flds_bc(),
@@ -892,22 +836,16 @@ namespace ntt {
       if (tags & BC::B) {
         comps.push_back(normal_b_comp);
       }
-      if constexpr (traits::has_member<traits::pgen::fix_fields_t, pgen_t>::value) {
-        raise::Error("Non-const fixed fields not implemented", HERE);
-      } else if constexpr (
-        traits::has_member<traits::pgen::fix_fields_const_t, pgen_t>::value) {
+      if constexpr (arch::traits::pgen::HasFixFieldsConst<pgen_t>) {
         for (const auto& comp : comps) {
-          auto value     = ZERO;
-          bool shouldset = false;
-          if constexpr (
-            traits::has_member<traits::pgen::fix_fields_const_t, pgen_t>::value) {
-            // if fix field function present, read from it
-            const auto newset = m_pgen.FixFieldsConst(
-              (bc_in)(sign * ((short)dim + 1)),
-              (em)comp);
-            value     = newset.first;
-            shouldset = newset.second;
-          }
+          auto       value     = ZERO;
+          bool       shouldset = false;
+          // if fix field function present, read from it
+          const auto newset    = m_pgen.FixFieldsConst(
+            (bc_in)(sign * ((short)dim + 1)),
+            (em)comp);
+          value     = newset.first;
+          shouldset = newset.second;
           if (shouldset) {
             if constexpr (M::Dim == Dim::_1D) {
               Kokkos::deep_copy(
@@ -1070,7 +1008,7 @@ namespace ntt {
       /**
        * atmosphere field boundaries
        */
-      if constexpr (traits::has_member<traits::pgen::atm_fields_t, pgen_t>::value) {
+      if constexpr (arch::traits::pgen::HasAtmFields<pgen_t>) {
         const auto [sign, dim, xg_min, xg_max] = get_atm_extent(direction);
         const auto           dd                = static_cast<dim_t>(dim);
         boundaries_t<real_t> box;

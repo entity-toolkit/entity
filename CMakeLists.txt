@@ -7,7 +7,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.3.0
+  VERSION 1.4.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
@@ -34,6 +34,15 @@ set(DEBUG
 set(precision
     ${default_precision}
     CACHE STRING "Precision")
+
+set(deposit
+    ${default_deposit}
+    CACHE STRING "Deposit")
+
+set(shape_order
+    ${default_shape_order}
+    CACHE STRING "Shape function")
+
 set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
@@ -53,7 +62,7 @@ set(gpu_aware_mpi
     CACHE BOOL "Enable GPU-aware MPI")
 
 # -------------------------- Compilation settings -------------------------- #
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -75,6 +84,20 @@ set(precisions
     "single" "double"
     CACHE STRING "Precisions")
 
+set(deposits
+    "zigzag" "esirkepov"
+    CACHE STRING "Deposits")
+
+if(${deposit} STREQUAL "zigzag")
+  set(shape_order
+      ${default_shape_order}
+      CACHE STRING "Shape functions")
+endif()
+
+set(shape_orders
+    "1;2;3;4;5;6;7;8;9;10;11"
+    CACHE STRING "Shape orders")
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
 # ------------------------- Third-Party Tests ------------------------------ #
@@ -92,6 +115,7 @@ include_directories(${plog_SRC}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
+set_shape_order(${shape_order})
 if("${Kokkos_DEVICES}" MATCHES "CUDA")
   add_compile_options("-D CUDA_ENABLED")
   set(DEVICE_ENABLED ON)
@@ -138,9 +162,9 @@ if(${output})
   find_or_fetch_dependency(adios2 FALSE QUIET)
   add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx_mpi)
   else()
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx)
   endif()
 endif()
 

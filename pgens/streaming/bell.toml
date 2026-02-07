@@ -1,0 +1,99 @@
+[simulation]
+  name    = "bell"
+  engine  = "srpic"
+  runtime = 100000.0
+
+[grid]
+  resolution = [8192]
+  extent     = [[0.0, 512.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"]]
+    particles = [["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 8
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 512.0
+
+  [[particles.species]]
+    label    = "ions"
+    mass     = 50.0
+    charge   = 1.0
+    maxnpart = 5e6
+
+  [[particles.species]]
+    label    = "e-1"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 5e6
+
+  [[particles.species]]
+    label    = "CR"
+    mass     = 50.0
+    charge   = 1.0
+    maxnpart = 1e5
+
+  [[particles.species]]
+    label    = "e-2"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e5
+
+[setup]
+  # Drift 4-velocities for each species in all 3 directions
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  drifts_in_x = [0.0, -0.00990098030746225, -99.9962499609, -0.00990098030746225]
+  drifts_in_y = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_z = [0.0, 0.0, 0.0, 0.0]
+  # Pair-wise species densities in units of n0
+  #   @type: array of floats (length = nspec/2)
+  #   @default: [ 2 / nspec, ... ]
+  densities = [1.0, 0.01]
+  # Species temperatures in units of m0 (c^2)
+  #   @type: array of floats (length = nspec)
+  #   @default: [ 0.0, ... ]
+  temperatures = [1e-4, 1e-4, 1e-4, 1e-4]
+  # Magnetic field 
+  Bmag    = 1.0   # magnetic field strength as fraction of magnetisation
+  Btheta  = 0.0   # magnetic field angle in the plane  [deg]
+  Bphi    = 0.0   # magnetic field angle out of plane  [deg]
+
+[output]
+  interval_time = 100.0
+  format = "BPFile"
+
+  [output.fields]
+    enable = true
+    quantities = ["E", "B"]
+
+  [output.spectra]
+    enable = false
+
+  [output.particles]
+    enable = false
+
+  [output.stats]
+    enable = true
+    interval_time = 10.0
+
+[diagnostics]
+  log_level = "WARNING"
+  blocking_timers = true
+  colored_stdout = false
+
+[checkpoint]
+  interval = 1000
+  keep = 1

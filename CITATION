@@ -1,0 +1,43 @@
+As stated in the Code of Conduct document, we have no requirements for any explicit recognition or attribution when using Entity. However, we would greatly appreciate it if you could cite our work in any publications that have benefited from using Entity.
+
+Use the following BibTeX entry to cite the main paper describing the code:
+
+```latex
+@ARTICLE{Entity_2025,
+       author = {{Hakobyan}, Hayk and {B{\"o}ss}, Ludwig M. and {Cai}, Yangyang and {Chernoglazov}, Alexander and {Galishnikova}, Alisa and {Gorbunov}, Evgeny A. and {Mahlmann}, Jens F. and {Philippov}, Alexander and {Solanki}, Siddhant and {Vanthieghem}, Arno and {Zhou}, Muni},
+        title = "{Entity -- Hardware-agnostic Particle-in-Cell Code for Plasma Astrophysics. I: Curvilinear Special Relativistic Module}",
+      journal = {arXiv e-prints},
+     keywords = {High Energy Astrophysical Phenomena, Plasma Physics},
+         year = 2025,
+        month = nov,
+          eid = {arXiv:2511.17710},
+        pages = {arXiv:2511.17710},
+          doi = {10.48550/arXiv.2511.17710},
+archivePrefix = {arXiv},
+       eprint = {2511.17710},
+ primaryClass = {astro-ph.HE},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2025arXiv251117710H},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```
+
+For the general relativistic module, please cite the following paper:
+
+```latex
+@ARTICLE{EntityGR_2025,
+       author = {{Galishnikova}, Alisa and {Hakobyan}, Hayk and {Philippov}, Alexander and {Crinquand}, Benjamin},
+        title = "{$\mathtt{Entity}$ -- Hardware-agnostic Particle-in-Cell Code for Plasma Astrophysics. II: General Relativistic Module}",
+      journal = {arXiv e-prints},
+     keywords = {High Energy Astrophysical Phenomena},
+         year = 2025,
+        month = nov,
+          eid = {arXiv:2511.17701},
+        pages = {arXiv:2511.17701},
+          doi = {10.48550/arXiv.2511.17701},
+archivePrefix = {arXiv},
+       eprint = {2511.17701},
+ primaryClass = {astro-ph.HE},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2025arXiv251117701G},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```

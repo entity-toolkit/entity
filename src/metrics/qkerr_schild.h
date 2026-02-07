@@ -39,20 +39,21 @@ namespace metric {
     const real_t chi_min, eta_min, phi_min;
     const real_t dchi, deta, dphi;
     const real_t dchi_inv, deta_inv, dphi_inv;
+    const bool   small_angle;
 
-    Inline auto Delta(const real_t& r) const -> real_t {
+    Inline auto Delta(real_t r) const -> real_t {
       return SQR(r) - TWO * r + SQR(a);
     }
 
-    Inline auto Sigma(const real_t& r, const real_t& theta) const -> real_t {
+    Inline auto Sigma(real_t r, real_t theta) const -> real_t {
       return SQR(r) + SQR(a) * SQR(math::cos(theta));
     }
 
-    Inline auto A(const real_t& r, const real_t& theta) const -> real_t {
+    Inline auto A(real_t r, real_t theta) const -> real_t {
       return SQR(SQR(r) + SQR(a)) - SQR(a) * Delta(r) * SQR(math::sin(theta));
     }
 
-    Inline auto z(const real_t& r, const real_t& theta) const -> real_t {
+    Inline auto z(real_t r, real_t theta) const -> real_t {
       return TWO * r / Sigma(r, theta);
     }
 
@@ -89,24 +90,25 @@ namespace metric {
       , dphi { (x3_max - phi_min) / nx3 }
       , dchi_inv { ONE / dchi }
       , deta_inv { ONE / deta }
-      , dphi_inv { ONE / dphi } {
+      , dphi_inv { ONE / dphi } 
+      , small_angle { eta2theta(HALF * deta) < constant::SMALL_ANGLE } {
       set_dxMin(find_dxMin());
     }
 
     ~QKerrSchild() = default;
 
     [[nodiscard]]
-    Inline auto spin() const -> const real_t& {
+    Inline auto spin() const -> real_t {
       return a;
     }
 
     [[nodiscard]]
-    Inline auto rhorizon() const -> const real_t& {
+    Inline auto rhorizon() const -> real_t {
       return rh_;
     }
 
     [[nodiscard]]
-    Inline auto rg() const -> const real_t& {
+    Inline auto rg() const -> real_t {
       return rg_;
     }
 
@@ -388,7 +390,7 @@ namespace metric {
      * dtheta derivative of Sigma
      * @param x coordinate array in code units
      */
-    Inline auto dt_Sigma(const real_t& eta) const -> real_t {
+    Inline auto dt_Sigma(real_t eta) const -> real_t {
       const real_t theta { eta2theta(eta) };
       const real_t dt_Sigma { -TWO * SQR(a) * math::sin(theta) *
                               math::cos(theta) * dx_dt(eta) };
@@ -403,7 +405,7 @@ namespace metric {
      * dtheta derivative of A
      * @param x coordinate array in code units
      */
-    Inline auto dt_A(const real_t& r, const real_t& eta) const -> real_t {
+    Inline auto dt_A(real_t r, real_t eta) const -> real_t {
       const real_t theta { eta2theta(eta) };
       const real_t dt_A { -TWO * SQR(a) * math::sin(theta) * math::cos(theta) *
                           Delta(r) * dx_dt(eta) };
@@ -503,15 +505,27 @@ namespace metric {
      * differential area at the pole (used in axisymmetric solvers)
      * @note approximate solution for the polar area
      * @param x1 radial coordinate along the axis (code units)
+     * @note uses small-angle approximation when the resolution is too high
      */
-    Inline auto polar_area(const real_t& x1) const -> real_t {
+    Inline auto polar_area(real_t x1) const -> real_t {
       if constexpr (D != Dim::_1D) {
-        return dchi * math::exp(x1 * dchi + chi_min) *
-               (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
-               math::sqrt(
-                 ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
-                         (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
-               (ONE - math::cos(eta2theta(HALF * deta)));
+        if (small_angle) { 
+          const real_t dtheta = eta2theta(HALF * deta);
+          return dchi * math::exp(x1 * dchi + chi_min) *
+                (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
+                math::sqrt(
+                  ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
+                          (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
+                (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
+                 static_cast<real_t>(384);
+        } else {
+          return dchi * math::exp(x1 * dchi + chi_min) *
+                (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a)) *
+                math::sqrt(
+                  ONE + TWO * (r0 + math::exp(x1 * dchi + chi_min)) /
+                          (SQR(r0 + math::exp(x1 * dchi + chi_min)) + SQR(a))) *
+                (ONE - math::cos(eta2theta(HALF * deta)));
+        }
       }
     }
 
@@ -519,7 +533,7 @@ namespace metric {
      * component-wise coordinate conversions
      */
     template <idx_t i, Crd in, Crd out>
-    Inline auto convert(const real_t& x_in) const -> real_t {
+    Inline auto convert(real_t x_in) const -> real_t {
       static_assert(in != out, "Invalid coordinate conversion");
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert((in == Crd::Cd && (out == Crd::Sph || out == Crd::Ph)) ||
@@ -654,7 +668,7 @@ namespace metric {
     /**
      * @brief d(th) / d(eta) for a given eta
      */
-    Inline auto dtheta_deta(const real_t& eta) const -> real_t {
+    Inline auto dtheta_deta(real_t eta) const -> real_t {
       if (cmp::AlmostZero(h0)) {
         return ONE;
       } else {
@@ -668,7 +682,7 @@ namespace metric {
     /**
      * @brief quasi-spherical eta to spherical theta
      */
-    Inline auto eta2theta(const real_t& eta) const -> real_t {
+    Inline auto eta2theta(real_t eta) const -> real_t {
       if (cmp::AlmostZero(h0)) {
         return eta;
       } else {
@@ -682,7 +696,7 @@ namespace metric {
     /**
      * @brief quasi-spherical eta to spherical theta
      */
-    Inline auto dx_dt(const real_t& eta) const -> real_t {
+    Inline auto dx_dt(real_t eta) const -> real_t {
       if (cmp::AlmostZero(h0)) {
         return deta;
       } else {
@@ -697,7 +711,7 @@ namespace metric {
     /**
      * @brief spherical theta to quasi-spherical eta
      */
-    Inline auto theta2eta(const real_t& theta) const -> real_t {
+    Inline auto theta2eta(real_t theta) const -> real_t {
       if (cmp::AlmostZero(h0)) {
         return theta;
       } else {

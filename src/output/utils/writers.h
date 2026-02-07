@@ -41,15 +41,6 @@ namespace out {
                     std::size_t,
                     std::size_t);
 
-  // template <typename T>
-  // void Write1DSubArray(adios2::IO&,
-  //                      adios2::Engine&,
-  //                      const std::string&,
-  //                      const subarray1d_t<T>&,
-  //                      std::size_t,
-  //                      std::size_t,
-  //                      std::size_t);
-
   template <typename T, typename S>
   void Write1DSubArray(adios2::IO&        io,
                        adios2::Engine&    writer,

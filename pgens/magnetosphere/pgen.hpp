@@ -5,10 +5,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/numeric.h"
 
 #include "archetypes/problem_generator.h"
+#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
 
 #include <string>
@@ -52,13 +52,13 @@ namespace user {
 
   template <Dimension D>
   struct DriveFields : public InitFields<D> {
-    DriveFields(real_t             time,
+    DriveFields(simtime_t          time,
                 real_t             bsurf,
                 real_t             rstar,
                 real_t             omega,
                 const std::string& field_geometry)
       : InitFields<D> { bsurf, rstar, field_geometry }
-      , time { time }
+      , time { (real_t)time }
       , Omega { omega } {}
 
     using InitFields<D>::bx1;
@@ -87,11 +87,15 @@ namespace user {
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
-    static constexpr auto engines { traits::compatible_with<SimEngine::SRPIC>::value };
-    static constexpr auto metrics {
-      traits::compatible_with<Metric::Spherical, Metric::QSpherical>::value
+    static constexpr auto engines {
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
     };
-    static constexpr auto dimensions { traits::compatible_with<Dim::_2D>::value };
+    static constexpr auto metrics {
+      arch::traits::pgen::compatible_with<Metric::Spherical, Metric::QSpherical>::value
+    };
+    static constexpr auto dimensions {
+      arch::traits::pgen::compatible_with<Dim::_2D>::value
+    };
 
     // for easy access to variables in the child class
     using arch::ProblemGenerator<S, M>::D;
@@ -113,11 +117,11 @@ namespace user {
 
     inline PGen() {}
 
-    auto AtmFields(real_t time) const -> DriveFields<D> {
+    auto AtmFields(simtime_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega, field_geom };
     }
 
-    auto MatchFields(real_t) const -> InitFields<D> {
+    auto MatchFields(simtime_t) const -> InitFields<D> {
       return InitFields<D> { Bsurf, Rstar, field_geom };
     }
   };

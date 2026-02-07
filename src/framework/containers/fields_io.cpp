@@ -41,7 +41,7 @@ namespace ntt {
       gs3.push_back(3);
       lo3.push_back(0);
       ls3.push_back(3);
-      io.DefineVariable<real_t>("cur0", gs3, lo3, ls3);
+      io.DefineVariable<real_t>("cur", gs3, lo3, ls3);
     }
   }
 
@@ -60,7 +60,7 @@ namespace ntt {
       auto range3 = adios2::Box<adios2::Dims>(range.first, range.second);
       range3.first.push_back(0);
       range3.second.push_back(3);
-      out::ReadNDField<D, 3>(io, reader, "cur0", cur0, range3);
+      out::ReadNDField<D, 3>(io, reader, "cur", cur, range3);
     }
   }
 
@@ -71,7 +71,7 @@ namespace ntt {
     out::WriteNDField<D, 6>(io, writer, "em", em);
     if (S == ntt::SimEngine::GRPIC) {
       out::WriteNDField<D, 6>(io, writer, "em0", em0);
-      out::WriteNDField<D, 3>(io, writer, "cur0", cur0);
+      out::WriteNDField<D, 3>(io, writer, "cur", cur);
     }
   }
 

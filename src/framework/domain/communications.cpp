@@ -6,14 +6,8 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "metrics/kerr_schild.h"
-#include "metrics/kerr_schild_0.h"
-#include "metrics/minkowski.h"
-#include "metrics/qkerr_schild.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
-
 #include "framework/domain/metadomain.h"
+#include "framework/specialization_registry.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -203,6 +197,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain, CommTags tags) {
     // const auto comm_fields = (tags & Comm::E) or (tags & Comm::B) or
     //                          (tags & Comm::J) or (tags & Comm::D) or
@@ -423,6 +418,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&        domain,
                                            CommTags             tags,
                                            const range_tuple_t& components) {
@@ -579,6 +575,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) {
 #if defined(MPI_ENABLED)
     logger::Checkpoint("Communicating particles\n", HERE);
@@ -670,28 +667,23 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>& domain) {
     for (auto& species : domain.species) {
       species.RemoveDead();
     }
   }
 
-#define METADOMAIN_COMM(S, M)                                                  \
-  template void Metadomain<S, M>::CommunicateFields(Domain<S, M>&, CommTags);  \
-  template void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&,             \
-                                                    CommTags,                  \
-                                                    const range_tuple_t&);     \
-  template void Metadomain<S, M>::CommunicateParticles(Domain<S, M>&);         \
-  template void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>&);
+#define METADOMAIN_COMM(S, M, D)                                               \
+  template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,       \
+                                                       CommTags);              \
+  template void Metadomain<S, M<D>>::SynchronizeFields(Domain<S, M<D>>&,       \
+                                                       CommTags,               \
+                                                       const range_tuple_t&);  \
+  template void Metadomain<S, M<D>>::CommunicateParticles(Domain<S, M<D>>&);   \
+  template void Metadomain<S, M<D>>::RemoveDeadParticles(Domain<S, M<D>>&);
 
-  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
-  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
-  METADOMAIN_COMM(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
-  METADOMAIN_COMM(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
-  METADOMAIN_COMM(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
-  METADOMAIN_COMM(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
-  METADOMAIN_COMM(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
-  METADOMAIN_COMM(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
+  NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
 
 #undef METADOMAIN_COMM
 

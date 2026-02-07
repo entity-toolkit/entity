@@ -22,6 +22,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
@@ -53,6 +55,7 @@ namespace arch {
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
   auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box)
     -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
     if (not domain.mesh.Intersects(box)) {
@@ -107,6 +110,7 @@ namespace arch {
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M>
   auto ComputeNumInject(const SimulationParams&     params,
                         const Domain<S, M>&         domain,
                         real_t                      number_density,
@@ -198,6 +202,8 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    */
   template <SimEngine::type S, class M, class ED1, class ED2>
+    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
+             traits::energydist::IsValid<ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -205,9 +211,6 @@ namespace arch {
                             real_t                             number_density,
                             bool                        use_weights = false,
                             const boundaries_t<real_t>& box         = {}) {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
     raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
                    "Weights must be used for non-Cartesian coordinates",
                    HERE);
@@ -278,7 +281,6 @@ namespace arch {
                              spidx_t                 spidx,
                              const std::map<std::string, std::vector<real_t>>& data,
                              bool use_weights = false) {
-    static_assert(M::is_metric, "M must be a metric class");
     const auto n_inject        = data.at("ux1").size();
     auto       injector_kernel = kernel::GlobalInjector_kernel<S, M>(
       local_domain.species[spidx - 1],
@@ -309,6 +311,8 @@ namespace arch {
    * @tparam SD Spatial distribution type
    */
   template <SimEngine::type S, class M, class ED1, class ED2, class SD>
+    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
+             traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,
@@ -317,10 +321,6 @@ namespace arch {
                                real_t                      number_density,
                                bool                        use_weights = false,
                                const boundaries_t<real_t>& box         = {}) {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
     raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
                    "Weights must be used for non-Cartesian coordinates",
                    HERE);

@@ -22,7 +22,7 @@
 #include "utils/toml.h"
 
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "engines/engine.hpp"
 #include "kernels/ampere_gr.hpp"
@@ -66,12 +66,11 @@ namespace ntt {
   };
 
   template <class M>
+    requires traits::engine::IsCompatibleWithGRPICEngine<M, user::PGen>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;
     using domain_t = Domain<SimEngine::GRPIC, M>;
-    // constexprs
-    using base_t::pgen_is_ok;
     // contents
     using base_t::m_metadomain;
     using base_t::m_params;
@@ -94,9 +93,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.toggles.fieldsolver");
+        "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.toggles.deposit");
+        "algorithms.deposit.enable");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
@@ -696,17 +695,17 @@ namespace ntt {
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em,
-                                                      i1_min,
-                                                      tags,
-                                                      nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M::Dim>(domain.fields.em,
+                                                           i1_min,
+                                                           tags,
+                                                           nfilter));
         Kokkos::parallel_for(
           "OpenBCFields",
           range,
-          kernel::bc::gr::HorizonBoundaries_kernel<M>(domain.fields.em0,
-                                                      i1_min,
-                                                      tags,
-                                                      nfilter));
+          kernel::bc::gr::HorizonBoundaries_kernel<M::Dim>(domain.fields.em0,
+                                                           i1_min,
+                                                           tags,
+                                                           nfilter));
       }
     }
 
@@ -974,19 +973,19 @@ namespace ntt {
     }
 
     void TimeAverageDB(domain_t& domain) {
-      Kokkos::parallel_for("TimeAverageDB",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::gr::TimeAverageDB_kernel<M>(domain.fields.em,
-                                                               domain.fields.em0,
-                                                               domain.mesh.metric));
+      Kokkos::parallel_for(
+        "TimeAverageDB",
+        domain.mesh.rangeActiveCells(),
+        kernel::gr::TimeAverageDB_kernel<M::Dim>(domain.fields.em,
+                                                 domain.fields.em0));
     }
 
     void TimeAverageJ(domain_t& domain) {
-      Kokkos::parallel_for("TimeAverageJ",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::gr::TimeAverageJ_kernel<M>(domain.fields.cur,
-                                                              domain.fields.cur0,
-                                                              domain.mesh.metric));
+      Kokkos::parallel_for(
+        "TimeAverageJ",
+        domain.mesh.rangeActiveCells(),
+        kernel::gr::TimeAverageJ_kernel<M::Dim>(domain.fields.cur,
+                                                domain.fields.cur0));
     }
 
     void CurrentsDeposit(domain_t& domain) {
@@ -1081,36 +1080,40 @@ namespace ntt {
           "algorithms.gr.pusher_eps");
         const auto niter = m_params.template get<unsigned short>(
           "algorithms.gr.pusher_niter");
-        // clang-format off
-        if (species.pusher() == PrtlPusher::PHOTON) {
-        auto range_policy = Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massless_t>(
-          0,
-          species.npart());
+        if (species.pusher() == ParticlePusher::PHOTON) {
+          auto range_policy =
+            Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massless_t>(
+              0,
+              species.npart());
 
-        Kokkos::parallel_for(
-          "ParticlePusher",
-          range_policy,
-          kernel::gr::Pusher_kernel<M>(
-              domain.fields.em,
-              domain.fields.em0,
-              species.i1,        species.i2,       species.i3,
-              species.i1_prev,   species.i2_prev,  species.i3_prev,
-              species.dx1,       species.dx2,      species.dx3,
-              species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-              species.ux1,       species.ux2,      species.ux3,
-              species.phi,       species.tag,
-              domain.mesh.metric,
-              coeff, dt,
-              domain.mesh.n_active(in::x1),
-              domain.mesh.n_active(in::x2),
-              domain.mesh.n_active(in::x3),
-              eps, niter,
-              domain.mesh.prtl_bc()
-          ));
-        } else if (species.pusher() == PrtlPusher::BORIS) {
-          auto range_policy = Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massive_t>(
-          0,
-          species.npart());
+          // clang-format off
+          Kokkos::parallel_for(
+            "ParticlePusher",
+            range_policy,
+            kernel::gr::Pusher_kernel<M>(
+                domain.fields.em,
+                domain.fields.em0,
+                species.i1,        species.i2,       species.i3,
+                species.i1_prev,   species.i2_prev,  species.i3_prev,
+                species.dx1,       species.dx2,      species.dx3,
+                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
+                species.ux1,       species.ux2,      species.ux3,
+                species.phi,       species.tag,
+                domain.mesh.metric,
+                coeff, dt,
+                domain.mesh.n_active(in::x1),
+                domain.mesh.n_active(in::x2),
+                domain.mesh.n_active(in::x3),
+                eps, niter,
+                domain.mesh.prtl_bc()
+            ));
+          // clang-format on
+        } else if (species.pusher() == ParticlePusher::BORIS) {
+          auto range_policy =
+            Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massive_t>(
+              0,
+              species.npart());
+          // clang-format off
           Kokkos::parallel_for(
             "ParticlePusher",
             range_policy,
@@ -1131,12 +1134,12 @@ namespace ntt {
                 eps, niter,
                 domain.mesh.prtl_bc()
           ));
-        } else if (species.pusher() == PrtlPusher::NONE) {
+          // clang-format on
+        } else if (species.pusher() == ParticlePusher::NONE) {
           // do nothing
         } else {
           raise::Error("not implemented", HERE);
         }
-        // clang-format on
       }
     }
   };

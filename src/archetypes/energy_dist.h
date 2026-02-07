@@ -26,6 +26,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
@@ -33,10 +35,9 @@ namespace arch {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
-    static constexpr bool is_energy_dist { true };
-    static_assert(M::is_metric, "M must be a metric class");
 
     EnergyDistribution(const M& metric) : metric { metric } {}
 
@@ -103,7 +104,7 @@ namespace arch {
   };
 
   Inline void JuttnerSinge(vec_t<Dim::_3D>&            v,
-                           const real_t&               temp,
+                           real_t                      temp,
                            const random_number_pool_t& pool) {
     auto   rand_gen = pool.get_state();
     real_t randX1, randX2;
@@ -161,13 +162,12 @@ namespace arch {
   }
 
   template <SimEngine::type S, bool CanBoost>
-  Inline void SampleFromMaxwellian(
-    vec_t<Dim::_3D>&            v,
-    const random_number_pool_t& pool,
-    const real_t&               temperature,
-    const real_t&               boost_velocity  = static_cast<real_t>(0),
-    const in&                   boost_direction = in::x1,
-    bool                        flip_velocity   = false) {
+  Inline void SampleFromMaxwellian(vec_t<Dim::_3D>&            v,
+                                   const random_number_pool_t& pool,
+                                   real_t                      temperature,
+                                   real_t boost_velocity = static_cast<real_t>(0),
+                                   in   boost_direction = in::x1,
+                                   bool flip_velocity   = false) {
     if (cmp::AlmostZero(temperature)) {
       v[0] = ZERO;
       v[1] = ZERO;

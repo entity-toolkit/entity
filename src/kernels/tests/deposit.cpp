@@ -49,7 +49,7 @@ void put_value(array_t<T*> arr, T value, int i) {
   Kokkos::deep_copy(arr, arr_h);
 }
 
-template <typename M, ntt::SimEngine::type S>
+template <typename M, ntt::SimEngine::type S, unsigned short O>
 void testDeposit(const std::vector<std::size_t>&      res,
                  const boundaries_t<real_t>&          ext,
                  const std::map<std::string, real_t>& params,
@@ -89,12 +89,16 @@ void testDeposit(const std::vector<std::size_t>&      res,
   array_t<short*>      tag { "tag", 10 };
   const real_t         charge { 1.0 }, inv_dt { 1.0 };
 
-  const int i0 = 40, j0 = 40;
+  const int    i0 = 25, j0 = 21;
+  const int    i0f = 24, j0f = 20;
+  const real_t uz = 2.5;
 
-  const prtldx_t dxi = 0.53, dxf = 0.47;
-  const prtldx_t dyi = 0.34, dyf = 0.52;
-  const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0 + (real_t)dxf;
-  const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0 + (real_t)dyf;
+  // const prtldx_t dxi = 0.53, dxf = 0.47;
+  // const prtldx_t dyi = 0.34, dyf = 0.52;
+  const prtldx_t dxi = 0.65, dxf = 0.99;
+  const prtldx_t dyi = 0.65, dyf = 0.80;
+  const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0f + (real_t)dxf;
+  const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0f + (real_t)dyf;
 
   const real_t xr = 0.5 * (xi + xf);
   const real_t yr = 0.5 * (yi + yf);
@@ -111,14 +115,22 @@ void testDeposit(const std::vector<std::size_t>&      res,
   const real_t Fy1 = (yr - yi);
   const real_t Fy2 = (yf - yr);
 
+  const real_t Fz1 = HALF * uz / math::sqrt(1.0 + uz * uz);
+  const real_t Fz2 = HALF * uz / math::sqrt(1.0 + uz * uz);
+
   const real_t Jx1 = Fx1 * (1 - Wy1) + Fx2 * (1 - Wy2);
   const real_t Jx2 = Fx1 * Wy1 + Fx2 * Wy2;
 
   const real_t Jy1 = Fy1 * (1 - Wx1) + Fy2 * (1 - Wx2);
   const real_t Jy2 = Fy1 * Wx1 + Fy2 * Wx2;
 
-  put_value<int>(i1, i0, 0);
-  put_value<int>(i2, j0, 0);
+  const real_t Jz = Fz1 * (1 - Wx1) * (1 - Wy1) + Fz1 * Wx1 * (1 - Wy1) +
+                    Fz1 * (1 - Wx1) * Wy1 + Fz1 * Wx1 * Wy1 +
+                    Fz2 * (1 - Wx2) * (1 - Wy2) + Fz2 * Wx2 * (1 - Wy2) +
+                    Fz2 * (1 - Wx2) * Wy2 + Fz2 * Wx2 * Wy2;
+
+  put_value<int>(i1, i0f, 0);
+  put_value<int>(i2, j0f, 0);
   put_value<int>(i1_prev, i0, 0);
   put_value<int>(i2_prev, j0, 0);
   put_value<prtldx_t>(dx1, dxf, 0);
@@ -127,15 +139,15 @@ void testDeposit(const std::vector<std::size_t>&      res,
   put_value<prtldx_t>(dx2_prev, dyi, 0);
   put_value<real_t>(ux1, ZERO, 0);
   put_value<real_t>(ux2, ZERO, 0);
-  put_value<real_t>(ux3, ZERO, 0);
+  put_value<real_t>(ux3, uz, 0);
   put_value<real_t>(weight, 1.0, 0);
   put_value<short>(tag, ParticleTag::alive, 0);
-
+  
   auto J_scat = Kokkos::Experimental::create_scatter_view(J);
 
   // clang-format off
-  Kokkos::parallel_for("CurrentsDeposit", 1,
-                       kernel::DepositCurrents_kernel<S, M>(J_scat,
+  Kokkos::parallel_for("CurrentsDeposit", 10,
+                       kernel::DepositCurrents_kernel<S, M, O>(J_scat,
                                                             i1, i2, i3,
                                                             i1_prev, i2_prev, i3_prev,
                                                             dx1, dx2, dx3,
@@ -147,60 +159,135 @@ void testDeposit(const std::vector<std::size_t>&      res,
 
   Kokkos::Experimental::contribute(J, J_scat);
 
-  real_t SumDivJ { 0.0 };
+  const auto range = Kokkos::MDRangePolicy<Kokkos::Rank<2>>(
+    { N_GHOSTS, N_GHOSTS },
+    { nx1 + N_GHOSTS, nx2 + N_GHOSTS });
+
+  real_t SumDivJ = ZERO, SumJx = ZERO, SumJy = ZERO, SumJz = ZERO;
   Kokkos::parallel_reduce(
     "SumDivJ",
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({ N_GHOSTS, N_GHOSTS },
-                                           { nx1 + N_GHOSTS, nx2 + N_GHOSTS }),
+    range,
     Lambda(const int i, const int j, real_t& sum) {
       sum += J(i, j, cur::jx1) - J(i - 1, j, cur::jx1) + J(i, j, cur::jx2) -
              J(i, j - 1, cur::jx2);
     },
     SumDivJ);
 
-  auto J_h = Kokkos::create_mirror_view(J);
-  Kokkos::deep_copy(J_h, J);
+  Kokkos::parallel_reduce(
+    "SumJx",
+    range,
+    Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx1); },
+    SumJx);
+
+  Kokkos::parallel_reduce(
+    "SumJy",
+    range,
+    Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx2); },
+    SumJy);
+
+  Kokkos::parallel_reduce(
+    "SumJy",
+    range,
+    Lambda(const int i, const int j, real_t& sum) { sum += J(i, j, cur::jx3); },
+    SumJz);
+
+  // auto J_h = Kokkos::create_mirror_view(J);
+  // Kokkos::deep_copy(J_h, J);
 
   if (not cmp::AlmostZero(SumDivJ)) {
     throw std::logic_error("DepositCurrents_kernel::SumDivJ != 0");
   }
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx1), Jx1, "", eps),
-          "DepositCurrents_kernel::Jx1 is incorrect");
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + 1 + N_GHOSTS, cur::jx1), Jx2, "", eps),
-          "DepositCurrents_kernel::Jx2 is incorrect");
-  errorIf(not equal(J_h(i0 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy1, "", eps),
-          "DepositCurrents_kernel::Jy1 is incorrect");
-  errorIf(not equal(J_h(i0 + 1 + N_GHOSTS, j0 + N_GHOSTS, cur::jx2), Jy2, "", eps),
-          "DepositCurrents_kernel::Jy2 is incorrect");
+
+  if (not equal(SumJx, Jx1 + Jx2, "DepositCurrents_kernel::SumJx", eps)) {
+    throw std::logic_error("DepositCurrents_kernel::SumJx mismatch");
+  }
+
+  if (not equal(SumJy, Jy1 + Jy2, "DepositCurrents_kernel::SumJy", eps)) {
+    throw std::logic_error("DepositCurrents_kernel::SumJy mismatch");
+  }
+
+  if constexpr (M::CoordType == Coord::Cart) {
+    if (not equal(SumJz, Jz, "DepositCurrents_kernel::SumJz", eps)) {
+      throw std::logic_error("DepositCurrents_kernel::SumJz mismatch");
+    }
+  }
+}
+
+template <unsigned short O>
+void testDepositForShapeOrder() {
+  using namespace ntt;
+  using namespace metric;
+  testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 0.0, 55.0 }, { 0.0, 55.0 } },
+    {},
+    500);
+
+  testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 1.0, 100.0 } },
+    {},
+    500);
+
+  testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 1.0, 100.0 } },
+    { { "r0", 0.0 }, { "h", 0.25 } },
+    500);
+
+  testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 1.0, 100.0 } },
+    { { "a", 0.9 } },
+    500);
+
+  testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 1.0, 100.0 } },
+    { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } },
+    500);
+
+  testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC, O>(
+    {
+      50,
+      50
+  },
+    { { 1.0, 100.0 } },
+    { { "a", 0.9 } },
+    500);
 }
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
-
   try {
-    using namespace ntt;
-    using namespace metric;
 
-    const auto res      = std::vector<std::size_t> { 100, 100 };
-    const auto r_extent = boundaries_t<real_t> {
-      { 1.0, 100.0 }
-    };
-    const auto xy_extent = boundaries_t<real_t> {
-      { 0.0, 55.0 },
-      { 0.0, 55.0 }
-    };
-    const std::map<std::string, real_t> params {
-      { "r0",  0.0 },
-      {  "h", 0.25 },
-      {  "a",  0.9 }
-    };
-
-    testDeposit<Minkowski<Dim::_2D>, SimEngine::SRPIC>(res, xy_extent, {}, eps);
-    testDeposit<Spherical<Dim::_2D>, SimEngine::SRPIC>(res, r_extent, {}, eps);
-    testDeposit<QSpherical<Dim::_2D>, SimEngine::SRPIC>(res, r_extent, params, eps);
-    testDeposit<KerrSchild<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
-    testDeposit<QKerrSchild<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
-    testDeposit<KerrSchild0<Dim::_2D>, SimEngine::GRPIC>(res, r_extent, params, eps);
+    testDepositForShapeOrder<0u>();
+    testDepositForShapeOrder<1u>();
+    testDepositForShapeOrder<2u>();
+    testDepositForShapeOrder<3u>();
+    testDepositForShapeOrder<4u>();
+    testDepositForShapeOrder<5u>();
+    testDepositForShapeOrder<6u>();
+    testDepositForShapeOrder<7u>();
+    testDepositForShapeOrder<8u>();
+    testDepositForShapeOrder<9u>();
+    testDepositForShapeOrder<10u>();
+    testDepositForShapeOrder<11u>();
 
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;

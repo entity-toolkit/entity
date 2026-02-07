@@ -20,6 +20,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel::sr {
   using namespace ntt;
 
@@ -28,8 +30,9 @@ namespace kernel::sr {
    * @tparam M Metric
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
   class Ampere_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     ndfield_t<D, 6> EB;
@@ -121,6 +124,8 @@ namespace kernel::sr {
    * @brief Add the currents to the E field with the appropriate conversion
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
   class CurrentsAmpere_kernel {
     static constexpr auto     D     = M::Dim;
     static constexpr ncells_t i2min = N_GHOSTS;

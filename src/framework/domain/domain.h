@@ -45,6 +45,9 @@
 #include "arch/directions.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
+#include "utils/reporter.h"
+
+#include "metrics/traits.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -57,9 +60,10 @@
 #include <vector>
 
 namespace ntt {
+
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M>
   struct Domain {
-    static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
     Mesh<M>                                 mesh;
@@ -146,8 +150,70 @@ namespace ntt {
     }
 
     /* setters -------------------------------------------------------------- */
-    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx) -> void {
+    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
+      -> void {
       m_neighbor_idx[dir] = idx;
+    }
+
+    /* printer overload ----------------------------------------------------- */
+    auto Report() const -> std::string {
+      std::string report = "";
+      reporter::AddSubcategory(report,
+                               4,
+                               fmt::format("Domain #%d", index()).c_str());
+#if defined(MPI_ENABLED)
+      reporter::AddParam(report, 6, "Rank", "%d", mpi_rank());
+#endif
+      reporter::AddParam(report,
+                         6,
+                         "Resolution",
+                         "%s",
+                         fmt::formatVector(mesh.n_active()).c_str());
+      reporter::AddParam(report,
+                         6,
+                         "Extent",
+                         "%s",
+                         fmt::formatVector(mesh.extent()).c_str());
+      reporter::AddSubcategory(report, 6, "Boundary conditions");
+
+      reporter::AddLabel(
+        report,
+        8 + 2 + 2 * M::Dim,
+        fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
+      for (auto& direction : dir::Directions<M::Dim>::all) {
+        const auto flds_bc      = mesh.flds_bc_in(direction);
+        const auto prtl_bc      = mesh.prtl_bc_in(direction);
+        bool       has_sync     = false;
+        auto       neighbor_idx = neighbor_idx_in(direction);
+        if (flds_bc == FldsBC::SYNC || prtl_bc == PrtlBC::SYNC) {
+          has_sync = true;
+        }
+        reporter::AddUnlabeledParam(
+          report,
+          8,
+          direction.to_string().c_str(),
+          "%-10s  %-10s  %-10s",
+          flds_bc.to_string(),
+          prtl_bc.to_string(),
+          has_sync ? std::to_string(neighbor_idx).c_str() : ".");
+      }
+      reporter::AddSubcategory(report, 6, "Memory footprint");
+      auto flds_footprint = fields.memory_footprint();
+      auto [flds_size, flds_unit] = reporter::Bytes2HumanReadable(flds_footprint);
+      reporter::AddParam(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
+      if (species.size() > 0) {
+        reporter::AddSubcategory(report, 8, "Particles");
+      }
+      for (auto& species : species) {
+        const auto str = fmt::format("Species #%d (%s)",
+                                     species.index(),
+                                     species.label().c_str());
+        auto [size,
+              unit] = reporter::Bytes2HumanReadable(species.memory_footprint());
+        reporter::AddParam(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
+      }
+      report.pop_back();
+      return report;
     }
 
   private:
@@ -164,8 +230,8 @@ namespace ntt {
   };
 
   template <SimEngine::type S, class M>
-  inline auto operator<<(std::ostream&       os,
-                         const Domain<S, M>& domain) -> std::ostream& {
+  inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
+    -> std::ostream& {
     os << "Domain #" << domain.index();
 #if defined(MPI_ENABLED)
     os << " [MPI rank: " << domain.mpi_rank() << "]";

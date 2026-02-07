@@ -21,6 +21,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
 #endif
@@ -29,7 +31,9 @@
 /* Local macros                                                               */
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
-  { I = static_cast<int>((XI + 1)) - 1; }
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
@@ -56,13 +60,21 @@ namespace kernel::gr {
 
   struct Massless_t {};
 
+  template <class M>
+  concept IsCompatibleWithPusherGR = metric::traits::HasD<M> &&
+                                     metric::traits::HasTransform<M> &&
+                                     metric::traits::HasHij<M> &&
+                                     metric::traits::HasAlpha<M> &&
+                                     metric::traits::HasBeta1<M> &&
+                                     metric::traits::HasMetricDerivatives<M>;
+
   /**
    * @brief Algorithm for the Particle pusher
    * @tparam M Metric
    */
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   class Pusher_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
   private:
@@ -97,7 +109,7 @@ namespace kernel::gr {
                   array_t<prtldx_t*>&         dx1,
                   array_t<prtldx_t*>&         dx2,
                   array_t<prtldx_t*>&         dx3,
-                  array_t<prtldx_t*>&         dx1_prev,
+                  array_t<prtldx_t*>&         dx1_pGev,
                   array_t<prtldx_t*>&         dx2_prev,
                   array_t<prtldx_t*>&         dx3_prev,
                   array_t<real_t*>&           ux1,
@@ -111,8 +123,8 @@ namespace kernel::gr {
                   int                         ni1,
                   int                         ni2,
                   int                         ni3,
-                  const real_t&               epsilon,
-                  const unsigned short&       niter,
+                  real_t                      epsilon,
+                  unsigned short              niter,
                   const boundaries_t<PrtlBC>& boundaries)
       : DB { DB }
       , DB0 { DB0 }
@@ -213,7 +225,7 @@ namespace kernel::gr {
     Inline void UpdatePhi(T,
                           const coord_t<D>&      xp,
                           const vec_t<Dim::_3D>& vp,
-                          real_t&                phi) const;
+                          real_t                 phi) const;
 
     /**
      * @brief EM pusher (Boris) substep.
@@ -273,7 +285,7 @@ namespace kernel::gr {
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
-    Inline void interpolateFields(index_t&         p,
+    Inline void interpolateFields(index_t          p,
                                   vec_t<Dim::_3D>& e,
                                   vec_t<Dim::_3D>& b) const;
 
@@ -298,7 +310,7 @@ namespace kernel::gr {
     }
 
     // Extra
-    Inline void boundaryConditions(index_t&) const;
+    Inline void boundaryConditions(index_t) const;
   };
 
   /* -------------------------------------------------------------------------- */
@@ -306,6 +318,7 @@ namespace kernel::gr {
   /* -------------------------------------------------------------------------- */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicMomentumPush(T,
                                                      const coord_t<D>&      xp,
@@ -379,6 +392,7 @@ namespace kernel::gr {
   }
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicCoordinatePush(T,
                                                        const coord_t<D>& xp,
@@ -414,6 +428,7 @@ namespace kernel::gr {
   }
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicFullPush(T,
                                                  const coord_t<D>&      xp,
@@ -488,11 +503,12 @@ namespace kernel::gr {
   /*                                 Phi pusher */
   /* -------------------------------------------------------------------------- */
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   template <typename T>
   Inline void Pusher_kernel<M>::UpdatePhi(T,
                                           const coord_t<D>&      xp,
                                           const vec_t<Dim::_3D>& vp,
-                                          real_t&                phi) const {
+                                          real_t                 phi) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "UpdatePhi: 1D implementation called");
     } else if constexpr (D == Dim::_2D) {
@@ -511,7 +527,8 @@ namespace kernel::gr {
   }
 
   template <class M>
-  Inline void Pusher_kernel<M>::interpolateFields(index_t&         p,
+    requires IsCompatibleWithPusherGR<M>
+  Inline void Pusher_kernel<M>::interpolateFields(index_t          p,
                                                   vec_t<Dim::_3D>& e0,
                                                   vec_t<Dim::_3D>& b0) const {
     if constexpr (D == Dim::_1D) {
@@ -591,6 +608,7 @@ namespace kernel::gr {
   /* ------------------------------ Photon pusher ----------------------------- */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D");
@@ -651,6 +669,7 @@ namespace kernel::gr {
   /* ------------------------- Massive particle pusher ------------------------ */
 
   template <class M>
+    requires IsCompatibleWithPusherGR<M>
   Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D");
@@ -743,7 +762,8 @@ namespace kernel::gr {
   // Boundary conditions
 
   template <class M>
-  Inline void Pusher_kernel<M>::boundaryConditions(index_t& p) const {
+    requires IsCompatibleWithPusherGR<M>
+  Inline void Pusher_kernel<M>::boundaryConditions(index_t p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < 0 && is_absorb_i1min) {
         tag(p) = ParticleTag::dead;

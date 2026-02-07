@@ -3,6 +3,8 @@
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>
+ *   - kernel::sr::PusherParams
+ *   - kernel::sr::PusherArrays
  * @namespaces:
  *   - kernel::sr::
  * @macros:
@@ -21,6 +23,12 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+#include "utils/param_container.h"
+
+#include "metrics/traits.h"
+
+#include "kernels/emission.hpp"
+#include "particle_shapes.hpp"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -47,16 +55,6 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  namespace Cooling {
-    enum CoolingTags_ {
-      None        = 0,
-      Synchrotron = 1 << 0,
-      Compton = 1 << 1,
-    };
-  } // namespace Cooling
-
-  typedef int CoolingTags;
-
   struct NoForce_t {
     NoForce_t() {}
   };
@@ -75,8 +73,8 @@ namespace kernel::sr {
    */
   template <Dimension D, Coord::type C, class F = NoForce_t, bool Atm = false>
   struct Force {
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
-    static_assert(ExtForce or Atm,
+    static constexpr auto HasExtForce = not std::is_same<F, NoForce_t>::value;
+    static_assert(HasExtForce or Atm,
                   "Force initialized with neither PGen force nor gravity");
 
     const F      pgen_force;
@@ -102,15 +100,15 @@ namespace kernel::sr {
 
     Force(const vec_t<Dim::_3D>& g, real_t x_surf, real_t ds)
       : Force { NoForce_t {}, g, x_surf, ds } {
-      raise::ErrorIf(ExtForce, "External force not provided", HERE);
+      raise::ErrorIf(HasExtForce, "External force not provided", HERE);
     }
 
-    Inline auto fx1(const spidx_t&    sp,
-                    const simtime_t&  time,
+    Inline auto fx1(spidx_t           sp,
+                    simtime_t         time,
                     bool              ext_force,
                     const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x1 = ZERO;
-      if constexpr (ExtForce) {
+      if constexpr (HasExtForce) {
         if (ext_force) {
           f_x1 += pgen_force.fx1(sp, time, x_Ph);
         }
@@ -131,12 +129,12 @@ namespace kernel::sr {
       return f_x1;
     }
 
-    Inline auto fx2(const spidx_t&    sp,
-                    const simtime_t&  time,
+    Inline auto fx2(spidx_t           sp,
+                    simtime_t         time,
                     bool              ext_force,
                     const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x2 = ZERO;
-      if constexpr (ExtForce) {
+      if constexpr (HasExtForce) {
         if (ext_force) {
           f_x2 += pgen_force.fx2(sp, time, x_Ph);
         }
@@ -157,12 +155,12 @@ namespace kernel::sr {
       return f_x2;
     }
 
-    Inline auto fx3(const spidx_t&    sp,
-                    const simtime_t&  time,
+    Inline auto fx3(spidx_t           sp,
+                    simtime_t         time,
                     bool              ext_force,
                     const coord_t<D>& x_Ph) const -> real_t {
       real_t f_x3 = ZERO;
-      if constexpr (ExtForce) {
+      if constexpr (HasExtForce) {
         if (ext_force) {
           f_x3 += pgen_force.fx3(sp, time, x_Ph);
         }
@@ -184,231 +182,209 @@ namespace kernel::sr {
     }
   };
 
+  struct PusherParams {
+    // pusher algorithm(s) assigned to the species
+    ParticlePusherFlags pusher_flags { ParticlePusher::NONE };
+    // radiative drag force(s) enabled for the species
+    RadiativeDragFlags  radiative_drag_flags { RadiativeDrag::NONE };
+
+    // external force (other than the atmosphere)
+    bool ext_force { false };
+
+    // species parameters
+    float mass, charge;
+
+    // time variable
+    simtime_t time;
+
+    // global constants
+    real_t dt, omegaB0;
+
+    // grid parameters
+    int                  ni1, ni2, ni3;
+    boundaries_t<PrtlBC> boundaries;
+
+    // parameters for the advanced features
+    prm::Parameters gca_params;
+    prm::Parameters radiative_drag_params;
+  };
+
+  struct PusherArrays {
+    spidx_t            sp;
+    array_t<int*>      i1, i2, i3;
+    array_t<int*>      i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>   ux1, ux2, ux3;
+    array_t<real_t*>   phi;
+    array_t<short*>    tag;
+  };
+
   /**
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F = NoForce_t>
+  template <class M, class F = NoForce_t, EmissionTypeFlag E = EmissionType::NONE>
+    requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
+             metric::traits::HasConvertXYZ<M> &&
+             metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
   struct Pusher_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static constexpr auto D        = M::Dim;
-    static constexpr auto ExtForce = not std::is_same<F, NoForce_t>::value;
+    static constexpr auto D           = M::Dim;
+    static constexpr auto HasExtForce = not std::is_same<F, NoForce_t>::value;
+    static constexpr auto HasEmission = (E != EmissionType::NONE);
 
   private:
-    const PrtlPusher::type pusher;
-    const bool             GCA;
-    const bool             ext_force;
-    const CoolingTags      cooling;
+    const ParticlePusherFlags pusher_flags;
+    const RadiativeDragFlags  radiative_drag_flags;
+
+    const bool ext_force;
 
     const randacc_ndfield_t<D, 6> EB;
-    const spidx_t                 sp;
-    array_t<int*>                 i1, i2, i3;
-    array_t<int*>                 i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*>            dx1, dx2, dx3;
-    array_t<prtldx_t*>            dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>              ux1, ux2, ux3;
-    array_t<real_t*>              phi;
-    array_t<short*>               tag;
-    const M                       metric;
-    const F                       force;
 
-    const real_t time, coeff, dt;
-    const int    ni1, ni2, ni3;
-    bool         is_absorb_i1min { false }, is_absorb_i1max { false };
-    bool         is_absorb_i2min { false }, is_absorb_i2max { false };
-    bool         is_absorb_i3min { false }, is_absorb_i3max { false };
-    bool         is_periodic_i1min { false }, is_periodic_i1max { false };
-    bool         is_periodic_i2min { false }, is_periodic_i2max { false };
-    bool         is_periodic_i3min { false }, is_periodic_i3max { false };
-    bool         is_reflect_i1min { false }, is_reflect_i1max { false };
-    bool         is_reflect_i2min { false }, is_reflect_i2max { false };
-    bool         is_reflect_i3min { false }, is_reflect_i3max { false };
-    bool         is_axis_i2min { false }, is_axis_i2max { false };
+    const spidx_t      sp;
+    array_t<int*>      i1, i2, i3;
+    array_t<int*>      i1_prev, i2_prev, i3_prev;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
+    array_t<real_t*>   ux1, ux2, ux3;
+    array_t<real_t*>   phi;
+    array_t<short*>    tag;
+    const M            metric;
+    const F            force;
+
+    const EmissionPolicy<M, E> emission_policy;
+
+    const simtime_t time;
+    const real_t    coeff, dt;
+
+    const int ni1, ni2, ni3;
+    bool      is_absorb_i1min { false }, is_absorb_i1max { false };
+    bool      is_absorb_i2min { false }, is_absorb_i2max { false };
+    bool      is_absorb_i3min { false }, is_absorb_i3max { false };
+    bool      is_periodic_i1min { false }, is_periodic_i1max { false };
+    bool      is_periodic_i2min { false }, is_periodic_i2max { false };
+    bool      is_periodic_i3min { false }, is_periodic_i3max { false };
+    bool      is_reflect_i1min { false }, is_reflect_i1max { false };
+    bool      is_reflect_i2min { false }, is_reflect_i2max { false };
+    bool      is_reflect_i3min { false }, is_reflect_i3max { false };
+    bool      is_axis_i2min { false }, is_axis_i2max { false };
+
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
-    // radiative cooling parameters
-    const real_t coeff_sync, coeff_comp;
+    // radiative drag parameters
+    const real_t raddrag_coeff_synchrotron, raddrag_coeff_compton;
 
   public:
-    Pusher_kernel(const PrtlPusher::type&        pusher,
-                  bool                           GCA,
-                  bool                           ext_force,
-                  CoolingTags                    cooling,
-                  const randacc_ndfield_t<D, 6>& EB,
-                  spidx_t                        sp,
-                  array_t<int*>&                 i1,
-                  array_t<int*>&                 i2,
-                  array_t<int*>&                 i3,
-                  array_t<int*>&                 i1_prev,
-                  array_t<int*>&                 i2_prev,
-                  array_t<int*>&                 i3_prev,
-                  array_t<prtldx_t*>&            dx1,
-                  array_t<prtldx_t*>&            dx2,
-                  array_t<prtldx_t*>&            dx3,
-                  array_t<prtldx_t*>&            dx1_prev,
-                  array_t<prtldx_t*>&            dx2_prev,
-                  array_t<prtldx_t*>&            dx3_prev,
-                  array_t<real_t*>&              ux1,
-                  array_t<real_t*>&              ux2,
-                  array_t<real_t*>&              ux3,
-                  array_t<real_t*>&              phi,
-                  array_t<short*>&               tag,
-                  const M&                       metric,
-                  const F&                       force,
-                  real_t                         time,
-                  real_t                         coeff,
-                  real_t                         dt,
-                  int                            ni1,
-                  int                            ni2,
-                  int                            ni3,
-                  const boundaries_t<PrtlBC>&    boundaries,
-                  real_t                         gca_larmor_max,
-                  real_t                         gca_eovrb_max,
-                  real_t                         coeff_sync,
-                  real_t                         coeff_comp)
-      : pusher { pusher }
-      , GCA { GCA }
-      , ext_force { ext_force }
-      , cooling { cooling }
+    Pusher_kernel(
+      const PusherParams&            pusher_params,
+      PusherArrays&                  pusher_arrays,
+      const randacc_ndfield_t<D, 6>& EB,
+      const M&                       metric,
+      const F&                       force           = NoForce_t {},
+      const EmissionPolicy<M, E>&    emission_policy = EmissionPolicy<M, E> {})
+      : pusher_flags { pusher_params.pusher_flags }
+      , radiative_drag_flags { pusher_params.radiative_drag_flags }
+      , ext_force { pusher_params.ext_force }
       , EB { EB }
-      , sp { sp }
-      , i1 { i1 }
-      , i2 { i2 }
-      , i3 { i3 }
-      , i1_prev { i1_prev }
-      , i2_prev { i2_prev }
-      , i3_prev { i3_prev }
-      , dx1 { dx1 }
-      , dx2 { dx2 }
-      , dx3 { dx3 }
-      , dx1_prev { dx1_prev }
-      , dx2_prev { dx2_prev }
-      , dx3_prev { dx3_prev }
-      , ux1 { ux1 }
-      , ux2 { ux2 }
-      , ux3 { ux3 }
-      , phi { phi }
-      , tag { tag }
+      , sp { pusher_arrays.sp }
+      , i1 { pusher_arrays.i1 }
+      , i2 { pusher_arrays.i2 }
+      , i3 { pusher_arrays.i3 }
+      , i1_prev { pusher_arrays.i1_prev }
+      , i2_prev { pusher_arrays.i2_prev }
+      , i3_prev { pusher_arrays.i3_prev }
+      , dx1 { pusher_arrays.dx1 }
+      , dx2 { pusher_arrays.dx2 }
+      , dx3 { pusher_arrays.dx3 }
+      , dx1_prev { pusher_arrays.dx1_prev }
+      , dx2_prev { pusher_arrays.dx2_prev }
+      , dx3_prev { pusher_arrays.dx3_prev }
+      , ux1 { pusher_arrays.ux1 }
+      , ux2 { pusher_arrays.ux2 }
+      , ux3 { pusher_arrays.ux3 }
+      , phi { pusher_arrays.phi }
+      , tag { pusher_arrays.tag }
       , metric { metric }
       , force { force }
-      , time { time }
-      , coeff { coeff }
-      , dt { dt }
-      , ni1 { ni1 }
-      , ni2 { ni2 }
-      , ni3 { ni3 }
-      , gca_larmor { gca_larmor_max }
-      , gca_EovrB_sqr { SQR(gca_eovrb_max) }
-      , coeff_sync { coeff_sync }
-      , coeff_comp { coeff_comp } {
-      raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
-      is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
-                        (boundaries[0].first == PrtlBC::ABSORB);
-      is_absorb_i1max = (boundaries[0].second == PrtlBC::ATMOSPHERE) ||
-                        (boundaries[0].second == PrtlBC::ABSORB);
-      is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
-      is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
-      is_reflect_i1min  = (boundaries[0].first == PrtlBC::REFLECT);
-      is_reflect_i1max  = (boundaries[0].second == PrtlBC::REFLECT);
+      , time { pusher_params.time }
+      , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
+                pusher_params.omegaB0 * pusher_params.dt }
+      , dt { pusher_params.dt }
+      , ni1 { pusher_params.ni1 }
+      , ni2 { pusher_params.ni2 }
+      , ni3 { pusher_params.ni3 }
+      , gca_larmor { (pusher_flags & ParticlePusher::GCA)
+                       ? pusher_params.gca_params.get<real_t>("larmor_max")
+                       : ZERO }
+      , gca_EovrB_sqr { (pusher_flags & ParticlePusher::GCA)
+                          ? SQR(pusher_params.gca_params.get<real_t>(
+                              "e_ovr_b_max"))
+                          : ZERO }
+      , raddrag_coeff_synchrotron { (pusher_params.radiative_drag_flags &
+                                     RadiativeDrag::SYNCHROTRON)
+                                      ? static_cast<real_t>(0.1) *
+                                          pusher_params.dt * pusher_params.omegaB0 /
+                                          (SQR(pusher_params
+                                                 .radiative_drag_params.get<real_t>(
+                                                   "synchrotron_gamma_rad")) *
+                                           pusher_params.mass)
+                                      : ZERO }
+      , raddrag_coeff_compton { (pusher_params.radiative_drag_flags &
+                                 RadiativeDrag::COMPTON)
+                                  ? static_cast<real_t>(0.1) *
+                                      pusher_params.dt * pusher_params.omegaB0 /
+                                      (SQR(pusher_params.radiative_drag_params.get<real_t>(
+                                         "compton_gamma_rad")) *
+                                       pusher_params.mass)
+                                  : ZERO }
+      , emission_policy { emission_policy } {
+      raise::ErrorIf(pusher_flags == ParticlePusher::NONE,
+                     "No particle pusher specified",
+                     HERE);
+      raise::ErrorIf(pusher_params.boundaries.size() < 1,
+                     "pusher_params.boundaries defined incorrectly",
+                     HERE);
+      is_absorb_i1min = (pusher_params.boundaries[0].first == PrtlBC::ATMOSPHERE) ||
+                        (pusher_params.boundaries[0].first == PrtlBC::ABSORB);
+      is_absorb_i1max = (pusher_params.boundaries[0].second == PrtlBC::ATMOSPHERE) ||
+                        (pusher_params.boundaries[0].second == PrtlBC::ABSORB);
+      is_periodic_i1min = (pusher_params.boundaries[0].first == PrtlBC::PERIODIC);
+      is_periodic_i1max = (pusher_params.boundaries[0].second == PrtlBC::PERIODIC);
+      is_reflect_i1min = (pusher_params.boundaries[0].first == PrtlBC::REFLECT);
+      is_reflect_i1max = (pusher_params.boundaries[0].second == PrtlBC::REFLECT);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-        raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_absorb_i2min = (boundaries[1].first == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[1].first == PrtlBC::ABSORB);
-        is_absorb_i2max = (boundaries[1].second == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[1].second == PrtlBC::ABSORB);
-        is_periodic_i2min = (boundaries[1].first == PrtlBC::PERIODIC);
-        is_periodic_i2max = (boundaries[1].second == PrtlBC::PERIODIC);
-        is_reflect_i2min  = (boundaries[1].first == PrtlBC::REFLECT);
-        is_reflect_i2max  = (boundaries[1].second == PrtlBC::REFLECT);
-        is_axis_i2min     = (boundaries[1].first == PrtlBC::AXIS);
-        is_axis_i2max     = (boundaries[1].second == PrtlBC::AXIS);
+        raise::ErrorIf(pusher_params.boundaries.size() < 2,
+                       "pusher_params.boundaries defined incorrectly",
+                       HERE);
+        is_absorb_i2min = (pusher_params.boundaries[1].first == PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[1].first == PrtlBC::ABSORB);
+        is_absorb_i2max = (pusher_params.boundaries[1].second ==
+                           PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[1].second == PrtlBC::ABSORB);
+        is_periodic_i2min = (pusher_params.boundaries[1].first == PrtlBC::PERIODIC);
+        is_periodic_i2max = (pusher_params.boundaries[1].second == PrtlBC::PERIODIC);
+        is_reflect_i2min = (pusher_params.boundaries[1].first == PrtlBC::REFLECT);
+        is_reflect_i2max = (pusher_params.boundaries[1].second == PrtlBC::REFLECT);
+        is_axis_i2min = (pusher_params.boundaries[1].first == PrtlBC::AXIS);
+        is_axis_i2max = (pusher_params.boundaries[1].second == PrtlBC::AXIS);
       }
       if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(boundaries.size() < 3, "boundaries defined incorrectly", HERE);
-        is_absorb_i3min = (boundaries[2].first == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2].first == PrtlBC::ABSORB);
-        is_absorb_i3max = (boundaries[2].second == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[2].second == PrtlBC::ABSORB);
-        is_periodic_i3min = (boundaries[2].first == PrtlBC::PERIODIC);
-        is_periodic_i3max = (boundaries[2].second == PrtlBC::PERIODIC);
-        is_reflect_i3min  = (boundaries[2].first == PrtlBC::REFLECT);
-        is_reflect_i3max  = (boundaries[2].second == PrtlBC::REFLECT);
+        raise::ErrorIf(pusher_params.boundaries.size() < 3,
+                       "pusher_params.boundaries defined incorrectly",
+                       HERE);
+        is_absorb_i3min = (pusher_params.boundaries[2].first == PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[2].first == PrtlBC::ABSORB);
+        is_absorb_i3max = (pusher_params.boundaries[2].second ==
+                           PrtlBC::ATMOSPHERE) ||
+                          (pusher_params.boundaries[2].second == PrtlBC::ABSORB);
+        is_periodic_i3min = (pusher_params.boundaries[2].first == PrtlBC::PERIODIC);
+        is_periodic_i3max = (pusher_params.boundaries[2].second == PrtlBC::PERIODIC);
+        is_reflect_i3min = (pusher_params.boundaries[2].first == PrtlBC::REFLECT);
+        is_reflect_i3max = (pusher_params.boundaries[2].second == PrtlBC::REFLECT);
       }
     }
 
-    Pusher_kernel(const PrtlPusher::type&     pusher,
-                  bool                        GCA,
-                  bool                        ext_force,
-                  CoolingTags                 cooling,
-                  const ndfield_t<D, 6>&      EB,
-                  spidx_t                     sp,
-                  array_t<int*>&              i1,
-                  array_t<int*>&              i2,
-                  array_t<int*>&              i3,
-                  array_t<int*>&              i1_prev,
-                  array_t<int*>&              i2_prev,
-                  array_t<int*>&              i3_prev,
-                  array_t<prtldx_t*>&         dx1,
-                  array_t<prtldx_t*>&         dx2,
-                  array_t<prtldx_t*>&         dx3,
-                  array_t<prtldx_t*>&         dx1_prev,
-                  array_t<prtldx_t*>&         dx2_prev,
-                  array_t<prtldx_t*>&         dx3_prev,
-                  array_t<real_t*>&           ux1,
-                  array_t<real_t*>&           ux2,
-                  array_t<real_t*>&           ux3,
-                  array_t<real_t*>&           phi,
-                  array_t<short*>&            tag,
-                  const M&                    metric,
-                  simtime_t                   time,
-                  real_t                      coeff,
-                  real_t                      dt,
-                  int                         ni1,
-                  int                         ni2,
-                  int                         ni3,
-                  const boundaries_t<PrtlBC>& boundaries,
-                  real_t                      gca_larmor_max,
-                  real_t                      gca_eovrb_max,
-                  real_t                      coeff_sync,
-                  real_t                      coeff_comp)
-      : Pusher_kernel(pusher,
-                      GCA,
-                      ext_force,
-                      cooling,
-                      EB,
-                      sp,
-                      i1,
-                      i2,
-                      i3,
-                      i1_prev,
-                      i2_prev,
-                      i3_prev,
-                      dx1,
-                      dx2,
-                      dx3,
-                      dx1_prev,
-                      dx2_prev,
-                      dx3_prev,
-                      ux1,
-                      ux2,
-                      ux3,
-                      phi,
-                      tag,
-                      metric,
-                      NoForce_t {},
-                      time,
-                      coeff,
-                      dt,
-                      ni1,
-                      ni2,
-                      ni3,
-                      boundaries,
-                      gca_larmor_max,
-                      gca_eovrb_max,
-                      coeff_sync,
-                      coeff_comp) {}
-
-    Inline void synchrotronDrag(index_t&               p,
+    Inline void synchrotronDrag(index_t                p,
                                 vec_t<Dim::_3D>&       u_prime,
                                 const vec_t<Dim::_3D>& e0,
                                 const vec_t<Dim::_3D>& b0) const {
@@ -454,14 +430,15 @@ namespace kernel::sr {
                                        e_plus_beta_cross_b[1],
                                        e_plus_beta_cross_b[2]) -
                               SQR(beta_dot_e) };
-      ux1(p) += coeff_sync * (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
-      ux2(p) += coeff_sync * (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
-      ux3(p) += coeff_sync * (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+      ux1(p) += raddrag_coeff_synchrotron *
+                (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
+      ux2(p) += raddrag_coeff_synchrotron *
+                (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
+      ux3(p) += raddrag_coeff_synchrotron *
+                (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
     }
 
-    Inline void inverseComptonDrag(index_t&               p,
-                                   vec_t<Dim::_3D>&       u_prime
-                                  ) const {
+    Inline void inverseComptonDrag(index_t p, vec_t<Dim::_3D>& u_prime) const {
       real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
                                                                u_prime[1],
                                                                u_prime[2]));
@@ -470,9 +447,9 @@ namespace kernel::sr {
       u_prime[2]             *= gamma_prime_sqr;
       gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
 
-      ux1(p) -= coeff_comp * gamma_prime_sqr * u_prime[0];
-      ux2(p) -= coeff_comp * gamma_prime_sqr * u_prime[1];
-      ux3(p) -= coeff_comp * gamma_prime_sqr * u_prime[2];
+      ux1(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[0];
+      ux2(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[1];
+      ux3(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[2];
     }
 
     Inline void operator()(index_t p) const {
@@ -484,7 +461,7 @@ namespace kernel::sr {
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getPrtlPos(p, xp_Cd);
-      if (pusher == PrtlPusher::PHOTON) {
+      if (pusher_flags == ParticlePusher::PHOTON) {
         posUpd(false, p, xp_Cd);
         return;
       }
@@ -496,11 +473,13 @@ namespace kernel::sr {
       vec_t<Dim::_3D> ei_Cart_rad { ZERO }, bi_Cart_rad { ZERO };
       bool            is_gca { false };
 
-      getInterpFlds(p, ei, bi);
+      // field interpolation 0th-11th order
+      getInterpFlds<SHAPE_ORDER>(p, ei, bi);
+
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      if (cooling != 0) {
-        // backup fields & velocities to use later in cooling
+      if (radiative_drag_flags != RadiativeDrag::NONE) {
+        // backup fields & velocities to use later in radiative drag
         ei_Cart_rad[0] = ei_Cart[0];
         ei_Cart_rad[1] = ei_Cart[1];
         ei_Cart_rad[2] = ei_Cart[2];
@@ -511,7 +490,7 @@ namespace kernel::sr {
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
       }
-      if constexpr (ExtForce) {
+      if constexpr (HasExtForce) {
         coord_t<M::PrtlDim> xp_Ph { ZERO };
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
@@ -527,7 +506,7 @@ namespace kernel::sr {
             force.fx3(sp, time, ext_force, xp_Ph) },
           force_Cart);
       }
-      if (GCA) {
+      if (pusher_flags & ParticlePusher::GCA) {
         /* hybrid GCA/conventional mode --------------------------------- */
         const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
         const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
@@ -536,20 +515,20 @@ namespace kernel::sr {
         if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
           is_gca = true;
           // update with GCA
-          if constexpr (ExtForce) {
+          if constexpr (HasExtForce) {
             velUpd(true, p, force_Cart, ei_Cart, bi_Cart);
           } else {
             velUpd(true, p, ei_Cart, bi_Cart);
           }
         } else {
           // update with conventional pusher
-          if constexpr (ExtForce) {
+          if constexpr (HasExtForce) {
             ux1(p) += HALF * dt * force_Cart[0];
             ux2(p) += HALF * dt * force_Cart[1];
             ux3(p) += HALF * dt * force_Cart[2];
           }
           velUpd(false, p, ei_Cart, bi_Cart);
-          if constexpr (ExtForce) {
+          if constexpr (HasExtForce) {
             ux1(p) += HALF * dt * force_Cart[0];
             ux2(p) += HALF * dt * force_Cart[1];
             ux3(p) += HALF * dt * force_Cart[2];
@@ -558,20 +537,20 @@ namespace kernel::sr {
       } else {
         /* conventional pusher mode ------------------------------------- */
         // update with conventional pusher
-        if constexpr (ExtForce) {
+        if constexpr (HasExtForce) {
           ux1(p) += HALF * dt * force_Cart[0];
           ux2(p) += HALF * dt * force_Cart[1];
           ux3(p) += HALF * dt * force_Cart[2];
         }
         velUpd(false, p, ei_Cart, bi_Cart);
-        if constexpr (ExtForce) {
+        if constexpr (HasExtForce) {
           ux1(p) += HALF * dt * force_Cart[0];
           ux2(p) += HALF * dt * force_Cart[1];
           ux3(p) += HALF * dt * force_Cart[2];
         }
       }
-      // cooling
-      if (cooling & Cooling::Synchrotron) {
+      // radiative drag
+      if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
         if (!is_gca) {
           u_prime[0] = HALF * (u_prime[0] + ux1(p));
           u_prime[1] = HALF * (u_prime[1] + ux2(p));
@@ -579,7 +558,7 @@ namespace kernel::sr {
           synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
         }
       }
-      if (cooling & Cooling::Compton) {
+      if (radiative_drag_flags & RadiativeDrag::COMPTON) {
         if (!is_gca) {
           u_prime[0] = HALF * (u_prime[0] + ux1(p));
           u_prime[1] = HALF * (u_prime[1] + ux2(p));
@@ -591,7 +570,7 @@ namespace kernel::sr {
       posUpd(true, p, xp_Cd);
     }
 
-    Inline void posUpd(bool massive, index_t& p, coord_t<M::PrtlDim>& xp) const {
+    Inline void posUpd(bool massive, index_t p, coord_t<M::PrtlDim>& xp) const {
       // get cartesian velocity
       if constexpr (M::CoordType == Coord::Cart) {
         // i+di push for Cartesian basis
@@ -682,7 +661,7 @@ namespace kernel::sr {
      * @param p, e0, b0 index & interpolated fields
      */
     Inline void velUpd(bool             with_gca,
-                       index_t&         p,
+                       index_t          p,
                        vec_t<Dim::_3D>& e0,
                        vec_t<Dim::_3D>& b0) const {
       if (with_gca) {
@@ -722,7 +701,7 @@ namespace kernel::sr {
         ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
         ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
         ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
-      } else if (pusher == PrtlPusher::BORIS) {
+      } else if (pusher_flags & ParticlePusher::BORIS) {
         real_t COEFF { coeff };
 
         e0[0] *= COEFF;
@@ -749,7 +728,7 @@ namespace kernel::sr {
         ux1(p) = u0[0];
         ux2(p) = u0[1];
         ux3(p) = u0[2];
-      } else if (pusher == PrtlPusher::VAY) {
+      } else if (pusher_flags & ParticlePusher::VAY) {
         auto COEFF { coeff };
         e0[0] *= COEFF;
         e0[1] *= COEFF;
@@ -797,7 +776,7 @@ namespace kernel::sr {
     }
 
     Inline void velUpd(bool,
-                       index_t&         p,
+                       index_t          p,
                        vec_t<Dim::_3D>& f0,
                        vec_t<Dim::_3D>& e0,
                        vec_t<Dim::_3D>& b0) const {
@@ -839,7 +818,7 @@ namespace kernel::sr {
     }
 
     // Getters
-    Inline void getPrtlPos(index_t& p, coord_t<M::PrtlDim>& xp) const {
+    Inline void getPrtlPos(index_t p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
         xp[0] = i_di_to_Xi(i1(p), dx1(p));
       }
@@ -855,272 +834,529 @@ namespace kernel::sr {
       }
     }
 
-    Inline void getInterpFlds(index_t&         p,
+    template <unsigned short O>
+    Inline void getInterpFlds(index_t          p,
                               vec_t<Dim::_3D>& e0,
                               vec_t<Dim::_3D>& b0) const {
-      if constexpr (D == Dim::_1D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
+      // Zig-zag interpolation
+      if constexpr (O == 0u) {
 
-        // first order
-        real_t c0, c1;
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
 
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
+          // first order
+          real_t c0, c1;
 
-        // Ex1
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::ex1);
-        c1    = EB(i + indx, em::ex1);
-        e0[0] = c0 * pondmx + c1 * pondpx;
-        // Ex2
-        // Interpolate --- (primal)
-        c0    = EB(i, em::ex2);
-        c1    = EB(i + 1, em::ex2);
-        e0[1] = c0 * ponpmx + c1 * ponppx;
-        // Ex3
-        // Interpolate --- (primal)
-        c0    = EB(i, em::ex3);
-        c1    = EB(i + 1, em::ex3);
-        e0[2] = c0 * ponpmx + c1 * ponppx;
-        // Bx1
-        // Interpolate --- (primal)
-        c0    = EB(i, em::bx1);
-        c1    = EB(i + 1, em::bx1);
-        b0[0] = c0 * ponpmx + c1 * ponppx;
-        // Bx2
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::bx2);
-        c1    = EB(i + indx, em::bx2);
-        b0[1] = c0 * pondmx + c1 * pondpx;
-        // Bx3
-        // Interpolate --- (dual)
-        c0    = EB(i - 1 + indx, em::bx3);
-        c1    = EB(i + indx, em::bx3);
-        b0[2] = c0 * pondmx + c1 * pondpx;
-      } else if constexpr (D == Dim::_2D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
 
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
-        int indy = static_cast<int>(dx2_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
 
-        // first order
-        real_t c000, c100, c010, c110, c00, c10;
+          // Ex1
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::ex1);
+          c1    = EB(i + indx, em::ex1);
+          e0[0] = c0 * pondmx + c1 * pondpx;
+          // Ex2
+          // Interpolate --- (primal)
+          c0    = EB(i, em::ex2);
+          c1    = EB(i + 1, em::ex2);
+          e0[1] = c0 * ponpmx + c1 * ponppx;
+          // Ex3
+          // Interpolate --- (primal)
+          c0    = EB(i, em::ex3);
+          c1    = EB(i + 1, em::ex3);
+          e0[2] = c0 * ponpmx + c1 * ponppx;
+          // Bx1
+          // Interpolate --- (primal)
+          c0    = EB(i, em::bx1);
+          c1    = EB(i + 1, em::bx1);
+          b0[0] = c0 * ponpmx + c1 * ponppx;
+          // Bx2
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::bx2);
+          c1    = EB(i + indx, em::bx2);
+          b0[1] = c0 * pondmx + c1 * pondpx;
+          // Bx3
+          // Interpolate --- (dual)
+          c0    = EB(i - 1 + indx, em::bx3);
+          c1    = EB(i + indx, em::bx3);
+          b0[2] = c0 * pondmx + c1 * pondpx;
+        } else if constexpr (D == Dim::_2D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
 
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
-        real_t ponpmy = ONE - dx2_;
-        real_t ponppy = dx2_;
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
 
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
-        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
-        real_t pondpy = ONE - pondmy;
+          // first order
+          real_t c000, c100, c010, c110, c00, c10;
 
-        // Ex1
-        // Interpolate --- (dual, primal)
-        c000  = EB(i - 1 + indx, j, em::ex1);
-        c100  = EB(i + indx, j, em::ex1);
-        c010  = EB(i - 1 + indx, j + 1, em::ex1);
-        c110  = EB(i + indx, j + 1, em::ex1);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        e0[0] = c00 * ponpmy + c10 * ponppy;
-        // Ex2
-        // Interpolate -- (primal, dual)
-        c000  = EB(i, j - 1 + indy, em::ex2);
-        c100  = EB(i + 1, j - 1 + indy, em::ex2);
-        c010  = EB(i, j + indy, em::ex2);
-        c110  = EB(i + 1, j + indy, em::ex2);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        e0[1] = c00 * pondmy + c10 * pondpy;
-        // Ex3
-        // Interpolate -- (primal, primal)
-        c000  = EB(i, j, em::ex3);
-        c100  = EB(i + 1, j, em::ex3);
-        c010  = EB(i, j + 1, em::ex3);
-        c110  = EB(i + 1, j + 1, em::ex3);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        e0[2] = c00 * ponpmy + c10 * ponppy;
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
 
-        // Bx1
-        // Interpolate -- (primal, dual)
-        c000  = EB(i, j - 1 + indy, em::bx1);
-        c100  = EB(i + 1, j - 1 + indy, em::bx1);
-        c010  = EB(i, j + indy, em::bx1);
-        c110  = EB(i + 1, j + indy, em::bx1);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        b0[0] = c00 * pondmy + c10 * pondpy;
-        // Bx2
-        // Interpolate -- (dual, primal)
-        c000  = EB(i - 1 + indx, j, em::bx2);
-        c100  = EB(i + indx, j, em::bx2);
-        c010  = EB(i - 1 + indx, j + 1, em::bx2);
-        c110  = EB(i + indx, j + 1, em::bx2);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        b0[1] = c00 * ponpmy + c10 * ponppy;
-        // Bx3
-        // Interpolate -- (dual, dual)
-        c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
-        c100  = EB(i + indx, j - 1 + indy, em::bx3);
-        c010  = EB(i - 1 + indx, j + indy, em::bx3);
-        c110  = EB(i + indx, j + indy, em::bx3);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        b0[2] = c00 * pondmy + c10 * pondpy;
-      } else if constexpr (D == Dim::_3D) {
-        const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-        const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-        const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
-        const auto dx1_ { static_cast<real_t>(dx1(p)) };
-        const auto dx2_ { static_cast<real_t>(dx2(p)) };
-        const auto dx3_ { static_cast<real_t>(dx3(p)) };
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
 
-        // direct interpolation - Arno
-        int indx = static_cast<int>(dx1_ + HALF);
-        int indy = static_cast<int>(dx2_ + HALF);
-        int indz = static_cast<int>(dx3_ + HALF);
+          // Ex1
+          // Interpolate --- (dual, primal)
+          c000  = EB(i - 1 + indx, j, em::ex1);
+          c100  = EB(i + indx, j, em::ex1);
+          c010  = EB(i - 1 + indx, j + 1, em::ex1);
+          c110  = EB(i + indx, j + 1, em::ex1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          e0[0] = c00 * ponpmy + c10 * ponppy;
+          // Ex2
+          // Interpolate -- (primal, dual)
+          c000  = EB(i, j - 1 + indy, em::ex2);
+          c100  = EB(i + 1, j - 1 + indy, em::ex2);
+          c010  = EB(i, j + indy, em::ex2);
+          c110  = EB(i + 1, j + indy, em::ex2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[1] = c00 * pondmy + c10 * pondpy;
+          // Ex3
+          // Interpolate -- (primal, primal)
+          c000  = EB(i, j, em::ex3);
+          c100  = EB(i + 1, j, em::ex3);
+          c010  = EB(i, j + 1, em::ex3);
+          c110  = EB(i + 1, j + 1, em::ex3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[2] = c00 * ponpmy + c10 * ponppy;
 
-        // first order
-        real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
-          c11, c0, c1;
+          // Bx1
+          // Interpolate -- (primal, dual)
+          c000  = EB(i, j - 1 + indy, em::bx1);
+          c100  = EB(i + 1, j - 1 + indy, em::bx1);
+          c010  = EB(i, j + indy, em::bx1);
+          c110  = EB(i + 1, j + indy, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          b0[0] = c00 * pondmy + c10 * pondpy;
+          // Bx2
+          // Interpolate -- (dual, primal)
+          c000  = EB(i - 1 + indx, j, em::bx2);
+          c100  = EB(i + indx, j, em::bx2);
+          c010  = EB(i - 1 + indx, j + 1, em::bx2);
+          c110  = EB(i + indx, j + 1, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[1] = c00 * ponpmy + c10 * ponppy;
+          // Bx3
+          // Interpolate -- (dual, dual)
+          c000  = EB(i - 1 + indx, j - 1 + indy, em::bx3);
+          c100  = EB(i + indx, j - 1 + indy, em::bx3);
+          c010  = EB(i - 1 + indx, j + indy, em::bx3);
+          c110  = EB(i + indx, j + indy, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[2] = c00 * pondmy + c10 * pondpy;
+        } else if constexpr (D == Dim::_3D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
 
-        real_t ponpmx = ONE - dx1_;
-        real_t ponppx = dx1_;
-        real_t ponpmy = ONE - dx2_;
-        real_t ponppy = dx2_;
-        real_t ponpmz = ONE - dx3_;
-        real_t ponppz = dx3_;
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
+          int indz = static_cast<int>(dx3_ + HALF);
 
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
-        real_t pondpx = ONE - pondmx;
-        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
-        real_t pondpy = ONE - pondmy;
-        real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
-        real_t pondpz = ONE - pondmz;
+          // first order
+          real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
+            c11, c0, c1;
 
-        // Ex1
-        // Interpolate --- (dual, primal, primal)
-        c000  = EB(i - 1 + indx, j, k, em::ex1);
-        c100  = EB(i + indx, j, k, em::ex1);
-        c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
-        c110  = EB(i + indx, j + 1, k, em::ex1);
-        c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
-        c101  = EB(i + indx, j, k + 1, em::ex1);
-        c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
-        c111  = EB(i + indx, j + 1, k + 1, em::ex1);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        e0[0] = c0 * ponpmz + c1 * ponppz;
-        // Ex2
-        // Interpolate -- (primal, dual, primal)
-        c000  = EB(i, j - 1 + indy, k, em::ex2);
-        c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
-        c010  = EB(i, j + indy, k, em::ex2);
-        c110  = EB(i + 1, j + indy, k, em::ex2);
-        c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
-        c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
-        c011  = EB(i, j + indy, k + 1, em::ex2);
-        c111  = EB(i + 1, j + indy, k + 1, em::ex2);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * pondmy + c10 * pondpy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * pondmy + c11 * pondpy;
-        e0[1] = c0 * ponpmz + c1 * ponppz;
-        // Ex3
-        // Interpolate -- (primal, primal, dual)
-        c000  = EB(i, j, k - 1 + indz, em::ex3);
-        c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
-        c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
-        c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
-        c001  = EB(i, j, k + indz, em::ex3);
-        c101  = EB(i + 1, j, k + indz, em::ex3);
-        c011  = EB(i, j + 1, k + indz, em::ex3);
-        c111  = EB(i + 1, j + 1, k + indz, em::ex3);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        e0[2] = c0 * pondmz + c1 * pondpz;
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
+          real_t ponpmz = ONE - dx3_;
+          real_t ponppz = dx3_;
 
-        // Bx1
-        // Interpolate -- (primal, dual, dual)
-        c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
-        c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
-        c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
-        c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
-        c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
-        c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
-        c011  = EB(i, j + indy, k + indz, em::bx1);
-        c111  = EB(i + 1, j + indy, k + indz, em::bx1);
-        c00   = c000 * ponpmx + c100 * ponppx;
-        c10   = c010 * ponpmx + c110 * ponppx;
-        c0    = c00 * pondmy + c10 * pondpy;
-        c01   = c001 * ponpmx + c101 * ponppx;
-        c11   = c011 * ponpmx + c111 * ponppx;
-        c1    = c01 * pondmy + c11 * pondpy;
-        b0[0] = c0 * pondmz + c1 * pondpz;
-        // Bx2
-        // Interpolate -- (dual, primal, dual)
-        c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
-        c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
-        c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
-        c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
-        c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
-        c101  = EB(i + indx, j, k + indz, em::bx2);
-        c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
-        c111  = EB(i + indx, j + 1, k + indz, em::bx2);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        b0[1] = c0 * pondmz + c1 * pondpz;
-        // Bx3
-        // Interpolate -- (dual, dual, primal)
-        c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
-        c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
-        c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
-        c110  = EB(i + indx, j + indy, k, em::bx3);
-        c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
-        c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
-        c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
-        c111  = EB(i + indx, j + indy, k + 1, em::bx3);
-        c00   = c000 * pondmx + c100 * pondpx;
-        c10   = c010 * pondmx + c110 * pondpx;
-        c0    = c00 * ponpmy + c10 * ponppy;
-        c01   = c001 * pondmx + c101 * pondpx;
-        c11   = c011 * pondmx + c111 * pondpx;
-        c1    = c01 * ponpmy + c11 * ponppy;
-        b0[2] = c0 * ponpmz + c1 * ponppz;
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
+          real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+          real_t pondpz = ONE - pondmz;
+
+          // Ex1
+          // Interpolate --- (dual, primal, primal)
+          c000  = EB(i - 1 + indx, j, k, em::ex1);
+          c100  = EB(i + indx, j, k, em::ex1);
+          c010  = EB(i - 1 + indx, j + 1, k, em::ex1);
+          c110  = EB(i + indx, j + 1, k, em::ex1);
+          c001  = EB(i - 1 + indx, j, k + 1, em::ex1);
+          c101  = EB(i + indx, j, k + 1, em::ex1);
+          c011  = EB(i - 1 + indx, j + 1, k + 1, em::ex1);
+          c111  = EB(i + indx, j + 1, k + 1, em::ex1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[0] = c0 * ponpmz + c1 * ponppz;
+          // Ex2
+          // Interpolate -- (primal, dual, primal)
+          c000  = EB(i, j - 1 + indy, k, em::ex2);
+          c100  = EB(i + 1, j - 1 + indy, k, em::ex2);
+          c010  = EB(i, j + indy, k, em::ex2);
+          c110  = EB(i + 1, j + indy, k, em::ex2);
+          c001  = EB(i, j - 1 + indy, k + 1, em::ex2);
+          c101  = EB(i + 1, j - 1 + indy, k + 1, em::ex2);
+          c011  = EB(i, j + indy, k + 1, em::ex2);
+          c111  = EB(i + 1, j + indy, k + 1, em::ex2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          e0[1] = c0 * ponpmz + c1 * ponppz;
+          // Ex3
+          // Interpolate -- (primal, primal, dual)
+          c000  = EB(i, j, k - 1 + indz, em::ex3);
+          c100  = EB(i + 1, j, k - 1 + indz, em::ex3);
+          c010  = EB(i, j + 1, k - 1 + indz, em::ex3);
+          c110  = EB(i + 1, j + 1, k - 1 + indz, em::ex3);
+          c001  = EB(i, j, k + indz, em::ex3);
+          c101  = EB(i + 1, j, k + indz, em::ex3);
+          c011  = EB(i, j + 1, k + indz, em::ex3);
+          c111  = EB(i + 1, j + 1, k + indz, em::ex3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[2] = c0 * pondmz + c1 * pondpz;
+
+          // Bx1
+          // Interpolate -- (primal, dual, dual)
+          c000  = EB(i, j - 1 + indy, k - 1 + indz, em::bx1);
+          c100  = EB(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
+          c010  = EB(i, j + indy, k - 1 + indz, em::bx1);
+          c110  = EB(i + 1, j + indy, k - 1 + indz, em::bx1);
+          c001  = EB(i, j - 1 + indy, k + indz, em::bx1);
+          c101  = EB(i + 1, j - 1 + indy, k + indz, em::bx1);
+          c011  = EB(i, j + indy, k + indz, em::bx1);
+          c111  = EB(i + 1, j + indy, k + indz, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          b0[0] = c0 * pondmz + c1 * pondpz;
+          // Bx2
+          // Interpolate -- (dual, primal, dual)
+          c000  = EB(i - 1 + indx, j, k - 1 + indz, em::bx2);
+          c100  = EB(i + indx, j, k - 1 + indz, em::bx2);
+          c010  = EB(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
+          c110  = EB(i + indx, j + 1, k - 1 + indz, em::bx2);
+          c001  = EB(i - 1 + indx, j, k + indz, em::bx2);
+          c101  = EB(i + indx, j, k + indz, em::bx2);
+          c011  = EB(i - 1 + indx, j + 1, k + indz, em::bx2);
+          c111  = EB(i + indx, j + 1, k + indz, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[1] = c0 * pondmz + c1 * pondpz;
+          // Bx3
+          // Interpolate -- (dual, dual, primal)
+          c000  = EB(i - 1 + indx, j - 1 + indy, k, em::bx3);
+          c100  = EB(i + indx, j - 1 + indy, k, em::bx3);
+          c010  = EB(i - 1 + indx, j + indy, k, em::bx3);
+          c110  = EB(i + indx, j + indy, k, em::bx3);
+          c001  = EB(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
+          c101  = EB(i + indx, j - 1 + indy, k + 1, em::bx3);
+          c011  = EB(i - 1 + indx, j + indy, k + 1, em::bx3);
+          c111  = EB(i + indx, j + indy, k + 1, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[2] = c0 * ponpmz + c1 * ponppz;
+        }
+      } else if constexpr (O >= 1u) {
+
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          // primal and dual shape function
+          real_t     Sp[O + 1], Sd[O + 1];
+          // minimum contributing cells
+          int        ip_min, id_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, Sp);
+
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, Sd);
+
+          // Ex1 -- dual
+          e0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[0] += Sd[idx1] * EB(id_min + idx1, em::ex1);
+          }
+
+          // Ex2 -- primal
+          e0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[1] += Sp[idx1] * EB(ip_min + idx1, em::ex2);
+          }
+
+          // Ex3 -- primal
+          e0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[2] += Sp[idx1] * EB(ip_min + idx1, em::ex3);
+          }
+
+          // Bx1 -- primal
+          b0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[0] += Sp[idx1] * EB(ip_min + idx1, em::bx1);
+          }
+
+          // Bx2 -- dual
+          b0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[1] += Sd[idx1] * EB(id_min + idx1, em::bx2);
+          }
+
+          // Bx3 -- dual
+          b0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[2] += Sd[idx1] * EB(id_min + idx1, em::bx3);
+          }
+
+        } else if constexpr (D == Dim::_2D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          // minimum contributing cells
+          int    ip_min, id_min;
+          int    jp_min, jd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+
+          // Ex1 -- dual, primal
+          e0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::ex1);
+            }
+            e0[0] += c0 * S2p[idx2];
+          }
+
+          // Ex2 -- primal, dual
+          e0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::ex2);
+            }
+            e0[1] += c0 * S2d[idx2];
+          }
+
+          // Ex3 -- primal, primal
+          e0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jp_min + idx2, em::ex3);
+            }
+            e0[2] += c0 * S2p[idx2];
+          }
+
+          // Bx1 -- primal, dual
+          b0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * EB(ip_min + idx1, jd_min + idx2, em::bx1);
+            }
+            b0[0] += c0 * S2d[idx2];
+          }
+
+          // Bx2 -- dual, primal
+          b0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jp_min + idx2, em::bx2);
+            }
+            b0[1] += c0 * S2p[idx2];
+          }
+
+          // Bx3 -- dual, dual
+          b0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * EB(id_min + idx1, jd_min + idx2, em::bx3);
+            }
+            b0[2] += c0 * S2d[idx2];
+          }
+
+        } else if constexpr (D == Dim::_3D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          real_t S3p[O + 1], S3d[O + 1];
+
+          // minimum contributing cells
+          int ip_min, id_min;
+          int jp_min, jd_min;
+          int kp_min, kd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          prtl_shape::order<false, O>(k, dx3_, kp_min, S3p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+          prtl_shape::order<true, O>(k, dx3_, kd_min, S3d);
+
+          // Ex1 -- dual, primal, primal
+          e0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jp_min + idx2, kp_min + idx3, em::ex1);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[0] += c0 * S3p[idx3];
+          }
+
+          // Ex2 -- primal, dual, primal
+          e0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jd_min + idx2, kp_min + idx3, em::ex2);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            e0[1] += c0 * S3p[idx3];
+          }
+
+          // Ex3 -- primal, primal, dual
+          e0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jp_min + idx2, kd_min + idx3, em::ex3);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[2] += c0 * S3d[idx3];
+          }
+
+          // Bx1 -- primal, dual, dual
+          b0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       EB(ip_min + idx1, jd_min + idx2, kd_min + idx3, em::bx1);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[0] += c0 * S3d[idx3];
+          }
+
+          // Bx2 -- dual, primal, dual
+          b0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jp_min + idx2, kd_min + idx3, em::bx2);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            b0[1] += c0 * S3d[idx3];
+          }
+
+          // Bx3 -- dual, dual, primal
+          b0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       EB(id_min + idx1, jd_min + idx2, kp_min + idx3, em::bx3);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[2] += c0 * S3p[idx3];
+          }
+        }
       }
     }
 
     // Extra
-    Inline void boundaryConditions(index_t& p, coord_t<M::PrtlDim>& xp) const {
+    Inline void boundaryConditions(index_t p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
         auto invert_vel = false;
         if (i1(p) < 0) {

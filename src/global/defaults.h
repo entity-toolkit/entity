@@ -97,12 +97,16 @@ namespace ntt::defaults {
   } // namespace gca
 
   namespace synchrotron {
-    const real_t gamma_rad = 1.0;
+    const real_t energy_min = 1e-3;
+    const real_t gamma_rad  = 1.0;
+    const real_t gamma_qed  = 10.0;
   } // namespace synchrotron
-  
-  namespace compton{
-    const real_t gamma_rad = 1.0;
-  }
+
+  namespace compton {
+    const real_t energy_min = 1e-3;
+    const real_t gamma_rad  = 1.0;
+    const real_t gamma_qed  = 10.0;
+  } // namespace compton
 } // namespace ntt::defaults
 
 #endif // GLOBAL_DEFAULTS_H

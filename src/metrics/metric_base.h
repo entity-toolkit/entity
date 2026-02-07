@@ -84,7 +84,6 @@ namespace metric {
    */
   template <Dimension D>
   struct MetricBase {
-    static constexpr bool      is_metric { true };
     static constexpr Dimension Dim { D };
 
     MetricBase(const std::vector<ncells_t>& res, const boundaries_t<real_t>& ext)

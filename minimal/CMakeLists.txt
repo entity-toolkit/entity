@@ -89,7 +89,7 @@ if("ADIOS2_NOMPI" IN_LIST MODES)
 
   find_kokkos()
   find_adios2()
-  list(APPEND libs Kokkos::kokkos adios2::cxx11)
+  list(APPEND libs Kokkos::kokkos adios2::cxx)
 
   add_executable(${exec} ${src})
 
@@ -104,7 +104,7 @@ if("ADIOS2_MPI" IN_LIST MODES)
   find_package(MPI REQUIRED)
   find_kokkos()
   find_adios2()
-  list(APPEND libs MPI::MPI_CXX Kokkos::kokkos adios2::cxx11_mpi)
+  list(APPEND libs MPI::MPI_CXX Kokkos::kokkos adios2::cxx_mpi)
 
   add_executable(${exec} ${src})
 

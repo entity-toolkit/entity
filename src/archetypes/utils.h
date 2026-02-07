@@ -17,7 +17,7 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include <utility>
 
@@ -45,7 +45,6 @@ namespace arch {
     const std::pair<std::vector<real_t>, std::vector<real_t>>& drift_four_vels = {{ ZERO, ZERO, ZERO }, { ZERO, ZERO, ZERO }},
     bool                               use_weights = false,
     const boundaries_t<real_t>&        box         = {}) {
-    static_assert(M::is_metric, "M must be a metric class");
 
     const auto mass_1        = domain.species[species.first - 1].mass();
     const auto mass_2        = domain.species[species.second - 1].mass();
@@ -93,7 +92,6 @@ namespace arch {
     const std::pair<std::vector<real_t>, std::vector<real_t>>& drift_four_vels = {{ ZERO, ZERO, ZERO }, { ZERO, ZERO, ZERO }},
     bool                               use_weights = false,
     const boundaries_t<real_t>&        box         = {}) {
-    static_assert(M::is_metric, "M must be a metric class");
 
     InjectUniformMaxwellians<S, M>(params,
                                    domain,

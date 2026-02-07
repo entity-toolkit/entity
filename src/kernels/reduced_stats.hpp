@@ -17,14 +17,17 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel {
   using namespace ntt;
 
   template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
+    requires metric::traits::HasD<M> &&
+             (metric::traits::HasTransform_i<M> || I == 0) &&
+             metric::traits::HasTransform<M> && metric::traits::HasSqrtDetH<M> &&
+             (I <= 3)
   class ReducedFields_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(I <= 3,
-                  "I must be less than or equal to 3 for ReducedFields_kernel");
     static constexpr auto D = M::Dim;
 
     ndfield_t<D, 6> EM;
@@ -398,14 +401,13 @@ namespace kernel {
   }
 
   template <SimEngine::type S, class M, StatsID::type P>
+    requires metric::traits::HasD<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              S == SimEngine::GRPIC && metric::traits::HasTransform<M>) &&
+             ((P == StatsID::Rho) || (P == StatsID::Charge) ||
+              (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
   class ReducedParticleMoments_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
-
-    static_assert((P == StatsID::Rho) || (P == StatsID::Charge) ||
-                    (P == StatsID::N) || (P == StatsID::Npart) ||
-                    (P == StatsID::T),
-                  "Invalid stats ID");
 
     const unsigned short     c1, c2;
     const array_t<int*>      i1, i2, i3;
