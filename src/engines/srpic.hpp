@@ -1221,7 +1221,7 @@ namespace ntt {
       }
 
       const auto maxwellian = arch::Maxwellian<S, M> { domain.mesh.metric,
-                                                       domain.random_pool,
+                                                       domain.random_pool(),
                                                        temp };
 
       if (dim == in::x1) {
