@@ -231,7 +231,7 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
+                                                      local_domain.random_pool(),
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,
@@ -252,7 +252,7 @@ namespace user {
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
+                                                      local_domain.random_pool(),
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,
