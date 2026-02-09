@@ -95,11 +95,11 @@ namespace ntt {
       : mesh { ncells, extent, metric_params }
       , fields { ncells }
       , species { species_params.begin(), species_params.end() }
-      , m_random_number_pool { constant::RandomSeed +
-                               static_cast<std::uint64_t>(index) }
       , m_index { index }
       , m_offset_ndomains { offset_ndomains }
-      , m_offset_ncells { offset_ncells } {}
+      , m_offset_ncells { offset_ncells }
+      , m_random_number_pool { constant::RandomSeed +
+                               static_cast<std::uint64_t>(index) } {}
 
 #if defined(MPI_ENABLED)
     [[nodiscard]]
