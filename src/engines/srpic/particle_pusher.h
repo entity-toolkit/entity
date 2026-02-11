@@ -4,6 +4,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "utils/comparators.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
@@ -16,7 +17,7 @@
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
 
-#include "kernels/emission/emission.hpp"
+#include "kernels/emission/compton.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
@@ -49,28 +50,31 @@ namespace ntt {
                        "Invalid photon_species for Compton emission",
                        HERE);
         auto& emitted_species = domain.species[photon_species - 1];
-        raise::ErrorIf(not cmp::AlmostEqual_host(emitted_species.mass(), ZERO),
+        raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.mass()),
                        "Emitted photon species must have zero mass",
                        HERE);
-        raise::ErrorIf(not cmp::AlmostEqual_host(emitted_species.charge(), ZERO),
+        raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
                        "Emitted photon species must have zero charge",
                        HERE);
-        const auto emission_policy = kernel::EmissionPolicy<M, EmissionType::COMPTON>(
+        const auto emission_policy = kernel::emission::Compton<M>(
           emitted_species,
           pusher_params.mass,
+          pusher_params.charge,
+          pusher_params.radiative_drag_flags,
           pusher_params.dt,
           domain.index(),
           params,
-          domain.random_pool);
+          domain.random_pool());
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, EmissionType::COMPTON>(pusher_params,
-                                                                 pusher_arrays,
-                                                                 EB,
-                                                                 metric,
-                                                                 force,
-                                                                 emission_policy));
+          kernel::sr::Pusher_kernel<M, F, decltype(emission_policy)>(
+            pusher_params,
+            pusher_arrays,
+            EB,
+            metric,
+            force,
+            emission_policy));
         const auto n_inj = emission_policy.number_injected();
         domain.species[photon_species - 1].set_npart(
           emitted_species.npart() + n_inj);

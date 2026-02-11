@@ -109,7 +109,7 @@ namespace kernel::gr {
                   array_t<prtldx_t*>&         dx1,
                   array_t<prtldx_t*>&         dx2,
                   array_t<prtldx_t*>&         dx3,
-                  array_t<prtldx_t*>&         dx1_pGev,
+                  array_t<prtldx_t*>&         dx1_prev,
                   array_t<prtldx_t*>&         dx2_prev,
                   array_t<prtldx_t*>&         dx3_prev,
                   array_t<real_t*>&           ux1,
