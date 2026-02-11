@@ -55,9 +55,7 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  struct NoForce_t {
-    NoForce_t() {}
-  };
+  struct NoForce_t {};
 
   /**
    * @brief
@@ -225,14 +223,15 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F = NoForce_t, EmissionTypeFlag E = EmissionType::NONE>
+  template <class M, class F = NoForce_t, class E = NoEmissionPolicy_t<SimEngine::SRPIC, M>>
     requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
              metric::traits::HasConvertXYZ<M> &&
              metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
   struct Pusher_kernel {
     static constexpr auto D           = M::Dim;
     static constexpr auto HasExtForce = not std::is_same<F, NoForce_t>::value;
-    static constexpr auto HasEmission = (E != EmissionType::NONE);
+    static constexpr auto HasEmission =
+      not std::is_same<E, NoEmissionPolicy_t<SimEngine::SRPIC, M>>::value;
 
   private:
     const ParticlePusherFlags pusher_flags;
@@ -254,7 +253,7 @@ namespace kernel::sr {
     const M            metric;
     const F            force;
 
-    const EmissionPolicy<M, E> emission_policy;
+    const E emission_policy;
 
     const simtime_t time;
     const real_t    coeff, dt;
@@ -282,8 +281,8 @@ namespace kernel::sr {
       PusherArrays&                  pusher_arrays,
       const randacc_ndfield_t<D, 6>& EB,
       const M&                       metric,
-      const F&                       force           = NoForce_t {},
-      const EmissionPolicy<M, E>&    emission_policy = EmissionPolicy<M, E> {})
+      const F&                       force = NoForce_t {},
+      const E& emission_policy = NoEmissionPolicy_t<SimEngine::SRPIC, M> {})
       : pusher_flags { pusher_params.pusher_flags }
       , radiative_drag_flags { pusher_params.radiative_drag_flags }
       , ext_force { pusher_params.ext_force }
@@ -455,22 +454,40 @@ namespace kernel::sr {
       ux3(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[2];
     }
 
-    Inline void comptonEmission(index_t p, vec_t<Dim::_3D>& u_prime) const {
-      real_t          photon_energy { ZERO };
-      vec_t<Dim::_3D> delta_u_Ph { ZERO };
-      if (emission_policy.shouldEmit(u_prime, photon_energy, delta_u_Ph)) {
-        if (radiative_drag_flags & RadiativeDrag::COMPTON) {
-          ux1(p) += delta_u_Ph[0];
-          ux2(p) += delta_u_Ph[1];
-          ux3(p) += delta_u_Ph[2];
-        }
+    Inline void processEmission(index_t                    p,
+                                vec_t<Dim::_3D>&           u_prime,
+                                const coord_t<M::PrtlDim>& xp_Cd,
+                                const coord_t<M::PrtlDim>& xp_Ph,
+                                const vec_t<Dim::_3D>&     ep_Cart,
+                                const vec_t<Dim::_3D>&     bp_Cart) const {
+      typename E::Payload payload;
+      real_t              photon_energy { ZERO };
+      vec_t<Dim::_3D>     delta_u_Ph { ZERO };
+      const auto          emission_response = emission_policy.shouldEmit(xp_Cd,
+                                                                xp_Ph,
+                                                                u_prime,
+                                                                ep_Cart,
+                                                                bp_Cart,
+                                                                delta_u_Ph,
+                                                                payload);
+
+      const auto should_emit = emission_response.first;
+      const auto should_drag = emission_response.second;
+
+      if (should_drag) {
+        ux1(p) += delta_u_Ph[0];
+        ux2(p) += delta_u_Ph[1];
+        ux3(p) += delta_u_Ph[2];
+      }
+
+      if (should_emit) {
         vec_t<Dim::_3D> direction { ZERO };
         const auto      delta_u_Ph_mag = NORM(delta_u_Ph[0],
                                          delta_u_Ph[1],
                                          delta_u_Ph[2]);
-        direction[0]                   = delta_u_Ph[0] / delta_u_Ph_mag;
-        direction[1]                   = delta_u_Ph[1] / delta_u_Ph_mag;
-        direction[2]                   = delta_u_Ph[2] / delta_u_Ph_mag;
+        direction[0]                   = -delta_u_Ph[0] / delta_u_Ph_mag;
+        direction[1]                   = -delta_u_Ph[1] / delta_u_Ph_mag;
+        direction[2]                   = -delta_u_Ph[2] / delta_u_Ph_mag;
         tuple_t<int, M::Dim>      xi_Cd { 0 };
         tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
         real_t                    prtl_phi = ZERO;
@@ -490,7 +507,7 @@ namespace kernel::sr {
           xi_Cd[2]  = i3(p);
           dxi_Cd[2] = dx3(p);
         }
-        emission_policy.emit(xi_Cd, dxi_Cd, direction, photon_energy, weight(p), prtl_phi);
+        emission_policy.emit(xi_Cd, dxi_Cd, direction, weight(p), prtl_phi, payload);
       }
     }
 
@@ -520,7 +537,7 @@ namespace kernel::sr {
 
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
       metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-      if (radiative_drag_flags != RadiativeDrag::NONE) {
+      if ((radiative_drag_flags != RadiativeDrag::NONE) or HasEmission) {
         // backup fields & velocities to use later in radiative drag
         ei_Cart_rad[0] = ei_Cart[0];
         ei_Cart_rad[1] = ei_Cart[1];
@@ -532,8 +549,8 @@ namespace kernel::sr {
         u_prime[1]     = ux2(p);
         u_prime[2]     = ux3(p);
       }
-      if constexpr (HasExtForce) {
-        coord_t<M::PrtlDim> xp_Ph { ZERO };
+      coord_t<M::PrtlDim> xp_Ph { ZERO };
+      if constexpr (HasExtForce or HasEmission) {
         xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
         if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
           xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
@@ -541,6 +558,8 @@ namespace kernel::sr {
         if constexpr (M::PrtlDim == Dim::_3D) {
           xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
         }
+      }
+      if constexpr (HasExtForce) {
         metric.template transform_xyz<Idx::T, Idx::XYZ>(
           xp_Cd,
           { force.fx1(sp, time, ext_force, xp_Ph),
@@ -608,10 +627,7 @@ namespace kernel::sr {
         u_prime[0] = HALF * (u_prime[0] + ux1(p));
         u_prime[1] = HALF * (u_prime[1] + ux2(p));
         u_prime[2] = HALF * (u_prime[2] + ux3(p));
-        if constexpr (E == EmissionType::SYNCHROTRON) {
-        } else if constexpr (E == EmissionType::COMPTON) {
-          comptonEmission(p, u_prime);
-        }
+        processEmission(p, u_prime, xp_Cd, xp_Ph, ei_Cart_rad, bi_Cart_rad);
       }
       // update position
       posUpd(true, p, xp_Cd);
