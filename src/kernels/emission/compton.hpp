@@ -54,21 +54,17 @@ namespace kernel {
               npart_t                          domain_idx,
               const SimulationParams&          params,
               random_number_pool_t&            random_pool)
-        : emitted_photon_weight { params.get<real_t>(
+        : emitted_photon_weight { params.template get<real_t>(
             "radiation.emission.compton.photon_weight") }
-        , emitted_photon_min_energy { params.get<real_t>(
+        , emitted_photon_min_energy { params.template get<real_t>(
             "radiation.emission.compton.photon_energy_min") }
         , nominal_probability { math::abs(species_charge / species_mass) *
-                                params.get<real_t>("scales.omegaB0") *
-                                static_cast<real_t>(0.1) * dt *
-                                SQR(params.get<real_t>(
-                                      "radiation.emission.compton.gamma_qed") /
-                                    params.get<real_t>(
-                                      "radiation.drag.compton.gamma_rad")) /
-                                emitted_photon_weight }
-        , nominal_photon_energy { species_mass /
-                                  SQR(params.get<real_t>(
-                                    "radiation.emission.compton.gamma_qed")) }
+                                params.template get<real_t>(
+                                  "radiation.emission.compton.nominal_"
+                                  "probability") }
+        , nominal_photon_energy { species_mass * params.template get<real_t>(
+                                                   "radiation.emission.compton."
+                                                   "nominal_photon_energy") }
         , should_drag { static_cast<bool>(radiative_drag_flags &
                                           RadiativeDrag::COMPTON) }
         , photon_i1 { photon_species.i1 }
@@ -98,8 +94,15 @@ namespace kernel {
 
       /**
        *
-       * @brief Determine whether a photon is emitted and compute its energy and
-       * the recoil on the emitting particle
+       * @brief Determine whether a photon is emitted, the drag is applied,
+       *      and compute its energy and the recoil on the emitting particle
+       *
+       * @param x_Cd Position of the particle (code)
+       * @param x_Ph Position of the particle (physical)
+       * @param u_Ph Velocity of the particle (physical)
+       * @param ep Interpolated electric field at the particle position (physical)
+       * @param bp Interpolated magnetic field at the particle position (physical)
+       * @param delta_u_Ph Output parameter for the recoil on the emitting particle (physical units)
        *
        * @note
        *
@@ -112,18 +115,18 @@ namespace kernel {
        *      e_gamma = (gamma / gamma_QED)^2 * (m / m0)
        *
        *   drag force [in units of m c]:
-       *      du / dt = - photon_weight * p_gamma * e_gamma * u_hat
+       *      du / dt = - photon_weight * p_gamma * e_gamma * u_hat / beta
        *
        *  @returns Pair of booleans to indicate whether a particle should be emitted
        *      and whether the emitting particle should experience a recoil (i.e. radiative drag)
        *
        */
-      Inline auto shouldEmit(const coord_t<M::PrtlDim>& xp_Cd,
-                             const coord_t<M::PrtlDim>& xp_Ph,
-                             const vec_t<Dim::_3D>&     u_Ph,
-                             const vec_t<Dim::_3D>&     ep,
-                             const vec_t<Dim::_3D>&     bp,
-                             vec_t<Dim::_3D>&           delta_u_Ph,
+      Inline auto shouldEmit(const coord_t<M::PrtlDim>&,
+                             const coord_t<M::PrtlDim>&,
+                             const vec_t<Dim::_3D>& u_Ph,
+                             const vec_t<Dim::_3D>&,
+                             const vec_t<Dim::_3D>&,
+                             vec_t<Dim::_3D>& delta_u_Ph,
                              Payload& payload) const -> Kokkos::pair<bool, bool> {
         const auto u_sqr       = NORM_SQR(u_Ph[0], u_Ph[1], u_Ph[2]);
         const auto gamma_sqr   = ONE + u_sqr;
@@ -132,8 +135,8 @@ namespace kernel {
 
         payload.photon_energy = gamma_sqr * nominal_photon_energy;
 
-        const auto delta_u = -probability * payload.photon_energy /
-                             math::sqrt(u_sqr);
+        const auto delta_u = -emitted_photon_weight * payload.photon_energy /
+                             (math::sqrt(u_sqr) * beta);
 
         delta_u_Ph[0] = delta_u * u_Ph[0];
         delta_u_Ph[1] = delta_u * u_Ph[1];
@@ -142,11 +145,10 @@ namespace kernel {
         auto       rand_gen    = random_pool.get_state();
         const auto should_emit = Random<real_t>(rand_gen) < probability;
         random_pool.free_state(rand_gen);
-        Kokkos::printf("probability: %e\n", probability);
 
         return Kokkos::make_pair(
           should_emit and (payload.photon_energy >= emitted_photon_min_energy),
-          should_drag);
+          should_drag and should_emit);
       }
 
       Inline void emit(const tuple_t<int, M::Dim>&      xi_Cd,

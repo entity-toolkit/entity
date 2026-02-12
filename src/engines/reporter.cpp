@@ -79,7 +79,7 @@ namespace ntt {
                        fmt::formatVector(ndomains_per_dim).c_str(),
                        ndomains);
     report += "\n";
-    reporter::AddCategory(report, 4, "Fiducial parameters");
+    reporter::AddCategory(report, 4, "Nominal parameters");
     reporter::AddParam(report,
                        4,
                        "Particles per cell [ppc0]",
@@ -116,6 +116,22 @@ namespace ntt {
                        "Magnetization [sigma0]",
                        "%.3e",
                        params.template get<real_t>("scales.sigma0"));
+
+    reporter::AddCategory(report, 6, "Compton emission");
+    if (params.contains("radiation.emission.compton.photon_species")) {
+      reporter::AddParam(report,
+                         6,
+                         "Nominal probability",
+                         "%.3e",
+                         params.template get<real_t>(
+                           "radiation.emission.compton.nominal_probability"));
+      reporter::AddParam(report,
+                         6,
+                         "Nominal photon energy",
+                         "%.3e",
+                         params.template get<real_t>(
+                           "radiation.emission.compton.nominal_photon_energy"));
+    }
     return report;
   }
 

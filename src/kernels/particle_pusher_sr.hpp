@@ -471,16 +471,13 @@ namespace kernel::sr {
                                                                 delta_u_Ph,
                                                                 payload);
 
-      const auto should_emit = emission_response.first;
-      const auto should_drag = emission_response.second;
-
-      if (should_drag) {
+      if (emission_response.second) {
         ux1(p) += delta_u_Ph[0];
         ux2(p) += delta_u_Ph[1];
         ux3(p) += delta_u_Ph[2];
       }
 
-      if (should_emit) {
+      if (emission_response.first) {
         vec_t<Dim::_3D> direction { ZERO };
         const auto      delta_u_Ph_mag = NORM(delta_u_Ph[0],
                                          delta_u_Ph[1],

@@ -197,7 +197,7 @@ namespace ntt {
     boundaries_params.setParams(this);
 
     /* [algorithms] --------------------------------------------------------- */
-    ntt::params::Algorithms     alg_params {};
+    params::Algorithms          alg_params {};
     std::map<std::string, bool> alg_extra_flags = {
       {  "gr",          engine_enum == SimEngine::GRPIC },
       { "gca", isPromised("algorithms.gca.e_ovr_b_max") },
@@ -206,7 +206,7 @@ namespace ntt {
     alg_params.setParams(alg_extra_flags, this);
 
     /* extra physics ------------------------------------------------------ */
-    ntt::params::Extra          extra_params {};
+    params::Extra               extra_params {};
     std::map<std::string, bool> extra_extra_flags = {
       {     "synchrotron_drag",isPromised("radiation.drag.synchrotron.gamma_rad")                               },
       {         "compton_drag",          isPromised("radiation.drag.compton.gamma_rad") },
@@ -214,7 +214,7 @@ namespace ntt {
        isPromised("radiation.emission.synchrotron.photon_species")                     },
       {     "compton_emission", isPromised("radiation.emission.compton.photon_species") }
     };
-    extra_params.read(extra_extra_flags, toml_data);
+    extra_params.read(extra_extra_flags, toml_data, this);
     extra_params.setParams(extra_extra_flags, this);
 
     // @TODO: disabling stats for non-Cartesian

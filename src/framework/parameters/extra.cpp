@@ -8,7 +8,8 @@ namespace ntt {
   namespace params {
 
     void Extra::read(const std::map<std::string, bool>& extra,
-                     const toml::value&                 toml_data) {
+                     const toml::value&                 toml_data,
+                     const SimulationParams* const      params) {
       if (extra.at("synchrotron_drag")) {
         synchrotron_gamma_rad = toml::find_or(toml_data,
                                               "radiation",
@@ -60,35 +61,43 @@ namespace ntt {
       }
 
       if (extra.at("compton_emission")) {
-        compton_gamma_rad      = toml::find_or(toml_data,
+        compton_gamma_rad           = toml::find_or(toml_data,
                                           "radiation",
                                           "drag",
                                           "compton",
                                           "gamma_rad",
                                           defaults::compton::gamma_rad);
-        compton_gamma_qed      = toml::find_or(toml_data,
+        compton_gamma_qed           = toml::find_or(toml_data,
                                           "radiation",
                                           "emission",
                                           "compton",
                                           "gamma_qed",
                                           defaults::compton::gamma_qed);
-        compton_energy_min     = toml::find_or(toml_data,
+        compton_energy_min          = toml::find_or(toml_data,
                                            "radiation",
                                            "emission",
                                            "compton",
                                            "photon_energy_min",
                                            defaults::compton::energy_min);
-        compton_photon_weight  = toml::find_or(toml_data,
+        compton_photon_weight       = toml::find_or(toml_data,
                                               "radiation",
                                               "emission",
                                               "compton",
                                               "photon_weight",
                                               ONE);
-        compton_photon_species = toml::find<spidx_t>(toml_data,
+        compton_photon_species      = toml::find<spidx_t>(toml_data,
                                                      "radiation",
                                                      "emission",
                                                      "compton",
                                                      "photon_species");
+        compton_nominal_probability = params->template get<real_t>(
+                                        "scales.omegaB0") *
+                                      static_cast<real_t>(0.1) *
+                                      params->template get<real_t>(
+                                        "algorithms.timestep.dt") *
+                                      SQR(compton_gamma_qed / compton_gamma_rad) /
+                                      compton_photon_weight;
+        compton_nominal_photon_energy = ONE / SQR(compton_gamma_qed);
       }
     }
 
@@ -123,6 +132,10 @@ namespace ntt {
                     compton_photon_weight);
         params->set("radiation.emission.compton.photon_species",
                     compton_photon_species);
+        params->set("radiation.emission.compton.nominal_probability",
+                    compton_nominal_probability);
+        params->set("radiation.emission.compton.nominal_photon_energy",
+                    compton_nominal_photon_energy);
       }
     }
   } // namespace params
