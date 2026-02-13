@@ -224,11 +224,14 @@ namespace ntt {
     }
 
     template <class M, class PG>
-      requires metric::traits::HasD<M>
+      requires metric::traits::HasD<M> and metric::traits::HasCoordType<M> and
+               metric::traits::HasTransform_i<M>
     void FixedFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::SRPIC, M>& domain,
                        const PG&                    pgen,
+                       const prm::Parameters&       engine_params,
                        BCTags                       tags) {
+      const auto time = engine_params.get<simtime_t>("time");
       /**
        * fixed field boundaries
        */
@@ -238,22 +241,6 @@ namespace ntt {
                      "Fixed BCs only implemented for x1 in "
                      "non-cartesian coordinates",
                      HERE);
-      em normal_b_comp, tang_e_comp1, tang_e_comp2;
-      if (dim == in::x1) {
-        normal_b_comp = em::bx1;
-        tang_e_comp1  = em::ex2;
-        tang_e_comp2  = em::ex3;
-      } else if (dim == in::x2) {
-        normal_b_comp = em::bx2;
-        tang_e_comp1  = em::ex1;
-        tang_e_comp2  = em::ex3;
-      } else if (dim == in::x3) {
-        normal_b_comp = em::bx3;
-        tang_e_comp1  = em::ex1;
-        tang_e_comp2  = em::ex2;
-      } else {
-        raise::Error("Invalid dimension", HERE);
-      }
       std::vector<ncells_t> xi_min, xi_max;
       const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
       for (dim_t d { 0u }; d < M::Dim; ++d) {
@@ -277,35 +264,59 @@ namespace ntt {
                      HERE);
       std::vector<unsigned short> comps;
       if (tags & BC::E) {
-        comps.push_back(tang_e_comp1);
-        comps.push_back(tang_e_comp2);
+        comps.push_back(em::ex1);
+        comps.push_back(em::ex2);
+        comps.push_back(em::ex3);
       }
       if (tags & BC::B) {
-        comps.push_back(normal_b_comp);
+        comps.push_back(em::bx1);
+        comps.push_back(em::bx2);
+        comps.push_back(em::bx3);
       }
       if constexpr (arch::traits::pgen::HasFixFieldsConst<PG>) {
+        raise::ErrorIf(M::CoordType != Coord::Cart and dim != in::x1,
+                       "FixedFields cannot be used for non-cartesian metric",
+                       HERE);
         for (const auto& comp : comps) {
-          auto value     = ZERO;
-          bool shouldset = false;
+          auto       value     = ZERO;
+          bool       shouldset = false;
           // if fix field function present, read from it
-          const auto newset = pgen.FixFieldsConst((bc_in)(sign * ((short)dim + 1)),
+          const auto newset    = pgen.FixFieldsConst(time,
+                                                  (bc_in)(sign * ((short)dim + 1)),
                                                   (em)comp);
-          value     = newset.first;
-          shouldset = newset.second;
+          value                = newset.first;
+          shouldset            = newset.second;
           if (shouldset) {
+            // convert tetrad basis field (T) to contravariant (U)
+            real_t value_U = ZERO;
+            if (comp == em::ex1 or comp == em::bx1) {
+              value_U = domain.mesh.metric.template transform<1, Idx::T, Idx::U>(
+                { ZERO },
+                value);
+            } else if (comp == em::ex2 or comp == em::bx2) {
+              value_U = domain.mesh.metric.template transform<2, Idx::T, Idx::U>(
+                { ZERO },
+                value);
+            } else if (comp == em::ex3 or comp == em::bx3) {
+              value_U = domain.mesh.metric.template transform<3, Idx::T, Idx::U>(
+                { ZERO },
+                value);
+            } else {
+              raise::Error("Invalid EM component", HERE);
+            }
             if constexpr (M::Dim == Dim::_1D) {
               Kokkos::deep_copy(
                 Kokkos::subview(domain.fields.em,
                                 std::make_pair(xi_min[0], xi_max[0]),
                                 comp),
-                value);
+                value_U);
             } else if constexpr (M::Dim == Dim::_2D) {
               Kokkos::deep_copy(
                 Kokkos::subview(domain.fields.em,
                                 std::make_pair(xi_min[0], xi_max[0]),
                                 std::make_pair(xi_min[1], xi_max[1]),
                                 comp),
-                value);
+                value_U);
             } else if constexpr (M::Dim == Dim::_3D) {
               Kokkos::deep_copy(
                 Kokkos::subview(domain.fields.em,
@@ -313,7 +324,7 @@ namespace ntt {
                                 std::make_pair(xi_min[1], xi_max[1]),
                                 std::make_pair(xi_min[2], xi_max[2]),
                                 comp),
-                value);
+                value_U);
             } else {
               raise::Error("Invalid dimension", HERE);
             }
@@ -642,7 +653,7 @@ namespace ntt {
                                     tags);
         } else if (global_grid.flds_bc_in(direction) == FldsBC::FIXED) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::FIXED) {
-            FixedFieldsIn<M, PG>(direction, domain, pgen, tags);
+            FixedFieldsIn<M, PG>(direction, domain, pgen, engine_params, tags);
           }
         } else if (global_grid.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
           if (domain.mesh.flds_bc_in(direction) == FldsBC::CONDUCTOR) {
