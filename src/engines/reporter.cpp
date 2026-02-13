@@ -117,8 +117,8 @@ namespace ntt {
                        "%.3e",
                        params.template get<real_t>("scales.sigma0"));
 
-    reporter::AddCategory(report, 6, "Compton emission");
     if (params.contains("radiation.emission.compton.photon_species")) {
+      reporter::AddCategory(report, 4, "- Compton emission");
       reporter::AddParam(report,
                          6,
                          "Nominal probability",
@@ -131,6 +131,23 @@ namespace ntt {
                          "%.3e",
                          params.template get<real_t>(
                            "radiation.emission.compton.nominal_photon_energy"));
+    }
+    if (params.contains("radiation.emission.synchrotron.photon_species")) {
+      reporter::AddCategory(report, 4, "- Synchrotron emission");
+      reporter::AddParam(
+        report,
+        6,
+        "Nominal probability",
+        "%.3e",
+        params.template get<real_t>(
+          "radiation.emission.synchrotron.nominal_probability"));
+      reporter::AddParam(
+        report,
+        6,
+        "Nominal photon energy",
+        "%.3e",
+        params.template get<real_t>(
+          "radiation.emission.synchrotron.nominal_photon_energy"));
     }
     return report;
   }

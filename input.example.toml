@@ -230,6 +230,18 @@
       #   @required
       photon_species = ""
 
+      # @inferred:
+      # - nominal_probability
+      #     @brief: Nominal probability of the emission for a particle with `gamma * beta = 1`, charge-to-mass = `q0 / m0`
+      #     @type: float
+      #     @from: `.gamma_qed`, `.photon_weight`, `...drag.synchrotron.gamma_rad`, `scales.omegaB0`, `algorithms.timestep.dt`
+      #     @value: `0.1 * omegaB0 * dt * (gamma_qed / gamma_rad)^2 / photon_weight`
+      # - nominal_photon_energy
+      #     @brief: Nominal energy of the emitted photon for a particle with `gamma * beta = 1`, mass = `m0`
+      #     @type: float
+      #     @from: `.gamma_qed`
+      #     @value: `(1 / gamma_qed)^2`
+
     [radiation.emission.compton]
       # Gamma-factor of a particle emitting inverse Compton photons at energy `m0 c^2` in fiducial magnetic field `B0`
       #   @type: float [> 1.0]

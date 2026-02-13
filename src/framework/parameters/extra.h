@@ -34,6 +34,8 @@ namespace ntt {
       real_t  synchrotron_gamma_qed;
       real_t  synchrotron_photon_weight;
       spidx_t synchrotron_photon_species;
+      real_t  synchrotron_nominal_probability;
+      real_t  synchrotron_nominal_photon_energy;
 
       real_t  compton_energy_min;
       real_t  compton_gamma_qed;

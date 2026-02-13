@@ -18,6 +18,7 @@
 #include "framework/parameters/parameters.h"
 
 #include "kernels/emission/compton.hpp"
+#include "kernels/emission/synchrotron.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
@@ -42,7 +43,42 @@ namespace ntt {
                                                              metric,
                                                              force));
       } else if (emission_policy_flag == EmissionType::SYNCHROTRON) {
-        // ...
+        const auto photon_species = params.get<spidx_t>(
+          "radiation.emission.synchrotron.photon_species");
+        raise::ErrorIf(photon_species > domain.species.size(),
+                       "Invalid photon_species for Synchrotron emission",
+                       HERE);
+        auto& emitted_species = domain.species[photon_species - 1];
+        raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.mass()),
+                       "Emitted photon species must have zero mass",
+                       HERE);
+        raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
+                       "Emitted photon species must have zero charge",
+                       HERE);
+        const auto emission_policy = kernel::emission::Synchrotron<M>(
+          emitted_species,
+          pusher_params.mass,
+          pusher_params.charge,
+          pusher_params.radiative_drag_flags,
+          pusher_params.dt,
+          domain.index(),
+          params,
+          domain.random_pool());
+        Kokkos::parallel_for(
+          "ParticlePusher",
+          range,
+          kernel::sr::Pusher_kernel<M, F, decltype(emission_policy)>(
+            pusher_params,
+            pusher_arrays,
+            EB,
+            metric,
+            force,
+            emission_policy));
+        const auto n_inj = emission_policy.number_injected();
+        domain.species[photon_species - 1].set_npart(
+          emitted_species.npart() + n_inj);
+        domain.species[photon_species - 1].set_counter(
+          emitted_species.counter() + n_inj);
       } else if (emission_policy_flag == EmissionType::COMPTON) {
         const auto photon_species = params.get<spidx_t>(
           "radiation.emission.compton.photon_species");

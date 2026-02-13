@@ -58,6 +58,13 @@ namespace ntt {
                                                          "emission",
                                                          "synchrotron",
                                                          "photon_species");
+        synchrotron_nominal_probability =
+          params->template get<real_t>("scales.omegaB0") *
+          static_cast<real_t>(0.1) *
+          params->template get<real_t>("algorithms.timestep.dt") *
+          SQR(synchrotron_gamma_qed / synchrotron_gamma_rad) /
+          synchrotron_photon_weight;
+        synchrotron_nominal_photon_energy = ONE / SQR(synchrotron_gamma_qed);
       }
 
       if (extra.at("compton_emission")) {
@@ -121,6 +128,10 @@ namespace ntt {
                     synchrotron_photon_weight);
         params->set("radiation.emission.synchrotron.photon_species",
                     synchrotron_photon_species);
+        params->set("radiation.emission.synchrotron.nominal_probability",
+                    synchrotron_nominal_probability);
+        params->set("radiation.emission.synchrotron.nominal_photon_energy",
+                    synchrotron_nominal_photon_energy);
       }
 
       if (extra.at("compton_emission")) {

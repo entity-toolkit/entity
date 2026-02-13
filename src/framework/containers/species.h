@@ -196,6 +196,11 @@ namespace ntt {
                          "Radiative drag",
                          "%s",
                          RadiativeDrag::to_string(radiative_drag_flags()).c_str());
+      reporter::AddParam(report,
+                         6,
+                         "Emission policy",
+                         "%s",
+                         EmissionType::to_string(emission_policy_flag()).c_str());
       reporter::AddParam(report, 6, "# of real-value payloads", "%d", npld_r());
       reporter::AddParam(report, 6, "# of integer-value payloads", "%d", npld_i());
       return report;

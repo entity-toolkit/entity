@@ -322,8 +322,9 @@ namespace kernel::sr {
                           ? SQR(pusher_params.gca_params.get<real_t>(
                               "e_ovr_b_max"))
                           : ZERO }
-      , raddrag_coeff_synchrotron { (pusher_params.radiative_drag_flags &
-                                     RadiativeDrag::SYNCHROTRON)
+      , raddrag_coeff_synchrotron { ((pusher_params.radiative_drag_flags &
+                                      RadiativeDrag::SYNCHROTRON) and
+                                     (not HasEmission))
                                       ? static_cast<real_t>(0.1) *
                                           pusher_params.dt * pusher_params.omegaB0 /
                                           (SQR(pusher_params
@@ -331,8 +332,9 @@ namespace kernel::sr {
                                                    "synchrotron_gamma_rad")) *
                                            pusher_params.mass)
                                       : ZERO }
-      , raddrag_coeff_compton { (pusher_params.radiative_drag_flags &
-                                 RadiativeDrag::COMPTON)
+      , raddrag_coeff_compton { ((pusher_params.radiative_drag_flags &
+                                  RadiativeDrag::COMPTON) and
+                                 (not HasEmission))
                                   ? static_cast<real_t>(0.1) *
                                       pusher_params.dt * pusher_params.omegaB0 /
                                       (SQR(pusher_params.radiative_drag_params.get<real_t>(
