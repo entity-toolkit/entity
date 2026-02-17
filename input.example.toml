@@ -449,7 +449,7 @@
     # Particle emission policy for the species
     #   @type: string
     #   @default: "None"
-    #   @enum: "None", "Synchrotron", "Compton", "StrongFieldPP"
+    #   @enum: "None", "Synchrotron", "Compton"
     #   @note: Only one emission mechanism allowed
     #   @note: Appropriate radiation drag flag will be applied automatically (unless explicitly set to "None")
     emission = ""
