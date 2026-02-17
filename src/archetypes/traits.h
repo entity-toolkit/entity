@@ -114,11 +114,12 @@ namespace arch {
       };
 
       template <class PG>
-      concept HasFixFieldsConst = requires(const PG&      pgen,
-                                           const bc_in&   bc,
-                                           const ntt::em& comp) {
+      concept HasFixFieldsConst = requires(const PG&    pgen,
+                                           simtime_t    time,
+                                           const bc_in& bc,
+                                           ntt::em      comp) {
         {
-          pgen.FixFieldsConst(bc, comp)
+          pgen.FixFieldsConst(time, bc, comp)
         } -> std::convertible_to<std::pair<real_t, bool>>;
       };
 

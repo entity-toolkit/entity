@@ -34,13 +34,19 @@ namespace ntt {
       real_t  synchrotron_gamma_qed;
       real_t  synchrotron_photon_weight;
       spidx_t synchrotron_photon_species;
+      real_t  synchrotron_nominal_probability;
+      real_t  synchrotron_nominal_photon_energy;
 
       real_t  compton_energy_min;
       real_t  compton_gamma_qed;
       real_t  compton_photon_weight;
       spidx_t compton_photon_species;
+      real_t  compton_nominal_probability;
+      real_t  compton_nominal_photon_energy;
 
-      void read(const std::map<std::string, bool>&, const toml::value&);
+      void read(const std::map<std::string, bool>&,
+                const toml::value&,
+                const SimulationParams* const);
       void setParams(const std::map<std::string, bool>&, SimulationParams*) const;
     };
 
