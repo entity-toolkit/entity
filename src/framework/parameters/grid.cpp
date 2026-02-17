@@ -6,7 +6,7 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"

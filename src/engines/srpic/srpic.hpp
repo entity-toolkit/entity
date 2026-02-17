@@ -18,7 +18,7 @@
 
 #include "utils/numeric.h"
 #include "utils/timer.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "engines/srpic/currents.h"
 #include "engines/srpic/fields_bcs.h"

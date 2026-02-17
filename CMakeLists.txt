@@ -106,9 +106,8 @@ set(BUILD_TESTING
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 find_or_fetch_dependency(Kokkos FALSE QUIET)
-find_or_fetch_dependency(plog TRUE QUIET)
 set(DEPENDENCIES Kokkos::kokkos)
-include_directories(${plog_SRC}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})

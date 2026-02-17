@@ -7,7 +7,7 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 #include "framework/parameters/algorithms.h"

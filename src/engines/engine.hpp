@@ -22,7 +22,7 @@
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
