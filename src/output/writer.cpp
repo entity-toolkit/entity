@@ -48,9 +48,8 @@ namespace out {
     m_trackers.insert({ type, tools::Tracker(type, interval, interval_time) });
   }
 
-  auto Writer::shouldWrite(const std::string& type,
-                           timestep_t         step,
-                           simtime_t          time) -> bool {
+  auto Writer::shouldWrite(const std::string& type, timestep_t step, simtime_t time)
+    -> bool {
     if (m_trackers.find(type) != m_trackers.end()) {
       return m_trackers.at(type).shouldWrite(step, time);
     } else {
@@ -173,6 +172,8 @@ namespace out {
       m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
     }
   }
+
+
 
   void Writer::writeAttrs(const prm::Parameters& params) {
     params.write(m_io);
@@ -332,7 +333,48 @@ namespace out {
     Kokkos::deep_copy(array_h, array);
     m_writer.Put<real_t>(var, array_h, adios2::Mode::Sync);
   }
+///// !!!!! Ignore the below code it is deprecated
+//  void Writer::writeSpectrum_deprecated(const array_t<real_t*>& counts,
+//                             const std::string&      varname) {
+//    auto var      = m_io.InquireVariable<real_t>(varname);
+//    auto counts_h = Kokkos::create_mirror_view(counts);
+//    Kokkos::deep_copy(counts_h, counts);
+//#if defined(MPI_ENABLED)
+//    array_t<real_t*> counts_all { "counts_all", counts.extent(0) };
+//    //auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+//    int              rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//
+//    array_t<real_t*> counts_h_all;
+//    if (rank == MPI_ROOT_RANK) {
+//     Kokkos::deep_copy(counts_h_all, counts_all);
+      //counts_h_all = Kokkos::create_mirror_view(counts_all);
+//    }
 
+//    MPI_Reduce(counts_h.data(),
+//               rank == MPI_ROOT_RANK ? counts_h_all.data() : nullptr,
+//               counts_h.extent(0),
+//               mpi::get_type<real_t>(),
+//               MPI_SUM,
+//               MPI_ROOT_RANK,
+//               MPI_COMM_WORLD);
+               
+//    if (rank == MPI_ROOT_RANK) {
+//      var.SetSelection(
+//        adios2::Box<adios2::Dims>({ 0u }, { counts_h_all.extent(0) }));
+//      m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Sync);
+//    }// else {
+    //  var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+    //  m_writer.Put<real_t>(var, nullptr);
+    //}
+//#else
+//    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+//    m_writer.Put<real_t>(var, counts_h, adios2::Mode::Sync);
+//#endif
+//  }
+/////// !!!!!! The function above is deprecated
+
+// this is the old version written by Hayk, which we will keep
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
                              const std::string&      varname) {
     auto var      = m_io.InquireVariable<real_t>(varname);
@@ -344,7 +386,107 @@ namespace out {
     int              rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Reduce(counts_h.data(),
-               counts_h_all.data(),
+               counts_h_all.data() ,
+               counts_h.extent(0),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      var.SetSelection(
+        adios2::Box<adios2::Dims>({ 0u }, { counts_h_all.extent(0) }));
+      m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Sync);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
+      m_writer.Put<real_t>(var, nullptr);
+    }
+#else
+    var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
+    m_writer.Put<real_t>(var, counts_h, adios2::Mode::Sync);
+#endif
+  }
+
+// spectrum3D, broken up into separate sub-domains
+void Writer::writeSpectrum3D(const array_t<real_t****>& counts3D,
+                             const std::string&      varname) {
+    // need to include the rank specific coordinates contained here
+    std::string varname3d = varname + "_3D"; 
+    //auto var      = m_io.InquireVariable<real_t>(varname);
+    auto counts3D_h = Kokkos::create_mirror_view(counts3D);
+    // copy to host
+    Kokkos::deep_copy(counts3D_h, counts3D);
+#if defined(MPI_ENABLED)
+    array_t<real_t****> counts3D_all { "counts3D_all", counts3D.extent(0), counts3D.extent(1), counts3D.extent(2), counts3D.extent(3) };
+    //auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+    int              rank;
+    int              size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    auto counts3D_h_all  = Kokkos::create_mirror_view(counts3D_all);
+    
+
+    MPI_Allreduce(counts3D_h.data(),
+               counts3D_h_all.data(),
+               counts3D_h.extent(0)*counts3D_h.extent(1)*counts3D_h.extent(2)*counts3D_h.extent(3),// size so probably need to multiply counts_h.extent(0)*counts_h.extent(1)*counts_h.extent(2)
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_COMM_WORLD); // size
+    //Kokkos::deep_copy()
+#else
+    int rank = 0;
+    int size = 1;
+#endif 
+    using Shape = std::vector<std::size_t>;
+
+    Shape shape = {counts3D.extent(0), counts3D.extent(1), counts3D.extent(2), counts3D.extent(3)};              // global size of counts3D_all
+    Shape start, count;                        // per-rank selection  
+
+    // split the domain along the x1 direction across the different ranks
+    auto split_x1 = [&](std::size_t n, int this_rank, int nranks)
+    {
+      // base number of cells to allocate to each rank
+      std::size_t base = n / nranks;
+      // remainder that do not fit neatly in one rank
+      std::size_t rem = n % nranks;
+      // number of cells to allocate to the rank including the remainder
+      std::size_t nloc = base + (this_rank <(int)rem ? 1 : 0); // allocate one more if this rank is less that the remainder
+      //offset to allocate
+      std::size_t off = base * this_rank + std::min<std::size_t>(this_rank, rem);
+
+      return std::pair{nloc, off};
+    };
+
+    auto [nloc0, off0] = split_x1(counts3D.extent(0), rank, size);
+    start = {off0, 0, 0, 0};
+    count = {nloc0, counts3D.extent(1), counts3D.extent(2), counts3D.extent(3)};
+
+    auto var = m_io.InquireVariable<real_t>(varname3d);
+    if (!var)
+    {
+        var = m_io.DefineVariable<real_t>(varname3d, shape, start, count, adios2::ConstantDims);
+    }
+    
+    //auto var = m_io.DefineVariable<real_t>(varname3d, shape, start, count, adios2::ConstantDims);
+    
+    auto counts3D_h_all_slab = Kokkos::subview(counts3D_h_all, Kokkos::make_pair(off0, off0+nloc0), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
+
+    m_writer.Put(var, counts3D_h_all_slab, adios2::Mode::Sync);  
+  }
+
+// this is the old version written by Hayk
+  void Writer::writeSpectrum_og(const array_t<real_t*>& counts,
+                             const std::string&      varname) {
+    auto var      = m_io.InquireVariable<real_t>(varname);
+    auto counts_h = Kokkos::create_mirror_view(counts);
+    Kokkos::deep_copy(counts_h, counts);
+#if defined(MPI_ENABLED)
+    array_t<real_t*> counts_all { "counts_all", counts.extent(0) };
+    auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+    int              rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(counts_h.data(),
+               counts_h_all.data() ,
                counts_h.extent(0),
                mpi::get_type<real_t>(),
                MPI_SUM,
@@ -422,6 +564,8 @@ namespace out {
           mode_str = "particles";
         } else if (write_mode == WriteMode::Spectra) {
           mode_str = "spectra";
+        } else if (write_mode == WriteMode::Spectra3D){
+          mode_str = "spectra3D";
         } else {
           raise::Fatal("Unknown write mode", HERE);
         }

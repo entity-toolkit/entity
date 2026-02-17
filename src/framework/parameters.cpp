@@ -431,16 +431,13 @@ namespace ntt {
                       "current_filters",
                       defaults::current_filters));
 
-    /* [algorithms.deposit] ------------------------------------------------- */
-    set("algorithms.deposit.enable",
-        toml::find_or(toml_data, "algorithms", "deposit", "enable", true));
-    set("algorithms.deposit.order",
-        toml::find_or(toml_data, "algorithms", "deposit", "order", 1));
+    /* [algorithms.toggles] ------------------------------------------------- */
+    set("algorithms.toggles.fieldsolver",
+        toml::find_or(toml_data, "algorithms", "toggles", "fieldsolver", true));
+    set("algorithms.toggles.deposit",
+        toml::find_or(toml_data, "algorithms", "toggles", "deposit", true));
 
     /* [algorithms.fieldsolver] --------------------------------------------- */
-    set("algorithms.fieldsolver.enable",
-        toml::find_or(toml_data, "algorithms", "fieldsolver", "enable", true));
-
     set("algorithms.fieldsolver.delta_x",
         toml::find_or(toml_data,
                       "algorithms",
@@ -577,6 +574,9 @@ namespace ntt {
     promiseToDefine("output.spectra.enable");
     promiseToDefine("output.spectra.interval");
     promiseToDefine("output.spectra.interval_time");
+    promiseToDefine("output.spectra3D.enable");
+    promiseToDefine("output.spectra3D.interval");
+    promiseToDefine("output.spectra3D.interval_time");
     promiseToDefine("output.stats.enable");
     promiseToDefine("output.stats.interval");
     promiseToDefine("output.stats.interval_time");
@@ -671,7 +671,41 @@ namespace ntt {
                       "spectra",
                       "n_bins",
                       defaults::output::spec_nbins));
-
+    //
+    set("output.spectra3D.e_min",
+        toml::find_or(toml_data, "output", "spectra3D", "e_min", defaults::output::spec3d_emin));
+    set("output.spectra3D.e_max",
+        toml::find_or(toml_data, "output", "spectra3D", "e_max", defaults::output::spec3d_emax));
+    set("output.spectra3D.log_bins",
+        toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "log_bins",
+                      defaults::output::spec3d_log));
+    set("output.spectra3D.n_bins",
+        toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "n_bins",
+                      defaults::output::spec3d_nbins));
+    set("output.spectra3D.nx1",
+        toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx1",
+                      defaults::output::spec3d_nx1));
+    set("output.spectra3D.nx2",
+        toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx2",
+                      defaults::output::spec3d_nx2));
+    set("output.spectra3D.nx3",
+        toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx3",
+                      defaults::output::spec3d_nx3));
     // stats
     set("output.stats.quantities",
         toml::find_or(toml_data,
@@ -687,7 +721,7 @@ namespace ntt {
                       std::vector<std::string> {}));
 
     // intervals
-    for (const auto& type : { "fields", "particles", "spectra", "stats" }) {
+    for (const auto& type : { "fields", "particles", "spectra", "spectra3D", "stats" }) {
       const auto q_int      = toml::find_or<timestep_t>(toml_data,
                                                    "output",
                                                    std::string(type),
@@ -1111,8 +1145,9 @@ namespace ntt {
     CallOnce([&]() {
       std::ofstream metadata;
       metadata.open(path);
-      metadata << fmt::format("[metadata]\n  time = %f\n\n", time) << data()
-               << std::endl;
+      metadata << "[metadata]\n"
+               << "  time = " << time << "\n\n"
+               << data() << std::endl;
       metadata.close();
     });
   }

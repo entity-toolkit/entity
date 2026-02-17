@@ -4,7 +4,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
 

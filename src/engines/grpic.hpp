@@ -94,9 +94,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.fieldsolver.enable");
+        "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.deposit.enable");
+        "algorithms.toggles.deposit");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 

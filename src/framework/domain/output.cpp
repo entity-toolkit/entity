@@ -6,11 +6,17 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 
+#include "metrics/kerr_schild.h"
+#include "metrics/kerr_schild_0.h"
+#include "metrics/minkowski.h"
+#include "metrics/qkerr_schild.h"
+#include "metrics/qspherical.h"
+#include "metrics/spherical.h"
+
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters.h"
-#include "framework/specialization_registry.h"
 
 #include "kernels/divergences.hpp"
 #include "kernels/fields_to_phys.hpp"
@@ -99,7 +105,7 @@ namespace ntt {
       spectra_species.push_back(sp.index());
     }
     g_writer.defineSpectraOutputs(spectra_species);
-    for (const auto& type : { "fields", "particles", "spectra" }) {
+    for (const auto& type : { "fields", "particles", "spectra", "spectra3D" }) {
       g_writer.addTracker(type,
                           params.template get<timestep_t>(
                             "output." + std::string(type) + ".interval"),
@@ -347,8 +353,13 @@ namespace ntt {
                                g_writer.shouldWrite("spectra",
                                                     finished_step,
                                                     finished_time);
+    const auto write_spectra3D = params.template get<bool>(
+                                 "output.spectra3D.enable") and
+                               g_writer.shouldWrite("spectra3D",
+                                                    finished_step,
+                                                    finished_time);
     const auto extension = params.template get<std::string>("output.format");
-    if (not(write_fields or write_particles or write_spectra) and
+    if (not(write_fields or write_particles or write_spectra or write_spectra3D) and
         extension != "disabled") {
       return false;
     }
@@ -748,7 +759,7 @@ namespace ntt {
       for (const auto& spec : g_writer.spectraWriters()) {
         auto&            species = local_domain->species[spec.species() - 1];
         array_t<real_t*> dn { "dn", n_bins };
-        auto       dn_scatter = Kokkos::Experimental::create_scatter_view(dn);
+        auto       dn_scatter = Kokkos::Experimental::create_scatter_view(dn); // create scatter view, cpus make lots of copies of array, gpus distribute arrays properly
         auto       ux1        = species.ux1;
         auto       ux2        = species.ux2;
         auto       ux3        = species.ux3;
@@ -780,7 +791,7 @@ namespace ntt {
               e_ind = static_cast<std::size_t>(
                 static_cast<real_t>(n_bins) * (en - e_min) / (e_max - e_min));
             }
-            auto dn_acc    = dn_scatter.access();
+            auto dn_acc    = dn_scatter.access();  
             dn_acc(e_ind) += weight(p);
           });
         Kokkos::Experimental::contribute(dn, dn_scatter);
@@ -790,34 +801,283 @@ namespace ntt {
       g_writer.endWriting(WriteMode::Spectra);
     } // end shouldWrite("spectra", step, time)
 
+  if (write_spectra3D) {
+      g_writer.beginWriting(WriteMode::Spectra3D, current_step, current_time);
+      const auto log_bins = params.template get<bool>(
+        "output.spectra3D.log_bins");
+      const auto n_bins = params.template get<std::size_t>(
+        "output.spectra3D.n_bins");
+      const auto& metric = local_domain->mesh.metric;
+      // extract the number of bins globally in each direction
+      const auto nx1_bins = params.template get<std::size_t>("output.spectra3D.nx1");
+      const auto nx2_bins = params.template get<std::size_t>("output.spectra3D.nx2");
+      const auto nx3_bins = params.template get<std::size_t>("output.spectra3D.nx3");
+
+      // select the min and max energy for the spectra
+      auto e_min = params.template get<real_t>("output.spectra3D.e_min");
+      auto e_max = params.template get<real_t>("output.spectra3D.e_max");
+
+
+      const auto x1_size_local   = local_domain->mesh.n_active()[0];
+      const auto x1_offset_local = local_domain->offset_ncells()[0];
+      const auto x1_size_global   = mesh().n_active()[0];
+
+      // divide based on physical coordinates maybe rather than cells
+
+      std::size_t x2_size_local = 0;
+      std::size_t x2_offset_local = 0;
+      std::size_t x2_size_global = 0;
+
+      std::size_t x3_size_local = 0;
+      std::size_t x3_offset_local = 0;
+      std::size_t x3_size_global = 0; 
+
+      auto x1_min = mesh().extent(in::x1).first; // extent is in physical units, not code
+      decltype(x1_min) x2_min = 0;
+      decltype(x1_min) x3_min = 0;
+
+      auto x1_max = mesh().extent(in::x1).second; // pairs in c++ are addressed by first and secocnd
+      decltype(x1_max) x2_max = 0;
+      decltype(x1_max) x3_max = 0;
+      
+      //auto x1_extent_local  = mesh().extent(in::x1)
+      //const auto nx1          = local_domain->mesh.n_active(in::x1);
+      //const auto nx2          = local_domain->mesh.n_active(in::x2);
+
+      //auto dx1 = (x1_extent_local.second - x1_extent_local.first) / (real_t)(nx1_bin - 1);
+      auto x1_extent_local  = local_domain->mesh.extent(in::x1);
+      auto x1_min_local = x1_extent_local.first; 
+      auto x1_max_local = x1_extent_local.second;
+
+      auto x1_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx1_bins) * (x1_min_local - x1_min) / (x1_max - x1_min));
+      auto x1_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx1_bins) * (x1_max_local - x1_min) / (x1_max - x1_min));
+
+      decltype(x1_min_local) x2_min_local=0;
+      decltype(x1_max_local) x2_max_local=0;
+      decltype(x1_ind_rank_min) x2_ind_rank_min=0;
+      decltype(x1_ind_rank_max) x2_ind_rank_max=0;
+
+      decltype(x1_min_local) x3_min_local=0;
+      decltype(x1_max_local) x3_max_local=0;
+      decltype(x1_ind_rank_min) x3_ind_rank_min=0;
+      decltype(x1_ind_rank_max) x3_ind_rank_max=0;
+
+      real_t dx1_bin = (x1_max - x1_min )/nx1_bins;
+      real_t dx2_bin = 1.;
+      real_t dx3_bin = 1.;
+
+      
+
+      if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+          
+          x2_min = mesh().extent(in::x2).first;
+          x2_max = mesh().extent(in::x2).second;
+
+          auto x2_extent_local  = local_domain->mesh.extent(in::x2);
+          x2_min_local = x2_extent_local.first; 
+          x2_max_local = x2_extent_local.second;
+
+          dx2_bin = (static_cast<real_t>(x2_max) - static_cast<real_t>(x2_min) )/static_cast<real_t>(nx2_bins);
+
+          x2_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx2_bins) * (x2_min_local - x1_min) / (x2_max - x2_min));
+          x2_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx2_bins) * (x2_max_local - x1_min) / (x2_max - x2_min));
+      }
+
+      if constexpr (M::PrtlDim == Dim::_3D){
+
+          x3_min = mesh().extent(in::x3).first;
+          x3_max = mesh().extent(in::x3).second;
+
+          auto x3_extent_local  = local_domain->mesh.extent(in::x3);
+          x3_min_local = x3_extent_local.first; 
+          x3_max_local = x3_extent_local.second;
+
+          dx3_bin = (static_cast<real_t>(x3_max) - static_cast<real_t>(x3_min) )/static_cast<real_t>(nx3_bins);
+
+          x3_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx3_bins) * (x3_min_local - x3_min) / (x1_max - x1_min));
+          x3_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx3_bins) * (x3_max_local - x3_min) / (x1_max - x1_min));          
+      }
+
+      
+
+      //auto dx_slice = mesh().dx1;
+      
+
+      //auto dxslice = (x1_max - x1_min) / x_bins
+
+      if (log_bins) {
+        e_min = math::log10(e_min);
+        e_max = math::log10(e_max);
+      }
+      array_t<real_t*> energy { "energy", n_bins + 1 };
+      // generating the energy bins
+      Kokkos::parallel_for(
+        "GenerateEnergyBins",
+        n_bins + 1,
+        Lambda(index_t e) {
+          if (log_bins) {
+            energy(e) = math::pow(10.0, e_min + (e_max - e_min) * e / n_bins);
+          } else {
+            energy(e) = e_min + (e_max - e_min) * e / n_bins;
+          }
+        });
+
+      for (const auto& spec : g_writer.spectraWriters()) {
+        auto&            species = local_domain->species[spec.species() - 1];
+        array_t<real_t****> dn3d { "dn3d", nx1_bins, nx2_bins, nx3_bins, n_bins };
+        auto       dn3d_scatter = Kokkos::Experimental::create_scatter_view(dn3d);
+        auto       ux1        = species.ux1;
+        auto       ux2        = species.ux2;
+        auto       ux3        = species.ux3;
+        auto       i1         = species.i1;
+        auto       dx1        = species.dx1;
+        //adeep_copy;
+        decltype(i1) i2;
+        decltype(i1) i3; 
+        decltype(dx1) dx2;
+        decltype(dx1) dx3;
+        if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+          i2 = species.i2;
+          dx2 = species.dx2;
+        }
+        if constexpr (M::PrtlDim == Dim::_3D){
+          i3 = species.i3;
+          dx3 = species.dx3;
+        }
+        auto       weight     = species.weight;
+        auto       tag        = species.tag;
+        const auto is_massive = species.mass() > 0.0f;
+        Kokkos::parallel_for(
+          "ComputeSpectra",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            if (tag(p) != ParticleTag::alive) {
+              return;
+            }
+            
+            coord_t<D> x_Cd {ZERO}; 
+            if  (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+              x_Cd[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+            }
+            if  (D == Dim::_2D or D == Dim::_3D) {
+              x_Cd[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+            }
+            if  (D == Dim::_3D) {
+              x_Cd[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+            }
+            coord_t<D> x_Ph { ZERO };
+            metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+
+            real_t en;
+            if (is_massive) {
+              en = U2GAMMA(ux1(p), ux2(p), ux3(p)) - ONE;
+            } else {
+              en = NORM(ux1(p), ux2(p), ux3(p));
+            }
+            if (log_bins) {
+              en = math::log10(en);
+            }
+            std::size_t e_ind = 0;
+            if (en <= e_min) {
+              e_ind = 0;
+            } else if (en >= e_max) {
+              e_ind = n_bins-1;
+            } else {
+              e_ind = static_cast<std::size_t>(
+                static_cast<real_t>(n_bins) * (en - e_min) / (e_max - e_min));
+            }
+
+            std::size_t x1_ind = 0;
+            if (x_Ph[0]<= x1_min) {
+              x1_ind = 0;
+            } else if (x_Ph[0] >= x1_max) {
+              x1_ind = nx1_bins-1;
+            } else {
+              x1_ind = static_cast<std::size_t>(
+                static_cast<real_t>(nx1_bins) * (x_Ph[0] - x1_min) / (x1_max - x1_min));
+            }
+
+            
+            std::size_t x2_ind = 0;
+            if (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+              if (x_Ph[1] <= x2_min) {
+                x2_ind = 0;
+              } else if (x_Ph[1] >= x2_max) {
+                x2_ind = nx2_bins-1;
+              } else {
+                x2_ind = static_cast<std::size_t>(
+                  static_cast<real_t>(nx2_bins) * (x_Ph[1] - x2_min) / (x2_max - x2_min));
+              }
+              //real_t x2_center = x2_min + (x2_ind+0.5)*dx2_bin;
+              //owns_x2 = (x2_center >= x2_min_local) && (x2_center <= x2_max_local);
+            }
+            std::size_t x3_ind = 0;
+            if (M::PrtlDim == Dim::_3D){ // only pick x3 if simulation is in 3D
+              
+              if (x_Ph[2] <= x3_min) {
+                x3_ind = 0;
+              } else if (x_Ph[2] >= x3_max) {
+                x3_ind = nx3_bins-1;
+              } else {
+                x3_ind = static_cast<std::size_t>(
+                  static_cast<real_t>(nx3_bins) * (x_Ph[2] - x3_min) / (x3_max - x3_min));
+              }
+             
+              
+            }   
+
+            // now I want to save the nx_bins contained in each rank
+            // can save array of x1_inds which are saved?
+            // maybe I can ask what local x_min and x_max are for this rank, pass that to writeSpectrum3D
+
+            
+            auto dn3d_acc    = dn3d_scatter.access();
+            dn3d_acc(x1_ind, x2_ind, x3_ind, e_ind) += weight(p);
+          });
+        Kokkos::Experimental::contribute(dn3d, dn3d_scatter);
+        g_writer.writeSpectrum3D(dn3d, spec.name());
+      }
+      g_writer.writeSpectrumBins(energy, "sEbn");
+      g_writer.endWriting(WriteMode::Spectra3D);
+    } // end shouldWrite("spectra", step, time)
+
     return true;
   }
 
-#define METADOMAIN_OUTPUT(S, M, D)                                             \
-  template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,                \
-                                                const SimulationParams&);      \
-  template auto Metadomain<S, M<D>>::Write(                                    \
+#define METADOMAIN_OUTPUT(S, M)                                                \
+  template void Metadomain<S, M>::InitWriter(adios2::ADIOS*,                   \
+                                             const SimulationParams&);         \
+  template auto Metadomain<S, M>::Write(                                       \
     const SimulationParams&,                                                   \
     timestep_t,                                                                \
     timestep_t,                                                                \
     simtime_t,                                                                 \
     simtime_t,                                                                 \
     std::function<void(const std::string&,                                     \
-                       ndfield_t<M<D>::Dim, 6>&,                               \
+                       ndfield_t<M::Dim, 6>&,                                  \
                        index_t,                                                \
                        timestep_t,                                             \
                        simtime_t,                                              \
-                       const Domain<S, M<D>>&)>) -> bool;
+                       const Domain<S, M>&)>) -> bool;
 
-  NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  METADOMAIN_OUTPUT(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
 
 #undef METADOMAIN_OUTPUT
 
 #if defined(MPI_ENABLED)
-  #define COMMVECTORPOTENTIAL(S, M, D)                                         \
-    template void Metadomain<S, M<D>>::CommunicateVectorPotential(unsigned short);
+  #define COMMVECTORPOTENTIAL(S, M)                                            \
+    template void Metadomain<S, M>::CommunicateVectorPotential(unsigned short);
 
-  NTT_FOREACH_SPECIALIZATION(COMMVECTORPOTENTIAL)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  COMMVECTORPOTENTIAL(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
 
   #undef COMMVECTORPOTENTIAL
 #endif

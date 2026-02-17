@@ -73,6 +73,13 @@ namespace ntt::defaults {
     const real_t                   spec_emax        = 1e3;
     const bool                     spec_log         = true;
     const std::size_t              spec_nbins       = 200;
+    const real_t                   spec3d_emin        = 1e-3;
+    const real_t                   spec3d_emax        = 1e3;
+    const bool                     spec3d_log         = true;
+    const std::size_t              spec3d_nbins       = 200;
+    const std::size_t              spec3d_nx1         = 1;
+    const std::size_t              spec3d_nx2         = 1;
+    const std::size_t              spec3d_nx3         = 1;
     const std::vector<std::string> stats_quantities = { "B^2",
                                                         "E^2",
                                                         "ExB",
@@ -99,10 +106,10 @@ namespace ntt::defaults {
   namespace synchrotron {
     const real_t gamma_rad = 1.0;
   } // namespace synchrotron
-
-  namespace compton {
+  
+  namespace compton{
     const real_t gamma_rad = 1.0;
-  } // namespace compton
+  }
 } // namespace ntt::defaults
 
 #endif // GLOBAL_DEFAULTS_H

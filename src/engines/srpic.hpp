@@ -78,9 +78,9 @@ namespace ntt {
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
-        "algorithms.fieldsolver.enable");
+        "algorithms.toggles.fieldsolver");
       const auto deposit_enabled = m_params.template get<bool>(
-        "algorithms.deposit.enable");
+        "algorithms.toggles.deposit");
       const auto clear_interval = m_params.template get<std::size_t>(
         "particles.clear_interval");
 
@@ -348,7 +348,7 @@ namespace ntt {
                                              : ZERO;
         // cooling
         const auto has_synchrotron = (cooling == Cooling::SYNCHROTRON);
-        const auto has_compton     = (cooling == Cooling::COMPTON);
+        const auto has_compton = (cooling == Cooling::COMPTON);
         const auto sync_grad       = has_synchrotron
                                        ? m_params.template get<real_t>(
                                      "algorithms.synchrotron.gamma_rad")
@@ -359,16 +359,17 @@ namespace ntt {
                                         "scales.omegaB0") /
                                       (SQR(sync_grad) * species.mass())
                                        : ZERO;
-        const auto comp_grad    = has_compton ? m_params.template get<real_t>(
-                                               "algorithms.compton.gamma_rad")
-                                              : ZERO;
-        const auto comp_coeff   = has_compton ? (real_t)(0.1) * dt *
-                                                m_params.template get<real_t>(
-                                                  "scales.omegaB0") /
-                                                (SQR(comp_grad) * species.mass())
-                                              : ZERO;
+        const auto comp_grad       = has_compton
+                                      ? m_params.template get<real_t>(
+                                     "algorithms.compton.gamma_rad")
+                                      : ZERO; 
+        const auto comp_coeff      = has_compton
+                                      ? (real_t)(0.1) * dt * 
+                                      m_params.template get<real_t>(
+                                          "scales.omegaB0") / (SQR(comp_grad) * species.mass())
+                                      : ZERO;
         // toggle to indicate whether pgen defines the external force
-        bool       has_extforce = false;
+        bool has_extforce = false;
         if constexpr (traits::has_member<traits::pgen::ext_force_t, pgen_t>::value) {
           has_extforce = true;
           // toggle to indicate whether the ext force applies to current species
@@ -518,30 +519,9 @@ namespace ntt {
       }
     }
 
-    template <unsigned short O>
-    void deposit_with(const Particles<M::Dim, M::CoordType>& species,
-                      const M&                               metric,
-                      const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
-                      real_t                                 dt) {
-      // clang-format off
-      Kokkos::parallel_for("CurrentsDeposit",
-                          species.rangeActiveParticles(),
-                          kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
-                            scatter_cur,
-                            species.i1, species.i2, species.i3,
-                            species.i1_prev, species.i2_prev, species.i3_prev,
-                            species.dx1, species.dx2, species.dx3,
-                            species.dx1_prev, species.dx2_prev, species.dx3_prev,
-                            species.ux1, species.ux2, species.ux3,
-                            species.phi, species.weight, species.tag,
-                            metric, (real_t)(species.charge()), dt));
-      // clang-format on
-    }
-
     void CurrentsDeposit(domain_t& domain) {
       auto scatter_cur = Kokkos::Experimental::create_scatter_view(
         domain.fields.cur);
-      auto shape_order = m_params.template get<int>("algorithms.deposit.order");
       for (auto& species : domain.species) {
         if ((species.pusher() == PrtlPusher::NONE) or (species.npart() == 0) or
             cmp::AlmostZero_host(species.charge())) {
@@ -554,8 +534,20 @@ namespace ntt {
                       species.npart(),
                       (double)species.charge()),
           HERE);
-
-        deposit_with<SHAPE_ORDER>(species, domain.mesh.metric, scatter_cur, dt);
+        // clang-format off
+        Kokkos::parallel_for("CurrentsDeposit",
+                             species.rangeActiveParticles(),
+                             kernel::DepositCurrents_kernel<SimEngine::SRPIC, M>(
+                               scatter_cur,
+                               species.i1, species.i2, species.i3,
+                               species.i1_prev, species.i2_prev, species.i3_prev,
+                               species.dx1, species.dx2, species.dx3,
+                               species.dx1_prev, species.dx2_prev, species.dx3_prev,
+                               species.ux1, species.ux2, species.ux3,
+                               species.phi, species.weight, species.tag,
+                               domain.mesh.metric,
+                               (real_t)(species.charge()), dt));
+        // clang-format on
       }
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
@@ -1291,7 +1283,7 @@ namespace ntt {
       }
 
       const auto maxwellian = arch::Maxwellian<S, M> { domain.mesh.metric,
-                                                       domain.random_pool(),
+                                                       domain.random_pool,
                                                        temp };
 
       if (dim == in::x1) {

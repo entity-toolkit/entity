@@ -113,15 +113,7 @@ namespace files {
 
 namespace ntt {
 
-#if !defined(SHAPE_ORDER)
-  #define SHAPE_ORDER 0
   inline constexpr std::size_t N_GHOSTS = 2;
-#else  // SHAPE_ORDER
-  inline constexpr std::size_t N_GHOSTS = static_cast<std::size_t>(
-                                            (SHAPE_ORDER + 1) / 2) +
-                                          1;
-#endif // SHAPE_ORDER
-
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
@@ -284,6 +276,7 @@ namespace WriteMode {
     Particles = 1 << 1,
     Spectra   = 1 << 2,
     Stats     = 1 << 3,
+    Spectra3D = 1 << 4,
   };
 } // namespace WriteMode
 

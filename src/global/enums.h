@@ -271,8 +271,8 @@ namespace ntt {
 
     constexpr Cooling(uint8_t c) : enums_hidden::BaseEnum<Cooling> { c } {}
 
-    static constexpr type variants[] = { SYNCHROTRON, COMPTON, NONE };
-    static constexpr const char* lookup[] = { "synchrotron", "compton", "none" };
+    static constexpr type        variants[] = { SYNCHROTRON, COMPTON, NONE };
+    static constexpr const char* lookup[]   = { "synchrotron", "compton", "none" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 

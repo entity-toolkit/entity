@@ -13,7 +13,6 @@
 #include "metrics/spherical.h"
 
 #include "framework/containers/particles.h"
-#include "framework/specialization_registry.h"
 #include "output/utils/readers.h"
 #include "output/utils/writers.h"
 
@@ -409,9 +408,9 @@ namespace ntt {
     }
     if (npld_i() > 0) {
       io.DefineVariable<npart_t>(fmt::format("s%d_pld_i", index()),
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim },
-                                 { adios2::UnknownDim });
+                                 { adios2::UnknownDim, npld_i() },
+                                 { adios2::UnknownDim, 0 },
+                                 { adios2::UnknownDim, npld_i() });
     }
   }
 
@@ -816,16 +815,23 @@ namespace ntt {
   PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qsph)
 #undef PARTICLES_OUTPUT_DECLARE
 
-#define PARTICLES_OUTPUT_WRITE(S, M, D)                                        \
-  template void Particles<M<D>::Dim, M<D>::CoordType>::OutputWrite<S, M<D>>(   \
+#define PARTICLES_OUTPUT_WRITE(S, M)                                           \
+  template void Particles<M::Dim, M::CoordType>::OutputWrite<S, M>(            \
     adios2::IO&,                                                               \
     adios2::Engine&,                                                           \
     npart_t,                                                                   \
     std::size_t,                                                               \
     std::size_t,                                                               \
-    const M<D>&);
+    const M&);
 
-  NTT_FOREACH_SPECIALIZATION(PARTICLES_OUTPUT_WRITE)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_1D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Minkowski<Dim::_3D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::Spherical<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::SRPIC, metric::QSpherical<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::KerrSchild<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::QKerrSchild<Dim::_2D>)
+  PARTICLES_OUTPUT_WRITE(SimEngine::GRPIC, metric::KerrSchild0<Dim::_2D>)
 #undef PARTICLES_OUTPUT_WRITE
 
 #define PARTICLES_CHECKPOINTS(D, C)                                            \
