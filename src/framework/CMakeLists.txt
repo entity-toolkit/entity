@@ -13,12 +13,16 @@
 # * simulation.cpp
 # * domain/grid.cpp
 # * domain/metadomain.cpp
-# * domain/communications.cpp
-# * domain/checkpoint.cpp
+# * domain/metadomain_sort.cpp
+# * domain/metadomain_comm.cpp
+# * domain/metadomain_chckpt.cpp
+# * domain/metadomain_stats.cpp
+# * domain/metadomain_io.cpp
 # * containers/particles.cpp
+# * containers/particles_comm.cpp
+# * containers/particles_io.cpp
+# * containers/particles_sort.cpp
 # * containers/fields.cpp
-# * domain/stats.cpp
-# * domain/output.cpp
 #
 # @includes:
 #
@@ -50,13 +54,15 @@ set(SOURCES
     ${SRC_DIR}/parameters/extra.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
-    ${SRC_DIR}/domain/communications.cpp
-    ${SRC_DIR}/domain/stats.cpp
+    ${SRC_DIR}/domain/metadomain_comm.cpp
+    ${SRC_DIR}/domain/metadomain_sort.cpp
+    ${SRC_DIR}/domain/metadomain_stats.cpp
     ${SRC_DIR}/containers/particles.cpp
+    ${SRC_DIR}/containers/particles_sort.cpp
     ${SRC_DIR}/containers/fields.cpp)
 if(${output})
-  list(APPEND SOURCES ${SRC_DIR}/domain/output.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/domain/checkpoint.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_io.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_chckpt.cpp)
   list(APPEND SOURCES ${SRC_DIR}/containers/fields_io.cpp)
   list(APPEND SOURCES ${SRC_DIR}/containers/particles_io.cpp)
 endif()

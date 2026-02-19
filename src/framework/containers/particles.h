@@ -5,6 +5,9 @@
  *   - ntt::Particles<> : ntt::ParticleSpecies
  * @cpp:
  *   - particles.cpp
+ *   - particles_io.cpp
+ *   - particles_comm.cpp
+ *   - particles_sort.cpp
  * @macros:
  *   - MPI_ENABLED
  */
@@ -83,6 +86,7 @@ namespace ntt {
      * @param m The mass of the species
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
+     * @param spatial_sorting_interval The interval for spatial sorting of the particles
      * @param particle_pusher_flags The pusher(s) assigned for the species
      * @param use_tracking Use particle tracking for the species
      * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
@@ -95,6 +99,7 @@ namespace ntt {
               float               m,
               float               ch,
               npart_t             maxnpart,
+              timestep_t          spatial_sorting_interval,
               ParticlePusherFlags particle_pusher_flags,
               bool                use_tracking,
               RadiativeDragFlags  radiative_drag_flags,
@@ -113,6 +118,7 @@ namespace ntt {
                   spec.mass(),
                   spec.charge(),
                   spec.maxnpart(),
+                  spec.spatial_sorting_interval(),
                   spec.pusher(),
                   spec.use_tracking(),
                   spec.radiative_drag_flags(),

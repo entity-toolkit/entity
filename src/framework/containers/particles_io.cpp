@@ -5,13 +5,6 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "metrics/kerr_schild.h"
-#include "metrics/kerr_schild_0.h"
-#include "metrics/minkowski.h"
-#include "metrics/qkerr_schild.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
-
 #include "framework/containers/particles.h"
 #include "framework/specialization_registry.h"
 #include "output/utils/readers.h"
@@ -814,6 +807,8 @@ namespace ntt {
   PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cart)
   PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Sph)
   PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qsph)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Sph)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Qsph)
 #undef PARTICLES_OUTPUT_DECLARE
 
 #define PARTICLES_OUTPUT_WRITE(S, M, D)                                        \

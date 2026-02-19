@@ -7,7 +7,6 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 #include "framework/parameters/algorithms.h"
@@ -15,6 +14,8 @@
 #include "framework/parameters/grid.h"
 #include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
+
+#include <toml11/toml.hpp>
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -62,6 +63,12 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(toml_data, "particles", "use_weights", false));
+    const auto global_spatial_sorting_interval = toml::find_or<timestep_t>(
+      toml_data,
+      "particles",
+      "spatial_sorting_interval",
+      0u);
+    set("particles.spatial_sorting_interval", global_spatial_sorting_interval);
 
     set("scales.n0", ppc0 / get<real_t>("scales.V0"));
     set("scales.q0", get<real_t>("scales.V0") / (ppc0 * SQR(skindepth0)));
@@ -76,7 +83,12 @@ namespace ntt {
 
     spidx_t idx = 1;
     for (const auto& sp : species_tab) {
-      species.emplace_back(params::GetParticleSpecies(this, engine_enum, idx, sp));
+      species.emplace_back(
+        params::GetParticleSpecies(this,
+                                   engine_enum,
+                                   idx,
+                                   sp,
+                                   global_spatial_sorting_interval));
       idx += 1;
     }
     set("particles.species", species);
@@ -133,6 +145,7 @@ namespace ntt {
                                particle_species.mass(),
                                particle_species.charge(),
                                maxnpart,
+                               particle_species.spatial_sorting_interval(),
                                particle_species.pusher(),
                                particle_species.use_tracking(),
                                particle_species.radiative_drag_flags(),

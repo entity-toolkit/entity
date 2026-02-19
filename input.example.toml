@@ -390,11 +390,16 @@
   #   @type: bool
   #   @default: false
   use_weights = ""
-  # Timesteps between particle re-sorting (removing dead particles)
+  # Timesteps between particle re-sorting by tags (removing dead particles)
   #   @type: uint
   #   @default: 100
   #   @note: Set to 0 to disable re-sorting
   clear_interval = ""
+  # Timesteps between spatial sorting of particles (for better cache performance)
+  #   @type: uint
+  #   @default: 0
+  #   @note: Set to 0 to disable spatial sorting
+  spatial_sorting_interval = ""
 
   # @inferred:
   # - nspec
@@ -453,6 +458,12 @@
     #   @note: Only one emission mechanism allowed
     #   @note: Appropriate radiation drag flag will be applied automatically (unless explicitly set to "None")
     emission = ""
+    # Timesteps between spatial sorting of particles for given species
+    #   @type: uint
+    #   @default: 0
+    #   @note: Set to 0 to disable spatial sorting
+    #   @note: Overrides `particles.spatial_sorting_interval` for the given species
+    spatial_sorting_interval = ""
 
 # Parameters for specific problem generators and setups
 [setup]
