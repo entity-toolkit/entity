@@ -15,6 +15,7 @@ void testParticles(
   float                    m,
   float                    ch,
   std::size_t              maxnpart,
+  timestep_t               spatial_sorting_interval,
   ntt::ParticlePusherFlags pusher,
   bool                     use_tracking,
   ntt::RadiativeDragFlags  radiative_drag_flags,
@@ -27,6 +28,7 @@ void testParticles(
                            m,
                            ch,
                            maxnpart,
+                           spatial_sorting_interval,
                            pusher,
                            use_tracking,
                            radiative_drag_flags,
@@ -38,7 +40,11 @@ void testParticles(
   raise::ErrorIf(p.mass() != m, "Mass mismatch", HERE);
   raise::ErrorIf(p.charge() != ch, "Charge mismatch", HERE);
   raise::ErrorIf(p.maxnpart() != maxnpart, "Max number of particles mismatch", HERE);
+  raise::ErrorIf(p.spatial_sorting_interval() != spatial_sorting_interval,
+                 "Spatial sorting interval mismatch",
+                 HERE);
   raise::ErrorIf(p.pusher() != pusher, "Pusher mismatch", HERE);
+  raise::ErrorIf(p.use_tracking() != use_tracking, "Use Tracking mismatch", HERE);
   raise::ErrorIf(p.radiative_drag_flags() != radiative_drag_flags,
                  "Radiative drag mismatch",
                  HERE);
@@ -114,7 +120,7 @@ void testParticles(
 }
 
 auto main(int argc, char** argv) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     using namespace ntt;
     testParticles<Dim::_1D, Coord::Cart>(1,
@@ -122,6 +128,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
+                                         0u,
                                          ParticlePusher::BORIS,
                                          false,
                                          RadiativeDrag::SYNCHROTRON);
@@ -129,19 +136,21 @@ auto main(int argc, char** argv) -> int {
                                          "p+",
                                          100.0,
                                          -1.0,
-                                         1000,
+                                         100,
+                                         1u,
                                          ParticlePusher::VAY,
                                          true,
                                          RadiativeDrag::SYNCHROTRON |
                                            RadiativeDrag::COMPTON,
                                          EmissionType::SYNCHROTRON,
                                          2,
-                                         1);
+                                         2);
     testParticles<Dim::_3D, Coord::Cart>(3,
                                          "ph",
                                          0.0,
                                          0.0,
                                          100,
+                                         12u,
                                          ParticlePusher::PHOTON,
                                          false,
                                          RadiativeDrag::NONE,
@@ -152,6 +161,7 @@ auto main(int argc, char** argv) -> int {
                                         1.0,
                                         1.0,
                                         100,
+                                        123u,
                                         ParticlePusher::BORIS,
                                         true,
                                         RadiativeDrag::NONE,
@@ -163,6 +173,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          1.0,
                                          100,
+                                         1234u,
                                          ParticlePusher::BORIS,
                                          false,
                                          RadiativeDrag::NONE,
@@ -171,9 +182,9 @@ auto main(int argc, char** argv) -> int {
                                          2);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return 1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
   return 0;
 }

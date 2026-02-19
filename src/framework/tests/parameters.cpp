@@ -2,14 +2,15 @@
 
 #include "defaults.h"
 #include "enums.h"
+#include "global.h"
 
 #include "utils/comparators.h"
 #include "utils/error.h"
-#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 
 #include <stdio.h>
+#include <toml11/toml.hpp>
 
 #include <iostream>
 
@@ -262,7 +263,7 @@ void assert_equal(const T& a, const T& b, const std::string& msg) {
 }
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
 
   try {
     using namespace ntt;
@@ -656,11 +657,11 @@ auto main(int argc, char* argv[]) -> int {
 
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
 
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }
