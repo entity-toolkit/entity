@@ -13,10 +13,10 @@
 
 #include "enums.h"
 
-#include <toml11/toml.hpp>
-
 #include "framework/containers/species.h"
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 namespace ntt {
 
@@ -25,7 +25,8 @@ namespace ntt {
     auto GetParticleSpecies(SimulationParams*,
                             const SimEngine&,
                             spidx_t,
-                            const toml::value&) -> ParticleSpecies;
+                            const toml::value&,
+                            timestep_t) -> ParticleSpecies;
 
   } // namespace params
 

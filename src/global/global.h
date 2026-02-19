@@ -232,15 +232,15 @@ typedef int PrepareOutputFlags;
 
 namespace Timer {
   enum TimerFlags_ {
-    None            = 0,
-    PrintTotal      = 1 << 0,
-    PrintTitle      = 1 << 1,
-    AutoConvert     = 1 << 2,
-    PrintOutput     = 1 << 3,
-    PrintPrtlClear  = 1 << 4,
-    PrintCheckpoint = 1 << 5,
-    PrintNormed     = 1 << 6,
-    Default         = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
+    None              = 0,
+    PrintTotal        = 1 << 0,
+    PrintTitle        = 1 << 1,
+    AutoConvert       = 1 << 2,
+    PrintOutput       = 1 << 3,
+    PrintParticleSort = 1 << 4,
+    PrintCheckpoint   = 1 << 5,
+    PrintNormed       = 1 << 6,
+    Default           = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
   };
 } // namespace Timer
 
