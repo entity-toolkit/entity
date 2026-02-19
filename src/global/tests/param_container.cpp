@@ -1,6 +1,7 @@
 #include "utils/param_container.h"
 
 #include "enums.h"
+#include "global.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -13,8 +14,9 @@ void errorIf(bool condition, const std::string& message) {
   }
 }
 
-auto main() -> int {
+auto main(int argc, char* argv[]) -> int {
   using namespace ntt;
+  GlobalInitialize(argc, argv);
   auto p = prm::Parameters();
 
   const auto d_vec = std::vector<bool> { true, true, false };
@@ -84,7 +86,9 @@ auto main() -> int {
 
   } catch (std::exception& exc) {
     std::cerr << exc.what() << "\n";
+    GlobalFinalize();
     return 1;
   }
+  GlobalFinalize();
   return 0;
 }
