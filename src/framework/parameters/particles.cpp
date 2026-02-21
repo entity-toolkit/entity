@@ -6,7 +6,7 @@
 
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 #include "framework/parameters/parameters.h"
@@ -85,8 +85,6 @@ namespace ntt {
         return EmissionType::SYNCHROTRON;
       } else if (fmt::toLower(emission_policy_str) == "compton") {
         return EmissionType::COMPTON;
-      } else if (fmt::toLower(emission_policy_str) == "strongfieldpp") {
-        return EmissionType::STRONGFIELDPP;
       } else {
         raise::Error(fmt::format("Invalid emission_policy value: %s",
                                  emission_policy_str.c_str()),
@@ -151,11 +149,6 @@ namespace ntt {
       auto radiative_drag_flags  = getRadiativeDragFlags(radiative_drag_str);
       auto emission_policy_flag  = getEmissionPolicyFlag(emission_policy_str);
 
-      raise::ErrorIf((emission_policy_flag == EmissionType::STRONGFIELDPP) and
-                       (not is_massless),
-                     "Strong Field Pair Production emission policy is only "
-                     "applicable to massless particles",
-                     HERE);
       raise::ErrorIf((emission_policy_flag == EmissionType::SYNCHROTRON or
                       emission_policy_flag == EmissionType::COMPTON) and
                        is_massless,

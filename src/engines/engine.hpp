@@ -22,7 +22,7 @@
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
@@ -120,6 +120,13 @@ namespace ntt {
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
     void run();
+
+    auto engineParams() const -> prm::Parameters {
+      auto parameters = prm::Parameters {};
+      parameters.set("dt", static_cast<real_t>(dt));
+      parameters.set("time", static_cast<simtime_t>(time));
+      return parameters;
+    }
   };
 
   template <SimEngine::type S, class M>

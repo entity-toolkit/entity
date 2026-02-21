@@ -56,6 +56,7 @@
 
 #include <iomanip>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -69,7 +70,6 @@ namespace ntt {
     Mesh<M>                                 mesh;
     Fields<D, S>                            fields;
     std::vector<Particles<D, M::CoordType>> species;
-    random_number_pool_t                    random_pool;
 
     /**
      * @brief constructor for "empty" allocation of non-local domain placeholders
@@ -85,7 +85,6 @@ namespace ntt {
       : mesh { ncells, extent, metric_params }
       , fields {}
       , species {}
-      , random_pool { constant::RandomSeed }
       , m_index { index }
       , m_offset_ndomains { offset_ndomains }
       , m_offset_ncells { offset_ncells } {}
@@ -100,10 +99,11 @@ namespace ntt {
       : mesh { ncells, extent, metric_params }
       , fields { ncells }
       , species { species_params.begin(), species_params.end() }
-      , random_pool { constant::RandomSeed + static_cast<std::uint64_t>(index) }
       , m_index { index }
       , m_offset_ndomains { offset_ndomains }
-      , m_offset_ncells { offset_ncells } {}
+      , m_offset_ncells { offset_ncells }
+      , m_random_number_pool { constant::RandomSeed +
+                               static_cast<std::uint64_t>(index) } {}
 
 #if defined(MPI_ENABLED)
     [[nodiscard]]
@@ -147,6 +147,14 @@ namespace ntt {
         sp_footprint += sp.memory_footprint();
       }
       return fields.memory_footprint() == 0 and sp_footprint == 0;
+    }
+
+    [[nodiscard]]
+    auto random_pool() -> random_number_pool_t& {
+      raise::ErrorIf(not m_random_number_pool.has_value(),
+                     "random_pool() called on a placeholder domain",
+                     HERE);
+      return m_random_number_pool.value();
     }
 
     /* setters -------------------------------------------------------------- */
@@ -227,6 +235,9 @@ namespace ntt {
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
     int                         m_mpi_rank;
+
+    // random number pool for the domain
+    std::optional<random_number_pool_t> m_random_number_pool;
   };
 
   template <SimEngine::type S, class M>

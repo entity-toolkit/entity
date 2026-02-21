@@ -7,7 +7,7 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include "utils/toml.h"
+#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 #include "framework/parameters/algorithms.h"
@@ -197,7 +197,7 @@ namespace ntt {
     boundaries_params.setParams(this);
 
     /* [algorithms] --------------------------------------------------------- */
-    ntt::params::Algorithms     alg_params {};
+    params::Algorithms          alg_params {};
     std::map<std::string, bool> alg_extra_flags = {
       {  "gr",          engine_enum == SimEngine::GRPIC },
       { "gca", isPromised("algorithms.gca.e_ovr_b_max") },
@@ -206,7 +206,7 @@ namespace ntt {
     alg_params.setParams(alg_extra_flags, this);
 
     /* extra physics ------------------------------------------------------ */
-    ntt::params::Extra          extra_params {};
+    params::Extra               extra_params {};
     std::map<std::string, bool> extra_extra_flags = {
       {     "synchrotron_drag",isPromised("radiation.drag.synchrotron.gamma_rad")                               },
       {         "compton_drag",          isPromised("radiation.drag.compton.gamma_rad") },
@@ -214,7 +214,7 @@ namespace ntt {
        isPromised("radiation.emission.synchrotron.photon_species")                     },
       {     "compton_emission", isPromised("radiation.emission.compton.photon_species") }
     };
-    extra_params.read(extra_extra_flags, toml_data);
+    extra_params.read(extra_extra_flags, toml_data, this);
     extra_params.setParams(extra_extra_flags, this);
 
     // @TODO: disabling stats for non-Cartesian
@@ -265,7 +265,51 @@ namespace ntt {
             }
             set("setup." + key, vec);
           } else if (val_arr[0].is_array()) {
-            raise::Error("only 1D arrays allowed in [setup]", HERE);
+            if (val_arr[0].as_array().size() == 0) {
+              raise::Error("empty inner arrays not allowed in [setup]", HERE);
+            } else if (val_arr[0][0].is_integer()) {
+              std::vector<std::vector<int>> vec;
+              for (const auto& v1 : val_arr) {
+                std::vector<int> inner_vec;
+                for (const auto& v2 : v1.as_array()) {
+                  inner_vec.push_back(v2.as_integer());
+                }
+                vec.push_back(inner_vec);
+              }
+              set("setup." + key, vec);
+            } else if (val_arr[0][0].is_floating()) {
+              std::vector<std::vector<real_t>> vec;
+              for (const auto& v1 : val_arr) {
+                std::vector<real_t> inner_vec;
+                for (const auto& v2 : v1.as_array()) {
+                  inner_vec.push_back(v2.as_floating());
+                }
+                vec.push_back(inner_vec);
+              }
+              set("setup." + key, vec);
+            } else if (val_arr[0][0].is_boolean()) {
+              std::vector<std::vector<bool>> vec;
+              for (const auto& v : val_arr) {
+                std::vector<bool> inner_vec;
+                for (const auto& v2 : v.as_array()) {
+                  inner_vec.push_back(v2.as_boolean());
+                }
+                vec.push_back(inner_vec);
+              }
+              set("setup." + key, vec);
+            } else if (val_arr[0][0].is_string()) {
+              std::vector<std::vector<std::string>> vec;
+              for (const auto& v : val_arr) {
+                std::vector<std::string> inner_vec;
+                for (const auto& v2 : v.as_array()) {
+                  inner_vec.push_back(v2.as_string());
+                }
+                vec.push_back(inner_vec);
+              }
+              set("setup." + key, vec);
+            } else if (val_arr[0][0].is_array()) {
+              raise::Error("up to 2D arrays allowed in [setup]", HERE);
+            }
           } else {
             raise::Error("invalid setup variable type", HERE);
           }

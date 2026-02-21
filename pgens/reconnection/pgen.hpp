@@ -216,7 +216,7 @@ namespace user {
 
       // current layer
       auto       edist_cs = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                             local_domain.random_pool,
+                                             local_domain.random_pool(),
                                              cs_temperature,
                                                    { ZERO, ZERO, cs_drift_u });
       const auto sdist_cs = CurrentLayer<S, M>(local_domain.mesh.metric,
@@ -243,7 +243,7 @@ namespace user {
       }
 
       const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool,
+                                                      domain.random_pool(),
                                                       bg_temperature);
 
       const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
