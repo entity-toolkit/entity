@@ -330,72 +330,132 @@ namespace user {
 
   // update domain if needed
   // todo: implement in main code like CustomPostStep
-  void CustomUpdateDomain(const SimulationParams& params, Domain<S, M>& local_domain, Domain<S, M>& global_domain) {
+  void CustomUpdateDomain(const SimulationParams& params, Domain<S, M>& local_domain, Domain<S, M>& new_domain, Domain<S, M>& global_domain) {
 
-    // todo: check if update is needed at this time step
+    // check if the injector should be active
+    // ToDo: read parameter into global variable
+    if (step % params.template get<int>("setup.domain_decomposition_frequency") != 0) {
+      return;
+    }
 
     // compute size of local and global domains 
     const auto local_size   = local_domain->mesh.n_active()[in::x1];
     const auto local_offset = local_domain->offset_ncells()[in::x1];
     const auto global_size  = global_domain->mesh.n_active()[in::x1];
-    const auto ni2          = global_domain->mesh.n_active(in::x2);
 
-    // compute number density field
-    // todo: define buffers properly
-    auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
-    for (const auto& sp : specs) {
-      auto& prtl_spec = prtl_species[sp - 1];
-      // clang-format off
-      Kokkos::parallel_for(
-        "ComputeMoments",
-        prtl_spec.rangeActiveParticles(),
-        kernel::ParticleMoments_kernel<S, M, F, 6>({}, scatter_buff, buff_idx,
-                                                   prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                   prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                   prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                   prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                   prtl_spec.mass(), prtl_spec.charge(),
-                                                   false,
-                                                   mesh.metric, mesh.flds_bc(),
-                                                   ni2, ONE, 0));
-      // clang-format on
-    }
-    Kokkos::Experimental::contribute(buffer, scatter_buff);
-
-    // compute particle profile along x1
-    index_t Nx[global_size] = { 0 };
-    
-    for (auto i = 0; i < local_size; ++i) {
-        for (auto d = 0u; d < M::Dim; ++d) {          
-            // todo: sum over other dimensions  
-            Nx[local_offset + i] += buffer(i, j, buff_idx);
-        }
-    }
-    // todo: perform MPI allreduce to get global Nx
+    // global number density field along x1
     index_t Nx_global[global_size] = { 0 };
-    MPI_ALLREDUCE(MPI_SUM, Nx, Nx_global, global_size, MPI_TYPE_INT_T, MPI_COMM_WORLD);
+
+    /*
+      Option 1: Use built-in particle counting kernel to compute number density field and perform MPI allreduce to get global number density field. 
+      Then compute new domain boundaries based on the global number density field and perform reshuffling of particles according to new domain boundaries.
+    */
+    //     tuple_t<std::size_t, M::Dim> local_cells{ 0 }, global_x_min { 0 }, global_x_max { 0 };
+    // for (auto d = 0; d < M::Dim; ++d) {
+    //   local_cells[d] = local_domain->mesh.n_active(d);
+    //   global_x_min[d] = local_domain->offset_ncells(d);
+    //   global_x_max[d] = local_domain->mesh.n_active(d) + local_domain->offset_ncells(d);
+    // }
+
+    // // compute number density field
+    // array_t<int**> NumberOfParticles("num_particles", local_cells);
+    // auto scatter_buff = Kokkos::Experimental::create_scatter_view(NumberOfParticles);
+    // for (const auto& sp : specs) {
+    //   auto& prtl_spec = prtl_species[sp - 1];
+    //   // clang-format off
+    //   Kokkos::parallel_for(
+    //     "ComputeMoments",
+    //     prtl_spec.rangeActiveParticles(),
+    //     kernel::ParticleMoments_kernel<S, M, F, 6>({}, scatter_buff, buff_idx,
+    //                                                prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
+    //                                                prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
+    //                                                prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
+    //                                                prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
+    //                                                prtl_spec.mass(), prtl_spec.charge(),
+    //                                                false,
+    //                                                mesh.metric, mesh.flds_bc(),
+    //                                                ni2, ONE, 0));
+    //   // clang-format on
+    // }
+    // Kokkos::Experimental::contribute(NumberOfParticles, scatter_buff);
+
+    //     // compute particle profile along x1
+    // index_t Nx[global_size] = { 0 };
     
+    // for (auto i = 0; i < local_size; ++i) {
+    //     for (auto d = 0u; d < M::Dim; ++d) {          
+    //         // todo: sum over other dimensions  
+    //         Nx[local_offset + i] += buffer(i, j, buff_idx);
+    //     }
+    // }
+    // // todo: perform MPI allreduce to get global Nx
+    // index_t Nx_global[global_size] = { 0 };
+    // MPI_ALLREDUCE(MPI_SUM, Nx, Nx_global, global_size, MPI_TYPE_INT_T, MPI_COMM_WORLD);
+    
+
+    /*
+      Option 2: Loop over particles and compute number density field manually. Then perform MPI allreduce to get global number density field. 
+      Then compute new domain boundaries based on the global number density field and perform reshuffling of particles according to new domain boundaries.
+    */
+    // store total number of particles in each cell in x1 direction
+    array_t<int**> NumberOfParticles("num_particles", local_size);
+    // loop over particle species
+    for (auto s { 0u }; s < 2; ++s) {
+        // get particle properties
+        auto& species = local_domain.species[s];
+        auto  i1      = species.i1;
+        auto  tag     = species.tag;
+
+          auto NumParts_scatter = Kokkos::Experimental::create_scatter_view(
+            NumberOfParticles);
+          Kokkos::parallel_for(
+            "ComputePPC",
+            species.rangeActiveParticles(),
+            Lambda(index_t p) {
+              if (tag(p) != ParticleTag::alive) {
+                return;
+              }
+              auto NumPart_acc    = NumParts_scatter.access();
+              NumPart_acc(i1(p)) += 1;
+            });
+          Kokkos::Experimental::contribute(NumberOfParticles, NumParts_scatter);
+    }
+
+    // construct contribution to global number density field along x1 direction
+    index_t Nx_local[global_size] = { 0 };
+    for (auto i = 0; i < local_size; ++i) {
+        Nx_local[i+local_offset] = NumberOfParticles(i);
+    }
+    // sum up all ranks
+    MPI_ALLREDUCE(MPI_SUM, Nx_local, Nx_global, global_size, MPI_TYPE_INT_T, MPI_COMM_WORLD);
+
     // compute mean particle load
-    int total_N = 0;
+    npart_t total_N = 0;
     for (auto i = 0; i < global_size; ++i) {
         total_N += Nx_global[i];
     }
 
     // get threshold number of particles
-    auto N_1_ranks += global_domain.ndomains_per_dim()[d]
+    auto N_1_ranks = global_domain.ndomains_per_dim()[in::x1];
     auto N_23_ranks = 0;
     for (auto d = 1u; d < M::Dim; ++d) {         
-        N_23ranks += global_domain.ndomains_per_dim()[d];
+        N_23_ranks += global_domain.ndomains_per_dim()[d];
     }
-    // todo: as parameter
-    real_t tolerance = 1.05; // allow 5% tolerance
-    index_t target_N = total_N / (N_1_ranks + N_23ranks) * tolerance;
-    // compute new domain boundaries
-    index_t bound_start[N_ranks];
-    index_t bound_end[N_ranks];
+
+    // maximum allowed load imbalance 
+    real_t tolerance = params.load_balancing_tolerance;
+    index_t target_N = total_N / (N_1_ranks + N_23_ranks) * tolerance;
+    // compute new domain boundaries in x1 direction
+    index_t bound_start[N_1_ranks];
+    index_t bound_end[N_1_ranks];
+
+    // overwrite N_23_ranks to be 1 if it's initally 0 to avoid division by zero
+    if (N_23_ranks == 0) {
+        N_23_ranks = 1;
+    }
 
     bound_start[0] = 0;
-    for (auto r = 0; r < N_ranks-1; ++r) {
+    for (auto r = 0; r < N_1_ranks-1; ++r) {
         real_t cum_N = 0;
         for (auto i = bound_start[r]; i < global_size; ++i) {
             cum_N += static_cast<real_t>(Nx_global[i]) / N_23_ranks;
@@ -411,9 +471,22 @@ namespace user {
             }
         }
     }
-    bound_end[N_ranks-1] = global_size - 1;
+    // rest of the domain goes to the last rank
+    bound_end[N_1_ranks-1] = global_size - 1;
 
-    // todo: bounds in other directions
+    // compute maximum load imbalance after reshuffling
+    index_t max_N = 0;
+    for (auto r = 0; r < N_1_ranks; ++r) {
+        index_t N_r = 0;
+        for (auto i = bound_start[r]; i < bound_end[r]; ++i) {
+            N_r += Nx_global[i];
+        }
+        if (N_r > max_N) {
+            max_N = N_r;
+        } 
+    }
+    real_t imbalance = static_cast<real_t>(max_N) / (total_N / N_1_ranks);
+    
 
     // todo: reshuffling of particles according to new domain boundaries
 
