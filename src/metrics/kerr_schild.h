@@ -219,6 +219,77 @@ namespace metric {
     }
 
     /**
+     * metric component with lower indices: g_mu nu
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto g_(const coord_t<D>& x) const -> real_t {
+      static_assert(i >= 0 && i <= 3, "Invalid index i");
+      static_assert(j >= 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 1 && j == 1) {
+        // h_11
+        return SQR(dr) * (ONE + z(x[0] * dr + x1_min, x[1] * dtheta + x2_min));
+      } else if constexpr (i == 2 && j == 2) {
+        // h_22
+        return SQR(dtheta) * Sigma(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
+      } else if constexpr (i == 3 && j == 3) {
+        // h_33
+        if constexpr (D == Dim::_2D) {
+          return A(x[0] * dr + x1_min, x[1] * dtheta + x2_min) *
+                 SQR(math::sin(x[1] * dtheta + x2_min)) /
+                 Sigma(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
+        } else {
+          return SQR(dphi) * A(x[0] * dr + x1_min, x[1] * dtheta + x2_min) *
+                 SQR(math::sin(x[1] * dtheta + x2_min)) /
+                 Sigma(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
+        }
+      } else if constexpr ((i == 1 && j == 3) || (i == 3 && j == 1)) {
+        // h_13 or h_31
+        if constexpr (D == Dim::_2D) {
+          return -dr * a * (ONE + z(x[0] * dr + x1_min, x[1] * dtheta + x2_min)) *
+                 SQR(math::sin(x[1] * dtheta + x2_min));
+        } else {
+          return -dr * dphi * a *
+                 (ONE + z(x[0] * dr + x1_min, x[1] * dtheta + x2_min)) *
+                 SQR(math::sin(x[1] * dtheta + x2_min));
+        }
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
+     * metric component with upper indices: g^mu nu
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto g(const coord_t<D>& x) const -> real_t {
+      static_assert(i >= 0 && i <= 3, "Invalid index i");
+      static_assert(j >= 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 0 && j == 0) {
+        // g^00
+        return - ONE / SQR(alpha(x));
+      } else if constexpr ((i == 0 && j == 1) ||  (i == 1 && j == 0)) {
+        // g^01 or g^10
+        return beta1(x) / SQR(alpha(x));
+      } else if constexpr (i == 1 && j == 1) {
+        // g^11
+        return h<1, 1>(x) - SQR(beta1(x)) / SQR(alpha(x));
+      } else if constexpr (i == 2 && j == 2) {
+        // g^22
+        return h<2, 2>(x);
+      } else if constexpr (i == 3 && j == 3) {
+        // g^33
+        return h<3, 3>(x);
+      } else if constexpr ((i == 1 && j == 3) || (i == 3 && j == 1)) {
+        // g^13 or g^31
+        return h<1, 3>(x);
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
      * lapse function
      * @param x coordinate array in code units
      */
