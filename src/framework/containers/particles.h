@@ -24,6 +24,7 @@
 #include "utils/formatting.h"
 
 #include "framework/containers/species.h"
+#include "framework/domain/grid.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -254,6 +255,12 @@ namespace ntt {
      * @brief Move dead particles to the end of arrays
      */
     void RemoveDead();
+
+    /**
+     * @brief Sort particles spatially by their cell indices
+     * @param grid The grid object to get the cell information for sorting
+     */
+    void SortSpatially(const Grid<D>&);
 
     /**
      * @brief Copy particle data from device to host.

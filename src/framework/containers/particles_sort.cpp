@@ -4,8 +4,10 @@
 #include "arch/kokkos_aliases.h"
 
 #include "framework/containers/particles.h"
+#include "framework/domain/grid.h"
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
@@ -179,10 +181,86 @@ namespace ntt {
     m_is_sorted = true;
   }
 
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
+    const auto& tag_p = tag;
+    const auto& i1_p  = i1;
+    const auto& i2_p  = i2;
+    const auto& i3_p  = i3;
+
+    const auto nx1         = grid.n_active(in::x1);
+    const auto nx2         = grid.n_active(in::x2);
+    const auto nx3         = grid.n_active(in::x3);
+    const auto total_cells = grid.num_active();
+
+    array_t<ncells_t*> cell_indices { "cell_indices", npart() };
+
+    Kokkos::parallel_for(
+      "FillCellIndices",
+      rangeActiveParticles(),
+      Lambda(index_t p) {
+        if (tag_p(p) != ParticleTag::alive) {
+          cell_indices(p) = total_cells + 1u;
+        } else {
+          if constexpr (D == Dim::_1D) {
+            cell_indices(p) = i1_p(p);
+          } else if constexpr (D == Dim::_2D) {
+            cell_indices(p) = i1_p(p) * nx2 + i2_p(p);
+          } else if constexpr (D == Dim::_3D) {
+            cell_indices(p) = (i1_p(p) * nx2 + i2_p(p)) * nx3 + i3_p(p);
+          } else {
+            raise::KernelError(HERE, "Wrong D in SortSpatially");
+          }
+        }
+      });
+    const auto slice = range_tuple_t(0, npart());
+
+    using sorter_op_t = Kokkos::BinOp1D<decltype(cell_indices)>;
+    using sorter_t    = Kokkos::BinSort<decltype(cell_indices), sorter_op_t>;
+    auto bin_op       = sorter_op_t { static_cast<int>(total_cells + 1u),
+                                0u,
+                                total_cells + 1u };
+    auto sorter       = sorter_t { cell_indices, bin_op, false };
+    sorter.create_permute_vector();
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i1, slice));
+      sorter.sort(Kokkos::subview(i1_prev, slice));
+      sorter.sort(Kokkos::subview(dx1, slice));
+      sorter.sort(Kokkos::subview(dx1_prev, slice));
+    }
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i2, slice));
+      sorter.sort(Kokkos::subview(i2_prev, slice));
+      sorter.sort(Kokkos::subview(dx2, slice));
+      sorter.sort(Kokkos::subview(dx2_prev, slice));
+    }
+    if constexpr (D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i3, slice));
+      sorter.sort(Kokkos::subview(i3_prev, slice));
+      sorter.sort(Kokkos::subview(dx3, slice));
+      sorter.sort(Kokkos::subview(dx3_prev, slice));
+    }
+    sorter.sort(Kokkos::subview(ux1, slice));
+    sorter.sort(Kokkos::subview(ux2, slice));
+    sorter.sort(Kokkos::subview(ux3, slice));
+    sorter.sort(Kokkos::subview(weight, slice));
+    sorter.sort(Kokkos::subview(tag, slice));
+    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      sorter.sort(Kokkos::subview(phi, slice));
+    }
+    for (auto pldr { 0u }; pldr < npld_r(); ++pldr) {
+      sorter.sort(Kokkos::subview(pld_r, slice, pldr));
+    }
+    for (auto pldi { 0u }; pldi < npld_i(); ++pldi) {
+      sorter.sort(Kokkos::subview(pld_i, slice, pldi));
+    }
+  }
+
 #define PARTICLES_SORT(D, C)                                                   \
   template auto Particles<D, C>::NpartsPerTagAndOffsets() const                \
     -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;                     \
-  template void Particles<D, C>::RemoveDead();
+  template void Particles<D, C>::RemoveDead();                                 \
+  template void Particles<D, C>::SortSpatially(const Grid<D>&);
 
   PARTICLES_SORT(Dim::_1D, Coord::Cart)
   PARTICLES_SORT(Dim::_2D, Coord::Cart)
@@ -194,3 +272,83 @@ namespace ntt {
 #undef PARTICLES_SORT
 
 } // namespace ntt
+
+// template <Dimension D, typename T>
+// void AllocateArrayOnGrid(nddata_t<D, T>&    arr,
+//                          const Grid<D>&     grid,
+//                          const std::string& name) {
+//   if constexpr (D == Dim::_1D) {
+//     arr = nddata_t<D, T> { name, grid.n_active(in::x1) };
+//   } else if constexpr (D == Dim::_2D) {
+//     arr = nddata_t<D, T> { name, grid.n_active(in::x1), grid.n_active(in::x2) };
+//   } else if constexpr (D == Dim::_3D) {
+//     arr = nddata_t<D, T> { name,
+//                            grid.n_active(in::x1),
+//                            grid.n_active(in::x2),
+//                            grid.n_active(in::x3) };
+//   } else {
+//     raise::Error("Unsupported dimension for array allocation", HERE);
+//   }
+// }
+//
+//
+// array_t<ncells_t*> cell_idx { "cell_indices", npart() };
+// const auto         num_cells = grid.num_active();
+//
+// nddata_t<D, npart_t> num_ppc;
+// nddata_t<D, npart_t> disp_map;
+// AllocateArrayOnGrid<D, npart_t>(num_ppc, grid, "num_ppc");
+// AllocateArrayOnGrid<D, npart_t>(disp_map, grid, "disp_map");
+// auto num_ppc_scatter =
+// Kokkos::Experimental::create_scatter_view(num_ppc); Kokkos::parallel_for(
+//   "ComputeNumPPC",
+//   rangeActiveParticles(),
+//   Lambda(index_t p) {
+//     if (tag_p(p) != ParticleTag::alive) {
+//       return;
+//     }
+//     auto num_ppc_acc = num_ppc_scatter.access();
+//     if constexpr (D == Dim::_1D) {
+//       num_ppc_acc(i1_p(p)) += 1u;
+//     } else if constexpr (D == Dim::_2D) {
+//       num_ppc_acc(i1_p(p), i2_p(p)) += 1u;
+//     } else {
+//       num_ppc_acc(i1_p(p), i2_p(p), i3_p(p)) += 1u;
+//     }
+//   });
+// Kokkos::Experimental::contribute(num_ppc, num_ppc_scatter);
+//
+// npart_t  total_sum   = 0u;
+// Kokkos::parallel_scan(
+//   "ComputeDisplacementMap",
+//   total_cells,
+//   Lambda(index_t cell, npart_t & cumulative_sum, bool is_final) {
+//     ncells_t i1, i2, i3;
+//     if constexpr (D == Dim::_1D) {
+//       i1 = cell;
+//     } else if constexpr (D == Dim::_2D) {
+//       i1 = cell / nx2;
+//       i2 = cell % nx2;
+//     } else {
+//       i1 = cell / (nx2 * nx3);
+//       i2 = (cell % (nx2 * nx3)) / nx3;
+//       i3 = cell % nx3;
+//     }
+//     if (is_final) {
+//       if constexpr (D == Dim::_1D) {
+//         disp_map(i1) = cumulative_sum;
+//       } else if constexpr (D == Dim::_2D) {
+//         disp_map(i1, i2) = cumulative_sum;
+//       } else {
+//         disp_map(i1, i2, i3) = cumulative_sum;
+//       }
+//     }
+//     if constexpr (D == Dim::_1D) {
+//       cumulative_sum += num_ppc(i1);
+//     } else if constexpr (D == Dim::_2D) {
+//       cumulative_sum += num_ppc(i1, i2);
+//     } else {
+//       cumulative_sum += num_ppc(i1, i2, i3);
+//     }
+//   },
+//   total_sum);
