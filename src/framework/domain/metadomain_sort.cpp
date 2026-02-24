@@ -25,7 +25,7 @@ namespace ntt {
       const auto spatial_sorting_interval = species.spatial_sorting_interval();
       if ((spatial_sorting_interval > 0u) and
           (step % spatial_sorting_interval == 0u)) {
-        // ...
+        species.SortSpatially(domain.mesh);
       }
     }
   }
