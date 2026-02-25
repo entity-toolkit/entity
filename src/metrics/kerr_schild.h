@@ -237,7 +237,7 @@ namespace metric {
         if constexpr (D == Dim::_2D) {
           return - a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) * SQR(math::sin(x[1] * dtheta + x2_min));
         } else {
-          return - dphi_inv * a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) * SQR(math::sin(x[1] * dtheta + x2_min));
+          return - dphi * a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) * SQR(math::sin(x[1] * dtheta + x2_min));
         }
       } else if constexpr (i == 1 && j == 1) {
         // g_11
@@ -673,7 +673,7 @@ namespace metric {
       const real_t B { - TWO * g<0, 1>(xi) * u_i[0] };
       const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
                        g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + ONE };
-      return (B + math::sqrt(SQR(B) + FOUR * A * C)) / (TWO * A);
+      return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
     }
 
     /**

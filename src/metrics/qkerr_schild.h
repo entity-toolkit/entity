@@ -255,9 +255,9 @@ namespace metric {
         // g_03 or g_30
         const real_t theta { eta2theta(x[1] * deta + eta_min) };
         if constexpr (D == Dim::_2D) {
-          return - a * z(r0 + math::exp(x[0] * dchi + chi_min)) * SQR(math::sin(theta));
+          return - a * z(r0 + math::exp(x[0] * dchi + chi_min), theta) * SQR(math::sin(theta));
         } else {
-          return - dphi_inv * a * z(r0 + math::exp(x[0] * dchi + chi_min)) * SQR(math::sin(theta));
+          return - dphi * a * z(r0 + math::exp(x[0] * dchi + chi_min)) * SQR(math::sin(theta));
         }
       } else if constexpr (i == 1 && j == 1) {
         // g_11
@@ -748,7 +748,7 @@ namespace metric {
       const real_t B { - TWO * g<0, 1>(xi) * u_i[0] };
       const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
                        g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + ONE };
-      return (B + math::sqrt(SQR(B) + FOUR * A * C)) / (TWO * A);
+      return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
     }
 
     /**
