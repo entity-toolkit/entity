@@ -257,7 +257,7 @@ namespace metric {
         if constexpr (D == Dim::_2D) {
           return - a * z(r0 + math::exp(x[0] * dchi + chi_min), theta) * SQR(math::sin(theta));
         } else {
-          return - dphi * a * z(r0 + math::exp(x[0] * dchi + chi_min)) * SQR(math::sin(theta));
+          return - dphi * a * z(r0 + math::exp(x[0] * dchi + chi_min), theta) * SQR(math::sin(theta));
         }
       } else if constexpr (i == 1 && j == 1) {
         // g_11
