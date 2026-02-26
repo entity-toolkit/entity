@@ -8,7 +8,7 @@
 #include "utils/log.h"
 
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 
 namespace ntt {

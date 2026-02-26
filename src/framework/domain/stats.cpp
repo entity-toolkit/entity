@@ -9,7 +9,7 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 
 #include "kernels/reduced_stats.hpp"

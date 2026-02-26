@@ -5,13 +5,13 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
+#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
 
 #include "kernels/particle_moments.hpp"
@@ -43,7 +43,8 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -61,7 +62,8 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -197,11 +199,17 @@ namespace user {
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
-    static constexpr auto engines { traits::compatible_with<SimEngine::GRPIC>::value };
-    static constexpr auto metrics {
-      traits::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0>::value
+    static constexpr auto engines {
+      arch::traits::pgen::compatible_with<SimEngine::GRPIC>::value
     };
-    static constexpr auto dimensions { traits::compatible_with<Dim::_2D>::value };
+    static constexpr auto metrics {
+      arch::traits::pgen::compatible_with<Metric::Kerr_Schild,
+                                          Metric::QKerr_Schild,
+                                          Metric::Kerr_Schild_0>::value
+    };
+    static constexpr auto dimensions {
+      arch::traits::pgen::compatible_with<Dim::_2D>::value
+    };
 
     // for easy access to variables in the child class
     using arch::ProblemGenerator<S, M>::D;
@@ -231,7 +239,7 @@ namespace user {
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
+                                                      local_domain.random_pool(),
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,
@@ -252,7 +260,7 @@ namespace user {
 
     void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool,
+                                                      local_domain.random_pool(),
                                                       temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,

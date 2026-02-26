@@ -4,7 +4,12 @@
 #
 # @sources:
 #
-# * parameters.cpp
+# * parameters/parameters.cpp
+# * parameters/particles.cpp
+# * parameters/grid.cpp
+# * parameters/output.cpp
+# * parameters/algorithms.cpp
+# * parameters/extra.cpp
 # * simulation.cpp
 # * domain/grid.cpp
 # * domain/metadomain.cpp
@@ -36,8 +41,13 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES
-    ${SRC_DIR}/parameters.cpp
     ${SRC_DIR}/simulation.cpp
+    ${SRC_DIR}/parameters/parameters.cpp
+    ${SRC_DIR}/parameters/particles.cpp
+    ${SRC_DIR}/parameters/grid.cpp
+    ${SRC_DIR}/parameters/output.cpp
+    ${SRC_DIR}/parameters/algorithms.cpp
+    ${SRC_DIR}/parameters/extra.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
     ${SRC_DIR}/domain/communications.cpp
@@ -58,7 +68,9 @@ add_library(ntt_framework ${SOURCES})
 set(libs ntt_global ntt_metrics ntt_kernels ntt_output)
 add_dependencies(ntt_framework ${libs})
 target_link_libraries(ntt_framework PUBLIC ${libs})
-target_link_libraries(ntt_framework PRIVATE stdc++fs)
+if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+  target_link_libraries(ntt_framework PRIVATE stdc++fs)
+endif()
 
 target_include_directories(
   ntt_framework

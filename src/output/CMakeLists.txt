@@ -39,7 +39,9 @@ add_library(ntt_output ${SOURCES})
 set(libs ntt_global)
 add_dependencies(ntt_output ${libs})
 target_link_libraries(ntt_output PUBLIC ${libs})
-target_link_libraries(ntt_output PRIVATE stdc++fs)
+if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+  target_link_libraries(ntt_output PRIVATE stdc++fs)
+endif()
 
 target_include_directories(
   ntt_output

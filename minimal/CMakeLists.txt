@@ -83,7 +83,10 @@ if("KOKKOS" IN_LIST MODES)
 endif()
 
 if("ADIOS2_NOMPI" IN_LIST MODES)
-  set(libs stdc++fs)
+  set(libs "")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+    list(APPEND libs stdc++fs)
+  endif()
   set(exec adios2-nompi.xc)
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/adios2.cpp)
 
@@ -97,7 +100,10 @@ if("ADIOS2_NOMPI" IN_LIST MODES)
 endif()
 
 if("ADIOS2_MPI" IN_LIST MODES)
-  set(libs stdc++fs)
+  set(libs "")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+    list(APPEND libs stdc++fs)
+  endif()
   set(exec adios2-mpi.xc)
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/adios2.cpp)
 

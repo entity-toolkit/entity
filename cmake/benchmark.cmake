@@ -2,17 +2,6 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_subdirectory(${SRC_DIR}/global ${CMAKE_CURRENT_BINARY_DIR}/global)
-add_subdirectory(${SRC_DIR}/metrics ${CMAKE_CURRENT_BINARY_DIR}/metrics)
-add_subdirectory(${SRC_DIR}/kernels ${CMAKE_CURRENT_BINARY_DIR}/kernels)
-add_subdirectory(${SRC_DIR}/archetypes ${CMAKE_CURRENT_BINARY_DIR}/archetypes)
-add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
-
-if(${output})
-  add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
-  add_subdirectory(${SRC_DIR}/checkpoint ${CMAKE_CURRENT_BINARY_DIR}/checkpoint)
-endif()
-
 set(exec benchmark.xc)
 set(src ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/benchmark.cpp)
 
@@ -23,4 +12,7 @@ if(${output})
   list(APPEND libs ntt_output)
 endif()
 add_dependencies(${exec} ${libs})
-target_link_libraries(${exec} PRIVATE ${libs} stdc++fs)
+if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+  list(APPEND libs stdc++fs)
+endif()
+target_link_libraries(${exec} PRIVATE ${libs})
