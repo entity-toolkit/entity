@@ -47,8 +47,9 @@ namespace arch {
     namespace spatialdist {
 
       template <class SD>
-      concept IsValid = requires(const SD& sdist, const coord_t<SD::D>& x_Ph) {
-        { sdist(x_Ph) } -> std::convertible_to<real_t>;
+      concept IsValid = requires(const SD& sdist, const coord_t<SD::D>& x_Ph,
+                                 real_t& ppc_dist, real_t& weight_dist) {
+        { sdist(x_Ph, ppc_dist, weight_dist) } -> std::same_as<void>;
       };
 
     } // namespace spatialdist
