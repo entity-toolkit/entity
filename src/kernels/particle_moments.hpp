@@ -139,7 +139,7 @@ namespace kernel {
       }
       real_t coeff { ZERO };
       if constexpr (F == FldsID::T) {
-        real_t          energy { ZERO };
+        real_t          u0 { ZERO };
         // for stress-energy tensor
         vec_t<Dim::_3D> u_Phys { ZERO };
         if constexpr (S == SimEngine::SRPIC) {
@@ -165,10 +165,9 @@ namespace kernel {
               u_Phys);
           }
           if (mass == ZERO) {
-            energy = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+            u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
           } else {
-            energy = mass *
-                     math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+            u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
           }
         } else {
           // GR
@@ -181,16 +180,6 @@ namespace kernel {
             x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
           }
           vec_t<Dim::_3D> u_Cntrv { ZERO };
-          // compute u_i u^i for energy
-          metric.template transform<Idx::D, Idx::U>(x_Code,
-                                                    { ux1(p), ux2(p), ux3(p) },
-                                                    u_Cntrv);
-          energy = u_Cntrv[0] * ux1(p) + u_Cntrv[1] * ux2(p) + u_Cntrv[2] * ux3(p);
-          if (mass == ZERO) {
-            energy = math::sqrt(energy);
-          } else {
-            energy = mass * math::sqrt(ONE + energy);
-          }
           // raise full covariant 4-vector to get correct contravariant u^i
           // u^i != h^{ij} u_j
           const real_t    norm { (mass == ZERO) ? ZERO : ONE };
@@ -200,20 +189,21 @@ namespace kernel {
             x_Code,
             { u_0_cov, ux1(p), ux2(p), ux3(p) },
             u_cntrv_4d);
+          // in GR (3+1): u^0 = Gamma/alpha (includes lapse)
+          u0         = u_cntrv_4d[0];
           u_Cntrv[0] = u_cntrv_4d[1];
           u_Cntrv[1] = u_cntrv_4d[2];
           u_Cntrv[2] = u_cntrv_4d[3];
           metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
         }
         // compute the corresponding moment
-        // T^μν = energy * v^{c1} * v^{c2},
+        // T^μν = m * u^0 * v^{c1} * v^{c2},
         // where v^0 = 1, v^i = u^i / u^0 (coordinate 3-velocity)
-        const real_t inv_u0 { (mass == ZERO) ? ONE : mass / energy };
-        coeff = energy;
+        coeff = ((mass == ZERO) ? ONE : mass) * u0;
 #pragma unroll
         for (const auto& c : { c1, c2 }) {
           if (c != 0) {
-            coeff *= u_Phys[c - 1] * inv_u0;
+            coeff *= u_Phys[c - 1] / u0;
           }
         }
       } else if constexpr (F == FldsID::V) {
