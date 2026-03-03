@@ -32,8 +32,10 @@ namespace ntt {
     const float       m_charge;
     // Max number of allocated particles for the species
     npart_t           m_maxnpart;
-    // Toggle for spatial sorting
+    // Spatial sorting interval for the species (0 means no sorting)
     const timestep_t  m_spatial_sorting_interval;
+    // Spatial sorting interval for the species (0 means no clearing)
+    const timestep_t  m_clearing_interval;
 
     // Pusher assigned for the species
     const ParticlePusherFlags m_particle_pusher_flags;
@@ -58,6 +60,7 @@ namespace ntt {
       , m_mass { 0.0 }
       , m_charge { 0.0 }
       , m_maxnpart { 0 }
+      , m_clearing_interval { 0u }
       , m_spatial_sorting_interval { 0u }
       , m_particle_pusher_flags { ParticlePusher::NONE }
       , m_use_tracking { false }
@@ -86,6 +89,7 @@ namespace ntt {
                     float               m,
                     float               ch,
                     npart_t             maxnpart,
+                    timestep_t          clearing_interval,
                     timestep_t          spatial_sorting_interval,
                     ParticlePusherFlags particle_pusher_flags,
                     bool                use_tracking,
@@ -98,6 +102,7 @@ namespace ntt {
       , m_mass { m }
       , m_charge { ch }
       , m_maxnpart { maxnpart }
+      , m_clearing_interval { clearing_interval }
       , m_spatial_sorting_interval { spatial_sorting_interval }
       , m_particle_pusher_flags { particle_pusher_flags }
       , m_use_tracking { use_tracking }
@@ -152,6 +157,11 @@ namespace ntt {
     }
 
     [[nodiscard]]
+    auto clearing_interval() const -> timestep_t {
+      return m_clearing_interval;
+    }
+
+    [[nodiscard]]
     auto spatial_sorting_interval() const -> timestep_t {
       return m_spatial_sorting_interval;
     }
@@ -196,6 +206,13 @@ namespace ntt {
       reporter::AddParam(report, 6, "Mass", "%.1f", mass());
       reporter::AddParam(report, 6, "Charge", "%.1f", charge());
       reporter::AddParam(report, 6, "Max #", "%d [per domain]", maxnpart());
+      reporter::AddParam(report,
+                         6,
+                         "Clearing interval",
+                         "%s",
+                         clearing_interval() == 0u
+                           ? "OFF"
+                           : fmt::format("%d", clearing_interval()).c_str());
       reporter::AddParam(report,
                          6,
                          "Spatial sorting interval",

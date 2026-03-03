@@ -15,6 +15,7 @@ void testParticles(
   float                    m,
   float                    ch,
   std::size_t              maxnpart,
+  timestep_t               clearing_interval,
   timestep_t               spatial_sorting_interval,
   ntt::ParticlePusherFlags pusher,
   bool                     use_tracking,
@@ -28,6 +29,7 @@ void testParticles(
                            m,
                            ch,
                            maxnpart,
+                           clearing_interval,
                            spatial_sorting_interval,
                            pusher,
                            use_tracking,
@@ -40,6 +42,9 @@ void testParticles(
   raise::ErrorIf(p.mass() != m, "Mass mismatch", HERE);
   raise::ErrorIf(p.charge() != ch, "Charge mismatch", HERE);
   raise::ErrorIf(p.maxnpart() != maxnpart, "Max number of particles mismatch", HERE);
+  raise::ErrorIf(p.clearing_interval() != clearing_interval,
+                 "Clearing interval mismatch",
+                 HERE);
   raise::ErrorIf(p.spatial_sorting_interval() != spatial_sorting_interval,
                  "Spatial sorting interval mismatch",
                  HERE);
@@ -128,6 +133,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
+                                         123u,
                                          0u,
                                          ParticlePusher::BORIS,
                                          false,
@@ -137,6 +143,7 @@ auto main(int argc, char** argv) -> int {
                                          100.0,
                                          -1.0,
                                          100,
+                                         0u,
                                          1u,
                                          ParticlePusher::VAY,
                                          true,
@@ -150,6 +157,7 @@ auto main(int argc, char** argv) -> int {
                                          0.0,
                                          0.0,
                                          100,
+                                         0u,
                                          12u,
                                          ParticlePusher::PHOTON,
                                          false,
@@ -162,6 +170,7 @@ auto main(int argc, char** argv) -> int {
                                         1.0,
                                         100,
                                         123u,
+                                        123u,
                                         ParticlePusher::BORIS,
                                         true,
                                         RadiativeDrag::NONE,
@@ -173,6 +182,7 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          1.0,
                                          100,
+                                         321u,
                                          1234u,
                                          ParticlePusher::BORIS,
                                          false,

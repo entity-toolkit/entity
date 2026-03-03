@@ -14,14 +14,14 @@ namespace ntt {
                                        timestep_t              step,
                                        const SimulationParams& params,
                                        Domain<S, M>&           domain) const {
-    const auto clear_interval = params.template get<timestep_t>(
-      "particles.clear_interval");
-    if ((clear_interval > 0u) and (step % clear_interval == 0u) and (step > 0u)) {
-      for (auto& species : domain.species) {
-        species.RemoveDead();
-      }
-    }
     for (auto& species : domain.species) {
+      const auto clearing_interval = species.clearing_interval();
+      if ((clearing_interval > 0u) and (step % clearing_interval == 0u) and
+          (step > 0u)) {
+        for (auto& species : domain.species) {
+          species.RemoveDead();
+        }
+      }
       const auto spatial_sorting_interval = species.spatial_sorting_interval();
       if ((spatial_sorting_interval > 0u) and
           (step % spatial_sorting_interval == 0u)) {

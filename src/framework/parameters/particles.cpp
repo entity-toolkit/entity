@@ -98,6 +98,7 @@ namespace ntt {
                             const SimEngine&   engine_enum,
                             spidx_t            idx,
                             const toml::value& sp,
+                            timestep_t         global_clearing_interval,
                             timestep_t         global_spatial_sorting_interval)
       -> ParticleSpecies {
       const auto label  = toml::find_or<std::string>(sp,
@@ -108,11 +109,15 @@ namespace ntt {
       raise::ErrorIf((charge != 0.0f) && (mass == 0.0f),
                      "mass of the charged species must be non-zero",
                      HERE);
-      const auto is_massless              = (mass == 0.0f) && (charge == 0.0f);
-      const auto def_pusher               = (is_massless ? defaults::ph_pusher
-                                                         : defaults::em_pusher);
-      const auto maxnpart_real            = toml::find<double>(sp, "maxnpart");
-      const auto maxnpart                 = static_cast<npart_t>(maxnpart_real);
+      const auto is_massless       = (mass == 0.0f) && (charge == 0.0f);
+      const auto def_pusher        = (is_massless ? defaults::ph_pusher
+                                                  : defaults::em_pusher);
+      const auto maxnpart_real     = toml::find<double>(sp, "maxnpart");
+      const auto maxnpart          = static_cast<npart_t>(maxnpart_real);
+      const auto clearing_interval = toml::find_or<timestep_t>(
+        sp,
+        "clear_interval",
+        global_clearing_interval);
       const auto spatial_sorting_interval = toml::find_or<timestep_t>(
         sp,
         "spatial_sorting_interval",
@@ -206,6 +211,7 @@ namespace ntt {
                              mass,
                              charge,
                              maxnpart,
+                             clearing_interval,
                              spatial_sorting_interval,
                              particle_pusher_flags,
                              use_tracking,

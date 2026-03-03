@@ -107,7 +107,7 @@
 
     [grid.boundaries.match]
       # Size of the matching layer in each direction for fields in physical (code) units
-      #   @type: float | array<tuple<float>> 
+      #   @type: float | array<tuple<float>>
       #   @default: 1% of the domain size (in shortest dimension)
       #   @note: In spherical, this is the size of the layer in `r` from the outer wall
       #   @example: `ds = 1.5` (will set the same for all directions)
@@ -464,6 +464,12 @@
     #   @note: Set to 0 to disable spatial sorting
     #   @note: Overrides `particles.spatial_sorting_interval` for the given species
     spatial_sorting_interval = ""
+    # Timesteps between particle re-sorting by tags (removing dead particles)
+    #   @type: uint
+    #   @default: 100
+    #   @note: Set to 0 to disable re-sorting
+    #   @note: Overrides `particles.clear_interval` for the given species
+    clear_interval = ""
 
 # Parameters for specific problem generators and setups
 [setup]
@@ -645,7 +651,7 @@
   #   @note: 0 = disable checkpointing
   #   @note: -1 = keep all checkpoints
   keep = ""
-  # Write a checkpoint once after a fixed walltime 
+  # Write a checkpoint once after a fixed walltime
   #   @type: string
   #   @default: "00:00:00"
   #   @note: The format is "HH:MM:SS"

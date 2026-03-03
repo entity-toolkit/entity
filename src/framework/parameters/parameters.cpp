@@ -63,6 +63,12 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(toml_data, "particles", "use_weights", false));
+    const auto global_clearing_interval = toml::find_or<timestep_t>(
+      toml_data,
+      "particles",
+      "clear_interval",
+      defaults::clear_interval);
+    set("particles.clear_interval", global_clearing_interval);
     const auto global_spatial_sorting_interval = toml::find_or<timestep_t>(
       toml_data,
       "particles",
@@ -88,6 +94,7 @@ namespace ntt {
                                    engine_enum,
                                    idx,
                                    sp,
+                                   global_clearing_interval,
                                    global_spatial_sorting_interval));
       idx += 1;
     }
@@ -121,8 +128,6 @@ namespace ntt {
     set("grid.boundaries.particles", prtl_bc);
 
     /* [particles] ---------------------------------------------------------- */
-    set("particles.clear_interval",
-        toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
     const auto species_tab               = toml::find_or<toml::array>(toml_data,
                                                         "particles",
                                                         "species",
@@ -145,6 +150,7 @@ namespace ntt {
                                particle_species.mass(),
                                particle_species.charge(),
                                maxnpart,
+                               particle_species.clearing_interval(),
                                particle_species.spatial_sorting_interval(),
                                particle_species.pusher(),
                                particle_species.use_tracking(),

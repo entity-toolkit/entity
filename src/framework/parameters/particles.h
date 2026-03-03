@@ -26,6 +26,7 @@ namespace ntt {
                             const SimEngine&,
                             spidx_t,
                             const toml::value&,
+                            timestep_t,
                             timestep_t) -> ParticleSpecies;
 
   } // namespace params

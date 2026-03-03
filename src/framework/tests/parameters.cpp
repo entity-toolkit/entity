@@ -70,6 +70,7 @@ const auto mink_1d = u8R"(
     n_payloads_real = 3
     tracking = true
     spatial_sorting_interval = 100
+    clear_interval = 50
 
   [[particles.species]]
     label = "p+"
@@ -323,6 +324,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
+      assert_equal(species[0].clearing_interval(),
+                   static_cast<timestep_t>(50u),
+                   "species[0].clearing_interval");
       assert_equal(species[0].spatial_sorting_interval(),
                    static_cast<timestep_t>(100u),
                    "species[0].spatial_sorting_interval");
@@ -342,6 +346,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 200.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
+      assert_equal(species[1].clearing_interval(),
+                   static_cast<timestep_t>(100u),
+                   "species[1].clearing_interval");
       assert_equal(species[1].spatial_sorting_interval(),
                    static_cast<timestep_t>(10u),
                    "species[1].spatial_sorting_interval");
