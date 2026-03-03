@@ -743,11 +743,11 @@ namespace metric {
     /**
      * u_0 from covariant velocity components
      */
-    Inline auto u_0(const coord_t<D>& xi, const vec_t<Dim::_3D>& u_i) const {
+    Inline auto u_0(const coord_t<D>& xi, const vec_t<Dim::_3D>& u_i, const real_t norm) const {
       const real_t A { g<0, 0>(xi) };
       const real_t B { - TWO * g<0, 1>(xi) * u_i[0] };
       const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
-                       g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + ONE };
+                       g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
       return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
     }
 
