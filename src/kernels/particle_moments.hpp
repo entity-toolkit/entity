@@ -194,13 +194,14 @@ namespace kernel {
           metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
         }
         // compute the corresponding moment
-        coeff = ONE / energy;
+        // T^μν = mass * u^μ * u^ν / u^0
+        coeff = ((mass == ZERO) ? ONE : mass) / energy;
 #pragma unroll
         for (const auto& c : { c1, c2 }) {
           if (c == 0) {
-            coeff *= energy;
+            coeff *= energy;  // multiply by u^0
           } else {
-            coeff *= ((mass == ZERO) ? ONE : mass) * u_Phys[c - 1];
+            coeff *= u_Phys[c - 1];  // multiply by u^c
           }
         }
       } else if constexpr (F == FldsID::V) {
