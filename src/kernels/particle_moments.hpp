@@ -206,14 +206,14 @@ namespace kernel {
           metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
         }
         // compute the corresponding moment
-        // T^μν = mass * u^μ * u^ν / u^0
-        coeff = ((mass == ZERO) ? ONE : mass) / energy;
+        // T^μν = energy * v^{c1} * v^{c2},
+        // where v^0 = 1, v^i = u^i / u^0 (coordinate 3-velocity)
+        const real_t inv_u0 { (mass == ZERO) ? ONE : mass / energy };
+        coeff = energy;
 #pragma unroll
         for (const auto& c : { c1, c2 }) {
-          if (c == 0) {
-            coeff *= energy;
-          } else {
-            coeff *= u_Phys[c - 1];
+          if (c != 0) {
+            coeff *= u_Phys[c - 1] * inv_u0;
           }
         }
       } else if constexpr (F == FldsID::V) {
