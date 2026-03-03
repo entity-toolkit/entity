@@ -22,7 +22,6 @@
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
-#include <toml11/toml.hpp>
 
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
@@ -34,6 +33,8 @@
 #include "framework/parameters/parameters.h"
 
 #include "pgen.hpp"
+
+#include <toml11/toml.hpp>
 
 #if defined(OUTPUT_ENABLED)
   #include <adios2.h>
@@ -248,7 +249,7 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
-       "PrtlClear", "Output",
+       "ParticleSort", "Output",
        "Checkpoint" },
       []() {
         Kokkos::fence();

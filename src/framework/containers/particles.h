@@ -5,6 +5,9 @@
  *   - ntt::Particles<> : ntt::ParticleSpecies
  * @cpp:
  *   - particles.cpp
+ *   - particles_io.cpp
+ *   - particles_comm.cpp
+ *   - particles_sort.cpp
  * @macros:
  *   - MPI_ENABLED
  */
@@ -21,6 +24,7 @@
 #include "utils/formatting.h"
 
 #include "framework/containers/species.h"
+#include "framework/domain/grid.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -83,6 +87,8 @@ namespace ntt {
      * @param m The mass of the species
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
+     * @param clearing_interval The interval for clearing the particles
+     * @param spatial_sorting_interval The interval for spatial sorting of the particles
      * @param particle_pusher_flags The pusher(s) assigned for the species
      * @param use_tracking Use particle tracking for the species
      * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
@@ -95,6 +101,8 @@ namespace ntt {
               float               m,
               float               ch,
               npart_t             maxnpart,
+              timestep_t          clearing_interval,
+              timestep_t          spatial_sorting_interval,
               ParticlePusherFlags particle_pusher_flags,
               bool                use_tracking,
               RadiativeDragFlags  radiative_drag_flags,
@@ -113,6 +121,8 @@ namespace ntt {
                   spec.mass(),
                   spec.charge(),
                   spec.maxnpart(),
+                  spec.clearing_interval(),
+                  spec.spatial_sorting_interval(),
                   spec.pusher(),
                   spec.use_tracking(),
                   spec.radiative_drag_flags(),
@@ -248,6 +258,12 @@ namespace ntt {
      * @brief Move dead particles to the end of arrays
      */
     void RemoveDead();
+
+    /**
+     * @brief Sort particles spatially by their cell indices
+     * @param grid The grid object to get the cell information for sorting
+     */
+    void SortSpatially(const Grid<D>&);
 
     /**
      * @brief Copy particle data from device to host.
