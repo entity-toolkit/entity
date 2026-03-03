@@ -179,22 +179,22 @@ namespace kernel {
           if constexpr (D == Dim::_3D) {
             x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
           }
-          vec_t<Dim::_3D> u_Cntrv { ZERO };
           // raise full covariant 4-vector to get correct contravariant u^i
           // u^i != h^{ij} u_j
-          const real_t    norm { (mass == ZERO) ? ZERO : ONE };
-          const real_t    u_0_cov { metric.u_0(x_Code, { ux1(p), ux2(p), ux3(p) }, norm) };
+          const real_t    u_0_cov { metric.u_0(x_Code,
+                                               { ux1(p), ux2(p), ux3(p) },
+                                            (mass == ZERO) ? ZERO : ONE) };
           vec_t<Dim::_4D> u_cntrv_4d { ZERO };
           metric.template transform_4d<Idx::D, Idx::U>(
             x_Code,
             { u_0_cov, ux1(p), ux2(p), ux3(p) },
             u_cntrv_4d);
-          // in GR (3+1): u^0 = Gamma/alpha (includes lapse)
-          u0         = u_cntrv_4d[0];
-          u_Cntrv[0] = u_cntrv_4d[1];
-          u_Cntrv[1] = u_cntrv_4d[2];
-          u_Cntrv[2] = u_cntrv_4d[3];
-          metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
+          // in GR: u^0 = Gamma/alpha
+          u0 = u_cntrv_4d[0];
+          metric.template transform<Idx::U, Idx::PU>(
+            x_Code,
+            { u_cntrv_4d[1], u_cntrv_4d[2], u_cntrv_4d[3] },
+            u_Phys);
         }
         // compute the corresponding moment
         // T^μν = m * u^0 * v^{c1} * v^{c2},
