@@ -199,9 +199,9 @@ namespace kernel {
 #pragma unroll
         for (const auto& c : { c1, c2 }) {
           if (c == 0) {
-            coeff *= energy;  // multiply by u^0
+            coeff *= energy;
           } else {
-            coeff *= u_Phys[c - 1];  // multiply by u^c
+            coeff *= u_Phys[c - 1];
           }
         }
       } else if constexpr (F == FldsID::V) {
