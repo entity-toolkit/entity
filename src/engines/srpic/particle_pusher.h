@@ -18,30 +18,35 @@
 #include "framework/parameters/parameters.h"
 
 #include "kernels/emission/compton.hpp"
+#include "kernels/emission/emission.hpp"
 #include "kernels/emission/synchrotron.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
   namespace srpic {
 
-    template <class M, class F = kernel::sr::NoForce_t>
-    void CallPusherWithExternalForce(Domain<SimEngine::SRPIC, M>& domain,
-                                     const SimulationParams&      params,
-                                     const kernel::sr::PusherParams& pusher_params,
-                                     kernel::sr::PusherArrays& pusher_arrays,
-                                     EmissionTypeFlag emission_policy_flag,
-                                     const range_t<Dim::_1D>&    range,
-                                     const ndfield_t<M::Dim, 6>& EB,
-                                     const M&                    metric,
-                                     const F&                    force) {
+    template <class M, class F, bool Atm>
+    void CallPusher(Domain<SimEngine::SRPIC, M>&    domain,
+                    const SimulationParams&         params,
+                    const kernel::sr::PusherParams& pusher_params,
+                    kernel::sr::PusherArrays&       pusher_arrays,
+                    EmissionTypeFlag                emission_policy_flag,
+                    const range_t<Dim::_1D>&        range,
+                    const ndfield_t<M::Dim, 6>&     EB,
+                    const M&                        metric,
+                    const F&                        external_fields) {
       if (emission_policy_flag == EmissionType::NONE) {
-        Kokkos::parallel_for("ParticlePusher",
-                             range,
-                             kernel::sr::Pusher_kernel<M, F>(pusher_params,
-                                                             pusher_arrays,
-                                                             EB,
-                                                             metric,
-                                                             force));
+        const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
+        Kokkos::parallel_for(
+          "ParticlePusher",
+          range,
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(no_emission)>(
+            pusher_params,
+            pusher_arrays,
+            EB,
+            metric,
+            external_fields,
+            no_emission));
       } else if (emission_policy_flag == EmissionType::SYNCHROTRON) {
         const auto photon_species = params.get<spidx_t>(
           "radiation.emission.synchrotron.photon_species");
@@ -67,12 +72,12 @@ namespace ntt {
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, decltype(emission_policy)>(
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
             pusher_params,
             pusher_arrays,
             EB,
             metric,
-            force,
+            external_fields,
             emission_policy));
         const auto n_inj = emission_policy.number_injected();
         domain.species[photon_species - 1].set_npart(
@@ -104,12 +109,12 @@ namespace ntt {
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, decltype(emission_policy)>(
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
             pusher_params,
             pusher_arrays,
             EB,
             metric,
-            force,
+            external_fields,
             emission_policy));
         const auto n_inj = emission_policy.number_injected();
         domain.species[photon_species - 1].set_npart(
@@ -191,6 +196,14 @@ namespace ntt {
         pusher_params.ni3     = domain.mesh.n_active(in::x3);
         pusher_params.boundaries = domain.mesh.prtl_bc();
 
+        if (has_atmosphere) {
+          pusher_params.atmosphere_params.set("gx1", gx1);
+          pusher_params.atmosphere_params.set("gx2", gx2);
+          pusher_params.atmosphere_params.set("gx3", gx3);
+          pusher_params.atmosphere_params.set("x_surf", x_surf);
+          pusher_params.atmosphere_params.set("ds", ds);
+        }
+
         if (species.pusher() & ParticlePusher::GCA) {
           pusher_params.gca_params.set(
             "larmor_max",
@@ -235,38 +248,20 @@ namespace ntt {
         pusher_arrays.tag      = species.tag;
 
         // toggle to indicate whether pgen defines the external force
-        bool has_extforce = false;
-        if constexpr (arch::traits::pgen::HasExtForce<PG>) {
-          has_extforce = true;
+        bool has_extfields = false;
+        if constexpr (arch::traits::pgen::HasExtFields<PG>) {
+          has_extfields = true;
           // toggle to indicate whether the ext force applies to current species
-          if (::traits::has_member<::traits::species_t, decltype(PG::ext_force)>::value) {
-            has_extforce &= std::find(pgen.ext_force.species.begin(),
-                                      pgen.ext_force.species.end(),
-                                      species.index()) !=
-                            pgen.ext_force.species.end();
+          if (::traits::has_member<::traits::species_t, decltype(PG::ext_fields)>::value) {
+            has_extfields &= std::find(pgen.ext_fields.species.begin(),
+                                       pgen.ext_fields.species.end(),
+                                       species.index()) !=
+                             pgen.ext_fields.species.end();
           }
         }
 
-        pusher_params.ext_force = has_extforce;
-
-        if (not has_atmosphere and not has_extforce) {
-          CallPusherWithExternalForce<M>(domain,
-                                         params,
-                                         pusher_params,
-                                         pusher_arrays,
-                                         species.emission_policy_flag(),
-                                         species.rangeActiveParticles(),
-                                         domain.fields.em,
-                                         domain.mesh.metric,
-                                         kernel::sr::NoForce_t {});
-        } else if (has_atmosphere and not has_extforce) {
-          const auto force =
-            kernel::sr::Force<M::PrtlDim, M::CoordType, kernel::sr::NoForce_t, true> {
-              { gx1, gx2, gx3 },
-              x_surf,
-              ds
-          };
-          CallPusherWithExternalForce<M, decltype(force)>(
+        if (not has_atmosphere and not has_extfields) {
+          CallPusher<M, kernel::sr::NoField_t, false>(
             domain,
             params,
             pusher_params,
@@ -275,14 +270,21 @@ namespace ntt {
             species.rangeActiveParticles(),
             domain.fields.em,
             domain.mesh.metric,
-            force);
-        } else if (not has_atmosphere and has_extforce) {
-          if constexpr (arch::traits::pgen::HasExtForce<PG>) {
-            const auto force =
-              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(pgen.ext_force), false> {
-                pgen.ext_force
-              };
-            CallPusherWithExternalForce<M, decltype(force)>(
+            kernel::sr::NoField_t {});
+        } else if (has_atmosphere and not has_extfields) {
+          CallPusher<M, kernel::sr::NoField_t, true>(
+            domain,
+            params,
+            pusher_params,
+            pusher_arrays,
+            species.emission_policy_flag(),
+            species.rangeActiveParticles(),
+            domain.fields.em,
+            domain.mesh.metric,
+            kernel::sr::NoField_t {});
+        } else if (not has_atmosphere and has_extfields) {
+          if constexpr (arch::traits::pgen::HasExtFields<PG>) {
+            CallPusher<M, decltype(pgen.ext_fields), false>(
               domain,
               params,
               pusher_params,
@@ -291,20 +293,13 @@ namespace ntt {
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
-              force);
+              pgen.ext_fields);
           } else {
-            raise::Error("External force not implemented", HERE);
+            raise::Error("External fields not implemented", HERE);
           }
         } else { // has_atmosphere and has_extforce
-          if constexpr (arch::traits::pgen::HasExtForce<PG>) {
-            const auto force =
-              kernel::sr::Force<M::PrtlDim, M::CoordType, decltype(pgen.ext_force), true> {
-                pgen.ext_force,
-                { gx1, gx2, gx3 },
-                x_surf,
-                ds
-            };
-            CallPusherWithExternalForce<M, decltype(force)>(
+          if constexpr (arch::traits::pgen::HasExtFields<PG>) {
+            CallPusher<M, decltype(pgen.ext_fields), true>(
               domain,
               params,
               pusher_params,
@@ -313,9 +308,9 @@ namespace ntt {
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
-              force);
+              pgen.ext_fields);
           } else {
-            raise::Error("External force not implemented", HERE);
+            raise::Error("External fields not implemented", HERE);
           }
         }
       }

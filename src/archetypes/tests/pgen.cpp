@@ -42,7 +42,7 @@ struct CustomPgen : public arch::ProblemGenerator<S, M> {
     : arch::ProblemGenerator<S, M> { params } {}
 
   CustomFieldsetter<M::Dim> init_flds {};
-  ExtForce<M::Dim>          ext_force {};
+  ExtForce<M::Dim>          ext_fields {};
   ExtCurrent<M::Dim>        ext_current {};
 
   void InitPrtls(Domain<S, M>&) {}
@@ -100,8 +100,8 @@ auto main(int argc, char* argv[]) -> int {
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have InitPrtls");
     }
-    if constexpr (not arch::traits::pgen::HasExtForce<decltype(custom_pgen)>) {
-      throw std::runtime_error("CustomPgen should have ext_force");
+    if constexpr (not arch::traits::pgen::HasExtFields<decltype(custom_pgen)>) {
+      throw std::runtime_error("CustomPgen should have ext_fields");
     }
     if constexpr (not arch::traits::pgen::HasExtCurrent<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have ext_current");

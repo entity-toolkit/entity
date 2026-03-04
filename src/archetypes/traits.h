@@ -9,7 +9,7 @@
  *   - arch::traits::pgen::HasD<> - checks if problem generator has Dim static member
  *   - arch::traits::pgen::HasInitFlds<> - checks if problem generator has init_flds member
  *   - arch::traits::pgen::HasInitPrtls<> - checks if problem generator has InitPrtls method
- *   - arch::traits::pgen::HasExtForce<> - checks if problem generator has ext_force member
+ *   - arch::traits::pgen::HasExtFields<> - checks if problem generator has ext_fields member
  *   - arch::traits::pgen::HasExtCurrent<> - checks if problem generator has ext_current member
  *   - arch::traits::pgen::HasAtmFields<> - checks if problem generator has AtmFields method
  *   - arch::traits::pgen::HasMatchFields<> - checks if problem generator has MatchFields method
@@ -83,7 +83,7 @@ namespace arch {
       };
 
       template <class PG>
-      concept HasExtForce = requires(const PG& pgen) { pgen.ext_force; };
+      concept HasExtFields = requires(const PG& pgen) { pgen.ext_fields; };
 
       template <class PG>
       concept HasExtCurrent = requires(const PG& pgen) { pgen.ext_current; };
