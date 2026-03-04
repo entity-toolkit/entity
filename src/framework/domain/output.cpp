@@ -487,7 +487,7 @@ namespace ntt {
                                                  local_domain->fields.bckp,
                                                  c);
             } else if (fld.id() == FldsID::V) {
-              if constexpr (S != SimEngine::GRPIC) {
+              if constexpr (S == SimEngine::SRPIC) {
                 ComputeMoments<S, M, FldsID::V>(params,
                                                 local_domain->mesh,
                                                 local_domain->species,
@@ -495,8 +495,15 @@ namespace ntt {
                                                 fld.comp[0],
                                                 local_domain->fields.bckp,
                                                 c);
-              } else {
-                raise::Error("Bulk velocity not supported for GRPIC", HERE);
+              } else if constexpr (S == SimEngine::GRPIC) {
+                // Single component of 4-velocity (user requested e.g., "v_0")
+                ComputeMoments<S, M, FldsID::V>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                fld.comp[0],
+                                                local_domain->fields.bckp,
+                                                c);
               }
             } else {
               raise::Error("Wrong moment requested for output", HERE);
@@ -577,8 +584,15 @@ namespace ntt {
                                                   fld.comp[i],
                                                   local_domain->fields.bckp,
                                                   c);
-                } else {
-                  raise::Error("Bulk velocity not supported for GRPIC", HERE);
+                } else if constexpr (S == SimEngine::GRPIC) {
+                  // Single component from 3-vector spec (legacy), deposit as part of 4-vector
+                  ComputeMoments<S, M, FldsID::V>(params,
+                                                  local_domain->mesh,
+                                                  local_domain->species,
+                                                  fld.species,
+                                                  fld.comp[i],
+                                                  local_domain->fields.bckp,
+                                                  c);
                 }
               } else {
                 raise::Error("Wrong moment requested for output", HERE);
@@ -677,6 +691,57 @@ namespace ntt {
                                      fld.interp_flag | fld.prepare_flag,
                                      local_domain->mesh.metric));
             }
+          }
+        } else if (fld.comp.size() == 4) { // 4-vector
+          if constexpr (S == SimEngine::GRPIC) {
+            if (fld.is_moment() && fld.id() == FldsID::V) {
+              // Compute 4-velocity: V^μ (u^0, u^1, u^2, u^3)
+              for (auto i = 0; i < 4; ++i) {
+                names.push_back(fld.name(i));
+                addresses.push_back(i);
+                const auto c = static_cast<idx_t>(addresses[i]);
+                raise::ErrorIf(fld.comp[i].size() != 1,
+                               "Wrong # of components requested for 4-velocity",
+                               HERE);
+                ComputeMoments<S, M, FldsID::V>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                fld.comp[i],
+                                                local_domain->fields.bckp,
+                                                c);
+              }
+              // Synchronize all 4 components
+              SynchronizeFields(*local_domain, Comm::Bckp, { addresses[0], addresses[3] + 1 });
+              // Normalize 4-momentum flux: V^μ = N^μ / sqrt(-N_ν N^ν)
+              // (computed in coordinate contravariant basis)
+              Kokkos::parallel_for("Normalize4VelocityByNorm",
+                                   local_domain->mesh.rangeActiveCells(),
+                                   kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(
+                                     local_domain->fields.bckp,
+                                     local_domain->fields.bckp,
+                                     addresses[0],  // c_u0 (column for u^0)
+                                     addresses[1],  // c_u1 (column for u^1)
+                                     addresses[2],  // c_u2 (column for u^2)
+                                     addresses[3],  // c_u3 (column for u^3)
+                                     local_domain->mesh.metric));
+              SynchronizeFields(*local_domain, Comm::Bckp, { addresses[0], addresses[3] + 1 });
+              // Transform spatial components to physical basis for output
+              // u^0 (Gamma/alpha) remains unitless, only u^i transform
+              Kokkos::parallel_for("Transform4VelocitySpatialToPhysical",
+                                   local_domain->mesh.rangeActiveCells(),
+                                   kernel::Transform4VelocitySpatialToPhysical_kernel<M::Dim, M, 6>(
+                                     local_domain->fields.bckp,
+                                     addresses[1],  // c_u1 (column for u^1)
+                                     addresses[2],  // c_u2 (column for u^2)
+                                     addresses[3],  // c_u3 (column for u^3)
+                                     local_domain->mesh.metric));
+            } else {
+              raise::Error("4-vector output only supported for V (bulk velocity) moment in GRPIC",
+                           HERE);
+            }
+          } else {
+            raise::Error("4-vector output only supported for GRPIC", HERE);
           }
         } else if (fld.comp.size() == 6) { // tensor
           raise::ErrorIf(not fld.is_moment() or fld.id() != FldsID::T,

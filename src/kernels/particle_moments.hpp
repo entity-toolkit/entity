@@ -43,8 +43,6 @@ namespace kernel {
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
-    static_assert(!((S == SimEngine::GRPIC) && (F == FldsID::V)),
-                  "Bulk velocity not supported for GRPIC");
     static_assert((F == FldsID::Rho) || (F == FldsID::Charge) || (F == FldsID::N) ||
                     (F == FldsID::Nppc) || (F == FldsID::T) || (F == FldsID::V),
                   "Invalid field ID");
@@ -207,33 +205,71 @@ namespace kernel {
           }
         }
       } else if constexpr (F == FldsID::V) {
-        real_t          gamma { ZERO };
-        // for bulk 3vel (tetrad basis)
-        vec_t<Dim::_3D> u_Phys { ZERO };
-        if constexpr (M::CoordType == Coord::Cart) {
-          u_Phys[0] = ux1(p);
-          u_Phys[1] = ux2(p);
-          u_Phys[2] = ux3(p);
+        if constexpr (S == SimEngine::SRPIC) {
+          // SR: bulk velocity
+          real_t          gamma { ZERO };
+          // for bulk 3vel (tetrad basis)
+          vec_t<Dim::_3D> u_Phys { ZERO };
+          if constexpr (M::CoordType == Coord::Cart) {
+            u_Phys[0] = ux1(p);
+            u_Phys[1] = ux2(p);
+            u_Phys[2] = ux3(p);
+          } else {
+            coord_t<M::PrtlDim> x_Code { ZERO };
+            x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+            x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+            if constexpr (D == Dim::_3D) {
+              x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+            } else {
+              x_Code[2] = phi(p);
+            }
+            metric.template transform_xyz<Idx::XYZ, Idx::T>(x_Code,
+                                                            { ux1(p), ux2(p), ux3(p) },
+                                                            u_Phys);
+          }
+          if (mass == ZERO) {
+            gamma = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+          } else {
+            gamma = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+          }
+          // compute the corresponding moment
+          coeff = (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / gamma;
         } else {
-          coord_t<M::PrtlDim> x_Code { ZERO };
+          // GR: Eckart frame flux N^μ = m * u^μ / u^0
+          static_assert(D != Dim::_1D, "GRPIC 1D");
+          vec_t<Dim::_3D> u_Phys { ZERO };
+          real_t          u0 { ZERO };
+          coord_t<D> x_Code { ZERO };
           x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
           x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
           if constexpr (D == Dim::_3D) {
             x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
-          } else {
-            x_Code[2] = phi(p);
           }
-          metric.template transform_xyz<Idx::XYZ, Idx::T>(x_Code,
-                                                          { ux1(p), ux2(p), ux3(p) },
-                                                          u_Phys);
+          // raise full covariant 4-vector to get correct contravariant u^i
+          // u^i != h^{ij} u_j
+          const real_t    u_0_cov { metric.u_0(x_Code,
+                                               { ux1(p), ux2(p), ux3(p) },
+                                            (mass == ZERO) ? ZERO : ONE) };
+          vec_t<Dim::_4D> u_cntrv_4d { ZERO };
+          metric.template transform_4d<Idx::D, Idx::U>(
+            x_Code,
+            { u_0_cov, ux1(p), ux2(p), ux3(p) },
+            u_cntrv_4d);
+          // in GR: u^0 = Gamma/alpha
+          u0 = u_cntrv_4d[0];
+          metric.template transform<Idx::U, Idx::PU>(
+            x_Code,
+            { u_cntrv_4d[1], u_cntrv_4d[2], u_cntrv_4d[3] },
+            u_Phys);
+          // Deposit flux N^μ = mass * u^μ / u^0
+          if (c1 == 0) {
+            // u^0 component
+            coeff = (mass == ZERO ? ONE : mass);
+          } else {
+            // u^i component: mass * u^i / u^0
+            coeff = (mass == ZERO ? ONE : mass) * u_cntrv_4d[c1] / u0;
+          }
         }
-        if (mass == ZERO) {
-          gamma = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
-        } else {
-          gamma = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
-        }
-        // compute the corresponding moment
-        coeff = (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / gamma;
       } else {
         // for other cases, use the `contrib` defined above
         coeff = contrib;
@@ -392,6 +428,180 @@ namespace kernel {
         raise::KernelError(
           HERE,
           "3D implementation of NormalizeVectorByRho_kernel called for non-3D");
+      }
+    }
+  };
+
+  template <Dimension D, class M, unsigned short N>
+    requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
+  class Normalize4VelocityByNorm_kernel {
+    // Normalizes 4-momentum flux to Eckart frame velocity
+    // V^μ = N^μ / sqrt(-N_ν N^ν)
+    const ndfield_t<D, N> Flux;    // momentum flux N^μ
+    ndfield_t<D, N>       Vector;  // Eckart 4-velocity
+    const unsigned short  c_u0, c_u1, c_u2, c_u3;  // 4-velocity component indices
+    const M               metric;
+
+  public:
+    Normalize4VelocityByNorm_kernel(const ndfield_t<D, N>& flux,
+                                    const ndfield_t<D, N>& vector,
+                                    unsigned short         cu0,
+                                    unsigned short         cu1,
+                                    unsigned short         cu2,
+                                    unsigned short         cu3,
+                                    const M&               metric)
+      : Flux { flux }
+      , Vector { vector }
+      , c_u0 { cu0 }
+      , c_u1 { cu1 }
+      , c_u2 { cu2 }
+      , c_u3 { cu3 }
+      , metric { metric } {
+      raise::ErrorIf(c_u0 >= N or c_u1 >= N or c_u2 >= N or c_u3 >= N,
+                     "Invalid component index",
+                     HERE);
+    }
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = static_cast<real_t>(i1) + HALF;
+        x_Code[1] = static_cast<real_t>(i2) + HALF;
+        
+        vec_t<Dim::_4D> N_cntrv { ZERO };
+        N_cntrv[0] = Flux(i1, i2, c_u0);
+        N_cntrv[1] = Flux(i1, i2, c_u1);
+        N_cntrv[2] = Flux(i1, i2, c_u2);
+        N_cntrv[3] = Flux(i1, i2, c_u3);
+        
+        vec_t<Dim::_4D> N_cov { ZERO };
+        // Compute N_i = g_ij N^j
+        metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
+        
+        // Compute N_ν N^ν = -(N^0)^2 + g_ij N^i N^j      
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+        real_t norm = math::sqrt(-N_norm_sq);
+        
+        if (not cmp::AlmostZero(norm)) {
+          Vector(i1, i2, c_u0) = N_cntrv[0] / norm;
+          Vector(i1, i2, c_u1) = N_cntrv[1] / norm;
+          Vector(i1, i2, c_u2) = N_cntrv[2] / norm;
+          Vector(i1, i2, c_u3) = N_cntrv[3] / norm;
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "2D implementation of Normalize4VelocityByNorm_kernel called for non-2D");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = static_cast<real_t>(i1) + HALF;
+        x_Code[1] = static_cast<real_t>(i2) + HALF;
+        x_Code[2] = static_cast<real_t>(i3) + HALF;
+        
+        vec_t<Dim::_4D> N_cntrv { ZERO };
+        N_cntrv[0] = Flux(i1, i2, i3, c_u0);  // N^0
+        N_cntrv[1] = Flux(i1, i2, i3, c_u1);  // N^1
+        N_cntrv[2] = Flux(i1, i2, i3, c_u2);  // N^2
+        N_cntrv[3] = Flux(i1, i2, i3, c_u3);  // N^3
+        
+        vec_t<Dim::_4D> N_cov { ZERO };
+        // Compute N_i = g_ij N^j
+        metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
+        
+        // Compute N_ν N^ν = -(N^0)^2 + g_ij N^i N^j
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+        
+        real_t norm = math::sqrt(-N_norm_sq);  // sqrt(-N_ν N^ν) for timelike vector
+        
+        if (not cmp::AlmostZero(norm)) {
+          Vector(i1, i2, i3, c_u0) = N_cntrv[0] / norm;
+          Vector(i1, i2, i3, c_u1) = N_cntrv[1] / norm;
+          Vector(i1, i2, i3, c_u2) = N_cntrv[2] / norm;
+          Vector(i1, i2, i3, c_u3) = N_cntrv[3] / norm;
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "3D implementation of Normalize4VelocityByNorm_kernel called for non-3D");
+      }
+    }
+  };
+
+  template <Dimension D, class M, unsigned short N>
+    requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
+  class Transform4VelocitySpatialToPhysical_kernel {
+    // Transforms spatial components of 4-velocity from coordinate to physical basis
+    // u^0 (Gamma/alpha) remains unchanged as it's unitless
+    ndfield_t<D, N>       Vector;
+    const unsigned short  c_u1, c_u2, c_u3;
+    const M               metric;
+
+  public:
+    Transform4VelocitySpatialToPhysical_kernel(ndfield_t<D, N>&       vector,
+                                               unsigned short         cu1,
+                                               unsigned short         cu2,
+                                               unsigned short         cu3,
+                                               const M&               metric)
+      : Vector { vector }
+      , c_u1 { cu1 }
+      , c_u2 { cu2 }
+      , c_u3 { cu3 }
+      , metric { metric } {
+      raise::ErrorIf(c_u1 >= N or c_u2 >= N or c_u3 >= N,
+                     "Invalid component index",
+                     HERE);
+    }
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = static_cast<real_t>(i1) + HALF;
+        x_Code[1] = static_cast<real_t>(i2) + HALF;
+
+        vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, c_u1),
+                                   Vector(i1, i2, c_u2),
+                                   Vector(i1, i2, c_u3) };
+
+        vec_t<Dim::_3D> u_phys { ZERO };
+        // Transform spatial components from coordinate contravariant to physical contravariant
+        metric.template transform<Idx::U, Idx::PU>(x_Code, u_cntrv, u_phys);
+
+        Vector(i1, i2, c_u1) = u_phys[0];
+        Vector(i1, i2, c_u2) = u_phys[1];
+        Vector(i1, i2, c_u3) = u_phys[2];
+      } else {
+        raise::KernelError(
+          HERE,
+          "2D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-2D");
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = static_cast<real_t>(i1) + HALF;
+        x_Code[1] = static_cast<real_t>(i2) + HALF;
+        x_Code[2] = static_cast<real_t>(i3) + HALF;
+
+        vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, i3, c_u1),
+                                   Vector(i1, i2, i3, c_u2),
+                                   Vector(i1, i2, i3, c_u3) };
+
+        vec_t<Dim::_3D> u_phys { ZERO };
+        // Transform spatial components from coordinate contravariant to physical contravariant
+        metric.template transform<Idx::U, Idx::PU>(x_Code, u_cntrv, u_phys);
+
+        Vector(i1, i2, i3, c_u1) = u_phys[0];
+        Vector(i1, i2, i3, c_u2) = u_phys[1];
+        Vector(i1, i2, i3, c_u3) = u_phys[2];
+      } else {
+        raise::KernelError(
+          HERE,
+          "3D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-3D");
       }
     }
   };

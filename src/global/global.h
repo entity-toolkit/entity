@@ -168,7 +168,8 @@ namespace ntt {
 enum Dimension : unsigned short {
   _1D = 1,
   _2D = 2,
-  _3D = 3
+  _3D = 3,
+  _4D = 4
 };
 
 enum class CellLayer {
