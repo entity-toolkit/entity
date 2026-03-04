@@ -467,26 +467,50 @@ namespace kernel {
         coord_t<D> x_Code { ZERO };
         x_Code[0] = static_cast<real_t>(i1) + HALF;
         x_Code[1] = static_cast<real_t>(i2) + HALF;
-        
+
         vec_t<Dim::_4D> N_cntrv { ZERO };
         N_cntrv[0] = Flux(i1, i2, c_u0);
         N_cntrv[1] = Flux(i1, i2, c_u1);
         N_cntrv[2] = Flux(i1, i2, c_u2);
         N_cntrv[3] = Flux(i1, i2, c_u3);
-        
+
+        // rest frame for empty cells
+        if (cmp::AlmostZero(N_cntrv[0])) {
+          Vector(i1, i2, c_u0) = ONE;
+          Vector(i1, i2, c_u1) = ZERO;
+          Vector(i1, i2, c_u2) = ZERO;
+          Vector(i1, i2, c_u3) = ZERO;
+          return;
+        }
+
         vec_t<Dim::_4D> N_cov { ZERO };
         // Compute N_i = g_ij N^j
         metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
-        
-        // Compute N_ν N^ν = -(N^0)^2 + g_ij N^i N^j      
+
+        // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+
+        // Set to rest frame for cells with insufficient particles
+        if (cmp::AlmostZero(N_norm_sq) || N_norm_sq >= ZERO) {
+          Vector(i1, i2, c_u0) = ONE;
+          Vector(i1, i2, c_u1) = ZERO;
+          Vector(i1, i2, c_u2) = ZERO;
+          Vector(i1, i2, c_u3) = ZERO;
+          return;
+        }
+
         real_t norm = math::sqrt(-N_norm_sq);
-        
+
         if (not cmp::AlmostZero(norm)) {
           Vector(i1, i2, c_u0) = N_cntrv[0] / norm;
           Vector(i1, i2, c_u1) = N_cntrv[1] / norm;
           Vector(i1, i2, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, c_u3) = N_cntrv[3] / norm;
+        } else {
+          Vector(i1, i2, c_u0) = ONE;
+          Vector(i1, i2, c_u1) = ZERO;
+          Vector(i1, i2, c_u2) = ZERO;
+          Vector(i1, i2, c_u3) = ZERO;
         }
       } else {
         raise::KernelError(
@@ -501,27 +525,50 @@ namespace kernel {
         x_Code[0] = static_cast<real_t>(i1) + HALF;
         x_Code[1] = static_cast<real_t>(i2) + HALF;
         x_Code[2] = static_cast<real_t>(i3) + HALF;
-        
+
         vec_t<Dim::_4D> N_cntrv { ZERO };
         N_cntrv[0] = Flux(i1, i2, i3, c_u0);  // N^0
         N_cntrv[1] = Flux(i1, i2, i3, c_u1);  // N^1
         N_cntrv[2] = Flux(i1, i2, i3, c_u2);  // N^2
         N_cntrv[3] = Flux(i1, i2, i3, c_u3);  // N^3
-        
+
+        // Rest frame for empty cells
+        if (cmp::AlmostZero(N_cntrv[0])) {
+          Vector(i1, i2, i3, c_u0) = ONE;
+          Vector(i1, i2, i3, c_u1) = ZERO;
+          Vector(i1, i2, i3, c_u2) = ZERO;
+          Vector(i1, i2, i3, c_u3) = ZERO;
+          return;
+        }
+
         vec_t<Dim::_4D> N_cov { ZERO };
         // Compute N_i = g_ij N^j
         metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
-        
-        // Compute N_ν N^ν = -(N^0)^2 + g_ij N^i N^j
+
+        // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
-        
+
+        // Set to rest frame for cells with insufficient particles
+        if (cmp::AlmostZero(N_norm_sq) || N_norm_sq >= ZERO) {
+          Vector(i1, i2, i3, c_u0) = ONE;
+          Vector(i1, i2, i3, c_u1) = ZERO;
+          Vector(i1, i2, i3, c_u2) = ZERO;
+          Vector(i1, i2, i3, c_u3) = ZERO;
+          return;
+        }
+
         real_t norm = math::sqrt(-N_norm_sq);  // sqrt(-N_ν N^ν) for timelike vector
-        
+
         if (not cmp::AlmostZero(norm)) {
           Vector(i1, i2, i3, c_u0) = N_cntrv[0] / norm;
           Vector(i1, i2, i3, c_u1) = N_cntrv[1] / norm;
           Vector(i1, i2, i3, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, i3, c_u3) = N_cntrv[3] / norm;
+        } else {
+          Vector(i1, i2, i3, c_u0) = ONE;
+          Vector(i1, i2, i3, c_u1) = ZERO;
+          Vector(i1, i2, i3, c_u2) = ZERO;
+          Vector(i1, i2, i3, c_u3) = ZERO;
         }
       } else {
         raise::KernelError(
