@@ -403,9 +403,9 @@ namespace kernel::sr {
             is_gca = true;
             // update with GCA
             if constexpr (HasExtForce or Atm) {
-              velocityEMPush(true, p, external_force_Cart, ei_Cart, bi_Cart);
+              velocityEMPush_GCA_ExtForce(p, external_force_Cart, ei_Cart, bi_Cart);
             } else {
-              velocityEMPush(true, p, ei_Cart, bi_Cart);
+              velocityEMPush_GCA(p, ei_Cart, bi_Cart);
             }
           } else {
             // update with conventional pusher
@@ -414,7 +414,14 @@ namespace kernel::sr {
               ux2(p) += HALF * dt * external_force_Cart[1];
               ux3(p) += HALF * dt * external_force_Cart[2];
             }
-            velocityEMPush(false, p, ei_Cart, bi_Cart);
+            if (pusher_flags & ParticlePusher::BORIS) {
+              velocityEMPush_Boris(p, ei_Cart, bi_Cart);
+            } else if (pusher_flags & ParticlePusher::VAY) {
+              velocityEMPush_Vay(p, ei_Cart, bi_Cart);
+            } else {
+              raise::KernelError(HERE, "Invalid pusher algorithm for GCA mode");
+            }
+            // velocityEMPush(false, p, ei_Cart, bi_Cart);
             if constexpr (HasExtForce or Atm) {
               ux1(p) += HALF * dt * external_force_Cart[0];
               ux2(p) += HALF * dt * external_force_Cart[1];
@@ -429,7 +436,13 @@ namespace kernel::sr {
             ux2(p) += HALF * dt * external_force_Cart[1];
             ux3(p) += HALF * dt * external_force_Cart[2];
           }
-          velocityEMPush(false, p, ei_Cart, bi_Cart);
+          if (pusher_flags & ParticlePusher::BORIS) {
+            velocityEMPush_Boris(p, ei_Cart, bi_Cart);
+          } else if (pusher_flags & ParticlePusher::VAY) {
+            velocityEMPush_Vay(p, ei_Cart, bi_Cart);
+          } else {
+            raise::KernelError(HERE, "Invalid pusher algorithm for GCA mode");
+          }
           if constexpr (HasExtForce or Atm) {
             ux1(p) += HALF * dt * external_force_Cart[0];
             ux2(p) += HALF * dt * external_force_Cart[1];
@@ -547,129 +560,133 @@ namespace kernel::sr {
 
     /**
      * @brief update particle velocities
-     * @param P pusher algorithm
      * @param p, e0, b0 index & interpolated fields
      */
-    Inline void velocityEMPush(bool             with_gca,
-                               index_t          p,
-                               vec_t<Dim::_3D>& e0,
-                               vec_t<Dim::_3D>& b0) const {
-      if (with_gca) {
-        const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
-                            NORM_SQR(b0[0], b0[1], b0[2]) };
+    Inline void velocityEMPush_Boris(index_t          p,
+                                     vec_t<Dim::_3D>& e0,
+                                     vec_t<Dim::_3D>& b0) const {
+      real_t COEFF { coeff };
 
-        const vec_t<Dim::_3D> wE {
-          CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
-          CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
-          CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
-        };
+      e0[0] *= COEFF;
+      e0[1] *= COEFF;
+      e0[2] *= COEFF;
+      vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
 
-        {
-          const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
-          b0[0] *= b_norm_inv;
-          b0[1] *= b_norm_inv;
-          b0[2] *= b_norm_inv;
-        }
-        auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
-                    coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
+      COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
+      b0[0] *= COEFF;
+      b0[1] *= COEFF;
+      b0[2] *= COEFF;
+      COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-        real_t factor;
-        {
-          const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
-          if (wE_sqr < static_cast<real_t>(0.01)) {
-            factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
-          } else {
-            factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
-          }
-        }
-        const vec_t<Dim::_3D> vE_Cart { wE[0] * factor,
-                                        wE[1] * factor,
-                                        wE[2] * factor };
-        const auto            Gamma { math::sqrt(ONE + SQR(upar)) /
-                           math::sqrt(
-                             ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
-        ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
-        ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
-        ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
-      } else if (pusher_flags & ParticlePusher::BORIS) {
-        real_t COEFF { coeff };
+      vec_t<Dim::_3D> u1 {
+        (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+        (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
+        (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
+      };
 
-        e0[0] *= COEFF;
-        e0[1] *= COEFF;
-        e0[2] *= COEFF;
-        vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
+      u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[0];
+      u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
+      u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
 
-        COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
-        b0[0] *= COEFF;
-        b0[1] *= COEFF;
-        b0[2] *= COEFF;
-        COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
-
-        vec_t<Dim::_3D> u1 {
-          (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
-          (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
-          (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
-        };
-
-        u0[0] += CROSS_x1(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[0];
-        u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
-        u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
-
-        ux1(p) = u0[0];
-        ux2(p) = u0[1];
-        ux3(p) = u0[2];
-      } else if (pusher_flags & ParticlePusher::VAY) {
-        auto COEFF { coeff };
-        e0[0] *= COEFF;
-        e0[1] *= COEFF;
-        e0[2] *= COEFF;
-
-        b0[0] *= COEFF;
-        b0[1] *= COEFF;
-        b0[2] *= COEFF;
-
-        COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
-
-        vec_t<Dim::_3D> u1 {
-          (ux1(p) + TWO * e0[0] +
-           CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-          (ux2(p) + TWO * e0[1] +
-           CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-          (ux3(p) + TWO * e0[2] +
-           CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
-        };
-        COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
-        auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
-                      NORM_SQR(b0[0], b0[1], b0[2]) };
-
-        COEFF = ONE / math::sqrt(
-                        INV_2 *
-                        (COEFF2 + math::sqrt(SQR(COEFF2) +
-                                             FOUR * (SQR(b0[0]) + SQR(b0[1]) +
-                                                     SQR(b0[2]) + SQR(COEFF)))));
-        COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
-                        SQR(b0[2] * COEFF));
-
-        ux1(p) = COEFF2 * (u1[0] +
-                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                             (b0[0] * COEFF) +
-                           u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
-        ux2(p) = COEFF2 * (u1[1] +
-                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                             (b0[1] * COEFF) +
-                           u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
-        ux3(p) = COEFF2 * (u1[2] +
-                           COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                             (b0[2] * COEFF) +
-                           u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
-      }
+      ux1(p) = u0[0];
+      ux2(p) = u0[1];
+      ux3(p) = u0[2];
     }
 
-    Inline void velocityEMPush(bool,
-                               index_t          p,
-                               vec_t<Dim::_3D>& f0,
-                               vec_t<Dim::_3D>& e0,
-                               vec_t<Dim::_3D>& b0) const {
+    Inline void velocityEMPush_Vay(index_t          p,
+                                   vec_t<Dim::_3D>& e0,
+                                   vec_t<Dim::_3D>& b0) const {
+      auto COEFF { coeff };
+      e0[0] *= COEFF;
+      e0[1] *= COEFF;
+      e0[2] *= COEFF;
+
+      b0[0] *= COEFF;
+      b0[1] *= COEFF;
+      b0[2] *= COEFF;
+
+      COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
+
+      vec_t<Dim::_3D> u1 {
+        (ux1(p) + TWO * e0[0] +
+         CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+        (ux2(p) + TWO * e0[1] +
+         CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
+        (ux3(p) + TWO * e0[2] +
+         CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
+      };
+      COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
+      auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
+                    NORM_SQR(b0[0], b0[1], b0[2]) };
+
+      COEFF = ONE /
+              math::sqrt(
+                INV_2 * (COEFF2 + math::sqrt(SQR(COEFF2) +
+                                             FOUR * (SQR(b0[0]) + SQR(b0[1]) +
+                                                     SQR(b0[2]) + SQR(COEFF)))));
+      COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
+                      SQR(b0[2] * COEFF));
+
+      ux1(p) = COEFF2 * (u1[0] +
+                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                           (b0[0] * COEFF) +
+                         u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
+      ux2(p) = COEFF2 * (u1[1] +
+                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                           (b0[1] * COEFF) +
+                         u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
+      ux3(p) = COEFF2 * (u1[2] +
+                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                           (b0[2] * COEFF) +
+                         u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
+    }
+
+    Inline void velocityEMPush_GCA(index_t          p,
+                                   vec_t<Dim::_3D>& e0,
+                                   vec_t<Dim::_3D>& b0) const {
+      const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
+                          NORM_SQR(b0[0], b0[1], b0[2]) };
+
+      const vec_t<Dim::_3D> wE {
+        CROSS_x1(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+        CROSS_x2(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr,
+        CROSS_x3(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) / eb_sqr
+      };
+
+      {
+        const auto b_norm_inv { ONE / NORM(b0[0], b0[1], b0[2]) };
+        b0[0] *= b_norm_inv;
+        b0[1] *= b_norm_inv;
+        b0[2] *= b_norm_inv;
+      }
+      auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
+                  coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
+
+      real_t factor;
+      {
+        const auto wE_sqr { NORM_SQR(wE[0], wE[1], wE[2]) };
+        if (wE_sqr < static_cast<real_t>(0.01)) {
+          factor = ONE + wE_sqr + TWO * SQR(wE_sqr) + FIVE * SQR(wE_sqr) * wE_sqr;
+        } else {
+          factor = (ONE - math::sqrt(ONE - FOUR * wE_sqr)) / (TWO * wE_sqr);
+        }
+      }
+      const vec_t<Dim::_3D> vE_Cart { wE[0] * factor, wE[1] * factor, wE[2] * factor };
+      const auto Gamma { math::sqrt(ONE + SQR(upar)) /
+                         math::sqrt(
+                           ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
+      ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+      ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+      ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+    }
+
+    /**
+     * @brief velocity push with external force & EM fields in GCA mode
+     */
+    Inline void velocityEMPush_GCA_ExtForce(index_t          p,
+                                            vec_t<Dim::_3D>& f0,
+                                            vec_t<Dim::_3D>& e0,
+                                            vec_t<Dim::_3D>& b0) const {
       const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
                           NORM_SQR(b0[0], b0[1], b0[2]) };
 
@@ -1473,7 +1490,6 @@ namespace kernel::sr {
       requires ::traits::emission::IsValidEmissionPolicy<E, M::PrtlDim>
     {
       typename E::Payload payload;
-      real_t              photon_energy { ZERO };
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };
       const auto          emission_response = emission_policy.shouldEmit(xp_Cd,
                                                                 xp_Ph,
