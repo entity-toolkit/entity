@@ -766,14 +766,14 @@ namespace ntt {
                             Comm::Bckp,
                             { addresses[0], addresses[5] + 1 });
         } else if (fld.id() == FldsID::Tff) { // fluid-frame tensor (GRPIC only)
-          raise::ErrorIf(fld.comp.size() != 10,
-                         "Tff must have exactly 10 components",
-                         HERE);
           if constexpr (S == SimEngine::GRPIC) {
+            raise::ErrorIf(fld.comp.size() != 10,
+                           "Tff must have exactly 10 components",
+                           HERE);
+
             // Allocate temporary fields for input and output
-            // Allocate with ghost cells, same as bckp
             auto n_act = local_domain->mesh.n_active();
-            ndfield_t<M::Dim, 10> T_input = [&]() {
+            auto T_input = [&]() {
               if constexpr (M::Dim == Dim::_2D) {
                 return ndfield_t<Dim::_2D, 10> { "T_input",
                                                   n_act[0] + 2 * N_GHOSTS,
@@ -786,7 +786,7 @@ namespace ntt {
               }
             }();
 
-            ndfield_t<M::Dim, 10> T_ff = [&]() {
+            auto T_ff = [&]() {
               if constexpr (M::Dim == Dim::_2D) {
                 return ndfield_t<Dim::_2D, 10> { "T_ff",
                                                   n_act[0] + 2 * N_GHOSTS,
@@ -813,7 +813,6 @@ namespace ntt {
                                               static_cast<idx_t>(i % 6));
               SynchronizeFields(*local_domain, Comm::Bckp, { static_cast<idx_t>(i % 6),
                                                              static_cast<idx_t>(i % 6) + 1 });
-              // Copy from bckp to T_input
               Kokkos::deep_copy(Kokkos::subview(T_input, Kokkos::ALL, Kokkos::ALL, i),
                                 Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL, i % 6));
             }
@@ -830,7 +829,6 @@ namespace ntt {
                                               local_domain->fields.bckp,
                                               u_addr[i]);
             }
-
             SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
 
             // Normalize U (4-velocity)
@@ -858,17 +856,7 @@ namespace ntt {
                                    static_cast<unsigned short>(u_addr[1]),
                                    static_cast<unsigned short>(u_addr[2]),
                                    static_cast<unsigned short>(u_addr[3]),  // U input components
-                                   // Output all 10 components (T00-T33)
-                                   static_cast<unsigned short>(0),  // T00 → 0
-                                   static_cast<unsigned short>(1),  // T01 → 1
-                                   static_cast<unsigned short>(2),  // T02 → 2
-                                   static_cast<unsigned short>(3),  // T03 → 3
-                                   static_cast<unsigned short>(4),  // T11 → 4
-                                   static_cast<unsigned short>(5),  // T12 → 5
-                                   static_cast<unsigned short>(6),  // T13 → 6
-                                   static_cast<unsigned short>(7),  // T22 → 7
-                                   static_cast<unsigned short>(8),  // T23 → 8
-                                   static_cast<unsigned short>(9),  // T33 → 9
+                                   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,   // Output all 10 components
                                    local_domain->mesh.metric));
             Kokkos::fence();
 
@@ -880,7 +868,6 @@ namespace ntt {
               addresses_ff.push_back(i);
             }
             g_writer.writeField<M::Dim, 10>(names_ff, T_ff, addresses_ff);
-
           } else {
             raise::Error("Fluid-frame tensor output only supported for GRPIC", HERE);
           }
