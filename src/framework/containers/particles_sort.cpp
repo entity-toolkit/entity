@@ -2,12 +2,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/sorting.h"
 
 #include "framework/containers/particles.h"
 #include "framework/domain/grid.h"
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
@@ -183,12 +183,6 @@ namespace ntt {
 
   template <Dimension D, Coord::type C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
-    const auto& tag_p = tag;
-    const auto& i1_p  = i1;
-    const auto& i2_p  = i2;
-    const auto& i3_p  = i3;
-
-    const auto nx1         = grid.n_active(in::x1);
     const auto nx2         = grid.n_active(in::x2);
     const auto nx3         = grid.n_active(in::x3);
     const auto total_cells = grid.num_active();
@@ -198,21 +192,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "FillCellIndices",
       rangeActiveParticles(),
-      Lambda(index_t p) {
-        if (tag_p(p) != ParticleTag::alive) {
-          cell_indices(p) = total_cells + 1u;
-        } else {
-          if constexpr (D == Dim::_1D) {
-            cell_indices(p) = i1_p(p);
-          } else if constexpr (D == Dim::_2D) {
-            cell_indices(p) = i1_p(p) * nx2 + i2_p(p);
-          } else if constexpr (D == Dim::_3D) {
-            cell_indices(p) = (i1_p(p) * nx2 + i2_p(p)) * nx3 + i3_p(p);
-          } else {
-            raise::KernelError(HERE, "Wrong D in SortSpatially");
-          }
-        }
-      });
+      sort::PositionToCellIndex<D> { i1, i2, i3, tag, cell_indices, nx2, nx3, total_cells });
     const auto slice = range_tuple_t(0, npart());
 
     using sorter_op_t = Kokkos::BinOp1D<decltype(cell_indices)>;
