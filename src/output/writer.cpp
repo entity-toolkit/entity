@@ -478,10 +478,13 @@ namespace out {
                                  bool);
   WRITE_FIELD(Dim::_1D, 3)
   WRITE_FIELD(Dim::_1D, 6)
+  WRITE_FIELD(Dim::_1D, 10)
   WRITE_FIELD(Dim::_2D, 3)
   WRITE_FIELD(Dim::_2D, 6)
+  WRITE_FIELD(Dim::_2D, 10)
   WRITE_FIELD(Dim::_3D, 3)
   WRITE_FIELD(Dim::_3D, 6)
+  WRITE_FIELD(Dim::_3D, 10)
 #undef WRITE_FIELD
 
 } // namespace out

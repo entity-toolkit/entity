@@ -765,10 +765,132 @@ namespace ntt {
           SynchronizeFields(*local_domain,
                             Comm::Bckp,
                             { addresses[0], addresses[5] + 1 });
+        } else if (fld.id() == FldsID::Tff) { // fluid-frame tensor (GRPIC only)
+          raise::ErrorIf(fld.comp.size() != 10,
+                         "Tff must have exactly 10 components",
+                         HERE);
+          if constexpr (S == SimEngine::GRPIC) {
+            // Allocate temporary fields for input and output
+            // Allocate with ghost cells, same as bckp
+            auto n_act = local_domain->mesh.n_active();
+            ndfield_t<M::Dim, 10> T_input = [&]() {
+              if constexpr (M::Dim == Dim::_2D) {
+                return ndfield_t<Dim::_2D, 10> { "T_input",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS };
+              } else {  // _3D
+                return ndfield_t<Dim::_3D, 10> { "T_input",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS,
+                                                  n_act[2] + 2 * N_GHOSTS };
+              }
+            }();
+
+            ndfield_t<M::Dim, 10> T_ff = [&]() {
+              if constexpr (M::Dim == Dim::_2D) {
+                return ndfield_t<Dim::_2D, 10> { "T_ff",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS };
+              } else {  // _3D
+                return ndfield_t<Dim::_3D, 10> { "T_ff",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS,
+                                                  n_act[2] + 2 * N_GHOSTS };
+              }
+            }();
+
+            // Compute all 10 T components into bckp and copy to T_input
+            for (auto i = 0; i < 10; ++i) {
+              raise::ErrorIf(fld.comp[i].size() != 2,
+                             "Wrong # of components requested for 10-component moment",
+                             HERE);
+              ComputeMoments<S, M, FldsID::T>(params,
+                                              local_domain->mesh,
+                                              local_domain->species,
+                                              fld.species,
+                                              fld.comp[i],
+                                              local_domain->fields.bckp,
+                                              static_cast<idx_t>(i % 6));
+              SynchronizeFields(*local_domain, Comm::Bckp, { static_cast<idx_t>(i % 6),
+                                                             static_cast<idx_t>(i % 6) + 1 });
+              // Copy from bckp to T_input
+              Kokkos::deep_copy(Kokkos::subview(T_input, Kokkos::ALL, Kokkos::ALL, i),
+                                Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL, i % 6));
+            }
+
+            // Compute all 4 U components into bckp at addresses 0-3
+            std::vector<idx_t> u_addr(4);
+            for (auto i = 0; i < 4; ++i) {
+              u_addr[i] = static_cast<idx_t>(i);
+              ComputeMoments<S, M, FldsID::V>(params,
+                                              local_domain->mesh,
+                                              local_domain->species,
+                                              fld.species,
+                                              { { static_cast<unsigned short>(i) } },
+                                              local_domain->fields.bckp,
+                                              u_addr[i]);
+            }
+
+            SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
+
+            // Normalize U (4-velocity)
+            Kokkos::parallel_for("Normalize4VelocityByNorm_FluidFrame",
+                                 local_domain->mesh.rangeActiveCells(),
+                                 kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(
+                                   local_domain->fields.bckp,
+                                   local_domain->fields.bckp,
+                                   u_addr[0], u_addr[1], u_addr[2], u_addr[3],
+                                   local_domain->mesh.metric));
+            SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
+
+            // Compute 10 components of fluid-frame tensor
+            Kokkos::parallel_for("FluidFrameStressEnergy_ff",
+                                 local_domain->mesh.rangeActiveCells(),
+                                 kernel::FluidFrameStressEnergy_kernel<
+                                   M::Dim, M, 10, 6, 6, 6>(
+                                   T_input,
+                                   local_domain->fields.bckp,
+                                   local_domain->fields.em,
+                                   local_domain->fields.aux,
+                                   T_ff,
+                                   0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  // T input components
+                                   static_cast<unsigned short>(u_addr[0]),
+                                   static_cast<unsigned short>(u_addr[1]),
+                                   static_cast<unsigned short>(u_addr[2]),
+                                   static_cast<unsigned short>(u_addr[3]),  // U input components
+                                   // Output all 10 components (T00-T33)
+                                   static_cast<unsigned short>(0),  // T00 → 0
+                                   static_cast<unsigned short>(1),  // T01 → 1
+                                   static_cast<unsigned short>(2),  // T02 → 2
+                                   static_cast<unsigned short>(3),  // T03 → 3
+                                   static_cast<unsigned short>(4),  // T11 → 4
+                                   static_cast<unsigned short>(5),  // T12 → 5
+                                   static_cast<unsigned short>(6),  // T13 → 6
+                                   static_cast<unsigned short>(7),  // T22 → 7
+                                   static_cast<unsigned short>(8),  // T23 → 8
+                                   static_cast<unsigned short>(9),  // T33 → 9
+                                   local_domain->mesh.metric));
+            Kokkos::fence();
+
+            // Output all 10 components
+            std::vector<std::string> names_ff;
+            std::vector<std::size_t> addresses_ff;
+            for (auto i = 0; i < 10; ++i) {
+              names_ff.push_back(fld.name(i));
+              addresses_ff.push_back(i);
+            }
+            g_writer.writeField<M::Dim, 10>(names_ff, T_ff, addresses_ff);
+
+          } else {
+            raise::Error("Fluid-frame tensor output only supported for GRPIC", HERE);
+          }
         } else {
           raise::Error("Wrong # of components requested for output", HERE);
         }
-        g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
+        // Skip the 6-component write for Tff (already written at line 882)
+        if (fld.id() != FldsID::Tff) {
+          g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
+        }
       }
       g_writer.endWriting(WriteMode::Fields);
     } // end shouldWrite("fields", step, time)

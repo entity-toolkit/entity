@@ -72,8 +72,14 @@ namespace out {
       // only write A3
       comp = { { 3 } };
     } else if (id() == FldsID::T) {
-      // energy-momentum tensor
+      // energy-momentum tensor (lab frame)
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
+    } else if (id() == FldsID::Tff) {
+      // Fluid-frame stress-energy tensor has 10 symmetric components
+      comp = { { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 },
+               { 1, 1 }, { 1, 2 }, { 1, 3 },
+               { 2, 2 }, { 2, 3 },
+               { 3, 3 } };
     } else {
       // scalar (Rho, divE, Custom, etc.)
       comp = {};

@@ -262,18 +262,19 @@ namespace ntt {
       N       = 12,
       Nppc    = 13,
       V       = 14,
-      Custom  = 15,
+      Tff     = 15,  // Fluid-frame stress-energy tensor
+      Custom  = 16,
     };
 
     constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
 
     static constexpr type        variants[] = { E,      divE, D,    divD, B,
                                                 H,      J,    A,    T,    Rho,
-                                                Charge, N,    Nppc, V,    Custom };
+                                                Charge, N,    Nppc, V,    Tff, Custom };
     static constexpr const char* lookup[] = { "e",    "dive", "d",      "divd",
                                               "b",    "h",    "j",      "a",
                                               "t",    "rho",  "charge", "n",
-                                              "nppc", "v",    "custom" };
+                                              "nppc", "v",    "tff",    "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
