@@ -131,6 +131,9 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         modules = "\n".join(
             [f"module load {module} && \\" for module in settings.module_loads]
         )
+        modules_in_module = "\n".join(
+            [f"module load {module}" for module in settings.module_loads]
+        )
         src_path = f"{prefix}/src/kokkos"
         install_path = (
             f"{prefix}/kokkos/{version}/{backend}{f'_{arch}' if arch else ''}"
@@ -148,44 +151,42 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         arch = arch.upper()
 
         script = f"""
-        # Kokkos installation
-        {modules}
-        rm -rf {src_path} && \\
-        git clone https://github.com/kokkos/kokkos.git {src_path} && \\
-        cd {src_path} && \\
-        git checkout {version} && \\
-        cmake -B build \\
-            -D CMAKE_CXX_STANDARD={cxx_standard} \\
-            -D CMAKE_CXX_EXTENSIONS=OFF \\
-            -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
-            -D Kokkos_ARCH_{arch}=ON {f'-D Kokkos_ENABLE_{backend.upper()}=ON' if backend != 'cpu' else ''} \\
-            -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
-        cmake --build build -j $(nproc) && \\
-        cmake --install build
-        """
+# Kokkos installation
+{modules}
+rm -rf {src_path} && \\
+git clone https://github.com/kokkos/kokkos.git {src_path} && \\
+cd {src_path} && \\
+git checkout {version} && \\
+cmake -B build \\
+    -D CMAKE_CXX_STANDARD={cxx_standard} \\
+    -D CMAKE_CXX_EXTENSIONS=OFF \\
+    -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+    -D Kokkos_ARCH_{arch}=ON {f'-D Kokkos_ENABLE_{backend.upper()}=ON' if backend != 'cpu' else ''} \\
+    -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
+cmake --build build -j $(nproc) && \\
+cmake --install build"""
 
         modfile = f"""
-        #%Module1.0######################################################################
-        ##
-        ## Kokkos @ {backend} @ {arch} modulefile
-        ##
-        #################################################################################
-        proc ModulesHelp {{ }} {{
-            puts stderr \"\\tKokkos @ {backend} @ {arch}\\n\"
-        }}
+#%Module1.0######################################################################
+##
+## Kokkos @ {backend} @ {arch} modulefile
+##
+#################################################################################
+proc ModulesHelp {{ }} {{
+    puts stderr \"\\tKokkos @ {backend} @ {arch}\\n\"
+}}
 
-        module-whatis      \"Sets up Kokkos @ {backend} @ {arch}\"
+module-whatis      \"Sets up Kokkos @ {backend} @ {arch}\"
 
-        conflict           kokkos
-        {modules}
+conflict           kokkos
+{modules_in_module}
 
-        set                basedir      {install_path}
-        prepend-path       PATH         $basedir/bin
-        setenv             Kokkos_DIR   $basedir
+set                basedir      {install_path}
+prepend-path       PATH         $basedir/bin
+setenv             Kokkos_DIR   $basedir
 
-        setenv Kokkos_ARCH_{arch} ON
-        {f'setenv Kokkos_ENABLE_{backend.upper()} ON' if backend != 'cpu' else ''}
-        """
+setenv Kokkos_ARCH_{arch} ON
+{f'setenv Kokkos_ENABLE_{backend.upper()} ON' if backend != 'cpu' else ''}"""
 
         return (unindent(script), unindent(modfile))
 
@@ -200,6 +201,9 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         mpi_mode = settings.adios2_mpi
         modules = "\n".join(
             [f"module load {module} && \\" for module in settings.module_loads]
+        )
+        modules_in_module = "\n".join(
+            [f"module load {module}" for module in settings.module_loads]
         )
         src_path = f"{prefix}/src/adios2"
         install_path = f"{prefix}/adios2/{version}/{mpi_mode}"
@@ -218,50 +222,48 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         with_mpi = "ON" if mpi_mode == "mpi" else "OFF"
 
         script = f"""
-        # Adios2 installation
-        {modules}
-        rm -rf {src_path} && \\
-        git clone https://github.com/ornladios/ADIOS2.git {src_path} && \\
-        cd {src_path} && \\
-        git checkout v{version} && \\
-        cmake -B build \\
-            -D CMAKE_CXX_STANDARD={cxx_standard} \\
-            -D CMAKE_CXX_EXTENSIONS=OFF \\
-            -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
-            -D BUILD_SHARED_LIBS=ON \\
-            -D ADIOS2_USE_Python=OFF \\
-            -D ADIOS2_USE_Fortran=OFF \\
-            -D ADIOS2_USE_ZeroMQ=OFF \\
-            -D BUILD_TESTING=OFF \\
-            -D ADIOS2_BUILD_EXAMPLES=OFF \\
-            -D ADIOS2_USE_HDF5=OFF \\
-            -D ADIOS2_USE_MPI={with_mpi} \\
-            -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
-        cmake --build build -j $(nproc) && \\
-        cmake --install build
-        """
+# Adios2 installation
+{modules}
+rm -rf {src_path} && \\
+git clone https://github.com/ornladios/ADIOS2.git {src_path} && \\
+cd {src_path} && \\
+git checkout v{version} && \\
+cmake -B build \\
+    -D CMAKE_CXX_STANDARD={cxx_standard} \\
+    -D CMAKE_CXX_EXTENSIONS=OFF \\
+    -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+    -D BUILD_SHARED_LIBS=ON \\
+    -D ADIOS2_USE_Python=OFF \\
+    -D ADIOS2_USE_Fortran=OFF \\
+    -D ADIOS2_USE_ZeroMQ=OFF \\
+    -D BUILD_TESTING=OFF \\
+    -D ADIOS2_BUILD_EXAMPLES=OFF \\
+    -D ADIOS2_USE_HDF5=OFF \\
+    -D ADIOS2_USE_MPI={with_mpi} \\
+    -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
+cmake --build build -j $(nproc) && \\
+cmake --install build"""
 
         modfile = f"""
-        #%Module1.0######################################################################
-        ##
-        ## ADIOS2 @ {mpi_mode} modulefile
-        ##
-        #################################################################################
-        proc ModulesHelp {{ }} {{
-            puts stderr \"\\tADIOS2 @ {mpi_mode}\\n\"
-        }}
+#%Module1.0######################################################################
+##
+## ADIOS2 @ {mpi_mode} modulefile
+##
+#################################################################################
+proc ModulesHelp {{ }} {{
+    puts stderr \"\\tADIOS2 @ {mpi_mode}\\n\"
+}}
 
-        module-whatis      \"Sets up ADIOS2 @ {mpi_mode}\"    
+module-whatis      \"Sets up ADIOS2 @ {mpi_mode}\"    
 
-        conflict           adios2
-        {modules}
+conflict           adios2
+{modules_in_module}
 
-        set                basedir      {install_path}
-        prepend-path       PATH         $basedir/bin
-        setenv             ADIOS2_DIR   $basedir
+set                basedir      {install_path}
+prepend-path       PATH         $basedir/bin
+setenv             ADIOS2_DIR   $basedir
 
-        setenv ADIOS2_USE_MPI {with_mpi}
-        """
+setenv ADIOS2_USE_MPI {with_mpi}"""
 
         return (unindent(script), unindent(modfile))
 
@@ -292,7 +294,12 @@ def InstallNt2pyScript(settings: Settings) -> str:
 
 
 PRESETS = {
-    "rusty": {"module_loads": []},
+    "rusty": {
+        "module_loads": ["openmpi/5.0.6.lua", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
+        "kokkos_backend": "cuda",
+        "kokkos_arch": "AMPERE80",
+        "adios2_mpi": "mpi",
+    },
     "stellar": {"module_loads": []},
     "perlmutter": {"module_loads": []},
     "frontier": {"module_loads": []},
@@ -306,8 +313,11 @@ def apply_preset(s: Settings, name: str) -> None:
     cluster_preset = PRESETS.get(name, {})
     s.apps["Kokkos"] = True
     s.apps["adios2"] = True
-    s.apps["nt2py"] = True
+    s.apps["nt2py"] = False
     s.module_loads = cluster_preset.get("module_loads", [])
+    s.kokkos_backend = cluster_preset.get("kokkos_backend", "cpu")
+    s.kokkos_arch = cluster_preset.get("kokkos_arch", "NATIVE")
+    s.adios2_mpi = cluster_preset.get("adios2_mpi", "mpi")
     s.extra_kokkos_flags = cluster_preset.get("extra_kokkos_flags", [])
     s.extra_adios2_flags = cluster_preset.get("extra_adios2_flags", [])
 
@@ -1163,7 +1173,6 @@ def _wrapper_capture(stdscr) -> None:
     try:
         app.run()
     except TuiExitInstall:
-        on_install_confirmed(app.s)
         raise
 
 
