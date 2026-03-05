@@ -350,19 +350,9 @@ namespace kernel::sr {
 
         metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
         metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
-        if ((radiative_drag_flags != RadiativeDrag::NONE) or HasEmission) {
-          // backup fields & velocities to use later in radiative drag
-          ei_Cart_rad[0] = ei_Cart[0];
-          ei_Cart_rad[1] = ei_Cart[1];
-          ei_Cart_rad[2] = ei_Cart[2];
-          bi_Cart_rad[0] = bi_Cart[0];
-          bi_Cart_rad[1] = bi_Cart[1];
-          bi_Cart_rad[2] = bi_Cart[2];
-          u_prime[0]     = ux1(p);
-          u_prime[1]     = ux2(p);
-          u_prime[2]     = ux3(p);
-        }
+
         coord_t<M::PrtlDim> xp_Ph { ZERO };
+
         if constexpr (HasExtForce or Atm or HasExtEfield or HasExtBfield or
                       HasEmission) {
           if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
@@ -376,6 +366,58 @@ namespace kernel::sr {
             xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
           }
         }
+
+        // add the user-provided external fields
+        if constexpr (HasExtEfield) {
+          vec_t<Dim::_3D> ext_e_Ph { ZERO };
+          vec_t<Dim::_3D> ext_e_Cart { ZERO };
+          if constexpr (::traits::external::HasEx1<F, D>) {
+            ext_e_Ph[0] = external_fields.ex1(sp, time, xp_Ph);
+          }
+          if constexpr (::traits::external::HasEx2<F, D>) {
+            ext_e_Ph[1] = external_fields.ex2(sp, time, xp_Ph);
+          }
+          if constexpr (::traits::external::HasEx3<F, D>) {
+            ext_e_Ph[2] = external_fields.ex3(sp, time, xp_Ph);
+          }
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_e_Ph, ext_e_Cart);
+          ei_Cart[0] += ext_e_Cart[0];
+          ei_Cart[1] += ext_e_Cart[1];
+          ei_Cart[2] += ext_e_Cart[2];
+        }
+
+        if constexpr (HasExtBfield) {
+          vec_t<Dim::_3D> ext_b_Ph { ZERO };
+          vec_t<Dim::_3D> ext_b_Cart { ZERO };
+          if constexpr (::traits::external::HasEx1<F, D>) {
+            ext_b_Ph[0] = external_fields.bx1(sp, time, xp_Ph);
+          }
+          if constexpr (::traits::external::HasEx2<F, D>) {
+            ext_b_Ph[1] = external_fields.bx2(sp, time, xp_Ph);
+          }
+          if constexpr (::traits::external::HasEx3<F, D>) {
+            ext_b_Ph[2] = external_fields.bx3(sp, time, xp_Ph);
+          }
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_b_Ph, ext_b_Cart);
+          bi_Cart[0] += ext_b_Cart[0];
+          bi_Cart[1] += ext_b_Cart[1];
+          bi_Cart[2] += ext_b_Cart[2];
+        }
+
+        // backup fields & velocities to use later in radiative drag
+        if ((radiative_drag_flags != RadiativeDrag::NONE) or HasEmission) {
+          ei_Cart_rad[0] = ei_Cart[0];
+          ei_Cart_rad[1] = ei_Cart[1];
+          ei_Cart_rad[2] = ei_Cart[2];
+          bi_Cart_rad[0] = bi_Cart[0];
+          bi_Cart_rad[1] = bi_Cart[1];
+          bi_Cart_rad[2] = bi_Cart[2];
+          u_prime[0]     = ux1(p);
+          u_prime[1]     = ux2(p);
+          u_prime[2]     = ux3(p);
+        }
+
+        // compute the external force either user-provided or from the atmosphere model
         if constexpr (HasExtForce or Atm) {
           real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
           if constexpr (::traits::external::HasFx1<F, D>) {
@@ -460,7 +502,6 @@ namespace kernel::sr {
             } else {
               raise::KernelError(HERE, "Invalid pusher algorithm for GCA mode");
             }
-            // velocityEMPush(false, p, ei_Cart, bi_Cart);
             if constexpr (HasExtForce or Atm) {
               ux1(p) += HALF * dt * external_force_Cart[0];
               ux2(p) += HALF * dt * external_force_Cart[1];
