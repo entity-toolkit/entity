@@ -151,6 +151,11 @@ namespace stats {
     tools::Tracker           m_tracker;
 
   public:
+#if defined(SINGLE_PRECISION)
+    const int io_precision = 9;
+#else
+    const int io_precision = 18;
+#endif
     Writer() {}
 
     ~Writer() = default;
@@ -185,14 +190,29 @@ namespace stats {
       (void)communicate;
       tot_value = value;
 #endif
-      CallOnce(
-        [](auto&& fname, auto&& value) {
-          std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-          StatsOut << std::setw(14) << value << ",";
-          StatsOut.close();
-        },
-        m_fname,
-        tot_value);
+
+      if constexpr (std::is_floating_point_v<T>) {
+        CallOnce(
+          [this](auto&& fname, auto&& value) {
+            std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
+            StatsOut << std::setw(io_precision + 8)
+                     << std::setprecision(io_precision)
+                     << value
+                     << ",";
+            StatsOut.close();
+          },
+          m_fname,
+          tot_value);
+      } else {
+        CallOnce(
+          [this](auto&& fname, auto&& value) {
+            std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
+            StatsOut << std::setw(io_precision + 8) << value << ",";
+            StatsOut.close();
+          },
+          m_fname,
+          tot_value);
+      }
     }
 
     void endWriting();
