@@ -143,7 +143,7 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
             )
 
-        extra_flags = "-D ".join(settings.extra_kokkos_flags)
+        extra_flags = " ".join(["-D " + kf for kf in settings.extra_kokkos_flags])
         cxx_standard = 20 if tuple(map(int, version.split("."))) >= (5, 0, 0) else 17
 
         if arch == "":
@@ -212,7 +212,7 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
                 f"Adios2 install path {install_path} already exists and overwrite is disabled"
             )
 
-        extra_flags = "-D ".join(settings.extra_adios2_flags)
+        extra_flags = " ".join(["-D " + af for af in settings.extra_adios2_flags])
         cxx_standard = (
             20
             if tuple(map(int, settings.kokkos_version.split("."))) >= (5, 0, 0)
@@ -301,7 +301,19 @@ PRESETS = {
         "adios2_mpi": "mpi",
     },
     "stellar": {"module_loads": []},
-    "perlmutter": {"module_loads": []},
+    "perlmutter": {
+        "module_loads": ["gpu/1.0"],
+        "kokkos_backend": "cuda",
+        "kokkos_arch": "AMPERE80",
+        "extra_kokkos_flags": [
+            "Kokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=OFF",
+            "CMAKE_CXX_COMPILER=CC",
+        ],
+        "extra_adios2_flags": [
+            "LIBFABRIC_ROOT=/opt/cray/libfabric/1.15.2.0/",
+            "MPI_ROOT=/opt/cray/pe/craype/2.7.30",
+        ],
+    },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
 }
@@ -314,6 +326,8 @@ def apply_preset(s: Settings, name: str) -> None:
     s.apps["Kokkos"] = True
     s.apps["adios2"] = True
     s.apps["nt2py"] = False
+    s.write_modulefiles = True
+    s.overwrite = True
     s.module_loads = cluster_preset.get("module_loads", [])
     s.kokkos_backend = cluster_preset.get("kokkos_backend", "cpu")
     s.kokkos_arch = cluster_preset.get("kokkos_arch", "NATIVE")
