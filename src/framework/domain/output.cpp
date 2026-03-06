@@ -804,6 +804,18 @@ namespace ntt {
               raise::ErrorIf(fld.comp[i].size() != 2,
                              "Wrong # of components requested for 10-component moment",
                              HERE);
+              // Zero bckp slot before accumulation (avoid contamination from prior V or T steps)
+              if constexpr (M::Dim == Dim::_2D) {
+                Kokkos::deep_copy(
+                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                                  static_cast<int>(i % 6)),
+                  static_cast<real_t>(0));
+              } else {
+                Kokkos::deep_copy(
+                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                                  Kokkos::ALL, static_cast<int>(i % 6)),
+                  static_cast<real_t>(0));
+              }
               ComputeMoments<S, M, FldsID::T>(params,
                                               local_domain->mesh,
                                               local_domain->species,
@@ -813,14 +825,31 @@ namespace ntt {
                                               static_cast<idx_t>(i % 6));
               SynchronizeFields(*local_domain, Comm::Bckp, { static_cast<idx_t>(i % 6),
                                                              static_cast<idx_t>(i % 6) + 1 });
-              Kokkos::deep_copy(Kokkos::subview(T_input, Kokkos::ALL, Kokkos::ALL, i),
-                                Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL, i % 6));
+              if constexpr (M::Dim == Dim::_2D) {
+                Kokkos::deep_copy(Kokkos::subview(T_input, Kokkos::ALL, Kokkos::ALL, i),
+                                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL, i % 6));
+              } else {
+                Kokkos::deep_copy(Kokkos::subview(T_input, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, i),
+                                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, i % 6));
+              }
             }
 
             // Compute all 4 U components into bckp at addresses 0-3
+            // Must zero each slot first — bckp[0-3] hold T residuals from the loop above
             std::vector<idx_t> u_addr(4);
             for (auto i = 0; i < 4; ++i) {
               u_addr[i] = static_cast<idx_t>(i);
+              if constexpr (M::Dim == Dim::_2D) {
+                Kokkos::deep_copy(
+                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                                  static_cast<int>(i)),
+                  static_cast<real_t>(0));
+              } else {
+                Kokkos::deep_copy(
+                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                                  Kokkos::ALL, static_cast<int>(i)),
+                  static_cast<real_t>(0));
+              }
               ComputeMoments<S, M, FldsID::V>(params,
                                               local_domain->mesh,
                                               local_domain->species,
