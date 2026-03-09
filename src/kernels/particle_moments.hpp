@@ -578,6 +578,241 @@ namespace kernel {
     }
   };
 
+
+  template <Dimension D, class M, unsigned short N_T, unsigned short N_U, unsigned short N_em, unsigned short N_aux>
+    requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
+  class FluidFrameStressEnergy_kernel {
+    // Stress-energy tensor in fluid frame, rotated to B-field aligned coordinates
+    // T_phys and U_phys are in physical basis
+    ndfield_t<D, N_T>   T_in;
+    ndfield_t<D, N_U>   U_in;
+    ndfield_t<D, N_em>  EM_in;
+    ndfield_t<D, N_aux> AUX_in;
+    ndfield_t<D, N_T>   T_out;
+
+    unsigned short t_comp[10];  // T components: T00, T01, T02, T03, T11, T12, T13, T22, T23, T33
+    unsigned short u_comp[4];   // U components: U0, U1, U2, U3
+    unsigned short out_comp[10];  // Output components
+    const M metric;
+
+  public:
+    FluidFrameStressEnergy_kernel(ndfield_t<D, N_T>&   t_in, ndfield_t<D, N_U>&   u_in,
+                                  ndfield_t<D, N_em>&  em_in, ndfield_t<D, N_aux>& aux_in,
+                                  ndfield_t<D, N_T>&   t_out,
+                                  unsigned short t00, unsigned short t01, unsigned short t02,
+                                  unsigned short t03, unsigned short t11, unsigned short t12,
+                                  unsigned short t13, unsigned short t22, unsigned short t23,
+                                  unsigned short t33, unsigned short u0, unsigned short u1,
+                                  unsigned short u2, unsigned short u3, unsigned short out00,
+                                  unsigned short out01, unsigned short out02, unsigned short out03,
+                                  unsigned short out11, unsigned short out12, unsigned short out13,
+                                  unsigned short out22, unsigned short out23, unsigned short out33,
+                                  const M& m)
+      : T_in { t_in }, U_in { u_in }, EM_in { em_in }, AUX_in { aux_in }, T_out { t_out }
+      , metric { m } {
+      t_comp[0] = t00;  t_comp[1] = t01;  t_comp[2] = t02;  t_comp[3] = t03;
+      t_comp[4] = t11;  t_comp[5] = t12;  t_comp[6] = t13;
+      t_comp[7] = t22;  t_comp[8] = t23;  t_comp[9] = t33;
+      u_comp[0] = u0;  u_comp[1] = u1;  u_comp[2] = u2;  u_comp[3] = u3;
+      out_comp[0] = out00;  out_comp[1] = out01;  out_comp[2] = out02;  out_comp[3] = out03;
+      out_comp[4] = out11;  out_comp[5] = out12;  out_comp[6] = out13;
+      out_comp[7] = out22;  out_comp[8] = out23;  out_comp[9] = out33;
+    }
+
+    Inline real_t getTComp(index_t i1, index_t i2, int i, int j) const {
+      if (i > j) { return getTComp(i1, i2, j, i); }
+      int idx = i * 4 - i * (i - 1) / 2 + j - i;
+      if constexpr (D == Dim::_2D) {
+        return T_in(i1, i2, t_comp[idx]);
+      } else {
+        return T_in(i1, i2, 0, t_comp[idx]);
+      }
+    }
+
+    Inline real_t getTComp(index_t i1, index_t i2, index_t i3, int i, int j) const {
+      if (i > j) { return getTComp(i1, i2, i3, j, i); }
+      int idx = i * 4 - i * (i - 1) / 2 + j - i;
+      if constexpr (D == Dim::_3D) {
+        return T_in(i1, i2, i3, t_comp[idx]);
+      } else {
+        return T_in(i1, i2, t_comp[idx]);
+      }
+    }
+
+    Inline void setTComp(index_t i1, index_t i2, int i, int j, real_t val) const {
+      if (i > j) { setTComp(i1, i2, j, i, val); return; }
+      int idx = i * 4 - i * (i - 1) / 2 + j - i;
+      if constexpr (D == Dim::_2D) {
+        T_out(i1, i2, out_comp[idx]) = val;
+      } else {
+        T_out(i1, i2, 0, out_comp[idx]) = val;
+      }
+    }
+
+    Inline void setTComp(index_t i1, index_t i2, index_t i3, int i, int j, real_t val) const {
+      if (i > j) { setTComp(i1, i2, i3, j, i, val); return; }
+      int idx = i * 4 - i * (i - 1) / 2 + j - i;
+      if constexpr (D == Dim::_3D) {
+        T_out(i1, i2, i3, out_comp[idx]) = val;
+      } else {
+        T_out(i1, i2, out_comp[idx]) = val;
+      }
+    }
+
+    Inline void operator()(index_t i1, index_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        coord_t<D> x { static_cast<real_t>(i1) + HALF, static_cast<real_t>(i2) + HALF };
+
+        // ── 1. Load U (code contravariant) and lower ─────────────────────────
+        real_t U[4] { U_in(i1, i2, u_comp[0]), U_in(i1, i2, u_comp[1]),
+                      U_in(i1, i2, u_comp[2]), U_in(i1, i2, u_comp[3]) };
+        vec_t<Dim::_4D> Uup4 { U[0], U[1], U[2], U[3] };
+        vec_t<Dim::_4D> Udn4 { ZERO };
+        metric.template transform_4d<Idx::U, Idx::D>(x, Uup4, Udn4);
+        real_t Ud[4] { Udn4[0], Udn4[1], Udn4[2], Udn4[3] };
+
+        // ── 2. Metric quantities ──────────────────────────────────────────────
+        // sqrt_g  = sqrt(det h_code), sqrt_mg = sqrt(-g_code) = sqrt_g / alpha
+        real_t sq_g  = metric.sqrt_det_h(x);
+        real_t al    = metric.alpha(x);
+        real_t sq_mg = sq_g / al;
+
+        // ── 3. Convert T from physical to code basis ──────────────────────────
+        // T deposited with physical spatial indices (u^i_phys); u^0 is code time.
+        // T^{μν}_code = J^μ_α J^ν_β T^{αβ}_phys  where J = transform<PU,U> Jacobian.
+        // Two-pass: first convert row index (spatial), then column index (spatial).
+        // T^{00} and T^{0i}/T^{i0} temporal components handled by including index 0
+        // in each 4-vector pass; the transform only touches spatial {1,2,3}.
+        real_t T[4][4];
+        for (int i = 0; i < 4; ++i)
+          for (int j = 0; j < 4; ++j)
+            T[i][j] = getTComp(i1, i2, i, j);
+        // Pass 1: convert first index (spatial rows i=1,2,3) from phys to code
+        for (int j = 0; j < 4; ++j) {
+          vec_t<Dim::_3D> col_phys { T[1][j], T[2][j], T[3][j] };
+          vec_t<Dim::_3D> col_code { ZERO };
+          metric.template transform<Idx::PU, Idx::U>(x, col_phys, col_code);
+          T[1][j] = col_code[0]; T[2][j] = col_code[1]; T[3][j] = col_code[2];
+        }
+        // Pass 2: convert second index (spatial columns j=1,2,3) from phys to code
+        for (int i = 0; i < 4; ++i) {
+          vec_t<Dim::_3D> row_phys { T[i][1], T[i][2], T[i][3] };
+          vec_t<Dim::_3D> row_code { ZERO };
+          metric.template transform<Idx::PU, Idx::U>(x, row_phys, row_code);
+          T[i][1] = row_code[0]; T[i][2] = row_code[1]; T[i][3] = row_code[2];
+        }
+
+        // ── 4. Magnetic 4-vector b^μ (code basis) ────────────────────────────
+        // From F_{ij}_code = ε_{ijk} B^k sq_g and F_{0i}_code = E_i_code:
+        // b^μ = (1/2)/sq_mg * ε^{μνρσ} Ud_ν F_{ρσ}  (derived analytically)
+        real_t B[3] { EM_in(i1, i2, em::bx1), EM_in(i1, i2, em::bx2),
+                      EM_in(i1, i2, em::bx3) };
+        real_t E[3] { AUX_in(i1, i2, em::ex1), AUX_in(i1, i2, em::ex2),
+                      AUX_in(i1, i2, em::ex3) };
+
+        real_t bv[4];
+        bv[0] = al * (Ud[1] * B[0] + Ud[2] * B[1] + Ud[3] * B[2]);
+        bv[1] = -al * Ud[0] * B[0] + (Ud[2] * E[2] - Ud[3] * E[1]) / sq_mg;
+        bv[2] = -al * Ud[0] * B[1] - (Ud[1] * E[2] - Ud[3] * E[0]) / sq_mg;
+        bv[3] = -al * Ud[0] * B[2] + (Ud[1] * E[1] - Ud[2] * E[0]) / sq_mg;
+
+        // Lower b, compute norm, normalize
+        vec_t<Dim::_4D> bup4 { bv[0], bv[1], bv[2], bv[3] };
+        vec_t<Dim::_4D> bdn4 { ZERO };
+        metric.template transform_4d<Idx::U, Idx::D>(x, bup4, bdn4);
+        real_t b2 = bv[0]*bdn4[0] + bv[1]*bdn4[1] + bv[2]*bdn4[2] + bv[3]*bdn4[3];
+
+        if (cmp::AlmostZero(b2) || b2 <= ZERO) {
+          // No meaningful B field: output zeros (tetrad undefined)
+          for (int i = 0; i < 4; ++i)
+            for (int j = i; j < 4; ++j)
+              setTComp(i1, i2, i, j, ZERO);
+          return;
+        }
+        real_t bni = ONE / math::sqrt(b2);
+        for (int i = 0; i < 4; ++i) { bv[i] *= bni; bdn4[i] *= bni; }
+        real_t bd[4] { bdn4[0], bdn4[1], bdn4[2], bdn4[3] };
+
+        // ── 6. Perpendicular vector p (spatial 3D cross product in code basis) ─
+        // p_i_code = ε_{ijk} U^j b^k sq_g  (spatial i,j,k ∈ {1,2,3})
+        // Then raise with code metric; p^0 = g^{0i} p_i ≠ 0 after raising.
+        real_t pdn[4] { ZERO,
+                        (U[2] * bv[3] - U[3] * bv[2]) * sq_g,
+                        (U[3] * bv[1] - U[1] * bv[3]) * sq_g,
+                        (U[1] * bv[2] - U[2] * bv[1]) * sq_g };
+        vec_t<Dim::_4D> pdn4 { pdn[0], pdn[1], pdn[2], pdn[3] };
+        vec_t<Dim::_4D> pup4 { ZERO };
+        metric.template transform_4d<Idx::D, Idx::U>(x, pdn4, pup4);
+        real_t pv[4] { pup4[0], pup4[1], pup4[2], pup4[3] };
+        // Re-lower for accurate norm
+        vec_t<Dim::_4D> pdn4b { ZERO };
+        metric.template transform_4d<Idx::U, Idx::D>(x, pup4, pdn4b);
+        real_t p2 = pv[0]*pdn4b[0] + pv[1]*pdn4b[1] + pv[2]*pdn4b[2] + pv[3]*pdn4b[3];
+
+        if (cmp::AlmostZero(p2) || p2 <= ZERO) {
+          for (int i = 0; i < 4; ++i)
+            for (int j = i; j < 4; ++j)
+              setTComp(i1, i2, i, j, ZERO);
+          return;
+        }
+        real_t pni = ONE / math::sqrt(p2);
+        for (int i = 0; i < 4; ++i) { pv[i] *= pni; pdn4b[i] *= pni; }
+        real_t pd[4] { pdn4b[0], pdn4b[1], pdn4b[2], pdn4b[3] };
+
+        // ── 7. s vector: 4D cross product s_μ = ε_{μνρσ} U^ν P^ρ B^σ sq_mg ──
+        real_t sdn[4];
+        sdn[0] = sq_mg * ( U[1]*(pv[2]*bv[3] - pv[3]*bv[2])
+                         - U[2]*(pv[1]*bv[3] - pv[3]*bv[1])
+                         + U[3]*(pv[1]*bv[2] - pv[2]*bv[1]) );
+        sdn[1] = sq_mg * ( -U[0]*(pv[2]*bv[3] - pv[3]*bv[2])
+                          + U[2]*(pv[0]*bv[3] - pv[3]*bv[0])
+                          - U[3]*(pv[0]*bv[2] - pv[2]*bv[0]) );
+        sdn[2] = sq_mg * (  U[0]*(pv[1]*bv[3] - pv[3]*bv[1])
+                          - U[1]*(pv[0]*bv[3] - pv[3]*bv[0])
+                          + U[3]*(pv[0]*bv[1] - pv[1]*bv[0]) );
+        sdn[3] = sq_mg * ( -U[0]*(pv[1]*bv[2] - pv[2]*bv[1])
+                          + U[1]*(pv[0]*bv[2] - pv[2]*bv[0])
+                          - U[2]*(pv[0]*bv[1] - pv[1]*bv[0]) );
+        vec_t<Dim::_4D> sdn4 { sdn[0], sdn[1], sdn[2], sdn[3] };
+        vec_t<Dim::_4D> sup4 { ZERO };
+        metric.template transform_4d<Idx::D, Idx::U>(x, sdn4, sup4);
+        real_t sv[4] { sup4[0], sup4[1], sup4[2], sup4[3] };
+        vec_t<Dim::_4D> sdn4b { ZERO };
+        metric.template transform_4d<Idx::U, Idx::D>(x, sup4, sdn4b);
+        real_t s2 = sv[0]*sdn4b[0] + sv[1]*sdn4b[1] + sv[2]*sdn4b[2] + sv[3]*sdn4b[3];
+
+        if (cmp::AlmostZero(s2) || s2 <= ZERO) {
+          for (int i = 0; i < 4; ++i)
+            for (int j = i; j < 4; ++j)
+              setTComp(i1, i2, i, j, ZERO);
+          return;
+        }
+        real_t sni = ONE / math::sqrt(s2);
+        for (int i = 0; i < 4; ++i) { sv[i] *= sni; sdn4b[i] *= sni; }
+        real_t sd[4] { sdn4b[0], sdn4b[1], sdn4b[2], sdn4b[3] };
+
+        // ── 8. Project T directly onto tetrad {u(0), p(1), s(2), b(3)} ───────
+        // T^{(a)(b)} = Σ_{μν} T^{μν}_code (e_a)_μ (e_b)_ν
+        // e_{(0)}=u gives fluid-frame automatically; spatial vectors p,s,b are ⊥ u
+        // Covariant tetrad: a=0: Ud(u), a=1: pd(p), a=2: sd(s), a=3: bd(b)
+        // Output 10 upper-triangular components:
+        //   (0,0)=uu (W), (0,1)=up, (0,2)=us, (0,3)=ub (q_b),
+        //   (1,1)=pp, (1,2)=ps, (1,3)=pb, (2,2)=ss, (2,3)=sb, (3,3)=bb (p_par)
+        const real_t* edn[4] = { Ud, pd, sd, bd };
+        for (int a = 0; a < 4; ++a)
+          for (int b = a; b < 4; ++b) {
+            real_t val = ZERO;
+            for (int mu = 0; mu < 4; ++mu)
+              for (int nu = 0; nu < 4; ++nu)
+                val += T[mu][nu] * edn[a][mu] * edn[b][nu];
+            setTComp(i1, i2, a, b, val);
+          }
+      } else {
+        raise::KernelError(HERE, "2D implementation of FluidFrameStressEnergy_kernel called for non-2D");
+      }
+    }
+  };
+
   template <Dimension D, class M, unsigned short N>
     requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
   class Transform4VelocitySpatialToPhysical_kernel {
