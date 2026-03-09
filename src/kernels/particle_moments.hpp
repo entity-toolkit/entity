@@ -461,8 +461,8 @@ namespace kernel {
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
         coord_t<D> x_Code { ZERO };
-        x_Code[0] = static_cast<real_t>(i1) + HALF;
-        x_Code[1] = static_cast<real_t>(i2) + HALF;
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
 
         vec_t<Dim::_4D> N_cntrv { ZERO };
         N_cntrv[0] = Flux(i1, i2, c_u0);
@@ -518,9 +518,9 @@ namespace kernel {
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
         coord_t<D> x_Code { ZERO };
-        x_Code[0] = static_cast<real_t>(i1) + HALF;
-        x_Code[1] = static_cast<real_t>(i2) + HALF;
-        x_Code[2] = static_cast<real_t>(i3) + HALF;
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+        x_Code[2] = COORD(i3) + HALF;
 
         vec_t<Dim::_4D> N_cntrv { ZERO };
         N_cntrv[0] = Flux(i1, i2, i3, c_u0);  // N^0
@@ -602,8 +602,8 @@ namespace kernel {
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
         coord_t<D> x_Code { ZERO };
-        x_Code[0] = static_cast<real_t>(i1) + HALF;
-        x_Code[1] = static_cast<real_t>(i2) + HALF;
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
 
         vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, c_u1),
                                    Vector(i1, i2, c_u2),
@@ -626,9 +626,9 @@ namespace kernel {
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
         coord_t<D> x_Code { ZERO };
-        x_Code[0] = static_cast<real_t>(i1) + HALF;
-        x_Code[1] = static_cast<real_t>(i2) + HALF;
-        x_Code[2] = static_cast<real_t>(i3) + HALF;
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+        x_Code[2] = COORD(i3) + HALF;
 
         vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, i3, c_u1),
                                    Vector(i1, i2, i3, c_u2),
