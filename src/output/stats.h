@@ -151,11 +151,8 @@ namespace stats {
     tools::Tracker           m_tracker;
 
   public:
-#if defined(SINGLE_PRECISION)
-    const int io_precision = 9;
-#else
     const int io_precision = 18;
-#endif
+
     Writer() {}
 
     ~Writer() = default;
