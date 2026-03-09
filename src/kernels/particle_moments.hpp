@@ -257,10 +257,6 @@ namespace kernel {
             u_cntrv_4d);
           // in GR: u^0 = Gamma/alpha
           u0 = u_cntrv_4d[0];
-          metric.template transform<Idx::U, Idx::PU>(
-            x_Code,
-            { u_cntrv_4d[1], u_cntrv_4d[2], u_cntrv_4d[3] },
-            u_Phys);
           // Deposit flux N^μ = mass * u^μ / u^0
           if (c1 == 0) {
             // u^0 component
