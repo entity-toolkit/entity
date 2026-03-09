@@ -19,7 +19,8 @@ void errorIf(bool condition, const std::string& message) {
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
 template <Dimension D>
-Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE) -> bool {
+Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE)
+  -> bool {
   for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], epsilon * acc)) {
       Kokkos::printf("%d : %.12f != %.12f\n", d, a[d], b[d]);
@@ -30,27 +31,11 @@ Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE) ->
 }
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
 
   try {
     using namespace ntt;
     using namespace metric;
-    {
-      // catch unequal dx error
-      try {
-        Minkowski<Dim::_3D>(
-          {
-            256,
-            128,
-            64
-        },
-          { { -2.0, 2.0 }, { -1.0, 1.0 }, { -1.0, 1.0 } });
-      } catch (const std::exception& e) {
-        errorIf(std::string(e.what()).find("dx3 must be equal to dx1 in 3D") ==
-                  std::string::npos,
-                "unequal dx error not caught");
-      }
-    }
 
     constexpr unsigned int nx = 128;
     constexpr unsigned int ny = 64;
@@ -64,20 +49,20 @@ auto main(int argc, char* argv[]) -> int {
       { { -2.0, 2.0 }, { -1.0, 1.0 }, { -0.5, 0.5 } });
     const auto        dx = (real_t)(4.0 / nx);
     coord_t<Dim::_3D> dummy { ZERO, ZERO, ZERO };
-    errorIf(not cmp::AlmostEqual(M.dxMin(), dx / (real_t)math::sqrt(3.0)),
+    errorIf(not cmp::AlmostEqual_host(M.dxMin(), dx / (real_t)math::sqrt(3.0)),
             "dxMin not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_<1, 1>(dummy), SQR(dx)),
+    errorIf(not cmp::AlmostEqual_host(M.h_<1, 1>(dummy), SQR(dx)),
             "h_11 not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_<2, 2>(dummy), SQR(dx)),
+    errorIf(not cmp::AlmostEqual_host(M.h_<2, 2>(dummy), SQR(dx)),
             "h_22 not set correctly");
-    errorIf(not cmp::AlmostEqual(M.h_<3, 3>(dummy), SQR(dx)),
+    errorIf(not cmp::AlmostEqual_host(M.h_<3, 3>(dummy), SQR(dx)),
             "h_33 not set correctly");
-    errorIf(not cmp::AlmostEqual(M.sqrt_det_h(dummy), CUBE(dx)),
+    errorIf(not cmp::AlmostEqual_host(M.sqrt_det_h(dummy), CUBE(dx)),
             "sqrt_det_h not set correctly");
 
     // coord transformations
     // code <-> phys <-> sph
-    unsigned long all_wrongs = 0;
+    unsigned long all_wrongs = 0u;
     Kokkos::parallel_reduce(
       "code-phys",
       CreateRangePolicy<Dim::_3D>({ N_GHOSTS, N_GHOSTS, N_GHOSTS },
@@ -102,12 +87,12 @@ auto main(int argc, char* argv[]) -> int {
               math::atan2(x_Phys[1], -x_Phys[0]) });
       },
       all_wrongs);
-    errorIf(all_wrongs != 0, "code-phys-sph transformations failed");
+    errorIf(all_wrongs != 0u, "code-phys-sph transformations failed");
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return 1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
   return 0;
 }

@@ -19,6 +19,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel::gr {
   using namespace ntt;
 
@@ -27,8 +29,10 @@ namespace kernel::gr {
    * @tparam M Metric
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
+             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
   class ComputeAuxE_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, 6> Df;
@@ -134,8 +138,10 @@ namespace kernel::gr {
    * @tparam M Metric
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
+             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
   class ComputeAuxH_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, 6> Df;
@@ -241,22 +247,15 @@ namespace kernel::gr {
    * @brief Kernel for computing time average of B and D
    * @tparam M Metric
    */
-  template <class M>
+  template <Dimension D>
   class TimeAverageDB_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static constexpr auto D = M::Dim;
-
     const ndfield_t<D, 6> BDf;
     ndfield_t<D, 6>       BDf0;
-    const M               metric;
 
   public:
-    TimeAverageDB_kernel(const ndfield_t<D, 6>& BDf,
-                         const ndfield_t<D, 6>& BDf0,
-                         const M&               metric)
+    TimeAverageDB_kernel(const ndfield_t<D, 6>& BDf, const ndfield_t<D, 6>& BDf0)
       : BDf { BDf }
-      , BDf0 { BDf0 }
-      , metric { metric } {}
+      , BDf0 { BDf0 } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
@@ -284,22 +283,15 @@ namespace kernel::gr {
    * @brief Kernel for computing time average of J
    * @tparam M Metric
    */
-  template <class M>
+  template <Dimension D>
   class TimeAverageJ_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static constexpr auto D = M::Dim;
-
     ndfield_t<D, 3>       Jf;
     const ndfield_t<D, 3> Jf0;
-    const M               metric;
 
   public:
-    TimeAverageJ_kernel(const ndfield_t<D, 3>& Jf,
-                        const ndfield_t<D, 3>& Jf0,
-                        const M&               metric)
+    TimeAverageJ_kernel(const ndfield_t<D, 3>& Jf, const ndfield_t<D, 3>& Jf0)
       : Jf { Jf }
-      , Jf0 { Jf0 }
-      , metric { metric } {}
+      , Jf0 { Jf0 } {}
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {

@@ -5,6 +5,10 @@
  *   - ntt::Metadomain<>
  * @cpp:
  *   - metadomain.cpp
+ *   - metadomain_comm.cpp
+ *   - metadomain_chckpt.cpp
+ *   - metadomain_io.cpp
+ *   - metadomain_stats.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -20,10 +24,12 @@
 
 #include "arch/kokkos_aliases.h"
 
+#include "metrics/traits.h"
+
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)
@@ -35,7 +41,7 @@
   #include "output/writer.h"
 
   #include <adios2.h>
-  #include <adios2/cxx11/KokkosView.h>
+  #include <adios2/cxx/KokkosView.h>
 #endif // OUTPUT_ENABLED
 
 #include <functional>
@@ -46,10 +52,14 @@
 
 namespace ntt {
 
+  template <class M>
+  concept IsCompatibleWithMetadomain = metric::traits::HasD<M> &&
+                                       metric::traits::HasConvert<M> &&
+                                       metric::traits::HasTotVolume<M>;
+
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   struct Metadomain {
-    static_assert(M::is_metric,
-                  "template arg for Metadomain class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
     void initialValidityCheck() const;
@@ -86,10 +96,15 @@ namespace ntt {
       }
     }
 
-    void CommunicateFields(Domain<S, M>&, CommTags);
-    void SynchronizeFields(Domain<S, M>&, CommTags, const range_tuple_t& = { 0, 0 });
-    void CommunicateParticles(Domain<S, M>&);
-    void RemoveDeadParticles(Domain<S, M>&);
+    void CommunicateFields(Domain<S, M>&, CommTags) const;
+    void SynchronizeFields(Domain<S, M>&,
+                           CommTags,
+                           const range_tuple_t& = { 0, 0 }) const;
+    void CommunicateParticles(Domain<S, M>&) const;
+    void SortParticles(simtime_t,
+                       timestep_t,
+                       const SimulationParams&,
+                       Domain<S, M>&) const;
 
     /**
      * @param global_ndomains total number of domains
@@ -171,6 +186,12 @@ namespace ntt {
 
     [[nodiscard]]
     auto subdomain_ptr(unsigned int idx) -> Domain<S, M>* {
+      raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
+      return &g_subdomains[idx];
+    }
+
+    [[nodiscard]]
+    auto subdomain_ptr(unsigned int idx) const -> const Domain<S, M>* {
       raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
       return &g_subdomains[idx];
     }

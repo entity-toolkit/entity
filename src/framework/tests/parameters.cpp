@@ -1,15 +1,16 @@
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 
 #include "defaults.h"
 #include "enums.h"
+#include "global.h"
 
 #include "utils/comparators.h"
 #include "utils/error.h"
-#include "utils/toml.h"
 
 #include "framework/containers/species.h"
 
 #include <stdio.h>
+#include <toml11/toml.hpp>
 
 #include <iostream>
 
@@ -58,6 +59,7 @@ const auto mink_1d = u8R"(
 [particles]
   ppc0 = 10.0
   clear_interval = 100
+  spatial_sorting_interval = 10
 
   [[particles.species]]
     label = "e-"
@@ -67,6 +69,8 @@ const auto mink_1d = u8R"(
     pusher = "boris"
     n_payloads_real = 3
     tracking = true
+    spatial_sorting_interval = 100
+    clear_interval = 50
 
   [[particles.species]]
     label = "p+"
@@ -125,6 +129,21 @@ const auto sph_2d = u8R"(
   larmor0 = 0.01
   skindepth0 = 0.01
 
+[radiation]
+  [radiation.drag]
+    [radiation.drag.synchrotron]
+      gamma_rad = 50.0
+
+    [radiation.drag.compton]
+      gamma_rad = 20.0
+
+  [radiation.emission]
+    [radiation.emission.synchrotron]
+      gamma_qed = 100.0
+      photon_energy_min = 0.01
+      photon_weight = 10.0
+      photon_species = 3
+
 [algorithms]
   current_filters = 8
 
@@ -134,9 +153,6 @@ const auto sph_2d = u8R"(
   [algorithms.gca]
     e_ovr_b_max = 0.95
     larmor_max = 0.025
-
-  [algorithms.synchrotron]
-    gamma_rad = 50.0
 
 [particles]
   ppc0 = 25.0
@@ -151,7 +167,8 @@ const auto sph_2d = u8R"(
     maxnpart = 1e2
     pusher = "boris,gca"
     n_payloads_real = 3
-    cooling = "synchrotron"
+    radiative_drag = "synchrotron,compton"
+    emission = "synchrotron"
 
   [[particles.species]]
     label = "e+"
@@ -159,8 +176,9 @@ const auto sph_2d = u8R"(
     charge = 1.0
     maxnpart = 1e2
     pusher = "boris,gca"
-    cooling = "synchrotron"
+    radiative_drag = "synchrotron"
     n_payloads_int = 2
+    spatial_sorting_interval = 123
 
   [[particles.species]]
     label = "ph"
@@ -249,7 +267,7 @@ void assert_equal(const T& a, const T& b, const std::string& msg) {
 }
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
 
   try {
     using namespace ntt;
@@ -306,20 +324,37 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
+      assert_equal(species[0].clearing_interval(),
+                   static_cast<timestep_t>(50u),
+                   "species[0].clearing_interval");
+      assert_equal(species[0].spatial_sorting_interval(),
+                   static_cast<timestep_t>(100u),
+                   "species[0].spatial_sorting_interval");
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
-      assert_equal<unsigned short>(species[0].npld_i(), 1, "species[0].npld_i");
+#if defined(MPI_ENABLED)
+      const auto npld_i = 2u;
+#else
+      const auto npld_i = 1u;
+#endif
+      assert_equal<unsigned short>(species[0].npld_i(), npld_i, "species[0].npld_i");
       assert_equal<bool>(species[0].use_tracking(), true, "species[0].tracking");
 
       assert_equal<std::string>(species[1].label(), "p+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 200.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::VAY,
-                               "species[1].pusher");
+      assert_equal(species[1].clearing_interval(),
+                   static_cast<timestep_t>(100u),
+                   "species[1].clearing_interval");
+      assert_equal(species[1].spatial_sorting_interval(),
+                   static_cast<timestep_t>(10u),
+                   "species[1].spatial_sorting_interval");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::VAY,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
 
       assert_equal<real_t>(params_mink_1d.get<real_t>("setup.myfloat"),
@@ -454,9 +489,31 @@ auto main(int argc, char* argv[]) -> int {
                    "algorithms.gca.larmor_max");
 
       assert_equal(
-        params_sph_2d.get<real_t>("algorithms.synchrotron.gamma_rad"),
+        params_sph_2d.get<real_t>("radiation.drag.synchrotron.gamma_rad"),
         (real_t)50.0,
-        "algorithms.synchrotron.gamma_rad");
+        "radiation.drag.synchrotron.gamma_rad");
+
+      assert_equal(
+        params_sph_2d.get<real_t>("radiation.drag.compton.gamma_rad"),
+        (real_t)20.0,
+        "radiation.drag.compton.gamma_rad");
+
+      assert_equal(params_sph_2d.get<real_t>(
+                     "radiation.emission.synchrotron.photon_energy_min"),
+                   (real_t)0.01,
+                   "radiation.emission.synchrotron.photon_energy_min");
+      assert_equal(
+        params_sph_2d.get<real_t>("radiation.emission.synchrotron.gamma_qed"),
+        (real_t)100.0,
+        "radiation.emission.synchrotron.gamma_qed");
+      assert_equal(params_sph_2d.get<real_t>(
+                     "radiation.emission.synchrotron.photon_weight"),
+                   (real_t)10.0,
+                   "radiation.emission.synchrotron.photon_weight");
+      assert_equal<spidx_t>(params_sph_2d.get<spidx_t>(
+                              "radiation.emission.synchrotron.photon_species"),
+                            3,
+                            "radiation.emission.synchrotron.photon_species");
 
       const auto species = params_sph_2d.get<std::vector<ParticleSpecies>>(
         "particles.species");
@@ -464,27 +521,37 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
-      assert_equal<PrtlPusher>(species[0].use_gca(), true, "species[0].use_gca");
+      assert_equal(species[0].spatial_sorting_interval(),
+                   static_cast<timestep_t>(0u),
+                   "species[0].spatial_sorting_interval");
+
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS | ParticlePusher::GCA,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 3, "species[0].npld_r");
-      assert_equal<Cooling>(species[0].cooling(),
-                            Cooling::SYNCHROTRON,
-                            "species[0].cooling");
+      assert_equal<RadiativeDragFlags>(species[0].radiative_drag_flags(),
+                                       RadiativeDrag::SYNCHROTRON |
+                                         RadiativeDrag::COMPTON,
+                                       "species[0].radiative_drag_flags");
+
+      assert_equal<EmissionTypeFlag>(species[0].emission_policy_flag(),
+                                     EmissionType::SYNCHROTRON,
+                                     "species[0].emission_policy_flag");
 
       assert_equal<std::string>(species[1].label(), "e+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 1.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[1].pusher");
-      assert_equal<PrtlPusher>(species[1].use_gca(), true, "species[1].use_gca");
+      assert_equal(species[1].spatial_sorting_interval(),
+                   static_cast<timestep_t>(123u),
+                   "species[1].spatial_sorting_interval");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::BORIS | ParticlePusher::GCA,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
-      assert_equal<Cooling>(species[1].cooling(),
-                            Cooling::SYNCHROTRON,
-                            "species[1].cooling");
+      assert_equal<RadiativeDragFlags>(species[1].radiative_drag_flags(),
+                                       RadiativeDrag::SYNCHROTRON,
+                                       "species[1].radiative_drag_flags");
       assert_equal<unsigned short>(species[1].npld_i(), 2, "species[1].npld_i");
       assert_equal<bool>(species[1].use_tracking(), false, "species[1].tracking");
 
@@ -492,9 +559,9 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[2].mass(), 0.0f, "species[2].mass");
       assert_equal(species[2].charge(), 0.0f, "species[2].charge");
       assert_equal<std::size_t>(species[2].maxnpart(), 100, "species[2].maxnpart");
-      assert_equal<PrtlPusher>(species[2].pusher(),
-                               PrtlPusher::PHOTON,
-                               "species[2].pusher");
+      assert_equal<ParticlePusherFlags>(species[2].pusher(),
+                                        ParticlePusher::PHOTON,
+                                        "species[2].pusher");
       assert_equal<unsigned short>(species[2].npld_r(), 0, "species[2].npld_r");
     }
 
@@ -601,28 +668,28 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
       assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
-      assert_equal<PrtlPusher>(species[0].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[0].pusher");
+      assert_equal<ParticlePusherFlags>(species[0].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[0].pusher");
       assert_equal<unsigned short>(species[0].npld_r(), 0, "species[0].npld_r");
 
       assert_equal<std::string>(species[1].label(), "e+", "species[1].label");
       assert_equal(species[1].mass(), 1.0f, "species[1].mass");
       assert_equal(species[1].charge(), 1.0f, "species[1].charge");
       assert_equal<std::size_t>(species[1].maxnpart(), 100, "species[1].maxnpart");
-      assert_equal<PrtlPusher>(species[1].pusher(),
-                               PrtlPusher::BORIS,
-                               "species[1].pusher");
+      assert_equal<ParticlePusherFlags>(species[1].pusher(),
+                                        ParticlePusher::BORIS,
+                                        "species[1].pusher");
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
     }
 
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return -1;
   }
 
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
 
   return 0;
 }

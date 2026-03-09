@@ -83,13 +83,16 @@ if("KOKKOS" IN_LIST MODES)
 endif()
 
 if("ADIOS2_NOMPI" IN_LIST MODES)
-  set(libs stdc++fs)
+  set(libs "")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+    list(APPEND libs stdc++fs)
+  endif()
   set(exec adios2-nompi.xc)
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/adios2.cpp)
 
   find_kokkos()
   find_adios2()
-  list(APPEND libs Kokkos::kokkos adios2::cxx11)
+  list(APPEND libs Kokkos::kokkos adios2::cxx)
 
   add_executable(${exec} ${src})
 
@@ -97,14 +100,17 @@ if("ADIOS2_NOMPI" IN_LIST MODES)
 endif()
 
 if("ADIOS2_MPI" IN_LIST MODES)
-  set(libs stdc++fs)
+  set(libs "")
+  if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+    list(APPEND libs stdc++fs)
+  endif()
   set(exec adios2-mpi.xc)
   set(src ${CMAKE_CURRENT_SOURCE_DIR}/adios2.cpp)
 
   find_package(MPI REQUIRED)
   find_kokkos()
   find_adios2()
-  list(APPEND libs MPI::MPI_CXX Kokkos::kokkos adios2::cxx11_mpi)
+  list(APPEND libs MPI::MPI_CXX Kokkos::kokkos adios2::cxx_mpi)
 
   add_executable(${exec} ${src})
 

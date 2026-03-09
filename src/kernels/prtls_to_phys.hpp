@@ -22,12 +22,16 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel {
   using namespace ntt;
 
   template <SimEngine::type S, class M, bool T>
+    requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              S == SimEngine::GRPIC && metric::traits::HasTransform<M>)
   class PrtlToPhys_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr Dimension D = M::Dim;
 
   protected:

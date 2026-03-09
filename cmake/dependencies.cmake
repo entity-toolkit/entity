@@ -3,14 +3,24 @@
 set(Kokkos_REPOSITORY
     https://github.com/kokkos/kokkos.git
     CACHE STRING "Kokkos repository")
-set(plog_REPOSITORY
-    https://github.com/SergiusTheBest/plog.git
-    CACHE STRING "plog repository")
+set(Kokkos_TAG
+    5.0.1
+    CACHE STRING "Kokkos tag")
 set(adios2_REPOSITORY
     https://github.com/ornladios/ADIOS2.git
     CACHE STRING "ADIOS2 repository")
+set(adios2_TAG
+    v2.11.0
+    CACHE STRING "ADIOS2 tag")
+
+set(CONNECTION_CHECKED
+    FALSE
+    CACHE BOOL "Whether internet connection has been checked")
 
 function(check_internet_connection)
+  if(CONNECTION_CHECKED)
+    return()
+  endif()
   if(OFFLINE STREQUAL "ON")
     set(FETCHCONTENT_FULLY_DISCONNECTED
         ON
@@ -35,6 +45,9 @@ function(check_internet_connection)
       message(STATUS "${Green}Internet connection established.${ColorReset}")
     endif()
   endif()
+  set(CONNECTION_CHECKED
+      TRUE
+      CACHE BOOL "Whether internet connection has been checked")
 endfunction()
 
 function(find_or_fetch_dependency package_name header_only mode)
@@ -43,6 +56,8 @@ function(find_or_fetch_dependency package_name header_only mode)
   endif()
 
   if(NOT ${package_name}_FOUND)
+    check_internet_connection()
+
     if(${package_name} STREQUAL "Kokkos")
       include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/kokkosConfig.cmake)
     elseif(${package_name} STREQUAL "adios2")
@@ -54,16 +69,11 @@ function(find_or_fetch_dependency package_name header_only mode)
       message(STATUS "${Blue}${package_name} not found. "
                      "Fetching from ${${package_name}_REPOSITORY}${ColorReset}")
       include(FetchContent)
-      if(${package_name} STREQUAL "Kokkos")
+      if(${package_name} STREQUAL "Kokkos" OR ${package_name} STREQUAL "adios2")
         FetchContent_Declare(
           ${package_name}
           GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG 4.7.01)
-      elseif(${package_name} STREQUAL "adios2")
-        FetchContent_Declare(
-          ${package_name}
-          GIT_REPOSITORY ${${package_name}_REPOSITORY}
-          GIT_TAG v2.10.2)
+          GIT_TAG ${${package_name}_TAG})
       else()
         FetchContent_Declare(${package_name}
                              GIT_REPOSITORY ${${package_name}_REPOSITORY})
@@ -171,5 +181,3 @@ function(find_or_fetch_dependency package_name header_only mode)
       ${${package_name}_BUILD_DIR}
       PARENT_SCOPE)
 endfunction()
-
-check_internet_connection()

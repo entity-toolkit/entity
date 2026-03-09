@@ -9,26 +9,32 @@
 #include <string>
 
 template <Dimension D, ntt::Coord::type C>
-void testParticles(int                    index,
-                   const std::string&     label,
-                   float                  m,
-                   float                  ch,
-                   std::size_t            maxnpart,
-                   const ntt::PrtlPusher& pusher,
-                   bool                   use_tracking,
-                   const ntt::Cooling&    cooling,
-                   unsigned short         npld_r = 0,
-                   unsigned short         npld_i = 0) {
+void testParticles(
+  int                      index,
+  const std::string&       label,
+  float                    m,
+  float                    ch,
+  std::size_t              maxnpart,
+  timestep_t               clearing_interval,
+  timestep_t               spatial_sorting_interval,
+  ntt::ParticlePusherFlags pusher,
+  bool                     use_tracking,
+  ntt::RadiativeDragFlags  radiative_drag_flags,
+  ntt::EmissionTypeFlag    emission_policy_flag = ntt::EmissionType::NONE,
+  unsigned short           npld_r               = 0,
+  unsigned short           npld_i               = 0) {
   using namespace ntt;
   auto p = Particles<D, C>(index,
                            label,
                            m,
                            ch,
                            maxnpart,
+                           clearing_interval,
+                           spatial_sorting_interval,
                            pusher,
                            use_tracking,
-                           false,
-                           cooling,
+                           radiative_drag_flags,
+                           emission_policy_flag,
                            npld_r,
                            npld_i);
   raise::ErrorIf(p.index() != index, "Index mismatch", HERE);
@@ -36,8 +42,20 @@ void testParticles(int                    index,
   raise::ErrorIf(p.mass() != m, "Mass mismatch", HERE);
   raise::ErrorIf(p.charge() != ch, "Charge mismatch", HERE);
   raise::ErrorIf(p.maxnpart() != maxnpart, "Max number of particles mismatch", HERE);
+  raise::ErrorIf(p.clearing_interval() != clearing_interval,
+                 "Clearing interval mismatch",
+                 HERE);
+  raise::ErrorIf(p.spatial_sorting_interval() != spatial_sorting_interval,
+                 "Spatial sorting interval mismatch",
+                 HERE);
   raise::ErrorIf(p.pusher() != pusher, "Pusher mismatch", HERE);
-  raise::ErrorIf(p.cooling() != cooling, "Cooling mismatch", HERE);
+  raise::ErrorIf(p.use_tracking() != use_tracking, "Use Tracking mismatch", HERE);
+  raise::ErrorIf(p.radiative_drag_flags() != radiative_drag_flags,
+                 "Radiative drag mismatch",
+                 HERE);
+  raise::ErrorIf(p.emission_policy_flag() != emission_policy_flag,
+                 "Emission policy mismatch",
+                 HERE);
   raise::ErrorIf(p.npart() != 0, "Number of particles mismatch", HERE);
 
   raise::ErrorIf(p.i1.extent(0) != maxnpart, "i1 incorrectly allocated", HERE);
@@ -107,7 +125,7 @@ void testParticles(int                    index,
 }
 
 auto main(int argc, char** argv) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     using namespace ntt;
     testParticles<Dim::_1D, Coord::Cart>(1,
@@ -115,36 +133,48 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          -1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         123u,
+                                         0u,
+                                         ParticlePusher::BORIS,
                                          false,
-                                         Cooling::SYNCHROTRON);
+                                         RadiativeDrag::SYNCHROTRON);
     testParticles<Dim::_2D, Coord::Cart>(2,
                                          "p+",
                                          100.0,
                                          -1.0,
-                                         1000,
-                                         PrtlPusher::VAY,
+                                         100,
+                                         0u,
+                                         1u,
+                                         ParticlePusher::VAY,
                                          true,
-                                         Cooling::SYNCHROTRON,
+                                         RadiativeDrag::SYNCHROTRON |
+                                           RadiativeDrag::COMPTON,
+                                         EmissionType::SYNCHROTRON,
                                          2,
-                                         1);
+                                         2);
     testParticles<Dim::_3D, Coord::Cart>(3,
                                          "ph",
                                          0.0,
                                          0.0,
                                          100,
-                                         PrtlPusher::PHOTON,
+                                         0u,
+                                         12u,
+                                         ParticlePusher::PHOTON,
                                          false,
-                                         Cooling::NONE,
+                                         RadiativeDrag::NONE,
+                                         EmissionType::COMPTON,
                                          5);
     testParticles<Dim::_2D, Coord::Sph>(4,
                                         "e+",
                                         1.0,
                                         1.0,
                                         100,
-                                        PrtlPusher::BORIS,
+                                        123u,
+                                        123u,
+                                        ParticlePusher::BORIS,
                                         true,
-                                        Cooling::NONE,
+                                        RadiativeDrag::NONE,
+                                        EmissionType::NONE,
                                         2,
                                         3);
     testParticles<Dim::_2D, Coord::Qsph>(5,
@@ -152,16 +182,19 @@ auto main(int argc, char** argv) -> int {
                                          1.0,
                                          1.0,
                                          100,
-                                         PrtlPusher::BORIS,
+                                         321u,
+                                         1234u,
+                                         ParticlePusher::BORIS,
                                          false,
-                                         Cooling::NONE,
+                                         RadiativeDrag::NONE,
+                                         EmissionType::NONE,
                                          1,
                                          2);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return 1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
   return 0;
 }

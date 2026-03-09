@@ -7,7 +7,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.3.3
+  VERSION 1.4.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
@@ -47,9 +47,6 @@ set(pgen
     ${default_pgen}
     CACHE STRING "Problem generator")
 
-set(gui
-    ${default_gui}
-    CACHE BOOL "Use GUI [nttiny]")
 set(output
     ${default_output}
     CACHE BOOL "Enable output")
@@ -62,7 +59,7 @@ set(gpu_aware_mpi
     CACHE BOOL "Enable GPU-aware MPI")
 
 # -------------------------- Compilation settings -------------------------- #
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -70,7 +67,7 @@ if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
       Release
       CACHE STRING "CMake build type")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
 else()
   set(CMAKE_BUILD_TYPE
       Debug
@@ -109,9 +106,8 @@ set(BUILD_TESTING
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
 
 find_or_fetch_dependency(Kokkos FALSE QUIET)
-find_or_fetch_dependency(plog TRUE QUIET)
 set(DEPENDENCIES Kokkos::kokkos)
-include_directories(${plog_SRC}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # -------------------------------- Main code ------------------------------- #
 set_precision(${precision})
@@ -162,29 +158,37 @@ if(${output})
   find_or_fetch_dependency(adios2 FALSE QUIET)
   add_compile_options("-D OUTPUT_ENABLED")
   if(${mpi})
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11_mpi)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx_mpi)
   else()
-    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx11)
+    set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx)
   endif()
 endif()
 
 link_libraries(${DEPENDENCIES})
 
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+add_subdirectory(${SRC_DIR}/global ${CMAKE_CURRENT_BINARY_DIR}/global)
+add_subdirectory(${SRC_DIR}/metrics ${CMAKE_CURRENT_BINARY_DIR}/metrics)
+add_subdirectory(${SRC_DIR}/kernels ${CMAKE_CURRENT_BINARY_DIR}/kernels)
+add_subdirectory(${SRC_DIR}/archetypes ${CMAKE_CURRENT_BINARY_DIR}/archetypes)
+add_subdirectory(${SRC_DIR}/framework ${CMAKE_CURRENT_BINARY_DIR}/framework)
+add_subdirectory(${SRC_DIR}/output ${CMAKE_CURRENT_BINARY_DIR}/output)
+
+# ------------------------------- Main source ------------------------------ #
+if(NOT ${pgen} STREQUAL ${default_pgen})
+  set_problem_generator(${pgen})
+  add_subdirectory(${SRC_DIR}/engines ${CMAKE_CURRENT_BINARY_DIR}/engines)
+  add_subdirectory(${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src)
+endif()
+
 if(TESTS)
   # ---------------------------------- Tests --------------------------------- #
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests.cmake)
-elseif(BENCHMARK)
+endif()
+
+if(BENCHMARK)
   # ------------------------------ Benchmark --------------------------------- #
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/benchmark.cmake)
-else()
-  # ----------------------------------- GUI ---------------------------------- #
-  if(${gui})
-    find_or_fetch_dependency(nttiny FALSE QUIET)
-  endif()
-
-  # ------------------------------- Main source ------------------------------ #
-  set_problem_generator(${pgen})
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src src)
 endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/report.cmake)

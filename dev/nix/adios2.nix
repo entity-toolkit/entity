@@ -6,9 +6,9 @@
 
 let
   name = "adios2";
-  version = "2.10.2";
+  version = "2.11.0";
   cmakeFlags = {
-    CMAKE_CXX_STANDARD = "17";
+    CMAKE_CXX_STANDARD = "20";
     CMAKE_CXX_EXTENSIONS = "OFF";
     CMAKE_POSITION_INDEPENDENT_CODE = "TRUE";
     BUILD_SHARED_LIBS = "ON";
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
   src = pkgs.fetchgit {
     url = "https://github.com/ornladios/ADIOS2/";
     rev = "v${version}";
-    sha256 = "sha256-NVyw7xoPutXeUS87jjVv1YxJnwNGZAT4QfkBLzvQbwg=";
+    sha256 = "sha256-yHPI///17poiCEb7Luu5qfqxTWm9Nh+o9r57mZT26U0=";
   };
 
   nativeBuildInputs = with pkgs; [

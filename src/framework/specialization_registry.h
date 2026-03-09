@@ -1,11 +1,7 @@
-// SPDX-License-Identifier: BSD-3-Clause
-
 #ifndef FRAMEWORK_SPECIALIZATION_REGISTRY_H
 #define FRAMEWORK_SPECIALIZATION_REGISTRY_H
 
 #include "enums.h"
-
-#include "arch/traits.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"

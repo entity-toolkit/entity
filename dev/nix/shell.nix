@@ -29,8 +29,8 @@ let
         CC = "gcc";
       };
       HIP = {
-        CXX = "hipcc";
-        CC = "hipcc";
+        CXX = "clang++";
+        CC = "clang";
       };
       CUDA = { };
     };
@@ -45,8 +45,7 @@ pkgs.mkShell {
     adios2Pkg
     kokkosPkg
 
-    python312
-    python312Packages.jupyter
+    python314
 
     cmake-format
     cmake-lint

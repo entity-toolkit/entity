@@ -9,7 +9,7 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 
 #include "kernels/reduced_stats.hpp"
@@ -23,6 +23,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
                                          bool                    is_resuming) {
     raise::ErrorIf(
@@ -182,6 +183,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::WriteStats(
     const SimulationParams& params,
     timestep_t              current_step,

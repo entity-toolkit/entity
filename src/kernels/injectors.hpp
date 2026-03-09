@@ -19,6 +19,9 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
+#include "archetypes/traits.h"
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 
@@ -76,10 +79,12 @@ namespace kernel {
   }
 
   template <SimEngine::type S, class M, class ED1, class ED2>
+    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
+             arch::traits::energydist::IsValid<ED1> &&
+             arch::traits::energydist::IsValid<ED2>
   struct UniformInjector_kernel {
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(M::is_metric, "M must be a metric class");
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
     array_t<prtldx_t*> dx1s_1, dx2s_1, dx3s_1;
@@ -291,8 +296,10 @@ namespace kernel {
   }; // struct UniformInjector_kernel
 
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
   struct GlobalInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const bool use_weights;
@@ -522,11 +529,14 @@ namespace kernel {
   }; // struct GlobalInjector_kernel
 
   template <SimEngine::type S, class M, class ED1, class ED2, class SD>
+    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
+             metric::traits::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
+             arch::traits::energydist::IsValid<ED1> &&
+             arch::traits::energydist::IsValid<ED2> &&
+             arch::traits::spatialdist::IsValid<SD>
   struct NonUniformInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
 
     const real_t ppc0;
 

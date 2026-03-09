@@ -9,7 +9,7 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 
 #include "kernels/divergences.hpp"
@@ -31,6 +31,7 @@
 namespace ntt {
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
                                     const SimulationParams& params) {
     raise::ErrorIf(
@@ -57,8 +58,7 @@ namespace ntt {
 
     g_writer.init(ptr_adios,
                   params.template get<std::string>("output.format"),
-                  params.template get<std::string>("simulation.name"),
-                  params.template get<bool>("output.separate_files"));
+                  params.template get<std::string>("simulation.name"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
@@ -263,6 +263,7 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
     if constexpr (M::Dim == Dim::_2D) {
       auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -316,6 +317,7 @@ namespace ntt {
 #endif
 
   template <SimEngine::type S, class M>
+    requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::Write(
     const SimulationParams&                  params,
     timestep_t                               current_step,

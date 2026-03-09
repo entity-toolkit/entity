@@ -7,7 +7,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
+#include <adios2/cxx/KokkosView.h>
 #include <mpi.h>
 
 #include <filesystem>
@@ -17,7 +17,7 @@
 
 void cleanup() {
   namespace fs = std::filesystem;
-  fs::path tempfile_path { "test.bp" };
+  fs::path tempfile_path { "test" };
   fs::remove_all(tempfile_path);
 }
 
@@ -26,8 +26,7 @@ void cleanup() {
     math::ceil(static_cast<real_t>(a) / static_cast<real_t>(b))))
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
-  MPI_Init(&argc, &argv);
+  ntt::GlobalInitialize(argc, argv);
   int mpi_rank, mpi_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -61,7 +60,7 @@ auto main(int argc, char* argv[]) -> int {
     {
       // write
       auto writer = out::Writer();
-      writer.init(&adios, "BPFile", "test", false);
+      writer.init(&adios, "BPFile", "test");
       writer.defineMeshLayout({ static_cast<ncells_t>(mpi_size) * nx1 },
                               { static_cast<ncells_t>(mpi_rank) * nx1 },
                               { nx1 },
@@ -92,90 +91,98 @@ auto main(int argc, char* argv[]) -> int {
       // read
       adios2::IO io = adios.DeclareIO("read-test");
       io.SetEngine("BPFile");
-      adios2::Engine reader = io.Open("test.bp", adios2::Mode::Read);
-      for (auto step = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++step) {
-        raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
-                       "NGhosts is not correct",
-                       HERE);
-        raise::ErrorIf(io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 1,
-                       "Dimension is not correct",
-                       HERE);
 
-        timestep_t step_read;
-        simtime_t  time_read;
+      for (const auto time : { 0u, 1u }) {
+        namespace fs          = std::filesystem;
+        adios2::Engine reader = io.Open(
+          fs::path("test") / fs::path("fields") /
+            fs::path(fmt::format("fields.%08u.bp", time)),
+          adios2::Mode::Read);
+        for (auto st = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++st) {
+          raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
+                         "NGhosts is not correct",
+                         HERE);
+          raise::ErrorIf(
+            io.InquireAttribute<std::size_t>("Dimension").Data()[0] != 1,
+            "Dimension is not correct",
+            HERE);
 
-        reader.Get(io.InquireVariable<timestep_t>("Step"),
-                   &step_read,
-                   adios2::Mode::Sync);
-        reader.Get(io.InquireVariable<simtime_t>("Time"),
-                   &time_read,
-                   adios2::Mode::Sync);
-        raise::ErrorIf(step_read != step, "Step is not correct", HERE);
-        raise::ErrorIf((float)time_read != (float)step * 0.1f,
-                       "Time is not correct",
-                       HERE);
+          timestep_t step_read;
+          simtime_t  time_read;
 
-        const auto l_size   = nx1;
-        const auto l_offset = nx1 * mpi_rank;
+          reader.Get(io.InquireVariable<timestep_t>("Step"),
+                     &step_read,
+                     adios2::Mode::Sync);
+          reader.Get(io.InquireVariable<simtime_t>("Time"),
+                     &time_read,
+                     adios2::Mode::Sync);
+          raise::ErrorIf(step_read != time, "Step is not correct", HERE);
+          raise::ErrorIf((float)time_read != (float)time * 0.1f,
+                         "Time is not correct",
+                         HERE);
 
-        const double n = l_size;
-        const double d = dwn1;
-        const double l = l_offset;
-        const double f = math::ceil(l / d) * d - l;
+          const auto l_size   = nx1;
+          const auto l_offset = nx1 * mpi_rank;
 
-        const auto first_cell = static_cast<ncells_t>(f);
-        const auto l_size_dwn = static_cast<ncells_t>(math::ceil((n - f) / d));
-        const auto l_corner_dwn = static_cast<ncells_t>(math::ceil(l / d));
+          const double n = l_size;
+          const double d = dwn1;
+          const double l = l_offset;
+          const double f = math::ceil(l / d) * d - l;
 
-        array_t<real_t*> field_read {};
-        int              cntr = 0;
-        for (const auto& name : field_names) {
-          auto fieldVar = io.InquireVariable<real_t>(name);
-          if (fieldVar) {
-            raise::ErrorIf(fieldVar.Shape().size() != 1,
-                           fmt::format("%s is not 1D", name.c_str()),
-                           HERE);
-            auto        dims  = fieldVar.Shape();
-            std::size_t nx1_r = dims[0];
-            raise::ErrorIf((nx1_r != CEILDIV(nx1 * mpi_size, dwn1)),
-                           fmt::format("%s = %ld is not %d",
-                                       name.c_str(),
-                                       nx1_r,
-                                       CEILDIV(nx1 * mpi_size, dwn1)),
-                           HERE);
+          const auto first_cell = static_cast<ncells_t>(f);
+          const auto l_size_dwn = static_cast<ncells_t>(math::ceil((n - f) / d));
+          const auto l_corner_dwn = static_cast<ncells_t>(math::ceil(l / d));
 
-            fieldVar.SetSelection(
-              adios2::Box<adios2::Dims>({ l_corner_dwn }, { l_size_dwn }));
-            field_read        = array_t<real_t*>(name, l_size_dwn);
-            auto field_read_h = Kokkos::create_mirror_view(field_read);
-            reader.Get(fieldVar, field_read_h.data(), adios2::Mode::Sync);
-            Kokkos::deep_copy(field_read, field_read_h);
+          array_t<real_t*> field_read {};
+          int              cntr = 0;
+          for (const auto& name : field_names) {
+            auto fieldVar = io.InquireVariable<real_t>(name);
+            if (fieldVar) {
+              raise::ErrorIf(fieldVar.Shape().size() != 1,
+                             fmt::format("%s is not 1D", name.c_str()),
+                             HERE);
+              auto        dims  = fieldVar.Shape();
+              std::size_t nx1_r = dims[0];
+              raise::ErrorIf((nx1_r != CEILDIV(nx1 * mpi_size, dwn1)),
+                             fmt::format("%s = %ld is not %d",
+                                         name.c_str(),
+                                         nx1_r,
+                                         CEILDIV(nx1 * mpi_size, dwn1)),
+                             HERE);
 
-            Kokkos::parallel_for(
-              "check",
-              CreateRangePolicy<Dim::_1D>({ 0 }, { l_size_dwn }),
-              Lambda(index_t i1) {
-                if (not cmp::AlmostEqual(
-                      field_read(i1),
-                      field(i1 * dwn1 + first_cell + i1min, cntr))) {
-                  Kokkos::printf("\n:::::::::::::::\nfield_read(%ld) = %f != "
-                                 "field(%ld, %d) = %f\n:::::::::::::::\n",
-                                 i1,
-                                 field_read(i1),
-                                 i1 * dwn1 + first_cell + i1min,
-                                 cntr,
-                                 field(i1 * dwn1 + first_cell + i1min, cntr));
-                  raise::KernelError(HERE, "Field is not read correctly");
-                }
-              });
-          } else {
-            raise::Error("Field not found", HERE);
+              fieldVar.SetSelection(
+                adios2::Box<adios2::Dims>({ l_corner_dwn }, { l_size_dwn }));
+              field_read        = array_t<real_t*>(name, l_size_dwn);
+              auto field_read_h = Kokkos::create_mirror_view(field_read);
+              reader.Get(fieldVar, field_read_h.data(), adios2::Mode::Sync);
+              Kokkos::deep_copy(field_read, field_read_h);
+
+              Kokkos::parallel_for(
+                "check",
+                CreateRangePolicy<Dim::_1D>({ 0 }, { l_size_dwn }),
+                Lambda(index_t i1) {
+                  if (not cmp::AlmostEqual(
+                        field_read(i1),
+                        field(i1 * dwn1 + first_cell + i1min, cntr))) {
+                    Kokkos::printf("\n:::::::::::::::\nfield_read(%ld) = %f != "
+                                   "field(%ld, %d) = %f\n:::::::::::::::\n",
+                                   i1,
+                                   field_read(i1),
+                                   i1 * dwn1 + first_cell + i1min,
+                                   cntr,
+                                   field(i1 * dwn1 + first_cell + i1min, cntr));
+                    raise::KernelError(HERE, "Field is not read correctly");
+                  }
+                });
+            } else {
+              raise::Error("Field not found", HERE);
+            }
+            ++cntr;
           }
-          ++cntr;
+          reader.EndStep();
         }
-        reader.EndStep();
+        reader.Close();
       }
-      reader.Close();
     }
 
   } catch (std::exception& e) {
@@ -183,15 +190,13 @@ auto main(int argc, char* argv[]) -> int {
     CallOnce([]() {
       cleanup();
     });
-    MPI_Finalize();
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return 1;
   }
   CallOnce([]() {
     cleanup();
   });
-  MPI_Finalize();
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
   return 0;
 }
 

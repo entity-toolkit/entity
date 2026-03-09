@@ -19,6 +19,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel::gr {
   using namespace ntt;
 
@@ -28,8 +30,9 @@ namespace kernel::gr {
    * @tparam M Metric
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasSqrtDetH<M>
   class Faraday_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, 6> Bin;

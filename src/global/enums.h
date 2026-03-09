@@ -10,12 +10,15 @@
  *                                    reflect, horizon, axis, sync
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
  *                                    custom, horizon, axis, conductor, sync
- *   - enum ntt::PrtlPusher        // boris, vay, photon, none
- *   - enum ntt::Cooling           // compton, synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
  *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
  *                                    charge, n, npart
+ *
+ *   - enum ntt::ParticlePusher    // photon, boris, vay, gca, none
+ *   - enum ntt::RadiativeDrag     // compton, synchrotron, none
+ *   - enum ntt::EmissionType      // none, synchrotron, inversecompton
+ *
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -27,16 +30,16 @@
  * example: SimEngine(SimEngine::SRPIC).to_string() [return "srpic"]
  * @note
  * To check if a string is a valid option, use the contains() function
- * example: PrtlPusher::contains("vay") == true
+ * example: PrtlBC::contains("periodic") == true
  * @note
  * To get the proper enum instance from a string, use the pick() function
- * example: PrtlPusher::pick("vay") [returns PrtlPusher(PrtlPusher::VAY)]
+ * example: PrtlBC::pick("periodic") [returns PrtlBC::PERIODIC]
  * @note
  * To get the total number of enum instances, use the total variable
- * example: Cooling::total == 2
+ * example: SimEngine::total == 2
  * @note
  * To iterate over all enum instances, use the variants array
- * example: for (Cooling c : Cooling::variants) { ... }
+ * example: for (auto s : SimEngine::variants) { ... }
  */
 
 #ifndef GLOBAL_ENUMS_H
@@ -240,42 +243,6 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct PrtlPusher : public enums_hidden::BaseEnum<PrtlPusher> {
-    static constexpr const char* label = "prtl_pusher";
-
-    enum type : uint8_t {
-      INVALID = 0,
-      BORIS   = 1,
-      VAY     = 2,
-      PHOTON  = 3,
-      NONE    = 4,
-    };
-
-    constexpr PrtlPusher(uint8_t c)
-      : enums_hidden::BaseEnum<PrtlPusher> { c } {}
-
-    static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
-  struct Cooling : public enums_hidden::BaseEnum<Cooling> {
-    static constexpr const char* label = "cooling";
-
-    enum type : uint8_t {
-      INVALID     = 0,
-      SYNCHROTRON = 1,
-      COMPTON     = 2,
-      NONE        = 3,
-    };
-
-    constexpr Cooling(uint8_t c) : enums_hidden::BaseEnum<Cooling> { c } {}
-
-    static constexpr type variants[] = { SYNCHROTRON, COMPTON, NONE };
-    static constexpr const char* lookup[] = { "synchrotron", "compton", "none" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
   struct FldsID : public enums_hidden::BaseEnum<FldsID> {
     static constexpr const char* label = "out_flds";
 
@@ -336,6 +303,91 @@ namespace ntt {
                                               "npart", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
+
+  namespace ParticlePusher {
+    enum ParticlePusherFlags_ {
+      NONE   = 0,
+      PHOTON = 1 << 0,
+      BORIS  = 1 << 1,
+      VAY    = 1 << 2,
+      GCA    = 1 << 3,
+    };
+
+    inline auto to_string(int flags) -> std::string {
+      if (flags == NONE) {
+        return "none";
+      } else {
+        std::string result = "";
+        if (flags & PHOTON) {
+          result += "photon";
+        } else if (flags & BORIS) {
+          result += "boris";
+        } else if (flags & VAY) {
+          result += "vay";
+        }
+        if (flags & GCA) {
+          if (!result.empty()) {
+            result += ",";
+          }
+          result += "gca";
+        }
+        return result;
+      }
+    }
+  } // namespace ParticlePusher
+
+  typedef int ParticlePusherFlags;
+
+  namespace RadiativeDrag {
+    enum RadiativeDragFlags_ {
+      NONE        = 0,
+      SYNCHROTRON = 1 << 0,
+      COMPTON     = 1 << 1,
+    };
+
+    inline auto to_string(int flags) -> std::string {
+      if (flags == NONE) {
+        return "none";
+      } else {
+        std::string result = "";
+        if (flags & SYNCHROTRON) {
+          result += "synchrotron";
+        }
+        if (flags & COMPTON) {
+          if (!result.empty()) {
+            result += ",";
+          }
+          result += "compton";
+        }
+        return result;
+      }
+    }
+  } // namespace RadiativeDrag
+
+  typedef int RadiativeDragFlags;
+
+  namespace EmissionType {
+    enum EmissionTypeFlag_ {
+      NONE        = 0,
+      SYNCHROTRON = 1,
+      COMPTON     = 2,
+    };
+
+    inline auto to_string(int flags) -> std::string {
+      switch (flags) {
+        case NONE:
+          return "none";
+        case SYNCHROTRON:
+          return "synchrotron";
+        case COMPTON:
+          return "compton";
+        default:
+          return "unknown";
+      }
+    }
+  } // namespace EmissionType
+
+  typedef int EmissionTypeFlag;
 
 } // namespace ntt
 

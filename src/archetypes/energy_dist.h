@@ -26,6 +26,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
@@ -33,10 +35,9 @@ namespace arch {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
-    static constexpr bool is_energy_dist { true };
-    static_assert(M::is_metric, "M must be a metric class");
 
     EnergyDistribution(const M& metric) : metric { metric } {}
 

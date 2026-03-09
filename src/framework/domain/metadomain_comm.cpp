@@ -28,12 +28,12 @@ namespace ntt {
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvRanks(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction) -> std::pair<address_t, address_t> {
-    Domain<S, M>* send_to_nghbr_ptr   = nullptr;
-    Domain<S, M>* recv_from_nghbr_ptr = nullptr;
+  auto GetSendRecvRanks(const Metadomain<S, M>* const metadomain,
+                        Domain<S, M>&                 domain,
+                        dir::direction_t<M::Dim>      direction)
+    -> std::pair<address_t, address_t> {
+    const Domain<S, M>* send_to_nghbr_ptr   = nullptr;
+    const Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
     // can coincide with the current domain if periodic
     if (domain.mesh.flds_bc_in(direction) == FldsBC::PERIODIC) {
@@ -111,11 +111,11 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  auto GetSendRecvParams(
-    Metadomain<S, M>*        metadomain,
-    Domain<S, M>&            domain,
-    dir::direction_t<M::Dim> direction,
-    bool synchronize) -> std::pair<comm_params_t, comm_params_t> {
+  auto GetSendRecvParams(const Metadomain<S, M>* const metadomain,
+                         Domain<S, M>&                 domain,
+                         dir::direction_t<M::Dim>      direction,
+                         bool                          synchronize)
+    -> std::pair<comm_params_t, comm_params_t> {
     const auto [send_indrank,
                 recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
     const auto [send_ind, send_rank] = send_indrank;
@@ -197,11 +197,9 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain, CommTags tags) {
-    // const auto comm_fields = (tags & Comm::E) or (tags & Comm::B) or
-    //                          (tags & Comm::J) or (tags & Comm::D) or
-    //                          (tags & Comm::D0) or (tags & Comm::B0) or
-    //                          (tags & Comm::H);
+    requires IsCompatibleWithMetadomain<M>
+  void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain,
+                                           CommTags      tags) const {
     const auto comm_em = ((S == SimEngine::SRPIC) and
                           ((tags & Comm::E) or (tags & Comm::B))) or
                          ((S == SimEngine::GRPIC) and
@@ -417,9 +415,10 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::SynchronizeFields(Domain<S, M>&        domain,
-                                           CommTags             tags,
-                                           const range_tuple_t& components) {
+    requires IsCompatibleWithMetadomain<M>
+  void Metadomain<S, M>::SynchronizeFields(Domain<S, M>& domain,
+                                           CommTags      tags,
+                                           const range_tuple_t& components) const {
     const bool comm_j    = (tags & Comm::J);
     const bool comm_bckp = (tags & Comm::Bckp);
     const bool comm_buff = (tags & Comm::Buff);
@@ -573,7 +572,8 @@ namespace ntt {
   }
 
   template <SimEngine::type S, class M>
-  void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) {
+    requires IsCompatibleWithMetadomain<M>
+  void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) const {
 #if defined(MPI_ENABLED)
     logger::Checkpoint("Communicating particles\n", HERE);
     for (auto& species : domain.species) {
@@ -663,21 +663,14 @@ namespace ntt {
 #endif
   }
 
-  template <SimEngine::type S, class M>
-  void Metadomain<S, M>::RemoveDeadParticles(Domain<S, M>& domain) {
-    for (auto& species : domain.species) {
-      species.RemoveDead();
-    }
-  }
-
 #define METADOMAIN_COMM(S, M, D)                                               \
   template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,       \
-                                                       CommTags);              \
+                                                       CommTags) const;        \
   template void Metadomain<S, M<D>>::SynchronizeFields(Domain<S, M<D>>&,       \
                                                        CommTags,               \
-                                                       const range_tuple_t&);  \
-  template void Metadomain<S, M<D>>::CommunicateParticles(Domain<S, M<D>>&);   \
-  template void Metadomain<S, M<D>>::RemoveDeadParticles(Domain<S, M<D>>&);
+                                                       const range_tuple_t&)   \
+    const;                                                                     \
+  template void Metadomain<S, M<D>>::CommunicateParticles(Domain<S, M<D>>&) const;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
 

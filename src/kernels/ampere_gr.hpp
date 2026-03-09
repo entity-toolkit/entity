@@ -20,6 +20,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 namespace kernel::gr {
   using namespace ntt;
 
@@ -29,8 +31,9 @@ namespace kernel::gr {
    * @tparam M Metric.
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
   class Ampere_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const ndfield_t<D, 6> Din;
@@ -73,18 +76,14 @@ namespace kernel::gr {
 
         if ((i2 == i2min) && is_axis_i2min) {
           // theta = 0
-          const real_t inv_polar_area_pH { ONE / metric.polar_area(i1_ + HALF) };
           const real_t inv_sqrt_detH_0pH { ONE / metric.sqrt_det_h({ i1_, HALF }) };
-          Dout(i1, i2, em::dx1) = Din(i1, i2, em::dx1) +
-                                  inv_polar_area_pH * coeff * H(i1, i2, em::hx3);
+          Dout(i1, i2, em::dx1) = Din(i1, i2 + 1, em::dx1);
           Dout(i1, i2, em::dx2) = Din(i1, i2, em::dx2) +
                                   coeff * inv_sqrt_detH_0pH *
                                     (H(i1 - 1, i2, em::hx3) - H(i1, i2, em::hx3));
         } else if ((i2 == i2max) && is_axis_i2max) {
           // theta = pi
-          const real_t inv_polar_area_pH { ONE / metric.polar_area(i1_ + HALF) };
-          Dout(i1, i2, em::dx1) = Din(i1, i2, em::dx1) - inv_polar_area_pH * coeff *
-                                                           H(i1, i2 - 1, em::hx3);
+          Dout(i1, i2, em::dx1) = Din(i1, i2 - 1, em::dx1);
         } else {
           const real_t inv_sqrt_detH_00 { ONE / metric.sqrt_det_h({ i1_, i2_ }) };
           const real_t inv_sqrt_detH_pH0 { ONE / metric.sqrt_det_h(
@@ -110,6 +109,8 @@ namespace kernel::gr {
    * @brief Add the currents to the D field with the appropriate conversion.
    */
   template <class M>
+    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
+             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
   class CurrentsAmpere_kernel {
     static constexpr auto D = M::Dim;
 

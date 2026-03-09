@@ -12,7 +12,7 @@
 #define OUTPUT_UTILS_ATTR_WRITER_H
 
 #include <adios2.h>
-#include <adios2/cxx11/KokkosView.h>
+#include <adios2/cxx/KokkosView.h>
 
 #include <any>
 #include <functional>

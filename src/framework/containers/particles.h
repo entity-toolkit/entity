@@ -5,6 +5,9 @@
  *   - ntt::Particles<> : ntt::ParticleSpecies
  * @cpp:
  *   - particles.cpp
+ *   - particles_io.cpp
+ *   - particles_comm.cpp
+ *   - particles_sort.cpp
  * @macros:
  *   - MPI_ENABLED
  */
@@ -21,6 +24,7 @@
 #include "utils/formatting.h"
 
 #include "framework/containers/species.h"
+#include "framework/domain/grid.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -83,24 +87,28 @@ namespace ntt {
      * @param m The mass of the species
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
-     * @param pusher The pusher assigned for the species
+     * @param clearing_interval The interval for clearing the particles
+     * @param spatial_sorting_interval The interval for spatial sorting of the particles
+     * @param particle_pusher_flags The pusher(s) assigned for the species
      * @param use_tracking Use particle tracking for the species
-     * @param use_gca Use hybrid GCA pusher for the species
-     * @param cooling The cooling mechanism assigned for the species
+     * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
+     * @param emission_policy_flag The emission policy assigned for the species
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
-    Particles(spidx_t            index,
-              const std::string& label,
-              float              m,
-              float              ch,
-              npart_t            maxnpart,
-              const PrtlPusher&  pusher,
-              bool               use_gca,
-              bool               use_tracking,
-              const Cooling&     cooling,
-              unsigned short     npld_r = 0,
-              unsigned short     npld_i = 0);
+    Particles(spidx_t             index,
+              const std::string&  label,
+              float               m,
+              float               ch,
+              npart_t             maxnpart,
+              timestep_t          clearing_interval,
+              timestep_t          spatial_sorting_interval,
+              ParticlePusherFlags particle_pusher_flags,
+              bool                use_tracking,
+              RadiativeDragFlags  radiative_drag_flags,
+              EmissionTypeFlag    emission_policy_flag,
+              unsigned short      npld_r,
+              unsigned short      npld_i);
 
     /**
      * @brief Constructor for the particle container
@@ -113,10 +121,12 @@ namespace ntt {
                   spec.mass(),
                   spec.charge(),
                   spec.maxnpart(),
+                  spec.clearing_interval(),
+                  spec.spatial_sorting_interval(),
                   spec.pusher(),
                   spec.use_tracking(),
-                  spec.use_gca(),
-                  spec.cooling(),
+                  spec.radiative_drag_flags(),
+                  spec.emission_policy_flag(),
                   spec.npld_r(),
                   spec.npld_i()) {}
 
@@ -248,6 +258,12 @@ namespace ntt {
      * @brief Move dead particles to the end of arrays
      */
     void RemoveDead();
+
+    /**
+     * @brief Sort particles spatially by their cell indices
+     * @param grid The grid object to get the cell information for sorting
+     */
+    void SortSpatially(const Grid<D>&);
 
     /**
      * @brief Copy particle data from device to host.

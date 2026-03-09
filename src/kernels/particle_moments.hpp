@@ -18,6 +18,8 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "metrics/traits.h"
+
 #include <vector>
 
 namespace kernel {
@@ -35,8 +37,10 @@ namespace kernel {
   }
 
   template <SimEngine::type S, class M, FldsID::type F, unsigned short N>
+    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
   class ParticleMoments_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     static_assert(!((S == SimEngine::GRPIC) && (F == FldsID::V)),

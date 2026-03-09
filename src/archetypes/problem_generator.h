@@ -23,15 +23,16 @@
 #include "enums.h"
 #include "global.h"
 
-#include "framework/parameters.h"
+#include "metrics/traits.h"
+
+#include "framework/parameters/parameters.h"
 
 namespace arch {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
+    requires metric::traits::HasD<M> and metric::traits::HasCoordType<M>
   struct ProblemGenerator {
-    static_assert(M::is_metric, "M must be a metric class");
-    static constexpr bool      is_pgen { true };
     static constexpr Dimension D { M::Dim };
     static constexpr Coord     C { M::CoordType };
 

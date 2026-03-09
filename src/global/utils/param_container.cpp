@@ -5,7 +5,7 @@
   #include "global.h"
 
   #include <adios2.h>
-  #include <adios2/cxx11/KokkosView.h>
+  #include <adios2/cxx/KokkosView.h>
 
   #include <any>
   #include <functional>
@@ -235,7 +235,6 @@ namespace prm {
     register_write_function<ntt::Coord>();
     register_write_function<ntt::Metric>();
     register_write_function<ntt::SimEngine>();
-    register_write_function<ntt::PrtlPusher>();
 
     register_write_function_for_pair<float>();
     register_write_function_for_pair<double>();
@@ -254,7 +253,6 @@ namespace prm {
     register_write_function_for_pair<ntt::Coord>();
     register_write_function_for_pair<ntt::Metric>();
     register_write_function_for_pair<ntt::SimEngine>();
-    register_write_function_for_pair<ntt::PrtlPusher>();
 
     register_write_function_for_vector<float>();
     register_write_function_for_vector<double>();
@@ -273,7 +271,6 @@ namespace prm {
     register_write_function_for_vector<ntt::Coord>();
     register_write_function_for_vector<ntt::Metric>();
     register_write_function_for_vector<ntt::SimEngine>();
-    register_write_function_for_vector<ntt::PrtlPusher>();
 
     register_write_function_for_vector_of_pair<float>();
     register_write_function_for_vector_of_pair<double>();
@@ -292,7 +289,6 @@ namespace prm {
     register_write_function_for_vector_of_pair<ntt::Coord>();
     register_write_function_for_vector_of_pair<ntt::Metric>();
     register_write_function_for_vector_of_pair<ntt::SimEngine>();
-    register_write_function_for_vector_of_pair<ntt::PrtlPusher>();
 
     register_write_function_for_vector_of_vector<float>();
     register_write_function_for_vector_of_vector<double>();
@@ -311,7 +307,6 @@ namespace prm {
     register_write_function_for_vector_of_vector<ntt::Coord>();
     register_write_function_for_vector_of_vector<ntt::Metric>();
     register_write_function_for_vector_of_vector<ntt::SimEngine>();
-    register_write_function_for_vector_of_vector<ntt::PrtlPusher>();
 
     register_write_function_for_dict<float>();
     register_write_function_for_dict<double>();
