@@ -79,17 +79,21 @@ namespace stats {
 
   void Writer::writeHeader() {
     CallOnce(
-      [](auto& fname, auto& stat_writers) {
+      [this](auto& fname, auto& stat_writers) {
         std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << std::setw(14) << "step" << "," << std::setw(14) << "time"
+        StatsOut << std::setw(io_precision + 8)
+                 << "step"
+                 << ","
+                 << std::setw(io_precision + 8)
+                 << "time"
                  << ",";
         for (const auto& stat : stat_writers) {
           if (stat.is_vector()) {
             for (auto i { 0u }; i < stat.comp.size(); ++i) {
-              StatsOut << std::setw(14) << stat.name(i) << ",";
+              StatsOut << std::setw(io_precision + 8) << stat.name(i) << ",";
             }
           } else {
-            StatsOut << std::setw(14) << stat.name() << ",";
+            StatsOut << std::setw(io_precision + 8) << stat.name() << ",";
           }
         }
         StatsOut << std::endl;
