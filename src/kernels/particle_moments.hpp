@@ -237,7 +237,6 @@ namespace kernel {
         } else {
           // GR: Eckart frame flux N^μ = m * u^μ / u^0
           static_assert(D != Dim::_1D, "GRPIC 1D");
-          vec_t<Dim::_3D> u_Phys { ZERO };
           real_t          u0 { ZERO };
           coord_t<D> x_Code { ZERO };
           x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
@@ -629,16 +628,6 @@ namespace kernel {
       }
     }
 
-    Inline real_t getTComp(index_t i1, index_t i2, index_t i3, int i, int j) const {
-      if (i > j) { return getTComp(i1, i2, i3, j, i); }
-      int idx = i * 4 - i * (i - 1) / 2 + j - i;
-      if constexpr (D == Dim::_3D) {
-        return T_in(i1, i2, i3, t_comp[idx]);
-      } else {
-        return T_in(i1, i2, t_comp[idx]);
-      }
-    }
-
     Inline void setTComp(index_t i1, index_t i2, int i, int j, real_t val) const {
       if (i > j) { setTComp(i1, i2, j, i, val); return; }
       int idx = i * 4 - i * (i - 1) / 2 + j - i;
@@ -646,16 +635,6 @@ namespace kernel {
         T_out(i1, i2, out_comp[idx]) = val;
       } else {
         T_out(i1, i2, 0, out_comp[idx]) = val;
-      }
-    }
-
-    Inline void setTComp(index_t i1, index_t i2, index_t i3, int i, int j, real_t val) const {
-      if (i > j) { setTComp(i1, i2, i3, j, i, val); return; }
-      int idx = i * 4 - i * (i - 1) / 2 + j - i;
-      if constexpr (D == Dim::_3D) {
-        T_out(i1, i2, i3, out_comp[idx]) = val;
-      } else {
-        T_out(i1, i2, out_comp[idx]) = val;
       }
     }
 
