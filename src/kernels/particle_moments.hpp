@@ -661,7 +661,7 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        coord_t<D> x { static_cast<real_t>(i1) + HALF, static_cast<real_t>(i2) + HALF };
+        coord_t<D> x { COORD(i1) + HALF, COORD(i2) + HALF };
 
         // ── 1. Load U (code contravariant) and lower ─────────────────────────
         real_t U[4] { U_in(i1, i2, u_comp[0]), U_in(i1, i2, u_comp[1]),
