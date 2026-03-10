@@ -83,6 +83,7 @@ namespace kernel::sr {
     prm::Parameters gca_params;
     prm::Parameters radiative_drag_params;
     prm::Parameters atmosphere_params;
+    prm::Parameters piston_params; // ToDo!
   };
 
   struct PusherArrays {
@@ -151,6 +152,9 @@ namespace kernel::sr {
     bool      is_reflect_i2min { false }, is_reflect_i2max { false };
     bool      is_reflect_i3min { false }, is_reflect_i3max { false };
     bool      is_axis_i2min { false }, is_axis_i2max { false };
+
+    bool piston_active {false};
+    const real_t piston_v;
 
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
@@ -282,7 +286,9 @@ namespace kernel::sr {
         is_periodic_i3max = (pusher_params.boundaries[2].second == PrtlBC::PERIODIC);
         is_reflect_i3min = (pusher_params.boundaries[2].first == PrtlBC::REFLECT);
         is_reflect_i3max = (pusher_params.boundaries[2].second == PrtlBC::REFLECT);
-      }
+      },
+      piston_active { (pusher_params.piston_active) },
+      piston_v { (piston_active) ? pusher_params.piston_velocity : ZERO }
     }
 
     Inline void operator()(index_t p) const {
@@ -555,6 +561,12 @@ namespace kernel::sr {
           from_Xi_to_i_di(xp[2], i3(p), dx3(p));
         }
       }
+
+      if (piston_active) {
+        // contribution of piston velocity to position push
+        Piston(p, xp, massive);
+      }
+
       boundaryConditions(p, xp);
     }
 
@@ -1260,6 +1272,35 @@ namespace kernel::sr {
           }
         }
       }
+    }
+
+    // Update particle position and velocity contributed by moving piston
+    Inline void Piston(index_t p, coord_t<M::PrtlDim>& xp, bool massive) const {
+      // ToDo: Check for global position instead of local position, in case of domain decomposition
+      const auto piston_pos = piston_velocity * time;
+      if (piston_pos >= xp[0]) {
+        // const real_t dt_inv_energy {
+        //   massive
+        //     ? (dt / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+        //     : (dt / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+        // };
+
+        // step 1: calculate the time for the particle to reach the piston
+        // ToDo: correct time calculation in relativistic case
+        const real_t dt_to_piston = (piston_pos - xp[0]) / ux1(p);
+        // step 2: calculate remaining time after the collision
+        const real_t remaining_dt = dt - dt_to_piston;
+        // step 3: update the particle's velocity and position after the collision
+        // ToDo: correct velocity update in relativistic case
+        ux1(p) = TWO * piston_velocity + ux1(p);
+        const real_t remaining_dt_inv_energy {
+          massive
+            ? (dt / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+            : (dt / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
+        };
+        xp[0] = piston_pos + ux1(p) * remaining_dt_inv_energy;
+      }
+      from_Xi_to_i_di(xp[0], i1(p), dx1(p));
     }
 
     // Extra
