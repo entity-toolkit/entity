@@ -51,22 +51,8 @@ namespace out {
         // SR: always 3-velocity components
         comp = { { 1 }, { 2 }, { 3 } };
       } else {
-        // GR: 4-velocity components (Eckart frame)
-        // Check if user specified components
-        if (name.length() > 1) {
-          comp = InterpretComponents({ name.substr(1, 1) });
-          // Validate component indices are in [0,3] for 4-vector
-          for (auto& c : comp) {
-            for (auto& idx : c) {
-              if (idx > 3) {
-                raise::Error("Invalid component index for 4-velocity (must be 0-3)", HERE);
-              }
-            }
-          }
-        } else {
-          // No component specified, output all 4
-          comp = { { 0 }, { 1 }, { 2 }, { 3 } };
-        }
+        // GR: always output all 4 Eckart velocity components (u^0, u^1, u^2, u^3)
+        comp = { { 0 }, { 1 }, { 2 }, { 3 } };
       }
     } else if (id() == FldsID::A) {
       // only write A3
