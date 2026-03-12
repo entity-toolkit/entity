@@ -237,7 +237,6 @@ namespace kernel {
         } else {
           // GR: Eckart frame flux N^μ = m * u^μ / u^0
           static_assert(D != Dim::_1D, "GRPIC 1D");
-          vec_t<Dim::_3D> u_Phys { ZERO };
           real_t          u0 { ZERO };
           coord_t<D> x_Code { ZERO };
           x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
