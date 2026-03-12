@@ -650,11 +650,24 @@ namespace kernel {
         metric.template transform_4d<Idx::U, Idx::D>(x, Uup4, Udn4);
         real_t Ud[4] { Udn4[0], Udn4[1], Udn4[2], Udn4[3] };
 
+        // Check u^μ u_μ = -1 (timelike); normalize if needed
+        real_t u2 = U[0]*Ud[0] + U[1]*Ud[1] + U[2]*Ud[2] + U[3]*Ud[3];
+        if (u2 >= ZERO) {
+          for (int a = 0; a < 4; ++a)
+            for (int b = a; b < 4; ++b)
+              setTComp(i1, i2, a, b, ZERO);
+          return;
+        }
+        if (!cmp::AlmostZero(u2 + ONE)) {
+          real_t uni = ONE / math::sqrt(-u2);
+          for (int mu = 0; mu < 4; ++mu) { U[mu] *= uni; Ud[mu] *= uni; }
+        }
+
         // ── 2. Metric quantities ──────────────────────────────────────────────
         // sqrt_g  = sqrt(det h_code), sqrt_mg = sqrt(-g_code) = sqrt_g / alpha
         real_t sq_g  = metric.sqrt_det_h(x);
         real_t al    = metric.alpha(x);
-        real_t sq_mg = sq_g / al;
+        real_t sq_mg = al * sq_g;
 
         // ── 3. Convert T from physical to code basis ──────────────────────────
         // T deposited with physical spatial indices (u^i_phys); u^0 is code time.
@@ -681,19 +694,60 @@ namespace kernel {
           T[i][1] = row_code[0]; T[i][2] = row_code[1]; T[i][3] = row_code[2];
         }
 
-        // ── 4. Magnetic 4-vector b^μ (code basis) ────────────────────────────
-        // From F_{ij}_code = ε_{ijk} B^k sq_g and F_{0i}_code = E_i_code:
-        // b^μ = (1/2)/sq_mg * ε^{μνρσ} Ud_ν F_{ρσ}  (derived analytically)
+        // ── 4. Levi-Civita helpers ────────────────────────────────────────────
+        auto eps4 = [](int a, int b, int c, int d) -> int {
+          int p[4] = { a, b, c, d };
+          for (int i = 0; i < 4; ++i)
+            for (int j = i + 1; j < 4; ++j)
+              if (p[i] == p[j]) return 0;
+          int sign = 1;
+          for (int i = 0; i < 4; ++i)
+            for (int j = i + 1; j < 4; ++j)
+              if (p[i] > p[j]) sign = -sign;
+          return sign;
+        };
+
+        // ── 5. Magnetic 4-vector b^μ via F_{μν} and ε^{μνρσ} ────────────────
+        // b^μ = (1/2)/sqrt(-g) * ε_{symbol}^{μνρσ} u_ν F_{ρσ}
         real_t B[3] { EM_in(i1, i2, em::bx1), EM_in(i1, i2, em::bx2),
                       EM_in(i1, i2, em::bx3) };
         real_t E[3] { AUX_in(i1, i2, em::ex1), AUX_in(i1, i2, em::ex2),
                       AUX_in(i1, i2, em::ex3) };
 
-        real_t bv[4];
-        bv[0] = al * (Ud[1] * B[0] + Ud[2] * B[1] + Ud[3] * B[2]);
-        bv[1] = -al * Ud[0] * B[0] + (Ud[2] * E[2] - Ud[3] * E[1]) / sq_mg;
-        bv[2] = -al * Ud[0] * B[1] - (Ud[1] * E[2] - Ud[3] * E[0]) / sq_mg;
-        bv[3] = -al * Ud[0] * B[2] + (Ud[1] * E[1] - Ud[2] * E[0]) / sq_mg;
+        // Build F_{μν}: F_{ij} = sq_g * eps3_{ijk} * B^k_code; F_{i0} = E_i_code
+        real_t Fdn[4][4];
+        for (int mu = 0; mu < 4; ++mu) for (int nu = 0; nu < 4; ++nu) Fdn[mu][nu] = ZERO;
+        for (int i = 1; i <= 3; ++i) {
+          Fdn[i][0] =  E[i - 1];
+          Fdn[0][i] = -E[i - 1];
+        }
+        for (int i = 1; i <= 3; ++i)
+          for (int j = 1; j <= 3; ++j) {
+            real_t sum = ZERO;
+            for (int k = 1; k <= 3; ++k) {
+              int eps3 = 0;
+              if ((i==1&&j==2&&k==3)||(i==2&&j==3&&k==1)||(i==3&&j==1&&k==2)) eps3 = 1;
+              else if ((i==1&&j==3&&k==2)||(i==2&&j==1&&k==3)||(i==3&&j==2&&k==1)) eps3 = -1;
+              if (eps3) sum += (real_t)eps3 * B[k - 1];
+            }
+            Fdn[i][j] = sq_g * sum;
+          }
+
+        real_t bv[4] { ZERO, ZERO, ZERO, ZERO };
+        for (int mu = 0; mu < 4; ++mu) {
+          real_t sum = ZERO;
+          for (int nu = 0; nu < 4; ++nu)
+            for (int ro = 0; ro < 4; ++ro)
+              for (int si = 0; si < 4; ++si) {
+                int sgn = eps4(mu, nu, ro, si);
+                if (!sgn) continue;
+                sum += (real_t)sgn * Ud[nu] * Fdn[ro][si];
+              }
+          bv[mu] = HALF * sum / sq_mg;
+        }
+        // Enforce b·u = 0 exactly
+        real_t uDotb = Ud[0]*bv[0] + Ud[1]*bv[1] + Ud[2]*bv[2] + Ud[3]*bv[3];
+        for (int mu = 0; mu < 4; ++mu) bv[mu] += uDotb * U[mu];
 
         // Lower b, compute norm, normalize
         vec_t<Dim::_4D> bup4 { bv[0], bv[1], bv[2], bv[3] };
@@ -712,46 +766,59 @@ namespace kernel {
         for (int i = 0; i < 4; ++i) { bv[i] *= bni; bdn4[i] *= bni; }
         real_t bd[4] { bdn4[0], bdn4[1], bdn4[2], bdn4[3] };
 
-        // ── 6. Perpendicular vector p (spatial 3D cross product in code basis) ─
-        // p_i_code = ε_{ijk} U^j b^k sq_g  (spatial i,j,k ∈ {1,2,3})
-        // Then raise with code metric; p^0 = g^{0i} p_i ≠ 0 after raising.
-        real_t pdn[4] { ZERO,
-                        (U[2] * bv[3] - U[3] * bv[2]) * sq_g,
-                        (U[3] * bv[1] - U[1] * bv[3]) * sq_g,
-                        (U[1] * bv[2] - U[2] * bv[1]) * sq_g };
-        vec_t<Dim::_4D> pdn4 { pdn[0], pdn[1], pdn[2], pdn[3] };
-        vec_t<Dim::_4D> pup4 { ZERO };
-        metric.template transform_4d<Idx::D, Idx::U>(x, pdn4, pup4);
-        real_t pv[4] { pup4[0], pup4[1], pup4[2], pup4[3] };
-        // Re-lower for accurate norm
-        vec_t<Dim::_4D> pdn4b { ZERO };
-        metric.template transform_4d<Idx::U, Idx::D>(x, pup4, pdn4b);
-        real_t p2 = pv[0]*pdn4b[0] + pv[1]*pdn4b[1] + pv[2]*pdn4b[2] + pv[3]*pdn4b[3];
+        // ── 6. Perpendicular vector p: Gram-Schmidt with best seed ───────────
+        // Pick seed from {e_1, e_2, e_3} most orthogonal to span{u, b}
+        real_t best_p2 = -ONE;
+        real_t pv[4] { ZERO, ZERO, ZERO, ZERO };
+        real_t pd[4] { ZERO, ZERO, ZERO, ZERO };
+        const real_t seeds[3][4] = {
+          { ZERO, ONE,  ZERO, ZERO },
+          { ZERO, ZERO, ONE,  ZERO },
+          { ZERO, ZERO, ZERO, ONE  }
+        };
+        for (int sidx = 0; sidx < 3; ++sidx) {
+          const real_t* k = seeds[sidx];
+          real_t udotk = Ud[0]*k[0] + Ud[1]*k[1] + Ud[2]*k[2] + Ud[3]*k[3];
+          real_t bdotk = bd[0]*k[0] + bd[1]*k[1] + bd[2]*k[2] + bd[3]*k[3];
+          real_t ptmp[4];
+          for (int mu = 0; mu < 4; ++mu)
+            ptmp[mu] = k[mu] + udotk * U[mu] - bdotk * bv[mu];
+          vec_t<Dim::_4D> pup_t { ptmp[0], ptmp[1], ptmp[2], ptmp[3] };
+          vec_t<Dim::_4D> pdn_t { ZERO };
+          metric.template transform_4d<Idx::U, Idx::D>(x, pup_t, pdn_t);
+          real_t p2 = ptmp[0]*pdn_t[0] + ptmp[1]*pdn_t[1]
+                    + ptmp[2]*pdn_t[2] + ptmp[3]*pdn_t[3];
+          if (p2 > best_p2) {
+            best_p2 = p2;
+            for (int mu = 0; mu < 4; ++mu) {
+              pv[mu] = ptmp[mu];
+              pd[mu] = pdn_t[mu];
+            }
+          }
+        }
 
-        if (cmp::AlmostZero(p2) || p2 <= ZERO) {
+        if (cmp::AlmostZero(best_p2) || best_p2 <= ZERO) {
           for (int i = 0; i < 4; ++i)
             for (int j = i; j < 4; ++j)
               setTComp(i1, i2, i, j, ZERO);
           return;
         }
-        real_t pni = ONE / math::sqrt(p2);
-        for (int i = 0; i < 4; ++i) { pv[i] *= pni; pdn4b[i] *= pni; }
-        real_t pd[4] { pdn4b[0], pdn4b[1], pdn4b[2], pdn4b[3] };
+        real_t pni = ONE / math::sqrt(best_p2);
+        for (int mu = 0; mu < 4; ++mu) { pv[mu] *= pni; pd[mu] *= pni; }
 
-        // ── 7. s vector: 4D cross product s_μ = ε_{μνρσ} U^ν P^ρ B^σ sq_mg ──
-        real_t sdn[4];
-        sdn[0] = sq_mg * ( U[1]*(pv[2]*bv[3] - pv[3]*bv[2])
-                         - U[2]*(pv[1]*bv[3] - pv[3]*bv[1])
-                         + U[3]*(pv[1]*bv[2] - pv[2]*bv[1]) );
-        sdn[1] = sq_mg * ( -U[0]*(pv[2]*bv[3] - pv[3]*bv[2])
-                          + U[2]*(pv[0]*bv[3] - pv[3]*bv[0])
-                          - U[3]*(pv[0]*bv[2] - pv[2]*bv[0]) );
-        sdn[2] = sq_mg * (  U[0]*(pv[1]*bv[3] - pv[3]*bv[1])
-                          - U[1]*(pv[0]*bv[3] - pv[3]*bv[0])
-                          + U[3]*(pv[0]*bv[1] - pv[1]*bv[0]) );
-        sdn[3] = sq_mg * ( -U[0]*(pv[1]*bv[2] - pv[2]*bv[1])
-                          + U[1]*(pv[0]*bv[2] - pv[2]*bv[0])
-                          - U[2]*(pv[0]*bv[1] - pv[1]*bv[0]) );
+        // ── 7. s vector: s_μ = sqrt(-g) * ε_{μνρσ} U^ν p^ρ b^σ ─────────────
+        real_t sdn[4] { ZERO, ZERO, ZERO, ZERO };
+        for (int mu = 0; mu < 4; ++mu) {
+          real_t sum = ZERO;
+          for (int nu = 0; nu < 4; ++nu)
+            for (int ro = 0; ro < 4; ++ro)
+              for (int si = 0; si < 4; ++si) {
+                int sgn = eps4(mu, nu, ro, si);
+                if (!sgn) continue;
+                sum += (real_t)sgn * U[nu] * pv[ro] * bv[si];
+              }
+          sdn[mu] = sq_mg * sum;
+        }
         vec_t<Dim::_4D> sdn4 { sdn[0], sdn[1], sdn[2], sdn[3] };
         vec_t<Dim::_4D> sup4 { ZERO };
         metric.template transform_4d<Idx::D, Idx::U>(x, sdn4, sup4);

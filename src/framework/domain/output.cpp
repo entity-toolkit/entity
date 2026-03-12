@@ -834,19 +834,30 @@ namespace ntt {
               }
             }
 
-            // Compute all 4 U components into bckp at addresses 0-3
-            // Must zero each slot first — bckp[0-3] hold T residuals from the loop above
+            auto V_Eckart = [&]() {
+              if constexpr (M::Dim == Dim::_2D) {
+                return ndfield_t<Dim::_2D, 6> { "V_Eckart",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS };
+              } else {  // _3D
+                return ndfield_t<Dim::_3D, 6> { "V_Eckart",
+                                                  n_act[0] + 2 * N_GHOSTS,
+                                                  n_act[1] + 2 * N_GHOSTS,
+                                                  n_act[2] + 2 * N_GHOSTS };
+              }
+            }();
+            // Compute all 4 U components into V_Eckart at addresses 0-3
             std::vector<idx_t> u_addr(4);
             for (auto i = 0; i < 4; ++i) {
               u_addr[i] = static_cast<idx_t>(i);
               if constexpr (M::Dim == Dim::_2D) {
                 Kokkos::deep_copy(
-                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                  Kokkos::subview(V_Eckart, Kokkos::ALL, Kokkos::ALL,
                                   static_cast<int>(i)),
                   static_cast<real_t>(0));
               } else {
                 Kokkos::deep_copy(
-                  Kokkos::subview(local_domain->fields.bckp, Kokkos::ALL, Kokkos::ALL,
+                  Kokkos::subview(V_Eckart, Kokkos::ALL, Kokkos::ALL,
                                   Kokkos::ALL, static_cast<int>(i)),
                   static_cast<real_t>(0));
               }
@@ -855,20 +866,42 @@ namespace ntt {
                                               local_domain->species,
                                               fld.species,
                                               { { static_cast<unsigned short>(i) } },
-                                              local_domain->fields.bckp,
+                                              V_Eckart,
                                               u_addr[i]);
             }
-            SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
+            // SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
 
             // Normalize U (4-velocity)
             Kokkos::parallel_for("Normalize4VelocityByNorm_FluidFrame",
                                  local_domain->mesh.rangeActiveCells(),
                                  kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(
-                                   local_domain->fields.bckp,
-                                   local_domain->fields.bckp,
+                                   V_Eckart,
+                                   V_Eckart,
                                    u_addr[0], u_addr[1], u_addr[2], u_addr[3],
                                    local_domain->mesh.metric));
             SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
+
+            // Interpolate EM fields to cell centers into bckp (code basis, no conversion)
+            list_t<idx_t, 3> comp_from_to_em = { 3, 4, 5 };
+            Kokkos::parallel_for("FieldsToPhys",
+                                 local_domain->mesh.rangeActiveCells(),
+                                 kernel::FieldsToPhys_kernel<M, 6, 6>(
+                                   local_domain->fields.em,
+                                   local_domain->fields.bckp,
+                                   comp_from_to_em,
+                                   comp_from_to_em,
+                                   PrepareOutput::InterpToCellCenterFromFaces,
+                                   local_domain->mesh.metric));
+            list_t<idx_t, 3> comp_from_to_aux = { 0, 1, 2 };
+            Kokkos::parallel_for("FieldsToPhys",
+                                 local_domain->mesh.rangeActiveCells(),
+                                 kernel::FieldsToPhys_kernel<M, 6, 6>(
+                                   local_domain->fields.aux,
+                                   local_domain->fields.bckp,
+                                   comp_from_to_aux,
+                                   comp_from_to_aux,
+                                   PrepareOutput::InterpToCellCenterFromEdges,
+                                   local_domain->mesh.metric));
 
             // Compute 10 components of fluid-frame tensor
             Kokkos::parallel_for("FluidFrameStressEnergy_ff",
@@ -876,9 +909,9 @@ namespace ntt {
                                  kernel::FluidFrameStressEnergy_kernel<
                                    M::Dim, M, 10, 6, 6, 6>(
                                    T_input,
+                                   V_Eckart,
                                    local_domain->fields.bckp,
-                                   local_domain->fields.em,
-                                   local_domain->fields.aux,
+                                   local_domain->fields.bckp,
                                    T_ff,
                                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,  // T input components
                                    static_cast<unsigned short>(u_addr[0]),
