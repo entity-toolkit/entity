@@ -486,25 +486,6 @@ namespace ntt {
                                                  {},
                                                  local_domain->fields.bckp,
                                                  c);
-            } else if (fld.id() == FldsID::V) {
-              if constexpr (S == SimEngine::SRPIC) {
-                ComputeMoments<S, M, FldsID::V>(params,
-                                                local_domain->mesh,
-                                                local_domain->species,
-                                                fld.species,
-                                                fld.comp[0],
-                                                local_domain->fields.bckp,
-                                                c);
-              } else if constexpr (S == SimEngine::GRPIC) {
-                // Single component of 4-velocity (user requested e.g., "v_0")
-                ComputeMoments<S, M, FldsID::V>(params,
-                                                local_domain->mesh,
-                                                local_domain->species,
-                                                fld.species,
-                                                fld.comp[0],
-                                                local_domain->fields.bckp,
-                                                c);
-              }
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
@@ -576,24 +557,13 @@ namespace ntt {
                 raise::ErrorIf(fld.comp[i].size() != 1,
                                "Wrong # of components requested for 3vel",
                                HERE);
-                if constexpr (S == SimEngine::SRPIC) {
-                  ComputeMoments<S, M, FldsID::V>(params,
-                                                  local_domain->mesh,
-                                                  local_domain->species,
-                                                  fld.species,
-                                                  fld.comp[i],
-                                                  local_domain->fields.bckp,
-                                                  c);
-                } else if constexpr (S == SimEngine::GRPIC) {
-                  // Single component from 3-vector spec (legacy), deposit as part of 4-vector
-                  ComputeMoments<S, M, FldsID::V>(params,
-                                                  local_domain->mesh,
-                                                  local_domain->species,
-                                                  fld.species,
-                                                  fld.comp[i],
-                                                  local_domain->fields.bckp,
-                                                  c);
-                }
+                ComputeMoments<S, M, FldsID::V>(params,
+                                                local_domain->mesh,
+                                                local_domain->species,
+                                                fld.species,
+                                                fld.comp[i],
+                                                local_domain->fields.bckp,
+                                                c);
               } else {
                 raise::Error("Wrong moment requested for output", HERE);
               }
