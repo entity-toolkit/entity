@@ -1,11 +1,11 @@
-#include "framework/domain/comm_nompi.hpp"
-
 #include "enums.h"
 #include "global.h"
 
 #include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
+
+#include "framework/domain/comm_nompi.hpp"
 
 #include <iostream>
 #include <stdexcept>

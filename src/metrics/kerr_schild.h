@@ -450,15 +450,15 @@ namespace metric {
     Inline auto polar_area(real_t x1) const -> real_t {
       if (small_angle) {
         return dr * (SQR(x1 * dr + x1_min) + SQR(a)) *
-              math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
+               math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
                                   (SQR(x1 * dr + x1_min) + SQR(a))) *
                (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
                static_cast<real_t>(384);
       } else {
         return dr * (SQR(x1 * dr + x1_min) + SQR(a)) *
-              math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
+               math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
                                   (SQR(x1 * dr + x1_min) + SQR(a))) *
-              (ONE - math::cos(HALF * dtheta));
+               (ONE - math::cos(HALF * dtheta));
       }
     }
 

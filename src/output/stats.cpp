@@ -81,11 +81,8 @@ namespace stats {
     CallOnce(
       [this](auto& fname, auto& stat_writers) {
         std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << std::setw(io_precision + 8)
-                 << "step"
-                 << ","
-                 << std::setw(io_precision + 8)
-                 << "time"
+        StatsOut << std::setw(io_precision + 8) << "step"
+                 << "," << std::setw(io_precision + 8) << "time"
                  << ",";
         for (const auto& stat : stat_writers) {
           if (stat.is_vector()) {

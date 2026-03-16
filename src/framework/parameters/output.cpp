@@ -5,6 +5,7 @@
 
 #include "utils/error.h"
 #include "utils/log.h"
+
 #include <toml11/toml.hpp>
 
 namespace ntt {

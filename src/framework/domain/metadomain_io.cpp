@@ -11,7 +11,6 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
-
 #include "kernels/divergences.hpp"
 #include "kernels/fields_to_phys.hpp"
 #include "kernels/particle_moments.hpp"

@@ -142,7 +142,7 @@ void testDeposit(const std::vector<std::size_t>&      res,
   put_value<real_t>(ux3, uz, 0);
   put_value<real_t>(weight, 1.0, 0);
   put_value<short>(tag, ParticleTag::alive, 0);
-  
+
   auto J_scat = Kokkos::Experimental::create_scatter_view(J);
 
   // clang-format off

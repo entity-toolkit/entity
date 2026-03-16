@@ -26,7 +26,6 @@
 
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Core.hpp>
