@@ -30,6 +30,8 @@
 
 #include "arch/kokkos_aliases.h"
 
+#include "framework/parameters/parameters.h"
+
 namespace arch {
   namespace traits {
 
@@ -76,6 +78,15 @@ namespace arch {
 
       template <class PG>
       concept HasInitFlds = requires(const PG& pgen) { pgen.init_flds; };
+
+      template <class PG, class M, class D>
+      concept HasEmissionPolicy = requires(const PG& pgen,
+                                           simtime_t time,
+                                           spidx_t   sp,
+                                           const D&  domain,
+                                           const ntt::SimulationParams& params) {
+        pgen.EmissionPolicy(time, sp, domain, params);
+      };
 
       template <class PG, class D>
       concept HasInitPrtls = requires(PG& pgen, D& domain) {

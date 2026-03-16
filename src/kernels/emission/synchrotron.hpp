@@ -7,10 +7,12 @@
 #include "metrics/traits.h"
 
 #include "framework/parameters/parameters.h"
-
+#include "kernels/emission/traits.h"
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Pair.hpp>
+
+#include <vector>
 
 namespace kernel {
   namespace emission {
@@ -24,9 +26,10 @@ namespace kernel {
         real_t photon_energy;
       };
 
-      const real_t species_mass;
-      const real_t emitted_photon_weight;
-      const real_t emitted_photon_min_energy;
+      const spidx_t emitted_index;
+      const real_t  species_mass;
+      const real_t  emitted_photon_weight;
+      const real_t  emitted_photon_min_energy;
 
       const real_t nominal_probability;
       const real_t nominal_photon_energy;
@@ -48,6 +51,7 @@ namespace kernel {
       random_number_pool_t random_pool;
 
       Synchrotron(Particles<M::Dim, M::CoordType>& photon_species,
+                  spidx_t                          emitted_index,
                   float                            sp_mass,
                   float                            sp_charge,
                   RadiativeDragFlags               radiative_drag_flags,
@@ -55,7 +59,8 @@ namespace kernel {
                   npart_t                          domain_idx,
                   const SimulationParams&          params,
                   random_number_pool_t&            random_pool)
-        : species_mass { static_cast<real_t>(sp_mass) }
+        : emitted_index { emitted_index }
+        , species_mass { static_cast<real_t>(sp_mass) }
         , emitted_photon_weight { params.template get<real_t>(
             "radiation.emission.synchrotron.photon_weight") }
         , emitted_photon_min_energy { params.template get<real_t>(
@@ -89,10 +94,14 @@ namespace kernel {
         , photon_use_tracking { photon_species.use_tracking() }
         , random_pool { random_pool } {}
 
-      auto number_injected() const -> npart_t {
+      auto emitted_species_indices() const -> std::vector<spidx_t> {
+        return { emitted_index };
+      }
+
+      auto numbers_injected() const -> std::vector<npart_t> {
         auto photon_idx_h = Kokkos::create_mirror_view(photon_idx);
         Kokkos::deep_copy(photon_idx_h, photon_idx);
-        return photon_idx_h();
+        return { photon_idx_h() };
       }
 
       /**
@@ -266,6 +275,9 @@ namespace kernel {
             photon_cntr + index);
         }
       }
+
+      static_assert(kernel::traits::emission::IsValid<Synchrotron<M>, M>,
+                    "Synchrotron emission policy is invalid");
     };
 
   } // namespace emission

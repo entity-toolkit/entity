@@ -31,6 +31,8 @@
 #include "metrics/traits.h"
 
 #include "kernels/emission/emission.hpp"
+#include "kernels/emission/traits.h"
+
 #include "particle_shapes.hpp"
 
 #if defined(MPI_ENABLED)
@@ -61,6 +63,8 @@ namespace kernel::sr {
   struct NoField_t {};
 
   struct PusherParams {
+    // species index
+    spidx_t             species_index;
     // pusher algorithm(s) assigned to the species
     ParticlePusherFlags pusher_flags { ParticlePusher::NONE };
     // radiative drag force(s) enabled for the species
@@ -110,10 +114,9 @@ namespace kernel::sr {
     static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;
     static constexpr auto HasExtEfield = ::traits::external::HasExternalE<F, D>;
     static constexpr auto HasExtBfield = ::traits::external::HasExternalB<F, D>;
-    static constexpr auto HasEmission =
-      ::traits::emission::IsValidEmissionPolicy<E, M::PrtlDim>;
+    static constexpr auto HasEmission = kernel::traits::emission::IsValid<E, M>;
     static_assert(
-      ::traits::emission::IsValidEmissionPolicy<E, M::PrtlDim> or
+      HasEmission or
         std::is_same<E, const NoEmissionPolicy_t<SimEngine::SRPIC, M>>::value,
       "Invalid emission policy E for Pusher_kernel");
 
@@ -295,9 +298,45 @@ namespace kernel::sr {
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getParticlePosition(p, xp_Cd);
       if (pusher_flags == ParticlePusher::PHOTON) {
-        // just update the position
+        /**
+         * Procedure for massless particles
+         */
+        if constexpr (HasEmission) {
+          // get Cartesian position
+          coord_t<M::PrtlDim> xp_Ph { ZERO };
+          if constexpr (M::PrtlDim == Dim::_1D or M::PrtlDim == Dim::_2D or
+                        M::PrtlDim == Dim::_3D) {
+            xp_Ph[0] = metric.template convert<1, Crd::Cd, Crd::Ph>(xp_Cd[0]);
+          }
+          if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D) {
+            xp_Ph[1] = metric.template convert<2, Crd::Cd, Crd::Ph>(xp_Cd[1]);
+          }
+          if constexpr (M::PrtlDim == Dim::_3D) {
+            xp_Ph[2] = metric.template convert<3, Crd::Cd, Crd::Ph>(xp_Cd[2]);
+          }
+
+          // get Cartesian velocity
+          vec_t<Dim::_3D> u_prime { ZERO };
+          u_prime[0] = ux1(p);
+          u_prime[1] = ux2(p);
+          u_prime[2] = ux3(p);
+
+          // get Cartesian fields
+          vec_t<Dim::_3D> ei { ZERO }, bi { ZERO };
+          vec_t<Dim::_3D> ei_Cart { ZERO }, bi_Cart { ZERO };
+          getInterpolatedEMFields<SHAPE_ORDER>(p, ei, bi);
+
+          metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, ei, ei_Cart);
+          metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_Cd, bi, bi_Cart);
+
+          processEmission(p, u_prime, xp_Cd, xp_Ph, ei_Cart, bi_Cart);
+        }
+        // finally update the position
         positionPush(false, p, xp_Cd);
       } else {
+        /**
+         * Procedure for massive particles
+         */
         // update cartesian velocity
         vec_t<Dim::_3D> ei { ZERO }, bi { ZERO };
         vec_t<Dim::_3D> ei_Cart { ZERO }, bi_Cart { ZERO };
@@ -1487,7 +1526,7 @@ namespace kernel::sr {
                                 const coord_t<M::PrtlDim>& xp_Ph,
                                 const vec_t<Dim::_3D>&     ep_Cart,
                                 const vec_t<Dim::_3D>&     bp_Cart) const
-      requires ::traits::emission::IsValidEmissionPolicy<E, M::PrtlDim>
+      requires kernel::traits::emission::IsValid<E, M>
     {
       typename E::Payload payload;
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };

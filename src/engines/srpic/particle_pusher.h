@@ -16,7 +16,6 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
-
 #include "kernels/emission/compton.hpp"
 #include "kernels/emission/emission.hpp"
 #include "kernels/emission/synchrotron.hpp"
@@ -25,7 +24,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M, class F, bool Atm>
+    template <class M, class F, class PG, bool Atm>
     void CallPusher(Domain<SimEngine::SRPIC, M>&    domain,
                     const SimulationParams&         params,
                     const kernel::sr::PusherParams& pusher_params,
@@ -34,6 +33,7 @@ namespace ntt {
                     const range_t<Dim::_1D>&        range,
                     const ndfield_t<M::Dim, 6>&     EB,
                     const M&                        metric,
+                    const PG&                       pgen,
                     const F&                        external_fields) {
       if (emission_policy_flag == EmissionType::NONE) {
         const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
@@ -62,6 +62,7 @@ namespace ntt {
                        HERE);
         const auto emission_policy = kernel::emission::Synchrotron<M>(
           emitted_species,
+          photon_species,
           pusher_params.mass,
           pusher_params.charge,
           pusher_params.radiative_drag_flags,
@@ -79,11 +80,14 @@ namespace ntt {
             metric,
             external_fields,
             emission_policy));
-        const auto n_inj = emission_policy.number_injected();
+        const auto n_inj = emission_policy.numbers_injected();
+        raise::ErrorIf(n_inj.size() != 1,
+                       "Synchrotron emission should only inject one species",
+                       HERE);
         domain.species[photon_species - 1].set_npart(
-          emitted_species.npart() + n_inj);
+          emitted_species.npart() + n_inj[0]);
         domain.species[photon_species - 1].set_counter(
-          emitted_species.counter() + n_inj);
+          emitted_species.counter() + n_inj[0]);
       } else if (emission_policy_flag == EmissionType::COMPTON) {
         const auto photon_species = params.get<spidx_t>(
           "radiation.emission.compton.photon_species");
@@ -99,6 +103,7 @@ namespace ntt {
                        HERE);
         const auto emission_policy = kernel::emission::Compton<M>(
           emitted_species,
+          photon_species,
           pusher_params.mass,
           pusher_params.charge,
           pusher_params.radiative_drag_flags,
@@ -116,11 +121,59 @@ namespace ntt {
             metric,
             external_fields,
             emission_policy));
-        const auto n_inj = emission_policy.number_injected();
+        const auto n_inj = emission_policy.numbers_injected();
+        raise::ErrorIf(n_inj.size() != 1,
+                       "Compton emission should only inject one species",
+                       HERE);
         domain.species[photon_species - 1].set_npart(
-          emitted_species.npart() + n_inj);
+          emitted_species.npart() + n_inj[0]);
         domain.species[photon_species - 1].set_counter(
-          emitted_species.counter() + n_inj);
+          emitted_species.counter() + n_inj[0]);
+      } else if (emission_policy_flag == EmissionType::CUSTOM) {
+        if constexpr (
+          arch::traits::pgen::HasEmissionPolicy<PG, M, decltype(domain)>) {
+          const auto emission_policy = pgen.EmissionPolicy(pusher_params.time,
+                                                           pusher_params.species_index,
+                                                           domain,
+                                                           params);
+          static_assert(
+            kernel::traits::emission::IsValid<decltype(emission_policy), M>,
+            "Custom emission policy does not satisfy the required "
+            "interface");
+          Kokkos::parallel_for(
+            "ParticlePusher",
+            range,
+            kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
+              pusher_params,
+              pusher_arrays,
+              EB,
+              metric,
+              external_fields,
+              emission_policy));
+          const auto emitted_species = emission_policy.emitted_species_indices();
+          const auto n_inj = emission_policy.number_injected();
+          raise::ErrorIf(emitted_species.size() != n_inj.size(),
+                         "Emission policy emitted_species_indices and "
+                         "numbers_injected must have the same size",
+                         HERE);
+          for (auto i = 0u; i < emitted_species.size(); ++i) {
+            const auto sp_idx = emitted_species[i];
+            raise::ErrorIf(sp_idx > domain.species.size(),
+                           "Invalid emitted species index from custom "
+                           "emission policy",
+                           HERE);
+            domain.species[sp_idx - 1].set_npart(
+              domain.species[sp_idx - 1].npart() + n_inj[i]);
+            domain.species[sp_idx - 1].set_counter(
+              domain.species[sp_idx - 1].counter() + n_inj[i]);
+          }
+        } else {
+          raise::Error("Custom emission policy flag is set but problem "
+                       "generator does not define an emission policy",
+                       HERE);
+        }
+      } else {
+        raise::Error("Unrecognized emission policy flag", HERE);
       }
     }
 
@@ -184,6 +237,7 @@ namespace ntt {
           HERE);
 
         kernel::sr::PusherParams pusher_params {};
+        pusher_params.species_index        = species.index();
         pusher_params.pusher_flags         = species.pusher();
         pusher_params.radiative_drag_flags = species.radiative_drag_flags();
         pusher_params.mass                 = species.mass();
@@ -226,26 +280,7 @@ namespace ntt {
             params.template get<real_t>("radiation.drag.compton.gamma_rad"));
         }
 
-        kernel::sr::PusherArrays pusher_arrays {};
-        pusher_arrays.sp       = species.index();
-        pusher_arrays.i1       = species.i1;
-        pusher_arrays.i2       = species.i2;
-        pusher_arrays.i3       = species.i3;
-        pusher_arrays.i1_prev  = species.i1_prev;
-        pusher_arrays.i2_prev  = species.i2_prev;
-        pusher_arrays.i3_prev  = species.i3_prev;
-        pusher_arrays.dx1      = species.dx1;
-        pusher_arrays.dx2      = species.dx2;
-        pusher_arrays.dx3      = species.dx3;
-        pusher_arrays.dx1_prev = species.dx1_prev;
-        pusher_arrays.dx2_prev = species.dx2_prev;
-        pusher_arrays.dx3_prev = species.dx3_prev;
-        pusher_arrays.ux1      = species.ux1;
-        pusher_arrays.ux2      = species.ux2;
-        pusher_arrays.ux3      = species.ux3;
-        pusher_arrays.phi      = species.phi;
-        pusher_arrays.weight   = species.weight;
-        pusher_arrays.tag      = species.tag;
+        auto pusher_arrays = species.PusherKernelArrays();
 
         // toggle to indicate whether pgen defines the external force
         bool has_extfields = false;
@@ -261,7 +296,7 @@ namespace ntt {
         }
 
         if (not has_atmosphere and not has_extfields) {
-          CallPusher<M, kernel::sr::NoField_t, false>(
+          CallPusher<M, kernel::sr::NoField_t, decltype(pgen), false>(
             domain,
             params,
             pusher_params,
@@ -270,9 +305,10 @@ namespace ntt {
             species.rangeActiveParticles(),
             domain.fields.em,
             domain.mesh.metric,
+            pgen,
             kernel::sr::NoField_t {});
         } else if (has_atmosphere and not has_extfields) {
-          CallPusher<M, kernel::sr::NoField_t, true>(
+          CallPusher<M, kernel::sr::NoField_t, decltype(pgen), true>(
             domain,
             params,
             pusher_params,
@@ -281,10 +317,11 @@ namespace ntt {
             species.rangeActiveParticles(),
             domain.fields.em,
             domain.mesh.metric,
+            pgen,
             kernel::sr::NoField_t {});
         } else if (not has_atmosphere and has_extfields) {
           if constexpr (arch::traits::pgen::HasExtFields<PG>) {
-            CallPusher<M, decltype(pgen.ext_fields), false>(
+            CallPusher<M, decltype(pgen.ext_fields), decltype(pgen), false>(
               domain,
               params,
               pusher_params,
@@ -293,13 +330,14 @@ namespace ntt {
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
+              pgen,
               pgen.ext_fields);
           } else {
             raise::Error("External fields not implemented", HERE);
           }
         } else { // has_atmosphere and has_extforce
           if constexpr (arch::traits::pgen::HasExtFields<PG>) {
-            CallPusher<M, decltype(pgen.ext_fields), true>(
+            CallPusher<M, decltype(pgen.ext_fields), decltype(pgen), true>(
               domain,
               params,
               pusher_params,
@@ -308,6 +346,7 @@ namespace ntt {
               species.rangeActiveParticles(),
               domain.fields.em,
               domain.mesh.metric,
+              pgen,
               pgen.ext_fields);
           } else {
             raise::Error("External fields not implemented", HERE);

@@ -169,45 +169,6 @@ namespace traits {
 
   } // namespace external
 
-  namespace emission {
-
-    template <class E>
-    concept HasPayloadType = requires { typename E::Payload; };
-
-    template <class E, Dimension D>
-    concept HasShouldEmit = HasPayloadType<E> and requires(
-                                                    const E&               e,
-                                                    const coord_t<D>&      x_Cd,
-                                                    const coord_t<D>&      x_Ph,
-                                                    const vec_t<Dim::_3D>& u_Ph,
-                                                    const vec_t<Dim::_3D>& ep,
-                                                    const vec_t<Dim::_3D>& bp,
-                                                    vec_t<Dim::_3D>& delta_u_Ph,
-                                                    typename E::Payload& payload) {
-      {
-        e.shouldEmit(x_Cd, x_Ph, u_Ph, ep, bp, delta_u_Ph, payload)
-      } -> std::convertible_to<Kokkos::pair<bool, bool>>;
-    };
-
-    template <class E, Dimension D>
-    concept HasEmit = HasPayloadType<E> and
-                      requires(const E&                    e,
-                               const tuple_t<int, D>&      xi_Cd,
-                               const tuple_t<prtldx_t, D>& dxi_Cd,
-                               const vec_t<Dim::_3D>&      direction,
-                               real_t                      weight,
-                               real_t                      phi,
-                               const typename E::Payload&  payload) {
-                        {
-                          e.emit(xi_Cd, dxi_Cd, direction, weight, phi, payload)
-                        } -> std::same_as<void>;
-                      };
-
-    template <class E, Dimension D>
-    concept IsValidEmissionPolicy = HasShouldEmit<E, D> and HasEmit<E, D>;
-
-  } // namespace emission
-
   template <template <typename> class Trait, typename T, typename = void>
   struct has_method : std::false_type {};
 
