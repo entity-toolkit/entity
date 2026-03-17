@@ -14,7 +14,6 @@
 #include "archetypes/traits.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
-
 #include "kernels/particle_moments.hpp"
 
 namespace user {

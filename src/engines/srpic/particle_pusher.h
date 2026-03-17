@@ -134,8 +134,7 @@ namespace ntt {
           arch::traits::pgen::HasEmissionPolicy<PG, M, decltype(domain)>) {
           const auto emission_policy = pgen.EmissionPolicy(pusher_params.time,
                                                            pusher_params.species_index,
-                                                           domain,
-                                                           params);
+                                                           domain);
           static_assert(
             kernel::traits::emission::IsValid<decltype(emission_policy), M>,
             "Custom emission policy does not satisfy the required "
@@ -151,7 +150,7 @@ namespace ntt {
               external_fields,
               emission_policy));
           const auto emitted_species = emission_policy.emitted_species_indices();
-          const auto n_inj = emission_policy.number_injected();
+          const auto n_inj = emission_policy.numbers_injected();
           raise::ErrorIf(emitted_species.size() != n_inj.size(),
                          "Emission policy emitted_species_indices and "
                          "numbers_injected must have the same size",
