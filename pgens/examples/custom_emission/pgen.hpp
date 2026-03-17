@@ -15,6 +15,8 @@
 
 #include <Kokkos_Pair.hpp>
 
+#include <map>
+#include <string>
 #include <vector>
 
 namespace user {
