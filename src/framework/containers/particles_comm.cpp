@@ -10,7 +10,6 @@
 #include "utils/log.h"
 
 #include "framework/containers/particles.h"
-
 #include "kernels/comm.hpp"
 
 #include <mpi.h>

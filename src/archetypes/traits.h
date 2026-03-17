@@ -77,6 +77,14 @@ namespace arch {
       template <class PG>
       concept HasInitFlds = requires(const PG& pgen) { pgen.init_flds; };
 
+      template <class PG, class M, class D>
+      concept HasEmissionPolicy = requires(const PG& pgen,
+                                           simtime_t time,
+                                           spidx_t   sp,
+                                           D&        domain) {
+        pgen.EmissionPolicy(time, sp, domain);
+      };
+
       template <class PG, class D>
       concept HasInitPrtls = requires(PG& pgen, D& domain) {
         { pgen.InitPrtls(domain) } -> std::same_as<void>;

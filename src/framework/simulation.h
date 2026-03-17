@@ -17,10 +17,11 @@
 #include "enums.h"
 
 #include "utils/error.h"
-#include <toml11/toml.hpp>
 
 #include "engines/traits.h"
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 namespace ntt {
 

@@ -86,6 +86,8 @@ namespace ntt {
         return EmissionType::SYNCHROTRON;
       } else if (fmt::toLower(emission_policy_str) == "compton") {
         return EmissionType::COMPTON;
+      } else if (fmt::toLower(emission_policy_str) == "custom") {
+        return EmissionType::CUSTOM;
       } else {
         raise::Error(fmt::format("Invalid emission_policy value: %s",
                                  emission_policy_str.c_str()),

@@ -22,8 +22,6 @@
 
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-
-#include "engines/engine.hpp"
 #include "kernels/ampere_gr.hpp"
 #include "kernels/aux_fields_gr.hpp"
 #include "kernels/currents_deposit.hpp"
@@ -31,6 +29,8 @@
 #include "kernels/faraday_gr.hpp"
 #include "kernels/fields_bcs.hpp"
 #include "kernels/particle_pusher_gr.hpp"
+
+#include "engines/engine.hpp"
 #include "pgen.hpp"
 
 #include <Kokkos_Core.hpp>

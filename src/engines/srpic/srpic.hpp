@@ -69,8 +69,6 @@ namespace ntt {
         "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.deposit.enable");
-      const auto clear_interval = m_params.template get<std::size_t>(
-        "particles.clear_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep

@@ -11,9 +11,9 @@ namespace ntt {
   template <SimEngine::type S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::SortParticles(simtime_t,
-                                       timestep_t              step,
-                                       const SimulationParams& params,
-                                       Domain<S, M>&           domain) const {
+                                       timestep_t step,
+                                       const SimulationParams&,
+                                       Domain<S, M>& domain) const {
     for (auto& species : domain.species) {
       const auto clearing_interval = species.clearing_interval();
       if ((clearing_interval > 0u) and (step % clearing_interval == 0u) and

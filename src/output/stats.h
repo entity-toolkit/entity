@@ -193,9 +193,7 @@ namespace stats {
           [this](auto&& fname, auto&& value) {
             std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
             StatsOut << std::setw(io_precision + 8)
-                     << std::setprecision(io_precision)
-                     << value
-                     << ",";
+                     << std::setprecision(io_precision) << value << ",";
             StatsOut.close();
           },
           m_fname,

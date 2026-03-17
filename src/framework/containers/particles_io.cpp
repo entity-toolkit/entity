@@ -7,10 +7,9 @@
 
 #include "framework/containers/particles.h"
 #include "framework/specialization_registry.h"
+#include "kernels/prtls_to_phys.hpp"
 #include "output/utils/readers.h"
 #include "output/utils/writers.h"
-
-#include "kernels/prtls_to_phys.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
@@ -123,7 +122,10 @@ namespace ntt {
 
     npart_t nout_offset = 0;
     npart_t nout_total  = nout;
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+    (void)domains_total;
+    (void)domains_offset;
+#else
     auto nout_total_vec = std::vector<npart_t>(domains_total);
     MPI_Allgather(&nout,
                   1,
@@ -133,7 +135,7 @@ namespace ntt {
                   mpi::get_type<npart_t>(),
                   MPI_COMM_WORLD);
     nout_total = 0;
-    for (auto r = 0; r < domains_total; ++r) {
+    for (auto r = 0u; r < domains_total; ++r) {
       if (r < domains_offset) {
         nout_offset += nout_total_vec[r];
       }
@@ -429,7 +431,9 @@ namespace ntt {
                                domains_offset);
     set_npart(npart_read);
 
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+    (void)domains_total;
+#else
     {
       const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);
@@ -616,7 +620,7 @@ namespace ntt {
                     mpi::get_type<npart_t>(),
                     MPI_COMM_WORLD);
       npart_total = 0u;
-      for (auto r = 0; r < domains_total; ++r) {
+      for (auto r = 0u; r < domains_total; ++r) {
         if (r < domains_offset) {
           npart_offset += glob_nparts[r];
         }

@@ -13,7 +13,6 @@
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-
 #include "kernels/fields_bcs.hpp"
 
 namespace ntt {

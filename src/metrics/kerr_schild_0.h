@@ -34,9 +34,9 @@ namespace metric {
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
+    const real_t a, rg_, rh_;
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t a, rg_, rh_;
 
   public:
     static constexpr const char* Label { "kerr_schild_0" };
@@ -189,7 +189,7 @@ namespace metric {
      * dr derivative of lapse function
      * @param x coordinate array in code units
      */
-    Inline auto dr_alpha(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_alpha(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -197,7 +197,7 @@ namespace metric {
      * dtheta derivative of lapse function
      * @param x coordinate array in code units
      */
-    Inline auto dt_alpha(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_alpha(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -213,7 +213,7 @@ namespace metric {
      * dr derivative of radial component of shift vector
      * @param x coordinate array in code units
      */
-    Inline auto dr_beta1(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_beta1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -221,7 +221,7 @@ namespace metric {
      * dtheta derivative of radial component of shift vector
      * @param x coordinate array in code units
      */
-    Inline auto dt_beta1(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_beta1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -229,7 +229,7 @@ namespace metric {
      * dr derivative of h^11
      * @param x coordinate array in code units
      */
-    Inline auto dr_h11(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_h11(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -239,7 +239,6 @@ namespace metric {
      */
     Inline auto dr_h22(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + x1_min };
-      const real_t theta { x[1] * dtheta + x2_min };
       return -TWO / CUBE(r) * SQR(dtheta_inv) * dr;
     }
 
@@ -257,7 +256,7 @@ namespace metric {
      * dr derivative of h^13
      * @param x coordinate array in code units
      */
-    Inline auto dr_h13(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_h13(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -265,7 +264,7 @@ namespace metric {
      * dtheta derivative of h^11
      * @param x coordinate array in code units
      */
-    Inline auto dt_h11(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h11(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -273,7 +272,7 @@ namespace metric {
      * dtheta derivative of h^22
      * @param x coordinate array in code units
      */
-    Inline auto dt_h22(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h22(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -291,7 +290,7 @@ namespace metric {
      * dtheta derivative of h^13
      * @param x coordinate array in code units
      */
-    Inline auto dt_h13(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h13(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 

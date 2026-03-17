@@ -1,5 +1,3 @@
-#include "output/checkpoint.h"
-
 #include "enums.h"
 #include "global.h"
 
@@ -10,6 +8,7 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
+#include "output/checkpoint.h"
 
 namespace ntt {
 

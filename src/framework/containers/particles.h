@@ -25,6 +25,7 @@
 
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
+#include "kernels/particle_pusher_sr.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -269,6 +270,12 @@ namespace ntt {
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
+
+    /**
+     * @brief Get the arrays required for the particle pusher kernel
+     * @returns The struct of arrays for the particle pusher kernel
+     */
+    auto PusherKernelArrays() -> kernel::sr::PusherArrays;
 
 #if defined(MPI_ENABLED)
     /**

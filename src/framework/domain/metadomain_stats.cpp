@@ -11,7 +11,6 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
-
 #include "kernels/reduced_stats.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -190,8 +189,8 @@ namespace ntt {
     timestep_t              finished_step,
     simtime_t               current_time,
     simtime_t               finished_time,
-    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>
-      CustomStat) -> bool {
+    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> CustomStat)
+    -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
@@ -281,17 +280,18 @@ namespace ntt {
     return true;
   }
 
-#define METADOMAIN_STATS(S, M, D)                                              \
-  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,  \
-                                                     bool);                    \
-  template auto Metadomain<S, M<D>>::WriteStats(                               \
-    const SimulationParams&,                                                   \
-    timestep_t,                                                                \
-    timestep_t,                                                                \
-    simtime_t,                                                                 \
-    simtime_t,                                                                 \
-    std::function<                                                             \
-      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>) -> bool;
+#define METADOMAIN_STATS(S, M, D)                                                 \
+  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,     \
+                                                     bool);                       \
+  template auto Metadomain<S, M<D>>::WriteStats(                                  \
+    const SimulationParams&,                                                      \
+    timestep_t,                                                                   \
+    timestep_t,                                                                   \
+    simtime_t,                                                                    \
+    simtime_t,                                                                    \
+    std::function<                                                                \
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>) \
+    -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_STATS)
 

@@ -250,7 +250,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(const coord_t<M::Dim>& x_Code, vec_t<Dim::_3D>& v) const {
+    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;
