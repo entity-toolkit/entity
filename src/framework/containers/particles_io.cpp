@@ -122,7 +122,10 @@ namespace ntt {
 
     npart_t nout_offset = 0;
     npart_t nout_total  = nout;
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+    (void)domains_total;
+    (void)domains_offset;
+#else
     auto nout_total_vec = std::vector<npart_t>(domains_total);
     MPI_Allgather(&nout,
                   1,
@@ -428,7 +431,9 @@ namespace ntt {
                                domains_offset);
     set_npart(npart_read);
 
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+    (void)domains_total;
+#else
     {
       const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);

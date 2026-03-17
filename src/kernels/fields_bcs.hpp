@@ -20,7 +20,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -42,42 +41,27 @@ namespace kernel::bc {
   template <SimEngine::type S, class I, class M, in o>
     requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M> &&
              metric::traits::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransform_i<M>) ||
-              S == SimEngine::GRPIC) &&
-             (S == SimEngine::SRPIC &&
-                (::traits::fieldsetter::HasEx1<I, M::Dim> ||
-                 ::traits::fieldsetter::HasEx2<I, M::Dim> ||
-                 ::traits::fieldsetter::HasEx3<I, M::Dim> ||
+             (((S == SimEngine::SRPIC) && metric::traits::HasTransform_i<M>) ||
+              (S == SimEngine::GRPIC)) &&
+             (((S == SimEngine::SRPIC) &&
+               (::traits::fieldsetter::HasEx1<I, M::Dim> ||
+                ::traits::fieldsetter::HasEx2<I, M::Dim> ||
+                ::traits::fieldsetter::HasEx3<I, M::Dim> ||
+                ::traits::fieldsetter::HasBx1<I, M::Dim> ||
+                ::traits::fieldsetter::HasBx2<I, M::Dim> ||
+                ::traits::fieldsetter::HasBx3<I, M::Dim>)) ||
+              (((S == SimEngine::GRPIC) &&
+                (::traits::fieldsetter::HasDx1<I, M::Dim> ||
+                 ::traits::fieldsetter::HasDx2<I, M::Dim> ||
+                 ::traits::fieldsetter::HasDx3<I, M::Dim> ||
                  ::traits::fieldsetter::HasBx1<I, M::Dim> ||
                  ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-                 ::traits::fieldsetter::HasBx3<I, M::Dim>) ||
-              (S == SimEngine::GRPIC &&
-                 (::traits::fieldsetter::HasDx1<I, M::Dim> ||
-                  ::traits::fieldsetter::HasDx2<I, M::Dim> ||
-                  ::traits::fieldsetter::HasDx3<I, M::Dim>) ||
-               ::traits::fieldsetter::HasBx1<I, M::Dim> ||
-               ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-               ::traits::fieldsetter::HasBx3<I, M::Dim>))
+                 ::traits::fieldsetter::HasBx3<I, M::Dim>))))
   struct MatchBoundaries_kernel {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
     static constexpr auto  D = M::Dim;
     static constexpr idx_t i = static_cast<idx_t>(o) + 1u;
-    // static constexpr bool defines_dx1 = traits::has_method<traits::dx1_t, I>::value;
-    // static constexpr bool defines_dx2 = traits::has_method<traits::dx2_t, I>::value;
-    // static constexpr bool defines_dx3 = traits::has_method<traits::dx3_t, I>::value;
-    // static constexpr bool defines_ex1 = traits::has_method<traits::ex1_t, I>::value;
-    // static constexpr bool defines_ex2 = traits::has_method<traits::ex2_t, I>::value;
-    // static constexpr bool defines_ex3 = traits::has_method<traits::ex3_t, I>::value;
-    // static constexpr bool defines_bx1 = traits::has_method<traits::bx1_t, I>::value;
-    // static constexpr bool defines_bx2 = traits::has_method<traits::bx2_t, I>::value;
-    // static constexpr bool defines_bx3 = traits::has_method<traits::bx3_t, I>::value;
-    // static_assert(
-    //   (S == SimEngine::SRPIC and (defines_ex1 or defines_ex2 or defines_ex3 or
-    //                               defines_bx1 or defines_bx2 or defines_bx3)) or
-    //     ((S == SimEngine::GRPIC) and (defines_dx1 or defines_dx2 or defines_dx3 or
-    //                                   defines_bx1 or defines_bx2 or defines_bx3)),
-    //   "none of the components of E/D or B are specified in PGEN");
 
     ndfield_t<M::Dim, 6> Fld;
     const I              fset;
