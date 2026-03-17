@@ -132,7 +132,7 @@ namespace ntt {
                   mpi::get_type<npart_t>(),
                   MPI_COMM_WORLD);
     nout_total = 0;
-    for (auto r = 0; r < domains_total; ++r) {
+    for (auto r = 0u; r < domains_total; ++r) {
       if (r < domains_offset) {
         nout_offset += nout_total_vec[r];
       }
@@ -615,7 +615,7 @@ namespace ntt {
                     mpi::get_type<npart_t>(),
                     MPI_COMM_WORLD);
       npart_total = 0u;
-      for (auto r = 0; r < domains_total; ++r) {
+      for (auto r = 0u; r < domains_total; ++r) {
         if (r < domains_offset) {
           npart_offset += glob_nparts[r];
         }

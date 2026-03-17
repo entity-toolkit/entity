@@ -32,10 +32,10 @@ namespace ntt {
     const float       m_charge;
     // Max number of allocated particles for the species
     npart_t           m_maxnpart;
+    // Clearing interval for the species (0 means no clearing)
+    const timestep_t  m_clearing_interval;
     // Spatial sorting interval for the species (0 means no sorting)
     const timestep_t  m_spatial_sorting_interval;
-    // Spatial sorting interval for the species (0 means no clearing)
-    const timestep_t  m_clearing_interval;
 
     // Pusher assigned for the species
     const ParticlePusherFlags m_particle_pusher_flags;

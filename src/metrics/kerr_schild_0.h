@@ -34,9 +34,9 @@ namespace metric {
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
+    const real_t a, rg_, rh_;
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t a, rg_, rh_;
 
   public:
     static constexpr const char* Label { "kerr_schild_0" };

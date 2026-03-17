@@ -24,7 +24,7 @@ namespace user {
 
   template <Dimension D>
   struct InitFields {
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
       return ONE;
     }
   };
@@ -32,7 +32,7 @@ namespace user {
   template <class M>
   struct RandomEmission {
     struct Payload {
-      real_t photon_energy;
+      real_t photon_energy { ZERO };
     };
 
     random_number_pool_t random_pool;

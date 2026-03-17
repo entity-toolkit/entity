@@ -55,7 +55,6 @@ namespace kernel {
                   float                            sp_mass,
                   float                            sp_charge,
                   RadiativeDragFlags               radiative_drag_flags,
-                  real_t                           dt,
                   npart_t                          domain_idx,
                   const SimulationParams&          params,
                   random_number_pool_t&            random_pool)

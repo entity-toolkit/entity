@@ -66,7 +66,6 @@ namespace ntt {
           pusher_params.mass,
           pusher_params.charge,
           pusher_params.radiative_drag_flags,
-          pusher_params.dt,
           domain.index(),
           params,
           domain.random_pool());
@@ -107,7 +106,6 @@ namespace ntt {
           pusher_params.mass,
           pusher_params.charge,
           pusher_params.radiative_drag_flags,
-          pusher_params.dt,
           domain.index(),
           params,
           domain.random_pool());

@@ -80,10 +80,6 @@ namespace ntt {
       "output.particles.species");
     g_writer.defineFieldOutputs(S, all_fields_to_write);
 
-    Dimension dim = M::PrtlDim;
-    if constexpr (M::CoordType != Coord::Cart) {
-      dim = Dim::_3D;
-    }
     g_writer.clearSpeciesIndex();
     for (const auto& s : species_to_write) {
       g_writer.addSpeciesIndex(s);
@@ -280,7 +276,7 @@ namespace ntt {
         for (auto nr1 { 0u }; nr1 < nranks_x1; ++nr1) {
           const auto rank_send = rank_send_pre + nr1;
           const auto rank_recv = rank_recv_pre + nr1;
-          if (local_domain->mpi_rank() == rank_send) {
+          if (static_cast<unsigned int>(local_domain->mpi_rank()) == rank_send) {
             array_t<real_t*> aphi_r { "Aphi_r", nx1 };
             Kokkos::deep_copy(
               aphi_r,
@@ -294,7 +290,8 @@ namespace ntt {
                      rank_recv,
                      0,
                      MPI_COMM_WORLD);
-          } else if (local_domain->mpi_rank() == rank_recv) {
+          } else if (static_cast<unsigned int>(local_domain->mpi_rank()) ==
+                     rank_recv) {
             array_t<real_t*> aphi_r { "Aphi_r", nx1 };
             MPI_Recv(aphi_r.data(),
                      nx1,
