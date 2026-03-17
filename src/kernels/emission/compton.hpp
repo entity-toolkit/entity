@@ -222,9 +222,6 @@ namespace kernel {
             photon_cntr + index);
         }
       }
-
-      static_assert(kernel::traits::emission::IsValid<Compton<M>, M>,
-                    "Compton emission policy is invalid");
     };
 
   } // namespace emission

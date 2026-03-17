@@ -155,10 +155,6 @@ namespace user {
       Kokkos::deep_copy(inj_idx_h, inj_idx);
       return { inj_idx_h() };
     }
-
-    static_assert(
-      kernel::traits::emission::IsValid<RandomEmission<M>, M>,
-      "RandomEmission does not satisfy the requirements of an emission policy");
   };
 
   template <SimEngine::type S, class M>
@@ -187,10 +183,13 @@ namespace user {
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain }
       , emission_probability { params.template get<real_t>(
-          "setup.emission_probability") } {}
+          "setup.emission_probability") } {
+      static_assert(kernel::traits::emission::IsValid<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
+    }
 
-    inline auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
-      -> RandomEmission<M> {
+    inline auto EmissionPolicy(simtime_t,
+                               spidx_t,
+                               Domain<S, M>& domain) const -> RandomEmission<M> {
       return RandomEmission<M> {
         domain.random_pool(),      emission_probability,
         domain.species[1].npart(), domain.species[1].i1,

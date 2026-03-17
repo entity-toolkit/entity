@@ -19,6 +19,7 @@
 #include "kernels/emission/compton.hpp"
 #include "kernels/emission/emission.hpp"
 #include "kernels/emission/synchrotron.hpp"
+#include "kernels/emission/traits.h"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
@@ -69,6 +70,10 @@ namespace ntt {
           domain.index(),
           params,
           domain.random_pool());
+        static_assert(
+          kernel::traits::emission::IsValid<kernel::emission::Synchrotron<M>, M>,
+          "Synchrotron emission policy does not satisfy the required "
+          "interface");
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
@@ -109,6 +114,9 @@ namespace ntt {
           domain.index(),
           params,
           domain.random_pool());
+        static_assert(
+          kernel::traits::emission::IsValid<kernel::emission::Compton<M>, M>,
+          "Compton emission policy does not satisfy the required interface");
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
