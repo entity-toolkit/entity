@@ -280,11 +280,12 @@ namespace kernel::gr {
     // Helper functions
 
     /**
-     * @brief First order Yee mesh field interpolation to particle position.
+     * @brief Direct field interpolation to particle position with arbitrary shape function.
      * @param p index of the particle.
      * @param e interpolated e-field vector of size 3 [return].
      * @param b interpolated b-field vector of size 3 [return].
      */
+    template <unsigned short O>
     Inline void interpolateFields(index_t          p,
                                   vec_t<Dim::_3D>& e,
                                   vec_t<Dim::_3D>& b) const;
@@ -528,81 +529,530 @@ namespace kernel::gr {
 
   template <class M>
     requires IsCompatibleWithPusherGR<M>
+  template <unsigned short O>
   Inline void Pusher_kernel<M>::interpolateFields(index_t          p,
                                                   vec_t<Dim::_3D>& e0,
                                                   vec_t<Dim::_3D>& b0) const {
-    if constexpr (D == Dim::_1D) {
-      raise::KernelError(HERE, "interpolateFields: 1D implementation called");
-    } else if constexpr (D == Dim::_2D) {
-      // first order interpolation
-      // Using fields em::e = D(t = n), and em::b0 = B(t = n)
 
-      const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-      const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-      const auto dx1_ { static_cast<real_t>(dx1(p)) };
-      const auto dx2_ { static_cast<real_t>(dx2(p)) };
+    // Zig-zag interpolation
+      if constexpr (O == 0u) {
 
-      // first order
-      real_t c000, c100, c010, c110, c00, c10;
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
 
-      // Ex1
-      // interpolate to nodes
-      c000  = HALF * (DB(i, j, em::dx1) + DB(i - 1, j, em::dx1));
-      c100  = HALF * (DB(i, j, em::dx1) + DB(i + 1, j, em::dx1));
-      c010  = HALF * (DB(i, j + 1, em::dx1) + DB(i - 1, j + 1, em::dx1));
-      c110  = HALF * (DB(i, j + 1, em::dx1) + DB(i + 1, j + 1, em::dx1));
-      // interpolate from nodes to the particle position
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      e0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
-      // Ex2
-      c000  = HALF * (DB(i, j, em::dx2) + DB(i, j - 1, em::dx2));
-      c100  = HALF * (DB(i + 1, j, em::dx2) + DB(i + 1, j - 1, em::dx2));
-      c010  = HALF * (DB(i, j, em::dx2) + DB(i, j + 1, em::dx2));
-      c110  = HALF * (DB(i + 1, j, em::dx2) + DB(i + 1, j + 1, em::dx2));
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      e0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
-      // Ex3
-      c000  = DB(i, j, em::dx3);
-      c100  = DB(i + 1, j, em::dx3);
-      c010  = DB(i, j + 1, em::dx3);
-      c110  = DB(i + 1, j + 1, em::dx3);
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      e0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
 
-      // Bx1
-      c000  = HALF * (DB0(i, j, em::bx1) + DB0(i, j - 1, em::bx1));
-      c100  = HALF * (DB0(i + 1, j, em::bx1) + DB0(i + 1, j - 1, em::bx1));
-      c010  = HALF * (DB0(i, j, em::bx1) + DB0(i, j + 1, em::bx1));
-      c110  = HALF * (DB0(i + 1, j, em::bx1) + DB0(i + 1, j + 1, em::bx1));
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      b0[0] = c00 * (ONE - dx2_) + c10 * dx2_;
-      // Bx2
-      c000  = HALF * (DB0(i - 1, j, em::bx2) + DB0(i, j, em::bx2));
-      c100  = HALF * (DB0(i, j, em::bx2) + DB0(i + 1, j, em::bx2));
-      c010  = HALF * (DB0(i - 1, j + 1, em::bx2) + DB0(i, j + 1, em::bx2));
-      c110  = HALF * (DB0(i, j + 1, em::bx2) + DB0(i + 1, j + 1, em::bx2));
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      b0[1] = c00 * (ONE - dx2_) + c10 * dx2_;
-      // Bx3
-      c000  = INV_4 * (DB0(i - 1, j - 1, em::bx3) + DB0(i - 1, j, em::bx3) +
-                      DB0(i, j - 1, em::bx3) + DB0(i, j, em::bx3));
-      c100  = INV_4 * (DB0(i, j - 1, em::bx3) + DB0(i, j, em::bx3) +
-                      DB0(i + 1, j - 1, em::bx3) + DB0(i + 1, j, em::bx3));
-      c010  = INV_4 * (DB0(i - 1, j, em::bx3) + DB0(i - 1, j + 1, em::bx3) +
-                      DB0(i, j, em::bx3) + DB0(i, j + 1, em::bx3));
-      c110  = INV_4 * (DB0(i, j, em::bx3) + DB0(i, j + 1, em::bx3) +
-                      DB0(i + 1, j, em::bx3) + DB0(i + 1, j + 1, em::bx3));
-      c00   = c000 * (ONE - dx1_) + c100 * dx1_;
-      c10   = c010 * (ONE - dx1_) + c110 * dx1_;
-      b0[2] = c00 * (ONE - dx2_) + c10 * dx2_;
-    } else if constexpr (D == Dim::_3D) {
-      raise::KernelNotImplementedError(HERE);
-    }
+          // first order
+          real_t c0, c1;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+
+          // Ex1
+          // Interpolate --- (dual)
+          c0    = DB(i - 1 + indx, em::dx1);
+          c1    = DB(i + indx, em::dx1);
+          e0[0] = c0 * pondmx + c1 * pondpx;
+          // Ex2
+          // Interpolate --- (primal)
+          c0    = DB(i, em::dx2);
+          c1    = DB(i + 1, em::dx2);
+          e0[1] = c0 * ponpmx + c1 * ponppx;
+          // Ex3
+          // Interpolate --- (primal)
+          c0    = DB(i, em::dx3);
+          c1    = DB(i + 1, em::dx3);
+          e0[2] = c0 * ponpmx + c1 * ponppx;
+          // Bx1
+          // Interpolate --- (primal)
+          c0    = DB0(i, em::bx1);
+          c1    = DB0(i + 1, em::bx1);
+          b0[0] = c0 * ponpmx + c1 * ponppx;
+          // Bx2
+          // Interpolate --- (dual)
+          c0    = DB0(i - 1 + indx, em::bx2);
+          c1    = DB0(i + indx, em::bx2);
+          b0[1] = c0 * pondmx + c1 * pondpx;
+          // Bx3
+          // Interpolate --- (dual)
+          c0    = DB0(i - 1 + indx, em::bx3);
+          c1    = DB0(i + indx, em::bx3);
+          b0[2] = c0 * pondmx + c1 * pondpx;
+        } else if constexpr (D == Dim::_2D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
+
+          // first order
+          real_t c000, c100, c010, c110, c00, c10;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
+
+          // Ex1
+          // Interpolate --- (dual, primal)
+          c000  = DB(i - 1 + indx, j, em::dx1);
+          c100  = DB(i + indx, j, em::dx1);
+          c010  = DB(i - 1 + indx, j + 1, em::dx1);
+          c110  = DB(i + indx, j + 1, em::dx1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          e0[0] = c00 * ponpmy + c10 * ponppy;
+          // Ex2
+          // Interpolate -- (primal, dual)
+          c000  = DB(i, j - 1 + indy, em::dx2);
+          c100  = DB(i + 1, j - 1 + indy, em::dx2);
+          c010  = DB(i, j + indy, em::dx2);
+          c110  = DB(i + 1, j + indy, em::dx2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[1] = c00 * pondmy + c10 * pondpy;
+          // Ex3
+          // Interpolate -- (primal, primal)
+          c000  = DB(i, j, em::dx3);
+          c100  = DB(i + 1, j, em::dx3);
+          c010  = DB(i, j + 1, em::dx3);
+          c110  = DB(i + 1, j + 1, em::dx3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          e0[2] = c00 * ponpmy + c10 * ponppy;
+
+          // Bx1
+          // Interpolate -- (primal, dual)
+          c000  = DB0(i, j - 1 + indy, em::bx1);
+          c100  = DB0(i + 1, j - 1 + indy, em::bx1);
+          c010  = DB0(i, j + indy, em::bx1);
+          c110  = DB0(i + 1, j + indy, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          b0[0] = c00 * pondmy + c10 * pondpy;
+          // Bx2
+          // Interpolate -- (dual, primal)
+          c000  = DB0(i - 1 + indx, j, em::bx2);
+          c100  = DB0(i + indx, j, em::bx2);
+          c010  = DB0(i - 1 + indx, j + 1, em::bx2);
+          c110  = DB0(i + indx, j + 1, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[1] = c00 * ponpmy + c10 * ponppy;
+          // Bx3
+          // Interpolate -- (dual, dual)
+          c000  = DB0(i - 1 + indx, j - 1 + indy, em::bx3);
+          c100  = DB0(i + indx, j - 1 + indy, em::bx3);
+          c010  = DB0(i - 1 + indx, j + indy, em::bx3);
+          c110  = DB0(i + indx, j + indy, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          b0[2] = c00 * pondmy + c10 * pondpy;
+        } else if constexpr (D == Dim::_3D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+          // direct interpolation - Arno
+          int indx = static_cast<int>(dx1_ + HALF);
+          int indy = static_cast<int>(dx2_ + HALF);
+          int indz = static_cast<int>(dx3_ + HALF);
+
+          // first order
+          real_t c000, c100, c010, c110, c001, c101, c011, c111, c00, c10, c01,
+            c11, c0, c1;
+
+          real_t ponpmx = ONE - dx1_;
+          real_t ponppx = dx1_;
+          real_t ponpmy = ONE - dx2_;
+          real_t ponppy = dx2_;
+          real_t ponpmz = ONE - dx3_;
+          real_t ponppz = dx3_;
+
+          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondpx = ONE - pondmx;
+          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondpy = ONE - pondmy;
+          real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+          real_t pondpz = ONE - pondmz;
+
+          // Ex1
+          // Interpolate --- (dual, primal, primal)
+          c000  = DB(i - 1 + indx, j, k, em::dx1);
+          c100  = DB(i + indx, j, k, em::dx1);
+          c010  = DB(i - 1 + indx, j + 1, k, em::dx1);
+          c110  = DB(i + indx, j + 1, k, em::dx1);
+          c001  = DB(i - 1 + indx, j, k + 1, em::dx1);
+          c101  = DB(i + indx, j, k + 1, em::dx1);
+          c011  = DB(i - 1 + indx, j + 1, k + 1, em::dx1);
+          c111  = DB(i + indx, j + 1, k + 1, em::dx1);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[0] = c0 * ponpmz + c1 * ponppz;
+          // Ex2
+          // Interpolate -- (primal, dual, primal)
+          c000  = DB(i, j - 1 + indy, k, em::dx2);
+          c100  = DB(i + 1, j - 1 + indy, k, em::dx2);
+          c010  = DB(i, j + indy, k, em::dx2);
+          c110  = DB(i + 1, j + indy, k, em::dx2);
+          c001  = DB(i, j - 1 + indy, k + 1, em::dx2);
+          c101  = DB(i + 1, j - 1 + indy, k + 1, em::dx2);
+          c011  = DB(i, j + indy, k + 1, em::dx2);
+          c111  = DB(i + 1, j + indy, k + 1, em::dx2);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          e0[1] = c0 * ponpmz + c1 * ponppz;
+          // Ex3
+          // Interpolate -- (primal, primal, dual)
+          c000  = DB(i, j, k - 1 + indz, em::dx3);
+          c100  = DB(i + 1, j, k - 1 + indz, em::dx3);
+          c010  = DB(i, j + 1, k - 1 + indz, em::dx3);
+          c110  = DB(i + 1, j + 1, k - 1 + indz, em::dx3);
+          c001  = DB(i, j, k + indz, em::dx3);
+          c101  = DB(i + 1, j, k + indz, em::dx3);
+          c011  = DB(i, j + 1, k + indz, em::dx3);
+          c111  = DB(i + 1, j + 1, k + indz, em::dx3);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          e0[2] = c0 * pondmz + c1 * pondpz;
+
+          // Bx1
+          // Interpolate -- (primal, dual, dual)
+          c000  = DB0(i, j - 1 + indy, k - 1 + indz, em::bx1);
+          c100  = DB0(i + 1, j - 1 + indy, k - 1 + indz, em::bx1);
+          c010  = DB0(i, j + indy, k - 1 + indz, em::bx1);
+          c110  = DB0(i + 1, j + indy, k - 1 + indz, em::bx1);
+          c001  = DB0(i, j - 1 + indy, k + indz, em::bx1);
+          c101  = DB0(i + 1, j - 1 + indy, k + indz, em::bx1);
+          c011  = DB0(i, j + indy, k + indz, em::bx1);
+          c111  = DB0(i + 1, j + indy, k + indz, em::bx1);
+          c00   = c000 * ponpmx + c100 * ponppx;
+          c10   = c010 * ponpmx + c110 * ponppx;
+          c0    = c00 * pondmy + c10 * pondpy;
+          c01   = c001 * ponpmx + c101 * ponppx;
+          c11   = c011 * ponpmx + c111 * ponppx;
+          c1    = c01 * pondmy + c11 * pondpy;
+          b0[0] = c0 * pondmz + c1 * pondpz;
+          // Bx2
+          // Interpolate -- (dual, primal, dual)
+          c000  = DB0(i - 1 + indx, j, k - 1 + indz, em::bx2);
+          c100  = DB0(i + indx, j, k - 1 + indz, em::bx2);
+          c010  = DB0(i - 1 + indx, j + 1, k - 1 + indz, em::bx2);
+          c110  = DB0(i + indx, j + 1, k - 1 + indz, em::bx2);
+          c001  = DB0(i - 1 + indx, j, k + indz, em::bx2);
+          c101  = DB0(i + indx, j, k + indz, em::bx2);
+          c011  = DB0(i - 1 + indx, j + 1, k + indz, em::bx2);
+          c111  = DB0(i + indx, j + 1, k + indz, em::bx2);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[1] = c0 * pondmz + c1 * pondpz;
+          // Bx3
+          // Interpolate -- (dual, dual, primal)
+          c000  = DB0(i - 1 + indx, j - 1 + indy, k, em::bx3);
+          c100  = DB0(i + indx, j - 1 + indy, k, em::bx3);
+          c010  = DB0(i - 1 + indx, j + indy, k, em::bx3);
+          c110  = DB0(i + indx, j + indy, k, em::bx3);
+          c001  = DB0(i - 1 + indx, j - 1 + indy, k + 1, em::bx3);
+          c101  = DB0(i + indx, j - 1 + indy, k + 1, em::bx3);
+          c011  = DB0(i - 1 + indx, j + indy, k + 1, em::bx3);
+          c111  = DB0(i + indx, j + indy, k + 1, em::bx3);
+          c00   = c000 * pondmx + c100 * pondpx;
+          c10   = c010 * pondmx + c110 * pondpx;
+          c0    = c00 * ponpmy + c10 * ponppy;
+          c01   = c001 * pondmx + c101 * pondpx;
+          c11   = c011 * pondmx + c111 * pondpx;
+          c1    = c01 * ponpmy + c11 * ponppy;
+          b0[2] = c0 * ponpmz + c1 * ponppz;
+        }
+      } else if constexpr (O >= 1u) {
+
+        if constexpr (D == Dim::_1D) {
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          // primal and dual shape function
+          real_t     Sp[O + 1], Sd[O + 1];
+          // minimum contributing cells
+          int        ip_min, id_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, Sp);
+
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, Sd);
+
+          // Ex1 -- dual
+          e0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[0] += Sd[idx1] * DB(id_min + idx1, em::dx1);
+          }
+
+          // Ex2 -- primal
+          e0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[1] += Sp[idx1] * DB(ip_min + idx1, em::dx2);
+          }
+
+          // Ex3 -- primal
+          e0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            e0[2] += Sp[idx1] * DB(ip_min + idx1, em::dx3);
+          }
+
+          // Bx1 -- primal
+          b0[0] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[0] += Sp[idx1] * DB0(ip_min + idx1, em::bx1);
+          }
+
+          // Bx2 -- dual
+          b0[1] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[1] += Sd[idx1] * DB0(id_min + idx1, em::bx2);
+          }
+
+          // Bx3 -- dual
+          b0[2] = ZERO;
+          for (int idx1 = 0; idx1 < O + 1; idx1++) {
+            b0[2] += Sd[idx1] * DB0(id_min + idx1, em::bx3);
+          }
+
+        } else if constexpr (D == Dim::_2D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          // minimum contributing cells
+          int    ip_min, id_min;
+          int    jp_min, jd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+
+          // Ex1 -- dual, primal
+          e0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * DB(id_min + idx1, jp_min + idx2, em::dx1);
+            }
+            e0[0] += c0 * S2p[idx2];
+          }
+
+          // Ex2 -- primal, dual
+          e0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * DB(ip_min + idx1, jd_min + idx2, em::dx2);
+            }
+            e0[1] += c0 * S2d[idx2];
+          }
+
+          // Ex3 -- primal, primal
+          e0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * DB(ip_min + idx1, jp_min + idx2, em::dx3);
+            }
+            e0[2] += c0 * S2p[idx2];
+          }
+
+          // Bx1 -- primal, dual
+          b0[0] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1p[idx1] * DB0(ip_min + idx1, jd_min + idx2, em::bx1);
+            }
+            b0[0] += c0 * S2d[idx2];
+          }
+
+          // Bx2 -- dual, primal
+          b0[1] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * DB0(id_min + idx1, jp_min + idx2, em::bx2);
+            }
+            b0[1] += c0 * S2p[idx2];
+          }
+
+          // Bx3 -- dual, dual
+          b0[2] = ZERO;
+          for (int idx2 = 0; idx2 < O + 1; idx2++) {
+            real_t c0 = ZERO;
+            for (int idx1 = 0; idx1 < O + 1; idx1++) {
+              c0 += S1d[idx1] * DB0(id_min + idx1, jd_min + idx2, em::bx3);
+            }
+            b0[2] += c0 * S2d[idx2];
+          }
+
+        } else if constexpr (D == Dim::_3D) {
+
+          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+
+          // primal and dual shape function
+          real_t S1p[O + 1], S1d[O + 1];
+          real_t S2p[O + 1], S2d[O + 1];
+          real_t S3p[O + 1], S3d[O + 1];
+
+          // minimum contributing cells
+          int ip_min, id_min;
+          int jp_min, jd_min;
+          int kp_min, kd_min;
+
+          // primal shape function - not staggered
+          prtl_shape::order<false, O>(i, dx1_, ip_min, S1p);
+          prtl_shape::order<false, O>(j, dx2_, jp_min, S2p);
+          prtl_shape::order<false, O>(k, dx3_, kp_min, S3p);
+          // dual shape function - staggered
+          prtl_shape::order<true, O>(i, dx1_, id_min, S1d);
+          prtl_shape::order<true, O>(j, dx2_, jd_min, S2d);
+          prtl_shape::order<true, O>(k, dx3_, kd_min, S3d);
+
+          // Ex1 -- dual, primal, primal
+          e0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       DB(id_min + idx1, jp_min + idx2, kp_min + idx3, em::dx1);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[0] += c0 * S3p[idx3];
+          }
+
+          // Ex2 -- primal, dual, primal
+          e0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       DB(ip_min + idx1, jd_min + idx2, kp_min + idx3, em::dx2);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            e0[1] += c0 * S3p[idx3];
+          }
+
+          // Ex3 -- primal, primal, dual
+          e0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       DB(ip_min + idx1, jp_min + idx2, kd_min + idx3, em::dx3);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            e0[2] += c0 * S3d[idx3];
+          }
+
+          // Bx1 -- primal, dual, dual
+          b0[0] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1p[idx1] *
+                       DB0(ip_min + idx1, jd_min + idx2, kd_min + idx3, em::bx1);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[0] += c0 * S3d[idx3];
+          }
+
+          // Bx2 -- dual, primal, dual
+          b0[1] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       DB0(id_min + idx1, jp_min + idx2, kd_min + idx3, em::bx2);
+              }
+              c0 += c00 * S2p[idx2];
+            }
+            b0[1] += c0 * S3d[idx3];
+          }
+
+          // Bx3 -- dual, dual, primal
+          b0[2] = ZERO;
+          for (int idx3 = 0; idx3 < O + 1; idx3++) {
+            real_t c0 = ZERO;
+            for (int idx2 = 0; idx2 < O + 1; idx2++) {
+              real_t c00 = ZERO;
+              for (int idx1 = 0; idx1 < O + 1; idx1++) {
+                c00 += S1d[idx1] *
+                       DB0(id_min + idx1, jd_min + idx2, kp_min + idx3, em::bx3);
+              }
+              c0 += c00 * S2d[idx2];
+            }
+            b0[2] += c0 * S3p[idx3];
+          }
+        }
+      }
+
+    // if constexpr (D == Dim::_1D) {
+    //   raise::KernelError(HERE, "interpolateFields: 1D implementation called");
+ 
+    // }
   }
 
   /* ------------------------------ Photon pusher ----------------------------- */
@@ -707,7 +1157,7 @@ namespace kernel::gr {
 
       vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
-      interpolateFields(p, Dp_cntrv, Bp_cntrv);
+      interpolateFields<SHAPE_ORDER>(p, Dp_cntrv, Bp_cntrv);
       metric.template transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat);
       metric.template transform<Idx::U, Idx::T>(xp, Bp_cntrv, Bp_hat);
 
