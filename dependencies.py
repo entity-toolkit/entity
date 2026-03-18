@@ -314,6 +314,19 @@ PRESETS = {
             "MPI_ROOT=/opt/cray/pe/craype/2.7.30",
         ],
     },
+    "lumi": {
+        "module_loads": ["PrgEnv-cray", "cray-mpich", "craype-accel-amd-gfx90a", "rocm"],
+        "kokkos_backend": "hip",
+        "kokkos_arch": "AMD_GFX90A",
+        "extra_kokkos_flags": [
+            "CMAKE_CXX_COMPILER=hipcc",
+            "AMDGPU_TARGETS=gfx90a",
+        ],
+        "extra_adios2_flags": [
+            "CMAKE_CXX_COMPILER=CC",
+            "CMAKE_C_COMPILER=cc"
+        ]
+    },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
 }
@@ -1082,24 +1095,14 @@ class App:
 
     def menu_cluster(self) -> Tuple[str, str, List[MenuItem]]:
         def choose(name: str):
+            print ("CALLING:", name)
             apply_preset(self.s, name)
             self.push("custom")
 
         return (
             "cluster-specific",
             "pick a preset:",
-            [
-                MenuItem("rusty", "apply preset", on_enter=lambda: choose("rusty")),
-                MenuItem("stellar", "apply preset", on_enter=lambda: choose("stellar")),
-                MenuItem(
-                    "perlmutter", "apply preset", on_enter=lambda: choose("perlmutter")
-                ),
-                MenuItem(
-                    "frontier", "apply preset", on_enter=lambda: choose("frontier")
-                ),
-                MenuItem("aurora", "apply preset", on_enter=lambda: choose("aurora")),
-                MenuItem("back", "", on_enter=self.pop),
-            ],
+            [MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c)) for cluster in list(PRESETS.keys())] + [MenuItem("back", "", on_enter=self.pop)],
         )
 
     def get_menu(self) -> Tuple[str, str, List[MenuItem]]:
