@@ -1,0 +1,63 @@
+[simulation]
+  name    = "custom_energy_distribution"
+  engine  = "srpic"
+  runtime = 0.1
+
+[grid]
+  resolution = [64, 64]
+  extent     = [[-1.0, 1.0], [-1.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+
+  [algorithms.deposit]
+    enable = false
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 16.0
+
+  [[particles.species]]
+    label    = "e+"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e5
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e5
+
+[setup]
+
+  temperature     = 1e-1
+  drift_amplitude = 0.5
+
+[output]
+  interval = 1
+
+  [output.fields]
+    enable = false
+
+  [output.particles]
+    enable = true
+    stride = 1
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0
