@@ -28,7 +28,7 @@ function(gen_test title is_parallel)
 
   if(${is_parallel})
     add_test(NAME "FRAMEWORK::${title}"
-             COMMAND "${MPIEXEC_EXECUTABLE}" "${MPIEXEC_NUMPROC_FLAG}" "4"
+             COMMAND "${MPIEXEC_EXECUTABLE}" "${MPIEXEC_NUMPROC_FLAG}" "2"
                      "${exec}")
   else()
     add_test(NAME "FRAMEWORK::${title}" COMMAND "${exec}")
