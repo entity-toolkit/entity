@@ -4,6 +4,8 @@ Problem generations in this directory are just examples demonstrating how to use
 
 - `custom_energy_distribution`: demonstrates how to initialize a uniform distribution of particles with two different custom-defined energy (velocity) distributions (per each species).
 
+  <img width="1024" alt="image" src="https://github.com/user-attachments/assets/d8499ab7-31dc-49e8-8381-34aa8a994be0" />
+
 - `custom_emission`: simple example where two particles are initialized on gyrating trajectories probabilistically emitting photons while the total energy is conserved.
 
   https://github.com/user-attachments/assets/6c5c399a-bbab-4b93-be5f-35fed1959fcc
