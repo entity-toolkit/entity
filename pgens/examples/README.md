@@ -7,3 +7,5 @@ Problem generations in this directory are just examples demonstrating how to use
   https://github.com/user-attachments/assets/6c5c399a-bbab-4b93-be5f-35fed1959fcc
 
 - `external_fields`: example of using external fields for supplying a time-varying and species-dependent magnetic/electric fields and/or force-field imposed on particles.
+
+  <img width="512" alt="image" src="https://github.com/user-attachments/assets/7126fcdb-7484-4695-86c1-cdd425cc4655" />
