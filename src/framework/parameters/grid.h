@@ -15,9 +15,9 @@
 #include "enums.h"
 #include "global.h"
 
-#include <toml11/toml.hpp>
-
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 #include <map>
 #include <tuple>

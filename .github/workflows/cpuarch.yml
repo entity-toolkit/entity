@@ -63,8 +63,10 @@ jobs:
           cmake --version
       - name: Install OpenMPI 5
         run: |
-          sudo apt-get install -y libopenmpi-dev openmpi-bin
-          mpirun --version
+          if [ "${{ matrix.mpi }}" = "ON" ]; then
+            sudo apt-get install -y libopenmpi-dev openmpi-bin
+            mpirun --version
+          fi
       - name: Configure
         run: |
           if [ "${{ matrix.mpi }}" = "ON" ]; then
@@ -87,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pgen: [streaming, turbulence, reconnection, shock, magnetosphere, accretion, wald]
+        pgen: [streaming, turbulence, reconnection, shock, magnetosphere, accretion, wald, examples/custom_emission, examples/external_fields]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

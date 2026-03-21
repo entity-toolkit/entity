@@ -4,9 +4,10 @@
 #include "global.h"
 
 #include "utils/numeric.h"
-#include <toml11/toml.hpp>
 
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 namespace ntt {
   namespace params {

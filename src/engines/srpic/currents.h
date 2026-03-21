@@ -13,7 +13,6 @@
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-
 #include "kernels/currents_deposit.hpp"
 #include "kernels/digital_filter.hpp"
 

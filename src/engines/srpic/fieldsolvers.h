@@ -12,7 +12,6 @@
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-
 #include "kernels/ampere_mink.hpp"
 #include "kernels/ampere_sr.hpp"
 #include "kernels/faraday_mink.hpp"

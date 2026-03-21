@@ -9,7 +9,7 @@
  *   - arch::traits::pgen::HasD<> - checks if problem generator has Dim static member
  *   - arch::traits::pgen::HasInitFlds<> - checks if problem generator has init_flds member
  *   - arch::traits::pgen::HasInitPrtls<> - checks if problem generator has InitPrtls method
- *   - arch::traits::pgen::HasExtForce<> - checks if problem generator has ext_force member
+ *   - arch::traits::pgen::HasExternalFields<> - checks if problem generator has ExternalFields method
  *   - arch::traits::pgen::HasExtCurrent<> - checks if problem generator has ext_current member
  *   - arch::traits::pgen::HasAtmFields<> - checks if problem generator has AtmFields method
  *   - arch::traits::pgen::HasMatchFields<> - checks if problem generator has MatchFields method
@@ -78,12 +78,27 @@ namespace arch {
       concept HasInitFlds = requires(const PG& pgen) { pgen.init_flds; };
 
       template <class PG, class D>
+      concept HasEmissionPolicy = requires(const PG& pgen,
+                                           simtime_t time,
+                                           spidx_t   sp,
+                                           D&        domain) {
+        pgen.EmissionPolicy(time, sp, domain);
+      };
+
+      template <class PG, class D>
       concept HasInitPrtls = requires(PG& pgen, D& domain) {
         { pgen.InitPrtls(domain) } -> std::same_as<void>;
       };
 
-      template <class PG>
-      concept HasExtForce = requires(const PG& pgen) { pgen.ext_force; };
+      template <class PG, class D>
+      concept HasExternalFields = requires(const PG& pgen,
+                                           simtime_t time,
+                                           spidx_t   sp,
+                                           D&        domain) {
+        requires std::same_as<bool,
+                              decltype(pgen.ExternalFields(time, sp, domain).first)>;
+        pgen.ExternalFields(time, sp, domain).second;
+      };
 
       template <class PG>
       concept HasExtCurrent = requires(const PG& pgen) { pgen.ext_current; };

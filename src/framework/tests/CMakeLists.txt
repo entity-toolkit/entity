@@ -28,24 +28,32 @@ function(gen_test title is_parallel)
 
   if(${is_parallel})
     add_test(NAME "FRAMEWORK::${title}"
-             COMMAND "${MPIEXEC_EXECUTABLE}" "${MPIEXEC_NUMPROC_FLAG}" "4"
+             COMMAND "${MPIEXEC_EXECUTABLE}" "${MPIEXEC_NUMPROC_FLAG}" "2"
                      "${exec}")
   else()
     add_test(NAME "FRAMEWORK::${title}" COMMAND "${exec}")
   endif()
 endfunction()
 
+gen_test(parameters false)
 if(${mpi})
-  gen_test(comm_mpi true)
+  gen_test(particles true)
+  gen_test(particles_sort true)
 else()
-  gen_test(parameters false)
   gen_test(particles false)
-  gen_test(fields false)
-  gen_test(grid_mesh false)
-  if(${DEBUG})
-    gen_test(metadomain false)
-  endif()
-  gen_test(comm_nompi false)
+  gen_test(particles_sort false)
+endif()
+
+gen_test(fields false)
+gen_test(grid_mesh false)
+if(${DEBUG})
+  gen_test(metadomain false)
+endif()
+
+if(${mpi})
+  gen_test(comm-mpi true)
+else()
+  gen_test(comm-nompi false)
 endif()
 
 # this test is only run manually to ensure ...

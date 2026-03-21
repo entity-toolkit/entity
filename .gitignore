@@ -40,6 +40,7 @@ venv/
 *.mov
 *.mp4
 !pgens/**/*.png
+!pgens/**/*.mp4
 
 # Accidental files
 *.xc
@@ -59,3 +60,4 @@ tags
 action-token
 *.vim
 ignore-*
+tombi/

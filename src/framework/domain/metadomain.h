@@ -5,6 +5,10 @@
  *   - ntt::Metadomain<>
  * @cpp:
  *   - metadomain.cpp
+ *   - metadomain_comm.cpp
+ *   - metadomain_chckpt.cpp
+ *   - metadomain_io.cpp
+ *   - metadomain_stats.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -92,10 +96,15 @@ namespace ntt {
       }
     }
 
-    void CommunicateFields(Domain<S, M>&, CommTags);
-    void SynchronizeFields(Domain<S, M>&, CommTags, const range_tuple_t& = { 0, 0 });
-    void CommunicateParticles(Domain<S, M>&);
-    void RemoveDeadParticles(Domain<S, M>&);
+    void CommunicateFields(Domain<S, M>&, CommTags) const;
+    void SynchronizeFields(Domain<S, M>&,
+                           CommTags,
+                           const range_tuple_t& = { 0, 0 }) const;
+    void CommunicateParticles(Domain<S, M>&) const;
+    void SortParticles(simtime_t,
+                       timestep_t,
+                       const SimulationParams&,
+                       Domain<S, M>&) const;
 
     /**
      * @param global_ndomains total number of domains
@@ -177,6 +186,12 @@ namespace ntt {
 
     [[nodiscard]]
     auto subdomain_ptr(unsigned int idx) -> Domain<S, M>* {
+      raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
+      return &g_subdomains[idx];
+    }
+
+    [[nodiscard]]
+    auto subdomain_ptr(unsigned int idx) const -> const Domain<S, M>* {
       raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
       return &g_subdomains[idx];
     }

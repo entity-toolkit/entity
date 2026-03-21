@@ -16,7 +16,6 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
-
 #include "kernels/particle_moments.hpp"
 
 namespace ntt {

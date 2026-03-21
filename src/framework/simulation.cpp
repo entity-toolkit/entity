@@ -9,6 +9,7 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 #include "utils/plog.h"
+
 #include <toml11/toml.hpp>
 
 #include <filesystem>

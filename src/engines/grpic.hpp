@@ -19,12 +19,9 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
-#include <toml11/toml.hpp>
 
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-
-#include "engines/engine.hpp"
 #include "kernels/ampere_gr.hpp"
 #include "kernels/aux_fields_gr.hpp"
 #include "kernels/currents_deposit.hpp"
@@ -32,10 +29,13 @@
 #include "kernels/faraday_gr.hpp"
 #include "kernels/fields_bcs.hpp"
 #include "kernels/particle_pusher_gr.hpp"
+
+#include "engines/engine.hpp"
 #include "pgen.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <toml11/toml.hpp>
 
 #include <string>
 #include <utility>
@@ -532,11 +532,9 @@ namespace ntt {
         timers.stop("FieldBoundaries");
       }
 
-      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
-        timers.start("PrtlClear");
-        m_metadomain.RemoveDeadParticles(dom);
-        timers.stop("PrtlClear");
-      }
+      timers.start("ParticleSort");
+      m_metadomain.SortParticles(time, step, m_params, dom);
+      timers.stop("ParticleSort");
 
       /**
        * Finally: em0::B   at n-1/2

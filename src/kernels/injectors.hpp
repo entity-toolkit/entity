@@ -72,7 +72,9 @@ namespace kernel {
     weight_arr(p) = weight;
     if constexpr (T) {
       pld_i_arr(p, pldi::spcCtr) = species_cntr;
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+      (void)domain_idx;
+#else
       pld_i_arr(p, pldi::domIdx) = domain_idx;
 #endif
     }

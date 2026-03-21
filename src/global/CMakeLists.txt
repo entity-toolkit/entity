@@ -41,4 +41,7 @@ target_include_directories(
   ntt_global
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(ntt_global PRIVATE stdc++fs)
+if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+  target_link_libraries(ntt_global PRIVATE stdc++fs)
+endif()
+

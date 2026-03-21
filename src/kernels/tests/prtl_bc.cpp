@@ -7,6 +7,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "kernels/emission/emission.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -49,8 +50,6 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
                     const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
   errorIf(M::CoordType != Coord::Cart, "M::CoordType != Coord::Cart");
-  // aliases
-  const auto NoExtForce = false;
 
   real_t sx = ZERO, sy = ZERO, sz = ZERO;
   if (ext.size() > 0) {
@@ -266,12 +265,19 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   pusher_arrays.ux3      = ux3;
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
+  const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
 
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M>(pusher_params, pusher_arrays, emfield, metric));
+      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission)>(
+        pusher_params,
+        pusher_arrays,
+        emfield,
+        metric,
+        kernel::sr::NoField_t {},
+        no_emission));
     auto i1_  = Kokkos::create_mirror_view(i1);
     auto i2_  = Kokkos::create_mirror_view(i2);
     auto i3_  = Kokkos::create_mirror_view(i3);

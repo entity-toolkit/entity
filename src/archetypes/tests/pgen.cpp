@@ -24,7 +24,15 @@ struct CustomFieldsetter {
 
 template <Dimension D>
 struct ExtForce {
-  Inline auto fx1(spidx_t, simtime_t, const coord_t<D>&) const -> real_t {
+  Inline auto fx1(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  Inline auto ex1(const coord_t<D>&) const -> real_t {
+    return ZERO;
+  }
+
+  Inline auto bx3(const coord_t<D>&) const -> real_t {
     return ZERO;
   }
 };
@@ -42,7 +50,6 @@ struct CustomPgen : public arch::ProblemGenerator<S, M> {
     : arch::ProblemGenerator<S, M> { params } {}
 
   CustomFieldsetter<M::Dim> init_flds {};
-  ExtForce<M::Dim>          ext_force {};
   ExtCurrent<M::Dim>        ext_current {};
 
   void InitPrtls(Domain<S, M>&) {}
@@ -65,6 +72,11 @@ struct CustomPgen : public arch::ProblemGenerator<S, M> {
 
   auto MatchFieldsInX3(simtime_t) const -> CustomFieldsetter<M::Dim> {
     return init_flds;
+  }
+
+  auto ExternalFields(simtime_t, spidx_t, const Domain<S, M>&) const
+    -> std::pair<bool, ExtForce<M::Dim>> {
+    return { true, ExtForce<M::Dim> {} };
   }
 
   auto FixFieldsConst(simtime_t, const bc_in&, ntt::em) const
@@ -100,8 +112,10 @@ auto main(int argc, char* argv[]) -> int {
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have InitPrtls");
     }
-    if constexpr (not arch::traits::pgen::HasExtForce<decltype(custom_pgen)>) {
-      throw std::runtime_error("CustomPgen should have ext_force");
+    if constexpr (not arch::traits::pgen::HasExternalFields<
+                    decltype(custom_pgen),
+                    Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
+      throw std::runtime_error("CustomPgen should have ext_fields");
     }
     if constexpr (not arch::traits::pgen::HasExtCurrent<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have ext_current");
@@ -141,6 +155,24 @@ auto main(int argc, char* argv[]) -> int {
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have CustomStat");
+    }
+    auto domain = Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>> {
+      false, 0u, { 0u }, { 0u }, { 10u }, { { (real_t)0.0, (real_t)1.0 } },
+      {},    {}
+    };
+    auto [apply_extfields,
+          ext_fields] = custom_pgen.ExternalFields(ZERO, 0, domain);
+    if constexpr (not ::traits::external::HasFx1<decltype(ext_fields), Dim::_1D>) {
+      throw std::runtime_error("CustomPgen's ext_fields should have fx1");
+    }
+    if constexpr (not ::traits::external::HasEx1<decltype(ext_fields), Dim::_1D>) {
+      throw std::runtime_error("CustomPgen's ext_fields should have ex1");
+    }
+    if constexpr (::traits::external::HasBx1<decltype(ext_fields), Dim::_1D>) {
+      throw std::runtime_error("CustomPgen's ext_fields should not have bx1");
+    }
+    if constexpr (not ::traits::external::HasBx3<decltype(ext_fields), Dim::_1D>) {
+      throw std::runtime_error("CustomPgen's ext_current should have bx3");
     }
 
   } catch (std::exception& e) {

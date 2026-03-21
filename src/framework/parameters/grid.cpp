@@ -6,7 +6,6 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include <toml11/toml.hpp>
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -16,6 +15,8 @@
 #include "metrics/spherical.h"
 
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 #include <map>
 #include <string>

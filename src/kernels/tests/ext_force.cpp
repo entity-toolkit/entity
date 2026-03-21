@@ -8,6 +8,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "kernels/emission/emission.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -49,19 +50,17 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 }
 
 struct Force {
-  const std::vector<spidx_t> species { 1 };
-
   Force(real_t force) : force { force } {}
 
-  Inline auto fx1(spidx_t, simtime_t, const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx1(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::sin(ONE);
   }
 
-  Inline auto fx2(spidx_t, simtime_t, const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx2(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::cos(ONE);
   }
 
-  Inline auto fx3(spidx_t, simtime_t, const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx3(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::cos(ONE);
   }
 
@@ -156,8 +155,6 @@ void testPusher(const std::vector<std::size_t>& res) {
   const real_t eps = std::is_same_v<real_t, float> ? 1e-4 : 1e-6;
 
   const auto ext_force = Force { f_mag };
-  const auto force =
-    kernel::sr::Force<Dim::_3D, Coord::Cart, decltype(ext_force), false> { ext_force };
 
   static plog::RollingFileAppender<plog::NttInfoFormatter> file_appender(
     "pusher_log.csv");
@@ -178,7 +175,6 @@ void testPusher(const std::vector<std::size_t>& res) {
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
   };
-  pusher_params.ext_force = true;
 
   kernel::sr::PusherArrays pusher_arrays {};
   pusher_arrays.sp       = 1u;
@@ -200,6 +196,9 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
 
+  const auto no_emission =
+    kernel::NoEmissionPolicy_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
+
   for (auto t { 0u }; t < 100; ++t) {
     const real_t time  = t * dt;
     pusher_params.time = time;
@@ -207,11 +206,13 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(force)>(pusher_params,
-                                                                      pusher_arrays,
-                                                                      emfield,
-                                                                      metric,
-                                                                      force));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(ext_force), false, decltype(no_emission)>(
+        pusher_params,
+        pusher_arrays,
+        emfield,
+        metric,
+        ext_force,
+        no_emission));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);

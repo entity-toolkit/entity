@@ -1,5 +1,3 @@
-#include "framework/domain/comm_mpi.hpp"
-
 #include "enums.h"
 #include "global.h"
 
@@ -7,6 +5,8 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
+
+#include "framework/domain/comm_mpi.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <mpi.h>

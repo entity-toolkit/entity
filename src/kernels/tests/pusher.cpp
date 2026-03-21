@@ -7,6 +7,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "kernels/emission/emission.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -176,6 +177,8 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.ux3      = ux3;
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
+  const auto no_emission =
+    kernel::NoEmissionPolicy_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
 
   for (auto t { 0u }; t < 2000; ++t) {
     const real_t time  = t * dt;
@@ -185,20 +188,26 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params,
-                                                     pusher_arrays,
-                                                     emfield,
-                                                     metric));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, kernel::sr::NoField_t, false, decltype(no_emission)>(
+        pusher_params,
+        pusher_arrays,
+        emfield,
+        metric,
+        kernel::sr::NoField_t {},
+        no_emission));
 
     pusher_params.pusher_flags = ParticlePusher::VAY;
 
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_params,
-                                                     pusher_arrays,
-                                                     emfield,
-                                                     metric));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, kernel::sr::NoField_t, false, decltype(no_emission)>(
+        pusher_params,
+        pusher_arrays,
+        emfield,
+        metric,
+        kernel::sr::NoField_t {},
+        no_emission));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);

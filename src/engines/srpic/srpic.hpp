@@ -18,7 +18,6 @@
 
 #include "utils/numeric.h"
 #include "utils/timer.h"
-#include <toml11/toml.hpp>
 
 #include "engines/srpic/currents.h"
 #include "engines/srpic/fields_bcs.h"
@@ -34,6 +33,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <toml11/toml.hpp>
 
 namespace ntt {
 
@@ -69,8 +69,6 @@ namespace ntt {
         "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.deposit.enable");
-      const auto clear_interval = m_params.template get<std::size_t>(
-        "particles.clear_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
@@ -186,11 +184,9 @@ namespace ntt {
         timers.stop("Injector");
       }
 
-      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
-        timers.start("PrtlClear");
-        m_metadomain.RemoveDeadParticles(dom);
-        timers.stop("PrtlClear");
-      }
+      timers.start("ParticleSort");
+      m_metadomain.SortParticles(time, step, m_params, dom);
+      timers.stop("ParticleSort");
     }
   };
 
