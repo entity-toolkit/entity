@@ -149,8 +149,7 @@ namespace ntt {
         domain.species[photon_species - 1].set_counter(
           emitted_species.counter() + n_inj[0]);
       } else if (emission_policy_flag == EmissionType::CUSTOM) {
-        if constexpr (
-          arch::traits::pgen::HasEmissionPolicy<PG, M, decltype(domain)>) {
+        if constexpr (arch::traits::pgen::HasEmissionPolicy<PG, decltype(domain)>) {
           const auto emission_policy = pgen.EmissionPolicy(pusher_params.time,
                                                            pusher_params.species_index,
                                                            domain);
@@ -193,6 +192,83 @@ namespace ntt {
         }
       } else {
         raise::Error("Unrecognized emission policy flag", HERE);
+      }
+    }
+
+    template <class M, class PG, bool Atm>
+    void CallPusher_WithAtmFlag(Domain<SimEngine::SRPIC, M>&    domain,
+                                const SimulationParams&         params,
+                                const kernel::sr::PusherParams& pusher_params,
+                                kernel::sr::PusherArrays&       pusher_arrays,
+                                EmissionTypeFlag         emission_policy_flag,
+                                const range_t<Dim::_1D>& range,
+                                const ndfield_t<M::Dim, 6>& EB,
+                                const M&                    metric,
+                                const PG&                   pgen) {
+      if constexpr (arch::traits::pgen::HasExternalFields<PG, decltype(domain)>) {
+        auto [apply_extfields,
+              external_fields] = pgen.ExternalFields(pusher_params.time,
+                                                     pusher_params.species_index,
+                                                     domain);
+        if (apply_extfields) {
+          CallPusher_WithExternalFieldFlag<M, decltype(external_fields), decltype(pgen), Atm>(
+            domain,
+            params,
+            pusher_params,
+            pusher_arrays,
+            emission_policy_flag,
+            range,
+            domain.fields.em,
+            domain.mesh.metric,
+            pgen,
+            external_fields);
+          return;
+        }
+      }
+      CallPusher_WithExternalFieldFlag<M, kernel::sr::NoField_t, decltype(pgen), Atm>(
+        domain,
+        params,
+        pusher_params,
+        pusher_arrays,
+        emission_policy_flag,
+        range,
+        domain.fields.em,
+        domain.mesh.metric,
+        pgen,
+        kernel::sr::NoField_t {});
+    }
+
+    template <class M, class PG>
+    void CallPusher(Domain<SimEngine::SRPIC, M>&    domain,
+                    const SimulationParams&         params,
+                    const kernel::sr::PusherParams& pusher_params,
+                    kernel::sr::PusherArrays&       pusher_arrays,
+                    EmissionTypeFlag                emission_policy_flag,
+                    const range_t<Dim::_1D>&        range,
+                    const ndfield_t<M::Dim, 6>&     EB,
+                    const M&                        metric,
+                    const PG&                       pgen,
+                    bool                            has_atmosphere) {
+      if (not has_atmosphere) {
+        CallPusher_WithAtmFlag<M, decltype(pgen), false>(domain,
+                                                         params,
+                                                         pusher_params,
+                                                         pusher_arrays,
+                                                         emission_policy_flag,
+                                                         range,
+                                                         domain.fields.em,
+                                                         domain.mesh.metric,
+                                                         pgen);
+      } else {
+        CallPusher_WithAtmFlag<M, decltype(pgen), true>(domain,
+                                                        params,
+                                                        pusher_params,
+                                                        pusher_arrays,
+                                                        emission_policy_flag,
+                                                        range,
+                                                        domain.fields.em,
+                                                        domain.mesh.metric,
+                                                        pgen);
       }
     }
 
@@ -298,79 +374,18 @@ namespace ntt {
             "compton_gamma_rad",
             params.template get<real_t>("radiation.drag.compton.gamma_rad"));
         }
-
         auto pusher_arrays = species.PusherKernelArrays();
 
-        // toggle to indicate whether pgen defines the external force
-        bool has_extfields = false;
-        if constexpr (arch::traits::pgen::HasExtFields<PG>) {
-          has_extfields = true;
-          // toggle to indicate whether the ext force applies to current species
-          if (::traits::has_member<::traits::species_t, decltype(PG::ext_fields)>::value) {
-            has_extfields &= std::find(pgen.ext_fields.species.begin(),
-                                       pgen.ext_fields.species.end(),
-                                       species.index()) !=
-                             pgen.ext_fields.species.end();
-          }
-        }
-
-        if (not has_atmosphere and not has_extfields) {
-          CallPusher<M, kernel::sr::NoField_t, decltype(pgen), false>(
-            domain,
-            params,
-            pusher_params,
-            pusher_arrays,
-            species.emission_policy_flag(),
-            species.rangeActiveParticles(),
-            domain.fields.em,
-            domain.mesh.metric,
-            pgen,
-            kernel::sr::NoField_t {});
-        } else if (has_atmosphere and not has_extfields) {
-          CallPusher<M, kernel::sr::NoField_t, decltype(pgen), true>(
-            domain,
-            params,
-            pusher_params,
-            pusher_arrays,
-            species.emission_policy_flag(),
-            species.rangeActiveParticles(),
-            domain.fields.em,
-            domain.mesh.metric,
-            pgen,
-            kernel::sr::NoField_t {});
-        } else if (not has_atmosphere and has_extfields) {
-          if constexpr (arch::traits::pgen::HasExtFields<PG>) {
-            CallPusher<M, decltype(pgen.ext_fields), decltype(pgen), false>(
-              domain,
-              params,
-              pusher_params,
-              pusher_arrays,
-              species.emission_policy_flag(),
-              species.rangeActiveParticles(),
-              domain.fields.em,
-              domain.mesh.metric,
-              pgen,
-              pgen.ext_fields);
-          } else {
-            raise::Error("External fields not implemented", HERE);
-          }
-        } else { // has_atmosphere and has_extforce
-          if constexpr (arch::traits::pgen::HasExtFields<PG>) {
-            CallPusher<M, decltype(pgen.ext_fields), decltype(pgen), true>(
-              domain,
-              params,
-              pusher_params,
-              pusher_arrays,
-              species.emission_policy_flag(),
-              species.rangeActiveParticles(),
-              domain.fields.em,
-              domain.mesh.metric,
-              pgen,
-              pgen.ext_fields);
-          } else {
-            raise::Error("External fields not implemented", HERE);
-          }
-        }
+        CallPusher<M, decltype(pgen)>(domain,
+                                      params,
+                                      pusher_params,
+                                      pusher_arrays,
+                                      species.emission_policy_flag(),
+                                      species.rangeActiveParticles(),
+                                      domain.fields.em,
+                                      domain.mesh.metric,
+                                      pgen,
+                                      has_atmosphere);
       }
     }
 

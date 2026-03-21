@@ -87,75 +87,48 @@ namespace traits {
 
   namespace external {
     template <class T, Dimension D>
-    concept HasFx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasFx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasFx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>

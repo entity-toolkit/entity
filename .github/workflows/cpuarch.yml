@@ -89,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pgen: [streaming, turbulence, reconnection, shock, magnetosphere, accretion, wald, examples/custom_emission]
+        pgen: [streaming, turbulence, reconnection, shock, magnetosphere, accretion, wald, examples/custom_emission, examples/external_fields]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
