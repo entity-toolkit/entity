@@ -125,6 +125,7 @@ namespace ntt {
                                        "larmor_max",
                                        ZERO);
       }
+
     }
 
     void Algorithms::setParams(const std::map<std::string, bool>& extra,

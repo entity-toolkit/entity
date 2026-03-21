@@ -56,6 +56,11 @@ namespace ntt {
     struct Grid {
       unsigned int     number_of_domains;
       std::vector<int> domain_decomposition;
+      unsigned int     load_balancing_interval;
+      std::vector<int> load_balancing_dimensions;
+      bool             load_balancing_enable;
+      unsigned int     load_balancing_max_iterations;
+      real_t           load_balancing_tolerance;
 
       std::vector<ncells_t> resolution;
       Dimension             dim;

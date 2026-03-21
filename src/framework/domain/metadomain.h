@@ -106,6 +106,8 @@ namespace ntt {
                        const SimulationParams&,
                        Domain<S, M>&) const;
 
+    void BalanceLoad(const SimulationParams&);
+
     /**
      * @param global_ndomains total number of domains
      * @param global_decomposition decomposition of the global domain

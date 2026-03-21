@@ -385,6 +385,39 @@ namespace ntt {
         "decomposition",
         std::vector<int> { -1, -1, -1 });
 
+      load_balancing_enable = toml::find_or(toml_data,
+                                            "simulation",
+                                            "domain",
+                                            "load_balancing",
+                                            "enable",
+                                            false);
+      load_balancing_interval = toml::find_or(toml_data,
+                                              "simulation",
+                                              "domain",
+                                              "load_balancing",
+                                              "interval",
+                                              0u);
+      load_balancing_dimensions = toml::find_or<std::vector<int>>(
+        toml_data,
+        "simulation",
+        "domain",
+        "load_balancing",
+        "dimensions",
+        std::vector<int> {});
+
+      load_balancing_max_iterations = toml::find_or(toml_data,
+                                                    "simulation",
+                                                    "domain",
+                                                    "load_balancing",
+                                                    "max_iterations",
+                                                    10);
+      load_balancing_tolerance = toml::find_or(toml_data,
+                                               "simulation",
+                                               "domain",
+                                               "load_balancing",
+                                               "tolerance",
+                                               0.1);
+
       /* resolution and dimension ------------------------------------------- */
       resolution = toml::find<std::vector<ncells_t>>(toml_data, "grid", "resolution");
       raise::ErrorIf(resolution.size() < 1 || resolution.size() > 3,
@@ -533,6 +566,11 @@ namespace ntt {
     void Grid::setParams(SimulationParams* params) const {
       params->set("simulation.domain.number", number_of_domains);
       params->set("simulation.domain.decomposition", domain_decomposition);
+      params->set("simulation.domain.load_balancing.enable", load_balancing_enable);
+      params->set("simulation.domain.load_balancing.interval", load_balancing_interval);
+      params->set("simulation.domain.load_balancing.dimensions", load_balancing_dimensions);
+      params->set("simulation.domain.load_balancing.max_iterations", load_balancing_max_iterations);
+      params->set("simulation.domain.load_balancing.tolerance", load_balancing_tolerance);
 
       params->set("grid.resolution", resolution);
       params->set("grid.dim", dim);
