@@ -93,8 +93,8 @@ namespace kernel {
                                ? (boundaries[2].second == FldsBC::CONDUCTOR)
                                : false }
       , i1_max { size_[0] + N_GHOSTS }
-      , i2_max { (short)D > 1 ? (size_[1] + N_GHOSTS) : 0 }
-      , i3_max { (short)D > 2 ? (size_[2] + N_GHOSTS) : 0 } {}
+      , i2_max { (short)D > 1 ? (size_[(short)D > 1 ? 1 : 0] + N_GHOSTS) : 0 }
+      , i3_max { (short)D > 2 ? (size_[(short)D > 2 ? 2 : 0] + N_GHOSTS) : 0 } {}
 
     Inline void operator()(index_t i1) const {
       if constexpr ((D == Dim::_1D) && (C == Coord::Cart)) {

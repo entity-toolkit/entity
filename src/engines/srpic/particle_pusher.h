@@ -36,18 +36,29 @@ namespace ntt {
                     const M&                        metric,
                     const PG&                       pgen,
                     const F&                        external_fields) {
+      auto get_custom_prtl_bc = [&]() {
+        if constexpr (arch::traits::pgen::HasCustomPrtlBC<PG, M, decltype(domain)>) {
+          return pgen.CustomParticleBoundary(
+            pusher_params.time, pusher_params.species_index, domain);
+        } else {
+          return kernel::sr::NoCustomPrtlBC_t<SimEngine::SRPIC, M> {};
+        }
+      };
+      const auto custom_prtl_bc = get_custom_prtl_bc();
+
       if (emission_policy_flag == EmissionType::NONE) {
         const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, Atm, decltype(no_emission)>(
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(no_emission), decltype(custom_prtl_bc)>(
             pusher_params,
             pusher_arrays,
             EB,
             metric,
             external_fields,
-            no_emission));
+            no_emission,
+            custom_prtl_bc));
       } else if (emission_policy_flag == EmissionType::SYNCHROTRON) {
         const auto photon_species = params.get<spidx_t>(
           "radiation.emission.synchrotron.photon_species");
@@ -77,13 +88,14 @@ namespace ntt {
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy), decltype(custom_prtl_bc)>(
             pusher_params,
             pusher_arrays,
             EB,
             metric,
             external_fields,
-            emission_policy));
+            emission_policy,
+            custom_prtl_bc));
         const auto n_inj = emission_policy.numbers_injected();
         raise::ErrorIf(n_inj.size() != 1,
                        "Synchrotron emission should only inject one species",
@@ -120,13 +132,14 @@ namespace ntt {
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
-          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
+          kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy), decltype(custom_prtl_bc)>(
             pusher_params,
             pusher_arrays,
             EB,
             metric,
             external_fields,
-            emission_policy));
+            emission_policy,
+            custom_prtl_bc));
         const auto n_inj = emission_policy.numbers_injected();
         raise::ErrorIf(n_inj.size() != 1,
                        "Compton emission should only inject one species",
@@ -148,13 +161,14 @@ namespace ntt {
           Kokkos::parallel_for(
             "ParticlePusher",
             range,
-            kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy)>(
+            kernel::sr::Pusher_kernel<M, F, Atm, decltype(emission_policy), decltype(custom_prtl_bc)>(
               pusher_params,
               pusher_arrays,
               EB,
               metric,
               external_fields,
-              emission_policy));
+              emission_policy,
+              custom_prtl_bc));
           const auto emitted_species = emission_policy.emitted_species_indices();
           const auto n_inj = emission_policy.numbers_injected();
           raise::ErrorIf(emitted_species.size() != n_inj.size(),
