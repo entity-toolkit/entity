@@ -78,11 +78,21 @@ namespace ntt {
     const auto lb_max_iters  = static_cast<int>(params.template get<unsigned int>("simulation.domain.load_balancing.max_iterations"));
     const auto lb_tol        = static_cast<double>(params.template get<real_t>("simulation.domain.load_balancing.tolerance"));
 
+    // if no dimensions specified, skip load balancing
     if (lb_dims.empty()) return;
 
+    auto global_boundaries = std::vector<std::vector<ncells_t>> {};
+    auto offset_ncells     = std::vector<std::vector<ncells_t>> {};
+    auto global_ncells     = std::vector<std::vector<ncells_t>> {};
+    
+    // track if any boundary changed across all dimensions to avoid unnecessary domain updates
+    bool any_change = false;
+
+    // loop over all dimenstions to be load balanced
     for (int dim : lb_dims) {
+      // ToDo: fallback options for dimentions that should not be load-balanced.
       if (dim < 1 || dim > D) continue; 
-      int d = dim - 1; 
+      int d = dim - 1;
 
       int nx_domains = g_ndomains_per_dim[d];
       if (nx_domains < 2) continue;
@@ -122,7 +132,7 @@ namespace ntt {
 #endif
 
       // 2. Setup bounds vector 
-      std::vector<int> bounds(nx_domains + 1, 0);
+      std::vector<ncells_t> bounds(nx_domains + 1, 0);
       bounds[0] = 0;
       bounds[nx_domains] = global_ncells;
       
@@ -131,10 +141,11 @@ namespace ntt {
         target_idx[d] = i; 
         unsigned int flatten_idx = g_domain_offset2index[target_idx];
         const auto& dom = g_subdomains[flatten_idx];
-        bounds[i+1] = dom.offset_ncells()[d] + dom.mesh.n_active(static_cast<in>(d));
+        // compute global cell index of the right boundary of this domain
+        bounds[i+1] = dom.offset_ncells()[d] + dom.mesh.n_active(static_cast<int>(d));
       }
 
-      std::vector<int> old_bounds = bounds;
+      std::vector<ncells_t> old_bounds = bounds;
 
       // 3. Negotiate boundaries using iterative method
       for (int iter = 1; iter <= lb_max_iters; ++iter) {
@@ -150,215 +161,160 @@ namespace ntt {
         if (!moved_global) break;
       }
 
-      // Clamp bounds to ensure every domain is at least 2*N_GHOSTS+1 cells wide
-      const int L_min = 2 * N_GHOSTS + 1;
-      for (int i = 1; i < nx_domains; ++i) {
-        // ensure domain i-1 (left) is at least L_min wide
-        if (bounds[i] - bounds[i - 1] < L_min) {
-          bounds[i] = bounds[i - 1] + L_min;
-        }
-      }
-      // walk backwards to ensure domain nx_domains-1 (rightmost) is at least L_min wide
-      for (int i = nx_domains - 1; i >= 1; --i) {
-        if (bounds[i + 1] - bounds[i] < L_min) {
-          bounds[i] = bounds[i + 1] - L_min;
-        }
-      }
-
-      bool any_change = false;
+      // check if any boundary changed
       for (int i = 0; i <= nx_domains; ++i) {
         if (bounds[i] != old_bounds[i]) any_change = true;
       }
 
-      if (!any_change) continue;
+      // store updated boundaries for this dimension
+      global_boundaries.push_back(bounds);
 
+      // store offsets for this dimension (for later use in shifting particles)
+      std::vector<ncells_t> offsets(nx_domains, 0);
+      for (int i = 1; i <= nx_domains; ++i) { // first boundary is fixed at 0
+        offsets[i] = bounds[i] - old_bounds[i];
+      }
+      offset_ncells.push_back(offsets);
+
+      // store number of cells for each domain in this dimension (for later use in domain updates)
+      std::vector<ncells_t> new_ncells(nx_domains, 0);
+      for (int i = 1; i <= nx_domains; ++i) {
+        new_ncells[i] = bounds[i] - bounds[i-1];
+      }
+      global_ncells.push_back(new_ncells);
       info::Print(fmt::format("Load Balancing shifted boundaries in dimension {}", dim), true);
 
-      // 4. Update domains if boundary changed
-      std::vector<Domain<S, M>> new_subdomains;
-      new_subdomains.reserve(g_ndomains);
-      for (unsigned int idx = 0; idx < g_ndomains; ++idx) {
-        auto& old_dom = g_subdomains[idx];
-        
-        std::vector<ncells_t> new_ncells = old_dom.mesh.n_active();
-        std::vector<ncells_t> old_offset_ncells = old_dom.offset_ncells();
-        std::vector<ncells_t> new_offset_ncells = old_offset_ncells;
-        
-        int grid_i = old_dom.offset_ndomains()[d]; 
-        
-        new_offset_ncells[d] = bounds[grid_i];
-        new_ncells[d] = bounds[grid_i+1] - bounds[grid_i];
-        
-        boundaries_t<real_t> new_extent = old_dom.mesh.extent();
-        real_t x_min = 0, x_max = 0;
-        if (d == 0) {
-           x_min = g_mesh.metric.template convert<1, Crd::Cd, Crd::Ph>(new_offset_ncells[d]);
-           x_max = g_mesh.metric.template convert<1, Crd::Cd, Crd::Ph>(new_offset_ncells[d] + new_ncells[d]);
-        } else if (d == 1) {
-           if constexpr (D == Dim::_2D || D == Dim::_3D) {
-              x_min = g_mesh.metric.template convert<2, Crd::Cd, Crd::Ph>(new_offset_ncells[d]);
-              x_max = g_mesh.metric.template convert<2, Crd::Cd, Crd::Ph>(new_offset_ncells[d] + new_ncells[d]);
-           }
-        } else if (d == 2) {
-           if constexpr (D == Dim::_3D) {
-              x_min = g_mesh.metric.template convert<3, Crd::Cd, Crd::Ph>(new_offset_ncells[d]);
-              x_max = g_mesh.metric.template convert<3, Crd::Cd, Crd::Ph>(new_offset_ncells[d] + new_ncells[d]);
-           }
-        }
-        new_extent[d].first = x_min;
-        new_extent[d].second = x_max;
+    } // loop over dimensions
 
-        if (old_dom.is_placeholder()) {
-           new_subdomains.emplace_back(true, idx, old_dom.offset_ndomains(), new_offset_ncells, new_ncells, new_extent, g_metric_params, g_species_params);
-        } else {
-           new_subdomains.emplace_back(idx, old_dom.offset_ndomains(), new_offset_ncells, new_ncells, new_extent, g_metric_params, g_species_params);
-           auto& new_dom = new_subdomains.back();
-           
-           auto new_em = new_dom.fields.em;
-           auto old_em = old_dom.fields.em;
-           auto new_bckp = new_dom.fields.bckp;
-           auto old_bckp = old_dom.fields.bckp;
-           
-           int new_off_0 = new_offset_ncells[0];
-           int new_off_1 = (D > 1) ? new_offset_ncells[1] : 0;
-           int new_off_2 = (D > 2) ? new_offset_ncells[2] : 0;
-           
-           int old_off_0 = old_offset_ncells[0];
-           int old_off_1 = (D > 1) ? old_offset_ncells[1] : 0;
-           int old_off_2 = (D > 2) ? old_offset_ncells[2] : 0;
-           
-           int old_ext_0 = old_em.extent(0);
-           int old_ext_1 = (D > 1) ? old_em.extent(1) : 0;
-           int old_ext_2 = (D > 2) ? old_em.extent(2) : 0;
+    // no changes, skip domain updates
+    if (!any_change) return;
 
-           if constexpr (D == Dim::_1D) {
-             Kokkos::parallel_for("CopyFields_LB_1D", new_dom.mesh.rangeActiveCells(), KOKKOS_LAMBDA(int i1) {
-               int gx1 = new_off_0 + i1 - N_GHOSTS;
-               int old_i1 = gx1 - old_off_0 + N_GHOSTS;
-               if (old_i1 >= N_GHOSTS && old_i1 < old_ext_0 - N_GHOSTS) {
-                  for (int comp = 0; comp < 6; ++comp) {
-                     new_em(i1, comp) = old_em(old_i1, comp);
-                     new_bckp(i1, comp) = old_bckp(old_i1, comp);
-                  }
-               }
-             });
-           } else if constexpr (D == Dim::_2D) {
-             Kokkos::parallel_for("CopyFields_LB_2D", new_dom.mesh.rangeActiveCells(), KOKKOS_LAMBDA(int i1, int i2) {
-               int gx1 = new_off_0 + i1 - N_GHOSTS;
-               int gx2 = new_off_1 + i2 - N_GHOSTS;
-               int old_i1 = gx1 - old_off_0 + N_GHOSTS;
-               int old_i2 = gx2 - old_off_1 + N_GHOSTS;
-               if (old_i1 >= N_GHOSTS && old_i1 < old_ext_0 - N_GHOSTS &&
-                   old_i2 >= N_GHOSTS && old_i2 < old_ext_1 - N_GHOSTS) {
-                  for (int comp = 0; comp < 6; ++comp) {
-                     new_em(i1, i2, comp) = old_em(old_i1, old_i2, comp);
-                     new_bckp(i1, i2, comp) = old_bckp(old_i1, old_i2, comp);
-                  }
-               }
-             });
-           } else if constexpr (D == Dim::_3D) {
-             Kokkos::parallel_for("CopyFields_LB_3D", new_dom.mesh.rangeActiveCells(), KOKKOS_LAMBDA(int i1, int i2, int i3) {
-               int gx1 = new_off_0 + i1 - N_GHOSTS;
-               int gx2 = new_off_1 + i2 - N_GHOSTS;
-               int gx3 = new_off_2 + i3 - N_GHOSTS;
-               int old_i1 = gx1 - old_off_0 + N_GHOSTS;
-               int old_i2 = gx2 - old_off_1 + N_GHOSTS;
-               int old_i3 = gx3 - old_off_2 + N_GHOSTS;
-               if (old_i1 >= N_GHOSTS && old_i1 < old_ext_0 - N_GHOSTS &&
-                   old_i2 >= N_GHOSTS && old_i2 < old_ext_1 - N_GHOSTS &&
-                   old_i3 >= N_GHOSTS && old_i3 < old_ext_2 - N_GHOSTS) {
-                  for (int comp = 0; comp < 6; ++comp) {
-                     new_em(i1, i2, i3, comp) = old_em(old_i1, old_i2, old_i3, comp);
-                     new_bckp(i1, i2, i3, comp) = old_bckp(old_i1, old_i2, old_i3, comp);
-                  }
-               }
-             });
-           }
+    // ToDo: Mesh update
 
-           for(size_t s_idx = 0; s_idx < g_species_params.size(); ++s_idx) {
-               auto& old_sp = old_dom.species[s_idx];
-               auto& new_sp = new_dom.species[s_idx];
-               new_sp.set_npart(old_sp.npart());
-               
-               Kokkos::deep_copy(new_sp.i1, old_sp.i1);
-               Kokkos::deep_copy(new_sp.i1_prev, old_sp.i1_prev);
-               if(D>1) Kokkos::deep_copy(new_sp.i2, old_sp.i2);
-               if(D>1) Kokkos::deep_copy(new_sp.i2_prev, old_sp.i2_prev);
-               if(D>2) Kokkos::deep_copy(new_sp.i3, old_sp.i3);
-               if(D>2) Kokkos::deep_copy(new_sp.i3_prev, old_sp.i3_prev);
-               Kokkos::deep_copy(new_sp.dx1, old_sp.dx1);
-               Kokkos::deep_copy(new_sp.dx1_prev, old_sp.dx1_prev);
-               if(D>1)Kokkos::deep_copy(new_sp.dx2, old_sp.dx2);
-               if(D>1)Kokkos::deep_copy(new_sp.dx2_prev, old_sp.dx2_prev);
-               if(D>2)Kokkos::deep_copy(new_sp.dx3, old_sp.dx3);
-               if(D>2)Kokkos::deep_copy(new_sp.dx3_prev, old_sp.dx3_prev);
-               Kokkos::deep_copy(new_sp.ux1, old_sp.ux1);
-               Kokkos::deep_copy(new_sp.ux2, old_sp.ux2);
-               Kokkos::deep_copy(new_sp.ux3, old_sp.ux3);
-               Kokkos::deep_copy(new_sp.weight, old_sp.weight);
-               Kokkos::deep_copy(new_sp.tag, old_sp.tag);
 
-               // Reset all copied particle tags to 'alive': particles with
-               // send-direction tags from the previous pusher step must not be
-               // re-sent by CommunicateParticles; ShiftParticles below will
-               // re-tag any particle that is now out of the new domain bounds.
-               {
-                 auto tag_view = new_sp.tag;
-                 Kokkos::parallel_for("ResetTags_LB", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
-                     tag_view(p) = ParticleTag::alive;
-                 });
-               }
-               
-               int offset_diff1 = old_offset_ncells[0] - new_offset_ncells[0];
-               if constexpr (D == Dim::_1D) {
-                 if (offset_diff1 != 0) {
-                   auto i1_view = new_sp.i1;
-                   auto i1_prev_view = new_sp.i1_prev;
-                   auto tag_view = new_sp.tag;
-                   int ni1 = new_ncells[0];
-                   Kokkos::parallel_for("ShiftParticles_1D", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
-                      i1_view(p) += offset_diff1;
-                      i1_prev_view(p) += offset_diff1;
+    // ToDo: Field update
+    for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
 #if defined(MPI_ENABLED)
-                      tag_view(p) = mpi::SendTag(tag_view(p), i1_view(p) < 0, i1_view(p) >= ni1);
+      // !TODO: need to change to support multiple domains per rank
+      // assuming ONE local subdomain
+      const auto local = ((int)idx == g_mpi_rank);
+      if (local) {
+        auto nxnew = std::vector<ncells_t>(D, 0);
+        auto nxold = std::vector<ncells_t>(D, 0);
+        for (auto d { 0 }; d < (short)D; ++d) {
+          nxnew.push_back(new_ncells[d][idx]);
+          nxold.push_back(nxnew - offset_ncells[d][idx]);
+        }
+        if (offset_ncells[d][idx] < 0) {
+          // domain is shrinking -> right boundary moves left, need to send data to the right neighbor
+          // ToDo: define fields
+          ndfield_t<D, 6> new_fields {... };
+          ndfield_t<D, 6> send_fields {... };
+
+          if constexpr (D == Dim::_1D) {
+            Kokkos::deep_copy(new_fields, Kokkos::slice(old_fields, { 0, nxnew[0] }));
+            Kokkos::deep_copy(send_fields, Kokkos::slice(old_fields, { nxnew[0], nxold[0] }));
+          } else if constexpr (D == Dim::_2D) {
+            Kokkos::deep_copy(new_fields, Kokkos::slice(old_fields, { 0, nxnew[0] }, { 0, nxnew[1] }));
+            Kokkos::deep_copy(send_fields, Kokkos::slice(old_fields, { nxnew[0], nxold[0] }, { nxnew[1], nxold[1] }));
+          } else if constexpr (D == Dim::_3D) {
+            Kokkos::deep_copy(new_fields, Kokkos::slice(old_fields, { 0, nxnew[0] }, { 0, nxnew[1] }, { 0, nxnew[2] }));
+            Kokkos::deep_copy(send_fields, Kokkos::slice(old_fields, { nxnew[0], nxold[0] }, { nxnew[1], nxold[1] }, { nxnew[2], nxold[2] }));
+          }
+      
+          MPI_SEND(send_fields, ...);
+        } else if (offset_ncells[d][idx] > 0) {
+          // domain is growing -> right boundary moves right, need to receive data from the left neighbor
+          ndfield_t<D, 6> new_fields {... };
+          ndfield_t<D, 6> recv_fields {... };
+          
+          if constexpr (D == Dim::_1D) {
+            Kokkos::deep_copy(Kokkos::slice(new_fields, { nxnew[0] - nxold[0], nxnew[0] }), old_fields);
+          } else if constexpr (D == Dim::_2D) {
+            Kokkos::deep_copy(Kokkos::slice(new_fields, { nxnew[0] - nxold[0], nxnew[0] }, { nxnew[1] - nxold[1], nxnew[1] }), old_fields);
+          } else if constexpr (D == Dim::_3D) {
+            Kokkos::deep_copy(Kokkos::slice(new_fields, { nxnew[0] - nxold[0], nxnew[0] }, { nxnew[1] - nxold[1], nxnew[1] }, 
+              { nxnew[2] - nxold[2], nxnew[2] }), old_fields);
+          }
+
+          MPI_RECV(recv_fields, ...);
+          Kokkos::deep_copy(Kokkos::slice(new_fields, { 0, nxnew[0] - nxold[0] }), recv_fields);
+        }
+      }
+      
+      g_subdomains.back().set_mpi_rank(idx);
+      if (g_subdomains.back().mpi_rank() == g_mpi_rank) {
+        g_local_subdomain_indices.push_back(idx);
+      }
+#endif // MPI_ENABLED  
+
+    }
+      
+    // ToDo: Particle update
+    for(size_t s_idx = 0; s_idx < g_species_params.size(); ++s_idx) {
+      auto& sp = dom.species[s_idx];
+
+      // Reset all copied particle tags to 'alive': particles with
+      // send-direction tags from the previous pusher step must not be
+      // re-sent by CommunicateParticles; ShiftParticles below will
+      // re-tag any particle that is now out of the new domain bounds.
+      {
+        auto tag_view = sp.tag;
+        Kokkos::parallel_for("ResetTags_LB", sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
+            tag_view(p) = ParticleTag::alive;
+        });
+      }
+      
+      int offset_diff1 = offset_ncells[0][idx];
+      if constexpr (D == Dim::_1D) {
+        if (offset_diff1 != 0) {
+          auto i1_view = sp.i1;
+          auto i1_prev_view = sp.i1_prev;
+          auto tag_view = sp.tag;
+          int ni1 = new_ncells[0];
+          Kokkos::parallel_for("ShiftParticles_1D", sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
+             i1_view(p) += offset_diff1;
+             i1_prev_view(p) += offset_diff1;
+#if defined(MPI_ENABLED)
+              tag_view(p) = mpi::SendTag(tag_view(p), i1_view(p) < 0, i1_view(p) >= ni1);
 #endif
-                   });
-                 }
-               } else if constexpr (D == Dim::_2D) {
-                 int offset_diff2 = old_offset_ncells[1] - new_offset_ncells[1];
-                 if (offset_diff1 != 0 || offset_diff2 != 0) {
-                   auto i1_view = new_sp.i1;
-                   auto i1_prev_view = new_sp.i1_prev;
-                   auto i2_view = new_sp.i2;
-                   auto i2_prev_view = new_sp.i2_prev;
-                   auto tag_view = new_sp.tag;
-                   int ni1 = new_ncells[0];
-                   int ni2 = new_ncells[1];
-                   Kokkos::parallel_for("ShiftParticles_2D", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
-                      i1_view(p) += offset_diff1;
-                      i2_view(p) += offset_diff2;
-                      i1_prev_view(p) += offset_diff1;
-                      i2_prev_view(p) += offset_diff2;
+          });
+        }
+      } else if constexpr (D == Dim::_2D) {
+        int offset_diff2 = offset_ncells[domain_idx][1];
+        if (offset_diff1 != 0 || offset_diff2 != 0) {
+          auto i1_view = sp.i1;
+          auto i1_prev_view = sp.i1_prev;
+          auto i2_view = sp.i2;
+          auto i2_prev_view = sp.i2_prev;
+          auto tag_view = sp.tag;
+          int ni1 = new_ncells[0];
+          int ni2 = new_ncells[1];
+          Kokkos::parallel_for("ShiftParticles_2D", sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
+             i1_view(p) += offset_diff1;
+             i2_view(p) += offset_diff2;
+             i1_prev_view(p) += offset_diff1;
+             i2_prev_view(p) += offset_diff2;
 #if defined(MPI_ENABLED)
                       tag_view(p) = mpi::SendTag(tag_view(p), i1_view(p) < 0, i1_view(p) >= ni1, i2_view(p) < 0, i2_view(p) >= ni2);
 #endif
                    });
                  }
                } else if constexpr (D == Dim::_3D) {
-                 int offset_diff2 = old_offset_ncells[1] - new_offset_ncells[1];
-                 int offset_diff3 = old_offset_ncells[2] - new_offset_ncells[2];
+                 int offset_diff2 = offset_ncells[domain_idx][1];
+                 int offset_diff3 = offset_ncells[domain_idx][2];
                  if (offset_diff1 != 0 || offset_diff2 != 0 || offset_diff3 != 0) {
-                   auto i1_view = new_sp.i1;
-                   auto i2_view = new_sp.i2;
-                   auto i3_view = new_sp.i3;
-                   auto i1_prev_view = new_sp.i1_prev;
-                   auto i2_prev_view = new_sp.i2_prev;
-                   auto i3_prev_view = new_sp.i3_prev;
-                   auto tag_view = new_sp.tag;
+                   auto i1_view = sp.i1;
+                   auto i2_view = sp.i2;
+                   auto i3_view = sp.i3;
+                   auto i1_prev_view = sp.i1_prev;
+                   auto i2_prev_view = sp.i2_prev;
+                   auto i3_prev_view = sp.i3_prev;
+                   auto tag_view = sp.tag;
                    int ni1 = new_ncells[0];
                    int ni2 = new_ncells[1];
                    int ni3 = new_ncells[2];
-                   Kokkos::parallel_for("ShiftParticles_3D", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
+                   Kokkos::parallel_for("ShiftParticles_3D", sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
                       i1_view(p) += offset_diff1;
                       i2_view(p) += offset_diff2;
                       i3_view(p) += offset_diff3;
@@ -375,17 +331,9 @@ namespace ntt {
                  }
                }
            }
-        }
-      }
-      g_subdomains = std::move(new_subdomains);
 
-      redefineNeighbors();
-      redefineBoundaries();
-      
-      runOnLocalDomains([&](auto& dom){
-        CommunicateParticles(dom);
-        CommunicateFields(dom, Comm::E | Comm::B | Comm::J); 
-      });
+      CommunicateParticles(dom);
+      CommunicateFields(dom, Comm::E | Comm::B | Comm::J); 
     }
   }
 
