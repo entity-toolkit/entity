@@ -281,15 +281,22 @@ namespace ntt {
                new_sp.set_npart(old_sp.npart());
                
                Kokkos::deep_copy(new_sp.i1, old_sp.i1);
+               Kokkos::deep_copy(new_sp.i1_prev, old_sp.i1_prev);
                if(D>1) Kokkos::deep_copy(new_sp.i2, old_sp.i2);
+               if(D>1) Kokkos::deep_copy(new_sp.i2_prev, old_sp.i2_prev);
                if(D>2) Kokkos::deep_copy(new_sp.i3, old_sp.i3);
+               if(D>2) Kokkos::deep_copy(new_sp.i3_prev, old_sp.i3_prev);
                Kokkos::deep_copy(new_sp.dx1, old_sp.dx1);
+               Kokkos::deep_copy(new_sp.dx1_prev, old_sp.dx1_prev);
                if(D>1)Kokkos::deep_copy(new_sp.dx2, old_sp.dx2);
+               if(D>1)Kokkos::deep_copy(new_sp.dx2_prev, old_sp.dx2_prev);
                if(D>2)Kokkos::deep_copy(new_sp.dx3, old_sp.dx3);
+               if(D>2)Kokkos::deep_copy(new_sp.dx3_prev, old_sp.dx3_prev);
                Kokkos::deep_copy(new_sp.ux1, old_sp.ux1);
                Kokkos::deep_copy(new_sp.ux2, old_sp.ux2);
                Kokkos::deep_copy(new_sp.ux3, old_sp.ux3);
                Kokkos::deep_copy(new_sp.weight, old_sp.weight);
+               Kokkos::deep_copy(new_sp.tag, old_sp.tag);
 
                // Reset all copied particle tags to 'alive': particles with
                // send-direction tags from the previous pusher step must not be
