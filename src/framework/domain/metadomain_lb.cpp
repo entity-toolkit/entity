@@ -74,9 +74,9 @@ namespace ntt {
   template <SimEngine::type S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::BalanceLoad(const SimulationParams& params) {
-    const auto lb_dims = params.template get<std::vector<int>>("simulation.domain.load_balancing.dimensions");
-    const auto lb_max_iters = 1; //params.template get<int>("simulation.domain.load_balancing.max_iterations", 10);
-    const auto lb_tol = 0.1; //params.template get<real_t>("simulation.domain.load_balancing.tolerance", 0.1);
+    const auto lb_dims       = params.template get<std::vector<int>>("simulation.domain.load_balancing.dimensions");
+    const auto lb_max_iters  = static_cast<int>(params.template get<unsigned int>("simulation.domain.load_balancing.max_iterations"));
+    const auto lb_tol        = static_cast<double>(params.template get<real_t>("simulation.domain.load_balancing.tolerance"));
 
     if (lb_dims.empty()) return;
 
@@ -150,6 +150,21 @@ namespace ntt {
         if (!moved_global) break;
       }
 
+      // Clamp bounds to ensure every domain is at least 2*N_GHOSTS+1 cells wide
+      const int L_min = 2 * N_GHOSTS + 1;
+      for (int i = 1; i < nx_domains; ++i) {
+        // ensure domain i-1 (left) is at least L_min wide
+        if (bounds[i] - bounds[i - 1] < L_min) {
+          bounds[i] = bounds[i - 1] + L_min;
+        }
+      }
+      // walk backwards to ensure domain nx_domains-1 (rightmost) is at least L_min wide
+      for (int i = nx_domains - 1; i >= 1; --i) {
+        if (bounds[i + 1] - bounds[i] < L_min) {
+          bounds[i] = bounds[i + 1] - L_min;
+        }
+      }
+
       bool any_change = false;
       for (int i = 0; i <= nx_domains; ++i) {
         if (bounds[i] != old_bounds[i]) any_change = true;
@@ -161,6 +176,7 @@ namespace ntt {
 
       // 4. Update domains if boundary changed
       std::vector<Domain<S, M>> new_subdomains;
+      new_subdomains.reserve(g_ndomains);
       for (unsigned int idx = 0; idx < g_ndomains; ++idx) {
         auto& old_dom = g_subdomains[idx];
         
@@ -274,15 +290,28 @@ namespace ntt {
                Kokkos::deep_copy(new_sp.ux2, old_sp.ux2);
                Kokkos::deep_copy(new_sp.ux3, old_sp.ux3);
                Kokkos::deep_copy(new_sp.weight, old_sp.weight);
+
+               // Reset all copied particle tags to 'alive': particles with
+               // send-direction tags from the previous pusher step must not be
+               // re-sent by CommunicateParticles; ShiftParticles below will
+               // re-tag any particle that is now out of the new domain bounds.
+               {
+                 auto tag_view = new_sp.tag;
+                 Kokkos::parallel_for("ResetTags_LB", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
+                     tag_view(p) = ParticleTag::alive;
+                 });
+               }
                
                int offset_diff1 = old_offset_ncells[0] - new_offset_ncells[0];
                if constexpr (D == Dim::_1D) {
                  if (offset_diff1 != 0) {
                    auto i1_view = new_sp.i1;
+                   auto i1_prev_view = new_sp.i1_prev;
                    auto tag_view = new_sp.tag;
                    int ni1 = new_ncells[0];
                    Kokkos::parallel_for("ShiftParticles_1D", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
                       i1_view(p) += offset_diff1;
+                      i1_prev_view(p) += offset_diff1;
 #if defined(MPI_ENABLED)
                       tag_view(p) = mpi::SendTag(tag_view(p), i1_view(p) < 0, i1_view(p) >= ni1);
 #endif
@@ -292,13 +321,17 @@ namespace ntt {
                  int offset_diff2 = old_offset_ncells[1] - new_offset_ncells[1];
                  if (offset_diff1 != 0 || offset_diff2 != 0) {
                    auto i1_view = new_sp.i1;
+                   auto i1_prev_view = new_sp.i1_prev;
                    auto i2_view = new_sp.i2;
+                   auto i2_prev_view = new_sp.i2_prev;
                    auto tag_view = new_sp.tag;
                    int ni1 = new_ncells[0];
                    int ni2 = new_ncells[1];
                    Kokkos::parallel_for("ShiftParticles_2D", new_sp.rangeActiveParticles(), KOKKOS_LAMBDA(int p) {
                       i1_view(p) += offset_diff1;
                       i2_view(p) += offset_diff2;
+                      i1_prev_view(p) += offset_diff1;
+                      i2_prev_view(p) += offset_diff2;
 #if defined(MPI_ENABLED)
                       tag_view(p) = mpi::SendTag(tag_view(p), i1_view(p) < 0, i1_view(p) >= ni1, i2_view(p) < 0, i2_view(p) >= ni2);
 #endif
@@ -311,6 +344,9 @@ namespace ntt {
                    auto i1_view = new_sp.i1;
                    auto i2_view = new_sp.i2;
                    auto i3_view = new_sp.i3;
+                   auto i1_prev_view = new_sp.i1_prev;
+                   auto i2_prev_view = new_sp.i2_prev;
+                   auto i3_prev_view = new_sp.i3_prev;
                    auto tag_view = new_sp.tag;
                    int ni1 = new_ncells[0];
                    int ni2 = new_ncells[1];
@@ -319,6 +355,9 @@ namespace ntt {
                       i1_view(p) += offset_diff1;
                       i2_view(p) += offset_diff2;
                       i3_view(p) += offset_diff3;
+                      i1_prev_view(p) += offset_diff1;
+                      i2_prev_view(p) += offset_diff2;
+                      i3_prev_view(p) += offset_diff3;
 #if defined(MPI_ENABLED)
                       tag_view(p) = mpi::SendTag(tag_view(p),
                                                  i1_view(p) < 0, i1_view(p) >= ni1,
