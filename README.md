@@ -41,11 +41,16 @@ Maintainers indicated with an arrow.
 * :tipping_hand_person: Alexander Chernoglazov {[@SChernoglazov](https://github.com/SChernoglazov)}
 * :tea: Benjamin Crinquand {[@bcrinquand](https://github.com/bcrinquand)}
 * :bubble_tea: Alisa Galishnikova {[@alisagk](https://github.com/alisagk)}
+* :sloth: Xingwei Gong {[@xwgong01](https://github.com/xwgong01)}
 * :steam_locomotive: Evgeny Gorbunov {[@Alcauchy](https://github.com/Alcauchy)} [-> [genegorbs [at] gmail](mailto:genegorbs@gmail.com)]
+* :ant: Camille Granier {[@K1000Granier](https://github.com/K1000Granier)}
+* :fried_egg: Michael Grehan {[@mgrehan](https://github.com/mgrehan)}
 * :coffee: Hayk Hakobyan {[@haykh](https://github.com/haykh)} [-> [haykh.astro [at] gmail](mailto:haykh.astro@gmail.com)]
+* :sunrise_over_mountains: Anuj Kankani {[@AnujKankani](https://github.com/AnujKankani)}
 * :potato: Jens Mahlmann {[@jmahlmann](https://github.com/jmahlmann)}
 * :dolphin: Sasha Philippov {[@sashaph](https://github.com/sashaph)}
 * :radio: Siddhant Solanki {[@sidruns30](https://github.com/sidruns30)}
+* :mango: Andrew Sullivan {[@a-sullivan](https://github.com/a-sullivan)}
 * :shrug: Arno Vanthieghem {[@vanthieg](https://github.com/vanthieg)}
 * :cat: Muni Zhou {[@munizhou](https://github.com/munizhou)}
 
