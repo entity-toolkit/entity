@@ -1,10 +1,12 @@
 # Examples
 
-Problem generations in this directory are just examples demonstrating how to use some of the features of the Entity.
+Problem generators in this directory are just examples demonstrating how to use some of the features of the Entity.
 
 - `custom_energy_distribution`: demonstrates how to initialize a uniform distribution of particles with two different custom-defined energy (velocity) distributions (per each species).
 
   <img width="1024" alt="image" src="https://github.com/user-attachments/assets/d8499ab7-31dc-49e8-8381-34aa8a994be0" />
+
+- `match_fix_field_boundaries`: example of setting matching and/or fixed (coordinate-independent) field boundaries for the electromagnetic fields
 
 - `custom_emission`: simple example where two particles are initialized on gyrating trajectories probabilistically emitting photons while the total energy is conserved.
 

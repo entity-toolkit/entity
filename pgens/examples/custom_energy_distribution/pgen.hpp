@@ -26,6 +26,9 @@ namespace user {
       , drift_amplitude { drift_amplitude }
       , kx { static_cast<real_t>(constant::TWO_PI) / box_size } {}
 
+    // the only requirement for the energy distribution is to have this operator()
+    //   that takes in the particle position and velocity (by reference) and
+    //   modifies (sets) the velocity according to the desired distribution
     Inline void operator()(const coord_t<D>& x_Ph, vec_t<Dim::_3D>& v) const {
       // sample a static 3D maxwellian + drift in x1 direction with sinusoidal spatial dependence
       // @NOTE: for relativistic drift, use the built-in drifting Maxwellian
@@ -86,6 +89,8 @@ namespace user {
                                                          drift_amplitude,
                                                          box_size };
       const auto edist2 = CustomDistribution_2<M::Dim> { drift_amplitude };
+
+      // distributions are then passed to the particle injector function
       arch::InjectUniform<S, M, decltype(edist1), decltype(edist2)>(
         params,
         domain,

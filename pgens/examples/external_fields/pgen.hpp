@@ -22,10 +22,28 @@ namespace user {
   struct ExtFields {
     ExtFields(simtime_t time, spidx_t sp) : time { time }, sp { sp } {}
 
+    /*
+     * Particle's equation of motion is:
+     *
+     * du / dt = f_ext + (q / mc) * ((E + E_ext) + v x (B + B_ext))
+     *
+     * in dimensionless terms:
+     *
+     * du / dt = f_ext + (q / m) / (q0 / m0) * omegaB0 * ((e + e_ext) + v x (b + b_ext))
+     *
+     * - f_ext is the external force-field (acceleration) defined here
+     * - E and B are interpolated fields from the grid
+     * - e = E / B0 and b = B / B0
+     * - e_ext = E_ext / B0 and b_ext = B_ext / B0 are the dimensionless external fields defined here
+     *
+     */
+
+    // f_ext: external force-field (acceleration):
     Inline auto fx1(const coord_t<D>&) const -> real_t {
       return (sp % 2u == 0u) ? -HALF : HALF;
     }
 
+    // b_ext: external magnetic field:
     Inline auto bx3(const coord_t<D>&) const -> real_t {
       return ONE + 0.2 * time;
     }
@@ -56,6 +74,11 @@ namespace user {
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain } {}
 
+    /*
+     * @returns a pair of (apply_external_fields, external_fields)
+     *
+     * @note apply_external_fields is true for species other than 1 (i.e., 2 and 3 in this case)
+     */
     inline auto ExternalFields(simtime_t           time,
                                spidx_t             sp,
                                const Domain<S, M>& domain) const
