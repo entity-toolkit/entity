@@ -6,6 +6,8 @@ Problem generators in this directory are just examples demonstrating how to use 
 
   <img width="1024" alt="image" src="https://github.com/user-attachments/assets/d8499ab7-31dc-49e8-8381-34aa8a994be0" />
 
+- `custom_spatial_distribution`: example of using the non-uniform plasma injector with a custom spatial distirbution
+
 - `match_fix_field_boundaries`: example of setting matching and/or fixed (coordinate-independent) field boundaries for the electromagnetic fields
 
   https://github.com/user-attachments/assets/a1b9ea22-34ce-474f-a9b0-49789a2e52b3
