@@ -8,6 +8,8 @@ Problem generators in this directory are just examples demonstrating how to use 
 
 - `match_fix_field_boundaries`: example of setting matching and/or fixed (coordinate-independent) field boundaries for the electromagnetic fields
 
+  https://github.com/user-attachments/assets/a1b9ea22-34ce-474f-a9b0-49789a2e52b3
+
 - `custom_emission`: simple example where two particles are initialized on gyrating trajectories probabilistically emitting photons while the total energy is conserved.
 
   https://github.com/user-attachments/assets/6c5c399a-bbab-4b93-be5f-35fed1959fcc
