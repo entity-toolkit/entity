@@ -24,3 +24,4 @@ Problem generators in this directory are just examples demonstrating how to use 
 
 - `atmosphere`: setting up a gravitationally bound "atmosphere" with a constant particle replenisher (the plot also highlights the importance of having a constant replenisher and a gravity force acting on the particles; both are enabled by default when using the `ATMOSPHERE` particle boundary conditions)
 
+  <img width="1024" alt="atmosphere" src="https://github.com/user-attachments/assets/70ac2cff-6775-47a3-a394-bf6df2533344" />
