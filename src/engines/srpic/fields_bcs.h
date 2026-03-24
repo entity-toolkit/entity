@@ -230,49 +230,49 @@ namespace ntt {
                        const PG&                    pgen,
                        const prm::Parameters&       engine_params,
                        BCTags                       tags) {
-      const auto time = engine_params.get<simtime_t>("time");
-      /**
-       * fixed field boundaries
-       */
-      const auto sign = direction.get_sign();
-      const auto dim  = direction.get_dim();
-      raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
-                     "Fixed BCs only implemented for x1 in "
-                     "non-cartesian coordinates",
-                     HERE);
-      std::vector<ncells_t> xi_min, xi_max;
-      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
-      for (dim_t d { 0u }; d < M::Dim; ++d) {
-        const auto dd = all_dirs[d];
-        if (dim == dd) {
-          if (sign > 0) { // + direction
-            xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
-            xi_max.push_back(domain.mesh.n_all(dd));
-          } else { // - direction
-            xi_min.push_back(0);
-            xi_max.push_back(N_GHOSTS);
-          }
-        } else {
-          xi_min.push_back(0);
-          xi_max.push_back(domain.mesh.n_all(dd));
-        }
-      }
-      raise::ErrorIf(xi_min.size() != xi_max.size() or
-                       xi_min.size() != static_cast<std::size_t>(M::Dim),
-                     "Invalid range size",
-                     HERE);
-      std::vector<unsigned short> comps;
-      if (tags & BC::E) {
-        comps.push_back(em::ex1);
-        comps.push_back(em::ex2);
-        comps.push_back(em::ex3);
-      }
-      if (tags & BC::B) {
-        comps.push_back(em::bx1);
-        comps.push_back(em::bx2);
-        comps.push_back(em::bx3);
-      }
       if constexpr (arch::traits::pgen::HasFixFieldsConst<PG>) {
+        const auto time = engine_params.get<simtime_t>("time");
+        /**
+         * fixed field boundaries
+         */
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+        raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
+                       "Fixed BCs only implemented for x1 in "
+                       "non-cartesian coordinates",
+                       HERE);
+        std::vector<ncells_t> xi_min, xi_max;
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+        for (dim_t d { 0u }; d < M::Dim; ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
+            if (sign > 0) { // + direction
+              xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
+              xi_max.push_back(domain.mesh.n_all(dd));
+            } else { // - direction
+              xi_min.push_back(0);
+              xi_max.push_back(N_GHOSTS);
+            }
+          } else {
+            xi_min.push_back(0);
+            xi_max.push_back(domain.mesh.n_all(dd));
+          }
+        }
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+        std::vector<unsigned short> comps;
+        if (tags & BC::E) {
+          comps.push_back(em::ex1);
+          comps.push_back(em::ex2);
+          comps.push_back(em::ex3);
+        }
+        if (tags & BC::B) {
+          comps.push_back(em::bx1);
+          comps.push_back(em::bx2);
+          comps.push_back(em::bx3);
+        }
         raise::ErrorIf(M::CoordType != Coord::Cart and dim != in::x1,
                        "FixedFields cannot be used for non-cartesian metric",
                        HERE);
@@ -333,7 +333,6 @@ namespace ntt {
         (void)direction;
         (void)domain;
         (void)tags;
-        raise::Error("Fixed fields not present (both const and non-const)", HERE);
       }
     }
 
@@ -469,11 +468,11 @@ namespace ntt {
                             const SimulationParams&      params,
                             const prm::Parameters&       engine_params,
                             BCTags                       tags) {
-      const auto time = engine_params.get<simtime_t>("time");
       /**
        * atmosphere field boundaries
        */
       if constexpr (arch::traits::pgen::HasAtmFields<PG>) {
+        const auto time = engine_params.get<simtime_t>("time");
         const auto [sign, dim, xg_min, xg_max] = GetAtmosphereExtent(direction,
                                                                      global_metric,
                                                                      global_grid,
@@ -595,7 +594,6 @@ namespace ntt {
         (void)direction;
         (void)domain;
         (void)tags;
-        raise::Error("Atm fields not implemented in PGEN for atmosphere BCs", HERE);
       }
     }
 
@@ -608,15 +606,6 @@ namespace ntt {
       (void)domain;
       (void)tags;
       raise::Error("Custom boundaries not implemented", HERE);
-      // if constexpr (
-      //   traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
-      //   const auto [box, custom_fields] = m_pgen.CustomFields(time);
-      //   if (domain.mesh.Intersects(box)) {
-      //   }
-      //
-      // } else {
-      //   raise::Error("Custom boundaries not implemented", HERE);
-      // }
     }
 
     template <class M, class PG>
