@@ -1,12 +1,13 @@
 #include "utils/reporter.h"
 
 #include "utils/colors.h"
-#include "utils/error.h"
 #include "utils/formatting.h"
 
 #if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
 #elif defined(HIP_ENABLED)
+  #include "utils/error.h"
+
   #include <hip/hip_runtime.h>
 #endif
 

@@ -6,10 +6,8 @@
  * @namespaces:
  *   - ntt::
  * @macros:
- *   - MPI
- *   - DEBUG
+ *   - MPI_ENABLED
  *   - OUTPUT_ENABLED
- *   - CUDA_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H
