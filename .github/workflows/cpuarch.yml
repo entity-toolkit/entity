@@ -103,6 +103,7 @@ jobs:
             examples/match_fix_field_boundaries,
             examples/custom_energy_distribution,
             examples/custom_spatial_distribution,
+            examples/atmosphere,
           ]
     steps:
       - name: Checkout

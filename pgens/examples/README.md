@@ -21,3 +21,6 @@ Problem generators in this directory are just examples demonstrating how to use 
 - `external_fields`: example of using external fields for supplying a time-varying and species-dependent magnetic/electric fields and/or force-field imposed on particles.
 
   <img width="512" alt="image" src="https://github.com/user-attachments/assets/7126fcdb-7484-4695-86c1-cdd425cc4655" />
+
+- `atmosphere`: setting up a gravitationally bound "atmosphere" with a constant particle replenisher (the plot also highlights the importance of having a constant replenisher and a gravity force acting on the particles; both are enabled by default when using the `ATMOSPHERE` particle boundary conditions)
+
