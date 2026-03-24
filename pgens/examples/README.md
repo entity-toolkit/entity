@@ -27,3 +27,8 @@ Problem generators in this directory are just examples demonstrating how to use 
   <img width="1024" alt="atmosphere" src="https://github.com/user-attachments/assets/70ac2cff-6775-47a3-a394-bf6df2533344" />
 
 - `replenish_injector`: demonstration of how to use the replenish injector to periodically inject new plasma to a target density (both uniform and non-uniform) in `CustomPostStep`
+
+  https://github.com/user-attachments/assets/4955f05e-4795-439f-a4a5-8196e42e987b
+  
+  https://github.com/user-attachments/assets/ebc303ed-7b21-4f97-9822-d81124fdf962
+
