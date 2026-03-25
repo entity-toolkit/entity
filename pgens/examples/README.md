@@ -1,10 +1,18 @@
 # Examples
 
-Problem generations in this directory are just examples demonstrating how to use some of the features of the Entity.
+Problem generators in this directory are just examples demonstrating how to use some of the features of the Entity.
 
 - `custom_energy_distribution`: demonstrates how to initialize a uniform distribution of particles with two different custom-defined energy (velocity) distributions (per each species).
 
   <img width="1024" alt="image" src="https://github.com/user-attachments/assets/d8499ab7-31dc-49e8-8381-34aa8a994be0" />
+
+- `custom_spatial_distribution`: example of using the non-uniform plasma injector with a custom spatial distirbution
+
+  https://github.com/user-attachments/assets/bea0c290-e7e4-4ec7-b360-68ce76beab5b
+
+- `match_fix_field_boundaries`: example of setting matching and/or fixed (coordinate-independent) field boundaries for the electromagnetic fields
+
+  https://github.com/user-attachments/assets/a1b9ea22-34ce-474f-a9b0-49789a2e52b3
 
 - `custom_emission`: simple example where two particles are initialized on gyrating trajectories probabilistically emitting photons while the total energy is conserved.
 
@@ -13,3 +21,14 @@ Problem generations in this directory are just examples demonstrating how to use
 - `external_fields`: example of using external fields for supplying a time-varying and species-dependent magnetic/electric fields and/or force-field imposed on particles.
 
   <img width="512" alt="image" src="https://github.com/user-attachments/assets/7126fcdb-7484-4695-86c1-cdd425cc4655" />
+
+- `atmosphere`: setting up a gravitationally bound "atmosphere" with a constant particle replenisher (the plot also highlights the importance of having a constant replenisher and a gravity force acting on the particles; both are enabled by default when using the `ATMOSPHERE` particle boundary conditions)
+
+  <img width="1024" alt="atmosphere" src="https://github.com/user-attachments/assets/70ac2cff-6775-47a3-a394-bf6df2533344" />
+
+- `replenish_injector`: demonstration of how to use the replenish injector to periodically inject new plasma to a target density (both uniform and non-uniform) in `CustomPostStep`
+
+  https://github.com/user-attachments/assets/4955f05e-4795-439f-a4a5-8196e42e987b
+  
+  https://github.com/user-attachments/assets/ebc303ed-7b21-4f97-9822-d81124fdf962
+

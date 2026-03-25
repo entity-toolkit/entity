@@ -1,3 +1,28 @@
+/**
+ * @file utils/reporter.h
+ * @brief Utility functions for generating a report of the simulation configuration and environment
+ * @implements
+ *   - reporter::AddHeader -> void
+ *   - reporter::AddCategory -> void
+ *   - reporter::AddSubcategory -> void
+ *   - reporter::AddLabel -> void
+ *   - reporter::AddParam -> void
+ *   - reporter::AddUnlabeledParam -> void
+ *   - reporter::Bytes2HumanReadable -> std::pair<double, std::string>
+ *   - reporter::Backend -> std::string
+ * @cpp:
+ *   - reporter.cpp
+ * @namespaces:
+ *   - reporter::
+ * @macros:
+ *   - HIP_ENABLED
+ *   - CUDA_ENABLED
+ *   - DEVICE_ENABLED
+ *   - DEBUG
+ *   - SINGLE_PRECISION
+ *   - GPU_AWARE_MPI
+ */
+
 #ifndef GLOBAL_UTILS_REPORTER_H
 #define GLOBAL_UTILS_REPORTER_H
 

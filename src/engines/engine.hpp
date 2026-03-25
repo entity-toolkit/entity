@@ -6,10 +6,8 @@
  * @namespaces:
  *   - ntt::
  * @macros:
- *   - MPI
- *   - DEBUG
+ *   - MPI_ENABLED
  *   - OUTPUT_ENABLED
- *   - CUDA_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H
@@ -187,11 +185,9 @@ namespace ntt {
     std::string report = "";
     CallOnce(
       [&](auto& metadomain, auto& params) {
-        const auto pgen  = std::string(PGEN);
-        report          += reporter::Backend();
+        report += reporter::Backend();
 
-        report += ReportSimulationConfig(params,
-                                         pgen,
+        report               += ReportSimulationConfig(params,
                                          S,
                                          Metric(M::MetricType),
                                          dt,
@@ -199,6 +195,9 @@ namespace ntt {
                                          max_steps,
                                          metadomain.ndomains_per_dim(),
                                          metadomain.ndomains());
+        const auto pgen_name  = std::string(PGEN);
+        report += ReportPgenConfig<decltype(m_pgen), Domain<S, M>>(m_pgen,
+                                                                   pgen_name);
         if (metadomain.species_params().size() > 0) {
           report += "\n";
           reporter::AddCategory(report, 4, "Particles");

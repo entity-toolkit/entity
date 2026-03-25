@@ -16,9 +16,7 @@
 #ifndef GLOBAL_UTILS_PROGRESSBAR_H
 #define GLOBAL_UTILS_PROGRESSBAR_H
 
-#include "utils/colors.h"
-#include "utils/error.h"
-#include "utils/formatting.h"
+#include "global.h"
 
 #include <chrono>
 #include <numeric>
