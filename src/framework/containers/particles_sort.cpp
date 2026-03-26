@@ -189,10 +189,14 @@ namespace ntt {
 
     array_t<ncells_t*> cell_indices { "cell_indices", npart() };
 
-    Kokkos::parallel_for(
-      "FillCellIndices",
-      rangeActiveParticles(),
-      sort::PositionToCellIndex<D> { i1, i2, i3, tag, cell_indices, nx2, nx3, total_cells });
+    Kokkos::parallel_for("FillCellIndices",
+                         rangeActiveParticles(),
+                         sort::PositionToTileIndex<D, false> { i1,
+                                                               i2,
+                                                               i3,
+                                                               tag,
+                                                               cell_indices,
+                                                               grid.n_active() });
     const auto slice = range_tuple_t(0, npart());
 
     using sorter_op_t = Kokkos::BinOp1D<decltype(cell_indices)>;

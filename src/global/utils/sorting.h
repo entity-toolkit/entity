@@ -4,7 +4,7 @@
  * @implements
  *   - sort::BinBool<>
  *   - sort::BinTag<>
- *   - sort::PositionToCellIndex<>
+ *   - sort::PositionToTileIndex<>
  * @namespaces:
  *   - sort::
  * @note BinBool sorts by boolean values "true" then "false"
@@ -14,7 +14,6 @@
 #ifndef GLOBAL_UTILS_SORTING_H
 #define GLOBAL_UTILS_SORTING_H
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -63,46 +62,79 @@ namespace sort {
     const int m_max_bins;
   };
 
-  template <Dimension D>
-  struct PositionToCellIndex {
+  template <Dimension D, bool Count>
+  struct PositionToTileIndex {
     const array_t<int*>   i1, i2, i3;
     const array_t<short*> tag;
-    array_t<ncells_t*>    cell_indices;
-    ncells_t              nx2, nx3, total_cells;
+    array_t<ncells_t*>    tile_indices;
+    ncells_t              tile_size;
+    array_t<npart_t*>     num_ppt;
 
-    PositionToCellIndex(const array_t<int*>&   i1,
-                        const array_t<int*>&   i2,
-                        const array_t<int*>&   i3,
-                        const array_t<short*>& tag,
-                        array_t<ncells_t*>&    cell_indices,
-                        ncells_t               nx2,
-                        ncells_t               nx3,
-                        ncells_t               total_cells)
+    ncells_t ntx2, ntx3;
+    ncells_t total_tiles;
+
+    PositionToTileIndex(const array_t<int*>&        i1,
+                        const array_t<int*>&        i2,
+                        const array_t<int*>&        i3,
+                        const array_t<short*>&      tag,
+                        array_t<ncells_t*>&         tile_indices,
+                        const std::vector<ncells_t> ncells,
+                        ncells_t                    tile_size = 1u,
+                        array_t<npart_t*>           num_ppt = { "num_ppt", 0u })
       : i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
       , tag { tag }
-      , cell_indices { cell_indices }
-      , nx2 { nx2 }
-      , nx3 { nx3 }
-      , total_cells { total_cells } {}
+      , tile_indices { tile_indices }
+      , tile_size { tile_size }
+      , num_ppt { num_ppt } {
+      raise::ErrorIf(ncells.size() >= static_cast<std::size_t>(D),
+                     "ncells size must match D",
+                     HERE);
+      const auto ntx1 = static_cast<ncells_t>(math::ceil(
+        static_cast<double>(ncells[0]) / static_cast<double>(tile_size)));
+      if constexpr (D == Dim::_1D) {
+        ntx2 = 1u;
+        ntx3 = 1u;
+      } else if constexpr (D == Dim::_2D) {
+        ntx2 = static_cast<ncells_t>(math::ceil(
+          static_cast<double>(ncells[1]) / static_cast<double>(tile_size)));
+        ntx3 = 1u;
+      } else if constexpr (D == Dim::_3D) {
+        ntx2 = static_cast<ncells_t>(math::ceil(
+          static_cast<double>(ncells[1]) / static_cast<double>(tile_size)));
+        ntx3 = static_cast<ncells_t>(math::ceil(
+          static_cast<double>(ncells[2]) / static_cast<double>(tile_size)));
+      } else {
+        raise::Error("Wrong D in SortSpatially", HERE);
+      }
+      total_tiles = ntx1 * ntx2 * ntx3;
+      if constexpr (Count) {
+        raise::ErrorIf(num_ppt.extent(0) != total_tiles,
+                       "num_ppt must have extent equal to total tiles",
+                       HERE);
+      }
+    }
 
     Inline auto operator()(index_t p) const {
       if (tag(p) != ntt::ParticleTag::alive) {
-        cell_indices(p) = total_cells + 1u;
+        tile_indices(p) = total_tiles + 1u;
       } else {
         if constexpr (D == Dim::_1D) {
-          cell_indices(p) = static_cast<ncells_t>(i1(p));
+          tile_indices(p) = static_cast<ncells_t>(i1(p));
         } else if constexpr (D == Dim::_2D) {
-          cell_indices(p) = static_cast<ncells_t>(i1(p)) * nx2 +
-                            static_cast<ncells_t>(i2(p));
+          tile_indices(p) = static_cast<ncells_t>(i1(p) / tile_size) * ntx2 +
+                            static_cast<ncells_t>(i2(p) / tile_size);
         } else if constexpr (D == Dim::_3D) {
-          cell_indices(p) = (static_cast<ncells_t>(i1(p)) * nx2 +
-                             static_cast<ncells_t>(i2(p))) *
-                              nx3 +
-                            static_cast<ncells_t>(i3(p));
+          tile_indices(p) = (static_cast<ncells_t>(i1(p) / tile_size) * ntx2 +
+                             static_cast<ncells_t>(i2(p) / tile_size)) *
+                              ntx3 +
+                            static_cast<ncells_t>(i3(p) / tile_size);
         } else {
           raise::KernelError(HERE, "Wrong D in SortSpatially");
+        }
+        if constexpr (Count) {
+          Kokkos::atomic_add(&num_ppt(tile_indices(p)), 1);
         }
       }
     }
