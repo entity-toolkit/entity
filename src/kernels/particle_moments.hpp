@@ -496,7 +496,7 @@ namespace kernel {
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
         // ZAMO fallback for cells with insufficient particles
-        if (cmp::AlmostZero(N_norm_sq) || N_norm_sq >= ZERO) {
+        if (N_norm_sq >= ZERO) {
           zamo_fallback_2d();
           return;
         }
