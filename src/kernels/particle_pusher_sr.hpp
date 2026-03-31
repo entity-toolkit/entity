@@ -111,7 +111,7 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F, bool Atm, class E, class PUPD = NoCustomPrtlUpdate_t<SimEngine::SRPIC, M>>
+  template <class M, class F, bool Atm, class E, class PUPD>
     requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
              metric::traits::HasConvertXYZ<M> &&
              metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
