@@ -1,0 +1,82 @@
+[simulation]
+  name    = "_reflect"
+  engine  = "srpic"
+  runtime = 100.0
+
+[grid]
+  resolution = [256, 256]
+  extent     = [[0.0, 1.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["CONDUCTOR", "CONDUCTOR"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 8
+
+  [algorithms.timestep]
+    CFL = 0.7071
+
+[particles]
+  ppc0 = 10.0
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e2
+
+  [[particles.species]]
+    label    = "e+"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+
+[setup]
+  x1_e  = [0.9]
+  x2_e  = [0.8]
+  x3_e  = [0.0]
+  ux1_e = [3.162]
+  ux2_e = [2.0]
+  ux3_e = [0.0]
+
+  x1_i  = [0.1]
+  x2_i  = [0.2]
+  x3_i  = [0.0]
+  ux1_i = [-3.162]
+  ux2_i = [-2.0]
+  ux3_i = [0.0]
+
+  temperature = 0.04
+  temperature_gradient = 10.0
+
+[output]
+  format   = "BPFile"
+  interval_time = 0.04
+
+  [output.fields]
+    quantities = ["E"]
+
+  [output.particles]
+    enable = true
+    stride = 1
+
+  [output.spectra]
+    enable = false
+
+  [output.debug]
+    ghosts = false
+
+[checkpoint]
+  keep = 1
+
+[diagnostics]
+  log_level = "WARNING"
+  blocking_timers = true
