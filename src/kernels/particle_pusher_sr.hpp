@@ -163,9 +163,6 @@ namespace kernel::sr {
     bool      is_reflect_i1min { false }, is_reflect_i1max { false };
     bool      is_reflect_i2min { false }, is_reflect_i2max { false };
     bool      is_reflect_i3min { false }, is_reflect_i3max { false };
-    bool      is_custom_i1min { false }, is_custom_i1max { false };
-    bool      is_custom_i2min { false }, is_custom_i2max { false };
-    bool      is_custom_i3min { false }, is_custom_i3max { false };
     bool      is_axis_i2min { false }, is_axis_i2max { false };
 
     // gca parameters
@@ -271,8 +268,6 @@ namespace kernel::sr {
       is_periodic_i1max = (pusher_params.boundaries[0].second == PrtlBC::PERIODIC);
       is_reflect_i1min = (pusher_params.boundaries[0].first == PrtlBC::REFLECT);
       is_reflect_i1max = (pusher_params.boundaries[0].second == PrtlBC::REFLECT);
-      is_custom_i1min = (pusher_params.boundaries[0].first == PrtlBC::CUSTOM);
-      is_custom_i1max = (pusher_params.boundaries[0].second == PrtlBC::CUSTOM);
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(pusher_params.boundaries.size() < 2,
                        "pusher_params.boundaries defined incorrectly",
@@ -286,8 +281,6 @@ namespace kernel::sr {
         is_periodic_i2max = (pusher_params.boundaries[1].second == PrtlBC::PERIODIC);
         is_reflect_i2min = (pusher_params.boundaries[1].first == PrtlBC::REFLECT);
         is_reflect_i2max = (pusher_params.boundaries[1].second == PrtlBC::REFLECT);
-        is_custom_i2min = (pusher_params.boundaries[1].first == PrtlBC::CUSTOM);
-        is_custom_i2max = (pusher_params.boundaries[1].second == PrtlBC::CUSTOM);
         is_axis_i2min = (pusher_params.boundaries[1].first == PrtlBC::AXIS);
         is_axis_i2max = (pusher_params.boundaries[1].second == PrtlBC::AXIS);
       }
@@ -304,8 +297,6 @@ namespace kernel::sr {
         is_periodic_i3max = (pusher_params.boundaries[2].second == PrtlBC::PERIODIC);
         is_reflect_i3min = (pusher_params.boundaries[2].first == PrtlBC::REFLECT);
         is_reflect_i3max = (pusher_params.boundaries[2].second == PrtlBC::REFLECT);
-        is_custom_i3min = (pusher_params.boundaries[2].first == PrtlBC::CUSTOM);
-        is_custom_i3max = (pusher_params.boundaries[2].second == PrtlBC::CUSTOM);
       }
     }
 
@@ -1382,7 +1373,6 @@ namespace kernel::sr {
             i1(p)      = 0;
             dx1(p)     = ONE - dx1(p);
             invert_vel = true;
-          } else if (is_custom_i1min) {
           }
         } else if (i1(p) >= ni1) {
           if (is_periodic_i1max) {
@@ -1394,7 +1384,6 @@ namespace kernel::sr {
             i1(p)      = ni1 - 1;
             dx1(p)     = ONE - dx1(p);
             invert_vel = true;
-          } else if (is_custom_i1max) {
           }
         }
         if (invert_vel) {
@@ -1426,7 +1415,6 @@ namespace kernel::sr {
             i2(p)      = 0;
             dx2(p)     = ONE - dx2(p);
             invert_vel = true;
-          } else if (is_custom_i2min) {
           } else if (is_axis_i2min) {
             i2(p)  = 0;
             dx2(p) = ONE - dx2(p);
@@ -1441,7 +1429,6 @@ namespace kernel::sr {
             i2(p)      = ni2 - 1;
             dx2(p)     = ONE - dx2(p);
             invert_vel = true;
-          } else if (is_custom_i2max) {
           } else if (is_axis_i2max) {
             i2(p)  = ni2 - 1;
             dx2(p) = ONE - dx2(p);
@@ -1476,7 +1463,6 @@ namespace kernel::sr {
             i3(p)      = 0;
             dx3(p)     = ONE - dx3(p);
             invert_vel = true;
-          } else if (is_custom_i3min) {
           }
         } else if (i3(p) >= ni3) {
           if (is_periodic_i3max) {
@@ -1488,7 +1474,6 @@ namespace kernel::sr {
             i3(p)      = ni3 - 1;
             dx3(p)     = ONE - dx3(p);
             invert_vel = true;
-          } else if (is_custom_i3max) {
           }
         }
         if (invert_vel) {
