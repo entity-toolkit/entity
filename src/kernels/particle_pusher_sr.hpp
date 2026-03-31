@@ -102,16 +102,16 @@ namespace kernel::sr {
   };
 
   template <SimEngine::type S, class M>
-  struct NoCustomPrtlBC_t {
+  struct NoCustomPrtlUpdate_t {
     template <class PusherKernel>
-    Inline void operator()(index_t, int, bool, const PusherKernel&) const {}
+    Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {}
   };
 
   /**
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F, bool Atm, class E, class PBC = NoCustomPrtlBC_t<SimEngine::SRPIC, M>>
+  template <class M, class F, bool Atm, class E, class PUPD = NoCustomPrtlUpdate_t<SimEngine::SRPIC, M>>
     requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
              metric::traits::HasConvertXYZ<M> &&
              metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
@@ -133,6 +133,8 @@ namespace kernel::sr {
 
   public:
     const spidx_t      sp;
+    simtime_t           time;
+    const real_t dt;
     array_t<int*>      i1, i2, i3;
     array_t<int*>      i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*> dx1, dx2, dx3;
@@ -148,9 +150,9 @@ namespace kernel::sr {
     const F            external_fields;
 
     const E emission_policy;
-    const PBC custom_prtl_bc;
+    const PUPD custom_prtl_update;
 
-    const real_t coeff, dt;
+    const real_t coeff;
 
     bool      is_absorb_i1min { false }, is_absorb_i1max { false };
     bool      is_absorb_i2min { false }, is_absorb_i2max { false };
@@ -181,10 +183,11 @@ namespace kernel::sr {
                   const M&                       metric,
                   const F&                       external_fields,
                   const E&                       emission_policy,
-                  const PBC&                     custom_prtl_bc)
+                  const PUPD&                    custom_prtl_update)
       : pusher_flags { pusher_params.pusher_flags }
       , radiative_drag_flags { pusher_params.radiative_drag_flags }
       , EB { EB }
+      , sp { pusher_arrays.sp }
       , i1 { pusher_arrays.i1 }
       , i2 { pusher_arrays.i2 }
       , i3 { pusher_arrays.i3 }
@@ -206,7 +209,7 @@ namespace kernel::sr {
       , metric { metric }
       , external_fields { external_fields }
       , emission_policy { emission_policy }
-      , custom_prtl_bc { custom_prtl_bc }
+      , custom_prtl_update { custom_prtl_update }
       , time { pusher_params.time }
       , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
                 pusher_params.omegaB0 * pusher_params.dt }
@@ -653,6 +656,11 @@ namespace kernel::sr {
           from_Xi_to_i_di(xp[2], i3(p), dx3(p));
         }
       }
+
+      // call custom particle position update
+      custom_prtl_update(p, xp, *this);
+      
+      // apply boundary conditions
       boundaryConditions(p, xp);
     }
 
@@ -1375,7 +1383,6 @@ namespace kernel::sr {
             dx1(p)     = ONE - dx1(p);
             invert_vel = true;
           } else if (is_custom_i1min) {
-            custom_prtl_bc(p, 1, true, *this);
           }
         } else if (i1(p) >= ni1) {
           if (is_periodic_i1max) {
@@ -1388,7 +1395,6 @@ namespace kernel::sr {
             dx1(p)     = ONE - dx1(p);
             invert_vel = true;
           } else if (is_custom_i1max) {
-            custom_prtl_bc(p, 1, false, *this);
           }
         }
         if (invert_vel) {
@@ -1421,7 +1427,6 @@ namespace kernel::sr {
             dx2(p)     = ONE - dx2(p);
             invert_vel = true;
           } else if (is_custom_i2min) {
-            custom_prtl_bc(p, 2, true, *this);
           } else if (is_axis_i2min) {
             i2(p)  = 0;
             dx2(p) = ONE - dx2(p);
@@ -1437,7 +1442,6 @@ namespace kernel::sr {
             dx2(p)     = ONE - dx2(p);
             invert_vel = true;
           } else if (is_custom_i2max) {
-            custom_prtl_bc(p, 2, false, *this);
           } else if (is_axis_i2max) {
             i2(p)  = ni2 - 1;
             dx2(p) = ONE - dx2(p);
@@ -1473,7 +1477,6 @@ namespace kernel::sr {
             dx3(p)     = ONE - dx3(p);
             invert_vel = true;
           } else if (is_custom_i3min) {
-            custom_prtl_bc(p, 3, true, *this);
           }
         } else if (i3(p) >= ni3) {
           if (is_periodic_i3max) {
@@ -1486,7 +1489,6 @@ namespace kernel::sr {
             dx3(p)     = ONE - dx3(p);
             invert_vel = true;
           } else if (is_custom_i3max) {
-            custom_prtl_bc(p, 3, false, *this);
           }
         }
         if (invert_vel) {

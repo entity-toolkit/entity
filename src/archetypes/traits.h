@@ -86,11 +86,11 @@ namespace arch {
       };
 
       template <class PG, class M, class D>
-      concept HasCustomPrtlBC = requires(const PG& pgen,
+      concept HasCustomPrtlUpdate = requires(const PG& pgen,
                                          simtime_t time,
                                          spidx_t   sp,
                                          D&        domain) {
-        pgen.CustomParticleBoundary(time, sp, domain);
+        pgen.CustomParticleUpdate(time, sp, domain);
       };
 
       template <class PG, class D>
