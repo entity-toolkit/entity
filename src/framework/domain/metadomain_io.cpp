@@ -284,7 +284,9 @@ namespace ntt {
                               std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
                               N_GHOSTS + nx2 - 1,
                               buff_idx));
-            MPI_Send(aphi_r.data(),
+            auto aphi_r_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace {},
+                                                                 aphi_r);
+            MPI_Send(aphi_r_h.data(),
                      nx1,
                      mpi::get_type<real_t>(),
                      rank_recv,
@@ -293,13 +295,16 @@ namespace ntt {
           } else if (static_cast<unsigned int>(local_domain->mpi_rank()) ==
                      rank_recv) {
             array_t<real_t*> aphi_r { "Aphi_r", nx1 };
-            MPI_Recv(aphi_r.data(),
+            auto             aphi_r_h = Kokkos::create_mirror_view(Kokkos::HostSpace {},
+                                                                    aphi_r);
+            MPI_Recv(aphi_r_h.data(),
                      nx1,
                      mpi::get_type<real_t>(),
                      rank_send,
                      0,
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
+            Kokkos::deep_copy(aphi_r, aphi_r_h);
             ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
           }
         }
