@@ -70,7 +70,7 @@ namespace sort {
     ncells_t              tile_size;
     array_t<npart_t*>     num_ppt;
 
-    ncells_t ntx2, ntx3;
+    ncells_t ntx1, ntx2;
     ncells_t total_tiles;
 
     PositionToTileIndex(const array_t<int*>&        i1,
@@ -88,25 +88,20 @@ namespace sort {
       , tile_indices { tile_indices }
       , tile_size { tile_size }
       , num_ppt { num_ppt } {
-      raise::ErrorIf(ncells.size() >= static_cast<std::size_t>(D),
+      raise::ErrorIf(ncells.size() < static_cast<std::size_t>(D),
                      "ncells size must match D",
                      HERE);
-      const auto ntx1 = static_cast<ncells_t>(math::ceil(
+      ntx1          = static_cast<ncells_t>(math::ceil(
         static_cast<double>(ncells[0]) / static_cast<double>(tile_size)));
-      if constexpr (D == Dim::_1D) {
-        ntx2 = 1u;
-        ntx3 = 1u;
-      } else if constexpr (D == Dim::_2D) {
+      ntx2          = 1u;
+      ncells_t ntx3 = 1u;
+      if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
         ntx2 = static_cast<ncells_t>(math::ceil(
           static_cast<double>(ncells[1]) / static_cast<double>(tile_size)));
-        ntx3 = 1u;
-      } else if constexpr (D == Dim::_3D) {
-        ntx2 = static_cast<ncells_t>(math::ceil(
-          static_cast<double>(ncells[1]) / static_cast<double>(tile_size)));
+      }
+      if constexpr (D == Dim::_3D) {
         ntx3 = static_cast<ncells_t>(math::ceil(
           static_cast<double>(ncells[2]) / static_cast<double>(tile_size)));
-      } else {
-        raise::Error("Wrong D in SortSpatially", HERE);
       }
       total_tiles = ntx1 * ntx2 * ntx3;
       if constexpr (Count) {
@@ -121,15 +116,15 @@ namespace sort {
         tile_indices(p) = total_tiles + 1u;
       } else {
         if constexpr (D == Dim::_1D) {
-          tile_indices(p) = static_cast<ncells_t>(i1(p));
+          tile_indices(p) = static_cast<ncells_t>(i1(p) / tile_size);
         } else if constexpr (D == Dim::_2D) {
-          tile_indices(p) = static_cast<ncells_t>(i1(p) / tile_size) * ntx2 +
-                            static_cast<ncells_t>(i2(p) / tile_size);
+          tile_indices(p) = static_cast<ncells_t>(i2(p) / tile_size) * ntx1 +
+                            static_cast<ncells_t>(i1(p) / tile_size);
         } else if constexpr (D == Dim::_3D) {
-          tile_indices(p) = (static_cast<ncells_t>(i1(p) / tile_size) * ntx2 +
+          tile_indices(p) = (static_cast<ncells_t>(i3(p) / tile_size) * ntx2 +
                              static_cast<ncells_t>(i2(p) / tile_size)) *
-                              ntx3 +
-                            static_cast<ncells_t>(i3(p) / tile_size);
+                              ntx1 +
+                            static_cast<ncells_t>(i1(p) / tile_size);
         } else {
           raise::KernelError(HERE, "Wrong D in SortSpatially");
         }
