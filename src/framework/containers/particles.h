@@ -18,7 +18,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
@@ -26,6 +25,10 @@
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
 #include "kernels/particle_pusher_sr.hpp"
+
+#if defined(MPI_ENABLED)
+  #include "arch/directions.h"
+#endif
 
 #include <Kokkos_Core.hpp>
 
