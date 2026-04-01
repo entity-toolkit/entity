@@ -107,6 +107,7 @@ namespace out {
                                npart_t,
                                const std::string&);
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
+    void writeSpectrum3D(const array_t<real_t****>&, const std::string&);
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
     void beginWriting(WriteModeTags, timestep_t, simtime_t);

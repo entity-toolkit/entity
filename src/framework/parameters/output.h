@@ -52,6 +52,14 @@ namespace ntt {
       bool        spectra_log_bins;
       std::size_t spectra_n_bins;
 
+      real_t spectra3D_e_min;
+      real_t spectra3D_e_max;
+      bool spectra3D_log_bins;
+      std::size_t spectra3D_n_bins;
+      std::size_t spectra3D_nx1;
+      std::size_t spectra3D_nx2;
+      std::size_t spectra3D_nx3;
+
       std::vector<std::string> stats_quantities;
       std::vector<std::string> stats_custom_quantities;
 
