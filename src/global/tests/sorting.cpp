@@ -8,7 +8,6 @@
 #include <Kokkos_Sort.hpp>
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 auto main(int argc, char* argv[]) -> int {
