@@ -4,27 +4,72 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/traits.h"
-#include "archetypes/piston.h"
+#include "utils/error.h"
+#include "utils/numeric.h"
 
-#include "archetypes/particle_injector.h"
+#include "archetypes/field_setter.h"
 #include "archetypes/problem_generator.h"
-#include "archetypes/energy_dist.h"
-#include "framework/domain/domain.h"
-#include "archetypes/spatial_dist.h"
-#include "framework/domain/metadomain.h"
+#include "archetypes/traits.h"
 #include "archetypes/utils.h"
+#include "archetypes/piston.h"
+#include "archetypes/moving_window.h"
+#include "framework/domain/metadomain.h"
 
-#include <vector>
-
-
+#include <algorithm>
+#include <utility>
 
 namespace user {
   using namespace ntt;
 
+  template <Dimension D>
+  struct InitFields {
+    /*
+      Sets up magnetic and electric field components for the simulation.
+      Must satisfy E = -v x B for Lorentz Force to be zero.
+
+      @param bmag: magnetic field scaling
+      @param btheta: magnetic field polar angle
+      @param bphi: magnetic field azimuthal angle
+      @param drift_ux: drift velocity in the x direction
+    */
+    InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
+      : Bmag { bmag }
+      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
+      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
+      , Vx { drift_ux } {}
+
+    // magnetic field components
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
+      return Bmag * math::cos(Btheta);
+    }
+
+    Inline auto bx2(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(Btheta) * math::sin(Bphi);
+    }
+
+    Inline auto bx3(const coord_t<D>&) const -> real_t {
+      return Bmag * math::sin(Btheta) * math::cos(Bphi);
+    }
+
+    // electric field components
+    Inline auto ex1(const coord_t<D>&) const -> real_t {
+      return ZERO;
+    }
+
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
+      return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
+    }
+
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
+      return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
+    }
+
+  private:
+    const real_t Btheta, Bphi, Vx, Bmag;
+  };
+
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
-
     // compatibility traits for the problem generator
     static constexpr auto engines {
       arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
@@ -41,42 +86,49 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    const Metadomain<S, M>& global_domain;
+    Metadomain<S, M>& global_domain;
 
     // domain properties
     const real_t  global_xmin, global_xmax;
+    // gas properties
+    const real_t  temperature, temperature_ratio;
+    // injector properties
+    const real_t  dt;
+    // magnetic field properties
+    real_t        Btheta, Bphi, Bmag;
+    InitFields<D> init_flds;
 
-    // plasma
-    const real_t temperature, temperature_ratio;
     // piston properties
-    const real_t piston_velocity, piston_initial_position;
+    const real_t piston_velocity;
+    int i_piston;
+    real_t di_piston, piston_position;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain } 
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , piston_velocity {p.template get<real_t>("setup.piston_velocity", 0.0)}
-      , piston_initial_position {p.template get<real_t>("setup.piston_initial_position", 0.0)}
-      , temperature { p.template get<real_t>("setup.temperature", 0.0) }
-      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }{}
+      , drift_ux { p.template get<real_t>("setup.drift_ux") }
+      , temperature { p.template get<real_t>("setup.temperature") }
+      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
+      , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
+      , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
+      , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
+      , init_flds { Bmag, Btheta, Bphi, drift_ux }
+      , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
-      real_t xg_min = global_xmin+piston_initial_position;
-      real_t xg_max = global_xmax ;
+    inline PGen() {}
 
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimensions
-      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
-        // compute the range for the x-direction
-        if (d == static_cast<decltype(d)>(in::x1)) {
-          box.push_back({ xg_min, xg_max });
-        } else {
-          // inject into full range in other directions
-          box.push_back(Range::All);
-        }
-      }
+    auto MatchFields(simtime_t) const -> InitFields<D> {
+      return init_flds;
+    }
+
+    inline void InitPrtls(Domain<S, M>& domain) {
+
+      // set initial position of piston
+      i_piston = 0;
+      di_piston = ZERO;
+      piston_position = ZERO;
 
       // define temperatures of species
       const auto temperatures = std::make_pair(temperature,
@@ -88,28 +140,75 @@ namespace user {
 
       // inject particles
       arch::InjectUniformMaxwellians<S, M>(params,
-                                           local_domain,
+                                           domain,
                                            ONE,
                                            temperatures,
                                            { 1, 2 },
                                            drifts,
-                                           false,
-                                           box);
+                                           false);
     }
 
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+
+      di_piston += piston_velocity * dt;
+      if (di_piston >= domain.mesh().CellSize(in::x1)) {
+        i_piston += static_cast<int>(di_piston / domain.mesh().CellSize(in::x1));
+        di_piston = std::fmod(di_piston, domain.mesh().CellSize(in::x1));
+      }
+
+      // compute current position of piston
+      piston_position = static_cast<real_t>(i_piston) + di_piston;
+
+      // check if the window should be moved
+      if (i_piston > window_update_frequency) {
+
+        // move the window and all fields and particles in it
+        arch::MoveWindow<S, M>(in::x1, domain, window_update_frequency);
+
+        // synch ghost zones after moving the window
+        global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+
+        /*
+            Inject slab of fresh plasma
+        */
+        const real_t xmax = global_xmax;
+        const real_t xmin = xmax - window_update_frequency * domain.mesh().CellSize(in::x1);
+        // define box to inject into
+        boundaries_t<real_t> inj_box;
+        // loop over all dimension
+        for (auto d = 0u; d < M::Dim; ++d) {
+          if (d == 0) {
+            inj_box.push_back({ xmin, xmax });
+          } else {
+            inj_box.push_back(Range::All);
+          }
+        }
+
+        // same maxwell distribution as above
+        const auto temperatures = std::make_pair(temperature,
+                                                temperature_ratio * temperature);
+        const auto drifts       = std::make_pair(
+          std::vector<real_t> { ZERO, ZERO, ZERO },
+          std::vector<real_t> { ZERO, ZERO, ZERO });
+        arch::InjectUniformMaxwellians<S, M>(params,
+                                            domain,
+                                            ONE,
+                                            temperatures,
+                                            { 1, 2 },
+                                            drifts,
+                                            false,
+                                            inj_box);
+      }
+    }
     
 
     struct CustomPrtlUpdate {
       real_t piston_position_current; // current position of piston
       real_t piston_velocity_current;
       real_t xg_max;
-
       bool is_left;
-
       bool massive;
       
-      
-
       template <class Coord, class PusherKernel>
       Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
         
@@ -124,17 +223,13 @@ namespace user {
         if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, is_left)){
             arch::PistonUpdate<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, massive);
         }
-        
-
       }
     };
 
     template <class D>
     auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-      return CustomPrtlUpdate { piston_initial_position+static_cast<real_t>(time)*piston_velocity, piston_velocity, global_domain.mesh().extent(in::x1).second, true, true};
-
+      return CustomPrtlUpdate { piston_pos, piston_velocity, global_domain.mesh().extent(in::x1).second, true, true};
       };
-    
   };
 
 } // namespace user
