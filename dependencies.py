@@ -293,7 +293,7 @@ def InstallNt2pyScript(settings: Settings) -> str:
 
 PRESETS = {
     "rusty": {
-        "module_loads": ["openmpi/5.0.6.lua", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
+        "module_loads": ["openmpi/cuda-4.1.8", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
         "kokkos_backend": "cuda",
         "kokkos_arch": "AMPERE80",
         "adios2_mpi": "mpi",
