@@ -134,10 +134,8 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         modules_in_module = "\n".join(
             [f"module load {module}" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/kokkos"
-        install_path = (
-            f"{prefix}/kokkos/{version}/{backend}{f'_{arch}' if arch else ''}"
-        )
+        src_path = os.path.join(prefix, "src", "kokkos")
+        install_path = os.path.join(prefix, "kokkos", version, backend, arch.lower() if arch else "")
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
@@ -205,8 +203,8 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         modules_in_module = "\n".join(
             [f"module load {module}" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/adios2"
-        install_path = f"{prefix}/adios2/{version}/{mpi_mode}"
+        src_path = os.path.join(prefix, "src", "adios2")
+        install_path = os.path.join(prefix, "adios2", version, mpi_mode)
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Adios2 install path {install_path} already exists and overwrite is disabled"
@@ -295,7 +293,7 @@ def InstallNt2pyScript(settings: Settings) -> str:
 
 PRESETS = {
     "rusty": {
-        "module_loads": ["openmpi/5.0.6.lua", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
+        "module_loads": ["openmpi/cuda-4.1.8", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
         "kokkos_backend": "cuda",
         "kokkos_arch": "AMPERE80",
         "adios2_mpi": "mpi",
@@ -313,6 +311,19 @@ PRESETS = {
             "LIBFABRIC_ROOT=/opt/cray/libfabric/1.15.2.0/",
             "MPI_ROOT=/opt/cray/pe/craype/2.7.30",
         ],
+    },
+    "lumi": {
+        "module_loads": ["PrgEnv-cray", "cray-mpich", "craype-accel-amd-gfx90a", "rocm"],
+        "kokkos_backend": "hip",
+        "kokkos_arch": "AMD_GFX90A",
+        "extra_kokkos_flags": [
+            "CMAKE_CXX_COMPILER=hipcc",
+            "AMDGPU_TARGETS=gfx90a",
+        ],
+        "extra_adios2_flags": [
+            "CMAKE_CXX_COMPILER=CC",
+            "CMAKE_C_COMPILER=cc"
+        ]
     },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
@@ -354,13 +365,9 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "kokkos",
-                settings.kokkos_backend
-                + (
-                    f"_{settings.kokkos_arch.strip()}"
-                    if settings.kokkos_arch.strip()
-                    else ""
-                ),
                 settings.kokkos_version,
+                settings.kokkos_backend, 
+                settings.kokkos_arch.strip().lower(),
             )
             os.makedirs(os.path.dirname(kokkos_modfile_file), exist_ok=True)
             if os.path.exists(kokkos_modfile_file) and not settings.overwrite:
@@ -374,8 +381,8 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "adios2",
-                settings.adios2_mpi,
                 settings.adios2_version,
+                settings.adios2_mpi,
             )
             os.makedirs(os.path.dirname(adios2_modfile_file), exist_ok=True)
             if os.path.exists(adios2_modfile_file) and not settings.overwrite:
@@ -1082,24 +1089,14 @@ class App:
 
     def menu_cluster(self) -> Tuple[str, str, List[MenuItem]]:
         def choose(name: str):
+            print ("CALLING:", name)
             apply_preset(self.s, name)
             self.push("custom")
 
         return (
             "cluster-specific",
             "pick a preset:",
-            [
-                MenuItem("rusty", "apply preset", on_enter=lambda: choose("rusty")),
-                MenuItem("stellar", "apply preset", on_enter=lambda: choose("stellar")),
-                MenuItem(
-                    "perlmutter", "apply preset", on_enter=lambda: choose("perlmutter")
-                ),
-                MenuItem(
-                    "frontier", "apply preset", on_enter=lambda: choose("frontier")
-                ),
-                MenuItem("aurora", "apply preset", on_enter=lambda: choose("aurora")),
-                MenuItem("back", "", on_enter=self.pop),
-            ],
+            [MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c)) for cluster in list(PRESETS.keys())] + [MenuItem("back", "", on_enter=self.pop)],
         )
 
     def get_menu(self) -> Tuple[str, str, List[MenuItem]]:

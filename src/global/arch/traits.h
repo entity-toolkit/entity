@@ -5,6 +5,12 @@
  *   - traits::fieldsetter::HasEx1, ::HasEx2, ::HasEx3 - checks for E functions in field setter class
  *   - traits::fieldsetter::HasBx1, ::HasBx2, ::HasBx3 - checks for B functions in field setter class
  *   - traits::fieldsetter::HasDx1, ::HasDx2, ::HasDx3 - checks for D functions in field setter class
+ *   - traits::fieldsetter::HasConditionalEx1, ::HasConditionalEx2, ::HasConditionalEx3
+ * - checks for conditional E functions in field setter class
+ *   - traits::fieldsetter::HasConditionalBx1, ::HasConditionalBx2, ::HasConditionalBx3
+ * - checks for conditional B functions in field setter class
+ *   - traits::fieldsetter::HasConditionalDx1, ::HasConditionalDx2, ::HasConditionalDx3
+ * - checks for conditional D functions in field setter class
  *   - traits::external::HasFx1, ::HasFx2, ::HasFx3 - checks for F functions in external field class
  *   - traits::external::HasEx1, ::HasEx2, ::HasEx3 - checks for E functions in external field class
  *   - traits::external::HasBx1, ::HasBx2, ::HasBx3 - checks for B functions in external field class
@@ -83,79 +89,142 @@ namespace traits {
     concept HasDx3 = requires(const T& t, const coord_t<D>& x_Ph) {
       { t.dx3(x_Ph) } -> std::convertible_to<real_t>;
     };
+
+    template <class T, Dimension D>
+    concept HasConditionalEx1 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.ex1(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalEx2 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.ex2(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalEx3 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.ex3(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalBx1 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.bx1(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalBx2 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.bx2(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalBx3 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& e_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.bx3(x_Ph, e_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalDx1 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& d_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.dx1(x_Ph, d_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalDx2 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& d_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.dx2(x_Ph, d_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
+
+    template <class T, Dimension D>
+    concept HasConditionalDx3 = requires(const T&               t,
+                                         const coord_t<D>&      x_Ph,
+                                         const vec_t<Dim::_3D>& d_Ph,
+                                         const vec_t<Dim::_3D>& b_Ph) {
+      {
+        t.dx3(x_Ph, d_Ph, b_Ph)
+      } -> std::convertible_to<Kokkos::pair<bool, real_t>>;
+    };
   } // namespace fieldsetter
 
   namespace external {
     template <class T, Dimension D>
-    concept HasFx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasFx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasFx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.fx3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasFx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.fx3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasEx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.ex3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasEx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.ex3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx1 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx1(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx1(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx2 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx2(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx2(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>
-    concept HasBx3 = requires(const T&          t,
-                              spidx_t           sp,
-                              simtime_t         time,
-                              const coord_t<D>& x_Ph) {
-      { t.bx3(sp, time, x_Ph) } -> std::convertible_to<real_t>;
+    concept HasBx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+      { t.bx3(x_Ph) } -> std::convertible_to<real_t>;
     };
 
     template <class T, Dimension D>

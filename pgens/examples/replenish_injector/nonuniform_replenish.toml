@@ -1,0 +1,57 @@
+[simulation]
+  name    = "nonuniform_replenish"
+  engine  = "srpic"
+  runtime = 2.0
+
+[grid]
+  resolution = [128, 128]
+  extent     = [[0.0, 1.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["ABSORB", "ABSORB"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.01
+  skindepth0 = 0.1
+
+[algorithms]
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 8.0
+
+  [[particles.species]]
+    label    = "e+"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e6
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e6
+
+[setup]
+  target_density = "nonuniform"
+
+[output]
+  interval = 10
+
+  [output.fields]
+    quantities = ["N_1_2"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0

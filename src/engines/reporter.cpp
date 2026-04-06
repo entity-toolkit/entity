@@ -12,7 +12,6 @@
 namespace ntt {
 
   auto ReportSimulationConfig(const SimulationParams&          params,
-                              const std::string&               pgen,
                               SimEngine                        S,
                               Metric                           M,
                               real_t                           dt,
@@ -30,7 +29,6 @@ namespace ntt {
                        "Name",
                        "%s",
                        params.template get<std::string>("simulation.name").c_str());
-    reporter::AddParam(report, 4, "Problem generator", "%s", pgen.c_str());
     reporter::AddParam(report, 4, "Engine", "%s", S.to_string());
     reporter::AddParam(report, 4, "Metric", "%s", M.to_string());
 #if SHAPE_ORDER == 0

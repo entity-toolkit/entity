@@ -4,6 +4,7 @@
  * @implements
  *   - arch::InjectUniformMaxwellians<> -> void
  *   - arch::InjectUniformMaxwellian<> -> void
+ *   - arch::ComputeMomentWithSpecies<> -> void
  * @namespaces:
  *   - arch::
  */
@@ -18,6 +19,8 @@
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
+#include "kernels/fieldsetter.hpp"
+#include "kernels/particle_moments.hpp"
 
 #include <utility>
 
@@ -34,6 +37,9 @@ namespace arch {
    * @param drift_four_vels Pair of drift four-velocities for the two species
    * @param use_weights Use weights
    * @param box Region to inject the particles in global coords (or empty for the whole domain)
+   *
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
    */
   template <SimEngine::type S, class M>
   inline void InjectUniformMaxwellians(
@@ -81,6 +87,9 @@ namespace arch {
    * @param drift_four_vels Pair of drift four-velocities for the two species
    * @param use_weights Use weights
    * @param box Region to inject the particles in global coords (or empty for the whole domain)
+   *
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
    */
   template <SimEngine::type S, class M>
   inline void InjectUniformMaxwellian(
@@ -101,6 +110,90 @@ namespace arch {
                                    drift_four_vels,
                                    use_weights,
                                    box);
+  }
+
+  /**
+   * @brief Computes the moment of the distribution function for a given set of species and saves it to the provided buffer
+   *
+   * @param params Simulation parameters
+   * @param domain Domain object
+   * @param species Vector of species indices to include in the calculation
+   * @param buffer Buffer to save the computed moment (must be preallocated with the correct size)
+   * @param components Vector of field components to compute (e.g. {} for N, {0}
+   * {1} {2} for V, {0, 1} for T, etc., default: empty, i.e. scalar)
+   * @param buffer_idx Index of the field component in the buffer to save the result to
+   * @param window Window size for smoothing (in number of cells, default: 0, i.e. no smoothing)
+   *
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam F Field ID for the moment to compute (e.g. FldsID::N, FldsID::T, etc.)
+   * @tparam N Last dimension of the buffer (e.g. 3 or 6)
+   */
+  template <SimEngine::type S, class M, FldsID::type F, int N>
+    requires metric::traits::HasD<M>
+  inline void ComputeMomentWithSpecies(
+    const SimulationParams&            params,
+    Domain<S, M>&                      domain,
+    const std::vector<spidx_t>         species,
+    ndfield_t<M::Dim, N>&              buffer,
+    const std::vector<unsigned short>& components = {},
+    idx_t                              buffer_idx = 0u,
+    unsigned short                     window     = 0u) {
+    const auto ni2         = domain.mesh.n_active(in::x2);
+    const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
+    const auto use_weights = params.template get<bool>("particles.use_weights");
+
+    Kokkos::deep_copy(buffer, ZERO);
+    auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
+    for (const auto sp : species) {
+      const auto& prtl_spec = domain.species[sp - 1];
+      Kokkos::parallel_for(
+        "ComputeMoment",
+        prtl_spec.rangeActiveParticles(),
+        kernel::ParticleMoments_kernel<S, M, F, N>(components,
+                                                   scatter_buff,
+                                                   buffer_idx,
+                                                   prtl_spec.i1,
+                                                   prtl_spec.i2,
+                                                   prtl_spec.i3,
+                                                   prtl_spec.dx1,
+                                                   prtl_spec.dx2,
+                                                   prtl_spec.dx3,
+                                                   prtl_spec.ux1,
+                                                   prtl_spec.ux2,
+                                                   prtl_spec.ux3,
+                                                   prtl_spec.phi,
+                                                   prtl_spec.weight,
+                                                   prtl_spec.tag,
+                                                   prtl_spec.mass(),
+                                                   prtl_spec.charge(),
+                                                   use_weights,
+                                                   domain.mesh.metric,
+                                                   domain.mesh.flds_bc(),
+                                                   ni2,
+                                                   inv_n0,
+                                                   window));
+    }
+    Kokkos::Experimental::contribute(buffer, scatter_buff);
+  }
+
+  template <SimEngine::type S, class M, class F>
+    requires ::metric::traits::HasD<M>
+  inline void UpdateEMFields(const SimulationParams& params,
+                             Domain<S, M>&           domain,
+                             const F&                fieldsetter) {
+    if constexpr (S == SimEngine::SRPIC) {
+      Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
+      Kokkos::parallel_for("UpdateEMFields",
+                           domain.mesh.rangeActiveCells(),
+                           kernel::CustomFieldsetter<S, M, F>(domain.mesh.metric,
+                                                              domain.fields.em,
+                                                              domain.fields.bckp,
+                                                              fieldsetter));
+      // comm here
+    } else {
+      raise::Error("Custom fieldsetter is only implemented for SRPIC", HERE);
+    }
   }
 
 } // namespace arch

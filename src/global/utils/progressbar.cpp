@@ -2,6 +2,7 @@
 
 #include "global.h"
 
+#include "utils/colors.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 

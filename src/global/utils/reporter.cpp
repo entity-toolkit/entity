@@ -1,17 +1,22 @@
 #include "utils/reporter.h"
 
 #include "utils/colors.h"
-#include "utils/error.h"
 #include "utils/formatting.h"
 
 #if defined(CUDA_ENABLED)
   #include <cuda_runtime.h>
 #elif defined(HIP_ENABLED)
+  #include "utils/error.h"
+
   #include <hip/hip_runtime.h>
 #endif
 
 #if defined(OUTPUT_ENABLED)
   #include <adios2.h>
+#endif
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
 #endif
 
 #include <Kokkos_Core.hpp>
@@ -79,7 +84,7 @@ namespace reporter {
   auto Backend() -> std::string {
     std::string report = "";
 #if defined(MPI_ENABLED)
-    int mpi_v, mpi_subv;
+    int mpi_v = -1, mpi_subv = -1;
     MPI_Get_version(&mpi_v, &mpi_subv);
     const std::string mpi_version = fmt::format("%d.%d", mpi_v, mpi_subv);
 #else  // not MPI_ENABLED
