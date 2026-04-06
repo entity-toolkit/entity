@@ -289,18 +289,35 @@ namespace ntt {
                               std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
                               N_GHOSTS + nx2 - 1,
                               buff_idx));
-            auto aphi_r_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace {},
-                                                                 aphi_r);
+#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+            MPI_Send(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_recv,
+                     0,
+                     MPI_COMM_WORLD);
+#else
+            auto aphi_r_h = Kokkos::create_mirror_view(aphi_r);
+            Kokkos::deep_copy(aphi_r_h, aphi_r);
             MPI_Send(aphi_r_h.data(),
                      nx1,
                      mpi::get_type<real_t>(),
                      rank_recv,
                      0,
                      MPI_COMM_WORLD);
+#endif
           } else if (local_domain->mpi_rank() == rank_recv) {
             array_t<real_t*> aphi_r { "Aphi_r", nx1 };
-            auto             aphi_r_h = Kokkos::create_mirror_view(Kokkos::HostSpace {},
-                                                                    aphi_r);
+#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+            MPI_Recv(aphi_r.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_send,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+#else
+            auto aphi_r_h = Kokkos::create_mirror_view(aphi_r);
             MPI_Recv(aphi_r_h.data(),
                      nx1,
                      mpi::get_type<real_t>(),
@@ -309,6 +326,7 @@ namespace ntt {
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
             Kokkos::deep_copy(aphi_r, aphi_r_h);
+#endif
             ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
           }
         }
