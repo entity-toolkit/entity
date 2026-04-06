@@ -154,12 +154,11 @@ namespace user {
           const int      delta_i1_to_wall  = pusher.i1_prev(p);
           const prtldx_t delta_dx1_to_wall = pusher.dx1_prev(p);
           const real_t dx_to_wall = i_di_to_Xi(delta_i1_to_wall, delta_dx1_to_wall);
-          const real_t dt_to_wall =
-            dx_to_wall /
+          const real_t dt_to_wall = dx_to_wall /
             pusher.metric.template transform<1, Idx::XYZ, Idx::U>(x_dummy,
                                                                   beta_x_p);
 
-          // update the velocity to the post-collision value (perfect reflection with new speed sampled from Juttner distribution)
+          // update the velocity to the post-collision value (reflection with new speed sampled from Juttner distribution)
           pusher.ux1(p) = math::abs(v[0]);
           pusher.ux2(p) = v[1];
           pusher.ux3(p) = v[2];
@@ -172,7 +171,7 @@ namespace user {
                                                             SQR(pusher.ux2(p)) +
                                                             SQR(pusher.ux3(p)));
 
-          // update the position to the post-collision value (perfect reflection with new speed sampled from Juttner distribution)
+          // update the position to the post-collision value (reflection with new speed sampled from Juttner distribution)
           pusher.i1(p)  = 0;
           pusher.dx1(p) = pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
                             x_dummy,
@@ -190,13 +189,11 @@ namespace user {
           const int      delta_i1_to_wall  = pusher.ni1 - 1 - pusher.i1_prev(p);
           const prtldx_t delta_dx1_to_wall = ONE - pusher.dx1_prev(p);
           const real_t dx_to_wall = i_di_to_Xi(delta_i1_to_wall, delta_dx1_to_wall);
-
-          const real_t dt_to_wall =
-            dx_to_wall /
+          const real_t dt_to_wall = dx_to_wall /
             pusher.metric.template transform<1, Idx::XYZ, Idx::U>(x_dummy,
                                                                   beta_x_p);
 
-          // update the velocity to the post-collision value (perfect reflection with new speed sampled from Juttner distribution)
+          // update the velocity to the post-collision value (reflection with new speed sampled from Juttner distribution)
           pusher.ux1(p) = -math::abs(v[0]);
           pusher.ux2(p) = v[1];
           pusher.ux3(p) = v[2];
@@ -209,7 +206,7 @@ namespace user {
                                                             SQR(pusher.ux2(p)) +
                                                             SQR(pusher.ux3(p)));
 
-          // update the position to the post-collision value (perfect reflection with new speed sampled from Juttner distribution)
+          // update the position to the post-collision value (reflection with new speed sampled from Juttner distribution)
           pusher.i1(p)  = pusher.ni1 - 2;
           pusher.dx1(p) = ONE -
                           pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
@@ -229,8 +226,8 @@ namespace user {
 
       return CustomPrtlUpdate {
         domain.random_pool(),
-        temperature,                        // / domain.species[sp].mass(),
-        temperature_gradient * temperature, // / domain.species[sp].mass(),
+        temperature / domain.species[sp - 1].mass(), // sp is 1-indexed
+        temperature_gradient * temperature / domain.species[sp - 1].mass(),
         global_domain.mesh().extent(in::x1).first, // xmin
         global_domain.mesh().extent(in::x1).second // xmax
       };
