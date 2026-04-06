@@ -5,19 +5,17 @@
 #include "global.h"
 
 #include "arch/traits.h"
-#include "archetypes/piston.h"
 
-#include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/energy_dist.h"
-#include "framework/domain/domain.h"
+#include "archetypes/particle_injector.h"
+#include "archetypes/piston.h"
+#include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
-#include "framework/domain/metadomain.h"
 #include "archetypes/utils.h"
+#include "framework/domain/domain.h"
+#include "framework/domain/metadomain.h"
 
 #include <vector>
-
-
 
 namespace user {
   using namespace ntt;
@@ -44,7 +42,7 @@ namespace user {
     const Metadomain<S, M>& global_domain;
 
     // domain properties
-    const real_t  global_xmin, global_xmax;
+    const real_t global_xmin, global_xmax;
 
     // plasma
     const real_t temperature, temperature_ratio;
@@ -53,17 +51,20 @@ namespace user {
 
     inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain } 
+      , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , piston_velocity {p.template get<real_t>("setup.piston_velocity", 0.0)}
-      , piston_initial_position {p.template get<real_t>("setup.piston_initial_position", 0.0)}
+      , piston_velocity { p.template get<real_t>("setup.piston_velocity", 0.0) }
+      , piston_initial_position { p.template get<real_t>(
+          "setup.piston_initial_position",
+          0.0) }
       , temperature { p.template get<real_t>("setup.temperature", 0.0) }
-      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }{}
+      , temperature_ratio { p.template get<real_t>(
+          "setup.temperature_ratio") } {}
 
     inline void InitPrtls(Domain<S, M>& local_domain) {
-      real_t xg_min = global_xmin+piston_initial_position;
-      real_t xg_max = global_xmax ;
+      real_t xg_min = global_xmin + piston_initial_position;
+      real_t xg_max = global_xmax;
 
       // define box to inject into
       boundaries_t<real_t> box;
@@ -82,9 +83,8 @@ namespace user {
       const auto temperatures = std::make_pair(temperature,
                                                temperature_ratio * temperature);
       // define drift speed of species
-      const auto drifts       = std::make_pair(
-        std::vector<real_t> { ZERO, ZERO, ZERO },
-        std::vector<real_t> { ZERO, ZERO, ZERO });
+      const auto drifts = std::make_pair(std::vector<real_t> { ZERO, ZERO, ZERO },
+                                         std::vector<real_t> { ZERO, ZERO, ZERO });
 
       // inject particles
       arch::InjectUniformMaxwellians<S, M>(params,
@@ -97,8 +97,6 @@ namespace user {
                                            box);
     }
 
-    
-
     struct CustomPrtlUpdate {
       real_t piston_position_current; // current position of piston
       real_t piston_velocity_current;
@@ -107,34 +105,42 @@ namespace user {
       bool is_left;
 
       bool massive;
-      
-      
 
       template <class Coord, class PusherKernel>
       Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
-        
+
         real_t piston_position_use;
 
-        if (piston_position_current<xg_max){ //make sure piston has not reached the right wall
-            piston_position_use = piston_position_current;
+        // make sure piston has not reached the right wall
+        if (piston_position_current < xg_max) {
+          piston_position_use = piston_position_current;
         } else {
-            piston_position_use = xg_max;
+          piston_position_use = xg_max;
         }
 
-        if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, is_left)){
-            arch::PistonUpdate<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, massive);
+        if (arch::CrossesPiston<S, M, PusherKernel>(p,
+                                                    pusher,
+                                                    piston_position_use,
+                                                    piston_velocity_current,
+                                                    is_left)) {
+          arch::PistonUpdate<S, M, PusherKernel>(p,
+                                                 pusher,
+                                                 piston_position_use,
+                                                 piston_velocity_current,
+                                                 massive);
         }
-        
-
       }
     };
 
     template <class D>
     auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-      return CustomPrtlUpdate { piston_initial_position+static_cast<real_t>(time)*piston_velocity, piston_velocity, global_domain.mesh().extent(in::x1).second, true, true};
-
-      };
-    
+      return CustomPrtlUpdate { piston_initial_position +
+                                  static_cast<real_t>(time) * piston_velocity,
+                                piston_velocity,
+                                global_domain.mesh().extent(in::x1).second,
+                                true,
+                                true };
+    };
   };
 
 } // namespace user

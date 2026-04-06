@@ -87,9 +87,9 @@ namespace arch {
 
       template <class PG, class M, class D>
       concept HasCustomPrtlUpdate = requires(const PG& pgen,
-                                         simtime_t time,
-                                         spidx_t   sp,
-                                         D&        domain) {
+                                             simtime_t time,
+                                             spidx_t   sp,
+                                             D&        domain) {
         pgen.CustomParticleUpdate(time, sp, domain);
       };
 
