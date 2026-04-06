@@ -236,4 +236,8 @@ namespace user {
 
 } // namespace user
 
+#undef from_Xi_to_i_di
+#undef from_Xi_to_i
+#undef i_di_to_Xi
+
 #endif // PROBLEM_GENERATOR_H
