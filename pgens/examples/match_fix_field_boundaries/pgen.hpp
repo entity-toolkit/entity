@@ -13,15 +13,15 @@ namespace user {
 
   template <Dimension D>
   struct ZeroFields {
-    auto ex2(const coord_t<D>&) const -> real_t {
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    auto ex3(const coord_t<D>&) const -> real_t {
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    auto bx1(const coord_t<D>&) const -> real_t {
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
   };
@@ -66,8 +66,9 @@ namespace user {
      *
      * @return Pair of (value to set, whether to set it or not)
      */
-    auto FixFieldsConst(simtime_t time, const bc_in& bc, em comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(simtime_t    time,
+                        const bc_in& bc,
+                        em           comp) const -> std::pair<real_t, bool> {
       if (bc == bc_in::Mx1) {
         const auto phase { time * omega };
         real_t     ampl { ZERO };
