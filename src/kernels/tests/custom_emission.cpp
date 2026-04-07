@@ -248,6 +248,7 @@ auto main(int argc, char* argv[]) -> int {
     };
 
     ndfield_t<Dim::_1D, 6> EB { "EB", 128u + 2u * N_GHOSTS };
+    const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>> {};
 
     for (auto step = 0u; step < 7u; ++step) {
       pusher_params.time   = static_cast<simtime_t>(step) * delta_t;
@@ -286,13 +287,14 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "ParticlePusher",
         2u,
-        kernel::sr::Pusher_kernel<decltype(metric), kernel::sr::NoField_t, false, decltype(emission_policy)>(
+        kernel::sr::Pusher_kernel<decltype(metric), kernel::sr::NoField_t, false, decltype(emission_policy), decltype(no_custom_update)>(
           pusher_params,
           pusher_arrays,
           EB,
           metric,
           kernel::sr::NoField_t {},
-          emission_policy));
+          emission_policy,
+          no_custom_update));
       const auto n_injected = emission_policy.numbers_injected();
       emitted_species_1.set_counter(emitted_species_1.counter() + n_injected[0]);
       emitted_species_1.set_npart(emitted_species_1.npart() + n_injected[0]);
