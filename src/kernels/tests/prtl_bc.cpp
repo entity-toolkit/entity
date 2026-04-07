@@ -266,18 +266,20 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
   const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
+  const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
 
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission)>(
+      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission), decltype(no_custom_update)>(
         pusher_params,
         pusher_arrays,
         emfield,
         metric,
         kernel::sr::NoField_t {},
-        no_emission));
+        no_emission,
+        no_custom_update));
     auto i1_  = Kokkos::create_mirror_view(i1);
     auto i2_  = Kokkos::create_mirror_view(i2);
     auto i3_  = Kokkos::create_mirror_view(i3);

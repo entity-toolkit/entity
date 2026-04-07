@@ -85,6 +85,14 @@ namespace arch {
         pgen.EmissionPolicy(time, sp, domain);
       };
 
+      template <class PG, class M, class D>
+      concept HasCustomPrtlUpdate = requires(const PG& pgen,
+                                             simtime_t time,
+                                             spidx_t   sp,
+                                             D&        domain) {
+        pgen.CustomParticleUpdate(time, sp, domain);
+      };
+
       template <class PG, class D>
       concept HasInitPrtls = requires(PG& pgen, D& domain) {
         { pgen.InitPrtls(domain) } -> std::same_as<void>;

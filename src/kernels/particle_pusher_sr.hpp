@@ -101,11 +101,18 @@ namespace kernel::sr {
     array_t<short*>    tag;
   };
 
+  template <SimEngine::type S, class M>
+  struct NoCustomPrtlUpdate_t {
+    template <class PusherKernel>
+    Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {
+    }
+  };
+
   /**
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F, bool Atm, class E>
+  template <class M, class F, bool Atm, class E, class PUPD>
     requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
              metric::traits::HasConvertXYZ<M> &&
              metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
@@ -120,12 +127,15 @@ namespace kernel::sr {
         std::is_same<E, const NoEmissionPolicy_t<SimEngine::SRPIC, M>>::value,
       "Invalid emission policy E for Pusher_kernel");
 
-  private:
     const ParticlePusherFlags pusher_flags;
     const RadiativeDragFlags  radiative_drag_flags;
 
     const randacc_ndfield_t<D, 6> EB;
 
+  public:
+    const spidx_t      sp;
+    simtime_t          time;
+    const real_t       dt;
     array_t<int*>      i1, i2, i3;
     array_t<int*>      i1_prev, i2_prev, i3_prev;
     array_t<prtldx_t*> dx1, dx2, dx3;
@@ -135,23 +145,26 @@ namespace kernel::sr {
     array_t<real_t*>   weight;
     array_t<short*>    tag;
     const M            metric;
-    const F            external_fields;
+    const int          ni1, ni2, ni3;
 
-    const E emission_policy;
+  private:
+    const F external_fields;
 
-    const real_t coeff, dt;
+    const E    emission_policy;
+    const PUPD custom_prtl_update;
 
-    const int ni1, ni2, ni3;
-    bool      is_absorb_i1min { false }, is_absorb_i1max { false };
-    bool      is_absorb_i2min { false }, is_absorb_i2max { false };
-    bool      is_absorb_i3min { false }, is_absorb_i3max { false };
-    bool      is_periodic_i1min { false }, is_periodic_i1max { false };
-    bool      is_periodic_i2min { false }, is_periodic_i2max { false };
-    bool      is_periodic_i3min { false }, is_periodic_i3max { false };
-    bool      is_reflect_i1min { false }, is_reflect_i1max { false };
-    bool      is_reflect_i2min { false }, is_reflect_i2max { false };
-    bool      is_reflect_i3min { false }, is_reflect_i3max { false };
-    bool      is_axis_i2min { false }, is_axis_i2max { false };
+    const real_t coeff;
+
+    bool is_absorb_i1min { false }, is_absorb_i1max { false };
+    bool is_absorb_i2min { false }, is_absorb_i2max { false };
+    bool is_absorb_i3min { false }, is_absorb_i3max { false };
+    bool is_periodic_i1min { false }, is_periodic_i1max { false };
+    bool is_periodic_i2min { false }, is_periodic_i2max { false };
+    bool is_periodic_i3min { false }, is_periodic_i3max { false };
+    bool is_reflect_i1min { false }, is_reflect_i1max { false };
+    bool is_reflect_i2min { false }, is_reflect_i2max { false };
+    bool is_reflect_i3min { false }, is_reflect_i3max { false };
+    bool is_axis_i2min { false }, is_axis_i2max { false };
 
     // gca parameters
     const real_t gca_larmor, gca_EovrB_sqr;
@@ -167,10 +180,12 @@ namespace kernel::sr {
                   const randacc_ndfield_t<D, 6>& EB,
                   const M&                       metric,
                   const F&                       external_fields,
-                  const E&                       emission_policy)
+                  const E&                       emission_policy,
+                  const PUPD&                    custom_prtl_update)
       : pusher_flags { pusher_params.pusher_flags }
       , radiative_drag_flags { pusher_params.radiative_drag_flags }
       , EB { EB }
+      , sp { pusher_arrays.sp }
       , i1 { pusher_arrays.i1 }
       , i2 { pusher_arrays.i2 }
       , i3 { pusher_arrays.i3 }
@@ -192,6 +207,8 @@ namespace kernel::sr {
       , metric { metric }
       , external_fields { external_fields }
       , emission_policy { emission_policy }
+      , custom_prtl_update { custom_prtl_update }
+      , time { pusher_params.time }
       , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
                 pusher_params.omegaB0 * pusher_params.dt }
       , dt { pusher_params.dt }
@@ -563,8 +580,8 @@ namespace kernel::sr {
           dx1_prev(p) = dx1(p);
           dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux1(p)) *
                     dt_inv_energy;
-          i1(p) += static_cast<int>(dx1(p) >= ONE) -
-                   static_cast<int>(dx1(p) < ZERO);
+          i1(p)  += static_cast<int>(dx1(p) >= ONE) -
+                    static_cast<int>(dx1(p) < ZERO);
           dx1(p) -= (dx1(p) >= ONE);
           dx1(p) += (dx1(p) < ZERO);
         }
@@ -573,8 +590,8 @@ namespace kernel::sr {
           dx2_prev(p) = dx2(p);
           dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux2(p)) *
                     dt_inv_energy;
-          i2(p) += static_cast<int>(dx2(p) >= ONE) -
-                   static_cast<int>(dx2(p) < ZERO);
+          i2(p)  += static_cast<int>(dx2(p) >= ONE) -
+                    static_cast<int>(dx2(p) < ZERO);
           dx2(p) -= (dx2(p) >= ONE);
           dx2(p) += (dx2(p) < ZERO);
         }
@@ -583,8 +600,8 @@ namespace kernel::sr {
           dx3_prev(p) = dx3(p);
           dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux3(p)) *
                     dt_inv_energy;
-          i3(p) += static_cast<int>(dx3(p) >= ONE) -
-                   static_cast<int>(dx3(p) < ZERO);
+          i3(p)  += static_cast<int>(dx3(p) >= ONE) -
+                    static_cast<int>(dx3(p) < ZERO);
           dx3(p) -= (dx3(p) >= ONE);
           dx3(p) += (dx3(p) < ZERO);
         }
@@ -595,8 +612,8 @@ namespace kernel::sr {
                   : ONE / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
         };
         vec_t<Dim::_3D>     vp_Cart { ux1(p) * inv_energy,
-                                  ux2(p) * inv_energy,
-                                  ux3(p) * inv_energy };
+                                      ux2(p) * inv_energy,
+                                      ux3(p) * inv_energy };
         // get cartesian position
         coord_t<M::PrtlDim> xp_Cart { ZERO };
         metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
@@ -631,6 +648,11 @@ namespace kernel::sr {
           from_Xi_to_i_di(xp[2], i3(p), dx3(p));
         }
       }
+
+      // call custom particle position update
+      custom_prtl_update(p, xp, *this);
+
+      // apply boundary conditions
       boundaryConditions(p, xp);
     }
 
@@ -695,11 +717,11 @@ namespace kernel::sr {
       auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
                     NORM_SQR(b0[0], b0[1], b0[2]) };
 
-      COEFF = ONE /
-              math::sqrt(
-                INV_2 * (COEFF2 + math::sqrt(SQR(COEFF2) +
-                                             FOUR * (SQR(b0[0]) + SQR(b0[1]) +
-                                                     SQR(b0[2]) + SQR(COEFF)))));
+      COEFF  = ONE /
+               math::sqrt(
+                 INV_2 * (COEFF2 + math::sqrt(SQR(COEFF2) +
+                                              FOUR * (SQR(b0[0]) + SQR(b0[1]) +
+                                                      SQR(b0[2]) + SQR(COEFF)))));
       COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
                       SQR(b0[2] * COEFF));
 
@@ -1494,8 +1516,8 @@ namespace kernel::sr {
                                 const vec_t<Dim::_3D>& e0,
                                 const vec_t<Dim::_3D>& b0) const {
       real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
-                                                               u_prime[1],
-                                                               u_prime[2]));
+                                                                u_prime[1],
+                                                                u_prime[2]));
       u_prime[0]             *= gamma_prime_sqr;
       u_prime[1]             *= gamma_prime_sqr;
       u_prime[2]             *= gamma_prime_sqr;
@@ -1545,8 +1567,8 @@ namespace kernel::sr {
 
     Inline void inverseComptonDrag(index_t p, vec_t<Dim::_3D>& u_prime) const {
       real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
-                                                               u_prime[1],
-                                                               u_prime[2]));
+                                                                u_prime[1],
+                                                                u_prime[2]));
       u_prime[0]             *= gamma_prime_sqr;
       u_prime[1]             *= gamma_prime_sqr;
       u_prime[2]             *= gamma_prime_sqr;
@@ -1567,7 +1589,7 @@ namespace kernel::sr {
     {
       typename E::Payload payload;
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };
-      const auto          emission_response = emission_policy.shouldEmit(xp_Cd,
+      const auto emission_response = emission_policy.shouldEmit(xp_Cd,
                                                                 xp_Ph,
                                                                 u_prime,
                                                                 ep_Cart,
@@ -1584,8 +1606,8 @@ namespace kernel::sr {
       if (emission_response.first) {
         vec_t<Dim::_3D> direction { ZERO };
         const auto      delta_u_Ph_mag = NORM(delta_u_Ph[0],
-                                         delta_u_Ph[1],
-                                         delta_u_Ph[2]);
+                                              delta_u_Ph[1],
+                                              delta_u_Ph[2]);
         direction[0]                   = -delta_u_Ph[0] / delta_u_Ph_mag;
         direction[1]                   = -delta_u_Ph[1] / delta_u_Ph_mag;
         direction[2]                   = -delta_u_Ph[2] / delta_u_Ph_mag;
