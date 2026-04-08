@@ -103,19 +103,23 @@ namespace user {
     int i_piston;
     real_t di_piston, piston_position;
 
+    // window properties
+    const int window_update_frequency;
+
     inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , drift_ux { p.template get<real_t>("setup.drift_ux") }
       , temperature { p.template get<real_t>("setup.temperature") }
       , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
-      , init_flds { Bmag, Btheta, Bphi, drift_ux }
-      , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
+      , init_flds { Bmag, Btheta, Bphi, ZERO }
+      , dt { p.template get<real_t>("algorithms.timestep.dt") }
+      , window_update_frequency { p.template get<int>("setup.window_update_frequency", N_GHOSTS) }
+      , piston_velocity { p.template get<real_t>("setup.piston_velocity") } {}
 
     inline PGen() {}
 
@@ -150,20 +154,23 @@ namespace user {
 
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
 
-      di_piston += piston_velocity * dt;
-      if (di_piston >= domain.mesh().CellSize(in::x1)) {
-        i_piston += static_cast<int>(di_piston / domain.mesh().CellSize(in::x1));
-        di_piston = std::fmod(di_piston, domain.mesh().CellSize(in::x1));
-      }
-
-      // compute current position of piston
-      piston_position = static_cast<real_t>(i_piston) + di_piston;
+      /* 
+        update piston position
+      */
+      const real_t gamma_piston = ONE / math::sqrt(ONE - SQR(piston_velocity));
+      const real_t v_piston = gamma_piston * piston_velocity;
+      // piston movement over timestep
+      di_piston += v_piston * dt;
+      // check if the piston has moved to the next cell
+      i_piston += static_cast<int>(di_piston >= ONE);
+      // keep track of how much the piston has moved into the next cell
+      di_piston -= (di_piston >= ONE);
 
       // check if the window should be moved
-      if (i_piston > window_update_frequency) {
+      if (i_piston >= window_update_frequency) {
 
         // move the window and all fields and particles in it
-        arch::MoveWindow<S, M>(in::x1, domain, window_update_frequency);
+        arch::MoveWindow<S, M, in::x1>(domain, window_update_frequency);
 
         // synch ghost zones after moving the window
         global_domain.CommunicateFields(domain, Comm::E | Comm::B);
@@ -171,8 +178,9 @@ namespace user {
         /*
             Inject slab of fresh plasma
         */
+        const real_t cell_size = ZERO; // ToDo: get cell size from global domain
         const real_t xmax = global_xmax;
-        const real_t xmin = xmax - window_update_frequency * domain.mesh().CellSize(in::x1);
+        const real_t xmin = xmax - window_update_frequency * cell_size;
         // define box to inject into
         boundaries_t<real_t> inj_box;
         // loop over all dimension
@@ -198,13 +206,19 @@ namespace user {
                                             drifts,
                                             false,
                                             inj_box);
+
+        i_piston -= window_update_frequency;
       }
+
+      // compute current position of piston
+      // ToDo: check if this can be used as a global variable to avoid recomputing in piston update
+      piston_position = static_cast<real_t>(i_piston) + di_piston;
     }
     
 
     struct CustomPrtlUpdate {
-      real_t piston_position_current; // current position of piston
-      real_t piston_velocity_current;
+      real_t x_piston;
+      real_t v_piston;
       real_t xg_max;
       bool is_left;
       bool massive;
@@ -214,21 +228,24 @@ namespace user {
         
         real_t piston_position_use;
 
-        if (piston_position_current<xg_max){ //make sure piston has not reached the right wall
-            piston_position_use = piston_position_current;
+        if (x_piston < xg_max){ //make sure piston has not reached the right wall
+            piston_position_use = x_piston;
         } else {
             piston_position_use = xg_max;
         }
 
-        if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, is_left)){
-            arch::PistonUpdate<S, M, PusherKernel>(p, pusher, piston_position_use, piston_velocity_current, massive);
+        if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, v_piston, is_left)){
+            arch::PistonUpdate<S, M, PusherKernel>(p, pusher, piston_position_use, v_piston, massive);
         }
       }
     };
 
     template <class D>
     auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-      return CustomPrtlUpdate { piston_pos, piston_velocity, global_domain.mesh().extent(in::x1).second, true, true};
+      const real_t gamma_piston = ONE / math::sqrt(ONE - SQR(piston_velocity));
+      const real_t v_piston = gamma_piston * piston_velocity;
+      const real_t piston_pos = std::fmod(time * piston_velocity, window_update_frequency);
+      return CustomPrtlUpdate { piston_pos, v_piston, global_domain.mesh().extent(in::x1).second, true, true};
       };
   };
 

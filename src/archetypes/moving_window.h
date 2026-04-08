@@ -24,126 +24,17 @@
 
 namespace arch {
 
-  /**
-   * @brief Updates particle position and fields in the moving window.
-
-   */
-  template <SimEngine::type S, class M>
-  Inline void MoveWindow(dir::direction_t<M::Dim> direction,
-                         Domain<S, M>& domain, 
-                         const int window_shift) {
-    
-    if constexpr (M::CoordType != Coord::Cart) {
-        (void)direction;
-        (void)domain;
-        (void)tags;
-        raise::Error(
-          "Moving window only applicable to cartesian coordinates",
-          HERE);
-      } else {
-
-        const auto sign = direction.get_sign();
-        const auto dim  = direction.get_dim();
-
-        /*
-          move particles in the window back by the window size
-        */
-        const auto& mesh = domain.mesh;
-
-        // loop over particle species
-        for (auto s { 0u }; s < 2; ++s) {
-          // get particle properties
-          auto& species = domain.species[s];
-          auto  i1      = species.i1;
-
-          Kokkos::parallel_for(
-            "MoveParticles",
-            species.rangeActiveParticles(),
-            Lambda(index_t p) {
-              // shift particle position back by window update frequency
-              i1(p) -= window_shift;
-            });
-        }
-
-        // shift fields in the window back by the window size
-        std::vector<std::size_t> xi_min, xi_max;
-        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
-        for (auto d { 0u }; d < M::Dim; ++d) {
-          const auto dd = all_dirs[d];
-          if (dim == dd) {
-            xi_min.push_back(0);
-            xi_max.push_back(domain.mesh.n_all(dd) - window_shift);
-          } else {
-            xi_min.push_back(0);
-            xi_max.push_back(domain.mesh.n_all(dd));
-          }
-        }
-        raise::ErrorIf(xi_min.size() != xi_max.size() or
-                         xi_min.size() != static_cast<std::size_t>(M::Dim),
-                       "Invalid range size",
-                       HERE);
-
-        // loop range for shifting fields
-        range_t<M::Dim> range;
-        if constexpr (M::Dim == Dim::_1D) {
-          range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
-        } else if constexpr (M::Dim == Dim::_2D) {
-          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
-                                            { xi_max[0], xi_max[1] });
-        } else if constexpr (M::Dim == Dim::_3D) {
-          range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
-                                            { xi_max[0], xi_max[1], xi_max[2] });
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
-
-        if (dir == in::x1) {
-          Kokkos::parallel_for(
-              "ShiftFields",
-              range,
-              FieldShift_kernel<M::Dim, in::x1>(
-                domain.fields.em,
-                window_shift,
-                tags));
-        } else if (dir == in::x2) {
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "ShiftFields",
-              range,
-              FieldShift_kernel<M::Dim, in::x2>(
-                domain.fields.em,
-                window_shift,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        } else {
-          if constexpr (M::Dim == Dim::_3D) {
-            Kokkos::parallel_for(
-              "ShiftFields",
-              range,
-              FieldShift_kernel<M::Dim, in::x3>(
-                domain.fields.em,
-                window_shift,
-                tags));
-          } else {
-            raise::Error("Invalid dimension", HERE);
-          }
-        }
-
-      }
-  }
-
   template <Dimension D, in o>
   struct FieldShift_kernel {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(D),
                   "Invalid component index");
 
     ndfield_t<D, 6>   Fld;
+    ndfield_t<D, 6>   backup_Fld;
     const BCTags      tags;
     const int         window_shift;
 
-    FieldShift_kernel(ndfield_t<D, 6> Fld, const int window_shift, BCTags tags)
+    FieldShift_kernel(ndfield_t<D, 6> Fld, ndfield_t<D, 6> backup_Fld, const int window_shift, BCTags tags)
       : Fld { Fld }
       , window_shift { window_shift }
       , tags { tags } {}
@@ -151,14 +42,14 @@ namespace arch {
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (tags & BC::E) {
-          Fld(i1, em::ex1) = Fld(i1 + window_shift, em::ex1);
-          Fld(i1, em::ex2) = Fld(i1 + window_shift, em::ex2);
-          Fld(i1, em::ex3) = Fld(i1 + window_shift, em::ex3);
+          Fld(i1, em::ex1) = backup_Fld(i1 + window_shift, em::ex1);
+          Fld(i1, em::ex2) = backup_Fld(i1 + window_shift, em::ex2);
+          Fld(i1, em::ex3) = backup_Fld(i1 + window_shift, em::ex3);
         }
         if (tags & BC::B) {
-          Fld(i1, em::bx1) = Fld(i1 + window_shift, em::bx1);
-          Fld(i1, em::bx2) = Fld(i1 + window_shift, em::bx2);
-          Fld(i1, em::bx3) = Fld(i1 + window_shift, em::bx3);
+          Fld(i1, em::bx1) = backup_Fld(i1 + window_shift, em::bx1);
+          Fld(i1, em::bx2) = backup_Fld(i1 + window_shift, em::bx2);
+          Fld(i1, em::bx3) = backup_Fld(i1 + window_shift, em::bx3);
         }
       } else {
         raise::KernelError(
@@ -171,25 +62,25 @@ namespace arch {
       if constexpr (D == Dim::_2D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
-            Fld(i1, i2, em::ex1) = Fld(i1 + window_shift, i2, em::ex1);
-            Fld(i1, i2, em::ex2) = Fld(i1 + window_shift, i2, em::ex2);
-            Fld(i1, i2, em::ex3) = Fld(i1 + window_shift, i2, em::ex3);
+            Fld(i1, i2, em::ex1) = backup_Fld(i1 + window_shift, i2, em::ex1);
+            Fld(i1, i2, em::ex2) = backup_Fld(i1 + window_shift, i2, em::ex2);
+            Fld(i1, i2, em::ex3) = backup_Fld(i1 + window_shift, i2, em::ex3);
           }
           if (tags & BC::B) {
-            Fld(i1, i2, em::bx1) = Fld(i1 + window_shift, i2, em::bx1);
-            Fld(i1, i2, em::bx2) = Fld(i1 + window_shift, i2, em::bx2);
-            Fld(i1, i2, em::bx3) = Fld(i1 + window_shift, i2, em::bx3);
+            Fld(i1, i2, em::bx1) = backup_Fld(i1 + window_shift, i2, em::bx1);
+            Fld(i1, i2, em::bx2) = backup_Fld(i1 + window_shift, i2, em::bx2);
+            Fld(i1, i2, em::bx3) = backup_Fld(i1 + window_shift, i2, em::bx3);
           }
         } else if constexpr (o == in::x2) {
           if (tags & BC::E) {
-            Fld(i1, i2, em::ex1) = Fld(i1, i2 + window_shift, em::ex1);
-            Fld(i1, i2, em::ex2) = Fld(i1, i2 + window_shift, em::ex2);
-            Fld(i1, i2, em::ex3) = Fld(i1, i2 + window_shift, em::ex3);
+            Fld(i1, i2, em::ex1) = backup_Fld(i1, i2 + window_shift, em::ex1);
+            Fld(i1, i2, em::ex2) = backup_Fld(i1, i2 + window_shift, em::ex2);
+            Fld(i1, i2, em::ex3) = backup_Fld(i1, i2 + window_shift, em::ex3);
           }
           if (tags & BC::B) {
-            Fld(i1, i2, em::bx1) = Fld(i1, i2 + window_shift, em::bx1);
-            Fld(i1, i2, em::bx2) = Fld(i1, i2 + window_shift, em::bx2);
-            Fld(i1, i2, em::bx3) = Fld(i1, i2 + window_shift, em::bx3);
+            Fld(i1, i2, em::bx1) = backup_Fld(i1, i2 + window_shift, em::bx1);
+            Fld(i1, i2, em::bx2) = backup_Fld(i1, i2 + window_shift, em::bx2);
+            Fld(i1, i2, em::bx3) = backup_Fld(i1, i2 + window_shift, em::bx3);
           }
         }
       } else {
@@ -203,36 +94,36 @@ namespace arch {
       if constexpr (D == Dim::_3D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
-            Fld(i1, i2, i3, em::ex1) = Fld(i1 + window_shift, i2, i3, em::ex1);
-            Fld(i1, i2, i3, em::ex2) = Fld(i1 + window_shift, i2, i3, em::ex2);
-            Fld(i1, i2, i3, em::ex3) = Fld(i1 + window_shift, i2, i3, em::ex3);
+            Fld(i1, i2, i3, em::ex1) = backup_Fld(i1 + window_shift, i2, i3, em::ex1);
+            Fld(i1, i2, i3, em::ex2) = backup_Fld(i1 + window_shift, i2, i3, em::ex2);
+            Fld(i1, i2, i3, em::ex3) = backup_Fld(i1 + window_shift, i2, i3, em::ex3);
           }
           if (tags & BC::B) {
-            Fld(i1, i2, i3, em::bx1) = Fld(i1 + window_shift, i2, i3, em::bx1);
-            Fld(i1, i2, i3, em::bx2) = Fld(i1 + window_shift, i2, i3, em::bx2);
-            Fld(i1, i2, i3, em::bx3) = Fld(i1 + window_shift, i2, i3, em::bx3);
+            Fld(i1, i2, i3, em::bx1) = backup_Fld(i1 + window_shift, i2, i3, em::bx1);
+            Fld(i1, i2, i3, em::bx2) = backup_Fld(i1 + window_shift, i2, i3, em::bx2);
+            Fld(i1, i2, i3, em::bx3) = backup_Fld(i1 + window_shift, i2, i3, em::bx3);
           }
         } else if constexpr (o == in::x2) {
           if (tags & BC::E) {
-            Fld(i1, i2, i3, em::ex1) = Fld(i1, i2 + window_shift, i3, em::ex1);
-            Fld(i1, i2, i3, em::ex2) = Fld(i1, i2 + window_shift, i3, em::ex2);
-            Fld(i1, i2, i3, em::ex3) = Fld(i1, i2 + window_shift, i3, em::ex3);
+            Fld(i1, i2, i3, em::ex1) = backup_Fld(i1, i2 + window_shift, i3, em::ex1);
+            Fld(i1, i2, i3, em::ex2) = backup_Fld(i1, i2 + window_shift, i3, em::ex2);
+            Fld(i1, i2, i3, em::ex3) = backup_Fld(i1, i2 + window_shift, i3, em::ex3);
           }
           if (tags & BC::B) {
-            Fld(i1, i2, i3, em::bx1) = Fld(i1, i2 + window_shift, i3, em::bx1);
-            Fld(i1, i2, i3, em::bx2) = Fld(i1, i2 + window_shift, i3, em::bx2);
-            Fld(i1, i2, i3, em::bx3) = Fld(i1, i2 + window_shift, i3, em::bx3);
+            Fld(i1, i2, i3, em::bx1) = backup_Fld(i1, i2 + window_shift, i3, em::bx1);
+            Fld(i1, i2, i3, em::bx2) = backup_Fld(i1, i2 + window_shift, i3, em::bx2);
+            Fld(i1, i2, i3, em::bx3) = backup_Fld(i1, i2 + window_shift, i3, em::bx3);
           }
         } else {
           if (tags & BC::E) {
-            Fld(i1, i2, i3, em::ex1) = Fld(i1, i2, i3 + window_shift, em::ex1);
-            Fld(i1, i2, i3, em::ex2) = Fld(i1, i2, i3 + window_shift, em::ex2);
-            Fld(i1, i2, i3, em::ex3) = Fld(i1, i2, i3 + window_shift, em::ex3);
+            Fld(i1, i2, i3, em::ex1) = backup_Fld(i1, i2, i3 + window_shift, em::ex1);
+            Fld(i1, i2, i3, em::ex2) = backup_Fld(i1, i2, i3 + window_shift, em::ex2);
+            Fld(i1, i2, i3, em::ex3) = backup_Fld(i1, i2, i3 + window_shift, em::ex3);
           }
           if (tags & BC::B) {
-            Fld(i1, i2, i3, em::bx1) = Fld(i1, i2, i3 + window_shift, em::bx1);
-            Fld(i1, i2, i3, em::bx2) = Fld(i1, i2, i3 + window_shift, em::bx2);
-            Fld(i1, i2, i3, em::bx3) = Fld(i1, i2, i3 + window_shift, em::bx3);
+            Fld(i1, i2, i3, em::bx1) = backup_Fld(i1, i2, i3 + window_shift, em::bx1);
+            Fld(i1, i2, i3, em::bx2) = backup_Fld(i1, i2, i3 + window_shift, em::bx2);
+            Fld(i1, i2, i3, em::bx3) = backup_Fld(i1, i2, i3 + window_shift, em::bx3);
           }
         }
       } else {
@@ -242,6 +133,156 @@ namespace arch {
       }
     }
   };
+
+  /**
+   * @brief Updates particle position and fields in the moving window.
+
+   */
+  template <SimEngine::type S, class M, in o>
+  Inline void MoveWindow(Domain<S, M>& domain, 
+                         const int window_shift) {
+    
+    if constexpr (M::CoordType != Coord::Cart) {
+      raise::Error(
+        "Moving window only applicable to cartesian coordinates",
+        HERE);
+    } else {
+
+      /*
+        move particles in the window back by the window size
+      */
+      const auto nspec = domain.species.size();
+      const auto& mesh = domain.mesh;
+      if (o == in::x1) {
+        // loop over particle species
+        for (auto s { 0u }; s < nspec; ++s) {
+          // get particle properties
+          auto& species = domain.species[s];
+          auto  i1      = species.i1;
+          Kokkos::parallel_for(
+            "MoveParticles",
+            species.rangeActiveParticles(),
+            Lambda(index_t p) {
+              // shift particle position back by window update frequency
+              i1(p) -= window_shift;
+            }
+          );
+        }
+      } else if (o == in::x2) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          // loop over particle species
+          for (auto s { 0u }; s < nspec; ++s) {
+            // get particle properties
+            auto& species = domain.species[s];
+            auto  i2      = species.i2;
+            Kokkos::parallel_for(
+              "MoveParticles",
+              species.rangeActiveParticles(),
+              Lambda(index_t p) {
+                // shift particle position back by window update frequency
+                i2(p) -= window_shift;
+              }
+            );
+          }
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else if (o == in::x3) {
+        if constexpr (M::Dim == Dim::_3D) {
+          // loop over particle species
+          for (auto s { 0u }; s < nspec; ++s) {
+            // get particle properties
+            auto& species = domain.species[s];
+            auto  i3      = species.i3;
+            Kokkos::parallel_for(
+              "MoveParticles",
+              species.rangeActiveParticles(),
+              Lambda(index_t p) {
+                // shift particle position back by window update frequency
+                i3(p) -= window_shift;
+              }
+            );
+          }
+        } else {
+          raise::Error("Invalid direction", HERE);
+        }
+      } else {
+        raise::Error("Invalid direction", HERE);
+      }
+
+      // shift fields in the window back by the window size
+      std::vector<std::size_t> xi_min, xi_max;
+      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        const auto dd = all_dirs[d];
+        if (o == dd) {
+          xi_min.push_back(0);
+          xi_max.push_back(domain.mesh.n_all(dd) - window_shift);
+        } else {
+          xi_min.push_back(0);
+          xi_max.push_back(domain.mesh.n_all(dd));
+        }
+      }
+      raise::ErrorIf(xi_min.size() != xi_max.size() or
+                       xi_min.size() != static_cast<std::size_t>(M::Dim),
+                     "Invalid range size",
+                     HERE);
+
+      // loop range for shifting fields
+      range_t<M::Dim> range;
+      if constexpr (M::Dim == Dim::_1D) {
+        range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+      } else if constexpr (M::Dim == Dim::_2D) {
+        range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                          { xi_max[0], xi_max[1] });
+      } else if constexpr (M::Dim == Dim::_3D) {
+        range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                          { xi_max[0], xi_max[1], xi_max[2] });
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+
+      // copy fields to backup before shifting
+      Kokkos::deep_copy(domain.fields.bckp, domain.fields.em); 
+
+      if (o == in::x1) {
+        Kokkos::parallel_for(
+            "ShiftFields",
+            range,
+            FieldShift_kernel<M::Dim, in::x1>(
+              domain.fields.em,
+              domain.fields.bckp,
+              window_shift,
+              BC::B | BC::E));
+      } else if (o == in::x2) {
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          Kokkos::parallel_for(
+            "ShiftFields",
+            range,
+            FieldShift_kernel<M::Dim, in::x2>(
+              domain.fields.em,
+              domain.fields.bckp,
+              window_shift,
+              BC::B | BC::E));
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      } else {
+        if constexpr (M::Dim == Dim::_3D) {
+          Kokkos::parallel_for(
+            "ShiftFields",
+            range,
+            FieldShift_kernel<M::Dim, in::x3>(
+              domain.fields.em,
+              domain.fields.bckp,
+              window_shift,
+              BC::B | BC::E));
+        } else {
+          raise::Error("Invalid dimension", HERE);
+        }
+      }
+    }
+  }
 } // namespace arch
 
 #endif // ARCHETYPES_UTILS_H
