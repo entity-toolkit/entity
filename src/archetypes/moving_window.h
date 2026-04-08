@@ -36,6 +36,7 @@ namespace arch {
 
     FieldShift_kernel(ndfield_t<D, 6> Fld, ndfield_t<D, 6> backup_Fld, const int window_shift, BCTags tags)
       : Fld { Fld }
+      , backup_Fld { backup_Fld }
       , window_shift { window_shift }
       , tags { tags } {}
 
