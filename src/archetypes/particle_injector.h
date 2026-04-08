@@ -348,14 +348,18 @@ namespace arch {
       if (box.size() == 0) {
         cell_range = domain.mesh.rangeActiveCells();
       } else {
-        raise::ErrorIf(box.size() != M::Dim,
+        boundaries_t<real_t> reduced_box(box);
+        if (reduced_box.size() > M::Dim) {
+          reduced_box.resize(M::Dim);
+        }
+        raise::ErrorIf(reduced_box.size() != M::Dim,
                        "Box must have the same dimension as the mesh",
                        HERE);
         boundaries_t<bool> incl_ghosts;
         for (auto d = 0; d < M::Dim; ++d) {
           incl_ghosts.push_back({ false, false });
         }
-        const auto extent = domain.mesh.ExtentToRange(box, incl_ghosts);
+        const auto extent = domain.mesh.ExtentToRange(reduced_box, incl_ghosts);
         tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
         for (auto d = 0; d < M::Dim; ++d) {
           x_min[d] = extent[d].first;

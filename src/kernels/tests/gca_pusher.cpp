@@ -181,6 +181,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.tag      = tag;
   const auto no_emission =
     kernel::NoEmissionPolicy_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
+  const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
 
   for (auto t { 0u }; t < 2000; ++t) {
     pusher_params.time = t * dt;
@@ -188,13 +189,14 @@ void testPusher(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, kernel::sr::NoField_t, false, decltype(no_emission)>(
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, kernel::sr::NoField_t, false, decltype(no_emission), decltype(no_custom_update)>(
         pusher_params,
         pusher_arrays,
         emfield,
         metric,
         kernel::sr::NoField_t {},
-        no_emission));
+        no_emission,
+        no_custom_update));
 
     auto ux1_ = Kokkos::create_mirror_view(ux1);
     auto ux2_ = Kokkos::create_mirror_view(ux2);

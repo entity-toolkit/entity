@@ -138,9 +138,8 @@ namespace user {
       const auto temperatures = std::make_pair(temperature,
                                                temperature_ratio * temperature);
       // define drift speed of species
-      const auto drifts       = std::make_pair(
-        std::vector<real_t> { ZERO, ZERO, ZERO },
-        std::vector<real_t> { ZERO, ZERO, ZERO });
+      const auto drifts = std::make_pair(std::vector<real_t> { ZERO, ZERO, ZERO },
+                                         std::vector<real_t> { ZERO, ZERO, ZERO });
 
       // inject particles
       arch::InjectUniformMaxwellians<S, M>(params,
@@ -225,13 +224,13 @@ namespace user {
       
       template <class Coord, class PusherKernel>
       Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
-        
+
         real_t piston_position_use;
 
         if (x_piston < xg_max){ //make sure piston has not reached the right wall
             piston_position_use = x_piston;
         } else {
-            piston_position_use = xg_max;
+          piston_position_use = xg_max;
         }
 
         if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, v_piston, is_left)){

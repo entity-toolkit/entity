@@ -26,20 +26,23 @@ namespace ntt {
   namespace srpic {
 
     template <class M, class F, class PG, bool Atm>
-    void CallPusher_WithExternalFieldFlag(Domain<SimEngine::SRPIC, M>&    domain,
-                    const SimulationParams&         params,
-                    const kernel::sr::PusherParams& pusher_params,
-                    kernel::sr::PusherArrays&       pusher_arrays,
-                    EmissionTypeFlag                emission_policy_flag,
-                    const range_t<Dim::_1D>&        range,
-                    const ndfield_t<M::Dim, 6>&     EB,
-                    const M&                        metric,
-                    const PG&                       pgen,
-                    const F&                        external_fields) {
+    void CallPusher_WithExternalFieldFlag(
+      Domain<SimEngine::SRPIC, M>&    domain,
+      const SimulationParams&         params,
+      const kernel::sr::PusherParams& pusher_params,
+      kernel::sr::PusherArrays&       pusher_arrays,
+      EmissionTypeFlag                emission_policy_flag,
+      const range_t<Dim::_1D>&        range,
+      const ndfield_t<M::Dim, 6>&     EB,
+      const M&                        metric,
+      const PG&                       pgen,
+      const F&                        external_fields) {
       auto get_custom_prtl_update = [&]() {
-        if constexpr (arch::traits::pgen::HasCustomPrtlUpdate<PG, M, decltype(domain)>) {
-          return pgen.CustomParticleUpdate(
-            pusher_params.time, pusher_params.species_index, domain);
+        if constexpr (
+          arch::traits::pgen::HasCustomPrtlUpdate<PG, M, decltype(domain)>) {
+          return pgen.CustomParticleUpdate(pusher_params.time,
+                                           pusher_params.species_index,
+                                           domain);
         } else {
           return kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
         }

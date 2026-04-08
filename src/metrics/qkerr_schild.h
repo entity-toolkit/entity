@@ -663,6 +663,53 @@ namespace metric {
       }
     }
 
+    /**
+     * component-wise vector transformations
+     * @note phys cntrv/cov <-> cntrv/cov
+     */
+    template <idx_t i, Idx in, Idx out>
+    Inline auto transform(const coord_t<D>& xi, real_t v_in) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(((in == Idx::U) and (out == Idx::PU)) or
+                      ((in == Idx::PU) and (out == Idx::U)) or
+                      ((in == Idx::D) and (out == Idx::PD)) or
+                      ((in == Idx::PD) and (out == Idx::D)),
+                    "Invalid vector transformation: only cntrv/cov <-> phys "
+                    "cntrv/cov allowed");
+      if constexpr ((in == Idx::PU && out == Idx::U) ||
+                    (in == Idx::D && out == Idx::PD)) {
+        // phys cntrv -> cntrv || cov -> phys cov
+        if constexpr (i == 1) {
+          return v_in * dchi_inv / (math::exp(xi[0] * dchi + chi_min));
+        } else if constexpr (i == 2) {
+          return v_in * deta_inv / (dtheta_deta(xi[1] * deta + eta_min));
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi_inv;
+          }
+        }
+      } else if constexpr ((in == Idx::U && out == Idx::PU) ||
+                           (in == Idx::PD && out == Idx::D)) {
+        // cntrv -> phys cntrv || phys cov -> cov
+        if constexpr (i == 1) {
+          return v_in * math::exp(xi[0] * dchi + chi_min) * dchi;
+        } else if constexpr (i == 2) {
+          return v_in * (dtheta_deta(xi[1] * deta + eta_min) * deta);
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi;
+          }
+        }
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
+    }
+
   private:
     /* Specific for Quasi-Spherical metric with angle stretching ------------ */
     /**
