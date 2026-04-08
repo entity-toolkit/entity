@@ -90,6 +90,7 @@ namespace user {
 
     // domain properties
     const real_t  global_xmin, global_xmax;
+    const real_t  cell_size;
     // gas properties
     const real_t  temperature, temperature_ratio;
     // injector properties
@@ -99,9 +100,9 @@ namespace user {
     InitFields<D> init_flds;
 
     // piston properties
-    const real_t piston_velocity;
+    const real_t _piston_velocity;
     int i_piston;
-    real_t di_piston, piston_position;
+    real_t di_piston, piston_position, piston_velocity;
 
     // window properties
     const int window_update_frequency;
@@ -111,6 +112,7 @@ namespace user {
       , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
       , global_xmax { global_domain.mesh().extent(in::x1).second }
+      , cell_size { (global_xmax - global_xmin) / global_domain.mesh().n_all(in::x1) }
       , temperature { p.template get<real_t>("setup.temperature") }
       , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
@@ -119,8 +121,7 @@ namespace user {
       , init_flds { Bmag, Btheta, Bphi, ZERO }
       , dt { p.template get<real_t>("algorithms.timestep.dt") }
       , window_update_frequency { p.template get<int>("setup.window_update_frequency", N_GHOSTS) }
-      , piston_velocity { p.template get<real_t>("setup.piston_velocity", ZERO) 
-            / math::sqrt(ONE - SQR(p.template get<real_t>("setup.piston_velocity", ZERO)))} {}
+      , _piston_velocity { p.template get<real_t>("setup.piston_velocity", ZERO)} {}
 
     inline PGen() {}
 
@@ -134,7 +135,10 @@ namespace user {
       i_piston = 0;
       di_piston = ZERO;
       piston_position = ZERO;
-
+      
+      coord_t<M::PrtlDim> xp_Cd { ZERO };
+      // piston velocity in code units
+      piston_velocity = domain.mesh.metric.template transform<1, Idx::XYZ, Idx::U>(xp_Cd, _piston_velocity);
       // define temperatures of species
       const auto temperatures = std::make_pair(temperature,
                                                temperature_ratio * temperature);
@@ -165,18 +169,14 @@ namespace user {
       di_piston -= (di_piston >= ONE);
 
       // check if the window should be moved
-      if (i_piston >= window_update_frequency) {
-
+      if ((i_piston >= window_update_frequency) && (window_update_frequency > 0)) {
         // move the window and all fields and particles in it
         arch::MoveWindow<S, M, in::x1>(domain, window_update_frequency);
-
         // synch ghost zones after moving the window
         global_domain.CommunicateFields(domain, Comm::E | Comm::B);
-
         /*
             Inject slab of fresh plasma
         */
-        const real_t cell_size = ZERO; // ToDo: get cell size from global domain
         const real_t xmax = global_xmax;
         const real_t xmin = xmax - window_update_frequency * cell_size;
         // define box to inject into
