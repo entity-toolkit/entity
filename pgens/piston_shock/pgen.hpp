@@ -119,7 +119,8 @@ namespace user {
       , init_flds { Bmag, Btheta, Bphi, ZERO }
       , dt { p.template get<real_t>("algorithms.timestep.dt") }
       , window_update_frequency { p.template get<int>("setup.window_update_frequency", N_GHOSTS) }
-      , piston_velocity { p.template get<real_t>("setup.piston_velocity") } {}
+      , piston_velocity { p.template get<real_t>("setup.piston_velocity", ZERO) 
+            / math::sqrt(ONE - SQR(p.template get<real_t>("setup.piston_velocity", ZERO)))} {}
 
     inline PGen() {}
 
@@ -156,10 +157,8 @@ namespace user {
       /* 
         update piston position
       */
-      const real_t gamma_piston = ONE / math::sqrt(ONE - SQR(piston_velocity));
-      const real_t v_piston = gamma_piston * piston_velocity;
       // piston movement over timestep
-      di_piston += v_piston * dt;
+      di_piston += piston_velocity * dt;
       // check if the piston has moved to the next cell
       i_piston += static_cast<int>(di_piston >= ONE);
       // keep track of how much the piston has moved into the next cell
@@ -210,7 +209,6 @@ namespace user {
       }
 
       // compute current position of piston
-      // ToDo: check if this can be used as a global variable to avoid recomputing in piston update
       piston_position = static_cast<real_t>(i_piston) + di_piston;
     }
     
@@ -241,10 +239,7 @@ namespace user {
 
     template <class D>
     auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-      const real_t gamma_piston = ONE / math::sqrt(ONE - SQR(piston_velocity));
-      const real_t v_piston = gamma_piston * piston_velocity;
-      const real_t piston_pos = std::fmod(time * piston_velocity, window_update_frequency);
-      return CustomPrtlUpdate { piston_pos, v_piston, global_domain.mesh().extent(in::x1).second, true, true};
+      return CustomPrtlUpdate { piston_position, piston_velocity, global_xmax, true, true};
       };
   };
 
