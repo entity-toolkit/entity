@@ -1,9 +1,8 @@
 /**
- * @file archetypes/piston.h
- * @brief Piston functions for implementing the piston in the CustomPrtlUpdate in pgran
+ * @file archetypes/moving_window.h
+ * @brief Moving window functions for implementing the moving window in the CustomPostStep
  * @implements
- *   - arch::PistonUpdate<> -> void
- *   - arch::CrossesPiston<> -> Bool
+ *   - arch::MoveWindow<> -> void
  * @namespaces:
  *   - arch::
  */
