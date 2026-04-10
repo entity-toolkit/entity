@@ -174,6 +174,9 @@ namespace user {
         arch::MoveWindow<S, M, in::x1>(domain, window_update_frequency);
         // synch ghost zones after moving the window
         global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+        // communicate particles after moving
+        global_domain.CommunicateParticles(domain);
+
         /*
             Inject slab of fresh plasma
         */
@@ -209,7 +212,7 @@ namespace user {
       }
 
       // compute current position of piston
-      piston_position = static_cast<real_t>(i_piston) + di_piston;
+      piston_position = static_cast<real_t>(i_piston) + static_cast<real_t>(di_piston);
     }
     
 
@@ -230,7 +233,6 @@ namespace user {
         } else {
           piston_position_use = xg_max;
         }
-
         if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, piston_position_use, v_piston, is_left)){
             arch::PistonUpdate<S, M, PusherKernel>(p, pusher, piston_position_use, v_piston, massive);
         }
