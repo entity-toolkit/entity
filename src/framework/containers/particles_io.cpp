@@ -641,7 +641,7 @@ namespace ntt {
     out::WriteVariable<npart_t>(io,
                                 writer,
                                 fmt::format("s%d_counter", index()),
-                                npart(),
+                                counter(),
                                 domains_total,
                                 domains_offset);
 
