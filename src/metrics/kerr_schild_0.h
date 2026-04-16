@@ -41,8 +41,8 @@ namespace metric {
   public:
     static constexpr const char* Label { "kerr_schild_0" };
     static constexpr Dimension   PrtlDim { D };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild_0 };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
+    static constexpr ntt::Metric MetricType { ntt::Metric::Kerr_Schild_0 };
+    static constexpr ntt::Coord  CoordType { ntt::Coord::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

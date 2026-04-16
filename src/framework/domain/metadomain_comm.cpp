@@ -27,11 +27,11 @@ namespace ntt {
   using address_t     = std::pair<unsigned int, int>;
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
-  template <SimEngine::type S, class M>
-  auto GetSendRecvRanks(const Metadomain<S, M>* const metadomain,
-                        Domain<S, M>&                 domain,
-                        dir::direction_t<M::Dim>      direction)
-    -> std::pair<address_t, address_t> {
+  template <SimEngine S, class M>
+  auto GetSendRecvRanks(
+    const Metadomain<S, M>* const metadomain,
+    Domain<S, M>&                 domain,
+    dir::direction_t<M::Dim> direction) -> std::pair<address_t, address_t> {
     const Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     const Domain<S, M>* recv_from_nghbr_ptr = nullptr;
     // set pointers to the correct send/recv domains
@@ -110,12 +110,12 @@ namespace ntt {
     };
   }
 
-  template <SimEngine::type S, class M>
-  auto GetSendRecvParams(const Metadomain<S, M>* const metadomain,
-                         Domain<S, M>&                 domain,
-                         dir::direction_t<M::Dim>      direction,
-                         bool                          synchronize)
-    -> std::pair<comm_params_t, comm_params_t> {
+  template <SimEngine S, class M>
+  auto GetSendRecvParams(
+    const Metadomain<S, M>* const metadomain,
+    Domain<S, M>&                 domain,
+    dir::direction_t<M::Dim>      direction,
+    bool synchronize) -> std::pair<comm_params_t, comm_params_t> {
     const auto [send_indrank,
                 recv_indrank] = GetSendRecvRanks(metadomain, domain, direction);
     const auto [send_ind, send_rank] = send_indrank;
@@ -196,7 +196,7 @@ namespace ntt {
     };
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain,
                                            CommTags      tags) const {
@@ -414,7 +414,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>& domain,
                                            CommTags      tags,
@@ -571,7 +571,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) const {
 #if defined(MPI_ENABLED)

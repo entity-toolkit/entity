@@ -8,7 +8,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::SortParticles(simtime_t,
                                        timestep_t step,

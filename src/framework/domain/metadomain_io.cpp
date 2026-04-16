@@ -29,7 +29,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
                                     const SimulationParams& params) {
@@ -104,7 +104,7 @@ namespace ntt {
     g_writer.writeAttrs(params);
   }
 
-  template <SimEngine::type S, class M, FldsID::type F>
+  template <SimEngine S, class M, FldsID::type F>
   void ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
@@ -180,7 +180,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   void ComputeVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               ndfield_t<M::Dim, 6>& EM,
                               unsigned short        buff_idx,
@@ -244,7 +244,7 @@ namespace ntt {
   }
 
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               array_t<real_t*>&     aphi_r,
                               unsigned short        buff_idx,
@@ -257,7 +257,7 @@ namespace ntt {
       });
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
     if constexpr (M::Dim == Dim::_2D) {
@@ -312,7 +312,7 @@ namespace ntt {
   }
 #endif
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::Write(
     const SimulationParams&                  params,

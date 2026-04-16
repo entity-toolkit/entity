@@ -38,7 +38,7 @@ namespace kernel::bc {
    * @note If a component is not specified in the field setter, it is ignored.
    * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
-  template <SimEngine::type S, class I, class M, in o>
+  template <SimEngine S, class I, class M, in o>
     requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M> &&
              metric::traits::HasConvert<M> &&
              (((S == SimEngine::SRPIC) && metric::traits::HasTransform_i<M>) ||
@@ -86,7 +86,7 @@ namespace kernel::bc {
       , xg_edge { xg_edge }
       , dx_abs { dx_abs }
       , tags { tags } {
-      if constexpr ((M::CoordType != Coord::Cart) &&
+      if constexpr ((M::CoordType != Coord::Cartesian) &&
                     ((D == Dim::_2D) || (D == Dim::_3D))) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);

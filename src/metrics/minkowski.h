@@ -32,10 +32,10 @@ namespace metric {
     const real_t dx, dx_inv;
 
   public:
-    static constexpr const char*       Label { "minkowski" };
-    static constexpr Dimension         PrtlDim { D };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Minkowski };
-    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Cart };
+    static constexpr const char* Label { "minkowski" };
+    static constexpr Dimension   PrtlDim { D };
+    static constexpr ntt::Metric MetricType { ntt::Metric::Minkowski };
+    static constexpr ntt::Coord  CoordType { ntt::Coord::Cartesian };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

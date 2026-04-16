@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-template <Dimension D, ntt::SimEngine::type S>
+template <Dimension D, ntt::SimEngine S>
 void testFields(const std::vector<std::size_t>& res) {
   using namespace ntt;
   raise::ErrorIf(res.size() != D, "Resolution vector has wrong size", HERE);
@@ -84,11 +84,11 @@ auto main(int argc, char** argv) -> int {
   using namespace ntt;
   GlobalInitialize(argc, argv);
   try {
-    testFields<Dim::_1D, SimEngine::type::SRPIC>({ 10 });
-    testFields<Dim::_2D, SimEngine::type::SRPIC>({ 10, 20 });
-    testFields<Dim::_3D, SimEngine::type::SRPIC>({ 10, 20, 30 });
-    testFields<Dim::_2D, SimEngine::type::GRPIC>({ 10, 20 });
-    testFields<Dim::_3D, SimEngine::type::GRPIC>({ 10, 20, 30 });
+    testFields<Dim::_1D, SimEngine::SRPIC>({ 10 });
+    testFields<Dim::_2D, SimEngine::SRPIC>({ 10, 20 });
+    testFields<Dim::_3D, SimEngine::SRPIC>({ 10, 20, 30 });
+    testFields<Dim::_2D, SimEngine::GRPIC>({ 10, 20 });
+    testFields<Dim::_3D, SimEngine::GRPIC>({ 10, 20, 30 });
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     GlobalFinalize();

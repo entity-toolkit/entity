@@ -7,7 +7,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimEngine::type S>
+  template <Dimension D, SimEngine S>
   Fields<D, S>::Fields(const std::vector<ncells_t>& res) {
     ncells_t nx1, nx2, nx3;
     nx1 = res[0] + 2 * N_GHOSTS;
@@ -46,10 +46,10 @@ namespace ntt {
     }
   }
 
-  template struct Fields<Dim::_1D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::type::GRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::type::GRPIC>;
+  template struct Fields<Dim::_1D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_2D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_3D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_2D, SimEngine::GRPIC>;
+  template struct Fields<Dim::_3D, SimEngine::GRPIC>;
 
 } // namespace ntt

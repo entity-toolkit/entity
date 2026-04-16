@@ -12,7 +12,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
                                               const SimulationParams& params) {
@@ -63,7 +63,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
                                          timestep_t              current_step,
@@ -110,7 +110,7 @@ namespace ntt {
     return true;
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
                                                 const SimulationParams& params) {

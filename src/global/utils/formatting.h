@@ -54,8 +54,10 @@ namespace fmt {
    * @param c Character to pad with
    * @param right Pad on the right
    */
-  inline auto pad(const std::string& str, std::size_t n, char c, bool right = false)
-    -> std::string {
+  inline auto pad(const std::string& str,
+                  std::size_t        n,
+                  char               c,
+                  bool               right = false) -> std::string {
     if (n <= str.size()) {
       return str;
     }
@@ -127,8 +129,8 @@ namespace fmt {
    * @param delim Delimiter
    * @return Vector of strings
    */
-  inline auto splitString(const std::string& str, const std::string& delim)
-    -> std::vector<std::string> {
+  inline auto splitString(const std::string& str,
+                          const std::string& delim) -> std::vector<std::string> {
     std::regex regexz(delim);
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };

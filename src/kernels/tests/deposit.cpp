@@ -49,7 +49,7 @@ void put_value(array_t<T*> arr, T value, int i) {
   Kokkos::deep_copy(arr, arr_h);
 }
 
-template <typename M, ntt::SimEngine::type S, unsigned short O>
+template <typename M, ntt::SimEngine S, unsigned short O>
 void testDeposit(const std::vector<std::size_t>&      res,
                  const boundaries_t<real_t>&          ext,
                  const std::map<std::string, real_t>& params,
@@ -59,7 +59,7 @@ void testDeposit(const std::vector<std::size_t>&      res,
   using namespace ntt;
 
   auto extents = ext;
-  if constexpr (M::CoordType != Coord::Cart) {
+  if constexpr (M::CoordType != Coord::Cartesian) {
     extents.emplace_back(ZERO, (real_t)(constant::PI));
   }
 
@@ -206,7 +206,7 @@ void testDeposit(const std::vector<std::size_t>&      res,
     throw std::logic_error("DepositCurrents_kernel::SumJy mismatch");
   }
 
-  if constexpr (M::CoordType == Coord::Cart) {
+  if constexpr (M::CoordType == Coord::Cartesian) {
     if (not equal(SumJz, Jz, "DepositCurrents_kernel::SumJz", eps)) {
       throw std::logic_error("DepositCurrents_kernel::SumJz mismatch");
     }

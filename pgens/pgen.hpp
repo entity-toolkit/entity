@@ -15,11 +15,11 @@
 namespace user {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC, SimEngine::GRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC, SimEngine::GRPIC> {}
     };
     static constexpr auto metrics {
       arch::traits::pgen::compatible_with<Metric::Minkowski,
@@ -27,10 +27,10 @@ namespace user {
                                           Metric::QSpherical,
                                           Metric::Kerr_Schild,
                                           Metric::QKerr_Schild,
-                                          Metric::Kerr_Schild_0>::value
+                                          Metric::Kerr_Schild_0> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
     // for easy access to variables in the child class

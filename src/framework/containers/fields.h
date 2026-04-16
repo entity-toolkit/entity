@@ -34,7 +34,7 @@ namespace ntt {
    * @tparam D Dimension
    * @tparam S Simulation engine
    */
-  template <Dimension D, SimEngine::type S>
+  template <Dimension D, SimEngine S>
   struct Fields {
     /* SRPIC & GRPIC -------------------------------------------------------- */
     /**

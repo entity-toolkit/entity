@@ -26,16 +26,16 @@ namespace user {
     }
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D>::value
+      arch::traits::pgen::compatible_with<Dim::_1D> {}
     };
 
     using arch::ProblemGenerator<S, M>::D;

@@ -19,8 +19,7 @@ void errorIf(bool condition, const std::string& message) {
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
 template <Dimension D>
-Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE)
-  -> bool {
+Inline auto equal(const coord_t<D>& a, const coord_t<D>& b, real_t acc = ONE) -> bool {
   for (auto d { 0u }; d < D; ++d) {
     if (not cmp::AlmostEqual(a[d], b[d], epsilon * acc)) {
       Kokkos::printf("%d : %.12f != %.12f\n", d, a[d], b[d]);

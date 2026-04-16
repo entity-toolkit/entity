@@ -68,8 +68,7 @@ namespace checkpoint {
     }
 
     [[nodiscard]]
-    auto written() const
-      -> const std::vector<std::pair<std::string, std::string>>& {
+    auto written() const -> const std::vector<std::pair<std::string, std::string>>& {
       return m_written;
     }
 

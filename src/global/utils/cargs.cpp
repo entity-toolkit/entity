@@ -18,8 +18,8 @@ namespace cargs {
     _initialized = true;
   }
 
-  auto CommandLineArguments::getArgument(std::string_view key, std::string_view def)
-    -> std::string_view {
+  auto CommandLineArguments::getArgument(std::string_view key,
+                                         std::string_view def) -> std::string_view {
     if (!_initialized) {
       throw std::runtime_error(
         "# Error: command line arguments have not been parsed.");

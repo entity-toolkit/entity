@@ -20,7 +20,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, class F>
+  template <SimEngine S, class M, class F>
     requires metric::traits::HasD<M> && metric::traits::HasTransform<M> &&
              metric::traits::HasTransform_i<M> && (S != SimEngine::GRPIC) &&
              (::traits::fieldsetter::HasConditionalEx1<F, M::Dim> ||

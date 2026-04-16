@@ -17,7 +17,7 @@ auto main(int argc, char* argv[]) -> int {
         {           10u,             30u },
         { { -5.0, 5.0 }, { -15.0, 15.0 } }
       };
-      auto prtls = ntt::Particles<Dim::_2D, ntt::Coord::Cart>(
+      auto prtls = ntt::Particles<Dim::_2D, ntt::Coord::Cartesian>(
         1,
         "test",
         1.0f,
@@ -113,7 +113,7 @@ auto main(int argc, char* argv[]) -> int {
         {            6u,            7u,            8u },
         { { -3.0, 3.0 }, { -3.5, 3.5 }, { -4.0, 4.0 } }
       };
-      auto prtls = ntt::Particles<Dim::_3D, ntt::Coord::Cart>(
+      auto prtls = ntt::Particles<Dim::_3D, ntt::Coord::Cartesian>(
         1,
         "test",
         1.0f,

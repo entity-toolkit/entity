@@ -75,12 +75,12 @@ namespace ntt {
       void setParams(SimulationParams*) const;
     };
 
-    auto GetBoundaryConditions(SimulationParams* params,
-                               const SimEngine&,
-                               Dimension,
-                               const Coord&,
-                               const toml::value&)
-      -> std::tuple<boundaries_t<FldsBC>, boundaries_t<PrtlBC>>;
+    auto GetBoundaryConditions(
+      SimulationParams* params,
+      const SimEngine&,
+      Dimension,
+      const Coord&,
+      const toml::value&) -> std::tuple<boundaries_t<FldsBC>, boundaries_t<PrtlBC>>;
 
   } // namespace params
 } // namespace ntt

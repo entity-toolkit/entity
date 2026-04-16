@@ -43,7 +43,7 @@ namespace ntt {
    * @tparam D The dimension of the simulation
    * @tparam S The simulation engine being used
    */
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles
@@ -298,7 +298,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void OutputDeclare(adios2::IO&) const;
 
-    template <SimEngine::type S, class M>
+    template <SimEngine S, class M>
     void OutputWrite(adios2::IO&,
                      adios2::Engine&,
                      npart_t,

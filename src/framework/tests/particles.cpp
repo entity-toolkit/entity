@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-template <Dimension D, ntt::Coord::type C>
+template <Dimension D, ntt::Coord C>
 void testParticles(
   int                      index,
   const std::string&       label,
@@ -117,7 +117,7 @@ void testParticles(
     raise::ErrorIf(p.dx3_prev.extent(0) != 0, "dx3_prev incorrectly allocated", HERE);
   }
 
-  if ((D == Dim::_2D) && (C != Coord::Cart)) {
+  if ((D == Dim::_2D) && (C != Coord::Cartesian)) {
     raise::ErrorIf(p.phi.extent(0) != maxnpart, "phi incorrectly allocated", HERE);
   } else {
     raise::ErrorIf(p.phi.extent(0) != 0, "phi incorrectly allocated", HERE);
@@ -128,68 +128,68 @@ auto main(int argc, char** argv) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
     using namespace ntt;
-    testParticles<Dim::_1D, Coord::Cart>(1,
-                                         "e-",
-                                         1.0,
-                                         -1.0,
-                                         100,
-                                         123u,
-                                         0u,
-                                         ParticlePusher::BORIS,
-                                         false,
-                                         RadiativeDrag::SYNCHROTRON);
-    testParticles<Dim::_2D, Coord::Cart>(2,
-                                         "p+",
-                                         100.0,
-                                         -1.0,
-                                         100,
-                                         0u,
-                                         1u,
-                                         ParticlePusher::VAY,
-                                         true,
-                                         RadiativeDrag::SYNCHROTRON |
-                                           RadiativeDrag::COMPTON,
-                                         EmissionType::SYNCHROTRON,
-                                         2,
-                                         2);
-    testParticles<Dim::_3D, Coord::Cart>(3,
-                                         "ph",
-                                         0.0,
-                                         0.0,
-                                         100,
-                                         0u,
-                                         12u,
-                                         ParticlePusher::PHOTON,
-                                         false,
-                                         RadiativeDrag::NONE,
-                                         EmissionType::COMPTON,
-                                         5);
-    testParticles<Dim::_2D, Coord::Sph>(4,
-                                        "e+",
-                                        1.0,
-                                        1.0,
-                                        100,
-                                        123u,
-                                        123u,
-                                        ParticlePusher::BORIS,
-                                        true,
-                                        RadiativeDrag::NONE,
-                                        EmissionType::NONE,
-                                        2,
-                                        3);
-    testParticles<Dim::_2D, Coord::Qsph>(5,
-                                         "e+",
-                                         1.0,
-                                         1.0,
-                                         100,
-                                         321u,
-                                         1234u,
-                                         ParticlePusher::BORIS,
-                                         false,
-                                         RadiativeDrag::NONE,
-                                         EmissionType::NONE,
-                                         1,
-                                         2);
+    testParticles<Dim::_1D, Coord::Cartesian>(1,
+                                              "e-",
+                                              1.0,
+                                              -1.0,
+                                              100,
+                                              123u,
+                                              0u,
+                                              ParticlePusher::BORIS,
+                                              false,
+                                              RadiativeDrag::SYNCHROTRON);
+    testParticles<Dim::_2D, Coord::Cartesian>(2,
+                                              "p+",
+                                              100.0,
+                                              -1.0,
+                                              100,
+                                              0u,
+                                              1u,
+                                              ParticlePusher::VAY,
+                                              true,
+                                              RadiativeDrag::SYNCHROTRON |
+                                                RadiativeDrag::COMPTON,
+                                              EmissionType::SYNCHROTRON,
+                                              2,
+                                              2);
+    testParticles<Dim::_3D, Coord::Cartesian>(3,
+                                              "ph",
+                                              0.0,
+                                              0.0,
+                                              100,
+                                              0u,
+                                              12u,
+                                              ParticlePusher::PHOTON,
+                                              false,
+                                              RadiativeDrag::NONE,
+                                              EmissionType::COMPTON,
+                                              5);
+    testParticles<Dim::_2D, Coord::Spherical>(4,
+                                              "e+",
+                                              1.0,
+                                              1.0,
+                                              100,
+                                              123u,
+                                              123u,
+                                              ParticlePusher::BORIS,
+                                              true,
+                                              RadiativeDrag::NONE,
+                                              EmissionType::NONE,
+                                              2,
+                                              3);
+    testParticles<Dim::_2D, Coord::Qspherical>(5,
+                                               "e+",
+                                               1.0,
+                                               1.0,
+                                               100,
+                                               321u,
+                                               1234u,
+                                               ParticlePusher::BORIS,
+                                               false,
+                                               RadiativeDrag::NONE,
+                                               EmissionType::NONE,
+                                               1,
+                                               2);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     ntt::GlobalFinalize();

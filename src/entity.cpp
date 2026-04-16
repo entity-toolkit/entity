@@ -14,7 +14,7 @@
 #include <type_traits>
 
 namespace ntt {
-  template <SimEngine::type S>
+  template <SimEngine S>
   struct EngineSelector;
 
   template <>
@@ -30,24 +30,22 @@ namespace ntt {
   };
 } // namespace ntt
 
-template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
+template <ntt::SimEngine S, template <Dimension> class M, Dimension D>
 static constexpr bool should_compile {
-  arch::traits::pgen::check_compatibility<S>::value(user::PGen<S, M<D>>::engines) &&
-  arch::traits::pgen::check_compatibility<M<D>::MetricType>::value(
-    user::PGen<S, M<D>>::metrics) &&
-  arch::traits::pgen::check_compatibility<D>::value(user::PGen<S, M<D>>::dimensions)
+  arch::traits::pgen::is_compatible<S>(user::PGen<S, M<D>>::engines) and
+  arch::traits::pgen::is_compatible<M<D>::MetricType>(user::PGen<S, M<D>>::metrics) and
+  arch::traits::pgen::is_compatible<D>(user::PGen<S, M<D>>::dimensions)
 };
 
-template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
+template <ntt::SimEngine S, template <Dimension> class M, Dimension D>
 void dispatch_engine(ntt::Simulation& sim) {
   if constexpr (S == SimEngine::SRPIC) {
     sim.run<ntt::EngineSelector<S>::template type, M, D>();
   } else if constexpr (S == SimEngine::GRPIC) {
     sim.run<ntt::EngineSelector<S>::template type, M, D>();
   } else {
-    static_assert(
-      ::traits::always_false<std::integral_constant<SimEngine::type, S>>::value,
-      "Unsupported engine");
+    static_assert(::traits::always_false<std::integral_constant<SimEngine, S>>::value,
+                  "Unsupported engine");
   }
 }
 

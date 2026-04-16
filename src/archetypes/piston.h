@@ -51,7 +51,7 @@ namespace arch {
    * global coordinates
    * @param piston_v Velocity of piston at current timestep
    */
-  template <SimEngine::type S, class M, class PusherKernel>
+  template <SimEngine S, class M, class PusherKernel>
   Inline void PistonUpdate(const index_t       p,
                            const PusherKernel& pusher,
                            const real_t        piston_position,
@@ -113,8 +113,8 @@ namespace arch {
                            piston_v) *
                            dt_to_piston;
 
-    i_w_coll  += static_cast<int>(dx_w_coll >= ONE) -
-                 static_cast<int>(dx_w_coll < ZERO);
+    i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
+                static_cast<int>(dx_w_coll < ZERO);
     dx_w_coll -= (dx_w_coll >= ONE);
     dx_w_coll += (dx_w_coll < ZERO);
 
@@ -125,8 +125,8 @@ namespace arch {
                       remaining_dt_inv_energy +
                     dx_w_coll;
 
-    pusher.i1(p)  += static_cast<int>(pusher.dx1(p) >= ONE) -
-                     static_cast<int>(pusher.dx1(p) < ZERO);
+    pusher.i1(p) += static_cast<int>(pusher.dx1(p) >= ONE) -
+                    static_cast<int>(pusher.dx1(p) < ZERO);
     pusher.dx1(p) -= (pusher.dx1(p) >= ONE);
     pusher.dx1(p) += (pusher.dx1(p) < ZERO);
   }
@@ -140,7 +140,7 @@ namespace arch {
    * @param piston_v Velocity of piston at current timestep
    * @param is_left Is piston on the left side of the box or right side of the box
    */
-  template <SimEngine::type S, class M, class PusherKernel>
+  template <SimEngine S, class M, class PusherKernel>
   Inline bool CrossesPiston(const index_t       p,
                             const PusherKernel& pusher,
                             const real_t        piston_position,

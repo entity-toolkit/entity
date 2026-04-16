@@ -38,7 +38,7 @@ void testFilter(const std::vector<std::size_t>&      res,
 
   auto boundaries = boundaries_t<FldsBC> {};
   auto extents    = ext;
-  if constexpr (M::CoordType != Coord::Cart) {
+  if constexpr (M::CoordType != Coord::Cartesian) {
     boundaries = {
       { FldsBC::CUSTOM, FldsBC::CUSTOM },
       {   FldsBC::AXIS,   FldsBC::AXIS }

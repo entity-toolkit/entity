@@ -62,7 +62,7 @@ void put_value(ndfield_t<D, N>& arr, real_t v, unsigned short c) {
   Kokkos::parallel_for("Fill", range, Fill_kernel<D, N>(arr, v, c));
 }
 
-template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
+template <SimEngine S, class M, StatsID::type F, unsigned short I = 0>
 auto compute_field_stat(const M&                    metric,
                         const ndfield_t<M::Dim, 6>& em,
                         const ndfield_t<M::Dim, 3>& j,
@@ -80,7 +80,7 @@ auto almost_equal(real_t a, real_t b, real_t acc) -> bool {
          (real_t)1e-10;
 }
 
-template <SimEngine::type S, class M>
+template <SimEngine S, class M>
 void testReducedStats(const std::vector<std::size_t>& res,
                       const boundaries_t<real_t>&     ext,
                       const real_t                    acc) {

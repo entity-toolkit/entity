@@ -24,7 +24,6 @@
 #include "archetypes/field_setter.h"
 #include "archetypes/traits.h"
 #include "engines/reporter.h"
-#include "engines/traits.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -57,8 +56,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine S, class M>
   class Engine {
 
   protected:
@@ -128,8 +126,7 @@ namespace ntt {
     }
   };
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine S, class M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -177,8 +174,7 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine S, class M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
@@ -237,8 +233,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine S, class M>
   void Engine<S, M>::run() {
     init();
 

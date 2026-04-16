@@ -67,7 +67,7 @@ auto main(int argc, char* argv[]) -> int {
                               { mpi_rank, mpi_size },
                               { dwn1 },
                               false,
-                              Coord::Cart);
+                              Coord::Cartesian);
       writer.defineFieldOutputs(SimEngine::SRPIC, { "E" });
 
       std::vector<std::size_t> addresses;

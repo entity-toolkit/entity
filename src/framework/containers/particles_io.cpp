@@ -22,10 +22,11 @@ namespace ntt {
   /* * * * * * * * *
    * Output
    * * * * * * * * */
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::OutputDeclare(adios2::IO& io) const {
-    const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cart)) ? 1
-                                                                            : 0;
+    const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cartesian))
+                                     ? 1
+                                     : 0;
     for (auto d { 0u }; d < D + n_addition_coords; ++d) {
       io.DefineVariable<real_t>(fmt::format("pX%d_%d", d + 1, index()),
                                 { adios2::UnknownDim },
@@ -77,8 +78,8 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord::type C>
-  template <SimEngine::type S, class M>
+  template <Dimension D, Coord C>
+  template <SimEngine S, class M>
   void Particles<D, C>::OutputWrite(adios2::IO&     io,
                                     adios2::Engine& writer,
                                     npart_t         prtl_stride,
@@ -154,7 +155,7 @@ namespace ntt {
     if constexpr (D == Dim::_2D or D == Dim::_3D) {
       buff_x2 = array_t<real_t*> { "x2", nout };
     }
-    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cartesian))) {
       buff_x3 = array_t<real_t*> { "x3", nout };
     }
     array_t<real_t**>  buff_pldr;
@@ -250,7 +251,7 @@ namespace ntt {
                                 nout_total,
                                 nout_offset);
     }
-    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cartesian))) {
       out::Write1DArray<real_t>(io,
                                 writer,
                                 fmt::format("pX3_%d", index()),
@@ -341,7 +342,7 @@ namespace ntt {
    * Checkpoints
    * * * * * * * * */
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::CheckpointDeclare(adios2::IO& io) const {
     logger::Checkpoint(
       fmt::format("Declaring particle checkpoint for species #%d", index()),
@@ -374,7 +375,7 @@ namespace ntt {
                                   { adios2::UnknownDim });
     }
 
-    if constexpr (D == Dim::_2D and C != ntt::Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != ntt::Coord::Cartesian) {
       io.DefineVariable<real_t>(fmt::format("s%d_phi", index()),
                                 { adios2::UnknownDim },
                                 { adios2::UnknownDim },
@@ -410,7 +411,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::CheckpointRead(adios2::IO&     io,
                                        adios2::Engine& reader,
                                        std::size_t     domains_total,
@@ -536,7 +537,7 @@ namespace ntt {
                                  npart_offset);
     }
 
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       out::Read1DArray<real_t>(io,
                                reader,
                                fmt::format("s%d_phi", index()),
@@ -597,7 +598,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::CheckpointWrite(adios2::IO&     io,
                                         adios2::Engine& writer,
                                         std::size_t     domains_total,
@@ -735,7 +736,7 @@ namespace ntt {
                                   npart_offset);
     }
 
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       out::Write1DArray<real_t>(io,
                                 writer,
                                 fmt::format("s%d_phi", index()),
@@ -806,13 +807,13 @@ namespace ntt {
 #define PARTICLES_OUTPUT_DECLARE(D, C)                                         \
   template void Particles<D, C>::OutputDeclare(adios2::IO&) const;
 
-  PARTICLES_OUTPUT_DECLARE(Dim::_1D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Sph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qsph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Sph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Qsph)
+  PARTICLES_OUTPUT_DECLARE(Dim::_1D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Spherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qspherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Spherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_OUTPUT_DECLARE
 
 #define PARTICLES_OUTPUT_WRITE(S, M, D)                                        \
@@ -838,13 +839,13 @@ namespace ntt {
                                                  std::size_t,                  \
                                                  std::size_t) const;
 
-  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Sph)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Qsph)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Sph)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qsph)
+  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Spherical)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Qspherical)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Spherical)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_CHECKPOINTS
 
 } // namespace ntt

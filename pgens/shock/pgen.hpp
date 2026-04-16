@@ -66,17 +66,17 @@ namespace user {
     const real_t Btheta, Bphi, Vx, Bmag;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
     // for easy access to variables in the child class
@@ -121,8 +121,8 @@ namespace user {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
-      -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&,
+                        const em& comp) const -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
       } else if (comp == em::ex2) {

@@ -24,7 +24,6 @@
 #include "engines/srpic/fieldsolvers.h"
 #include "engines/srpic/particle_pusher.h"
 #include "engines/srpic/particles_bcs.h"
-#include "engines/traits.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 
@@ -38,7 +37,6 @@
 namespace ntt {
 
   template <class M>
-    requires traits::engine::IsCompatibleWithSRPICEngine<M, user::PGen>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;

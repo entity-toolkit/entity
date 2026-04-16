@@ -16,7 +16,7 @@
 
 namespace ntt {
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   auto Particles<D, C>::NpartsPerTagAndOffsets() const
     -> std::pair<std::vector<npart_t>, array_t<npart_t*>> {
     auto              this_tag = tag;
@@ -88,7 +88,7 @@ namespace ntt {
       buffer);
   }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::RemoveDead() {
     npart_t n_alive = 0, n_dead = 0;
     auto&   this_tag = tag;
@@ -153,7 +153,7 @@ namespace ntt {
     RemoveDeadInArray(ux3, indices_alive);
     RemoveDeadInArray(weight, indices_alive);
 
-    if constexpr (D == Dim::_2D && C != Coord::Cart) {
+    if constexpr (D == Dim::_2D && C != Coord::Cartesian) {
       RemoveDeadInArray(phi, indices_alive);
     }
 
@@ -181,7 +181,7 @@ namespace ntt {
     m_is_sorted = true;
   }
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
     const auto nx2         = grid.n_active(in::x2);
     const auto nx3         = grid.n_active(in::x3);
@@ -225,7 +225,7 @@ namespace ntt {
     sorter.sort(Kokkos::subview(ux3, slice));
     sorter.sort(Kokkos::subview(weight, slice));
     sorter.sort(Kokkos::subview(tag, slice));
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       sorter.sort(Kokkos::subview(phi, slice));
     }
     for (auto pldr { 0u }; pldr < npld_r(); ++pldr) {
@@ -237,18 +237,18 @@ namespace ntt {
   }
 
 #define PARTICLES_SORT(D, C)                                                   \
-  template auto Particles<D, C>::NpartsPerTagAndOffsets() const                \
-    -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;                     \
+  template auto Particles<D, C>::NpartsPerTagAndOffsets()                      \
+    const -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;               \
   template void Particles<D, C>::RemoveDead();                                 \
   template void Particles<D, C>::SortSpatially(const Grid<D>&);
 
-  PARTICLES_SORT(Dim::_1D, Coord::Cart)
-  PARTICLES_SORT(Dim::_2D, Coord::Cart)
-  PARTICLES_SORT(Dim::_3D, Coord::Cart)
-  PARTICLES_SORT(Dim::_2D, Coord::Sph)
-  PARTICLES_SORT(Dim::_2D, Coord::Qsph)
-  PARTICLES_SORT(Dim::_3D, Coord::Sph)
-  PARTICLES_SORT(Dim::_3D, Coord::Qsph)
+  PARTICLES_SORT(Dim::_1D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_2D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_3D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_2D, Coord::Spherical)
+  PARTICLES_SORT(Dim::_2D, Coord::Qspherical)
+  PARTICLES_SORT(Dim::_3D, Coord::Spherical)
+  PARTICLES_SORT(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_SORT
 
 } // namespace ntt

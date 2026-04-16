@@ -17,7 +17,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimEngine::type S>
+  template <Dimension D, SimEngine S>
   void Fields<D, S>::CheckpointDeclare(
     adios2::IO&                  io,
     const std::vector<ncells_t>& local_shape,
@@ -45,7 +45,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, SimEngine::type S>
+  template <Dimension D, SimEngine S>
   void Fields<D, S>::CheckpointRead(adios2::IO&                      io,
                                     adios2::Engine&                  reader,
                                     const adios2::Box<adios2::Dims>& range) {
@@ -64,7 +64,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, SimEngine::type S>
+  template <Dimension D, SimEngine S>
   void Fields<D, S>::CheckpointWrite(adios2::IO& io, adios2::Engine& writer) const {
     logger::Checkpoint("Writing fields checkpoint", HERE);
 

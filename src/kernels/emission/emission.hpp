@@ -6,7 +6,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct NoEmissionPolicy_t {};
 
 } // namespace kernel

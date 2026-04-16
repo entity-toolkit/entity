@@ -59,8 +59,7 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -78,8 +77,7 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -96,8 +94,8 @@ namespace user {
       }
     }
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i + HALF , j + HALF )
+    Inline auto bx3(
+      const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j + HALF )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -117,8 +115,7 @@ namespace user {
       }
     }
 
-    Inline auto dx1(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i + HALF , j )
+    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -156,8 +153,7 @@ namespace user {
       }
     }
 
-    Inline auto dx2(const coord_t<D>& x_Ph) const
-      -> real_t { // at ( i , j + HALF )
+    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -228,19 +224,19 @@ namespace user {
     InitFieldGeometry field_geometry;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::GRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::GRPIC> {}
     };
     static constexpr auto metrics {
       arch::traits::pgen::compatible_with<Metric::Kerr_Schild,
                                           Metric::QKerr_Schild,
-                                          Metric::Kerr_Schild_0>::value
+                                          Metric::Kerr_Schild_0> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D>::value
+      arch::traits::pgen::compatible_with<Dim::_2D> {}
     };
 
     // for easy access to variables in the child class

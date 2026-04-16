@@ -34,7 +34,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires metric::traits::HasD<M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
@@ -45,7 +45,7 @@ namespace arch {
     const M metric;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct Cold : public EnergyDistribution<S, M> {
     Cold(const M& metric) : EnergyDistribution<S, M> { metric } {}
 
@@ -57,7 +57,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct Powerlaw : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 
@@ -161,7 +161,7 @@ namespace arch {
     pool.free_state(rand_gen);
   }
 
-  template <SimEngine::type S, bool CanBoost>
+  template <SimEngine S, bool CanBoost>
   Inline void SampleFromMaxwellian(vec_t<Dim::_3D>&            v,
                                    const random_number_pool_t& pool,
                                    real_t                      temperature,
@@ -200,7 +200,7 @@ namespace arch {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct Maxwellian : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 
@@ -217,7 +217,7 @@ namespace arch {
       raise::ErrorIf(temperature < ZERO,
                      "Maxwellian: Temperature must be non-negative",
                      HERE);
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         drift_4vel = NORM(drift_four_vel[0], drift_four_vel[1], drift_four_vel[2]);
         if (cmp::AlmostZero_host(drift_4vel)) {
           drift_dir = 0;
@@ -244,7 +244,7 @@ namespace arch {
                        "Maxwellian: Incorrect drift direction",
                        HERE);
         raise::ErrorIf(
-          drift_dir != 0 and (M::CoordType != Coord::Cart),
+          drift_dir != 0 and (M::CoordType != Coord::Cartesian),
           "Maxwellian: Boosting is only supported in Cartesian coordinates",
           HERE);
       }
@@ -259,7 +259,7 @@ namespace arch {
         JuttnerSinge(v, temperature, pool);
       }
       // @note: boost only when using cartesian coordinates
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         if (drift_dir != 0) {
           // Boost an isotropic Maxwellian with a drift velocity using
           // flipping method https://arxiv.org/pdf/1504.03910.pdf

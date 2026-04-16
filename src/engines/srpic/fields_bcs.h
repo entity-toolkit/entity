@@ -193,7 +193,7 @@ namespace ntt {
       /**
        * axis boundaries
        */
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         raise::ErrorIf(direction.get_dim() != in::x2,
                        "Invalid axis direction, should be x2",
                        HERE);
@@ -237,7 +237,7 @@ namespace ntt {
          */
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
-        raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
+        raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cartesian,
                        "Fixed BCs only implemented for x1 in "
                        "non-cartesian coordinates",
                        HERE);
@@ -273,7 +273,7 @@ namespace ntt {
           comps.push_back(em::bx2);
           comps.push_back(em::bx3);
         }
-        raise::ErrorIf(M::CoordType != Coord::Cart and dim != in::x1,
+        raise::ErrorIf(M::CoordType != Coord::Cartesian and dim != in::x1,
                        "FixedFields cannot be used for non-cartesian metric",
                        HERE);
         for (const auto& comp : comps) {
@@ -344,7 +344,7 @@ namespace ntt {
       /**
        * perfect conductor field boundaries
        */
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         (void)direction;
         (void)domain;
         (void)tags;

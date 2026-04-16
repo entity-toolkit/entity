@@ -20,7 +20,7 @@ using namespace arch;
 
 template <class SpDist, class M>
 struct Caller {
-  static_assert(M::CoordType == Coord::Cart,
+  static_assert(M::CoordType == Coord::Cartesian,
                 "Caller only available in Cartesian coordinates");
   static_assert(M::Dim != Dim::_1D, "1D Caller not available");
 
@@ -66,10 +66,10 @@ private:
   const M metric;
 };
 
-template <SimEngine::type S, class M>
+template <SimEngine S, class M>
 struct RadialDist : public SpatialDistribution<S, M> {
   using SpatialDistribution<S, M>::metric;
-  static_assert(M::CoordType == Coord::Cart,
+  static_assert(M::CoordType == Coord::Cartesian,
                 "RadialDist only available in Cartesian coordinates");
 
   static_assert(M::Dim != Dim::_1D, "1D RadialDist not available");

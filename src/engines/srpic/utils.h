@@ -38,18 +38,18 @@ namespace ntt {
      */
     template <class M>
       requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
-    auto GetAtmosphereExtent(dir::direction_t<M::Dim> direction,
-                             const M&                 global_metric,
-                             const Grid<M::Dim>&      global_grid,
-                             const SimulationParams&  params)
-      -> std::tuple<short, in, real_t, real_t> {
+    auto GetAtmosphereExtent(
+      dir::direction_t<M::Dim> direction,
+      const M&                 global_metric,
+      const Grid<M::Dim>&      global_grid,
+      const SimulationParams& params) -> std::tuple<short, in, real_t, real_t> {
       const auto sign     = direction.get_sign();
       const auto dim      = direction.get_dim();
       const auto min_buff = params.template get<unsigned short>(
                               "algorithms.current_filters") +
                             2;
       const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
-      if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
+      if (M::CoordType != Coord::Cartesian and (dim != in::x1 or sign > 0)) {
         raise::Error("For non-cartesian coordinates atmosphere BCs is "
                      "possible only in -x1 (@ rmin)",
                      HERE);
@@ -94,10 +94,10 @@ namespace ntt {
     }
 
     template <class M>
-    auto RangeWithAxisBCs(const Domain<SimEngine::SRPIC, M>& domain)
-      -> range_t<M::Dim> {
+    auto RangeWithAxisBCs(
+      const Domain<SimEngine::SRPIC, M>& domain) -> range_t<M::Dim> {
       auto range = domain.mesh.rangeActiveCells();
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         /**
          * @brief taking one extra cell in the x2 direction if AXIS BCs
          */

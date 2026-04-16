@@ -84,17 +84,17 @@ namespace user {
     const real_t time, Omega;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Spherical, Metric::QSpherical>::value
+      arch::traits::pgen::compatible_with<Metric::Spherical, Metric::QSpherical> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D>::value
+      arch::traits::pgen::compatible_with<Dim::_2D> {}
     };
 
     // for easy access to variables in the child class

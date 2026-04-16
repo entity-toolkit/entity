@@ -74,8 +74,9 @@ namespace pbar {
     }
   };
 
-  auto normalize_duration_fmt(duration_t t, const std::string& u)
-    -> std::pair<duration_t, std::string>;
+  auto normalize_duration_fmt(
+    duration_t         t,
+    const std::string& u) -> std::pair<duration_t, std::string>;
 
   auto to_human_readable(duration_t t, const std::string& u) -> std::string;
 

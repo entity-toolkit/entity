@@ -25,7 +25,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   Metadomain<S, M>::Metadomain(unsigned int            global_ndomains,
                                const std::vector<int>& global_decomposition,
@@ -57,7 +57,7 @@ namespace ntt {
     metricCompatibilityCheck();
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::initialValidityCheck() const {
     // ensure everything has the correct shape
@@ -95,7 +95,7 @@ namespace ntt {
 #endif // MPI_ENABLED
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::createEmptyDomains() {
     /* decompose and compute cell & domain offsets ------------------------ */
@@ -191,7 +191,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::redefineNeighbors() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
@@ -232,7 +232,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::redefineBoundaries() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
@@ -322,7 +322,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::finalValidityCheck() const {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
@@ -368,7 +368,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
     const auto epsilon = std::numeric_limits<real_t>::epsilon() *
@@ -403,7 +403,7 @@ namespace ntt {
 #endif
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::setFldsBC(const bc_in& dir, const FldsBC& new_bcs) {
     if (dir == bc_in::Mx1) {
@@ -472,7 +472,7 @@ namespace ntt {
     redefineBoundaries();
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::setPrtlBC(const bc_in& dir, const PrtlBC& new_bcs) {
     if (dir == bc_in::Mx1) {

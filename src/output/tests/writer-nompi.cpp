@@ -78,7 +78,7 @@ auto main(int argc, char* argv[]) -> int {
                               { 0, 1 },
                               { dwn1, dwn2, dwn3 },
                               false,
-                              Coord::Cart);
+                              Coord::Cartesian);
       writer.defineFieldOutputs(SimEngine::SRPIC, { "E", "B", "Rho_1_3", "N_2" });
 
       std::vector<std::size_t> addresses;

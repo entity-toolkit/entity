@@ -62,7 +62,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires metric::traits::HasD<M>
   struct Domain {
     static constexpr Dimension D { M::Dim };
@@ -158,8 +158,7 @@ namespace ntt {
     }
 
     /* setters -------------------------------------------------------------- */
-    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
-      -> void {
+    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx) -> void {
       m_neighbor_idx[dir] = idx;
     }
 
@@ -240,9 +239,9 @@ namespace ntt {
     std::optional<random_number_pool_t> m_random_number_pool;
   };
 
-  template <SimEngine::type S, class M>
-  inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
-    -> std::ostream& {
+  template <SimEngine S, class M>
+  inline auto operator<<(std::ostream&       os,
+                         const Domain<S, M>& domain) -> std::ostream& {
     os << "Domain #" << domain.index();
 #if defined(MPI_ENABLED)
     os << " [MPI rank: " << domain.mpi_rank() << "]";

@@ -36,7 +36,7 @@ auto main(int argc, char* argv[]) -> int {
   p.set("c", 3.14);
   p.set("d", d_vec);
   p.set("e", e_vec);
-  p.set("enum1", Coord(Coord::Cart));
+  p.set("enum1", Coord(Coord::Cartesian));
   p.set("enum2", flds_bc_vec);
   p.set("enum3", prtl_bc_vec);
 
@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
             "Failed to get vector of vector of strings");
     errorIf(p.get<std::vector<int>>("nonexist", nonexist_vec) != nonexist_vec,
             "Failed to fallback to default");
-    errorIf(p.get<Coord>("enum1") != Coord::Cart, "Failed to get Coord::");
+    errorIf(p.get<Coord>("enum1") != Coord::Cartesian, "Failed to get Coord::");
     errorIf(p.get<std::vector<FldsBC>>("enum2") != flds_bc_vec,
             "Failed to get std::vector<FldsBC>::");
     errorIf(p.get<boundaries_t<PrtlBC>>("enum3", prtl_bc_vec) != prtl_bc_vec,

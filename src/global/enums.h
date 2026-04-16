@@ -56,102 +56,79 @@
 namespace ntt {
 
   namespace enums_hidden {
-    template <typename T>
-    constexpr auto basePick(const enum T::type arr[],
-                            const char* const* arr_c,
-                            const std::size_t  n,
-                            const char*        elem) -> T {
-      for (auto i = 0u; i < n; ++i) {
-        if (strcmp(arr_c[i], elem) == 0) {
-          return (T)(arr[i]);
-        }
+    template <typename Derived>
+    class EnumBase {
+      constexpr auto idx() const -> std::size_t {
+        return static_cast<std::size_t>(d().val) - 1; // assumes 1-indexed
       }
-      raise::Error(fmt::format("Invalid enum value: %s for %s", elem, T::label),
-                   HERE);
-      return T::INVALID;
-    }
 
-    template <typename T>
-    constexpr auto baseContains(const char* const* arr_c,
-                                const std::size_t  n,
-                                const char*        elem) -> bool {
-      for (auto i = 0u; i < n; ++i) {
-        if (strcmp(arr_c[i], elem) == 0) {
-          return true;
-        }
+      constexpr auto d() const -> const Derived& {
+        return static_cast<const Derived&>(*this);
       }
-      return false;
-    }
 
-    template <class T>
-    class BaseEnum {
     public:
-      constexpr bool operator==(BaseEnum<T> other) const {
-        return value == other.value;
+      constexpr bool operator==(Derived o) const noexcept {
+        return d().val == o.val;
       }
 
-      constexpr bool operator!=(BaseEnum<T> other) const {
-        return value != other.value;
+      constexpr bool operator!=(Derived o) const noexcept {
+        return d().val != o.val;
       }
 
-      constexpr bool operator==(uint8_t other) const {
-        return value == other;
+      constexpr bool operator==(const char* s) const noexcept {
+        return std::strcmp(Derived::lookup[idx()], s) == 0;
       }
 
-      constexpr bool operator!=(uint8_t other) const {
-        return value != other;
-      }
-
-      constexpr bool operator==(const char* other) const {
-        return strcmp(T::lookup[value - 1], other) == 0;
-      }
-
-      constexpr bool operator!=(const char* other) const {
-        return strcmp(T::lookup[value - 1], other) != 0;
-      }
-
-      static constexpr auto pick(const char* c) -> T {
-        return basePick<T>(T::variants, T::lookup, T::total, fmt::toLower(c).c_str());
-      }
-
-      static constexpr auto contains(const char* c) -> bool {
-        return baseContains<T>(T::lookup, T::total, c);
+      constexpr bool operator!=(const char* s) const noexcept {
+        return std::strcmp(Derived::lookup[idx()], s) != 0;
       }
 
       constexpr auto to_string() const -> const char* {
-        return T::lookup[value - 1];
+        return Derived::lookup[idx()];
       }
 
-      BaseEnum() = default;
+      static auto pick(const char* s) -> Derived {
+        for (auto i { 0 }; i < Derived::total; ++i) {
+          if (std::strcmp(Derived::lookup[i], s) == 0) {
+            return Derived { Derived::variants[i] };
+          }
+        }
+        raise::Error(fmt::format("Invalid %s: %s", Derived::label, s), HERE);
+        return Derived { Derived::variants[0] };
+      }
 
-      constexpr BaseEnum(uint8_t v) : value(v) {}
-
-    protected:
-      uint8_t value;
+      static auto contains(const char* s) -> bool {
+        for (auto i { 0u }; i < Derived::total; ++i) {
+          if (std::strcmp(Derived::lookup[i], s) == 0) {
+            return true;
+          }
+        }
+        return false;
+      }
     };
+
   } // namespace enums_hidden
 
-  struct Coord : public enums_hidden::BaseEnum<Coord> {
-    static constexpr const char* label = "coord";
-
-    enum type : uint8_t {
-      INVALID = 0,
-      Cart    = 1,
-      Sph     = 2,
-      Qsph    = 3,
+  struct Coord : public enums_hidden::EnumBase<Coord> {
+    enum class type : uint8_t {
+      INVALID   = 0,
+      Cartesian = 1,
+      Spherical,
+      Qspherical
     };
+    using enum type;
+    type val;
 
-    constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
+    constexpr Coord(type v) noexcept : val { v } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph };
-    static constexpr const char* lookup[]   = { "cart", "sph", "qsph" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr const char* label = "coord";
+    static constexpr type variants[]   = { Cartesian, Spherical, Qspherical };
+    static constexpr const char* lookup[] = { "cart", "sph", "qsph" };
+    static constexpr std::size_t total    = std::size(variants);
   };
 
-  struct Metric : public enums_hidden::BaseEnum<Metric> {
-    static constexpr const char* label = "metric";
-
-    enum type : uint8_t {
+  struct Metric : public enums_hidden::EnumBase<Metric> {
+    enum class type : uint8_t {
       INVALID       = 0,
       Minkowski     = 1,
       Spherical     = 2,
@@ -160,9 +137,12 @@ namespace ntt {
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
     };
+    using enum type;
+    type val;
 
-    constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
+    constexpr Metric(type v) noexcept : val { v } {}
 
+    static constexpr const char* label      = "metric";
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
                                                 QKerr_Schild, Kerr_Schild_0 };
@@ -172,26 +152,25 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct SimEngine : public enums_hidden::BaseEnum<SimEngine> {
-    static constexpr const char* label = "sim_engine";
-
-    enum type : uint8_t {
+  struct SimEngine : public enums_hidden::EnumBase<SimEngine> {
+    enum class type : uint8_t {
       INVALID = 0,
       SRPIC   = 1,
       GRPIC   = 2,
     };
+    using enum type;
+    type val;
 
-    constexpr SimEngine(uint8_t c) : enums_hidden::BaseEnum<SimEngine> { c } {}
+    constexpr SimEngine(type v) noexcept : val { v } {}
 
+    static constexpr const char* label      = "sim_engine";
     static constexpr type        variants[] = { SRPIC, GRPIC };
     static constexpr const char* lookup[]   = { "srpic", "grpic" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct PrtlBC : public enums_hidden::BaseEnum<PrtlBC> {
-    static constexpr const char* label = "prtl_bc";
-
-    enum type : uint8_t {
+  struct PrtlBC : public enums_hidden::EnumBase<PrtlBC> {
+    enum class type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
       ABSORB     = 2,
@@ -202,9 +181,12 @@ namespace ntt {
       AXIS       = 7,
       SYNC       = 8,
     };
+    using enum type;
+    type val;
 
-    constexpr PrtlBC(uint8_t c) : enums_hidden::BaseEnum<PrtlBC> { c } {}
+    constexpr PrtlBC(type v) noexcept : val { v } {}
 
+    static constexpr const char* label = "prtl_bc";
     static constexpr type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE, CUSTOM,
                                          REFLECT,  HORIZON, AXIS,       SYNC };
     static constexpr const char* lookup[] = { "periodic",   "absorb",
@@ -214,10 +196,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct FldsBC : public enums_hidden::BaseEnum<FldsBC> {
-    static constexpr const char* label = "flds_bc";
-
-    enum type : uint8_t {
+  struct FldsBC : public enums_hidden::EnumBase<FldsBC> {
+    enum class type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
       MATCH      = 2,
@@ -229,10 +209,13 @@ namespace ntt {
       CONDUCTOR  = 8,
       SYNC       = 9 // <- SYNC means synchronization with other domains
     };
+    using enum type;
+    type val;
 
-    constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
+    constexpr FldsBC(type v) noexcept : val { v } {}
 
-    static constexpr type variants[] = {
+    static constexpr const char* label      = "flds_bc";
+    static constexpr type        variants[] = {
       PERIODIC, MATCH, FIXED,     ATMOSPHERE, CUSTOM,
       HORIZON,  AXIS,  CONDUCTOR, SYNC,
     };
@@ -243,10 +226,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct FldsID : public enums_hidden::BaseEnum<FldsID> {
-    static constexpr const char* label = "out_flds";
-
-    enum type : uint8_t {
+  struct FldsID : public enums_hidden::EnumBase<FldsID> {
+    enum class type : uint8_t {
       INVALID = 0,
       E       = 1,
       divE    = 2,
@@ -264,9 +245,12 @@ namespace ntt {
       V       = 14,
       Custom  = 15,
     };
+    using enum type;
+    type val;
 
-    constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
+    constexpr FldsID(type v) noexcept : val { v } {}
 
+    static constexpr const char* label      = "out_flds";
     static constexpr type        variants[] = { E,      divE, D,    divD, B,
                                                 H,      J,    A,    T,    Rho,
                                                 Charge, N,    Nppc, V,    Custom };
@@ -277,10 +261,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct StatsID : public enums_hidden::BaseEnum<StatsID> {
-    static constexpr const char* label = "out_stats";
-
-    enum type : uint8_t {
+  struct StatsID : public enums_hidden::EnumBase<StatsID> {
+    enum class type : uint8_t {
       INVALID = 0,
       B2      = 1,
       E2      = 2,
@@ -293,9 +275,12 @@ namespace ntt {
       Npart   = 9,
       Custom  = 10,
     };
+    using enum type;
+    type val;
 
-    constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
+    constexpr StatsID(type v) noexcept : val { v } {}
 
+    static constexpr const char* label      = "out_stats";
     static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
                                                 Rho, Charge, N,   Npart, Custom };
     static constexpr const char* lookup[] = { "b^2",   "e^2",   "exb",    "j.e",

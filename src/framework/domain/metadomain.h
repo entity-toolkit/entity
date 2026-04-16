@@ -57,7 +57,7 @@ namespace ntt {
                                        metric::traits::HasConvert<M> &&
                                        metric::traits::HasTotVolume<M>;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   struct Metadomain {
     static constexpr Dimension D { M::Dim };

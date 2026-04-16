@@ -43,7 +43,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-template <SimEngine::type S, typename M>
+template <SimEngine S, typename M>
 void testParticleMoments(const std::vector<std::size_t>&      res,
                          const boundaries_t<real_t>&          ext,
                          const std::map<std::string, real_t>& params = {},
@@ -52,7 +52,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
 
   boundaries_t<real_t> extent;
-  if constexpr (M::CoordType == Coord::Cart) {
+  if constexpr (M::CoordType == Coord::Cartesian) {
     extent = ext;
   } else {
     extent = {
@@ -105,7 +105,7 @@ void testParticleMoments(const std::vector<std::size_t>&      res,
   put_value<real_t>(weight, 1.0, 4);
 
   auto boundaries = boundaries_t<FldsBC> {};
-  if constexpr (M::CoordType != Coord::Cart) {
+  if constexpr (M::CoordType != Coord::Cartesian) {
     boundaries = {
       { FldsBC::CUSTOM, FldsBC::CUSTOM },
       {   FldsBC::AXIS,   FldsBC::AXIS }

@@ -31,7 +31,7 @@ namespace kernel {
   /**
    * @brief Algorithm for the current deposition
    */
-  template <SimEngine::type S, class M, unsigned short O = 1u>
+  template <SimEngine S, class M, unsigned short O = 1u>
     requires metric::traits::HasD<M> &&
              ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
               (S == SimEngine::GRPIC && metric::traits::HasTransform<M> &&

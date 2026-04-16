@@ -94,27 +94,27 @@ namespace user {
   }
 
   template <>
-  Inline auto DipoleField<Dim::_2D>::radius(const coord_t<Dim::_2D>& x) const
-    -> real_t {
+  Inline auto DipoleField<Dim::_2D>::radius(
+    const coord_t<Dim::_2D>& x) const -> real_t {
     return math::sqrt(SQR(x[0]) + SQR(x[1]));
   }
 
   template <>
-  Inline auto DipoleField<Dim::_3D>::radius(const coord_t<Dim::_3D>& x) const
-    -> real_t {
+  Inline auto DipoleField<Dim::_3D>::radius(
+    const coord_t<Dim::_3D>& x) const -> real_t {
     return math::sqrt(SQR(x[0]) + SQR(x[1]) + SQR(x[2]));
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D, Dim::_3D>::value
+      arch::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
 
     // DipoleField<M::Dim> init_flds;

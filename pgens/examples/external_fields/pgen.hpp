@@ -52,16 +52,16 @@ namespace user {
     const spidx_t   sp;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
     using arch::ProblemGenerator<S, M>::D;
@@ -79,10 +79,10 @@ namespace user {
      *
      * @note apply_external_fields is true for species other than 1 (i.e., 2 and 3 in this case)
      */
-    inline auto ExternalFields(simtime_t           time,
-                               spidx_t             sp,
-                               const Domain<S, M>& domain) const
-      -> std::pair<bool, ExtFields<M::Dim>> {
+    inline auto ExternalFields(
+      simtime_t           time,
+      spidx_t             sp,
+      const Domain<S, M>& domain) const -> std::pair<bool, ExtFields<M::Dim>> {
       // apply only to species 2 and 3
       return {
         sp != 1u,

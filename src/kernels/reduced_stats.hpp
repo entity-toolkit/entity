@@ -22,7 +22,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
+  template <SimEngine S, class M, StatsID::type F, unsigned short I = 0>
     requires metric::traits::HasD<M> &&
              (metric::traits::HasTransform_i<M> || (I == 0)) &&
              metric::traits::HasTransform<M> && metric::traits::HasSqrtDetH<M> &&
@@ -400,7 +400,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
+  template <SimEngine S, class M, StatsID::type P>
     requires metric::traits::HasD<M> &&
              (((S == SimEngine::SRPIC) && metric::traits::HasTransformXYZ<M>) ||
               ((S == SimEngine::GRPIC) && metric::traits::HasTransform<M>)) &&
@@ -498,7 +498,7 @@ namespace kernel {
           if constexpr (S == SimEngine::SRPIC) {
             // SR
             // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-            if constexpr (M::CoordType == Coord::Cart) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
               u_Phys[0] = ux1(p);
               u_Phys[1] = ux2(p);
               u_Phys[2] = ux3(p);

@@ -21,7 +21,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
                                          bool                    is_resuming) {
@@ -62,7 +62,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
+  template <SimEngine S, class M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const M&                global_metric,
@@ -119,7 +119,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type F>
+  template <SimEngine S, class M, StatsID::type F>
   auto ReduceFields(Domain<S, M>*                      domain,
                     const M&                           global_metric,
                     const std::vector<unsigned short>& components) -> real_t {
@@ -181,7 +181,7 @@ namespace ntt {
     return buffer / global_metric.totVolume();
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
     requires IsCompatibleWithMetadomain<M>
   auto Metadomain<S, M>::WriteStats(
     const SimulationParams& params,
@@ -189,8 +189,8 @@ namespace ntt {
     timestep_t              finished_step,
     simtime_t               current_time,
     simtime_t               finished_time,
-    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> CustomStat)
-    -> bool {
+    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>
+      CustomStat) -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
       return false;
@@ -272,7 +272,7 @@ namespace ntt {
         }
       } else {
         raise::Error("StatsID not implemented for particular SimEngine: " +
-                       std::to_string(static_cast<int>(S)),
+                       std::string(S.to_string()),
                      HERE);
       }
     }
@@ -280,18 +280,17 @@ namespace ntt {
     return true;
   }
 
-#define METADOMAIN_STATS(S, M, D)                                                 \
-  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,     \
-                                                     bool);                       \
-  template auto Metadomain<S, M<D>>::WriteStats(                                  \
-    const SimulationParams&,                                                      \
-    timestep_t,                                                                   \
-    timestep_t,                                                                   \
-    simtime_t,                                                                    \
-    simtime_t,                                                                    \
-    std::function<                                                                \
-      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>) \
-    -> bool;
+#define METADOMAIN_STATS(S, M, D)                                              \
+  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,  \
+                                                     bool);                    \
+  template auto Metadomain<S, M<D>>::WriteStats(                               \
+    const SimulationParams&,                                                   \
+    timestep_t,                                                                \
+    timestep_t,                                                                \
+    simtime_t,                                                                 \
+    simtime_t,                                                                 \
+    std::function<                                                             \
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>) -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_STATS)
 

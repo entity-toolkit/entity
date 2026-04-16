@@ -34,7 +34,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <class I, SimEngine::type S, class M>
+  template <class I, SimEngine S, class M>
     requires metric::traits::HasD<M> &&
              (((S == SimEngine::SRPIC) && metric::traits::HasConvert<M> &&
                metric::traits::HasTransform_i<M>) ||

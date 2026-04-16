@@ -581,7 +581,7 @@ auto main(int argc, char* argv[]) -> int {
                               "simulation.engine");
 
       assert_equal<Coord>(params_qks_2d.get<Coord>("grid.metric.coord"),
-                          Coord::Qsph,
+                          Coord::Qspherical,
                           "grid.metric.coord");
 
       assert_equal<real_t>(params_qks_2d.get<real_t>("grid.metric.qsph_r0"),

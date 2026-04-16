@@ -21,8 +21,8 @@ namespace ntt {
     /*
      * Auxiliary functions
      */
-    auto getRadiativeDragFlags(const std::string& radiative_drag_str)
-      -> RadiativeDragFlags {
+    auto getRadiativeDragFlags(
+      const std::string& radiative_drag_str) -> RadiativeDragFlags {
       if (fmt::toLower(radiative_drag_str) == "none") {
         return RadiativeDrag::NONE;
       } else {
@@ -46,8 +46,8 @@ namespace ntt {
       }
     }
 
-    auto getPusherFlags(const std::string& particle_pusher_str)
-      -> ParticlePusherFlags {
+    auto getPusherFlags(
+      const std::string& particle_pusher_str) -> ParticlePusherFlags {
       if (fmt::toLower(particle_pusher_str) == "none") {
         return ParticlePusher::NONE;
       } else {
@@ -78,8 +78,8 @@ namespace ntt {
       }
     }
 
-    auto getEmissionPolicyFlag(const std::string& emission_policy_str)
-      -> EmissionTypeFlag {
+    auto getEmissionPolicyFlag(
+      const std::string& emission_policy_str) -> EmissionTypeFlag {
       if (fmt::toLower(emission_policy_str) == "none") {
         return EmissionType::NONE;
       } else if (fmt::toLower(emission_policy_str) == "synchrotron") {
@@ -96,13 +96,13 @@ namespace ntt {
       }
     }
 
-    auto GetParticleSpecies(SimulationParams*  params,
-                            const SimEngine&   engine_enum,
-                            spidx_t            idx,
-                            const toml::value& sp,
-                            timestep_t         global_clearing_interval,
-                            timestep_t         global_spatial_sorting_interval)
-      -> ParticleSpecies {
+    auto GetParticleSpecies(
+      SimulationParams*  params,
+      const SimEngine&   engine_enum,
+      spidx_t            idx,
+      const toml::value& sp,
+      timestep_t         global_clearing_interval,
+      timestep_t         global_spatial_sorting_interval) -> ParticleSpecies {
       const auto label  = toml::find_or<std::string>(sp,
                                                     "label",
                                                     "s" + std::to_string(idx));

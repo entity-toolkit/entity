@@ -9,18 +9,18 @@ auto CreateParticleRangePolicy(npart_t p1, npart_t p2) -> range_t<Dim::_1D> {
 }
 
 template <>
-auto CreateRangePolicy<Dim::_1D>(const tuple_t<ncells_t, Dim::_1D>& i1,
-                                 const tuple_t<ncells_t, Dim::_1D>& i2)
-  -> range_t<Dim::_1D> {
+auto CreateRangePolicy<Dim::_1D>(
+  const tuple_t<ncells_t, Dim::_1D>& i1,
+  const tuple_t<ncells_t, Dim::_1D>& i2) -> range_t<Dim::_1D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   return Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(i1min, i1max);
 }
 
 template <>
-auto CreateRangePolicy<Dim::_2D>(const tuple_t<ncells_t, Dim::_2D>& i1,
-                                 const tuple_t<ncells_t, Dim::_2D>& i2)
-  -> range_t<Dim::_2D> {
+auto CreateRangePolicy<Dim::_2D>(
+  const tuple_t<ncells_t, Dim::_2D>& i1,
+  const tuple_t<ncells_t, Dim::_2D>& i2) -> range_t<Dim::_2D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   index_t i2min = i1[1];
@@ -31,9 +31,9 @@ auto CreateRangePolicy<Dim::_2D>(const tuple_t<ncells_t, Dim::_2D>& i1,
 }
 
 template <>
-auto CreateRangePolicy<Dim::_3D>(const tuple_t<ncells_t, Dim::_3D>& i1,
-                                 const tuple_t<ncells_t, Dim::_3D>& i2)
-  -> range_t<Dim::_3D> {
+auto CreateRangePolicy<Dim::_3D>(
+  const tuple_t<ncells_t, Dim::_3D>& i1,
+  const tuple_t<ncells_t, Dim::_3D>& i2) -> range_t<Dim::_3D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   index_t i2min = i1[1];
@@ -46,18 +46,18 @@ auto CreateRangePolicy<Dim::_3D>(const tuple_t<ncells_t, Dim::_3D>& i1,
 }
 
 template <>
-auto CreateRangePolicyOnHost<Dim::_1D>(const tuple_t<ncells_t, Dim::_1D>& i1,
-                                       const tuple_t<ncells_t, Dim::_1D>& i2)
-  -> range_h_t<Dim::_1D> {
+auto CreateRangePolicyOnHost<Dim::_1D>(
+  const tuple_t<ncells_t, Dim::_1D>& i1,
+  const tuple_t<ncells_t, Dim::_1D>& i2) -> range_h_t<Dim::_1D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   return Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(i1min, i1max);
 }
 
 template <>
-auto CreateRangePolicyOnHost<Dim::_2D>(const tuple_t<ncells_t, Dim::_2D>& i1,
-                                       const tuple_t<ncells_t, Dim::_2D>& i2)
-  -> range_h_t<Dim::_2D> {
+auto CreateRangePolicyOnHost<Dim::_2D>(
+  const tuple_t<ncells_t, Dim::_2D>& i1,
+  const tuple_t<ncells_t, Dim::_2D>& i2) -> range_h_t<Dim::_2D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   index_t i2min = i1[1];
@@ -68,9 +68,9 @@ auto CreateRangePolicyOnHost<Dim::_2D>(const tuple_t<ncells_t, Dim::_2D>& i1,
 }
 
 template <>
-auto CreateRangePolicyOnHost<Dim::_3D>(const tuple_t<ncells_t, Dim::_3D>& i1,
-                                       const tuple_t<ncells_t, Dim::_3D>& i2)
-  -> range_h_t<Dim::_3D> {
+auto CreateRangePolicyOnHost<Dim::_3D>(
+  const tuple_t<ncells_t, Dim::_3D>& i1,
+  const tuple_t<ncells_t, Dim::_3D>& i2) -> range_h_t<Dim::_3D> {
   index_t i1min = i1[0];
   index_t i1max = i2[0];
   index_t i2min = i1[1];

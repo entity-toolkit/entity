@@ -40,7 +40,7 @@ void testFlds2Phys(const std::vector<std::size_t>&      res,
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
 
   boundaries_t<real_t> extent;
-  if constexpr (M::CoordType == Coord::Cart) {
+  if constexpr (M::CoordType == Coord::Cartesian) {
     extent = ext;
   } else {
     extent = {

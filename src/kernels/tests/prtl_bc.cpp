@@ -44,12 +44,12 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
-template <SimEngine::type S, typename M>
+template <SimEngine S, typename M>
 void testPeriodicBC(const std::vector<std::size_t>&      res,
                     const boundaries_t<real_t>&          ext,
                     const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
-  errorIf(M::CoordType != Coord::Cart, "M::CoordType != Coord::Cart");
+  errorIf(M::CoordType != Coord::Cartesian, "M::CoordType != Coord::Cartesian");
 
   real_t sx = ZERO, sy = ZERO, sz = ZERO;
   if (ext.size() > 0) {

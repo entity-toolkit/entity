@@ -56,18 +56,27 @@ namespace arch {
     namespace pgen {
 
       // checking compat for the problem generator + engine
-      template <int N>
-      struct check_compatibility {
-        template <int... Is>
-        static constexpr bool value(std::integer_sequence<int, Is...>) {
-          return ((Is == N) || ...);
-        }
-      };
+      template <auto... Is>
+      struct compatible_with {};
 
-      template <int... Is>
-      struct compatible_with {
-        static constexpr auto value = std::integer_sequence<int, Is...> {};
-      };
+      // free function — deduces Is... from the tag, checks if N is among them
+      template <auto N, auto... Is>
+      constexpr bool is_compatible(compatible_with<Is...>) {
+        return ((N == Is) || ...);
+      }
+
+      // template <int N>
+      // struct check_compatibility {
+      //   template <int... Is>
+      //   static constexpr bool value(std::integer_sequence<int, Is...>) {
+      //     return ((Is == N) || ...);
+      //   }
+      // };
+
+      // template <int... Is>
+      // struct compatible_with {
+      //   static constexpr auto value = std::integer_sequence<int, Is...> {};
+      // };
 
       template <class PG>
       concept HasD = requires {

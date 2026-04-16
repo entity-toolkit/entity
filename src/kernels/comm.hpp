@@ -105,7 +105,7 @@ namespace kernel::comm {
     }
   };
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   class PopulatePrtlSendBuffer_kernel {
     array_t<int*>      send_buff_int;
     array_t<real_t*>   send_buff_real;
@@ -214,7 +214,7 @@ namespace kernel::comm {
       send_buff_real(NREALS * p + 1) = ux2(idx);
       send_buff_real(NREALS * p + 2) = ux3(idx);
       send_buff_real(NREALS * p + 3) = weight(idx);
-      if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
         send_buff_real(NREALS * p + 4) = phi(idx);
       }
       if (NPLDS_R > 0) {
@@ -231,7 +231,7 @@ namespace kernel::comm {
     }
   };
 
-  template <Dimension D, Coord::type C>
+  template <Dimension D, Coord C>
   class ExtractReceivedPrtls_kernel {
     const array_t<int*>      recv_buff_int;
     const array_t<real_t*>   recv_buff_real;
@@ -346,7 +346,7 @@ namespace kernel::comm {
       ux2(idx)    = recv_buff_real(NREALS * p + 1);
       ux3(idx)    = recv_buff_real(NREALS * p + 2);
       weight(idx) = recv_buff_real(NREALS * p + 3);
-      if constexpr (D == Dim::_2D and C != Coord::Cart) {
+      if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
         phi(idx) = recv_buff_real(NREALS * p + 4);
       }
       if (NPLDS_R > 0) {

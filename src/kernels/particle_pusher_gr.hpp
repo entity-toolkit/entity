@@ -159,8 +159,8 @@ namespace kernel::gr {
                         (boundaries[0].first == PrtlBC::HORIZON);
       is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
                         (boundaries[0].second == PrtlBC::HORIZON);
-      is_axis_i2min   = (boundaries[1].first == PrtlBC::AXIS);
-      is_axis_i2max   = (boundaries[1].second == PrtlBC::AXIS);
+      is_axis_i2min = (boundaries[1].first == PrtlBC::AXIS);
+      is_axis_i2max = (boundaries[1].second == PrtlBC::AXIS);
     }
 
     /**

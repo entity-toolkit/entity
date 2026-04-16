@@ -18,7 +18,6 @@
 
 #include "utils/error.h"
 
-#include "engines/traits.h"
 #include "framework/parameters/parameters.h"
 
 #include <toml11/toml.hpp>
@@ -37,7 +36,6 @@ namespace ntt {
     ~Simulation();
 
     template <template <class> class E, template <Dimension> class M, Dimension D>
-      requires traits::engine::HasRun<E<M<D>>>
     inline void run() {
       using engine_t = E<M<D>>;
       try {

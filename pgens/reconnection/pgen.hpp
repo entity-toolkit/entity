@@ -19,7 +19,7 @@
 namespace user {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct CurrentLayer : public arch::SpatialDistribution<S, M> {
     CurrentLayer(const M& metric, real_t cs_width, real_t center_x, real_t cs_y)
       : arch::SpatialDistribution<S, M> { metric }
@@ -137,17 +137,17 @@ namespace user {
   };
 
   // constant particle density for particle boundaries
-  template <SimEngine::type S, class M>
+  template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D, Dim::_3D>::value
+      arch::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
 
     // for easy access to variables in the child class
