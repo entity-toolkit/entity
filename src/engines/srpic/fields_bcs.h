@@ -5,9 +5,8 @@
 #include "global.h"
 
 #include "arch/directions.h"
-#include "utils/numeric.h"
-
 #include "traits/metric.h"
+#include "utils/numeric.h"
 
 #include "archetypes/traits.h"
 #include "engines/srpic/utils.h"

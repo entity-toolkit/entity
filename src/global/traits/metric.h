@@ -158,6 +158,36 @@ namespace traits::metric {
     { m.dt_h13(xi) } -> std::convertible_to<real_t>;
   };
 
+  template <class M>
+  concept CurvilinearMetric = HasPolarArea<M> and HasSqrtDetHTilde<M>;
+
 } // namespace traits::metric
+
+template <class M>
+concept SRMetric = ::traits::metric::HasD<M> and ::traits::metric::HasPrtlDim<M> and
+                   ::traits::metric::HasCoordType<M> and
+                   ::traits::metric::HasH_ij<M> and
+                   ::traits::metric::HasSqrtH_ij<M> and
+                   ::traits::metric::HasSqrtDetH<M> and
+                   ::traits::metric::HasTransform_i<M> and
+                   ::traits::metric::HasTransform<M> and
+                   ::traits::metric::HasTransformXYZ<M> and
+                   ::traits::metric::HasConvert_i<M> and
+                   ::traits::metric::HasConvert<M> and
+                   ::traits::metric::HasConvertXYZ<M>;
+
+template <class M>
+concept GRMetric = ::traits::metric::CurvilinearMetric<M> and
+                   ::traits::metric::HasD<M> and ::traits::metric::HasPrtlDim<M> and
+                   ::traits::metric::HasCoordType<M> and
+                   ::traits::metric::HasHij<M> and ::traits::metric::HasH_ij<M> and
+                   ::traits::metric::HasSqrtDetH<M> and
+                   ::traits::metric::HasTransform_i<M> and
+                   ::traits::metric::HasTransform<M> and
+                   ::traits::metric::HasConvert_i<M> and
+                   ::traits::metric::HasConvert<M> and
+                   ::traits::metric::HasAlpha<M> and
+                   ::traits::metric::HasBeta1<M> and
+                   ::traits::metric::HasMetricDerivatives<M>;
 
 #endif // TRAITS_METRIC_H

@@ -25,9 +25,8 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
-#include "utils/numeric.h"
-
 #include "traits/metric.h"
+#include "utils/numeric.h"
 
 #include <Kokkos_Core.hpp>
 

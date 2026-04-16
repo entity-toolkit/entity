@@ -15,9 +15,8 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/numeric.h"
-
 #include "traits/metric.h"
+#include "utils/numeric.h"
 
 namespace kernel {
   using namespace ntt;
@@ -25,8 +24,8 @@ namespace kernel {
   template <SimEngine S, class M, StatsID::type F, unsigned short I = 0>
     requires ::traits::metric::HasD<M> &&
              (::traits::metric::HasTransform_i<M> || (I == 0)) &&
-             ::traits::metric::HasTransform<M> && ::traits::metric::HasSqrtDetH<M> &&
-             (I <= 3)
+             ::traits::metric::HasTransform<M> &&
+             ::traits::metric::HasSqrtDetH<M> && (I <= 3)
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 

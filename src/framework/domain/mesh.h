@@ -16,11 +16,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "traits/metric.h"
 
 #include "framework/domain/grid.h"
 

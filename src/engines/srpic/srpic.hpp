@@ -16,6 +16,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
 
@@ -36,7 +37,7 @@
 
 namespace ntt {
 
-  template <class M>
+  template <SRMetric M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;

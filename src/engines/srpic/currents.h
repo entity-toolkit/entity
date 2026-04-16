@@ -5,10 +5,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/log.h"
 #include "utils/param_container.h"
-
-#include "traits/metric.h"
 
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"

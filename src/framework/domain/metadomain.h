@@ -23,7 +23,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-
 #include "traits/metric.h"
 
 #include "framework/containers/species.h"

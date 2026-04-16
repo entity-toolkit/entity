@@ -23,12 +23,11 @@
 
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
-
-#include "traits/metric.h"
 
 #include "kernels/emission/emission.hpp"
 #include "kernels/emission/traits.h"
@@ -115,7 +114,8 @@ namespace kernel::sr {
   template <class M, class F, bool Atm, class E, class PUPD>
     requires ::traits::metric::HasD<M> && ::traits::metric::HasTransformXYZ<M> &&
              ::traits::metric::HasConvertXYZ<M> &&
-             ::traits::metric::HasTransform_i<M> && ::traits::metric::HasConvert_i<M>
+             ::traits::metric::HasTransform_i<M> &&
+             ::traits::metric::HasConvert_i<M>
   struct Pusher_kernel {
     static constexpr auto D            = M::Dim;
     static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;

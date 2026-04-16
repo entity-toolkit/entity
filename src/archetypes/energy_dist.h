@@ -22,11 +22,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "traits/metric.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>

@@ -4,12 +4,11 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
-
-#include "traits/metric.h"
 
 #include "archetypes/traits.h"
 #include "engines/srpic/utils.h"

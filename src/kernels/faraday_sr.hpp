@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "traits/metric.h"
 
 namespace kernel::sr {
   using namespace ntt;

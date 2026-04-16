@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
@@ -65,7 +66,7 @@ namespace ntt {
     curr
   };
 
-  template <class M>
+  template <GRMetric M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;

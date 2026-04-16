@@ -13,9 +13,8 @@
 #include "global.h"
 
 #include "arch/traits.h"
-#include "utils/numeric.h"
-
 #include "traits/metric.h"
+#include "utils/numeric.h"
 
 namespace kernel {
   using namespace ntt;

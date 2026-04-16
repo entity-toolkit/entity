@@ -19,10 +19,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "traits/metric.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"

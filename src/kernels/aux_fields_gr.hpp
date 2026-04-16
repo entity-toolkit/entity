@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "traits/metric.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -30,8 +29,9 @@ namespace kernel::gr {
    */
   template <class M>
     requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
-             ::traits::metric::HasSqrtDetHTilde<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasAlpha<M> && ::traits::metric::HasBeta1<M>
+             ::traits::metric::HasSqrtDetHTilde<M> &&
+             ::traits::metric::HasH_ij<M> && ::traits::metric::HasAlpha<M> &&
+             ::traits::metric::HasBeta1<M>
   class ComputeAuxE_kernel {
     static constexpr auto D = M::Dim;
 
@@ -139,8 +139,9 @@ namespace kernel::gr {
    */
   template <class M>
     requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
-             ::traits::metric::HasSqrtDetHTilde<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasAlpha<M> && ::traits::metric::HasBeta1<M>
+             ::traits::metric::HasSqrtDetHTilde<M> &&
+             ::traits::metric::HasH_ij<M> && ::traits::metric::HasAlpha<M> &&
+             ::traits::metric::HasBeta1<M>
   class ComputeAuxH_kernel {
     static constexpr auto D = M::Dim;
 

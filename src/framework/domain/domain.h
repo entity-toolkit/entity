@@ -43,11 +43,10 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 #include "utils/reporter.h"
-
-#include "traits/metric.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"

@@ -5,9 +5,8 @@
 #include "global.h"
 
 #include "arch/directions.h"
-#include "utils/numeric.h"
-
 #include "traits/metric.h"
+#include "utils/numeric.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
