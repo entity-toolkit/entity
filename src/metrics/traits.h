@@ -1,27 +1,27 @@
 /**
- * @file metrics/traits.h
+ * @file traits/metric.h
  * @brief Defines a set of traits to check if a metric class satisfies certain conditions
  * @implements
- *   - metric::traits::HasD<> - checks if metric has Dim static member
- *   - metric::traits::HasCoordType<> - checks if metric has CoordType static member
- *   - metric::traits::HasH_ij<> - checks if metric has h_ij method
- *   - metric::traits::HasHij<> - checks if metric has hij method
- *   - metric::traits::HasSqrtH_ij<> - checks if metric has sqrt_h_ij method
- *   - metric::traits::HasSqrtDetH<> - checks if metric has sqrt_det_h method
- *   - metric::traits::HasSqrtDetHTilde<> - checks if metric has sqrt_det_h_tilde method
- *   - metric::traits::HasPolarArea<> - checks if metric has polar_area method
- *   - metric::traits::HasTotVolume<> - checks if metric has totVolume method
- *   - metric::traits::HasTransform_i<> - checks if metric has transform method for single component
- *   - metric::traits::HasTransform<> - checks if metric has transform method for vector
- *   - metric::traits::HasTransformXYZ<> - checks if metric has transform_xyz method for vector
- *   - metric::traits::HasConvert_i<> - checks if metric has convert method for single component
- *   - metric::traits::HasConvert<> - checks if metric has convert method for vector
- *   - metric::traits::HasConvertXYZ<> - checks if metric has convert_xyz method for vector
- *   - metric::traits::HasAlpha<> - checks if metric has alpha method
- *   - metric::traits::HasBeta1<> - checks if metric has beta1 method
- *   - metric::traits::HasMetricDerivatives<> - checks if metric has metric derivatives methods
+ *   - ::traits::metric::HasD<> - checks if metric has Dim static member
+ *   - ::traits::metric::HasCoordType<> - checks if metric has CoordType static member
+ *   - ::traits::metric::HasH_ij<> - checks if metric has h_ij method
+ *   - ::traits::metric::HasHij<> - checks if metric has hij method
+ *   - ::traits::metric::HasSqrtH_ij<> - checks if metric has sqrt_h_ij method
+ *   - ::traits::metric::HasSqrtDetH<> - checks if metric has sqrt_det_h method
+ *   - ::traits::metric::HasSqrtDetHTilde<> - checks if metric has sqrt_det_h_tilde method
+ *   - ::traits::metric::HasPolarArea<> - checks if metric has polar_area method
+ *   - ::traits::metric::HasTotVolume<> - checks if metric has totVolume method
+ *   - ::traits::metric::HasTransform_i<> - checks if metric has transform method for single component
+ *   - ::traits::metric::HasTransform<> - checks if metric has transform method for vector
+ *   - ::traits::metric::HasTransformXYZ<> - checks if metric has transform_xyz method for vector
+ *   - ::traits::metric::HasConvert_i<> - checks if metric has convert method for single component
+ *   - ::traits::metric::HasConvert<> - checks if metric has convert method for vector
+ *   - ::traits::metric::HasConvertXYZ<> - checks if metric has convert_xyz method for vector
+ *   - ::traits::metric::HasAlpha<> - checks if metric has alpha method
+ *   - ::traits::metric::HasBeta1<> - checks if metric has beta1 method
+ *   - ::traits::metric::HasMetricDerivatives<> - checks if metric has metric derivatives methods
  * @namespaces:
- *   - metric::traits::
+ *   - ::traits::metric::
  */
 #ifndef METRICS_TRAITS_H
 #define METRICS_TRAITS_H

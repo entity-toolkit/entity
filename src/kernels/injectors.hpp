@@ -19,7 +19,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "archetypes/traits.h"
 #include "framework/containers/particles.h"
@@ -81,9 +81,9 @@ namespace kernel {
   }
 
   template <SimEngine S, class M, class ED1, class ED2>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>)) &&
              arch::traits::energydist::IsValid<ED1> &&
              arch::traits::energydist::IsValid<ED2>
   struct UniformInjector_kernel {
@@ -296,9 +296,9 @@ namespace kernel {
   }; // struct UniformInjector_kernel
 
   template <SimEngine S, class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
+             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>))
   struct GlobalInjector_kernel {
     static constexpr auto D = M::Dim;
 
@@ -529,10 +529,10 @@ namespace kernel {
   }; // struct GlobalInjector_kernel
 
   template <SimEngine S, class M, class ED1, class ED2, class SD>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             metric::traits::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
+             ::traits::metric::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>)) &&
              arch::traits::energydist::IsValid<ED1> &&
              arch::traits::energydist::IsValid<ED2> &&
              arch::traits::spatialdist::IsValid<SD>

@@ -7,7 +7,7 @@
 #include "arch/directions.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
@@ -19,7 +19,7 @@ namespace ntt {
   namespace srpic {
 
     template <class M, class T, in O>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void CallMatchFields(ndfield_t<M::Dim, 6>&       fields,
                          const boundaries_t<FldsBC>& boundaries,
                          const T&                    match_fields,
@@ -42,7 +42,7 @@ namespace ntt {
     }
 
     template <class M, class PG>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::SRPIC, M>& domain,
                        const Grid<M::Dim>&          global_grid,
@@ -186,7 +186,7 @@ namespace ntt {
     }
 
     template <class M>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void AxisFieldsIn(dir::direction_t<M::Dim>     direction,
                       Domain<SimEngine::SRPIC, M>& domain,
                       BCTags                       tags) {
@@ -223,8 +223,8 @@ namespace ntt {
     }
 
     template <class M, class PG>
-      requires metric::traits::HasD<M> and metric::traits::HasCoordType<M> and
-               metric::traits::HasTransform_i<M>
+      requires ::traits::metric::HasD<M> and ::traits::metric::HasCoordType<M> and
+               ::traits::metric::HasTransform_i<M>
     void FixedFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::SRPIC, M>& domain,
                        const PG&                    pgen,
@@ -337,7 +337,7 @@ namespace ntt {
     }
 
     template <class M>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void PerfectConductorFieldsIn(dir::direction_t<M::Dim>     direction,
                                   Domain<SimEngine::SRPIC, M>& domain,
                                   BCTags                       tags) {
@@ -598,7 +598,7 @@ namespace ntt {
     }
 
     template <class M>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void CustomFieldsIn(dir::direction_t<M::Dim>     direction,
                         Domain<SimEngine::SRPIC, M>& domain,
                         BCTags                       tags) {
@@ -609,7 +609,7 @@ namespace ntt {
     }
 
     template <class M, class PG>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void FieldBoundaries(Domain<SimEngine::SRPIC, M>& domain,
                          const M&                     global_metric,
                          const Grid<M::Dim>&          global_grid,

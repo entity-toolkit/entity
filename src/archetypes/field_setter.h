@@ -27,7 +27,7 @@
 #include "arch/traits.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -35,10 +35,10 @@ namespace arch {
   using namespace ntt;
 
   template <class I, SimEngine S, class M>
-    requires metric::traits::HasD<M> &&
-             (((S == SimEngine::SRPIC) && metric::traits::HasConvert<M> &&
-               metric::traits::HasTransform_i<M>) ||
-              ((S == SimEngine::GRPIC) && metric::traits::HasConvert_i<M>)) &&
+    requires ::traits::metric::HasD<M> &&
+             (((S == SimEngine::SRPIC) && ::traits::metric::HasConvert<M> &&
+               ::traits::metric::HasTransform_i<M>) ||
+              ((S == SimEngine::GRPIC) && ::traits::metric::HasConvert_i<M>)) &&
              (((S == SimEngine::SRPIC) &&
                (::traits::fieldsetter::HasEx1<I, M::Dim> ||
                 ::traits::fieldsetter::HasEx2<I, M::Dim> ||

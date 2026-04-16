@@ -7,7 +7,7 @@
 #include "arch/directions.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
@@ -22,7 +22,7 @@ namespace ntt {
   namespace srpic {
 
     template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
     void AtmosphereParticlesIn(dir::direction_t<M::Dim>         direction,
                                Metadomain<SimEngine::SRPIC, M>& metadomain,
                                Domain<SimEngine::SRPIC, M>&     domain,
@@ -288,7 +288,7 @@ namespace ntt {
     }
 
     template <class M>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void ParticleInjector(Metadomain<SimEngine::SRPIC, M>& metadomain,
                           Domain<SimEngine::SRPIC, M>&     domain,
                           const SimulationParams&          params,

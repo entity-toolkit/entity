@@ -28,7 +28,7 @@
 #include "utils/numeric.h"
 #include "utils/param_container.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "kernels/emission/emission.hpp"
 #include "kernels/emission/traits.h"
@@ -113,9 +113,9 @@ namespace kernel::sr {
    * @tparam F Additional force
    */
   template <class M, class F, bool Atm, class E, class PUPD>
-    requires metric::traits::HasD<M> && metric::traits::HasTransformXYZ<M> &&
-             metric::traits::HasConvertXYZ<M> &&
-             metric::traits::HasTransform_i<M> && metric::traits::HasConvert_i<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransformXYZ<M> &&
+             ::traits::metric::HasConvertXYZ<M> &&
+             ::traits::metric::HasTransform_i<M> && ::traits::metric::HasConvert_i<M>
   struct Pusher_kernel {
     static constexpr auto D            = M::Dim;
     static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;

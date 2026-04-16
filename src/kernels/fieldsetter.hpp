@@ -15,14 +15,14 @@
 #include "arch/traits.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 namespace kernel {
   using namespace ntt;
 
   template <SimEngine S, class M, class F>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform<M> &&
-             metric::traits::HasTransform_i<M> && (S != SimEngine::GRPIC) &&
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform<M> &&
+             ::traits::metric::HasTransform_i<M> && (S != SimEngine::GRPIC) &&
              (::traits::fieldsetter::HasConditionalEx1<F, M::Dim> ||
               ::traits::fieldsetter::HasConditionalEx2<F, M::Dim> ||
               ::traits::fieldsetter::HasConditionalEx3<F, M::Dim> ||

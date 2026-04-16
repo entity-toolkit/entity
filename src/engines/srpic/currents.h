@@ -8,7 +8,7 @@
 #include "utils/log.h"
 #include "utils/param_container.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
@@ -20,7 +20,7 @@ namespace ntt {
   namespace srpic {
 
     template <class M, unsigned short O>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
     void CallDepositKernel(const Particles<M::Dim, M::CoordType>& species,
                            const M&                               local_metric,
                            const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
@@ -78,7 +78,7 @@ namespace ntt {
     }
 
     template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
     void CurrentsFilter(Metadomain<SimEngine::SRPIC, M>& metadomain,
                         Domain<SimEngine::SRPIC, M>&     domain,
                         const SimulationParams&          params) {

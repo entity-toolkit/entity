@@ -20,7 +20,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/domain/grid.h"
 
@@ -32,7 +32,7 @@
 namespace ntt {
 
   template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M>
   struct Mesh : public Grid<M::Dim> {
     static constexpr Dimension D { M::Dim };
     using base_t = Grid<D>;

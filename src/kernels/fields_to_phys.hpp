@@ -27,13 +27,13 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 namespace kernel {
   using namespace ntt;
 
   template <class M, int N1, int N2>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform<M> &&
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform<M> &&
              (N1 >= 3) && (N2 >= 3)
   class FieldsToPhys_kernel {
     static constexpr auto D = M::Dim;

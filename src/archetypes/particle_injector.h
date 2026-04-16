@@ -22,7 +22,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -54,7 +54,7 @@ namespace arch {
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
   template <SimEngine S, class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M>
   auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box)
     -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
     if (not domain.mesh.Intersects(box)) {
@@ -109,7 +109,7 @@ namespace arch {
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
   template <SimEngine S, class M>
-    requires metric::traits::HasD<M>
+    requires ::traits::metric::HasD<M>
   auto ComputeNumInject(const SimulationParams&     params,
                         const Domain<S, M>&         domain,
                         real_t                      number_density,
@@ -201,7 +201,7 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    */
   template <SimEngine S, class M, class ED1, class ED2>
-    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
+    requires ::traits::metric::HasD<M> && traits::energydist::IsValid<ED1> &&
              traits::energydist::IsValid<ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
@@ -314,7 +314,7 @@ namespace arch {
    * @tparam SD Spatial distribution type
    */
   template <SimEngine S, class M, class ED1, class ED2, class SD>
-    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
+    requires ::traits::metric::HasD<M> && traits::energydist::IsValid<ED1> &&
              traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,

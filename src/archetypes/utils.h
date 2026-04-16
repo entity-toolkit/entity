@@ -130,7 +130,7 @@ namespace arch {
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
   template <SimEngine S, class M, FldsID::type F, int N>
-    requires metric::traits::HasD<M>
+    requires ::traits::metric::HasD<M>
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -178,7 +178,7 @@ namespace arch {
   }
 
   template <SimEngine S, class M, class F>
-    requires ::metric::traits::HasD<M>
+    requires ::traits::metric::HasD<M>
   inline void UpdateEMFields(const SimulationParams& params,
                              Domain<S, M>&           domain,
                              const F&                fieldsetter) {

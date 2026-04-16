@@ -47,7 +47,7 @@
 #include "utils/numeric.h"
 #include "utils/reporter.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -63,7 +63,7 @@
 namespace ntt {
 
   template <SimEngine S, class M>
-    requires metric::traits::HasD<M>
+    requires ::traits::metric::HasD<M>
   struct Domain {
     static constexpr Dimension D { M::Dim };
 

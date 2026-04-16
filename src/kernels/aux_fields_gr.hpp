@@ -19,7 +19,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -29,9 +29,9 @@ namespace kernel::gr {
    * @tparam M Metric
    */
   template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
+             ::traits::metric::HasSqrtDetHTilde<M> && ::traits::metric::HasH_ij<M> &&
+             ::traits::metric::HasAlpha<M> && ::traits::metric::HasBeta1<M>
   class ComputeAuxE_kernel {
     static constexpr auto D = M::Dim;
 
@@ -138,9 +138,9 @@ namespace kernel::gr {
    * @tparam M Metric
    */
   template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
+             ::traits::metric::HasSqrtDetHTilde<M> && ::traits::metric::HasH_ij<M> &&
+             ::traits::metric::HasAlpha<M> && ::traits::metric::HasBeta1<M>
   class ComputeAuxH_kernel {
     static constexpr auto D = M::Dim;
 

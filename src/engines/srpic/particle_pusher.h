@@ -9,7 +9,7 @@
 #include "utils/numeric.h"
 #include "utils/param_container.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
@@ -276,7 +276,7 @@ namespace ntt {
     }
 
     template <class M, class PG>
-      requires metric::traits::HasD<M>
+      requires ::traits::metric::HasD<M>
     void ParticlePush(Domain<SimEngine::SRPIC, M>& domain,
                       const Grid<M::Dim>&          global_grid,
                       const M&                     global_metric,

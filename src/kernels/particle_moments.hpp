@@ -18,7 +18,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include <vector>
 
@@ -37,9 +37,9 @@ namespace kernel {
   }
 
   template <SimEngine S, class M, FldsID::type F, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
+             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
+              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>))
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 

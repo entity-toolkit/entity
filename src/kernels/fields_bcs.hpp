@@ -23,7 +23,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 namespace kernel::bc {
   using namespace ntt;
@@ -39,9 +39,9 @@ namespace kernel::bc {
    * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
   template <SimEngine S, class I, class M, in o>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M> &&
-             metric::traits::HasConvert<M> &&
-             (((S == SimEngine::SRPIC) && metric::traits::HasTransform_i<M>) ||
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M> &&
+             ::traits::metric::HasConvert<M> &&
+             (((S == SimEngine::SRPIC) && ::traits::metric::HasTransform_i<M>) ||
               (S == SimEngine::GRPIC)) &&
              (((S == SimEngine::SRPIC) &&
                (::traits::fieldsetter::HasEx1<I, M::Dim> ||
@@ -900,8 +900,8 @@ namespace kernel::bc {
   };
 
   template <class I, class M, bool P, in O>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform_i<M> &&
-             metric::traits::HasConvert<M> &&
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform_i<M> &&
+             ::traits::metric::HasConvert<M> &&
              (static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim)) &&
              (::traits::fieldsetter::HasEx1<I, M::Dim> ||
               ::traits::fieldsetter::HasEx2<I, M::Dim> ||
@@ -1273,7 +1273,7 @@ namespace kernel::bc {
     };
 
     template <class M, idx_t i>
-      requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M>
     struct AbsorbCurrents_kernel {
       static_assert(i <= static_cast<unsigned short>(M::Dim),
                     "Invalid component index");

@@ -7,7 +7,7 @@
 #include "arch/directions.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
@@ -37,7 +37,7 @@ namespace ntt {
      * in this case the function returns { -1, in::x1, xg_min, xg_max }
      */
     template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M>
     auto GetAtmosphereExtent(
       dir::direction_t<M::Dim> direction,
       const M&                 global_metric,

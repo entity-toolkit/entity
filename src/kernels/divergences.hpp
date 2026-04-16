@@ -17,14 +17,14 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 namespace kernel {
   using namespace ntt;
 
   // @TODO: take care of boundaries
   template <class M, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M>
+    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M>
   class ComputeDivergence_kernel {
     const M metric;
 

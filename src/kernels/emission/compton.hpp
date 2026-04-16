@@ -4,7 +4,7 @@
 #include "enums.h"
 #include "global.h"
 
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/parameters/parameters.h"
 #include "kernels/emission/traits.h"
@@ -19,8 +19,8 @@ namespace kernel {
     using namespace ntt;
 
     template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M> &&
-               metric::traits::HasPrtlDim<M>
+      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M> &&
+               ::traits::metric::HasPrtlDim<M>
     struct Compton {
       struct Payload {
         real_t photon_energy;
