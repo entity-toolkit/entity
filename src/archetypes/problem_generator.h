@@ -30,8 +30,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine S, class M>
-    requires ::traits::metric::HasD<M> and ::traits::metric::HasCoordType<M>
+  template <SimEngine S, MetricClass M>
   struct ProblemGenerator {
     static constexpr Dimension D { M::Dim };
     static constexpr Coord     C { M::CoordType };

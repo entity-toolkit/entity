@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -79,7 +80,7 @@ namespace ntt {
   }
 
   template <Dimension D, Coord C>
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void Particles<D, C>::OutputWrite(adios2::IO&     io,
                                     adios2::Engine& writer,
                                     npart_t         prtl_stride,

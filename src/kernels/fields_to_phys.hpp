@@ -31,9 +31,8 @@
 namespace kernel {
   using namespace ntt;
 
-  template <class M, int N1, int N2>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform<M> &&
-             (N1 >= 3) && (N2 >= 3)
+  template <MetricClass M, int N1, int N2>
+    requires(N1 >= 3) && (N2 >= 3)
   class FieldsToPhys_kernel {
     static constexpr auto D = M::Dim;
 

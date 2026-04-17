@@ -27,11 +27,7 @@ namespace kernel::gr {
    * @brief Kernel for computing E
    * @tparam M Metric
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
-             ::traits::metric::HasSqrtDetHTilde<M> &&
-             ::traits::metric::HasH_ij<M> && ::traits::metric::HasAlpha<M> &&
-             ::traits::metric::HasBeta1<M>
+  template <GRMetricClass M>
   class ComputeAuxE_kernel {
     static constexpr auto D = M::Dim;
 
@@ -137,11 +133,7 @@ namespace kernel::gr {
    * @brief Kernel for computing H
    * @tparam M Metric
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
-             ::traits::metric::HasSqrtDetHTilde<M> &&
-             ::traits::metric::HasH_ij<M> && ::traits::metric::HasAlpha<M> &&
-             ::traits::metric::HasBeta1<M>
+  template <GRMetricClass M>
   class ComputeAuxH_kernel {
     static constexpr auto D = M::Dim;
 

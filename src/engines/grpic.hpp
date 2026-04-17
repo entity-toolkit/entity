@@ -66,7 +66,7 @@ namespace ntt {
     curr
   };
 
-  template <GRMetric M>
+  template <GRMetricClass M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;

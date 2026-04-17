@@ -15,6 +15,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
+
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
@@ -41,7 +43,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   inline void InjectUniformMaxwellians(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -91,7 +93,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   inline void InjectUniformMaxwellian(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -129,8 +131,7 @@ namespace arch {
    * @tparam F Field ID for the moment to compute (e.g. FldsID::N, FldsID::T, etc.)
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
-  template <SimEngine S, class M, FldsID::type F, int N>
-    requires ::traits::metric::HasD<M>
+  template <SimEngine S, MetricClass M, FldsID::type F, int N>
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -177,8 +178,7 @@ namespace arch {
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
 
-  template <SimEngine S, class M, class F>
-    requires ::traits::metric::HasD<M>
+  template <SimEngine S, MetricClass M, class F>
   inline void UpdateEMFields(const SimulationParams& params,
                              Domain<S, M>&           domain,
                              const F&                fieldsetter) {

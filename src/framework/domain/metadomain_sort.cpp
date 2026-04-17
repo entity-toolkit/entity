@@ -1,5 +1,7 @@
 #include "enums.h"
 
+#include "traits/metric.h"
+
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
@@ -8,8 +10,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   void Metadomain<S, M>::SortParticles(simtime_t,
                                        timestep_t step,
                                        const SimulationParams&,

@@ -94,14 +94,14 @@ namespace user {
   }
 
   template <>
-  Inline auto DipoleField<Dim::_2D>::radius(
-    const coord_t<Dim::_2D>& x) const -> real_t {
+  Inline auto DipoleField<Dim::_2D>::radius(const coord_t<Dim::_2D>& x) const
+    -> real_t {
     return math::sqrt(SQR(x[0]) + SQR(x[1]));
   }
 
   template <>
-  Inline auto DipoleField<Dim::_3D>::radius(
-    const coord_t<Dim::_3D>& x) const -> real_t {
+  Inline auto DipoleField<Dim::_3D>::radius(const coord_t<Dim::_3D>& x) const
+    -> real_t {
     return math::sqrt(SQR(x[0]) + SQR(x[1]) + SQR(x[2]));
   }
 

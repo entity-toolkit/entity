@@ -22,9 +22,8 @@
 
 namespace pbar {
 
-  auto normalize_duration_fmt(
-    duration_t         t,
-    const std::string& u) -> std::pair<duration_t, std::string> {
+  auto normalize_duration_fmt(duration_t t, const std::string& u)
+    -> std::pair<duration_t, std::string> {
     const std::vector<std::pair<std::string, duration_t>> units {
       {  "µs",   1e0 },
       {  "ms",   1e3 },

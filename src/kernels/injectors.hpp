@@ -79,11 +79,8 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, class M, class ED1, class ED2>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>)) &&
-             arch::traits::energydist::IsValid<ED1> &&
+  template <SimEngine S, MetricClass M, class ED1, class ED2>
+    requires arch::traits::energydist::IsValid<ED1> &&
              arch::traits::energydist::IsValid<ED2>
   struct UniformInjector_kernel {
 
@@ -294,10 +291,7 @@ namespace kernel {
     }
   }; // struct UniformInjector_kernel
 
-  template <SimEngine S, class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>))
+  template <SimEngine S, MetricClass M>
   struct GlobalInjector_kernel {
     static constexpr auto D = M::Dim;
 
@@ -527,12 +521,8 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine S, class M, class ED1, class ED2, class SD>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M> &&
-             ::traits::metric::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>)) &&
-             arch::traits::energydist::IsValid<ED1> &&
+  template <SimEngine S, MetricClass M, class ED1, class ED2, class SD>
+    requires arch::traits::energydist::IsValid<ED1> &&
              arch::traits::energydist::IsValid<ED2> &&
              arch::traits::spatialdist::IsValid<SD>
   struct NonUniformInjector_kernel {

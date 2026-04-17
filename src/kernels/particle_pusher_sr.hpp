@@ -100,7 +100,7 @@ namespace kernel::sr {
     array_t<short*>    tag;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine S, SRMetricClass M>
   struct NoCustomPrtlUpdate_t {
     template <class PusherKernel>
     Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {
@@ -111,11 +111,7 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <class M, class F, bool Atm, class E, class PUPD>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransformXYZ<M> &&
-             ::traits::metric::HasConvertXYZ<M> &&
-             ::traits::metric::HasTransform_i<M> &&
-             ::traits::metric::HasConvert_i<M>
+  template <SRMetricClass M, class F, bool Atm, class E, class PUPD>
   struct Pusher_kernel {
     static constexpr auto D            = M::Dim;
     static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;

@@ -298,7 +298,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void OutputDeclare(adios2::IO&) const;
 
-    template <SimEngine S, class M>
+    template <SimEngine S, MetricClass M>
     void OutputWrite(adios2::IO&,
                      adios2::Engine&,
                      npart_t,

@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -12,8 +13,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
                                               const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
@@ -63,8 +63,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
                                          timestep_t              current_step,
                                          timestep_t              finished_step,
@@ -110,8 +109,7 @@ namespace ntt {
     return true;
   }
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
                                                 const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);

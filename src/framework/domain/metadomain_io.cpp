@@ -2,6 +2,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
@@ -29,8 +30,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
                                     const SimulationParams& params) {
     raise::ErrorIf(
@@ -104,7 +104,7 @@ namespace ntt {
     g_writer.writeAttrs(params);
   }
 
-  template <SimEngine S, class M, FldsID::type F>
+  template <SimEngine S, MetricClass M, FldsID::type F>
   void ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
@@ -180,7 +180,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void ComputeVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               ndfield_t<M::Dim, 6>& EM,
                               unsigned short        buff_idx,
@@ -244,7 +244,7 @@ namespace ntt {
   }
 
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               array_t<real_t*>&     aphi_r,
                               unsigned short        buff_idx,
@@ -257,8 +257,7 @@ namespace ntt {
       });
   }
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   void Metadomain<S, M>::CommunicateVectorPotential(unsigned short buff_idx) {
     if constexpr (M::Dim == Dim::_2D) {
       auto       local_domain = subdomain_ptr(l_subdomain_indices()[0]);
@@ -312,8 +311,7 @@ namespace ntt {
   }
 #endif
 
-  template <SimEngine S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine S, MetricClass M>
   auto Metadomain<S, M>::Write(
     const SimulationParams&                  params,
     timestep_t                               current_step,

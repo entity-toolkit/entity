@@ -18,9 +18,7 @@ namespace kernel {
   namespace emission {
     using namespace ntt;
 
-    template <class M>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M> &&
-               ::traits::metric::HasPrtlDim<M>
+    template <MetricClass M>
     struct Compton {
       struct Payload {
         real_t photon_energy;

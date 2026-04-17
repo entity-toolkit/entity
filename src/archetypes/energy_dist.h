@@ -33,8 +33,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine S, class M>
-    requires ::traits::metric::HasD<M>
+  template <SimEngine S, MetricClass M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
 
@@ -44,7 +43,7 @@ namespace arch {
     const M metric;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   struct Cold : public EnergyDistribution<S, M> {
     Cold(const M& metric) : EnergyDistribution<S, M> { metric } {}
 
@@ -56,7 +55,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   struct Powerlaw : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 
@@ -199,7 +198,7 @@ namespace arch {
     }
   }
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   struct Maxwellian : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 

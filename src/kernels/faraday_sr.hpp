@@ -27,9 +27,7 @@ namespace kernel::sr {
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
    * space (diagonal metric)
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasSqrtDetH<M>
+  template <SRMetricClass M>
   class Faraday_kernel {
     static constexpr auto D = M::Dim;
 

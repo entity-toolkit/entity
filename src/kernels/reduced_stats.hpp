@@ -21,11 +21,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine S, class M, StatsID::type F, unsigned short I = 0>
-    requires ::traits::metric::HasD<M> &&
-             (::traits::metric::HasTransform_i<M> || (I == 0)) &&
-             ::traits::metric::HasTransform<M> &&
-             ::traits::metric::HasSqrtDetH<M> && (I <= 3)
+  template <SimEngine S, MetricClass M, StatsID::type F, unsigned short I = 0>
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 
@@ -399,12 +395,9 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, class M, StatsID::type P>
-    requires ::traits::metric::HasD<M> &&
-             (((S == SimEngine::SRPIC) && ::traits::metric::HasTransformXYZ<M>) ||
-              ((S == SimEngine::GRPIC) && ::traits::metric::HasTransform<M>)) &&
-             ((P == StatsID::Rho) || (P == StatsID::Charge) ||
-              (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
+  template <SimEngine S, MetricClass M, StatsID::type P>
+    requires((P == StatsID::Rho) || (P == StatsID::Charge) ||
+             (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
   class ReducedParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 

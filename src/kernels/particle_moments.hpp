@@ -35,10 +35,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, class M, FldsID::type F, unsigned short N>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && ::traits::metric::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && ::traits::metric::HasTransform<M>))
+  template <SimEngine S, MetricClass M, FldsID::type F, unsigned short N>
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 

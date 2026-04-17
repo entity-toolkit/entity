@@ -22,8 +22,7 @@ namespace kernel {
   using namespace ntt;
 
   // @TODO: take care of boundaries
-  template <class M, unsigned short N>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasSqrtDetH<M>
+  template <MetricClass M, unsigned short N>
   class ComputeDivergence_kernel {
     const M metric;
 

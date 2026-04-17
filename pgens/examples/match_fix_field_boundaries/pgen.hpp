@@ -66,9 +66,8 @@ namespace user {
      *
      * @return Pair of (value to set, whether to set it or not)
      */
-    auto FixFieldsConst(simtime_t    time,
-                        const bc_in& bc,
-                        em           comp) const -> std::pair<real_t, bool> {
+    auto FixFieldsConst(simtime_t time, const bc_in& bc, em comp) const
+      -> std::pair<real_t, bool> {
       if (bc == bc_in::Mx1) {
         const auto phase { time * omega };
         real_t     ampl { ZERO };

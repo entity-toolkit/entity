@@ -22,9 +22,8 @@
 #include <vector>
 
 namespace diag {
-  auto npart_stats(
-    npart_t npart,
-    npart_t maxnpart) -> std::vector<std::pair<npart_t, unsigned short>> {
+  auto npart_stats(npart_t npart, npart_t maxnpart)
+    -> std::vector<std::pair<npart_t, unsigned short>> {
     auto stats = std::vector<std::pair<npart_t, unsigned short>>();
     const auto percentage = [](npart_t part, npart_t maxpart) -> unsigned short {
       return static_cast<unsigned short>(

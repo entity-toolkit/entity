@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/mpi_aliases.h"
+#include "traits/metric.h"
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
@@ -56,7 +57,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   class Engine {
 
   protected:
@@ -126,7 +127,7 @@ namespace ntt {
     }
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -174,7 +175,7 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
@@ -233,7 +234,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   void Engine<S, M>::run() {
     init();
 

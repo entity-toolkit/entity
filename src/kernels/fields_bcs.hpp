@@ -37,25 +37,20 @@ namespace kernel::bc {
    * @note If a component is not specified in the field setter, it is ignored.
    * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
-  template <SimEngine S, class I, class M, in o>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M> &&
-             ::traits::metric::HasConvert<M> &&
-             (((S == SimEngine::SRPIC) && ::traits::metric::HasTransform_i<M>) ||
-              (S == SimEngine::GRPIC)) &&
-             (((S == SimEngine::SRPIC) &&
-               (::traits::fieldsetter::HasEx1<I, M::Dim> ||
-                ::traits::fieldsetter::HasEx2<I, M::Dim> ||
-                ::traits::fieldsetter::HasEx3<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx1<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx3<I, M::Dim>)) ||
-              (((S == SimEngine::GRPIC) &&
-                (::traits::fieldsetter::HasDx1<I, M::Dim> ||
-                 ::traits::fieldsetter::HasDx2<I, M::Dim> ||
-                 ::traits::fieldsetter::HasDx3<I, M::Dim> ||
-                 ::traits::fieldsetter::HasBx1<I, M::Dim> ||
-                 ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-                 ::traits::fieldsetter::HasBx3<I, M::Dim>))))
+  template <SimEngine S, class I, MetricClass M, in o>
+    requires(
+      ((S == SimEngine::SRPIC) && (::traits::fieldsetter::HasEx1<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasEx2<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasEx3<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx1<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx2<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx3<I, M::Dim>)) ||
+      (((S == SimEngine::GRPIC) && (::traits::fieldsetter::HasDx1<I, M::Dim> ||
+                                    ::traits::fieldsetter::HasDx2<I, M::Dim> ||
+                                    ::traits::fieldsetter::HasDx3<I, M::Dim> ||
+                                    ::traits::fieldsetter::HasBx1<I, M::Dim> ||
+                                    ::traits::fieldsetter::HasBx2<I, M::Dim> ||
+                                    ::traits::fieldsetter::HasBx3<I, M::Dim>))))
   struct MatchBoundaries_kernel {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");
@@ -898,16 +893,14 @@ namespace kernel::bc {
     }
   };
 
-  template <class I, class M, bool P, in O>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform_i<M> &&
-             ::traits::metric::HasConvert<M> &&
-             (static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim)) &&
-             (::traits::fieldsetter::HasEx1<I, M::Dim> ||
-              ::traits::fieldsetter::HasEx2<I, M::Dim> ||
-              ::traits::fieldsetter::HasEx3<I, M::Dim> ||
-              ::traits::fieldsetter::HasBx1<I, M::Dim> ||
-              ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-              ::traits::fieldsetter::HasBx3<I, M::Dim>)
+  template <class I, MetricClass M, bool P, in O>
+    requires(static_cast<dim_t>(O) < static_cast<dim_t>(M::Dim)) &&
+            (::traits::fieldsetter::HasEx1<I, M::Dim> ||
+             ::traits::fieldsetter::HasEx2<I, M::Dim> ||
+             ::traits::fieldsetter::HasEx3<I, M::Dim> ||
+             ::traits::fieldsetter::HasBx1<I, M::Dim> ||
+             ::traits::fieldsetter::HasBx2<I, M::Dim> ||
+             ::traits::fieldsetter::HasBx3<I, M::Dim>)
   struct EnforcedBoundaries_kernel {
     static constexpr Dimension D = M::Dim;
 
@@ -1271,8 +1264,7 @@ namespace kernel::bc {
       }
     };
 
-    template <class M, idx_t i>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M>
+    template <MetricClass M, idx_t i>
     struct AbsorbCurrents_kernel {
       static_assert(i <= static_cast<unsigned short>(M::Dim),
                     "Invalid component index");

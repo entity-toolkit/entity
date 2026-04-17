@@ -52,8 +52,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine S, class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M>
+  template <SimEngine S, MetricClass M>
   auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box)
     -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
     if (not domain.mesh.Intersects(box)) {
@@ -107,8 +106,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine S, class M>
-    requires ::traits::metric::HasD<M>
+  template <SimEngine S, MetricClass M>
   auto ComputeNumInject(const SimulationParams&     params,
                         const Domain<S, M>&         domain,
                         real_t                      number_density,
@@ -199,9 +197,8 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine S, class M, class ED1, class ED2>
-    requires ::traits::metric::HasD<M> && traits::energydist::IsValid<ED1> &&
-             traits::energydist::IsValid<ED2>
+  template <SimEngine S, MetricClass M, class ED1, class ED2>
+    requires traits::energydist::IsValid<ED1> && traits::energydist::IsValid<ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -275,7 +272,7 @@ namespace arch {
    * @param data Map containing all the coordinates/velocities of particles to inject
    * @param use_weights Boolean toggle to use weights or not
    */
-  template <SimEngine S, class M>
+  template <SimEngine S, MetricClass M>
   inline void InjectGlobally(const Metadomain<S, M>& global_domain,
                              Domain<S, M>&           local_domain,
                              spidx_t                 spidx,
@@ -312,8 +309,8 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine S, class M, class ED1, class ED2, class SD>
-    requires ::traits::metric::HasD<M> && traits::energydist::IsValid<ED1> &&
+  template <SimEngine S, MetricClass M, class ED1, class ED2, class SD>
+    requires traits::energydist::IsValid<ED1> &&
              traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,

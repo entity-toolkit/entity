@@ -26,10 +26,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine S, class M, bool T>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert_i<M> &&
-             (((S == SimEngine::SRPIC) && ::traits::metric::HasTransformXYZ<M>) ||
-              ((S == SimEngine::GRPIC) && ::traits::metric::HasTransform<M>))
+  template <SimEngine S, MetricClass M, bool T>
   class PrtlToPhys_kernel {
     static constexpr Dimension D = M::Dim;
 

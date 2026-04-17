@@ -28,9 +28,7 @@ namespace kernel::sr {
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space
    * @tparam M Metric
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasSqrtDetH<M> && ::traits::metric::HasPolarArea<M>
+  template <SRMetricClass M>
   class Ampere_kernel {
     static constexpr auto D = M::Dim;
 
@@ -122,9 +120,7 @@ namespace kernel::sr {
   /**
    * @brief Add the currents to the E field with the appropriate conversion
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasSqrtDetH<M> && ::traits::metric::HasPolarArea<M>
+  template <SRMetricClass M>
   class CurrentsAmpere_kernel {
     static constexpr auto     D     = M::Dim;
     static constexpr ncells_t i2min = N_GHOSTS;

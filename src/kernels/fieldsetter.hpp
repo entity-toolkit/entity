@@ -19,15 +19,13 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine S, class M, class F>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasTransform<M> &&
-             ::traits::metric::HasTransform_i<M> && (S != SimEngine::GRPIC) &&
-             (::traits::fieldsetter::HasConditionalEx1<F, M::Dim> ||
-              ::traits::fieldsetter::HasConditionalEx2<F, M::Dim> ||
-              ::traits::fieldsetter::HasConditionalEx3<F, M::Dim> ||
-              ::traits::fieldsetter::HasConditionalBx1<F, M::Dim> ||
-              ::traits::fieldsetter::HasConditionalBx2<F, M::Dim> ||
-              ::traits::fieldsetter::HasConditionalBx3<F, M::Dim>)
+  template <SimEngine S, SRMetricClass M, class F>
+    requires(::traits::fieldsetter::HasConditionalEx1<F, M::Dim> ||
+             ::traits::fieldsetter::HasConditionalEx2<F, M::Dim> ||
+             ::traits::fieldsetter::HasConditionalEx3<F, M::Dim> ||
+             ::traits::fieldsetter::HasConditionalBx1<F, M::Dim> ||
+             ::traits::fieldsetter::HasConditionalBx2<F, M::Dim> ||
+             ::traits::fieldsetter::HasConditionalBx3<F, M::Dim>)
   struct CustomFieldsetter {
     M                    metric;
     ndfield_t<M::Dim, 6> fields;

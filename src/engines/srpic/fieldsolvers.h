@@ -20,7 +20,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M>
+    template <SRMetricClass M>
     void Faraday(Domain<SimEngine::SRPIC, M>& domain,
                  const prm::Parameters&       engine_params,
                  const SimulationParams&      params,
@@ -85,7 +85,7 @@ namespace ntt {
       }
     }
 
-    template <class M>
+    template <SRMetricClass M>
     void Ampere(Domain<SimEngine::SRPIC, M>& domain,
                 const prm::Parameters&       engine_params,
                 const SimulationParams&      params,
@@ -126,7 +126,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
+    template <SRMetricClass M, class PG>
     void CurrentsAmpere(Domain<SimEngine::SRPIC, M>& domain,
                         const prm::Parameters&       engine_params,
                         const SimulationParams&      params,

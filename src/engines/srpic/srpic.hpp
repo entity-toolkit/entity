@@ -37,7 +37,7 @@
 
 namespace ntt {
 
-  template <SRMetric M>
+  template <SRMetricClass M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;

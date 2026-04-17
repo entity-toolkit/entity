@@ -35,13 +35,12 @@ namespace ntt {
      *
      * in this case the function returns { -1, in::x1, xg_min, xg_max }
      */
-    template <class M>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasConvert<M>
-    auto GetAtmosphereExtent(
-      dir::direction_t<M::Dim> direction,
-      const M&                 global_metric,
-      const Grid<M::Dim>&      global_grid,
-      const SimulationParams& params) -> std::tuple<short, in, real_t, real_t> {
+    template <SRMetricClass M>
+    auto GetAtmosphereExtent(dir::direction_t<M::Dim> direction,
+                             const M&                 global_metric,
+                             const Grid<M::Dim>&      global_grid,
+                             const SimulationParams&  params)
+      -> std::tuple<short, in, real_t, real_t> {
       const auto sign     = direction.get_sign();
       const auto dim      = direction.get_dim();
       const auto min_buff = params.template get<unsigned short>(
@@ -92,9 +91,9 @@ namespace ntt {
       return { sign, dim, xg_min, xg_max };
     }
 
-    template <class M>
-    auto RangeWithAxisBCs(
-      const Domain<SimEngine::SRPIC, M>& domain) -> range_t<M::Dim> {
+    template <SRMetricClass M>
+    auto RangeWithAxisBCs(const Domain<SimEngine::SRPIC, M>& domain)
+      -> range_t<M::Dim> {
       auto range = domain.mesh.rangeActiveCells();
       if constexpr (M::CoordType != Coord::Cartesian) {
         /**

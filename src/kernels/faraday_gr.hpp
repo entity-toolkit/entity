@@ -28,9 +28,7 @@ namespace kernel::gr {
    * @brief `d(Bin)^i / dt = -curl E_j`, `Bout += dt * d(Bin)/dt`
    * @tparam M Metric
    */
-  template <class M>
-    requires ::traits::metric::HasD<M> && ::traits::metric::HasH_ij<M> &&
-             ::traits::metric::HasSqrtDetH<M>
+  template <GRMetricClass M>
   class Faraday_kernel {
     static constexpr auto D = M::Dim;
 

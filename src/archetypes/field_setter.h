@@ -33,25 +33,20 @@
 namespace arch {
   using namespace ntt;
 
-  template <class I, SimEngine S, class M>
-    requires ::traits::metric::HasD<M> &&
-             (((S == SimEngine::SRPIC) && ::traits::metric::HasConvert<M> &&
-               ::traits::metric::HasTransform_i<M>) ||
-              ((S == SimEngine::GRPIC) && ::traits::metric::HasConvert_i<M>)) &&
-             (((S == SimEngine::SRPIC) &&
-               (::traits::fieldsetter::HasEx1<I, M::Dim> ||
-                ::traits::fieldsetter::HasEx2<I, M::Dim> ||
-                ::traits::fieldsetter::HasEx3<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx1<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx2<I, M::Dim> ||
-                ::traits::fieldsetter::HasBx3<I, M::Dim>)) ||
-              ((S == SimEngine::GRPIC) &&
-               ((::traits::fieldsetter::HasDx1<I, M::Dim> &&
-                 ::traits::fieldsetter::HasDx2<I, M::Dim> &&
-                 ::traits::fieldsetter::HasDx3<I, M::Dim>) ||
-                (::traits::fieldsetter::HasBx1<I, M::Dim> &&
-                 ::traits::fieldsetter::HasBx2<I, M::Dim> &&
-                 ::traits::fieldsetter::HasBx3<I, M::Dim>))))
+  template <class I, SimEngine S, MetricClass M>
+    requires(
+      ((S == SimEngine::SRPIC) && (::traits::fieldsetter::HasEx1<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasEx2<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasEx3<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx1<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx2<I, M::Dim> ||
+                                   ::traits::fieldsetter::HasBx3<I, M::Dim>)) ||
+      ((S == SimEngine::GRPIC) && ((::traits::fieldsetter::HasDx1<I, M::Dim> &&
+                                    ::traits::fieldsetter::HasDx2<I, M::Dim> &&
+                                    ::traits::fieldsetter::HasDx3<I, M::Dim>) ||
+                                   (::traits::fieldsetter::HasBx1<I, M::Dim> &&
+                                    ::traits::fieldsetter::HasBx2<I, M::Dim> &&
+                                    ::traits::fieldsetter::HasBx3<I, M::Dim>))))
   class SetEMFields_kernel {
     static constexpr Dimension D = M::Dim;
 

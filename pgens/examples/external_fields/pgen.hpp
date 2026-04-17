@@ -79,10 +79,10 @@ namespace user {
      *
      * @note apply_external_fields is true for species other than 1 (i.e., 2 and 3 in this case)
      */
-    inline auto ExternalFields(
-      simtime_t           time,
-      spidx_t             sp,
-      const Domain<S, M>& domain) const -> std::pair<bool, ExtFields<M::Dim>> {
+    inline auto ExternalFields(simtime_t           time,
+                               spidx_t             sp,
+                               const Domain<S, M>& domain) const
+      -> std::pair<bool, ExtFields<M::Dim>> {
       // apply only to species 2 and 3
       return {
         sp != 1u,

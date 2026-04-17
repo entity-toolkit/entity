@@ -18,8 +18,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M, unsigned short O>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
+    template <SRMetricClass M, unsigned short O>
     void CallDepositKernel(const Particles<M::Dim, M::CoordType>& species,
                            const M&                               local_metric,
                            const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
@@ -51,7 +50,7 @@ namespace ntt {
                              dt));
     }
 
-    template <class M>
+    template <SRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::SRPIC, M>& domain,
                          const prm::Parameters&       engine_params) {
       const auto dt = engine_params.get<real_t>("dt");
@@ -76,8 +75,7 @@ namespace ntt {
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
 
-    template <class M>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
+    template <SRMetricClass M>
     void CurrentsFilter(Metadomain<SimEngine::SRPIC, M>& metadomain,
                         Domain<SimEngine::SRPIC, M>&     domain,
                         const SimulationParams&          params) {

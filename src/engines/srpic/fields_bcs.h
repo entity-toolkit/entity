@@ -17,8 +17,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M, class T, in O>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M, class T, in O>
     void CallMatchFields(ndfield_t<M::Dim, 6>&       fields,
                          const boundaries_t<FldsBC>& boundaries,
                          const T&                    match_fields,
@@ -40,8 +39,7 @@ namespace ntt {
                                                                       boundaries));
     }
 
-    template <class M, class PG>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M, class PG>
     void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::SRPIC, M>& domain,
                        const Grid<M::Dim>&          global_grid,
@@ -184,8 +182,7 @@ namespace ntt {
       }
     }
 
-    template <class M>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M>
     void AxisFieldsIn(dir::direction_t<M::Dim>     direction,
                       Domain<SimEngine::SRPIC, M>& domain,
                       BCTags                       tags) {
@@ -221,9 +218,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
-      requires ::traits::metric::HasD<M> and ::traits::metric::HasCoordType<M> and
-               ::traits::metric::HasTransform_i<M>
+    template <SRMetricClass M, class PG>
     void FixedFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::SRPIC, M>& domain,
                        const PG&                    pgen,
@@ -335,8 +330,7 @@ namespace ntt {
       }
     }
 
-    template <class M>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M>
     void PerfectConductorFieldsIn(dir::direction_t<M::Dim>     direction,
                                   Domain<SimEngine::SRPIC, M>& domain,
                                   BCTags                       tags) {
@@ -458,7 +452,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
+    template <SRMetricClass M, class PG>
     void AtmosphereFieldsIn(dir::direction_t<M::Dim>     direction,
                             Domain<SimEngine::SRPIC, M>& domain,
                             const M&                     global_metric,
@@ -596,8 +590,7 @@ namespace ntt {
       }
     }
 
-    template <class M>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M>
     void CustomFieldsIn(dir::direction_t<M::Dim>     direction,
                         Domain<SimEngine::SRPIC, M>& domain,
                         BCTags                       tags) {
@@ -607,8 +600,7 @@ namespace ntt {
       raise::Error("Custom boundaries not implemented", HERE);
     }
 
-    template <class M, class PG>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M, class PG>
     void FieldBoundaries(Domain<SimEngine::SRPIC, M>& domain,
                          const M&                     global_metric,
                          const Grid<M::Dim>&          global_grid,

@@ -20,8 +20,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M>
-      requires ::traits::metric::HasD<M> && ::traits::metric::HasCoordType<M>
+    template <SRMetricClass M>
     void AtmosphereParticlesIn(dir::direction_t<M::Dim>         direction,
                                Metadomain<SimEngine::SRPIC, M>& metadomain,
                                Domain<SimEngine::SRPIC, M>&     domain,
@@ -286,8 +285,7 @@ namespace ntt {
       return;
     }
 
-    template <class M>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M>
     void ParticleInjector(Metadomain<SimEngine::SRPIC, M>& metadomain,
                           Domain<SimEngine::SRPIC, M>&     domain,
                           const SimulationParams&          params,

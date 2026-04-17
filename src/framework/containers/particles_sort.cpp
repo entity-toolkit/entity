@@ -237,8 +237,8 @@ namespace ntt {
   }
 
 #define PARTICLES_SORT(D, C)                                                   \
-  template auto Particles<D, C>::NpartsPerTagAndOffsets()                      \
-    const -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;               \
+  template auto Particles<D, C>::NpartsPerTagAndOffsets() const                \
+    -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;                     \
   template void Particles<D, C>::RemoveDead();                                 \
   template void Particles<D, C>::SortSpatially(const Grid<D>&);
 

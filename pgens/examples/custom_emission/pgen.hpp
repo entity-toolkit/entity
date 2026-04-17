@@ -187,9 +187,8 @@ namespace user {
       static_assert(kernel::traits::emission::IsValid<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
     }
 
-    inline auto EmissionPolicy(simtime_t,
-                               spidx_t,
-                               Domain<S, M>& domain) const -> RandomEmission<M> {
+    inline auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
+      -> RandomEmission<M> {
       return RandomEmission<M> {
         domain.random_pool(),      emission_probability,
         domain.species[1].npart(), domain.species[1].i1,

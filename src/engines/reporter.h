@@ -23,8 +23,8 @@ namespace ntt {
                               unsigned int) -> std::string;
 
   template <class PG, class Dom>
-  inline auto ReportPgenConfig(const PG&          pgen,
-                               const std::string& pgen_name) -> std::string {
+  inline auto ReportPgenConfig(const PG& pgen, const std::string& pgen_name)
+    -> std::string {
     std::string report  = "";
     report             += "\n";
     reporter::AddCategory(report, 4, "Problem generator");

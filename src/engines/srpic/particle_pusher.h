@@ -24,7 +24,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M, class F, class PG, bool Atm>
+    template <SRMetricClass M, class F, class PG, bool Atm>
     void CallPusher_WithExternalFieldFlag(
       Domain<SimEngine::SRPIC, M>&    domain,
       const SimulationParams&         params,
@@ -197,7 +197,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG, bool Atm>
+    template <SRMetricClass M, class PG, bool Atm>
     void CallPusher_WithAtmFlag(Domain<SimEngine::SRPIC, M>&    domain,
                                 const SimulationParams&         params,
                                 const kernel::sr::PusherParams& pusher_params,
@@ -240,7 +240,7 @@ namespace ntt {
         kernel::sr::NoField_t {});
     }
 
-    template <class M, class PG>
+    template <SRMetricClass M, class PG>
     void CallPusher(Domain<SimEngine::SRPIC, M>&    domain,
                     const SimulationParams&         params,
                     const kernel::sr::PusherParams& pusher_params,
@@ -274,8 +274,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
-      requires ::traits::metric::HasD<M>
+    template <SRMetricClass M, class PG>
     void ParticlePush(Domain<SimEngine::SRPIC, M>& domain,
                       const Grid<M::Dim>&          global_grid,
                       const M&                     global_metric,

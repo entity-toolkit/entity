@@ -19,13 +19,13 @@ namespace ntt {
 
   template <>
   struct EngineSelector<SimEngine::SRPIC> {
-    template <class M>
+    template <SRMetricClass M>
     using type = SRPICEngine<M>;
   };
 
   template <>
   struct EngineSelector<SimEngine::GRPIC> {
-    template <class M>
+    template <GRMetricClass M>
     using type = GRPICEngine<M>;
   };
 } // namespace ntt
