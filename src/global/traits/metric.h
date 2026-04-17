@@ -3,6 +3,7 @@
  * @brief Defines a set of traits to check if a metric class satisfies certain conditions
  * @implements
  *   - HasD<> - checks if metric has Dim static member
+ *   - HasPrtlDim<> - checks if metric has PrtlDim static member
  *   - HasCoordType<> - checks if metric has CoordType static member
  *   - HasH_ij<> - checks if metric has h_ij method
  *   - HasHij<> - checks if metric has hij method
@@ -20,6 +21,10 @@
  *   - HasAlpha<> - checks if metric has alpha method
  *   - HasBeta1<> - checks if metric has beta1 method
  *   - HasMetricDerivatives<> - checks if metric has metric derivatives methods
+ *   - CurvilinearMetric<> - checks if metric is in curvilinear coordinates
+ *   - ::SRMetricClass<> - checks if metric is a special-relativistic metric
+ *   - ::GRMetricClass<> - checks if metric is a general-relativistic metric
+ *   - ::MetricClass<> - checks if metric is a valid metric
  * @namespaces:
  *   - ::traits::metric::
  */

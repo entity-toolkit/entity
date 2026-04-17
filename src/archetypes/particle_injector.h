@@ -19,6 +19,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/archetypes.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -197,8 +198,7 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine S, MetricClass M, class ED1, class ED2>
-    requires traits::energydist::IsValid<ED1> && traits::energydist::IsValid<ED2>
+  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -309,9 +309,7 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine S, MetricClass M, class ED1, class ED2, class SD>
-    requires traits::energydist::IsValid<ED1> &&
-             traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
+  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,

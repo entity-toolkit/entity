@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/archetypes.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -79,9 +80,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, MetricClass M, class ED1, class ED2>
-    requires arch::traits::energydist::IsValid<ED1> &&
-             arch::traits::energydist::IsValid<ED2>
+  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
   struct UniformInjector_kernel {
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
@@ -521,10 +520,7 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine S, MetricClass M, class ED1, class ED2, class SD>
-    requires arch::traits::energydist::IsValid<ED1> &&
-             arch::traits::energydist::IsValid<ED2> &&
-             arch::traits::spatialdist::IsValid<SD>
+  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
   struct NonUniformInjector_kernel {
 
     const real_t ppc0;

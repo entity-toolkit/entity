@@ -2,8 +2,6 @@
  * @file archetypes/traits.h
  * @brief Defines a set of traits to check if archetype classes satisfy certain conditions
  * @implements
- *   - arch::traits::energydist::IsValid<> - checks if energy distribution class has required operator()
- *   - arch::traits::spatialdist::IsValid<> - checks if spatial distribution class has required operator()
  *   - arch::traits::pgen::check_compatibility<> - checks if problem generator is compatible with given enums
  *   - arch::traits::pgen::compatible_with<> - defines compatible enums for problem generator
  *   - arch::traits::pgen::HasD<> - checks if problem generator has Dim static member
@@ -32,26 +30,6 @@
 
 namespace arch {
   namespace traits {
-
-    namespace energydist {
-
-      template <class ED>
-      concept IsValid = requires(const ED&             edist,
-                                 const coord_t<ED::D>& x_Ph,
-                                 vec_t<Dim::_3D>&      v) {
-        { edist(x_Ph, v) } -> std::same_as<void>;
-      };
-
-    } // namespace energydist
-
-    namespace spatialdist {
-
-      template <class SD>
-      concept IsValid = requires(const SD& sdist, const coord_t<SD::D>& x_Ph) {
-        { sdist(x_Ph) } -> std::convertible_to<real_t>;
-      };
-
-    } // namespace spatialdist
 
     namespace pgen {
 
