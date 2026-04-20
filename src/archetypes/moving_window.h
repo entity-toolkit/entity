@@ -139,7 +139,7 @@ namespace arch {
 
    */
   template <SimEngine::type S, class M, in o>
-  Inline void MoveWindow(Domain<S, M>& domain, 
+  Inline void MoveWindow(Domain<S, M>& domain, Metadomain<S, M>& global_domain, 
                          const int window_shift) {
     
     if constexpr (M::CoordType != Coord::Cart) {
@@ -281,6 +281,14 @@ namespace arch {
           raise::Error("Invalid dimension", HERE);
         }
       }
+
+      // synch ghost zones after moving the window
+      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+      // communicate particles after moving
+      global_domain.CommunicateParticles(domain);
+
+      // ToDo: Update metric
+
     }
   }
 } // namespace arch
