@@ -639,7 +639,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "MatchBoundaries",
               CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              kernel::bc::MatchBoundaries_kernel<S, M, decltype(m_pgen.init_flds), in::x1>(
                 domain.fields.em,
                 m_pgen.init_flds,
                 domain.mesh.metric,
@@ -650,7 +650,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "MatchBoundaries",
               CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              kernel::bc::MatchBoundaries_kernel<S, M, decltype(m_pgen.init_flds), in::x1>(
                 domain.fields.em0,
                 m_pgen.init_flds,
                 domain.mesh.metric,

@@ -30,7 +30,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "MatchFields",
         CreateRangePolicy<M::Dim>(range_min, range_max),
-        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, T, M, O>(fields,
+        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, M, T, O>(fields,
                                                                       match_fields,
                                                                       metric,
                                                                       xg_edge,
@@ -511,7 +511,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "AtmosphereBCFields",
               range,
-              kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x1>(
+              kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x1>(
                 domain.fields.em,
                 atm_fields,
                 domain.mesh.metric,
@@ -521,7 +521,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "AtmosphereBCFields",
               range,
-              kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x1>(
+              kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x1>(
                 domain.fields.em,
                 atm_fields,
                 domain.mesh.metric,
@@ -534,7 +534,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x2>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x2>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -544,7 +544,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x2>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x2>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -560,7 +560,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x3>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x3>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -570,7 +570,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x3>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x3>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,

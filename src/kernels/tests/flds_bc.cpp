@@ -99,7 +99,7 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
   Kokkos::parallel_for(
     "MatchBoundaries_kernel",
     range,
-    MatchBoundaries_kernel<SimEngine::SRPIC, decltype(fset), decltype(metric), in::x1>(
+    MatchBoundaries_kernel<SimEngine::SRPIC, decltype(metric), decltype(fset), in::x1>(
       flds,
       fset,
       metric,

@@ -38,7 +38,7 @@ auto main(int argc, char* argv[]) -> int {
     ndfield_t<Dim::_1D, 6>   EM { "EM", nx1 + 2 * N_GHOSTS };
     Minkowski<Dim::_1D>      metric { { nx1 }, { { -2.0, 2.0 } } };
     ConstantFiller<Dim::_1D> finit { 123.0 };
-    SetEMFields_kernel<ConstantFiller<Dim::_1D>, SimEngine::SRPIC, Minkowski<Dim::_1D>>
+    SetEMFields_kernel<SimEngine::SRPIC, Minkowski<Dim::_1D>, ConstantFiller<Dim::_1D>>
       finitializer { EM, finit, metric };
     Kokkos::parallel_for(
       "InitFields",

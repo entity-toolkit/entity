@@ -18,10 +18,10 @@
 #include "traits/metric.h"
 
 #include "archetypes/energy_dist.h"
+#include "archetypes/field_setter.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/fieldsetter.hpp"
 #include "kernels/particle_moments.hpp"
 
 #include <utility>
@@ -184,12 +184,13 @@ namespace arch {
                              const F&                fieldsetter) {
     if constexpr (S == SimEngine::SRPIC) {
       Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
-      Kokkos::parallel_for("UpdateEMFields",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::CustomFieldsetter<S, M, F>(domain.mesh.metric,
-                                                              domain.fields.em,
-                                                              domain.fields.bckp,
-                                                              fieldsetter));
+      Kokkos::parallel_for(
+        "UpdateEMFields",
+        domain.mesh.rangeActiveCells(),
+        arch::CustomSetEMFields_kernel<S, M, F>(domain.mesh.metric,
+                                                domain.fields.em,
+                                                domain.fields.bckp,
+                                                fieldsetter));
       // comm here
     } else {
       raise::Error("Custom fieldsetter is only implemented for SRPIC", HERE);

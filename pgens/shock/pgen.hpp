@@ -258,7 +258,7 @@ namespace user {
 
       Kokkos::parallel_for("ResetFields",
                            CreateRangePolicy<M::Dim>(x_min, x_max),
-                           arch::SetEMFields_kernel<decltype(init_flds), S, M> {
+                           arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });

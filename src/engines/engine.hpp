@@ -144,7 +144,7 @@ namespace ntt {
           Kokkos::parallel_for(
             "InitFields",
             loc_dom.mesh.rangeActiveCells(),
-            arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
+            arch::SetEMFields_kernel<S, M, decltype(m_pgen.init_flds)> {
               loc_dom.fields.em,
               m_pgen.init_flds,
               loc_dom.mesh.metric });
