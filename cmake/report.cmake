@@ -1,13 +1,25 @@
 if(${PGEN_FOUND})
-  printchoices(
-    "Problem generator"
-    "pgen"
-    "${problem_generators}"
-    ${PGEN}
-    ""
-    "${Blue}"
-    PGEN_REPORT
-    0)
+  if(${single_pgen_mode})
+    printchoices(
+      "Problem generator"
+      "pgen"
+      "${problem_generators}"
+      "${PGEN}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  else()
+    printchoices(
+      "Problem generators"
+      "pgens"
+      "${problem_generators}"
+      "${pgens}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  endif()
 endif()
 
 if(${TESTS})
