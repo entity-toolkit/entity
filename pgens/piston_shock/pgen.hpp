@@ -121,6 +121,7 @@ namespace user {
     // piston properties
     const real_t piston_velocity;
     int i_piston;
+    int initial_i_piston;
     real_t di_piston,piston_velocity_cd, piston_position_cd, piston_position;
     // piston properties
     const real_t piston_initial_position;
@@ -160,8 +161,12 @@ namespace user {
       
       piston_position =  piston_initial_position;
       piston_position_cd = domain.mesh.metric.template convert<1, Crd::Ph, Crd::Cd>(piston_position);
+
+      
       
       from_Xi_to_i_di(piston_position_cd, i_piston, di_piston);
+
+      initial_i_piston = i_piston;
      
 
 
@@ -192,14 +197,17 @@ namespace user {
         update piston position
       */
       // piston movement over timestep
-      di_piston += piston_velocity * dt;
+
+
+      di_piston += piston_velocity_cd * dt;
       // check if the piston has moved to the next cell
       i_piston += static_cast<int>(di_piston >= ONE);
       // keep track of how much the piston has moved into the next cell
       di_piston -= (di_piston >= ONE);
 
       // check if the window should be moved
-      if ((i_piston >= window_update_frequency) && (window_update_frequency > 0)) {
+      if ((i_piston-initial_i_piston >= window_update_frequency) && (window_update_frequency > 0)) {
+
         // move the window and all fields and particles in it
         arch::MoveWindow<S, M, in::x1>(domain, window_update_frequency);
         // synch ghost zones after moving the window
@@ -246,6 +254,7 @@ namespace user {
       piston_position_cd = i_di_to_Xi(i_piston, di_piston);
       // convert to physical coordinates
       piston_position = domain.mesh.metric.template convert<1, Crd::Cd, Crd::Ph>(piston_position_cd);
+      
     }
     
 
