@@ -4,6 +4,7 @@
  * @implements
  *   - EnrgDistClass<> - checks if a class can be used as an energy distribution
  *   - SpatialDistClass<> - checks if a class can be used as a spatial distribution
+ *   - traits::fieldsetter::HasFx1, ::HasFx2, ::HasFx3 - checks for F functions in field setter class
  *   - traits::fieldsetter::HasEx1, ::HasEx2, ::HasEx3 - checks for E functions in field setter class
  *   - traits::fieldsetter::HasBx1, ::HasBx2, ::HasBx3 - checks for B functions in field setter class
  *   - traits::fieldsetter::HasDx1, ::HasDx2, ::HasDx3 - checks for D functions in field setter class
@@ -38,7 +39,21 @@ concept SpatialDistClass = requires(const SD& sdist, const coord_t<SD::D>& x_Ph)
 };
 
 namespace traits::fieldsetter {
-  // special ::ex1, ::ex2, ::ex3, ::bx1, ::bx2, ::bx3, ::dx1, ::dx2, ::dx3 methods
+  template <class T, Dimension D>
+  concept HasFx1 = requires(const T& t, const coord_t<D>& x_Ph) {
+    { t.fx1(x_Ph) } -> std::convertible_to<real_t>;
+  };
+
+  template <class T, Dimension D>
+  concept HasFx2 = requires(const T& t, const coord_t<D>& x_Ph) {
+    { t.fx2(x_Ph) } -> std::convertible_to<real_t>;
+  };
+
+  template <class T, Dimension D>
+  concept HasFx3 = requires(const T& t, const coord_t<D>& x_Ph) {
+    { t.fx3(x_Ph) } -> std::convertible_to<real_t>;
+  };
+
   template <class T, Dimension D>
   concept HasEx1 = requires(const T& t, const coord_t<D>& x_Ph) {
     { t.ex1(x_Ph) } -> std::convertible_to<real_t>;

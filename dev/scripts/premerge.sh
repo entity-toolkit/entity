@@ -15,13 +15,9 @@ if [ "${build_dir}" != "" ]; then
 
 	pgens=$(find pgens/ -mindepth 2 -name "pgen.hpp" -exec dirname {} \; | sed 's|^pgens/||' | paste -sd ";" -)
 	(
-		cmake -B ${build_dir}/${pgen_name} -D pgens="${pgens}" ${extra_flags} &&
-			cmake --build ${build_dir}/${pgen_name} -j $(nproc)
+		cmake -B ${build_dir}/${pgen_name} -D pgens="${pgens}" -D TESTS=ON ${extra_flags} &&
+			cmake --build ${build_dir}/${pgen_name} -j $(nproc) &&
+			ctest --test-dir ${build_dir}
 	) || exit 1
 
-	(
-		cmake -B ${build_dir}/tests -D TESTS=ON ${extra_flags} &&
-			cmake --build ${build_dir}/tests -j $(nproc) &&
-			ctest --test-dir ${build_dir}/tests
-	) || exit 1
 fi

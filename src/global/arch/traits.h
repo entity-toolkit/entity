@@ -100,22 +100,22 @@ namespace traits {
 
   } // namespace external
 
-  template <template <typename> class Trait, typename T, typename = void>
-  struct has_method : std::false_type {};
+  // template <template <typename> class Trait, typename T, typename = void>
+  // struct has_method : std::false_type {};
 
-  template <template <typename> class Trait, typename T>
-  struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
+  // template <template <typename> class Trait, typename T>
+  // struct has_method<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
 
-  // trivial overload of `has_method` for readability
-  template <template <typename> class Trait, typename T, typename = void>
-  struct has_member : std::false_type {};
+  // // trivial overload of `has_method` for readability
+  // template <template <typename> class Trait, typename T, typename = void>
+  // struct has_member : std::false_type {};
 
-  template <template <typename> class Trait, typename T>
-  struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
+  // template <template <typename> class Trait, typename T>
+  // struct has_member<Trait, T, std::void_t<Trait<T>>> : std::true_type {};
 
-  // for pgen ext_fields
-  template <typename T>
-  using species_t = decltype(&T::species);
+  // // for pgen ext_fields
+  // template <typename T>
+  // using species_t = decltype(&T::species);
 
   template <typename>
   struct always_false : std::false_type {};

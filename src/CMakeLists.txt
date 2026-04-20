@@ -28,7 +28,8 @@ set(ENTITY ${PROJECT_NAME}${pgen_suffix}.xc)
 set(SOURCES ${SRC_DIR}/entity.cpp)
 
 add_executable(${ENTITY} ${SOURCES})
-set(libs ntt_global ntt_framework ntt_metrics ntt_engines${pgen_suffix} ntt_pgen${pgen_suffix})
+set(libs ntt_global ntt_framework ntt_metrics ntt_engines${pgen_suffix}
+         ntt_pgen${pgen_suffix})
 add_dependencies(${ENTITY} ${libs})
 target_link_libraries(${ENTITY} PUBLIC ${libs})
 install(TARGETS ${ENTITY} DESTINATION bin)
