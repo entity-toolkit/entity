@@ -1,0 +1,49 @@
+[simulation]
+  name    = "my_first_pgen"
+  engine  = "srpic"
+  runtime = 1.0
+
+[grid]
+  resolution = [1024, 1024]
+  extent     = [[-2.0, 2.0], [-2.0, 2.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.003
+  skindepth0 = 0.01
+
+[algorithms.deposit]
+  enable = false
+
+[particles]
+  ppc0 = 8.0
+
+  [[particles.species]]
+    label    = "e+"
+    charge   = 1.0
+    mass     = 1.0
+    maxnpart = 1e5
+    tracking = true
+
+
+[output]
+  interval_time = 0.1
+
+  [output.fields]
+    quantities = ["N_1", "E", "B"]
+
+  [output.particles]
+    interval_time = 0.01
+    stride        = 1
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0

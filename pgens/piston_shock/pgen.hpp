@@ -18,6 +18,25 @@
 #include <algorithm>
 #include <utility>
 
+/* -------------------------------------------------------------------------- */
+/* Local macros    (same as in particle_pusher_sr.hpp)                        */
+/* -------------------------------------------------------------------------- */
+#define from_Xi_to_i(XI, I)                                                    \
+  {                                                                            \
+    I = static_cast<int>((XI + 1)) - 1;                                        \
+  }
+
+#define from_Xi_to_i_di(XI, I, DI)                                             \
+  {                                                                            \
+    from_Xi_to_i((XI), (I));                                                   \
+    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+  }
+
+#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+
+/* -------------------------------------------------------------------------- */
+
+
 namespace user {
   using namespace ntt;
 
@@ -100,12 +119,16 @@ namespace user {
     InitFields<D> init_flds;
 
     // piston properties
-    const real_t _piston_velocity;
+    const real_t piston_velocity;
     int i_piston;
-    real_t di_piston, piston_position, piston_velocity;
+    real_t di_piston,piston_velocity_cd, piston_position_cd, piston_position;
+    // piston properties
+    const real_t piston_initial_position;
 
     // window properties
     const int window_update_frequency;
+
+
 
     inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
@@ -121,7 +144,8 @@ namespace user {
       , init_flds { Bmag, Btheta, Bphi, ZERO }
       , dt { p.template get<real_t>("algorithms.timestep.dt") }
       , window_update_frequency { p.template get<int>("setup.window_update_frequency", N_GHOSTS) }
-      , _piston_velocity { p.template get<real_t>("setup.piston_velocity", ZERO)} {}
+      , piston_velocity {p.template get<real_t>("setup.piston_velocity", 0.0)}
+      , piston_initial_position {p.template get<real_t>("setup.piston_initial_position", 0.0)}{}
 
     inline PGen() {}
 
@@ -132,13 +156,19 @@ namespace user {
     inline void InitPrtls(Domain<S, M>& domain) {
 
       // set initial position of piston
-      i_piston = 0;
-      di_piston = ZERO;
-      piston_position = ZERO;
+
+      
+      piston_position =  piston_initial_position;
+      piston_position_cd = domain.mesh.metric.template convert<1, Crd::Ph, Crd::Cd>(piston_position);
+      
+      from_Xi_to_i_di(piston_position_cd, i_piston, di_piston);
+     
+
+
       
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       // piston velocity in code units
-      piston_velocity = domain.mesh.metric.template transform<1, Idx::XYZ, Idx::U>(xp_Cd, _piston_velocity);
+      piston_velocity_cd = domain.mesh.metric.template transform<1, Idx::XYZ, Idx::U>(xp_Cd, piston_velocity);
       // define temperatures of species
       const auto temperatures = std::make_pair(temperature,
                                                temperature_ratio * temperature);
@@ -212,7 +242,10 @@ namespace user {
       }
 
       // compute current position of piston
-      piston_position = static_cast<real_t>(i_piston) + static_cast<real_t>(di_piston);
+
+      piston_position_cd = i_di_to_Xi(i_piston, di_piston);
+      // convert to physical coordinates
+      piston_position = domain.mesh.metric.template convert<1, Crd::Cd, Crd::Ph>(piston_position_cd);
     }
     
 
