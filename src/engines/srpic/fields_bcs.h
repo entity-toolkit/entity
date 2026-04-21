@@ -8,7 +8,6 @@
 #include "traits/metric.h"
 #include "utils/numeric.h"
 
-#include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
@@ -96,7 +95,7 @@ namespace ntt {
       }
 
       if (dim == in::x1) {
-        if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+        if constexpr (::traits::pgen::HasMatchFields<PG>) {
           auto match_fields = pgen.MatchFields(time);
           CallMatchFields<M, decltype(match_fields), in::x1>(domain.fields.em,
                                                              domain.mesh.flds_bc(),
@@ -107,7 +106,7 @@ namespace ntt {
                                                              tags,
                                                              range_min,
                                                              range_max);
-        } else if constexpr (arch::traits::pgen::HasMatchFieldsInX1<PG>) {
+        } else if constexpr (::traits::pgen::HasMatchFieldsInX1<PG>) {
           auto match_fields = pgen.MatchFieldsInX1(time);
           CallMatchFields<M, decltype(match_fields), in::x1>(domain.fields.em,
                                                              domain.mesh.flds_bc(),
@@ -121,7 +120,7 @@ namespace ntt {
         }
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+          if constexpr (::traits::pgen::HasMatchFields<PG>) {
             auto match_fields = pgen.MatchFields(time);
             CallMatchFields<M, decltype(match_fields), in::x2>(
               domain.fields.em,
@@ -133,7 +132,7 @@ namespace ntt {
               tags,
               range_min,
               range_max);
-          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX2<PG>) {
+          } else if constexpr (::traits::pgen::HasMatchFieldsInX2<PG>) {
             auto match_fields = pgen.MatchFieldsInX2(time);
             CallMatchFields<M, decltype(match_fields), in::x2>(
               domain.fields.em,
@@ -151,7 +150,7 @@ namespace ntt {
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+          if constexpr (::traits::pgen::HasMatchFields<PG>) {
             auto match_fields = pgen.MatchFields(time);
             CallMatchFields<M, decltype(match_fields), in::x3>(
               domain.fields.em,
@@ -163,7 +162,7 @@ namespace ntt {
               tags,
               range_min,
               range_max);
-          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX3<PG>) {
+          } else if constexpr (::traits::pgen::HasMatchFieldsInX3<PG>) {
             auto match_fields = pgen.MatchFieldsInX3(time);
             CallMatchFields<M, decltype(match_fields), in::x3>(
               domain.fields.em,
@@ -224,7 +223,7 @@ namespace ntt {
                        const PG&                    pgen,
                        const prm::Parameters&       engine_params,
                        BCTags                       tags) {
-      if constexpr (arch::traits::pgen::HasFixFieldsConst<PG>) {
+      if constexpr (::traits::pgen::HasFixFieldsConst<PG>) {
         const auto time = engine_params.get<simtime_t>("time");
         /**
          * fixed field boundaries
@@ -464,7 +463,7 @@ namespace ntt {
       /**
        * atmosphere field boundaries
        */
-      if constexpr (arch::traits::pgen::HasAtmFields<PG>) {
+      if constexpr (::traits::pgen::HasAtmFields<PG>) {
         const auto time = engine_params.get<simtime_t>("time");
         const auto [sign, dim, xg_min, xg_max] = GetAtmosphereExtent(direction,
                                                                      global_metric,

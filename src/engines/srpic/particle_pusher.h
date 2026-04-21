@@ -5,6 +5,7 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "traits/policies.h"
 #include "utils/comparators.h"
 #include "utils/log.h"
@@ -12,7 +13,6 @@
 #include "utils/param_container.h"
 
 #include "archetypes/emission.h"
-#include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
@@ -35,8 +35,7 @@ namespace ntt {
       const PG&                       pgen,
       const F&                        external_fields) {
       auto get_custom_prtl_update = [&]() {
-        if constexpr (
-          arch::traits::pgen::HasCustomPrtlUpdate<PG, M, decltype(domain)>) {
+        if constexpr (::traits::pgen::HasCustomPrtlUpdate<PG, decltype(domain)>) {
           return pgen.CustomParticleUpdate(pusher_params.time,
                                            pusher_params.species_index,
                                            domain);
@@ -142,7 +141,7 @@ namespace ntt {
         domain.species[photon_species - 1].set_counter(
           emitted_species.counter() + n_inj[0]);
       } else if (emission_policy_flag == EmissionType::CUSTOM) {
-        if constexpr (arch::traits::pgen::HasEmissionPolicy<PG, decltype(domain)>) {
+        if constexpr (::traits::pgen::HasEmissionPolicy<PG, decltype(domain)>) {
           const auto emission_policy = pgen.EmissionPolicy(pusher_params.time,
                                                            pusher_params.species_index,
                                                            domain);
@@ -194,7 +193,7 @@ namespace ntt {
                                 const ndfield_t<M::Dim, 6>& EB,
                                 const M&                    metric,
                                 const PG&                   pgen) {
-      if constexpr (arch::traits::pgen::HasExternalFields<PG, decltype(domain)>) {
+      if constexpr (::traits::pgen::HasExternalFields<PG, decltype(domain)>) {
         auto [apply_extfields,
               external_fields] = pgen.ExternalFields(pusher_params.time,
                                                      pusher_params.species_index,

@@ -4,8 +4,9 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -29,14 +30,12 @@ namespace user {
   template <SimEngine S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC> {}
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski> {}
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
-    static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D> {}
-    };
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_1D> {} };
 
     using arch::ProblemGenerator<S, M>::D;
     using arch::ProblemGenerator<S, M>::C;

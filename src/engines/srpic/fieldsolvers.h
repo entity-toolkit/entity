@@ -4,11 +4,11 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
 
-#include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
@@ -142,7 +142,7 @@ namespace ntt {
         const auto V0    = params.template get<real_t>("scales.V0");
         const auto ppc0  = params.template get<real_t>("particles.ppc0");
         const auto coeff = -dt * q0 / (B0 * V0);
-        if constexpr (arch::traits::pgen::HasExtCurrent<PG>) {
+        if constexpr (::traits::pgen::HasExtCurrent<PG>) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };

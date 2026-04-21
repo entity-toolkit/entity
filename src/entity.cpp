@@ -1,9 +1,9 @@
 #include "enums.h"
 
 #include "arch/traits.h"
+#include "traits/pgen.h"
 #include "utils/error.h"
 
-#include "archetypes/traits.h"
 #include "framework/simulation.h"
 #include "framework/specialization_registry.h"
 
@@ -30,11 +30,16 @@ namespace ntt {
   };
 } // namespace ntt
 
+template <auto N, auto... Is>
+static constexpr bool is_compatible(::traits::pgen::compatible_with<Is...>) {
+  return ((N == Is) || ...);
+}
+
 template <ntt::SimEngine S, template <Dimension> class M, Dimension D>
 static constexpr bool should_compile {
-  arch::traits::pgen::is_compatible<S>(user::PGen<S, M<D>>::engines) and
-  arch::traits::pgen::is_compatible<M<D>::MetricType>(user::PGen<S, M<D>>::metrics) and
-  arch::traits::pgen::is_compatible<D>(user::PGen<S, M<D>>::dimensions)
+  is_compatible<S>(user::PGen<S, M<D>>::engines) and
+  is_compatible<M<D>::MetricType>(user::PGen<S, M<D>>::metrics) and
+  is_compatible<D>(user::PGen<S, M<D>>::dimensions)
 };
 
 template <ntt::SimEngine S, template <Dimension> class M, Dimension D>

@@ -635,7 +635,7 @@ namespace ntt {
       }
       if (dim == in::x1) {
         if (g != gr_bc::curr) {
-          if constexpr (arch::traits::pgen::HasInitFlds<pgen_t>) {
+          if constexpr (::traits::pgen::HasInitFlds<pgen_t>) {
             Kokkos::parallel_for(
               "MatchBoundaries",
               CreateRangePolicy<M::Dim>(range_min, range_max),

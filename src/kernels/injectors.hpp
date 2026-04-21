@@ -18,10 +18,10 @@
 #include "arch/kokkos_aliases.h"
 #include "traits/archetypes.h"
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "archetypes/traits.h"
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 

@@ -1,3 +1,5 @@
+#include "traits/pgen.h"
+
 #include "enums.h"
 
 #include "traits/archetypes.h"
@@ -6,7 +8,6 @@
 #include "metrics/minkowski.h"
 
 #include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 
@@ -105,54 +106,51 @@ auto main(int argc, char* argv[]) -> int {
   try {
     auto custom_pgen = CustomPgen<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>> {};
 
-    if constexpr (not arch::traits::pgen::HasInitFlds<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasInitFlds<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have init_flds");
     }
-    if constexpr (not arch::traits::pgen::HasInitPrtls<
+    if constexpr (not ::traits::pgen::HasInitPrtls<
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have InitPrtls");
     }
-    if constexpr (not arch::traits::pgen::HasExternalFields<
+    if constexpr (not ::traits::pgen::HasExternalFields<
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have ext_fields");
     }
-    if constexpr (not arch::traits::pgen::HasExtCurrent<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasExtCurrent<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have ext_current");
     }
-    if constexpr (not arch::traits::pgen::HasAtmFields<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasAtmFields<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have AtmFields");
     }
-    if constexpr (not arch::traits::pgen::HasMatchFields<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasMatchFields<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have MatchFields");
     }
-    if constexpr (
-      not arch::traits::pgen::HasMatchFieldsInX1<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasMatchFieldsInX1<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have MatchFieldsInX1");
     }
-    if constexpr (
-      not arch::traits::pgen::HasMatchFieldsInX2<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasMatchFieldsInX2<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have MatchFieldsInX2");
     }
-    if constexpr (
-      not arch::traits::pgen::HasMatchFieldsInX3<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasMatchFieldsInX3<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have MatchFieldsInX3");
     }
-    if constexpr (not arch::traits::pgen::HasFixFieldsConst<decltype(custom_pgen)>) {
+    if constexpr (not ::traits::pgen::HasFixFieldsConst<decltype(custom_pgen)>) {
       throw std::runtime_error("CustomPgen should have FixFieldsConst");
     }
-    if constexpr (not arch::traits::pgen::HasCustomPostStep<
+    if constexpr (not ::traits::pgen::HasCustomPostStep<
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have CustomPostStep");
     }
-    if constexpr (not arch::traits::pgen::HasCustomFieldOutput<
+    if constexpr (not ::traits::pgen::HasCustomFieldOutput<
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have CustomFieldOutput");
     }
-    if constexpr (not arch::traits::pgen::HasCustomStatOutput<
+    if constexpr (not ::traits::pgen::HasCustomStatOutput<
                     decltype(custom_pgen),
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have CustomStat");
