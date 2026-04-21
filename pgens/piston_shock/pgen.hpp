@@ -123,11 +123,7 @@ namespace user {
     int i_piston, initial_i_piston;
     real_t di_piston, piston_velocity_cd, piston_position_cd, piston_position;
 
-    // window properties
-    const int window_update_frequency;
-
-
-
+    
     inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
@@ -136,12 +132,11 @@ namespace user {
       , cell_size { (global_xmax - global_xmin) / global_domain.mesh().n_all(in::x1) }
       , temperature { p.template get<real_t>("setup.temperature") }
       , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
+      , piston_velocity {p.template get<real_t>("setup.piston_velocity", ZERO)}
       , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") }
-      , window_update_frequency { p.template get<int>("setup.window_update_frequency", N_GHOSTS) }
-      , piston_velocity {p.template get<real_t>("setup.piston_velocity", ZERO)}
       , init_flds { Bmag, Btheta, Bphi, ZERO } {}
 
     inline PGen() {}
@@ -155,15 +150,13 @@ namespace user {
       // set initial position of piston 
       piston_position = ZERO;
       piston_position_cd = domain.mesh.metric.template convert<1, Crd::Ph, Crd::Cd>(piston_position);
-
-      
-      
+      // convert to cell units and get cell index and sub-cell position
       from_Xi_to_i_di(piston_position_cd, i_piston, di_piston);
-
+      // store initial cell index of piston for window updates
       initial_i_piston = i_piston;
 
-      coord_t<M::PrtlDim> xp_Cd { ZERO };
       // piston velocity in code units
+      coord_t<M::PrtlDim> xp_Cd { ZERO };
       piston_velocity_cd = domain.mesh.metric.template transform<1, Idx::XYZ, Idx::U>(xp_Cd, piston_velocity);
 
       // define temperatures of species
@@ -191,16 +184,16 @@ namespace user {
       di_piston -= (di_piston >= ONE);
 
       // check if the window should be moved
-      if ((window_update_frequency > 0) && ((i_piston-initial_i_piston) >= window_update_frequency)) {
+      if ((i_piston-initial_i_piston) >= N_GHOSTS) {
         
         // move the window and all fields and particles in it
-        arch::MoveWindow<S, M, in::x1>(domain, global_domain, window_update_frequency);
+        arch::MoveWindow<S, M, in::x1>(domain, global_domain, N_GHOSTS);
         
         /*
             Inject slab of fresh plasma
         */
         const real_t xmax = global_domain.mesh().extent(in::x1).second;
-        const real_t xmin = xmax - window_update_frequency * cell_size;
+        const real_t xmin = xmax - N_GHOSTS * cell_size;
         // define box to inject into
         boundaries_t<real_t> inj_box;
         // loop over all dimension
@@ -227,7 +220,8 @@ namespace user {
                                             false,
                                             inj_box);
 
-        i_piston -= window_update_frequency;
+        // shift the piston indices back by the number of ghost cells to account for window movement
+        i_piston -= N_GHOSTS;
       }
 
       // compute current position of piston
