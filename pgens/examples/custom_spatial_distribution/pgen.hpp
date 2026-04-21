@@ -33,7 +33,7 @@ namespace user {
     }
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
 
     static constexpr auto engines {

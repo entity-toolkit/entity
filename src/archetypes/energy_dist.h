@@ -33,7 +33,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct EnergyDistribution {
     static constexpr auto D = M::Dim;
 
@@ -43,7 +43,7 @@ namespace arch {
     const M metric;
   };
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct Cold : public EnergyDistribution<S, M> {
     Cold(const M& metric) : EnergyDistribution<S, M> { metric } {}
 
@@ -55,7 +55,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct Powerlaw : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 
@@ -159,7 +159,7 @@ namespace arch {
     pool.free_state(rand_gen);
   }
 
-  template <SimEngine S, bool CanBoost>
+  template <SimEngine::type S, bool CanBoost>
   Inline void SampleFromMaxwellian(vec_t<Dim::_3D>&            v,
                                    const random_number_pool_t& pool,
                                    real_t                      temperature,
@@ -198,7 +198,7 @@ namespace arch {
     }
   }
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct Maxwellian : public EnergyDistribution<S, M> {
     using EnergyDistribution<S, M>::metric;
 

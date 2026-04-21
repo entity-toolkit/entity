@@ -51,7 +51,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct Metadomain {
     static constexpr Dimension D { M::Dim };
 

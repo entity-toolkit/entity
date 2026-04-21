@@ -23,7 +23,7 @@ namespace ntt {
   /* * * * * * * * *
    * Output
    * * * * * * * * */
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::OutputDeclare(adios2::IO& io) const {
     const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cartesian))
                                      ? 1
@@ -79,8 +79,8 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord C>
-  template <SimEngine S, MetricClass M>
+  template <Dimension D, Coord::type C>
+  template <SimEngine::type S, MetricClass M>
   void Particles<D, C>::OutputWrite(adios2::IO&     io,
                                     adios2::Engine& writer,
                                     npart_t         prtl_stride,
@@ -343,7 +343,7 @@ namespace ntt {
    * Checkpoints
    * * * * * * * * */
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::CheckpointDeclare(adios2::IO& io) const {
     logger::Checkpoint(
       fmt::format("Declaring particle checkpoint for species #%d", index()),
@@ -412,7 +412,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::CheckpointRead(adios2::IO&     io,
                                        adios2::Engine& reader,
                                        std::size_t     domains_total,
@@ -599,7 +599,7 @@ namespace ntt {
     }
   }
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::CheckpointWrite(adios2::IO&     io,
                                         adios2::Engine& writer,
                                         std::size_t     domains_total,

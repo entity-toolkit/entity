@@ -57,7 +57,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   class Engine {
 
   protected:
@@ -127,7 +127,7 @@ namespace ntt {
     }
   };
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -174,7 +174,7 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
@@ -233,7 +233,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::run() {
     init();
 

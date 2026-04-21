@@ -105,7 +105,7 @@ namespace kernel::comm {
     }
   };
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   class PopulatePrtlSendBuffer_kernel {
     array_t<int*>      send_buff_int;
     array_t<real_t*>   send_buff_real;
@@ -231,7 +231,7 @@ namespace kernel::comm {
     }
   };
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   class ExtractReceivedPrtls_kernel {
     const array_t<int*>      recv_buff_int;
     const array_t<real_t*>   recv_buff_real;

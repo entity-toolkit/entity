@@ -14,7 +14,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, template <Dimension> class MetricTemplate, Dimension D>
+  template <SimEngine::type S, template <Dimension> class MetricTemplate, Dimension D>
   struct SpecializationEntry {
     using MetricType = MetricTemplate<D>;
     template <Dimension D2>

@@ -10,7 +10,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::SortParticles(simtime_t,
                                        timestep_t step,
                                        const SimulationParams&,

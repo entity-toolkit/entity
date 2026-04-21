@@ -20,12 +20,13 @@
 
 #include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
-#include "kernels/particle_pusher_sr.hpp"
+#include "kernels/pushers/context.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -43,7 +44,7 @@ namespace ntt {
    * @tparam D The dimension of the simulation
    * @tparam S The simulation engine being used
    */
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   struct Particles : public ParticleSpecies {
   private:
     // Number of currently active (used) particles
@@ -275,7 +276,7 @@ namespace ntt {
      * @brief Get the arrays required for the particle pusher kernel
      * @returns The struct of arrays for the particle pusher kernel
      */
-    auto PusherKernelArrays() -> kernel::sr::PusherArrays;
+    auto PusherKernelArrays() -> kernel::PusherArrays;
 
 #if defined(MPI_ENABLED)
     /**
@@ -298,7 +299,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void OutputDeclare(adios2::IO&) const;
 
-    template <SimEngine S, MetricClass M>
+    template <SimEngine::type S, MetricClass M>
     void OutputWrite(adios2::IO&,
                      adios2::Engine&,
                      npart_t,

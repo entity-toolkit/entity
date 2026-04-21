@@ -55,7 +55,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   class DigitalFilter_kernel {
     ndfield_t<D, 3>       array;
     const ndfield_t<D, 3> buffer;

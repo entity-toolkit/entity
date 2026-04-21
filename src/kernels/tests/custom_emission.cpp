@@ -7,7 +7,8 @@
 
 #include "framework/containers/particles.h"
 #include "kernels/injectors.hpp"
-#include "kernels/particle_pusher_sr.hpp"
+#include "kernels/pushers/context.h"
+#include "kernels/pushers/sr.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Pair.hpp>
@@ -234,26 +235,24 @@ auto main(int argc, char* argv[]) -> int {
 
     auto pusher_arrays = emitting_species.PusherKernelArrays();
 
-    kernel::sr::PusherParams pusher_params {};
-    pusher_params.pusher_flags = emitting_species.pusher();
-    pusher_params.radiative_drag_flags = emitting_species.radiative_drag_flags();
-    pusher_params.mass       = emitting_species.mass();
-    pusher_params.charge     = emitting_species.charge();
-    pusher_params.dt         = delta_t;
-    pusher_params.omegaB0    = 1.0f;
-    pusher_params.ni1        = 128u;
-    pusher_params.ni2        = 1u;
-    pusher_params.ni3        = 1u;
-    pusher_params.boundaries = {
+    kernel::PusherContext pusher_ctx {};
+    pusher_ctx.pusher_flags         = emitting_species.pusher();
+    pusher_ctx.radiative_drag_flags = emitting_species.radiative_drag_flags();
+    pusher_ctx.mass                 = emitting_species.mass();
+    pusher_ctx.charge               = emitting_species.charge();
+    pusher_ctx.dt                   = delta_t;
+    pusher_ctx.omegaB0              = 1.0f;
+    pusher_ctx.ni1                  = 128u;
+    pusher_ctx.ni2                  = 1u;
+    pusher_ctx.ni3                  = 1u;
+    pusher_ctx.boundaries           = {
       { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
     };
 
     ndfield_t<Dim::_1D, 6> EB { "EB", 128u + 2u * N_GHOSTS };
-    const auto             no_custom_update =
-      kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>> {};
 
     for (auto step = 0u; step < 7u; ++step) {
-      pusher_params.time   = static_cast<simtime_t>(step) * delta_t;
+      pusher_ctx.time      = static_cast<simtime_t>(step) * delta_t;
       auto emission_policy = EmissionPolicy<decltype(metric)> {
         step,
         emitted_species_1.npart(),
@@ -285,21 +284,19 @@ auto main(int argc, char* argv[]) -> int {
         emitted_species_2.tag,
         emitted_species_2.pld_i
       };
-      const auto no_extfields = ::traits::extfields::NoPolicy_t {};
+      const auto pusher_policy =
+        ::kernel::PusherPolicy<decltype(metric), decltype(emission_policy)> {
+          emission_policy
+        };
       Kokkos::parallel_for(
         "ParticlePusher",
         2u,
-        kernel::sr::Pusher_kernel<decltype(metric),
-                                  decltype(no_extfields),
-                                  false,
-                                  decltype(emission_policy),
-                                  decltype(no_custom_update)>(pusher_params,
-                                                              pusher_arrays,
-                                                              EB,
-                                                              metric,
-                                                              no_extfields,
-                                                              emission_policy,
-                                                              no_custom_update));
+        kernel::sr::Pusher_kernel<decltype(metric), decltype(pusher_policy)>(
+          pusher_ctx,
+          pusher_arrays,
+          EB,
+          metric,
+          pusher_policy));
       const auto n_injected = emission_policy.numbers_injected();
       emitted_species_1.set_counter(emitted_species_1.counter() + n_injected[0]);
       emitted_species_1.set_npart(emitted_species_1.npart() + n_injected[0]);

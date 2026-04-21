@@ -53,7 +53,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box)
     -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
     if (not domain.mesh.Intersects(box)) {
@@ -107,7 +107,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   auto ComputeNumInject(const SimulationParams&     params,
                         const Domain<S, M>&         domain,
                         real_t                      number_density,
@@ -137,7 +137,7 @@ namespace arch {
     return { true, nparticles, xi_min, xi_max };
   }
 
-  template <Dimension D, Coord C, bool P, in O>
+  template <Dimension D, Coord::type C, bool P, in O>
   struct AtmosphereDensityProfile {
     const real_t nmax, height, xsurf, ds;
 
@@ -198,7 +198,7 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -272,7 +272,7 @@ namespace arch {
    * @param data Map containing all the coordinates/velocities of particles to inject
    * @param use_weights Boolean toggle to use weights or not
    */
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectGlobally(const Metadomain<S, M>& global_domain,
                              Domain<S, M>&           local_domain,
                              spidx_t                 spidx,
@@ -309,7 +309,7 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,

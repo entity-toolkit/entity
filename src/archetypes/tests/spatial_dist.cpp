@@ -66,7 +66,7 @@ private:
   const M metric;
 };
 
-template <SimEngine S, class M>
+template <SimEngine::type S, class M>
 struct RadialDist : public SpatialDistribution<S, M> {
   using SpatialDistribution<S, M>::metric;
   static_assert(M::CoordType == Coord::Cartesian,

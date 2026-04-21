@@ -36,10 +36,10 @@ namespace metric {
     const bool   small_angle;
 
   public:
-    static constexpr const char* Label { "spherical" };
-    static constexpr Dimension   PrtlDim { Dim::_3D };
-    static constexpr ntt::Metric MetricType { ntt::Metric::Spherical };
-    static constexpr ntt::Coord  CoordType { ntt::Coord::Spherical };
+    static constexpr const char*      Label { "spherical" };
+    static constexpr Dimension        PrtlDim { Dim::_3D };
+    static constexpr ntt::Metric      MetricType { ntt::Metric::Spherical };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

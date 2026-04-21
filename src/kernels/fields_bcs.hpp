@@ -38,7 +38,7 @@ namespace kernel::bc {
    * @note If a component is not specified in the field setter, it is ignored.
    * @note It is supposed to only be called on the active side of the absorbing edge (so sign is not needed).
    */
-  template <SimEngine S, MetricClass M, FieldSetterClass<S, M::Dim> FS, in o>
+  template <SimEngine::type S, MetricClass M, FieldSetterClass<S, M::Dim> FS, in o>
   struct MatchBoundaries_kernel {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(M::Dim),
                   "Invalid component index");

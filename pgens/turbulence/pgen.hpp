@@ -289,7 +289,7 @@ namespace user {
     array_t<real_t*>  A0;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
 
     // compatibility traits for the problem generator

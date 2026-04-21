@@ -121,6 +121,9 @@ namespace ntt {
 
     constexpr Coord(type v) noexcept : val { v } {}
 
+    constexpr Coord(enums_hidden::EnumBase<Coord>, type v) noexcept
+      : val { v } {}
+
     static constexpr const char* label = "coord";
     static constexpr type variants[]   = { Cartesian, Spherical, Qspherical };
     static constexpr const char* lookup[] = { "cart", "sph", "qsph" };
@@ -142,6 +145,9 @@ namespace ntt {
 
     constexpr Metric(type v) noexcept : val { v } {}
 
+    constexpr Metric(enums_hidden::EnumBase<Metric>, type v) noexcept
+      : val { v } {}
+
     static constexpr const char* label      = "metric";
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
@@ -162,6 +168,9 @@ namespace ntt {
     type val;
 
     constexpr SimEngine(type v) noexcept : val { v } {}
+
+    constexpr SimEngine(enums_hidden::EnumBase<SimEngine>, type v) noexcept
+      : val { v } {}
 
     static constexpr const char* label      = "sim_engine";
     static constexpr type        variants[] = { SRPIC, GRPIC };
@@ -185,6 +194,9 @@ namespace ntt {
     type val;
 
     constexpr PrtlBC(type v) noexcept : val { v } {}
+
+    constexpr PrtlBC(enums_hidden::EnumBase<PrtlBC>, type v) noexcept
+      : val { v } {}
 
     static constexpr const char* label = "prtl_bc";
     static constexpr type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE, CUSTOM,
@@ -213,6 +225,9 @@ namespace ntt {
     type val;
 
     constexpr FldsBC(type v) noexcept : val { v } {}
+
+    constexpr FldsBC(enums_hidden::EnumBase<FldsBC>, type v) noexcept
+      : val { v } {}
 
     static constexpr const char* label      = "flds_bc";
     static constexpr type        variants[] = {
@@ -250,6 +265,9 @@ namespace ntt {
 
     constexpr FldsID(type v) noexcept : val { v } {}
 
+    constexpr FldsID(enums_hidden::EnumBase<FldsID>, type v) noexcept
+      : val { v } {}
+
     static constexpr const char* label      = "out_flds";
     static constexpr type        variants[] = { E,      divE, D,    divD, B,
                                                 H,      J,    A,    T,    Rho,
@@ -279,6 +297,9 @@ namespace ntt {
     type val;
 
     constexpr StatsID(type v) noexcept : val { v } {}
+
+    constexpr StatsID(enums_hidden::EnumBase<StatsID>, type v) noexcept
+      : val { v } {}
 
     static constexpr const char* label      = "out_stats";
     static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,

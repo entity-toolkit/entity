@@ -30,7 +30,7 @@ namespace kernel {
   /**
    * @brief Algorithm for the current deposition
    */
-  template <SimEngine S, MetricClass M, unsigned short O = 1u>
+  template <SimEngine::type S, MetricClass M, unsigned short O = 1u>
   class DepositCurrents_kernel {
     static_assert(O <= 11u, "Shape function order O must be <= 11");
     static constexpr auto D = M::Dim;

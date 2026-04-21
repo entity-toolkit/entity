@@ -26,7 +26,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine S, MetricClass M, bool T>
+  template <SimEngine::type S, MetricClass M, bool T>
   class PrtlToPhys_kernel {
     static constexpr Dimension D = M::Dim;
 

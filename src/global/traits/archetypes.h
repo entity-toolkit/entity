@@ -190,7 +190,7 @@ namespace traits::fieldsetter {
   };
 } // namespace traits::fieldsetter
 
-template <class FS, ntt::SimEngine S, Dimension D>
+template <class FS, ntt::SimEngine::type S, Dimension D>
 concept FieldSetterClass =
   ((S == ntt::SimEngine::SRPIC) and
    (::traits::fieldsetter::HasEx1<FS, D> or ::traits::fieldsetter::HasEx2<FS, D> or

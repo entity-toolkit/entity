@@ -35,7 +35,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine S, MetricClass M, FieldSetterClass<S, M::Dim> FS>
+  template <SimEngine::type S, MetricClass M, FieldSetterClass<S, M::Dim> FS>
   class SetEMFields_kernel {
     static constexpr auto D      = M::Dim;
     static constexpr auto HasEx1 = ::traits::fieldsetter::HasEx1<FS, D>;
@@ -293,7 +293,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine S, SRMetricClass M, ConditionalSRFieldSetterClass<M::Dim> FS>
+  template <SimEngine::type S, SRMetricClass M, ConditionalSRFieldSetterClass<M::Dim> FS>
   struct CustomSetEMFields_kernel {
     static constexpr auto D = M::Dim;
     static constexpr auto HasEx1 = ::traits::fieldsetter::HasConditionalEx1<FS, D>;

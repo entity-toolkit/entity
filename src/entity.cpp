@@ -14,7 +14,7 @@
 #include <type_traits>
 
 namespace ntt {
-  template <SimEngine S>
+  template <SimEngine::type S>
   struct EngineSelector;
 
   template <>
@@ -35,14 +35,14 @@ static constexpr bool is_compatible(::traits::pgen::compatible_with<Is...>) {
   return ((N == Is) || ...);
 }
 
-template <ntt::SimEngine S, template <Dimension> class M, Dimension D>
+template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
 static constexpr bool should_compile {
   is_compatible<S>(user::PGen<S, M<D>>::engines) and
   is_compatible<M<D>::MetricType>(user::PGen<S, M<D>>::metrics) and
   is_compatible<D>(user::PGen<S, M<D>>::dimensions)
 };
 
-template <ntt::SimEngine S, template <Dimension> class M, Dimension D>
+template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
 void dispatch_engine(ntt::Simulation& sim) {
   if constexpr (S == SimEngine::SRPIC) {
     sim.run<ntt::EngineSelector<S>::template type, M, D>();

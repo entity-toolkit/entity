@@ -100,7 +100,7 @@ namespace user {
     const real_t m_eps;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PointDistribution : public arch::SpatialDistribution<S, M> {
     PointDistribution(const std::vector<real_t>& xi_min,
                       const std::vector<real_t>& xi_max,
@@ -195,7 +195,7 @@ namespace user {
     const M                 metric;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {

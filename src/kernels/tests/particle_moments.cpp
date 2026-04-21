@@ -43,7 +43,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
-template <SimEngine S, typename M>
+template <SimEngine::type S, typename M>
 void testParticleMoments(const std::vector<std::size_t>&      res,
                          const boundaries_t<real_t>&          ext,
                          const std::map<std::string, real_t>& params = {},

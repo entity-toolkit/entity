@@ -61,7 +61,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct Domain {
     static constexpr Dimension D { M::Dim };
 
@@ -238,7 +238,7 @@ namespace ntt {
     std::optional<random_number_pool_t> m_random_number_pool;
   };
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
     -> std::ostream& {
     os << "Domain #" << domain.index();

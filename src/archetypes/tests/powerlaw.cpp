@@ -20,7 +20,7 @@ using namespace ntt;
 using namespace metric;
 using namespace arch;
 
-template <class EnrgDist, SimEngine S, class M>
+template <class EnrgDist, SimEngine::type S, class M>
 struct Caller {
   static constexpr auto D = M::Dim;
 
@@ -62,7 +62,7 @@ private:
   EnrgDist dist;
 };
 
-template <SimEngine S, typename M>
+template <SimEngine::type S, typename M>
 void testEnergyDist(const std::vector<std::size_t>&      res,
                     const boundaries_t<real_t>&          ext,
                     const std::map<std::string, real_t>& params = {}) {

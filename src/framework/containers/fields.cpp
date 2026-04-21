@@ -7,7 +7,7 @@
 
 namespace ntt {
 
-  template <Dimension D, SimEngine S>
+  template <Dimension D, SimEngine::type S>
   Fields<D, S>::Fields(const std::vector<ncells_t>& res) {
     ncells_t nx1, nx2, nx3;
     nx1 = res[0] + 2 * N_GHOSTS;

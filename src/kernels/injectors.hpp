@@ -28,7 +28,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <Dimension D, Coord C, bool T>
+  template <Dimension D, Coord::type C, bool T>
   Inline void InjectParticle(npart_t                     p,
                              const array_t<int*>&        i1_arr,
                              const array_t<int*>&        i2_arr,
@@ -80,7 +80,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
   struct UniformInjector_kernel {
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
@@ -290,7 +290,7 @@ namespace kernel {
     }
   }; // struct UniformInjector_kernel
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct GlobalInjector_kernel {
     static constexpr auto D = M::Dim;
 
@@ -520,7 +520,7 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
   struct NonUniformInjector_kernel {
 
     const real_t ppc0;

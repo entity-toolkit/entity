@@ -35,7 +35,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine S, MetricClass M, FldsID::type F, unsigned short N>
+  template <SimEngine::type S, MetricClass M, FldsID::type F, unsigned short N>
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 

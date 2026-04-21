@@ -8,7 +8,8 @@
 
 #include "metrics/minkowski.h"
 
-#include "kernels/particle_pusher_sr.hpp"
+#include "kernels/pushers/context.h"
+#include "kernels/pushers/sr.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -44,7 +45,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
-template <SimEngine S, typename M>
+template <SimEngine::type S, typename M>
 void testPeriodicBC(const std::vector<std::size_t>&      res,
                     const boundaries_t<real_t>&          ext,
                     const std::map<std::string, real_t>& params = {}) {
@@ -231,56 +232,47 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   real_t     time   = ZERO;
   const auto n_iter = 100;
 
-  kernel::sr::PusherParams pusher_params {};
-  pusher_params.pusher_flags = ParticlePusher::BORIS;
-  pusher_params.mass         = ONE;
-  pusher_params.charge       = ONE;
-  pusher_params.dt           = dt;
-  pusher_params.omegaB0      = ONE;
-  pusher_params.ni1          = nx1;
-  pusher_params.ni2          = nx2;
-  pusher_params.ni3          = nx3;
-  pusher_params.boundaries   = {
+  kernel::PusherContext pusher_ctx {};
+  pusher_ctx.pusher_flags = ParticlePusher::BORIS;
+  pusher_ctx.mass         = ONE;
+  pusher_ctx.charge       = ONE;
+  pusher_ctx.dt           = dt;
+  pusher_ctx.omegaB0      = ONE;
+  pusher_ctx.ni1          = nx1;
+  pusher_ctx.ni2          = nx2;
+  pusher_ctx.ni3          = nx3;
+  pusher_ctx.boundaries   = {
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
   };
 
-  kernel::sr::PusherArrays pusher_arrays {};
-  pusher_arrays.sp        = 1u;
-  pusher_arrays.i1        = i1;
-  pusher_arrays.i2        = i2;
-  pusher_arrays.i3        = i3;
-  pusher_arrays.i1_prev   = i1_prev;
-  pusher_arrays.i2_prev   = i2_prev;
-  pusher_arrays.i3_prev   = i3_prev;
-  pusher_arrays.dx1       = dx1;
-  pusher_arrays.dx2       = dx2;
-  pusher_arrays.dx3       = dx3;
-  pusher_arrays.dx1_prev  = dx1_prev;
-  pusher_arrays.dx2_prev  = dx2_prev;
-  pusher_arrays.dx3_prev  = dx3_prev;
-  pusher_arrays.ux1       = ux1;
-  pusher_arrays.ux2       = ux2;
-  pusher_arrays.ux3       = ux3;
-  pusher_arrays.phi       = phi;
-  pusher_arrays.tag       = tag;
-  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
-  const auto no_emission  = ::traits::emission::NoPolicy_t {};
-  const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
+  kernel::PusherArrays pusher_arrays {};
+  pusher_arrays.sp       = 1u;
+  pusher_arrays.i1       = i1;
+  pusher_arrays.i2       = i2;
+  pusher_arrays.i3       = i3;
+  pusher_arrays.i1_prev  = i1_prev;
+  pusher_arrays.i2_prev  = i2_prev;
+  pusher_arrays.i3_prev  = i3_prev;
+  pusher_arrays.dx1      = dx1;
+  pusher_arrays.dx2      = dx2;
+  pusher_arrays.dx3      = dx3;
+  pusher_arrays.dx1_prev = dx1_prev;
+  pusher_arrays.dx2_prev = dx2_prev;
+  pusher_arrays.dx3_prev = dx3_prev;
+  pusher_arrays.ux1      = ux1;
+  pusher_arrays.ux2      = ux2;
+  pusher_arrays.ux3      = ux3;
+  pusher_arrays.phi      = phi;
+  pusher_arrays.tag      = tag;
 
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(no_custom_update)>(
-        pusher_params,
-        pusher_arrays,
-        emfield,
-        metric,
-        no_extfields,
-        no_emission,
-        no_custom_update));
+      kernel::sr::Pusher_kernel<M>(pusher_ctx, pusher_arrays, emfield, metric));
+
     auto i1_  = Kokkos::create_mirror_view(i1);
     auto i2_  = Kokkos::create_mirror_view(i2);
     auto i3_  = Kokkos::create_mirror_view(i3);

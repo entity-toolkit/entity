@@ -22,7 +22,7 @@
 
 namespace ntt {
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
                                          bool                    is_resuming) {
     raise::ErrorIf(
@@ -62,7 +62,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, MetricClass M, StatsID::type P>
+  template <SimEngine::type S, MetricClass M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const M&                global_metric,
@@ -119,7 +119,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine S, MetricClass M, StatsID::type F>
+  template <SimEngine::type S, MetricClass M, StatsID::type F>
   auto ReduceFields(Domain<S, M>*                      domain,
                     const M&                           global_metric,
                     const std::vector<unsigned short>& components) -> real_t {
@@ -181,7 +181,7 @@ namespace ntt {
     return buffer / global_metric.totVolume();
   }
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   auto Metadomain<S, M>::WriteStats(
     const SimulationParams& params,
     timestep_t              current_step,
@@ -271,7 +271,7 @@ namespace ntt {
         }
       } else {
         raise::Error("StatsID not implemented for particular SimEngine: " +
-                       std::string(S.to_string()),
+                       std::string(SimEngine(S).to_string()),
                      HERE);
       }
     }

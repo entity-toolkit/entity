@@ -51,7 +51,7 @@ namespace arch {
    * global coordinates
    * @param piston_v Velocity of piston at current timestep
    */
-  template <SimEngine S, class M, class PusherKernel>
+  template <SimEngine::type S, class M, class PusherKernel>
   Inline void PistonUpdate(const index_t       p,
                            const PusherKernel& pusher,
                            const real_t        piston_position,
@@ -140,7 +140,7 @@ namespace arch {
    * @param piston_v Velocity of piston at current timestep
    * @param is_left Is piston on the left side of the box or right side of the box
    */
-  template <SimEngine S, class M, class PusherKernel>
+  template <SimEngine::type S, class M, class PusherKernel>
   Inline bool CrossesPiston(const index_t       p,
                             const PusherKernel& pusher,
                             const real_t        piston_position,

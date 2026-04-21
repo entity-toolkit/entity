@@ -53,7 +53,7 @@ namespace user {
     const spidx_t   sp;
   };
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}

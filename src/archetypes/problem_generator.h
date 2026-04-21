@@ -30,7 +30,7 @@
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   struct ProblemGenerator {
     static constexpr Dimension D { M::Dim };
     static constexpr Coord     C { M::CoordType };

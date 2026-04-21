@@ -16,7 +16,7 @@
 
 namespace ntt {
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   auto Particles<D, C>::NpartsPerTagAndOffsets() const
     -> std::pair<std::vector<npart_t>, array_t<npart_t*>> {
     auto              this_tag = tag;
@@ -88,7 +88,7 @@ namespace ntt {
       buffer);
   }
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::RemoveDead() {
     npart_t n_alive = 0, n_dead = 0;
     auto&   this_tag = tag;
@@ -181,7 +181,7 @@ namespace ntt {
     m_is_sorted = true;
   }
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
     const auto nx2         = grid.n_active(in::x2);
     const auto nx3         = grid.n_active(in::x3);

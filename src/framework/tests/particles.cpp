@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-template <Dimension D, ntt::Coord C>
+template <Dimension D, ntt::Coord::type C>
 void testParticles(
   int                      index,
   const std::string&       label,

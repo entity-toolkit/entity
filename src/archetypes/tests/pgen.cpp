@@ -46,7 +46,7 @@ struct ExtCurrent {
   }
 };
 
-template <SimEngine S, class M>
+template <SimEngine::type S, class M>
 struct CustomPgen : public arch::ProblemGenerator<S, M> {
   CustomPgen(const SimulationParams& params = {})
     : arch::ProblemGenerator<S, M> { params } {}

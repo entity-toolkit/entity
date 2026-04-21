@@ -43,7 +43,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectUniformMaxwellians(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -93,7 +93,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine S, MetricClass M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectUniformMaxwellian(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -131,7 +131,7 @@ namespace arch {
    * @tparam F Field ID for the moment to compute (e.g. FldsID::N, FldsID::T, etc.)
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
-  template <SimEngine S, MetricClass M, FldsID::type F, int N>
+  template <SimEngine::type S, MetricClass M, FldsID::type F, int N>
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -178,7 +178,7 @@ namespace arch {
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
 
-  template <SimEngine S, MetricClass M, class F>
+  template <SimEngine::type S, MetricClass M, class F>
   inline void UpdateEMFields(const SimulationParams& params,
                              Domain<S, M>&           domain,
                              const F&                fieldsetter) {

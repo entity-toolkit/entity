@@ -48,7 +48,7 @@ namespace traits::metric {
 
   template <class M>
   concept HasCoordType = requires {
-    { M::CoordType } -> std::convertible_to<ntt::Coord>;
+    { M::CoordType } -> std::convertible_to<ntt::Coord::type>;
   };
 
   template <class M>

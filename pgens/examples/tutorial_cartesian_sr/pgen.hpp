@@ -106,7 +106,7 @@ namespace user {
     return math::sqrt(SQR(x[0]) + SQR(x[1]) + SQR(x[2]));
   }
 
-  template <SimEngine S, class M>
+  template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}

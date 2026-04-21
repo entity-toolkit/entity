@@ -161,7 +161,7 @@ namespace ntt {
     }
   } // namespace prtls
 
-  template <Dimension D, Coord C>
+  template <Dimension D, Coord::type C>
   void Particles<D, C>::Communicate(const dir::dirs_t<D>&     dirs_to_comm,
                                     const array_t<int*>&      shifts_in_x1,
                                     const array_t<int*>&      shifts_in_x2,
