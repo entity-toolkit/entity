@@ -2,12 +2,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/policies.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
 
-#include "kernels/emission/emission.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -265,7 +265,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   pusher_arrays.ux3      = ux3;
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
-  const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
+  const auto no_emission = ::traits::emission::NoPolicy_t {};
   const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
 
   for (auto n { 0 }; n < n_iter; ++n) {

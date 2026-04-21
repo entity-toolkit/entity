@@ -24,13 +24,11 @@
 #include "arch/kokkos_aliases.h"
 #include "arch/traits.h"
 #include "traits/metric.h"
+#include "traits/policies.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
-
-#include "kernels/emission/emission.hpp"
-#include "kernels/emission/traits.h"
 
 #include "particle_shapes.hpp"
 
@@ -111,17 +109,13 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <SRMetricClass M, class F, bool Atm, class E, class PUPD>
+  template <SRMetricClass M, class F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
   struct Pusher_kernel {
     static constexpr auto D            = M::Dim;
     static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;
     static constexpr auto HasExtEfield = ::traits::external::HasExternalE<F, D>;
     static constexpr auto HasExtBfield = ::traits::external::HasExternalB<F, D>;
-    static constexpr auto HasEmission = kernel::traits::emission::IsValid<E, M>;
-    static_assert(
-      HasEmission or
-        std::is_same<E, const NoEmissionPolicy_t<SimEngine::SRPIC, M>>::value,
-      "Invalid emission policy E for Pusher_kernel");
+    static constexpr auto HasEmission  = not ::traits::emission::IsNoPolicy<E>;
 
     const ParticlePusherFlags pusher_flags;
     const RadiativeDragFlags  radiative_drag_flags;
@@ -1581,7 +1575,7 @@ namespace kernel::sr {
                                 const coord_t<M::PrtlDim>& xp_Ph,
                                 const vec_t<Dim::_3D>&     ep_Cart,
                                 const vec_t<Dim::_3D>&     bp_Cart) const
-      requires kernel::traits::emission::IsValid<E, M>
+      requires(not ::traits::emission::IsNoPolicy<E>)
     {
       typename E::Payload payload;
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };

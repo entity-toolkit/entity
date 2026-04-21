@@ -7,7 +7,6 @@
 #include "traits/metric.h"
 
 #include "framework/parameters/parameters.h"
-#include "kernels/emission/traits.h"
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Pair.hpp>

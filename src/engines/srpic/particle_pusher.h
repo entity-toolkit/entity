@@ -5,6 +5,7 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/policies.h"
 #include "utils/comparators.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
@@ -18,7 +19,6 @@
 #include "kernels/emission/compton.hpp"
 #include "kernels/emission/emission.hpp"
 #include "kernels/emission/synchrotron.hpp"
-#include "kernels/emission/traits.h"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
@@ -49,7 +49,7 @@ namespace ntt {
       const auto custom_prtl_update = get_custom_prtl_update();
 
       if (emission_policy_flag == EmissionType::NONE) {
-        const auto no_emission = kernel::NoEmissionPolicy_t<SimEngine::SRPIC, M> {};
+        const auto no_emission = ::traits::emission::NoPolicy_t {};
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
@@ -83,10 +83,6 @@ namespace ntt {
           domain.index(),
           params,
           domain.random_pool());
-        static_assert(
-          kernel::traits::emission::IsValid<kernel::emission::Synchrotron<M>, M>,
-          "Synchrotron emission policy does not satisfy the required "
-          "interface");
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
@@ -128,9 +124,6 @@ namespace ntt {
           domain.index(),
           params,
           domain.random_pool());
-        static_assert(
-          kernel::traits::emission::IsValid<kernel::emission::Compton<M>, M>,
-          "Compton emission policy does not satisfy the required interface");
         Kokkos::parallel_for(
           "ParticlePusher",
           range,
@@ -155,10 +148,6 @@ namespace ntt {
           const auto emission_policy = pgen.EmissionPolicy(pusher_params.time,
                                                            pusher_params.species_index,
                                                            domain);
-          static_assert(
-            kernel::traits::emission::IsValid<decltype(emission_policy), M>,
-            "Custom emission policy does not satisfy the required "
-            "interface");
           Kokkos::parallel_for(
             "ParticlePusher",
             range,
