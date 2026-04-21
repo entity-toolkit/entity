@@ -8,7 +8,8 @@
 
 #include "metrics/minkowski.h"
 
-#include "kernels/particle_pusher_sr.hpp"
+#include "kernels/pushers/context.h"
+#include "kernels/pushers/sr.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -51,7 +52,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
-template <SimEngine S, typename M>
+template <SimEngine::type S, typename M>
 void testPusher(const std::vector<std::size_t>& res) {
   static_assert(M::Dim == 3);
   raise::ErrorIf(res.size() != M::Dim, "res.size() != M::Dim", HERE);
@@ -144,21 +145,21 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-2 : 1e-3;
 
-  kernel::sr::PusherParams pusher_params {};
-  pusher_params.mass       = ONE;
-  pusher_params.charge     = ONE;
-  pusher_params.dt         = dt;
-  pusher_params.omegaB0    = omegaB0;
-  pusher_params.ni1        = nx1;
-  pusher_params.ni2        = nx2;
-  pusher_params.ni3        = nx3;
-  pusher_params.boundaries = {
+  kernel::PusherContext pusher_ctx {};
+  pusher_ctx.mass       = ONE;
+  pusher_ctx.charge     = ONE;
+  pusher_ctx.dt         = dt;
+  pusher_ctx.omegaB0    = omegaB0;
+  pusher_ctx.ni1        = nx1;
+  pusher_ctx.ni2        = nx2;
+  pusher_ctx.ni3        = nx3;
+  pusher_ctx.boundaries = {
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
   };
 
-  kernel::sr::PusherArrays pusher_arrays {};
+  kernel::PusherArrays pusher_arrays {};
   pusher_arrays.sp       = 1u;
   pusher_arrays.i1       = i1;
   pusher_arrays.i2       = i2;
@@ -177,47 +178,29 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.ux3      = ux3;
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
-  const auto no_emission = ::traits::emission::NoPolicy_t {};
-  const auto no_custom_update =
-    kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
 
-  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
   for (auto t { 0u }; t < 2000; ++t) {
-    const real_t time  = t * dt;
-    pusher_params.time = time;
+    const real_t time = t * dt;
+    pusher_ctx.time   = time;
 
-    pusher_params.pusher_flags = ParticlePusher::BORIS;
+    pusher_ctx.pusher_flags = ParticlePusher::BORIS;
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
-                                decltype(no_extfields),
-                                false,
-                                decltype(no_emission),
-                                decltype(no_custom_update)>(pusher_params,
-                                                            pusher_arrays,
-                                                            emfield,
-                                                            metric,
-                                                            no_extfields,
-                                                            no_emission,
-                                                            no_custom_update));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_ctx,
+                                                     pusher_arrays,
+                                                     emfield,
+                                                     metric));
 
-    pusher_params.pusher_flags = ParticlePusher::VAY;
+    pusher_ctx.pusher_flags = ParticlePusher::VAY;
 
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
-                                decltype(no_extfields),
-                                false,
-                                decltype(no_emission),
-                                decltype(no_custom_update)>(pusher_params,
-                                                            pusher_arrays,
-                                                            emfield,
-                                                            metric,
-                                                            no_extfields,
-                                                            no_emission,
-                                                            no_custom_update));
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_ctx,
+                                                     pusher_arrays,
+                                                     emfield,
+                                                     metric));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);

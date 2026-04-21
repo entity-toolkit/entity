@@ -108,4 +108,13 @@ concept ExtFieldsPolicyClass =
    ::traits::fieldsetter::HasBx3<F, D>) or
   ::traits::extfields::IsNoPolicy<F>;
 
+namespace traits::custom_prtl_update {
+
+  struct NoPolicy_t {};
+
+  template <class CPU>
+  concept IsNoPolicy = std::is_same<std::remove_cvref_t<CPU>, NoPolicy_t>::value;
+
+} // namespace traits::custom_prtl_update
+
 #endif // TRAITS_POLICIES_H

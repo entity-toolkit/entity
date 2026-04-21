@@ -7,7 +7,8 @@
 
 #include "metrics/minkowski.h"
 
-#include "kernels/particle_pusher_sr.hpp"
+#include "kernels/pushers/context.h"
+#include "kernels/pushers/sr.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -95,7 +96,7 @@ struct TestCustomPrtlUpdate {
   }
 };
 
-template <SimEngine S, typename M>
+template <SimEngine::type S, typename M>
 void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
                           const boundaries_t<real_t>&          ext,
                           const std::map<std::string, real_t>& params = {}) {
@@ -191,30 +192,30 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
     put_value<prtldx_t>(c_dx3, 0.1, 0);
   }
 
-  kernel::sr::PusherParams r_params {};
-  r_params.pusher_flags = ParticlePusher::BORIS;
-  r_params.mass         = ONE;
-  r_params.charge       = ONE;
-  r_params.dt           = dt;
-  r_params.omegaB0      = ONE;
-  r_params.ni1          = nx1;
-  r_params.ni2          = nx2;
-  r_params.ni3          = nx3;
-  r_params.boundaries   = {
+  kernel::PusherContext r_ctx {};
+  r_ctx.pusher_flags = ParticlePusher::BORIS;
+  r_ctx.mass         = ONE;
+  r_ctx.charge       = ONE;
+  r_ctx.dt           = dt;
+  r_ctx.omegaB0      = ONE;
+  r_ctx.ni1          = nx1;
+  r_ctx.ni2          = nx2;
+  r_ctx.ni3          = nx3;
+  r_ctx.boundaries   = {
     { PrtlBC::REFLECT, PrtlBC::REFLECT },
     { PrtlBC::REFLECT, PrtlBC::REFLECT },
     { PrtlBC::REFLECT, PrtlBC::REFLECT }
   };
 
-  kernel::sr::PusherParams c_params = r_params;
+  kernel::PusherContext c_ctx = r_ctx;
   // initialize with periodic boundaries so that reflection is only handled by the custom update
-  c_params.boundaries               = {
+  c_ctx.boundaries            = {
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
     { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
   };
 
-  kernel::sr::PusherArrays r_arrays {};
+  kernel::PusherArrays r_arrays {};
   r_arrays.sp       = 1u;
   r_arrays.i1       = r_i1;
   r_arrays.i2       = r_i2;
@@ -234,7 +235,7 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   r_arrays.phi      = phi;
   r_arrays.tag      = r_tag;
 
-  kernel::sr::PusherArrays c_arrays {};
+  kernel::PusherArrays c_arrays {};
   c_arrays.sp       = 1u;
   c_arrays.i1       = c_i1;
   c_arrays.i2       = c_i2;
@@ -254,35 +255,29 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   c_arrays.phi      = phi;
   c_arrays.tag      = c_tag;
 
-  const auto no_emission = ::traits::emission::NoPolicy_t {};
-  const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
-  const auto custom_update = TestCustomPrtlUpdate {};
+  // const auto no_emission      = ::traits::emission::NoPolicy_t {};
+  // const auto no_custom_update = ::traits::custom_prtl_update::NoPolicy_t {};
+  // const auto custom_update    = TestCustomPrtlUpdate {};
+  const auto custom_update_policy =
+    ::kernel::PusherPolicy<M,
+                           ::traits::emission::NoPolicy_t,
+                           TestCustomPrtlUpdate,
+                           ::traits::extfields::NoPolicy_t,
+                           false> {};
 
-  const auto n_iter       = 100;
-  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
+  const auto n_iter = 100;
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher_reflect",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(no_custom_update)>(
-        r_params,
-        r_arrays,
-        emfield,
-        metric,
-        no_extfields,
-        no_emission,
-        no_custom_update));
+      kernel::sr::Pusher_kernel<M>(r_ctx, r_arrays, emfield, metric));
     Kokkos::parallel_for(
       "pusher_custom",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(custom_update)>(
-        c_params,
-        c_arrays,
-        emfield,
-        metric,
-        no_extfields,
-        no_emission,
-        custom_update));
+      kernel::sr::Pusher_kernel<M, decltype(custom_update_policy)>(c_ctx,
+                                                                   c_arrays,
+                                                                   emfield,
+                                                                   metric));
 
     auto hr_i1 = Kokkos::create_mirror_view(r_i1);
     Kokkos::deep_copy(hr_i1, r_i1);

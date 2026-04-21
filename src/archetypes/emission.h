@@ -53,7 +53,7 @@ namespace arch {
                         float                            sp_charge,
                         RadiativeDragFlags               radiative_drag_flags,
                         npart_t                          domain_idx,
-                        const SimulationParams&          params,
+                        const prm::Parameters&           params,
                         random_number_pool_t&            random_pool)
       : emitted_index { emitted_index }
       , species_mass { static_cast<real_t>(sp_mass) }
@@ -309,7 +309,7 @@ namespace arch {
                     float                            sp_charge,
                     RadiativeDragFlags               radiative_drag_flags,
                     npart_t                          domain_idx,
-                    const SimulationParams&          params,
+                    const prm::Parameters&           params,
                     random_number_pool_t&            random_pool)
       : emitted_index { emitted_index }
       , species_mass { static_cast<real_t>(sp_mass) }

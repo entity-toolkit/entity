@@ -1,5 +1,5 @@
 /**
- * @file kernels/particle_pusher_sr.h
+ * @file kernels/pushers/sr.h
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>
@@ -14,8 +14,8 @@
  * are additionally tagged depending on which direction they are leaving
  */
 
-#ifndef KERNELS_PARTICLE_PUSHER_SR_HPP
-#define KERNELS_PARTICLE_PUSHER_SR_HPP
+#ifndef KERNELS_PUSHERS_SR_HPP
+#define KERNELS_PUSHERS_SR_HPP
 
 #include "enums.h"
 #include "global.h"
@@ -27,9 +27,10 @@
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-#include "utils/param_container.h"
 
-#include "particle_shapes.hpp"
+#include "kernels/particle_shapes.hpp"
+#include "kernels/pushers/context.h"
+#include "kernels/pushers/policies.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -56,58 +57,25 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  struct PusherParams {
-    // species index
-    spidx_t             species_index;
-    // pusher algorithm(s) assigned to the species
-    ParticlePusherFlags pusher_flags { ParticlePusher::NONE };
-    // radiative drag force(s) enabled for the species
-    RadiativeDragFlags  radiative_drag_flags { RadiativeDrag::NONE };
-
-    // species parameters
-    float mass, charge;
-
-    // time variable
-    simtime_t time;
-
-    // global constants
-    real_t dt, omegaB0;
-
-    // grid parameters
-    int                  ni1, ni2, ni3;
-    boundaries_t<PrtlBC> boundaries;
-
-    // parameters for the advanced features
-    prm::Parameters gca_params;
-    prm::Parameters radiative_drag_params;
-    prm::Parameters atmosphere_params;
-  };
-
-  struct PusherArrays {
-    spidx_t            sp;
-    array_t<int*>      i1, i2, i3;
-    array_t<int*>      i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1, dx2, dx3;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>   ux1, ux2, ux3;
-    array_t<real_t*>   phi;
-    array_t<real_t*>   weight;
-    array_t<short*>    tag;
-  };
-
-  template <SimEngine S, SRMetricClass M>
-  struct NoCustomPrtlUpdate_t {
-    template <class PusherKernel>
-    Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {
-    }
-  };
+  // template <SimEngine::type S, SRMetricClass M>
+  // struct NoCustomPrtlUpdate_t {
+  //   template <class PusherKernel>
+  //   Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {
+  //   }
+  // };
 
   /**
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <SRMetricClass M, ExtFieldsPolicyClass<M::Dim> F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
+  // template <SRMetricClass M, ExtFieldsPolicyClass<M::Dim> F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
+  template <SRMetricClass M, class P = ::kernel::PusherPolicy<M>>
   struct Pusher_kernel {
+    using E                   = typename P::EmissionPolicy;
+    using PUPD                = typename P::CustomParticleUpdatePolicy;
+    using F                   = typename P::ExternalFieldsPolicy;
+    static constexpr auto Atm = P::ApplyAtmosphere;
+
     static constexpr auto D            = M::Dim;
     static constexpr auto HasExtFx1    = ::traits::fieldsetter::HasFx1<F, D>;
     static constexpr auto HasExtFx2    = ::traits::fieldsetter::HasFx2<F, D>;
@@ -122,6 +90,9 @@ namespace kernel::sr {
     static constexpr auto HasExtBx3    = ::traits::fieldsetter::HasBx3<F, D>;
     static constexpr auto HasExtBfield = HasExtBx1 or HasExtBx2 or HasExtBx3;
     static constexpr auto HasEmission  = not ::traits::emission::IsNoPolicy<E>;
+
+    static constexpr auto HasCustomPrtlUpdate =
+      not ::traits::custom_prtl_update::IsNoPolicy<PUPD>;
 
     const ParticlePusherFlags pusher_flags;
     const RadiativeDragFlags  radiative_drag_flags;
@@ -144,6 +115,7 @@ namespace kernel::sr {
     const int          ni1, ni2, ni3;
 
   private:
+    // const P policies;
     const F external_fields;
 
     const E    emission_policy;
@@ -171,13 +143,14 @@ namespace kernel::sr {
     const real_t atmosphere_x_surf, atmosphere_ds;
 
   public:
-    Pusher_kernel(const PusherParams&            pusher_params,
+    Pusher_kernel(const PusherContext&           pusher_params,
                   PusherArrays&                  pusher_arrays,
                   const randacc_ndfield_t<D, 6>& EB,
                   const M&                       metric,
-                  const F&                       external_fields,
-                  const E&                       emission_policy,
-                  const PUPD&                    custom_prtl_update)
+                  const P&                       policies = {})
+      // const F&                       external_fields,
+      // const E&                       emission_policy,
+      // const PUPD&                    custom_prtl_update)
       : pusher_flags { pusher_params.pusher_flags }
       , radiative_drag_flags { pusher_params.radiative_drag_flags }
       , EB { EB }
@@ -201,9 +174,12 @@ namespace kernel::sr {
       , weight { pusher_arrays.weight }
       , tag { pusher_arrays.tag }
       , metric { metric }
-      , external_fields { external_fields }
-      , emission_policy { emission_policy }
-      , custom_prtl_update { custom_prtl_update }
+      , external_fields { policies.external_fields_policy }
+      , emission_policy { policies.emission_policy }
+      , custom_prtl_update { policies.custom_particle_update_policy }
+      // , external_fields { external_fields }
+      // , emission_policy { emission_policy }
+      // , custom_prtl_update { custom_prtl_update }
       , time { pusher_params.time }
       , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
                 pusher_params.omegaB0 * pusher_params.dt }
@@ -646,7 +622,9 @@ namespace kernel::sr {
       }
 
       // call custom particle position update
-      custom_prtl_update(p, xp, *this);
+      if constexpr (HasCustomPrtlUpdate) {
+        custom_prtl_update(p, xp, *this);
+      }
 
       // apply boundary conditions
       boundaryConditions(p, xp);
@@ -1637,4 +1615,4 @@ namespace kernel::sr {
 #undef from_Xi_to_i
 #undef i_di_to_Xi
 
-#endif // KERNELS_PARTICLE_PUSHER_SR_HPP
+#endif // KERNELS_PUSHERS_SR_HPP
