@@ -1,6 +1,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/policies.h"
 
 #include "metrics/minkowski.h"
 
@@ -284,21 +285,21 @@ auto main(int argc, char* argv[]) -> int {
         emitted_species_2.tag,
         emitted_species_2.pld_i
       };
-
-      Kokkos::parallel_for("ParticlePusher",
-                           2u,
-                           kernel::sr::Pusher_kernel<decltype(metric),
-                                                     kernel::sr::NoField_t,
-                                                     false,
-                                                     decltype(emission_policy),
-                                                     decltype(no_custom_update)>(
-                             pusher_params,
-                             pusher_arrays,
-                             EB,
-                             metric,
-                             kernel::sr::NoField_t {},
-                             emission_policy,
-                             no_custom_update));
+      const auto no_extfields = ::traits::extfields::NoPolicy_t {};
+      Kokkos::parallel_for(
+        "ParticlePusher",
+        2u,
+        kernel::sr::Pusher_kernel<decltype(metric),
+                                  decltype(no_extfields),
+                                  false,
+                                  decltype(emission_policy),
+                                  decltype(no_custom_update)>(pusher_params,
+                                                              pusher_arrays,
+                                                              EB,
+                                                              metric,
+                                                              no_extfields,
+                                                              emission_policy,
+                                                              no_custom_update));
       const auto n_injected = emission_policy.numbers_injected();
       emitted_species_1.set_counter(emitted_species_1.counter() + n_injected[0]);
       emitted_species_1.set_npart(emitted_species_1.npart() + n_injected[0]);

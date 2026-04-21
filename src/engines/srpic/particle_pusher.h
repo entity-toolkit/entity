@@ -216,7 +216,7 @@ namespace ntt {
           return;
         }
       }
-      CallPusher_WithExternalFieldFlag<M, kernel::sr::NoField_t, decltype(pgen), Atm>(
+      CallPusher_WithExternalFieldFlag<M, ::traits::extfields::NoPolicy_t, decltype(pgen), Atm>(
         domain,
         params,
         pusher_params,
@@ -226,7 +226,7 @@ namespace ntt {
         domain.fields.em,
         domain.mesh.metric,
         pgen,
-        kernel::sr::NoField_t {});
+        {});
     }
 
     template <SRMetricClass M, class PG>

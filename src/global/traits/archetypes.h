@@ -196,7 +196,7 @@ concept FieldSetterClass =
    (::traits::fieldsetter::HasEx1<FS, D> or ::traits::fieldsetter::HasEx2<FS, D> or
     ::traits::fieldsetter::HasEx3<FS, D> or ::traits::fieldsetter::HasBx1<FS, D> or
     ::traits::fieldsetter::HasBx2<FS, D> or ::traits::fieldsetter::HasBx3<FS, D>)) or
-  ((S == ntt::SimEngine::GRPIC) &&
+  ((S == ntt::SimEngine::GRPIC) and
    ((::traits::fieldsetter::HasDx1<FS, D> and ::traits::fieldsetter::HasDx2<FS, D> and
      ::traits::fieldsetter::HasDx3<FS, D>) or
     (::traits::fieldsetter::HasBx1<FS, D> and ::traits::fieldsetter::HasBx2<FS, D> and

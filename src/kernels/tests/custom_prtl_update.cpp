@@ -258,29 +258,29 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
   const auto custom_update = TestCustomPrtlUpdate {};
 
-  const auto n_iter = 100;
-
+  const auto n_iter       = 100;
+  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher_reflect",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission), decltype(no_custom_update)>(
+      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(no_custom_update)>(
         r_params,
         r_arrays,
         emfield,
         metric,
-        kernel::sr::NoField_t {},
+        no_extfields,
         no_emission,
         no_custom_update));
     Kokkos::parallel_for(
       "pusher_custom",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission), decltype(custom_update)>(
+      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(custom_update)>(
         c_params,
         c_arrays,
         emfield,
         metric,
-        kernel::sr::NoField_t {},
+        no_extfields,
         no_emission,
         custom_update));
 

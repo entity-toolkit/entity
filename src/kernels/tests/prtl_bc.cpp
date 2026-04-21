@@ -247,37 +247,38 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   };
 
   kernel::sr::PusherArrays pusher_arrays {};
-  pusher_arrays.sp       = 1u;
-  pusher_arrays.i1       = i1;
-  pusher_arrays.i2       = i2;
-  pusher_arrays.i3       = i3;
-  pusher_arrays.i1_prev  = i1_prev;
-  pusher_arrays.i2_prev  = i2_prev;
-  pusher_arrays.i3_prev  = i3_prev;
-  pusher_arrays.dx1      = dx1;
-  pusher_arrays.dx2      = dx2;
-  pusher_arrays.dx3      = dx3;
-  pusher_arrays.dx1_prev = dx1_prev;
-  pusher_arrays.dx2_prev = dx2_prev;
-  pusher_arrays.dx3_prev = dx3_prev;
-  pusher_arrays.ux1      = ux1;
-  pusher_arrays.ux2      = ux2;
-  pusher_arrays.ux3      = ux3;
-  pusher_arrays.phi      = phi;
-  pusher_arrays.tag      = tag;
-  const auto no_emission = ::traits::emission::NoPolicy_t {};
+  pusher_arrays.sp        = 1u;
+  pusher_arrays.i1        = i1;
+  pusher_arrays.i2        = i2;
+  pusher_arrays.i3        = i3;
+  pusher_arrays.i1_prev   = i1_prev;
+  pusher_arrays.i2_prev   = i2_prev;
+  pusher_arrays.i3_prev   = i3_prev;
+  pusher_arrays.dx1       = dx1;
+  pusher_arrays.dx2       = dx2;
+  pusher_arrays.dx3       = dx3;
+  pusher_arrays.dx1_prev  = dx1_prev;
+  pusher_arrays.dx2_prev  = dx2_prev;
+  pusher_arrays.dx3_prev  = dx3_prev;
+  pusher_arrays.ux1       = ux1;
+  pusher_arrays.ux2       = ux2;
+  pusher_arrays.ux3       = ux3;
+  pusher_arrays.phi       = phi;
+  pusher_arrays.tag       = tag;
+  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
+  const auto no_emission  = ::traits::emission::NoPolicy_t {};
   const auto no_custom_update = kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, M> {};
 
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M, kernel::sr::NoField_t, false, decltype(no_emission), decltype(no_custom_update)>(
+      kernel::sr::Pusher_kernel<M, decltype(no_extfields), false, decltype(no_emission), decltype(no_custom_update)>(
         pusher_params,
         pusher_arrays,
         emfield,
         metric,
-        kernel::sr::NoField_t {},
+        no_extfields,
         no_emission,
         no_custom_update));
     auto i1_  = Kokkos::create_mirror_view(i1);

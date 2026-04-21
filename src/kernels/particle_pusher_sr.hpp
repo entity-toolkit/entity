@@ -2,7 +2,6 @@
  * @file kernels/particle_pusher_sr.h
  * @brief Particle pusher for the SR
  * @implements
- *   - kernel::sr::NoField_t
  *   - kernel::sr::Pusher_kernel<>
  *   - kernel::sr::PusherParams
  *   - kernel::sr::PusherArrays
@@ -22,7 +21,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
+#include "traits/archetypes.h"
 #include "traits/metric.h"
 #include "traits/policies.h"
 #include "utils/comparators.h"
@@ -56,8 +55,6 @@
 
 namespace kernel::sr {
   using namespace ntt;
-
-  struct NoField_t {};
 
   struct PusherParams {
     // species index
@@ -109,12 +106,21 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam F Additional force
    */
-  template <SRMetricClass M, class F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
+  template <SRMetricClass M, ExtFieldsPolicyClass<M::Dim> F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
   struct Pusher_kernel {
     static constexpr auto D            = M::Dim;
-    static constexpr auto HasExtForce  = ::traits::external::HasExternalF<F, D>;
-    static constexpr auto HasExtEfield = ::traits::external::HasExternalE<F, D>;
-    static constexpr auto HasExtBfield = ::traits::external::HasExternalB<F, D>;
+    static constexpr auto HasExtFx1    = ::traits::fieldsetter::HasFx1<F, D>;
+    static constexpr auto HasExtFx2    = ::traits::fieldsetter::HasFx2<F, D>;
+    static constexpr auto HasExtFx3    = ::traits::fieldsetter::HasFx3<F, D>;
+    static constexpr auto HasExtForce  = HasExtFx1 or HasExtFx2 or HasExtFx3;
+    static constexpr auto HasExtEx1    = ::traits::fieldsetter::HasEx1<F, D>;
+    static constexpr auto HasExtEx2    = ::traits::fieldsetter::HasEx2<F, D>;
+    static constexpr auto HasExtEx3    = ::traits::fieldsetter::HasEx3<F, D>;
+    static constexpr auto HasExtEfield = HasExtEx1 or HasExtEx2 or HasExtEx3;
+    static constexpr auto HasExtBx1    = ::traits::fieldsetter::HasBx1<F, D>;
+    static constexpr auto HasExtBx2    = ::traits::fieldsetter::HasBx2<F, D>;
+    static constexpr auto HasExtBx3    = ::traits::fieldsetter::HasBx3<F, D>;
+    static constexpr auto HasExtBfield = HasExtBx1 or HasExtBx2 or HasExtBx3;
     static constexpr auto HasEmission  = not ::traits::emission::IsNoPolicy<E>;
 
     const ParticlePusherFlags pusher_flags;
@@ -374,13 +380,13 @@ namespace kernel::sr {
         if constexpr (HasExtEfield) {
           vec_t<Dim::_3D> ext_e_Ph { ZERO };
           vec_t<Dim::_3D> ext_e_Cart { ZERO };
-          if constexpr (::traits::external::HasEx1<F, D>) {
+          if constexpr (HasExtEx1) {
             ext_e_Ph[0] = external_fields.ex1(xp_Ph);
           }
-          if constexpr (::traits::external::HasEx2<F, D>) {
+          if constexpr (HasExtEx2) {
             ext_e_Ph[1] = external_fields.ex2(xp_Ph);
           }
-          if constexpr (::traits::external::HasEx3<F, D>) {
+          if constexpr (HasExtEx3) {
             ext_e_Ph[2] = external_fields.ex3(xp_Ph);
           }
           metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_e_Ph, ext_e_Cart);
@@ -392,13 +398,13 @@ namespace kernel::sr {
         if constexpr (HasExtBfield) {
           vec_t<Dim::_3D> ext_b_Ph { ZERO };
           vec_t<Dim::_3D> ext_b_Cart { ZERO };
-          if constexpr (::traits::external::HasBx1<F, D>) {
+          if constexpr (HasExtBx1) {
             ext_b_Ph[0] = external_fields.bx1(xp_Ph);
           }
-          if constexpr (::traits::external::HasBx2<F, D>) {
+          if constexpr (HasExtBx2) {
             ext_b_Ph[1] = external_fields.bx2(xp_Ph);
           }
-          if constexpr (::traits::external::HasBx3<F, D>) {
+          if constexpr (HasExtBx3) {
             ext_b_Ph[2] = external_fields.bx3(xp_Ph);
           }
           metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_b_Ph, ext_b_Cart);
@@ -423,13 +429,13 @@ namespace kernel::sr {
         // compute the external force either user-provided or from the atmosphere model
         if constexpr (HasExtForce or Atm) {
           real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
-          if constexpr (::traits::external::HasFx1<F, D>) {
+          if constexpr (HasExtFx1) {
             f_x1 = external_fields.fx1(xp_Ph);
           }
-          if constexpr (::traits::external::HasFx2<F, D>) {
+          if constexpr (HasExtFx2) {
             f_x2 = external_fields.fx2(xp_Ph);
           }
-          if constexpr (::traits::external::HasFx3<F, D>) {
+          if constexpr (HasExtFx3) {
             f_x3 = external_fields.fx3(xp_Ph);
           }
           if constexpr (Atm) {

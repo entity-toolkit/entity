@@ -181,42 +181,43 @@ void testPusher(const std::vector<std::size_t>& res) {
   const auto no_custom_update =
     kernel::sr::NoCustomPrtlUpdate_t<SimEngine::SRPIC, Minkowski<Dim::_3D>> {};
 
+  const auto no_extfields = ::traits::extfields::NoPolicy_t {};
   for (auto t { 0u }; t < 2000; ++t) {
     const real_t time  = t * dt;
     pusher_params.time = time;
 
     pusher_params.pusher_flags = ParticlePusher::BORIS;
-    Kokkos::parallel_for("pusher",
-                         CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-                         kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
-                                                   kernel::sr::NoField_t,
-                                                   false,
-                                                   decltype(no_emission),
-                                                   decltype(no_custom_update)>(
-                           pusher_params,
-                           pusher_arrays,
-                           emfield,
-                           metric,
-                           kernel::sr::NoField_t {},
-                           no_emission,
-                           no_custom_update));
+    Kokkos::parallel_for(
+      "pusher",
+      CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
+                                decltype(no_extfields),
+                                false,
+                                decltype(no_emission),
+                                decltype(no_custom_update)>(pusher_params,
+                                                            pusher_arrays,
+                                                            emfield,
+                                                            metric,
+                                                            no_extfields,
+                                                            no_emission,
+                                                            no_custom_update));
 
     pusher_params.pusher_flags = ParticlePusher::VAY;
 
-    Kokkos::parallel_for("pusher",
-                         CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
-                         kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
-                                                   kernel::sr::NoField_t,
-                                                   false,
-                                                   decltype(no_emission),
-                                                   decltype(no_custom_update)>(
-                           pusher_params,
-                           pusher_arrays,
-                           emfield,
-                           metric,
-                           kernel::sr::NoField_t {},
-                           no_emission,
-                           no_custom_update));
+    Kokkos::parallel_for(
+      "pusher",
+      CreateRangePolicy<Dim::_1D>({ 1 }, { 2 }),
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>,
+                                decltype(no_extfields),
+                                false,
+                                decltype(no_emission),
+                                decltype(no_custom_update)>(pusher_params,
+                                                            pusher_arrays,
+                                                            emfield,
+                                                            metric,
+                                                            no_extfields,
+                                                            no_emission,
+                                                            no_custom_update));
 
     auto i1_prev_ = Kokkos::create_mirror_view(i1_prev);
     auto i2_prev_ = Kokkos::create_mirror_view(i2_prev);

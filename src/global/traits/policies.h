@@ -23,6 +23,8 @@
 
 #include "global.h"
 
+#include "traits/archetypes.h"
+
 #include <Kokkos_Pair.hpp>
 
 #include <vector>
@@ -81,11 +83,29 @@ namespace traits::emission {
 } // namespace traits::emission
 
 template <class E, class M>
-concept EmissionPolicyClass = (::traits::emission::HasPayload<E> &&
-                               ::traits::emission::HasNumbersInjected<E> &&
-                               ::traits::emission::HasEmittedSpeciesIndices<E> &&
-                               ::traits::emission::HasShouldEmit<E, M> &&
+concept EmissionPolicyClass = (::traits::emission::HasPayload<E> and
+                               ::traits::emission::HasNumbersInjected<E> and
+                               ::traits::emission::HasEmittedSpeciesIndices<E> and
+                               ::traits::emission::HasShouldEmit<E, M> and
                                ::traits::emission::HasEmit<E, M>) or
                               ::traits::emission::IsNoPolicy<E>;
+
+namespace traits::extfields {
+
+  struct NoPolicy_t {};
+
+  template <class F>
+  concept IsNoPolicy = std::is_same<std::remove_cvref_t<F>, NoPolicy_t>::value;
+
+} // namespace traits::extfields
+
+template <class F, Dimension D>
+concept ExtFieldsPolicyClass =
+  (::traits::fieldsetter::HasFx1<F, D> or ::traits::fieldsetter::HasFx2<F, D> or
+   ::traits::fieldsetter::HasFx3<F, D> or ::traits::fieldsetter::HasEx1<F, D> or
+   ::traits::fieldsetter::HasEx2<F, D> or ::traits::fieldsetter::HasEx3<F, D> or
+   ::traits::fieldsetter::HasBx1<F, D> or ::traits::fieldsetter::HasBx2<F, D> or
+   ::traits::fieldsetter::HasBx3<F, D>) or
+  ::traits::extfields::IsNoPolicy<F>;
 
 #endif // TRAITS_POLICIES_H
