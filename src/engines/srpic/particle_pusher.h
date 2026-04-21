@@ -11,14 +11,12 @@
 #include "utils/numeric.h"
 #include "utils/param_container.h"
 
+#include "archetypes/emission.h"
 #include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/emission/compton.hpp"
-#include "kernels/emission/emission.hpp"
-#include "kernels/emission/synchrotron.hpp"
 #include "kernels/particle_pusher_sr.hpp"
 
 namespace ntt {
@@ -74,7 +72,7 @@ namespace ntt {
         raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
                        "Emitted photon species must have zero charge",
                        HERE);
-        const auto emission_policy = kernel::emission::Synchrotron<M>(
+        const auto emission_policy = arch::EmissionSynchrotron<M>(
           emitted_species,
           photon_species,
           pusher_params.mass,
@@ -115,7 +113,7 @@ namespace ntt {
         raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
                        "Emitted photon species must have zero charge",
                        HERE);
-        const auto emission_policy = kernel::emission::Compton<M>(
+        const auto emission_policy = arch::EmissionCompton<M>(
           emitted_species,
           photon_species,
           pusher_params.mass,
