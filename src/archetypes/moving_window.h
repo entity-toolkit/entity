@@ -15,11 +15,10 @@
 
 #include "archetypes/energy_dist.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters/parameters.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 #include <utility>
-
 
 namespace arch {
 
@@ -28,12 +27,15 @@ namespace arch {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(D),
                   "Invalid component index");
 
-    ndfield_t<D, 6>   Fld;
-    ndfield_t<D, 6>   backup_Fld;
-    const BCTags      tags;
-    const int         window_shift;
+    ndfield_t<D, 6> Fld;
+    ndfield_t<D, 6> backup_Fld;
+    const BCTags    tags;
+    const int       window_shift;
 
-    FieldShift_kernel(ndfield_t<D, 6> Fld, ndfield_t<D, 6> backup_Fld, const int window_shift, BCTags tags)
+    FieldShift_kernel(ndfield_t<D, 6> Fld,
+                      ndfield_t<D, 6> backup_Fld,
+                      const int       window_shift,
+                      BCTags          tags)
       : Fld { Fld }
       , backup_Fld { backup_Fld }
       , window_shift { window_shift }
@@ -139,20 +141,19 @@ namespace arch {
 
    */
   template <SimEngine::type S, class M, in o>
-  Inline void MoveWindow(Domain<S, M>& domain, Metadomain<S, M>& global_domain, 
-                         const int window_shift) {
-    
+  Inline void MoveWindow(Domain<S, M>&     domain,
+                         Metadomain<S, M>& global_domain,
+                         const int         window_shift) {
+
     if constexpr (M::CoordType != Coord::Cart) {
-      raise::Error(
-        "Moving window only applicable to cartesian coordinates",
-        HERE);
+      raise::Error("Moving window only applicable to cartesian coordinates", HERE);
     } else {
 
       /*
         move particles in the window back by the window size
       */
-      const auto nspec = domain.species.size();
-      const auto& mesh = domain.mesh;
+      const auto  nspec = domain.species.size();
+      const auto& mesh  = domain.mesh;
       if (o == in::x1) {
         // loop over particle species
         for (auto s { 0u }; s < nspec; ++s) {
@@ -165,8 +166,7 @@ namespace arch {
             Lambda(index_t p) {
               // shift particle position back by window update frequency
               i1(p) -= window_shift;
-            }
-          );
+            });
         }
       } else if (o == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
@@ -181,8 +181,7 @@ namespace arch {
               Lambda(index_t p) {
                 // shift particle position back by window update frequency
                 i2(p) -= window_shift;
-              }
-            );
+              });
           }
         } else {
           raise::Error("Invalid dimension", HERE);
@@ -200,8 +199,7 @@ namespace arch {
               Lambda(index_t p) {
                 // shift particle position back by window update frequency
                 i3(p) -= window_shift;
-              }
-            );
+              });
           }
         } else {
           raise::Error("Invalid direction", HERE);
@@ -212,7 +210,7 @@ namespace arch {
 
       // shift fields in the window back by the window size
       std::vector<std::size_t> xi_min, xi_max;
-      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
       for (auto d { 0u }; d < M::Dim; ++d) {
         const auto dd = all_dirs[d];
         if (o == dd) {
@@ -243,40 +241,34 @@ namespace arch {
       }
 
       // copy fields to backup before shifting
-      Kokkos::deep_copy(domain.fields.bckp, domain.fields.em); 
+      Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
 
       if (o == in::x1) {
-        Kokkos::parallel_for(
-            "ShiftFields",
-            range,
-            FieldShift_kernel<M::Dim, in::x1>(
-              domain.fields.em,
-              domain.fields.bckp,
-              window_shift,
-              BC::B | BC::E));
+        Kokkos::parallel_for("ShiftFields",
+                             range,
+                             FieldShift_kernel<M::Dim, in::x1>(domain.fields.em,
+                                                               domain.fields.bckp,
+                                                               window_shift,
+                                                               BC::B | BC::E));
       } else if (o == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          Kokkos::parallel_for(
-            "ShiftFields",
-            range,
-            FieldShift_kernel<M::Dim, in::x2>(
-              domain.fields.em,
-              domain.fields.bckp,
-              window_shift,
-              BC::B | BC::E));
+          Kokkos::parallel_for("ShiftFields",
+                               range,
+                               FieldShift_kernel<M::Dim, in::x2>(domain.fields.em,
+                                                                 domain.fields.bckp,
+                                                                 window_shift,
+                                                                 BC::B | BC::E));
         } else {
           raise::Error("Invalid dimension", HERE);
         }
       } else {
         if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::parallel_for(
-            "ShiftFields",
-            range,
-            FieldShift_kernel<M::Dim, in::x3>(
-              domain.fields.em,
-              domain.fields.bckp,
-              window_shift,
-              BC::B | BC::E));
+          Kokkos::parallel_for("ShiftFields",
+                               range,
+                               FieldShift_kernel<M::Dim, in::x3>(domain.fields.em,
+                                                                 domain.fields.bckp,
+                                                                 window_shift,
+                                                                 BC::B | BC::E));
         } else {
           raise::Error("Invalid dimension", HERE);
         }
@@ -288,7 +280,6 @@ namespace arch {
       global_domain.CommunicateParticles(domain);
 
       // ToDo: Update metric
-
     }
   }
 } // namespace arch
