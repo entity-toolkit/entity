@@ -43,12 +43,10 @@ namespace user {
   struct InitFields {
     /*
       Sets up magnetic and electric field components for the simulation.
-      Must satisfy E = -v x B for Lorentz Force to be zero.
 
       @param bmag: magnetic field scaling
       @param btheta: magnetic field polar angle
       @param bphi: magnetic field azimuthal angle
-      @param drift_ux: drift velocity in the x direction
     */
     InitFields(real_t bmag, real_t btheta, real_t bphi)
       : Bmag { bmag }
@@ -95,7 +93,6 @@ namespace user {
     Metadomain<S, M>& global_domain;
 
     // domain properties
-    const real_t  global_xmin, global_xmax;
     const real_t  cell_size;
     // gas properties
     const real_t  temperature, temperature_ratio;
@@ -113,9 +110,8 @@ namespace user {
     inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
-      , global_xmin { global_domain.mesh().extent(in::x1).first }
-      , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , cell_size { (global_xmax - global_xmin) /
+      , cell_size { (global_domain.mesh().extent(in::x1).second -
+                     global_domain.mesh().extent(in::x1).first) /
                     global_domain.mesh().n_all(in::x1) }
       , temperature { p.template get<real_t>("setup.temperature") }
       , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
