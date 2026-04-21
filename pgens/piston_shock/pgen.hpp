@@ -50,11 +50,10 @@ namespace user {
       @param bphi: magnetic field azimuthal angle
       @param drift_ux: drift velocity in the x direction
     */
-    InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
+    InitFields(real_t bmag, real_t btheta, real_t bphi)
       : Bmag { bmag }
       , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
-      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
-      , Vx { drift_ux } {}
+      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) } {}
 
     // magnetic field components
     Inline auto bx1(const coord_t<D>&) const -> real_t {
@@ -69,21 +68,10 @@ namespace user {
       return Bmag * math::sin(Btheta) * math::cos(Bphi);
     }
 
-    // electric field components
-    Inline auto ex1(const coord_t<D>&) const -> real_t {
-      return ZERO;
-    }
-
-    Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
-    }
-
-    Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
-    }
+    // electric field components are all zero
 
   private:
-    const real_t Btheta, Bphi, Vx, Bmag;
+    const real_t Bmag, Btheta, Bphi;
   };
 
   template <SimEngine::type S, class M>
@@ -136,7 +124,7 @@ namespace user {
       , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
       , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") }
-      , init_flds { Bmag, Btheta, Bphi, ZERO } {}
+      , init_flds { Bmag, Btheta, Bphi } {}
 
     inline PGen() {}
 
