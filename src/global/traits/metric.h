@@ -183,6 +183,10 @@ concept SRMetricClass = ::traits::metric::HasD<M> and
                         ::traits::metric::HasConvertXYZ<M>;
 
 template <class M>
+concept CartesianMetricClass = SRMetricClass<M> and
+                               (M::CoordType == ntt::Coord::Cartesian);
+
+template <class M>
 concept GRMetricClass =
   ::traits::metric::CurvilinearMetric<M> and ::traits::metric::HasD<M> and
   ::traits::metric::HasPrtlDim<M> and ::traits::metric::HasCoordType<M> and

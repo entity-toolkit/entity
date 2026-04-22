@@ -4,13 +4,8 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/traits.h"
-
-#include "archetypes/energy_dist.h"
-#include "archetypes/particle_injector.h"
 #include "archetypes/piston.h"
 #include "archetypes/problem_generator.h"
-#include "archetypes/spatial_dist.h"
 #include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -103,14 +98,14 @@ namespace user {
       real_t xg_max;
 
       bool is_left;
-
       bool massive;
 
-      template <class Coord, class PusherKernel>
-      Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
-
+      Inline void operator()(index_t                      p,
+                             const kernel::PusherContext& ctx,
+                             const kernel::PusherBoundaries<M::Dim>&,
+                             const kernel::PusherArrays& particles,
+                             const M&                    metric) const {
         real_t piston_position_use;
-
         // make sure piston has not reached the right wall
         if (piston_position_current < xg_max) {
           piston_position_use = piston_position_current;
@@ -118,22 +113,26 @@ namespace user {
           piston_position_use = xg_max;
         }
 
-        if (arch::CrossesPiston<S, M, PusherKernel>(p,
-                                                    pusher,
-                                                    piston_position_use,
-                                                    piston_velocity_current,
-                                                    is_left)) {
-          arch::PistonUpdate<S, M, PusherKernel>(p,
-                                                 pusher,
-                                                 piston_position_use,
-                                                 piston_velocity_current,
-                                                 massive);
+        if (arch::CrossesPiston<M>(p,
+                                   ctx.dt,
+                                   particles,
+                                   metric,
+                                   piston_position_use,
+                                   piston_velocity_current,
+                                   is_left)) {
+          arch::PistonUpdate<M>(p,
+                                ctx.dt,
+                                particles,
+                                metric,
+                                piston_position_use,
+                                piston_velocity_current,
+                                massive);
         }
       }
     };
 
-    template <class D>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
+    template <class DOM>
+    auto CustomParticleUpdate(simtime_t time, spidx_t sp, DOM& domain) const {
       return CustomPrtlUpdate { piston_initial_position +
                                   static_cast<real_t>(time) * piston_velocity,
                                 piston_velocity,
