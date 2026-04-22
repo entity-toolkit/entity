@@ -82,7 +82,7 @@ namespace arch {
 
 
   /**
-   * @brief Updates particle position and velocity if it reflects off a moiving
+   * @brief Updates particle position and velocity if it reflects off a moving
    * piston, called to correct patticle position
    *
    * @param p Index of particle
@@ -94,7 +94,7 @@ namespace arch {
    * @param massive Whether the particle is massive or massless (e.g. photon)
    */
   template <CartesianMetricClass M>
-  Inline void PistonUpdate(index_t                     p,
+  Inline void Piston(index_t                     p,
                      real_t                      dt,
                      const kernel::PusherArrays& particles,
                      const M&                    metric,
