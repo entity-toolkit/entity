@@ -140,147 +140,142 @@ namespace arch {
    * @brief Updates particle position and fields in the moving window.
 
    */
-  template <SimEngine::type S, class M, in o>
+  template <SimEngine::type S, CartesianMetricClass M, in o>
   Inline void MoveWindow(Domain<S, M>&     domain,
                          Metadomain<S, M>& global_domain,
                          const int         window_shift) {
 
-    if constexpr (M::CoordType != Coord::Cart) {
-      raise::Error("Moving window only applicable to cartesian coordinates", HERE);
-    } else {
-
-      /*
-        move particles in the window back by the window size
-      */
-      const auto  nspec = domain.species.size();
-      const auto& mesh  = domain.mesh;
-      if (o == in::x1) {
+    /*
+      move particles in the window back by the window size
+    */
+    const auto  nspec = domain.species.size();
+    const auto& mesh  = domain.mesh;
+    if (o == in::x1) {
+      // loop over particle species
+      for (auto s { 0u }; s < nspec; ++s) {
+        // get particle properties
+        auto& species = domain.species[s];
+        auto  i1      = species.i1;
+        Kokkos::parallel_for(
+          "MoveParticles",
+          species.rangeActiveParticles(),
+          Lambda(index_t p) {
+            // shift particle position back by window update frequency
+            i1(p) -= window_shift;
+          });
+      }
+    } else if (o == in::x2) {
+      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
         // loop over particle species
         for (auto s { 0u }; s < nspec; ++s) {
           // get particle properties
           auto& species = domain.species[s];
-          auto  i1      = species.i1;
+          auto  i2      = species.i2;
           Kokkos::parallel_for(
             "MoveParticles",
             species.rangeActiveParticles(),
             Lambda(index_t p) {
               // shift particle position back by window update frequency
-              i1(p) -= window_shift;
+              i2(p) -= window_shift;
             });
         }
-      } else if (o == in::x2) {
-        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          // loop over particle species
-          for (auto s { 0u }; s < nspec; ++s) {
-            // get particle properties
-            auto& species = domain.species[s];
-            auto  i2      = species.i2;
-            Kokkos::parallel_for(
-              "MoveParticles",
-              species.rangeActiveParticles(),
-              Lambda(index_t p) {
-                // shift particle position back by window update frequency
-                i2(p) -= window_shift;
-              });
-          }
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
-      } else if (o == in::x3) {
-        if constexpr (M::Dim == Dim::_3D) {
-          // loop over particle species
-          for (auto s { 0u }; s < nspec; ++s) {
-            // get particle properties
-            auto& species = domain.species[s];
-            auto  i3      = species.i3;
-            Kokkos::parallel_for(
-              "MoveParticles",
-              species.rangeActiveParticles(),
-              Lambda(index_t p) {
-                // shift particle position back by window update frequency
-                i3(p) -= window_shift;
-              });
-          }
-        } else {
-          raise::Error("Invalid direction", HERE);
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
+    } else if (o == in::x3) {
+      if constexpr (M::Dim == Dim::_3D) {
+        // loop over particle species
+        for (auto s { 0u }; s < nspec; ++s) {
+          // get particle properties
+          auto& species = domain.species[s];
+          auto  i3      = species.i3;
+          Kokkos::parallel_for(
+            "MoveParticles",
+            species.rangeActiveParticles(),
+            Lambda(index_t p) {
+              // shift particle position back by window update frequency
+              i3(p) -= window_shift;
+            });
         }
       } else {
         raise::Error("Invalid direction", HERE);
       }
+    } else {
+      raise::Error("Invalid direction", HERE);
+    }
 
-      // shift fields in the window back by the window size
-      std::vector<std::size_t> xi_min, xi_max;
-      const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
-      for (auto d { 0u }; d < M::Dim; ++d) {
-        const auto dd = all_dirs[d];
-        if (o == dd) {
-          xi_min.push_back(0);
-          xi_max.push_back(domain.mesh.n_all(dd) - window_shift);
-        } else {
-          xi_min.push_back(0);
-          xi_max.push_back(domain.mesh.n_all(dd));
-        }
-      }
-      raise::ErrorIf(xi_min.size() != xi_max.size() or
-                       xi_min.size() != static_cast<std::size_t>(M::Dim),
-                     "Invalid range size",
-                     HERE);
-
-      // loop range for shifting fields
-      range_t<M::Dim> range;
-      if constexpr (M::Dim == Dim::_1D) {
-        range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
-      } else if constexpr (M::Dim == Dim::_2D) {
-        range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
-                                          { xi_max[0], xi_max[1] });
-      } else if constexpr (M::Dim == Dim::_3D) {
-        range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
-                                          { xi_max[0], xi_max[1], xi_max[2] });
+    // shift fields in the window back by the window size
+    std::vector<std::size_t> xi_min, xi_max;
+    const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      const auto dd = all_dirs[d];
+      if (o == dd) {
+        xi_min.push_back(0);
+        xi_max.push_back(domain.mesh.n_all(dd) - window_shift);
       } else {
-        raise::Error("Invalid dimension", HERE);
+        xi_min.push_back(0);
+        xi_max.push_back(domain.mesh.n_all(dd));
       }
+    }
+    raise::ErrorIf(xi_min.size() != xi_max.size() or
+                     xi_min.size() != static_cast<std::size_t>(M::Dim),
+                   "Invalid range size",
+                   HERE);
 
-      // copy fields to backup before shifting
-      Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
+    // loop range for shifting fields
+    range_t<M::Dim> range;
+    if constexpr (M::Dim == Dim::_1D) {
+      range = CreateRangePolicy<M::Dim>({ xi_min[0] }, { xi_max[0] });
+    } else if constexpr (M::Dim == Dim::_2D) {
+      range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1] },
+                                        { xi_max[0], xi_max[1] });
+    } else if constexpr (M::Dim == Dim::_3D) {
+      range = CreateRangePolicy<M::Dim>({ xi_min[0], xi_min[1], xi_min[2] },
+                                        { xi_max[0], xi_max[1], xi_max[2] });
+    } else {
+      raise::Error("Invalid dimension", HERE);
+    }
 
-      if (o == in::x1) {
+    // copy fields to backup before shifting
+    Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
+
+    if (o == in::x1) {
+      Kokkos::parallel_for("ShiftFields",
+                           range,
+                           FieldShift_kernel<M::Dim, in::x1>(domain.fields.em,
+                                                             domain.fields.bckp,
+                                                             window_shift,
+                                                             BC::B | BC::E));
+    } else if (o == in::x2) {
+      if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
         Kokkos::parallel_for("ShiftFields",
                              range,
-                             FieldShift_kernel<M::Dim, in::x1>(domain.fields.em,
+                             FieldShift_kernel<M::Dim, in::x2>(domain.fields.em,
                                                                domain.fields.bckp,
                                                                window_shift,
                                                                BC::B | BC::E));
-      } else if (o == in::x2) {
-        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          Kokkos::parallel_for("ShiftFields",
-                               range,
-                               FieldShift_kernel<M::Dim, in::x2>(domain.fields.em,
-                                                                 domain.fields.bckp,
-                                                                 window_shift,
-                                                                 BC::B | BC::E));
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
       } else {
-        if constexpr (M::Dim == Dim::_3D) {
-          Kokkos::parallel_for("ShiftFields",
-                               range,
-                               FieldShift_kernel<M::Dim, in::x3>(domain.fields.em,
-                                                                 domain.fields.bckp,
-                                                                 window_shift,
-                                                                 BC::B | BC::E));
-        } else {
-          raise::Error("Invalid dimension", HERE);
-        }
+        raise::Error("Invalid dimension", HERE);
       }
-
-      // synch ghost zones after moving the window
-      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
-      // communicate particles after moving
-      global_domain.CommunicateParticles(domain);
-
-      // ToDo: Update metric
+    } else {
+      if constexpr (M::Dim == Dim::_3D) {
+        Kokkos::parallel_for("ShiftFields",
+                             range,
+                             FieldShift_kernel<M::Dim, in::x3>(domain.fields.em,
+                                                               domain.fields.bckp,
+                                                               window_shift,
+                                                               BC::B | BC::E));
+      } else {
+        raise::Error("Invalid dimension", HERE);
+      }
     }
+
+    // synch ghost zones after moving the window
+    global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+    // communicate particles after moving
+    global_domain.CommunicateParticles(domain);
+
+    // ToDo: Update metric
   }
 } // namespace arch
 
