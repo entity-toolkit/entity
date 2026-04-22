@@ -2,29 +2,24 @@
 
 #include "global.h"
 
+#include "utils/error.h"
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
-
-void errorIf(bool condition, const std::string& message) {
-  if (condition) {
-    throw std::runtime_error(message);
-  }
-}
 
 auto main(int argc, char* argv[]) -> int {
   using namespace ntt;
 
   try {
-    Kokkos::initialize(argc, argv);
+    GlobalInitialize(argc, argv);
 
     {
       // simple arrays & ranges
       array_t<float*> a { "a", 100 };
-      errorIf(a.extent(0) != 100, "a.extent(0) must be 100");
+      raise::ErrorIf(a.extent(0) != 100, "a.extent(0) must be 100", HERE);
       Kokkos::parallel_for(
         range_t<Dim::_1D>(0, 100),
         Lambda(const int i) { a(i) = static_cast<float>(i); });
@@ -33,8 +28,10 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::deep_copy(b, a);
 
       Kokkos::parallel_for(range_h_t<Dim::_1D>(0, 100), [&](const int i) {
-        errorIf(b(i) != static_cast<float>(i),
-                "b(" + std::to_string(i) + ") must be = " + std::to_string(i));
+        raise::ErrorIf(b(i) != static_cast<float>(i),
+                       "b(" + std::to_string(i) +
+                         ") must be = " + std::to_string(i),
+                       HERE);
       });
     }
 
@@ -47,7 +44,6 @@ auto main(int argc, char* argv[]) -> int {
       array_t<float*> a { "a", 100 };
       auto            a_scatter = Kokkos::Experimental::create_scatter_view(a);
       Kokkos::parallel_for(
-        // range_t<Dim::_1D>({ 0 }, { 100 }),
         CreateRangePolicy<Dim::_1D>({ 0 }, { 100 }),
         Lambda(const int i) {
           auto a_acc     = a_scatter.access();
@@ -61,11 +57,12 @@ auto main(int argc, char* argv[]) -> int {
         CreateRangePolicyOnHost<Dim::_1D>({ 0 }, { 100 }),
         [&](const int i) {
           if (i < 10) {
-            errorIf(b(i) != (float)(450 + 10 * i),
-                    "b(" + std::to_string(i) +
-                      ") must be = " + std::to_string(450 + 10 * i));
+            raise::ErrorIf(b(i) != (float)(450 + 10 * i),
+                           "b(" + std::to_string(i) +
+                             ") must be = " + std::to_string(450 + 10 * i),
+                           HERE);
           } else {
-            errorIf(b(i) != 0.0, "b(" + std::to_string(i) + ") must be = 0.0");
+            raise::ErrorIf(b(i) != 0.0, "b(" + std::to_string(i) + ") must be = 0.0", HERE);
           }
         });
     }
@@ -80,11 +77,11 @@ auto main(int argc, char* argv[]) -> int {
 
   catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
-    Kokkos::finalize();
-    return -1;
+    GlobalFinalize();
+    return 1;
   }
 
-  Kokkos::finalize();
+  GlobalFinalize();
 
   return 0;
 }

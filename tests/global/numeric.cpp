@@ -3,18 +3,10 @@
 #include "global.h"
 
 #include "utils/comparators.h"
+#include "utils/error.h"
 
-#include <iomanip>
-#include <iostream>
 #include <limits>
-#include <stdexcept>
 #include <string>
-
-void errorIf(bool condition, const std::string& message) {
-  if (condition) {
-    throw std::runtime_error(message);
-  }
-}
 
 template <typename T>
 void testVec() {
@@ -34,12 +26,17 @@ void testVec() {
 
   constexpr auto c_one = static_cast<T>(1.0);
 
-  errorIf(not cmp::AlmostZero(DOT(a1, a2, a3, b1, b2, b3)),
-          "DOT of perp vectors != 0");
-  errorIf(not cmp::AlmostEqual(NORM_SQR(a1, a2, a3), c_one), "NORM_SQR of a != 1");
-  errorIf(not cmp::AlmostEqual(NORM(a1, a2, a3), c_one), "NORM of a != 1");
-  errorIf(not cmp::AlmostEqual(NORM_SQR(b1, b2, b3), c_one), "NORM_SQR of b != 1");
-  errorIf(not cmp::AlmostEqual(NORM(b1, b2, b3), c_one), "NORM of b != 1");
+  raise::ErrorIf(not cmp::AlmostZero(DOT(a1, a2, a3, b1, b2, b3)),
+                 "DOT of perp vectors != 0",
+                 HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM_SQR(a1, a2, a3), c_one),
+                 "NORM_SQR of a != 1",
+                 HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM(a1, a2, a3), c_one), "NORM of a != 1", HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM_SQR(b1, b2, b3), c_one),
+                 "NORM_SQR of b != 1",
+                 HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM(b1, b2, b3), c_one), "NORM of b != 1", HERE);
 
   const T c1 = CROSS_x1(a1, a2, a3, b1, b2, b3);
   const T c2 = CROSS_x2(a1, a2, a3, b1, b2, b3);
@@ -47,33 +44,37 @@ void testVec() {
 
   // decreasing accuracy
   constexpr auto eps = 10 * std::numeric_limits<T>::epsilon();
-  errorIf(not cmp::AlmostEqual(NORM_SQR(c1, c2, c3), c_one, eps),
-          "NORM_SQR of c != 1");
-  errorIf(not cmp::AlmostEqual(NORM(c1, c2, c3), c_one, eps), "NORM of c != 1");
+  raise::ErrorIf(not cmp::AlmostEqual(NORM_SQR(c1, c2, c3), c_one, eps),
+                 "NORM_SQR of c != 1",
+                 HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM(c1, c2, c3), c_one, eps),
+                 "NORM of c != 1",
+                 HERE);
 
-  errorIf(not cmp::AlmostZero(DOT(a1, a2, a3, c1, c2, c3), eps),
-          "DOT of a and c != 0");
-  errorIf(not cmp::AlmostZero(DOT(b1, b2, b3, c1, c2, c3), eps),
-          "DOT of b and c != 0");
+  raise::ErrorIf(not cmp::AlmostZero(DOT(a1, a2, a3, c1, c2, c3), eps),
+                 "DOT of a and c != 0",
+                 HERE);
+  raise::ErrorIf(not cmp::AlmostZero(DOT(b1, b2, b3, c1, c2, c3), eps),
+                 "DOT of b and c != 0",
+                 HERE);
 }
 
 auto main() -> int {
-  errorIf(IMIN(1, 2) != 1, "IMIN(1, 2) != 1");
-  errorIf(IMIN(2, 1) != 1, "IMIN(2, 1) != 1");
-  errorIf(IMAX(1, 2) != 2, "IMAX(1, 2) != 2");
-  errorIf(IMAX(2, 1) != 2, "IMAX(2, 1) != 2");
+  raise::ErrorIf(IMIN(1, 2) != 1, "IMIN(1, 2) != 1", HERE);
+  raise::ErrorIf(IMIN(2, 1) != 1, "IMIN(2, 1) != 1", HERE);
+  raise::ErrorIf(IMAX(1, 2) != 2, "IMAX(1, 2) != 2", HERE);
+  raise::ErrorIf(IMAX(2, 1) != 2, "IMAX(2, 1) != 2", HERE);
 
-  errorIf(SIGN(-1) != -ONE, "SIGN(-1) != -1");
-  errorIf(SIGN(1) != ONE, "SIGN(1) != 1");
+  raise::ErrorIf(SIGN(-1) != -ONE, "SIGN(-1) != -1", HERE);
+  raise::ErrorIf(SIGN(1) != ONE, "SIGN(1) != 1", HERE);
 
-  errorIf(HEAVISIDE(-1) != ZERO, "HEAVISIDE(-1) != 0");
-  errorIf(HEAVISIDE(0) != ZERO, "HEAVISIDE(0) != 0");
-  errorIf(HEAVISIDE(1) != ONE, "HEAVISIDE(1) != 1");
+  raise::ErrorIf(HEAVISIDE(-1) != ZERO, "HEAVISIDE(-1) != 0", HERE);
+  raise::ErrorIf(HEAVISIDE(0) != ZERO, "HEAVISIDE(0) != 0", HERE);
+  raise::ErrorIf(HEAVISIDE(1) != ONE, "HEAVISIDE(1) != 1", HERE);
 
-  errorIf(SQR(2) != 4, "SQR(2) != 4");
-  errorIf(CUBE(2) != 8, "CUBE(2) != 8");
+  raise::ErrorIf(SQR(2) != 4, "SQR(2) != 4", HERE);
+  raise::ErrorIf(CUBE(2) != 8, "CUBE(2) != 8", HERE);
 
-  // dot product of perp 3D vectors
   testVec<float>();
   testVec<double>();
   return 0;

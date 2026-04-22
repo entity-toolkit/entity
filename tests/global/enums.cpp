@@ -1,29 +1,28 @@
 #include "enums.h"
 
-#include <stdexcept>
+#include "utils/error.h"
+
 #include <string>
 #include <type_traits>
-
-void errorIf(bool condition, const std::string& message) {
-  if (condition) {
-    throw std::runtime_error(message);
-  }
-}
 
 using enum_str_t = const std::vector<std::string>;
 
 template <typename T>
 void checkEnum(const enum_str_t& all) {
   for (const auto& c : T::variants) {
-    errorIf(not T::contains(T(c).to_string()),
-            "Enum does not contain " + std::string(T(c).to_string()));
+    raise::ErrorIf(not T::contains(T(c).to_string()),
+                   "Enum does not contain " + std::string(T(c).to_string()),
+                   HERE);
   }
   for (const auto& c : all) {
-    errorIf(not T::contains(c.c_str()), "Enum does not contain " + std::string(c));
-    errorIf(T::pick(c.c_str()) == T::INVALID,
-            "Enum::pick(" + std::string(c) + ") == Enum::INVALID");
+    raise::ErrorIf(not T::contains(c.c_str()),
+                   "Enum does not contain " + std::string(c),
+                   HERE);
+    raise::ErrorIf(T::pick(c.c_str()) == T::INVALID,
+                   "Enum::pick(" + std::string(c) + ") == Enum::INVALID",
+                   HERE);
   }
-  errorIf(all.size() != T::total, "Enum::total is incorrect");
+  raise::ErrorIf(all.size() != T::total, "Enum::total is incorrect", HERE);
 }
 
 auto main() -> int {
@@ -52,8 +51,6 @@ auto main() -> int {
   static_assert(ParticleTag::alive == 1);
 
   static_assert(std::is_convertible_v<ParticleTag, short>);
-
-  using enum_str_t = const std::vector<std::string>;
 
   enum_str_t all_coords  = { "cart", "sph", "qsph" };
   enum_str_t all_metrics = { "minkowski",   "spherical",    "qspherical",

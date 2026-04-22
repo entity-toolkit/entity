@@ -8,11 +8,10 @@
 #include <Kokkos_Sort.hpp>
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
+  ntt::GlobalInitialize(argc, argv);
   try {
     constexpr std::size_t n          = 100;
     auto                  keys_short = Kokkos::View<short*>("keys", n);
@@ -107,9 +106,9 @@ auto main(int argc, char* argv[]) -> int {
       });
   } catch (const std::exception& e) {
     std::cerr << e.what() << std::endl;
-    Kokkos::finalize();
+    ntt::GlobalFinalize();
     return 1;
   }
-  Kokkos::finalize();
+  ntt::GlobalFinalize();
   return 0;
 }

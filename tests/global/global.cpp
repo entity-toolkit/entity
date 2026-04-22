@@ -1,17 +1,12 @@
 #include "global.h"
 
+#include "utils/error.h"
+
 #include <Kokkos_Core.hpp>
 
 #include <iostream>
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
-
-void errorIf(bool condition, const char* message) {
-  if (condition) {
-    throw std::runtime_error(message);
-  }
-}
 
 auto main(int argc, char* argv[]) -> int {
   using namespace ntt;
@@ -27,14 +22,14 @@ auto main(int argc, char* argv[]) -> int {
   static_assert(sizeof(tuple_t<int, Dim::_3D>) == 3 * sizeof(int));
 
   tuple_t<int, Dim::_1D> t1d { 123 };
-  errorIf(t1d[0] != 123, "t1d[0] must be 123");
+  raise::ErrorIf(t1d[0] != 123, "t1d[0] must be 123", HERE);
   tuple_t<int, Dim::_2D> t2d { 123, 456 };
-  errorIf(t2d[0] != 123, "t2d[0] must be 123");
-  errorIf(t2d[1] != 456, "t2d[1] must be 456");
+  raise::ErrorIf(t2d[0] != 123, "t2d[0] must be 123", HERE);
+  raise::ErrorIf(t2d[1] != 456, "t2d[1] must be 456", HERE);
   tuple_t<int, Dim::_3D> t3d { 123, 456, 789 };
-  errorIf(t3d[0] != 123, "t3d[0] must be 123");
-  errorIf(t3d[1] != 456, "t3d[1] must be 456");
-  errorIf(t3d[2] != 789, "t3d[2] must be 789");
+  raise::ErrorIf(t3d[0] != 123, "t3d[0] must be 123", HERE);
+  raise::ErrorIf(t3d[1] != 456, "t3d[1] must be 456", HERE);
+  raise::ErrorIf(t3d[2] != 789, "t3d[2] must be 789", HERE);
 
   static_assert(std::is_same_v<list_t<int, 1>, tuple_t<int, Dim::_1D>>);
   static_assert(std::is_same_v<list_t<int, 2>, tuple_t<int, Dim::_2D>>);
@@ -54,18 +49,18 @@ auto main(int argc, char* argv[]) -> int {
   try {
     GlobalInitialize(argc, argv);
 
-    errorIf(not Kokkos::is_initialized(), "Kokkos was not initialized");
+    raise::ErrorIf(not Kokkos::is_initialized(), "Kokkos was not initialized", HERE);
 
   } catch (std::exception& err) {
     std::cerr << err.what() << std::endl;
     GlobalFinalize();
-    return -1;
+    return 1;
   }
 
   GlobalFinalize();
 
-  errorIf(Kokkos::is_initialized(), "Kokkos was not finalized");
-  errorIf(not Kokkos::is_finalized(), "Kokkos was not finalized");
+  raise::ErrorIf(Kokkos::is_initialized(), "Kokkos was not finalized", HERE);
+  raise::ErrorIf(not Kokkos::is_finalized(), "Kokkos was not finalized", HERE);
 
   return 0;
 }
