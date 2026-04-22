@@ -28,10 +28,10 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::deep_copy(b, a);
 
       Kokkos::parallel_for(range_h_t<Dim::_1D>(0, 100), [&](const int i) {
-        raise::ErrorIf(b(i) != static_cast<float>(i),
-                       "b(" + std::to_string(i) +
-                         ") must be = " + std::to_string(i),
-                       HERE);
+        raise::ErrorIf(
+          b(i) != static_cast<float>(i),
+          "b(" + std::to_string(i) + ") must be = " + std::to_string(i),
+          HERE);
       });
     }
 
@@ -62,7 +62,9 @@ auto main(int argc, char* argv[]) -> int {
                              ") must be = " + std::to_string(450 + 10 * i),
                            HERE);
           } else {
-            raise::ErrorIf(b(i) != 0.0, "b(" + std::to_string(i) + ") must be = 0.0", HERE);
+            raise::ErrorIf(b(i) != 0.0,
+                           "b(" + std::to_string(i) + ") must be = 0.0",
+                           HERE);
           }
         });
     }

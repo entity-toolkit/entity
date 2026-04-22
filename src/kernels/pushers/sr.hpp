@@ -28,7 +28,7 @@
 
 #include "kernels/particle_shapes.hpp"
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
+#include "kernels/pushers/sr_policies.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -59,7 +59,7 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam P Extra policies
    */
-  template <SRMetricClass M, class P = ::kernel::PusherPolicy<M>>
+  template <SRMetricClass M, class P = PusherPolicy<M>>
   struct Pusher_kernel {
     using E                   = typename P::EmissionPolicy;
     using PUPD                = typename P::CustomParticleUpdatePolicy;

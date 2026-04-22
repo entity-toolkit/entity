@@ -1,9 +1,9 @@
+#include "archetypes/field_setter.h"
+
 #include "enums.h"
 #include "global.h"
 
 #include "metrics/minkowski.h"
-
-#include "archetypes/field_setter.h"
 
 #include <Kokkos_Core.hpp>
 

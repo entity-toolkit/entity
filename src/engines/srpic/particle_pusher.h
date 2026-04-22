@@ -23,8 +23,8 @@
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
 #include "kernels/pushers/sr.hpp"
+#include "kernels/pushers/sr_policies.h"
 
 namespace ntt {
   namespace srpic {
@@ -87,7 +87,7 @@ namespace ntt {
                       species.npart()),
           HERE);
 
-        kernel::PusherContext pusher_ctx {
+        kernel::sr::PusherContext pusher_ctx {
           species.index(),
           species.pusher(),
           species.radiative_drag_flags(),
@@ -102,21 +102,21 @@ namespace ntt {
         };
 
         if (species.pusher() & ParticlePusher::GCA) {
-          pusher_ctx.gca = kernel::PusherGCAContext(
+          pusher_ctx.gca = kernel::sr::PusherGCAContext(
             params.template get<real_t>("algorithms.gca.larmor_max"),
             params.template get<real_t>("algorithms.gca.e_ovr_b_max"));
         }
 
         if (has_atmosphere) {
-          pusher_ctx.atmosphere = kernel::PusherAtmosphereContext(gx1,
-                                                                  gx2,
-                                                                  gx3,
-                                                                  x_surf,
-                                                                  ds);
+          pusher_ctx.atmosphere = kernel::sr::PusherAtmosphereContext(gx1,
+                                                                      gx2,
+                                                                      gx3,
+                                                                      x_surf,
+                                                                      ds);
         }
 
         if (species.radiative_drag_flags() & RadiativeDrag::SYNCHROTRON) {
-          pusher_ctx.synchrotron_drag = kernel::PusherSynchrotronDragContext(
+          pusher_ctx.synchrotron_drag = kernel::sr::PusherSynchrotronDragContext(
             dt,
             pusher_ctx.omegaB0,
             params.template get<real_t>("radiation.drag.synchrotron.gamma_rad"),
@@ -124,20 +124,22 @@ namespace ntt {
         }
 
         if (species.radiative_drag_flags() & RadiativeDrag::COMPTON) {
-          pusher_ctx.compton_drag = kernel::PusherComptonDragContext(
+          pusher_ctx.compton_drag = kernel::sr::PusherComptonDragContext(
             dt,
             pusher_ctx.omegaB0,
             params.template get<real_t>("radiation.drag.compton.gamma_rad"),
             species.mass());
         }
 
-        auto pusher_boundaries = kernel::PusherBoundaries<M::Dim> {
+        auto pusher_boundaries = kernel::sr::PusherBoundaries<M::Dim> {
           domain.mesh.prtl_bc()
         };
 
         auto pusher_arrays = species.PusherKernelArrays();
 
-        kernel::MakePusherPolicy<decltype(domain.mesh.metric), decltype(domain), decltype(pgen)>(
+        kernel::sr::MakePusherPolicy<decltype(domain.mesh.metric),
+                                     decltype(domain),
+                                     decltype(pgen)>(
           pgen,
           domain,
           params,

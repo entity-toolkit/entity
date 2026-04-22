@@ -101,37 +101,63 @@ void testEnergyDist(const std::vector<std::size_t>&      res,
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
-    testEnergyDist<SimEngine::SRPIC, Minkowski<Dim::_1D>>({ 10 }, { { 0.0, 55.0 } });
+    testEnergyDist<SimEngine::SRPIC, Minkowski<Dim::_1D>>(
+      {
+        10
+    },
+      { { 0.0, 55.0 } });
 
     testEnergyDist<SimEngine::SRPIC, Minkowski<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 0.0, 55.0 }, { 0.0, 55.0 } });
 
     testEnergyDist<SimEngine::SRPIC, Minkowski<Dim::_3D>>(
-      { 10, 10, 10 },
+      {
+        10,
+        10,
+        10
+    },
       { { 0.0, 55.0 }, { 0.0, 55.0 }, { 0.0, 55.0 } });
 
     testEnergyDist<SimEngine::SRPIC, Spherical<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 1.0, 100.0 } });
 
     testEnergyDist<SimEngine::SRPIC, QSpherical<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 } });
 
     testEnergyDist<SimEngine::GRPIC, KerrSchild<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } });
 
     testEnergyDist<SimEngine::GRPIC, QKerrSchild<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 1.0, 100.0 } },
       { { "r0", 0.0 }, { "h", 0.25 }, { "a", 0.9 } });
 
     testEnergyDist<SimEngine::GRPIC, KerrSchild0<Dim::_2D>>(
-      { 10, 10 },
+      {
+        10,
+        10
+    },
       { { 1.0, 100.0 } },
       { { "a", 0.9 } });
 

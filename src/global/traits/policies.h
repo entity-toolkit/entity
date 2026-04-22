@@ -121,12 +121,12 @@ namespace traits::custom_prtl_update {
 
 template <class CPU, class M>
 concept CustomParticleUpdatePolicyClass =
-  requires(const CPU&                              cpu,
-           index_t                                 p,
-           const kernel::PusherContext&            pusher_ctx,
-           const kernel::PusherBoundaries<M::Dim>& pusher_boundaries,
-           const kernel::PusherArrays&             particles,
-           const M&                                metric) {
+  requires(const CPU&                                  cpu,
+           index_t                                     p,
+           const kernel::sr::PusherContext&            pusher_ctx,
+           const kernel::sr::PusherBoundaries<M::Dim>& pusher_boundaries,
+           const kernel::PusherArrays&                 particles,
+           const M&                                    metric) {
     {
       cpu(p, pusher_ctx, pusher_boundaries, particles, metric)
     } -> std::same_as<void>;

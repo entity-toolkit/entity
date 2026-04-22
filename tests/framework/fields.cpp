@@ -1,9 +1,9 @@
+#include "framework/containers/fields.h"
+
 #include "enums.h"
 #include "global.h"
 
 #include "utils/error.h"
-
-#include "framework/containers/fields.h"
 
 #include <iostream>
 #include <vector>

@@ -100,9 +100,9 @@ namespace user {
       bool is_left;
       bool massive;
 
-      Inline void operator()(index_t                      p,
-                             const kernel::PusherContext& ctx,
-                             const kernel::PusherBoundaries<M::Dim>&,
+      Inline void operator()(index_t                          p,
+                             const kernel::sr::PusherContext& ctx,
+                             const kernel::sr::PusherBoundaries<M::Dim>&,
                              const kernel::PusherArrays& particles,
                              const M&                    metric) const {
         real_t piston_position_use;

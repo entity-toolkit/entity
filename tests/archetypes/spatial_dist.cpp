@@ -1,3 +1,5 @@
+#include "archetypes/spatial_dist.h"
+
 #include "enums.h"
 #include "global.h"
 
@@ -6,8 +8,6 @@
 #include "utils/error.h"
 
 #include "metrics/minkowski.h"
-
-#include "archetypes/spatial_dist.h"
 
 #include <Kokkos_Core.hpp>
 

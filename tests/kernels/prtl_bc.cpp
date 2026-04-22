@@ -232,7 +232,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   real_t     time   = ZERO;
   const auto n_iter = 100;
 
-  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+  const auto boundaries = kernel::sr::PusherBoundaries<M::Dim> {
     { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }

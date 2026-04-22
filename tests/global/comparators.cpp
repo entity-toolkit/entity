@@ -34,7 +34,8 @@ auto main() -> int {
     const auto f2 = 9999999.0f;
     const auto df = 1.0f;
 
-    raise::ErrorIf(ulp_eq(f1 + df, f2 + df) && cmp::AlmostEqual(f1 + df, f2 + df, 1e-8f),
+    raise::ErrorIf(ulp_eq(f1 + df, f2 + df) &&
+                     cmp::AlmostEqual(f1 + df, f2 + df, 1e-8f),
                    "Wrong comparison with ULP-1 #f3",
                    HERE);
     raise::ErrorIf(ulp_eq(f1, f2) && cmp::AlmostEqual(f1, f2, 1e-8f),

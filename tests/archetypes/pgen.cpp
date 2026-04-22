@@ -1,8 +1,9 @@
+#include "traits/pgen.h"
+
 #include "enums.h"
 #include "global.h"
 
 #include "traits/archetypes.h"
-#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"

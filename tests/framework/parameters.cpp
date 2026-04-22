@@ -1,3 +1,5 @@
+#include "framework/parameters/parameters.h"
+
 #include "defaults.h"
 #include "enums.h"
 #include "global.h"
@@ -6,7 +8,6 @@
 #include "utils/error.h"
 
 #include "framework/containers/species.h"
-#include "framework/parameters/parameters.h"
 
 #include <toml11/toml.hpp>
 

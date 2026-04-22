@@ -95,7 +95,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     {
-      const auto left_expect  = static_cast<real_t>((rank - 1 + size) % size + 1);
+      const auto left_expect = static_cast<real_t>((rank - 1 + size) % size + 1);
       const auto right_expect = static_cast<real_t>((rank + 1) % size + 1);
 
       Kokkos::parallel_for(

@@ -1,7 +1,6 @@
-#include "traits/pgen.h"
-
 #include "global.h"
 
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 using namespace ntt;
@@ -11,7 +10,9 @@ struct DummyDomain {};
 
 // Stub field setter (satisfies SRFieldSetterClass via ex1)
 struct StubFieldSetter {
-  real_t ex1(const coord_t<Dimension::_1D>&) const { return ZERO; }
+  real_t ex1(const coord_t<Dimension::_1D>&) const {
+    return ZERO;
+  }
 };
 
 // --- HasD ---
@@ -89,11 +90,25 @@ static_assert(not traits::pgen::HasInitPrtls<NoD, DummyDomain>);
 // --- HasAtmFields / HasMatchFields / HasMatchFieldsInX1/X2/X3 ---
 
 struct WithAllMatchFields {
-  StubFieldSetter AtmFields(simtime_t) const { return {}; }
-  StubFieldSetter MatchFields(simtime_t) const { return {}; }
-  StubFieldSetter MatchFieldsInX1(simtime_t) const { return {}; }
-  StubFieldSetter MatchFieldsInX2(simtime_t) const { return {}; }
-  StubFieldSetter MatchFieldsInX3(simtime_t) const { return {}; }
+  StubFieldSetter AtmFields(simtime_t) const {
+    return {};
+  }
+
+  StubFieldSetter MatchFields(simtime_t) const {
+    return {};
+  }
+
+  StubFieldSetter MatchFieldsInX1(simtime_t) const {
+    return {};
+  }
+
+  StubFieldSetter MatchFieldsInX2(simtime_t) const {
+    return {};
+  }
+
+  StubFieldSetter MatchFieldsInX3(simtime_t) const {
+    return {};
+  }
 };
 
 static_assert(traits::pgen::HasAtmFields<WithAllMatchFields>);
@@ -115,7 +130,9 @@ struct WithFixFieldsConst {
 
 // wrong return type: plain int is not convertible to std::pair<real_t, bool>
 struct BadFixFieldsConst {
-  int FixFieldsConst(simtime_t, const bc_in&, ntt::em) const { return 0; }
+  int FixFieldsConst(simtime_t, const bc_in&, ntt::em) const {
+    return 0;
+  }
 };
 
 static_assert(traits::pgen::HasFixFieldsConst<WithFixFieldsConst>);
@@ -135,6 +152,7 @@ static_assert(not traits::pgen::HasCustomPostStep<NoD, DummyDomain>);
 
 struct WithCustomFieldOutput {
   static constexpr Dimension D { Dimension::_2D };
+
   void CustomFieldOutput(const std::string&,
                          ndfield_t<Dimension::_2D, 6>&,
                          index_t,
@@ -143,7 +161,8 @@ struct WithCustomFieldOutput {
                          const DummyDomain&) {}
 };
 
-static_assert(traits::pgen::HasCustomFieldOutput<WithCustomFieldOutput, DummyDomain>);
+static_assert(
+  traits::pgen::HasCustomFieldOutput<WithCustomFieldOutput, DummyDomain>);
 static_assert(not traits::pgen::HasCustomFieldOutput<NoD, DummyDomain>);
 
 // --- HasCustomStatOutput ---

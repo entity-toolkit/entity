@@ -1,3 +1,5 @@
+#include "framework/domain/metadomain.h"
+
 #include "enums.h"
 #include "global.h"
 
@@ -5,8 +7,6 @@
 #include "utils/error.h"
 
 #include "metrics/qspherical.h"
-
-#include "framework/domain/metadomain.h"
 
 #include <Kokkos_Core.hpp>
 

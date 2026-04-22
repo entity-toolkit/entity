@@ -1,14 +1,3 @@
-/**
- * @file kernels/pushers/policies.h
- * @brief Policy structs and factory functions for configuring particle pusher behavior
- * @implements
- *   - kernel::PusherPolicy<>
- *   - kernel::MakePusherPolicyEmission<> -> auto
- *   - kernel::MakePusherPolicy<> -> void
- * @namespaces:
- *   - kernel::
- */
-
 #ifndef KERNELS_PUSHERS_POLICIES_H
 #define KERNELS_PUSHERS_POLICIES_H
 
@@ -23,7 +12,7 @@
 #include "archetypes/emission.h"
 #include "kernels/pushers/context.h"
 
-namespace kernel {
+namespace kernel::sr {
 
   template <MetricClass            M,
             EmissionPolicyClass<M> E = ::traits::emission::NoPolicy_t,
@@ -181,6 +170,6 @@ namespace kernel {
     });
   }
 
-} // namespace kernel
+} // namespace kernel::sr
 
 #endif // KERNELS_PUSHERS_POLICIES_H

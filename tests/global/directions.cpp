@@ -30,11 +30,10 @@ auto main() -> int {
         "Wrong ::unique in 1D",
         HERE);
       for (auto dd = 0u; dd < dir1D::unique.size(); ++dd) {
-        raise::ErrorIf(
-          (d != dd) & ((dir1D::unique[d] == dir1D::unique[dd]) ||
-                       (dir1D::unique[d] == -dir1D::unique[dd])),
-          "Wrong ::unique in 1D",
-          HERE);
+        raise::ErrorIf((d != dd) & ((dir1D::unique[d] == dir1D::unique[dd]) ||
+                                    (dir1D::unique[d] == -dir1D::unique[dd])),
+                       "Wrong ::unique in 1D",
+                       HERE);
       }
     }
   }
@@ -60,11 +59,10 @@ auto main() -> int {
         "Wrong ::unique in 2D",
         HERE);
       for (auto dd = 0u; dd < dir2D::unique.size(); ++dd) {
-        raise::ErrorIf(
-          (d != dd) & ((dir2D::unique[d] == dir2D::unique[dd]) ||
-                       (dir2D::unique[d] == -dir2D::unique[dd])),
-          "Wrong ::unique in 2D",
-          HERE);
+        raise::ErrorIf((d != dd) & ((dir2D::unique[d] == dir2D::unique[dd]) ||
+                                    (dir2D::unique[d] == -dir2D::unique[dd])),
+                       "Wrong ::unique in 2D",
+                       HERE);
       }
     }
   }
@@ -93,11 +91,10 @@ auto main() -> int {
         "Wrong ::unique in 3D",
         HERE);
       for (auto dd = 0u; dd < dir3D::unique.size(); ++dd) {
-        raise::ErrorIf(
-          (d != dd) & ((dir3D::unique[d] == dir3D::unique[dd]) ||
-                       (dir3D::unique[d] == -dir3D::unique[dd])),
-          "Wrong ::unique in 3D",
-          HERE);
+        raise::ErrorIf((d != dd) & ((dir3D::unique[d] == dir3D::unique[dd]) ||
+                                    (dir3D::unique[d] == -dir3D::unique[dd])),
+                       "Wrong ::unique in 3D",
+                       HERE);
       }
     }
   }

@@ -29,7 +29,7 @@
 #include "kernels/digital_filter.hpp"
 #include "kernels/faraday_gr.hpp"
 #include "kernels/fields_bcs.hpp"
-#include "kernels/particle_pusher_gr.hpp"
+#include "kernels/pushers/gr.hpp"
 
 #include "engines/engine.hpp"
 #include "pgen.hpp"
@@ -1065,78 +1065,52 @@ namespace ntt {
                       species.label().c_str(),
                       species.npart()),
           HERE);
-        if (species.npart() == 0) {
+        if ((species.npart() == 0) or (species.pusher() == ParticlePusher::NONE)) {
           continue;
         }
-        const auto q_ovr_m = species.mass() > ZERO
-                               ? species.charge() / species.mass()
-                               : ZERO;
-        //  coeff = q / m (dt / 2) omegaB0
-        const auto coeff   = q_ovr_m * HALF * dt *
-                           m_params.template get<real_t>(
-                             "algorithms.timestep.correction") *
-                           m_params.template get<real_t>("scales.omegaB0");
-        const auto eps = m_params.template get<real_t>(
-          "algorithms.gr.pusher_eps");
-        const auto niter = m_params.template get<unsigned short>(
-          "algorithms.gr.pusher_niter");
+        const auto pusher_ctx = kernel::gr::PusherContext {
+          species.mass(),
+          species.charge(),
+          dt,
+          m_params.template get<real_t>("scales.omegaB0"),
+          m_params.template get<real_t>("algorithms.gr.pusher_eps"),
+          m_params.template get<unsigned short>("algorithms.gr.pusher_niter"),
+          static_cast<int>(domain.mesh.n_active(in::x1)),
+          static_cast<int>(domain.mesh.n_active(in::x2)),
+          static_cast<int>(domain.mesh.n_active(in::x3))
+        };
+
+        const auto pusher_boundaries = kernel::gr::PusherBoundaries<M::Dim> {
+          domain.mesh.prtl_bc()
+        };
+        auto pusher_arrays = species.PusherKernelArrays();
+
         if (species.pusher() == ParticlePusher::PHOTON) {
-          auto range_policy =
+          const auto range_policy =
             Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massless_t>(
               0,
               species.npart());
-
-          // clang-format off
-          Kokkos::parallel_for(
-            "ParticlePusher",
-            range_policy,
-            kernel::gr::Pusher_kernel<M>(
-                domain.fields.em,
-                domain.fields.em0,
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                eps, niter,
-                domain.mesh.prtl_bc()
-            ));
-          // clang-format on
+          Kokkos::parallel_for("ParticlePusher",
+                               range_policy,
+                               kernel::gr::Pusher_kernel<M>(pusher_ctx,
+                                                            pusher_boundaries,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.fields.em0,
+                                                            domain.mesh.metric));
         } else if (species.pusher() == ParticlePusher::BORIS) {
-          auto range_policy =
+          const auto range_policy =
             Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace, kernel::gr::Massive_t>(
               0,
               species.npart());
-          // clang-format off
-          Kokkos::parallel_for(
-            "ParticlePusher",
-            range_policy,
-            kernel::gr::Pusher_kernel<M>(
-                domain.fields.em,
-                domain.fields.em0,
-                species.i1,        species.i2,       species.i3,
-                species.i1_prev,   species.i2_prev,  species.i3_prev,
-                species.dx1,       species.dx2,      species.dx3,
-                species.dx1_prev,  species.dx2_prev, species.dx3_prev,
-                species.ux1,       species.ux2,      species.ux3,
-                species.phi,       species.tag,
-                domain.mesh.metric,
-                coeff, dt,
-                domain.mesh.n_active(in::x1),
-                domain.mesh.n_active(in::x2),
-                domain.mesh.n_active(in::x3),
-                eps, niter,
-                domain.mesh.prtl_bc()
-          ));
-          // clang-format on
-        } else if (species.pusher() == ParticlePusher::NONE) {
-          // do nothing
+          Kokkos::parallel_for("ParticlePusher",
+                               range_policy,
+                               kernel::gr::Pusher_kernel<M>(pusher_ctx,
+                                                            pusher_boundaries,
+                                                            pusher_arrays,
+                                                            domain.fields.em,
+                                                            domain.fields.em0,
+                                                            domain.mesh.metric));
         } else {
           raise::Error("not implemented", HERE);
         }

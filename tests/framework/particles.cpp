@@ -1,9 +1,9 @@
+#include "framework/containers/particles.h"
+
 #include "enums.h"
 #include "global.h"
 
 #include "utils/error.h"
-
-#include "framework/containers/particles.h"
 
 #include <iostream>
 #include <string>
