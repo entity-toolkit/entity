@@ -1,9 +1,9 @@
-#include "framework/containers/particles.h"
-
 #include "enums.h"
 #include "global.h"
 
 #include "utils/error.h"
+
+#include "framework/containers/particles.h"
 
 #include <iostream>
 #include <string>
@@ -124,7 +124,7 @@ void testParticles(
   }
 }
 
-auto main(int argc, char** argv) -> int {
+auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
   try {
     using namespace ntt;
@@ -191,7 +191,7 @@ auto main(int argc, char** argv) -> int {
                                                1,
                                                2);
   } catch (const std::exception& e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     ntt::GlobalFinalize();
     return 1;
   }

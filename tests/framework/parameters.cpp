@@ -1,5 +1,3 @@
-#include "framework/parameters/parameters.h"
-
 #include "defaults.h"
 #include "enums.h"
 #include "global.h"
@@ -8,13 +6,15 @@
 #include "utils/error.h"
 
 #include "framework/containers/species.h"
+#include "framework/parameters/parameters.h"
 
-#include <stdio.h>
 #include <toml11/toml.hpp>
 
+#include <cstdio>
 #include <iostream>
 
 using namespace toml::literals::toml_literals;
+
 const auto mink_1d = u8R"(
 [simulation]
   name = "mink1d"
@@ -185,7 +185,7 @@ const auto sph_2d = u8R"(
     mass = 0.0
     charge = 0.0
     maxnpart = 1e2
-    
+
 [setup]
 
 )"_toml;
@@ -255,12 +255,12 @@ void assert_equal(const T& a, const T& b, const std::string& msg) {
     static_assert(std::is_member_function_pointer_v<decltype(&T::to_string)>);
     eq = (a == b);
     if (!eq) {
-      std::cout << T(a).to_string() << " != " << T(b).to_string() << std::endl;
+      std::cout << T(a).to_string() << " != " << T(b).to_string() << '\n';
     }
   } else {
     eq = (a == b);
     if (!eq) {
-      std::cout << a << " != " << b << std::endl;
+      std::cout << a << " != " << b << '\n';
     }
   }
   raise::ErrorIf(!eq, msg, HERE);
@@ -268,7 +268,6 @@ void assert_equal(const T& a, const T& b, const std::string& msg) {
 
 auto main(int argc, char* argv[]) -> int {
   ntt::GlobalInitialize(argc, argv);
-
   try {
     using namespace ntt;
 
@@ -282,7 +281,6 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<Metric>(params_mink_1d.get<Metric>("grid.metric.metric"),
                            Metric::Minkowski,
                            "grid.metric.metric");
-      //  engine
       assert_equal<SimEngine>(
         params_mink_1d.get<SimEngine>("simulation.engine"),
         SimEngine::SRPIC,
@@ -471,7 +469,6 @@ auto main(int argc, char* argv[]) -> int {
         fbc.size(),
         "grid.boundaries.fields.size()");
 
-      // match coeffs
       assert_equal<real_t>(
         params_sph_2d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].second,
         (real_t)(defaults::bc::match::ds_frac * 19.0),
@@ -609,7 +606,6 @@ auto main(int argc, char* argv[]) -> int {
         assert_equal<real_t>(read.at(key), val, "grid.metric.params");
       }
 
-      // algorithms gr
       assert_equal<real_t>(
         params_qks_2d.get<real_t>("algorithms.gr.pusher_eps"),
         (real_t)(1e-6),
@@ -656,7 +652,6 @@ auto main(int argc, char* argv[]) -> int {
         pbc.size(),
         "grid.boundaries.particles.size()");
 
-      // match coeffs
       assert_equal<real_t>(
         params_qks_2d.get<boundaries_t<real_t>>("grid.boundaries.match.ds")[0].second,
         (real_t)(defaults::bc::match::ds_frac * (100.0 - 0.8)),
@@ -683,13 +678,12 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<unsigned short>(species[1].npld_r(), 0, "species[1].npld_r");
     }
 
-  } catch (std::exception& err) {
-    std::cerr << err.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     ntt::GlobalFinalize();
-    return -1;
+    return 1;
   }
 
   ntt::GlobalFinalize();
-
   return 0;
 }
