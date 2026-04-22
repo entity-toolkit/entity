@@ -27,7 +27,7 @@ if(${TESTS})
   foreach(test_dir IN LISTS TEST_DIRECTORIES)
     get_property(
       LOCAL_TEST_NAMES
-      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir}/tests
+      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/${test_dir}
       PROPERTY TESTS)
     list(APPEND TEST_NAMES ${LOCAL_TEST_NAMES})
   endforeach()
