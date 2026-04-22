@@ -1,5 +1,5 @@
 /**
- * @file framework/parameters/algorithms.h
+ * @file framework/parameters/extra.h
  * @brief Auxiliary functions for reading in extra physics parameters
  * @implements
  *   - ntt::params::Extra

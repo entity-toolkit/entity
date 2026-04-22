@@ -1,5 +1,5 @@
 /**
- * @file archetypes/field_setter.hpp
+ * @file archetypes/field_setter.h
  * @brief Defines kernels which populate the EM fields with user-defined values
  * conditionally or unconditionally
  * @implements

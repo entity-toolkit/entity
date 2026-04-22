@@ -1,6 +1,15 @@
 /**
  * @file output/writer.h
  * @brief Writer class which takes care of data output
+ * @implements
+ *   - out::Writer
+ * @cpp:
+ *   - writer.cpp
+ * @namespaces:
+ *   - out::
+ * @macros:
+ *   - MPI_ENABLED
+ *   - OUTPUT_ENABLED
  */
 
 #ifndef OUTPUT_WRITER_H

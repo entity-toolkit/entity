@@ -1,3 +1,13 @@
+/**
+ * @file engines/reporter.h
+ * @brief Functions for reporting simulation and problem generator configuration
+ * @implements
+ *   - ntt::ReportSimulationConfig -> std::string
+ *   - ntt::ReportPgenConfig<> -> std::string
+ * @namespaces:
+ *   - ntt::
+ */
+
 #ifndef ENGINES_REPORTER_H
 #define ENGINES_REPORTER_H
 

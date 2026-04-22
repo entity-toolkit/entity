@@ -1,5 +1,5 @@
 /**
- * @file kernels/ampere_gr.hpp
+ * @file kernels/ampere_sr.hpp
  * @brief Algorithms for Ampere's law in curvilinear SR
  * @implements
  *   - kernel::sr::Ampere_kernel<>

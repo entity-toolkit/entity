@@ -1,3 +1,13 @@
+/**
+ * @file engines/srpic/particles_bcs.h
+ * @brief Particle boundary condition routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::AtmosphereParticlesIn<> -> void
+ *   - ntt::srpic::ParticleInjector<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_PARTICLES_BCS_H
 #define ENGINES_SRPIC_PARTICLES_BCS_H
 

@@ -1,5 +1,5 @@
 /**
- * @file kernels/current_deposit.hpp
+ * @file kernels/currents_deposit.hpp
  * @brief Covariant algorithms for the current deposition
  * @implements
  *   - kernel::DepositCurrents_kernel<>

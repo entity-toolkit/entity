@@ -6,7 +6,7 @@
  *   - enum timer::TimerFlags
  * @cpp:
  *   - timer.cpp
- * @namespces:
+ * @namespaces:
  *   - timer::
  * @macros:
  *   - MPI_ENABLED

@@ -1,3 +1,28 @@
+/**
+ * @file traits/pgen.h
+ * @brief Traits and concepts for detecting problem generator interface methods
+ * @implements
+ *   - traits::pgen::compatible_with<>
+ *   - traits::pgen::HasD<>
+ *   - traits::pgen::HasInitFlds<>
+ *   - traits::pgen::HasEmissionPolicy<>
+ *   - traits::pgen::HasCustomPrtlUpdate<>
+ *   - traits::pgen::HasExternalFields<>
+ *   - traits::pgen::HasInitPrtls<>
+ *   - traits::pgen::HasExtCurrent<>
+ *   - traits::pgen::HasAtmFields<>
+ *   - traits::pgen::HasMatchFields<>
+ *   - traits::pgen::HasMatchFieldsInX1<>
+ *   - traits::pgen::HasMatchFieldsInX2<>
+ *   - traits::pgen::HasMatchFieldsInX3<>
+ *   - traits::pgen::HasFixFieldsConst<>
+ *   - traits::pgen::HasCustomPostStep<>
+ *   - traits::pgen::HasCustomFieldOutput<>
+ *   - traits::pgen::HasCustomStatOutput<>
+ * @namespaces:
+ *   - traits::pgen::
+ */
+
 #ifndef TRAITS_PGEN_H
 #define TRAITS_PGEN_H
 

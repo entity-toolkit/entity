@@ -1,3 +1,12 @@
+/**
+ * @file engines/srpic/utils.h
+ * @brief Utility functions used by the SRPIC engine
+ * @implements
+ *   - ntt::srpic::GetAtmosphereExtent<> -> std::tuple<short, in, real_t, real_t>
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_UTILS_H
 #define ENGINES_SRPIC_UTILS_H
 

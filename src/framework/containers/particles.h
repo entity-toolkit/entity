@@ -8,6 +8,8 @@
  *   - particles_io.cpp
  *   - particles_comm.cpp
  *   - particles_sort.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  */

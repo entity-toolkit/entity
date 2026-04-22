@@ -1,12 +1,12 @@
 /**
- * @file archetypes/spatial_dist.hpp
+ * @file archetypes/spatial_dist.h
  * @brief Spatial distribution class passed to injectors
  * @implements
  *   - arch::SpatialDistribution<>
  *   - arch::Uniform<> : arch::SpatialDistribution<>
  *   - arch::Replenish<> : arch::SpatialDistribution<>
  *   - arch::ReplenishUniform<> : arch::SpatialDistribution<>
- * @namespace
+ * @namespaces:
  *   - arch::
  * @note
  * Instances of these functors take coordinate position in code units

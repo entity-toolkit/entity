@@ -1,5 +1,5 @@
 /**
- * @file archetypes/energy_dist.hpp
+ * @file archetypes/energy_dist.h
  * @brief Defines an archetype for energy distributions
  * @implements
  *   - arch::EnergyDistribution<>

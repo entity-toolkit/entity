@@ -7,7 +7,7 @@
  * @cpp:
  *   - stats.cpp
  * @namespaces:
- *   - stats::
+ *   - out::
  */
 
 #ifndef OUTPUT_STATS_H

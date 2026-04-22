@@ -1,3 +1,19 @@
+/**
+ * @file engines/srpic/fields_bcs.h
+ * @brief Field boundary condition routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::CallMatchFields<> -> void
+ *   - ntt::srpic::MatchFieldsIn<> -> void
+ *   - ntt::srpic::AxisFieldsIn<> -> void
+ *   - ntt::srpic::FixedFieldsIn<> -> void
+ *   - ntt::srpic::PerfectConductorFieldsIn<> -> void
+ *   - ntt::srpic::AtmosphereFieldsIn<> -> void
+ *   - ntt::srpic::CustomFieldsIn<> -> void
+ *   - ntt::srpic::FieldBoundaries<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_FIELDS_BCS_H
 #define ENGINES_SRPIC_FIELDS_BCS_H
 

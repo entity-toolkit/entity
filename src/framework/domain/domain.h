@@ -6,6 +6,10 @@
  * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
+ * @cpp:
+ *   - domain.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  * @note

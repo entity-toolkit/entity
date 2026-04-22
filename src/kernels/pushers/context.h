@@ -1,3 +1,18 @@
+/**
+ * @file kernels/pushers/context.h
+ * @brief Context structs aggregating parameters passed to particle pusher kernels
+ * @implements
+ *   - kernel::PusherGCAContext
+ *   - kernel::PusherSynchrotronDragContext
+ *   - kernel::PusherComptonDragContext
+ *   - kernel::PusherAtmosphereContext
+ *   - kernel::PusherContext
+ *   - kernel::PusherBoundaries<>
+ *   - kernel::PusherArrays
+ * @namespaces:
+ *   - kernel::
+ */
+
 #ifndef KERNELS_PUSHERS_CONTEXT_H
 #define KERNELS_PUSHERS_CONTEXT_H
 

@@ -1,6 +1,6 @@
 /**
  * @file framework/domain/metadomain.h
- * @brief ...
+ * @brief Global metadomain class managing domain decomposition, inter-domain communication, I/O, and checkpointing
  * @implements
  *   - ntt::Metadomain<>
  * @cpp:

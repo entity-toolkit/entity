@@ -1,9 +1,9 @@
 /**
- * @file archetypes/problem_generator.hpp
+ * @file archetypes/problem_generator.h
  * @brief Base class for all problem generators
  * @implements
  *   - arch::ProblemGenerator<>
- * @namespace
+ * @namespaces:
  *   - arch::
  * @note
  * To have easier access to variables inside ProblemGenerator in children

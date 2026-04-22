@@ -1,3 +1,14 @@
+/**
+ * @file kernels/pushers/policies.h
+ * @brief Policy structs and factory functions for configuring particle pusher behavior
+ * @implements
+ *   - kernel::PusherPolicy<>
+ *   - kernel::MakePusherPolicyEmission<> -> auto
+ *   - kernel::MakePusherPolicy<> -> void
+ * @namespaces:
+ *   - kernel::
+ */
+
 #ifndef KERNELS_PUSHERS_POLICIES_H
 #define KERNELS_PUSHERS_POLICIES_H
 

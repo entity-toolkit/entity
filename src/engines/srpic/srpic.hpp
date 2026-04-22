@@ -1,13 +1,12 @@
 /**
- * @file engines/srpic.hpp
- * @brief Simulation engien class which specialized on SRPIC
+ * @file engines/srpic/srpic.hpp
+ * @brief Simulation engine class which specializes on SRPIC
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
  *   - ntt::
- * @macros:
  */
 
 #ifndef ENGINES_SRPIC_SRPIC_H

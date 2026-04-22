@@ -1,5 +1,5 @@
 /**
- * @file kernels/particle_pusher_gr.h
+ * @file kernels/particle_pusher_gr.hpp
  * @brief Implementation of the particle pusher for GR
  * @implements
  *   - kernel::gr::Pusher_kernel<>

@@ -1,6 +1,6 @@
 /**
  * @file engines/grpic.hpp
- * @brief Simulation engien class which specialized on GRPIC
+ * @brief Simulation engine class which specializes on GRPIC
  * @implements
  *   - ntt::GRPICEngine<> : ntt::Engine<>
  * @cpp:

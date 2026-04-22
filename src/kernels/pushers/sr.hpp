@@ -1,5 +1,5 @@
 /**
- * @file kernels/pushers/sr.h
+ * @file kernels/pushers/sr.hpp
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>

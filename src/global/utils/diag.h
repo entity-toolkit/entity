@@ -5,7 +5,7 @@
  *   - diag::printDiagnostics -> void
  * @cpp:
  *   - diag.cpp
- * @namespces:
+ * @namespaces:
  *   - diag::
  * @macros:
  *   - MPI_ENABLED

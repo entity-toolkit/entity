@@ -1,3 +1,13 @@
+/**
+ * @file archetypes/emission.h
+ * @brief Emission policy archetypes for radiative processes in particle pushers
+ * @implements
+ *   - arch::EmissionSynchrotron<>
+ *   - arch::EmissionCompton<>
+ * @namespaces:
+ *   - arch::
+ */
+
 #ifndef ARCHETYPES_EMISSION_HPP
 #define ARCHETYPES_EMISSION_HPP
 

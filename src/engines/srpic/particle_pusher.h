@@ -1,3 +1,12 @@
+/**
+ * @file engines/srpic/particle_pusher.h
+ * @brief Particle pusher routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::ParticlePush<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_PARTICLE_PUSHER_H
 #define ENGINES_SRPIC_PARTICLE_PUSHER_H
 
