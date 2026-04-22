@@ -3,8 +3,6 @@
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>
- *   - kernel::sr::PusherParams
- *   - kernel::sr::PusherArrays
  * @namespaces:
  *   - kernel::sr::
  * @macros:
@@ -57,18 +55,10 @@
 namespace kernel::sr {
   using namespace ntt;
 
-  // template <SimEngine::type S, SRMetricClass M>
-  // struct NoCustomPrtlUpdate_t {
-  //   template <class PusherKernel>
-  //   Inline void operator()(index_t, coord_t<M::PrtlDim>&, const PusherKernel&) const {
-  //   }
-  // };
-
   /**
    * @tparam M Metric
-   * @tparam F Additional force
+   * @tparam P Extra policies
    */
-  // template <SRMetricClass M, ExtFieldsPolicyClass<M::Dim> F, bool Atm, EmissionPolicyClass<M> E, class PUPD>
   template <SRMetricClass M, class P = ::kernel::PusherPolicy<M>>
   struct Pusher_kernel {
     using E                   = typename P::EmissionPolicy;
@@ -94,195 +84,45 @@ namespace kernel::sr {
     static constexpr auto HasCustomPrtlUpdate =
       not ::traits::custom_prtl_update::IsNoPolicy<PUPD>;
 
-    const ParticlePusherFlags pusher_flags;
-    const RadiativeDragFlags  radiative_drag_flags;
+    const PusherContext       ctx;
+    const PusherBoundaries<D> bc;
+    PusherArrays              particles;
 
     const randacc_ndfield_t<D, 6> EB;
 
-  public:
-    const spidx_t      sp;
-    simtime_t          time;
-    const real_t       dt;
-    array_t<int*>      i1, i2, i3;
-    array_t<int*>      i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1, dx2, dx3;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>   ux1, ux2, ux3;
-    array_t<real_t*>   phi;
-    array_t<real_t*>   weight;
-    array_t<short*>    tag;
-    const M            metric;
-    const int          ni1, ni2, ni3;
+    const M metric;
+    const P policies;
 
-  private:
-    // const P policies;
-    const F external_fields;
+    const real_t normalized_dt_half;
 
-    const E    emission_policy;
-    const PUPD custom_prtl_update;
-
-    const real_t coeff;
-
-    bool is_absorb_i1min { false }, is_absorb_i1max { false };
-    bool is_absorb_i2min { false }, is_absorb_i2max { false };
-    bool is_absorb_i3min { false }, is_absorb_i3max { false };
-    bool is_periodic_i1min { false }, is_periodic_i1max { false };
-    bool is_periodic_i2min { false }, is_periodic_i2max { false };
-    bool is_periodic_i3min { false }, is_periodic_i3max { false };
-    bool is_reflect_i1min { false }, is_reflect_i1max { false };
-    bool is_reflect_i2min { false }, is_reflect_i2max { false };
-    bool is_reflect_i3min { false }, is_reflect_i3max { false };
-    bool is_axis_i2min { false }, is_axis_i2max { false };
-
-    // gca parameters
-    const real_t gca_larmor, gca_EovrB_sqr;
-    // radiative drag parameters
-    const real_t raddrag_coeff_synchrotron, raddrag_coeff_compton;
-    // atmospheric boundary parameters
-    const real_t atmosphere_gx1, atmosphere_gx2, atmosphere_gx3;
-    const real_t atmosphere_x_surf, atmosphere_ds;
-
-  public:
-    Pusher_kernel(const PusherContext&           pusher_params,
+    Pusher_kernel(const PusherContext&           pusher_ctx,
+                  const PusherBoundaries<D>&     pusher_boundaries,
                   PusherArrays&                  pusher_arrays,
                   const randacc_ndfield_t<D, 6>& EB,
                   const M&                       metric,
                   const P&                       policies = {})
-      // const F&                       external_fields,
-      // const E&                       emission_policy,
-      // const PUPD&                    custom_prtl_update)
-      : pusher_flags { pusher_params.pusher_flags }
-      , radiative_drag_flags { pusher_params.radiative_drag_flags }
+      : ctx { pusher_ctx }
+      , bc { pusher_boundaries }
+      , particles { pusher_arrays }
       , EB { EB }
-      , sp { pusher_arrays.sp }
-      , i1 { pusher_arrays.i1 }
-      , i2 { pusher_arrays.i2 }
-      , i3 { pusher_arrays.i3 }
-      , i1_prev { pusher_arrays.i1_prev }
-      , i2_prev { pusher_arrays.i2_prev }
-      , i3_prev { pusher_arrays.i3_prev }
-      , dx1 { pusher_arrays.dx1 }
-      , dx2 { pusher_arrays.dx2 }
-      , dx3 { pusher_arrays.dx3 }
-      , dx1_prev { pusher_arrays.dx1_prev }
-      , dx2_prev { pusher_arrays.dx2_prev }
-      , dx3_prev { pusher_arrays.dx3_prev }
-      , ux1 { pusher_arrays.ux1 }
-      , ux2 { pusher_arrays.ux2 }
-      , ux3 { pusher_arrays.ux3 }
-      , phi { pusher_arrays.phi }
-      , weight { pusher_arrays.weight }
-      , tag { pusher_arrays.tag }
       , metric { metric }
-      , external_fields { policies.external_fields_policy }
-      , emission_policy { policies.emission_policy }
-      , custom_prtl_update { policies.custom_particle_update_policy }
-      // , external_fields { external_fields }
-      // , emission_policy { emission_policy }
-      // , custom_prtl_update { custom_prtl_update }
-      , time { pusher_params.time }
-      , coeff { HALF * (pusher_params.charge / pusher_params.mass) *
-                pusher_params.omegaB0 * pusher_params.dt }
-      , dt { pusher_params.dt }
-      , ni1 { pusher_params.ni1 }
-      , ni2 { pusher_params.ni2 }
-      , ni3 { pusher_params.ni3 }
-      , gca_larmor { (pusher_flags & ParticlePusher::GCA)
-                       ? pusher_params.gca_params.get<real_t>("larmor_max")
-                       : ZERO }
-      , gca_EovrB_sqr { (pusher_flags & ParticlePusher::GCA)
-                          ? SQR(pusher_params.gca_params.get<real_t>(
-                              "e_ovr_b_max"))
-                          : ZERO }
-      , raddrag_coeff_synchrotron { ((pusher_params.radiative_drag_flags &
-                                      RadiativeDrag::SYNCHROTRON) and
-                                     (not HasEmission))
-                                      ? static_cast<real_t>(0.1) *
-                                          pusher_params.dt * pusher_params.omegaB0 /
-                                          (SQR(pusher_params
-                                                 .radiative_drag_params.get<real_t>(
-                                                   "synchrotron_gamma_rad")) *
-                                           pusher_params.mass)
-                                      : ZERO }
-      , raddrag_coeff_compton { ((pusher_params.radiative_drag_flags &
-                                  RadiativeDrag::COMPTON) and
-                                 (not HasEmission))
-                                  ? static_cast<real_t>(0.1) *
-                                      pusher_params.dt * pusher_params.omegaB0 /
-                                      (SQR(pusher_params.radiative_drag_params.get<real_t>(
-                                         "compton_gamma_rad")) *
-                                       pusher_params.mass)
-                                  : ZERO }
-      , atmosphere_gx1 { (Atm)
-                           ? pusher_params.atmosphere_params.get<real_t>("gx1")
-                           : ZERO }
-      , atmosphere_gx2 { (Atm)
-                           ? pusher_params.atmosphere_params.get<real_t>("gx2")
-                           : ZERO }
-      , atmosphere_gx3 { (Atm)
-                           ? pusher_params.atmosphere_params.get<real_t>("gx3")
-                           : ZERO }
-      , atmosphere_x_surf { (Atm) ? pusher_params.atmosphere_params.get<real_t>("x_surf")
-                                  : ZERO }
-      , atmosphere_ds { (Atm)
-                          ? pusher_params.atmosphere_params.get<real_t>("ds")
-                          : ZERO } {
-      raise::ErrorIf(pusher_flags == ParticlePusher::NONE,
+      , policies { policies }
+      , normalized_dt_half { HALF * (ctx.charge / ctx.mass) * ctx.omegaB0 * ctx.dt } {
+      raise::ErrorIf(ctx.pusher_flags == ParticlePusher::NONE,
                      "No particle pusher specified",
                      HERE);
-      raise::ErrorIf(pusher_params.boundaries.size() < 1,
-                     "pusher_params.boundaries defined incorrectly",
-                     HERE);
-      is_absorb_i1min = (pusher_params.boundaries[0].first == PrtlBC::ATMOSPHERE) ||
-                        (pusher_params.boundaries[0].first == PrtlBC::ABSORB);
-      is_absorb_i1max = (pusher_params.boundaries[0].second == PrtlBC::ATMOSPHERE) ||
-                        (pusher_params.boundaries[0].second == PrtlBC::ABSORB);
-      is_periodic_i1min = (pusher_params.boundaries[0].first == PrtlBC::PERIODIC);
-      is_periodic_i1max = (pusher_params.boundaries[0].second == PrtlBC::PERIODIC);
-      is_reflect_i1min = (pusher_params.boundaries[0].first == PrtlBC::REFLECT);
-      is_reflect_i1max = (pusher_params.boundaries[0].second == PrtlBC::REFLECT);
-      if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
-        raise::ErrorIf(pusher_params.boundaries.size() < 2,
-                       "pusher_params.boundaries defined incorrectly",
-                       HERE);
-        is_absorb_i2min = (pusher_params.boundaries[1].first == PrtlBC::ATMOSPHERE) ||
-                          (pusher_params.boundaries[1].first == PrtlBC::ABSORB);
-        is_absorb_i2max = (pusher_params.boundaries[1].second ==
-                           PrtlBC::ATMOSPHERE) ||
-                          (pusher_params.boundaries[1].second == PrtlBC::ABSORB);
-        is_periodic_i2min = (pusher_params.boundaries[1].first == PrtlBC::PERIODIC);
-        is_periodic_i2max = (pusher_params.boundaries[1].second == PrtlBC::PERIODIC);
-        is_reflect_i2min = (pusher_params.boundaries[1].first == PrtlBC::REFLECT);
-        is_reflect_i2max = (pusher_params.boundaries[1].second == PrtlBC::REFLECT);
-        is_axis_i2min = (pusher_params.boundaries[1].first == PrtlBC::AXIS);
-        is_axis_i2max = (pusher_params.boundaries[1].second == PrtlBC::AXIS);
-      }
-      if constexpr (D == Dim::_3D) {
-        raise::ErrorIf(pusher_params.boundaries.size() < 3,
-                       "pusher_params.boundaries defined incorrectly",
-                       HERE);
-        is_absorb_i3min = (pusher_params.boundaries[2].first == PrtlBC::ATMOSPHERE) ||
-                          (pusher_params.boundaries[2].first == PrtlBC::ABSORB);
-        is_absorb_i3max = (pusher_params.boundaries[2].second ==
-                           PrtlBC::ATMOSPHERE) ||
-                          (pusher_params.boundaries[2].second == PrtlBC::ABSORB);
-        is_periodic_i3min = (pusher_params.boundaries[2].first == PrtlBC::PERIODIC);
-        is_periodic_i3max = (pusher_params.boundaries[2].second == PrtlBC::PERIODIC);
-        is_reflect_i3min = (pusher_params.boundaries[2].first == PrtlBC::REFLECT);
-        is_reflect_i3max = (pusher_params.boundaries[2].second == PrtlBC::REFLECT);
-      }
     }
 
     Inline void operator()(index_t p) const {
-      if (tag(p) != ParticleTag::alive) {
-        if (tag(p) != ParticleTag::dead) {
+      if (particles.tag(p) != ParticleTag::alive) {
+        if (particles.tag(p) != ParticleTag::dead) {
           raise::KernelError(HERE, "Invalid particle tag in pusher");
         }
         return;
       }
       coord_t<M::PrtlDim> xp_Cd { ZERO };
       getParticlePosition(p, xp_Cd);
-      if (pusher_flags == ParticlePusher::PHOTON) {
+      if (ctx.pusher_flags == ParticlePusher::PHOTON) {
         /**
          * Procedure for massless particles
          */
@@ -302,9 +142,9 @@ namespace kernel::sr {
 
           // get Cartesian velocity
           vec_t<Dim::_3D> u_prime { ZERO };
-          u_prime[0] = ux1(p);
-          u_prime[1] = ux2(p);
-          u_prime[2] = ux3(p);
+          u_prime[0] = particles.ux1(p);
+          u_prime[1] = particles.ux2(p);
+          u_prime[2] = particles.ux3(p);
 
           // get Cartesian fields
           vec_t<Dim::_3D> ei { ZERO }, bi { ZERO };
@@ -357,13 +197,13 @@ namespace kernel::sr {
           vec_t<Dim::_3D> ext_e_Ph { ZERO };
           vec_t<Dim::_3D> ext_e_Cart { ZERO };
           if constexpr (HasExtEx1) {
-            ext_e_Ph[0] = external_fields.ex1(xp_Ph);
+            ext_e_Ph[0] = policies.external_fields_policy.ex1(xp_Ph);
           }
           if constexpr (HasExtEx2) {
-            ext_e_Ph[1] = external_fields.ex2(xp_Ph);
+            ext_e_Ph[1] = policies.external_fields_policy.ex2(xp_Ph);
           }
           if constexpr (HasExtEx3) {
-            ext_e_Ph[2] = external_fields.ex3(xp_Ph);
+            ext_e_Ph[2] = policies.external_fields_policy.ex3(xp_Ph);
           }
           metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_e_Ph, ext_e_Cart);
           ei_Cart[0] += ext_e_Cart[0];
@@ -375,13 +215,13 @@ namespace kernel::sr {
           vec_t<Dim::_3D> ext_b_Ph { ZERO };
           vec_t<Dim::_3D> ext_b_Cart { ZERO };
           if constexpr (HasExtBx1) {
-            ext_b_Ph[0] = external_fields.bx1(xp_Ph);
+            ext_b_Ph[0] = policies.external_fields_policy.bx1(xp_Ph);
           }
           if constexpr (HasExtBx2) {
-            ext_b_Ph[1] = external_fields.bx2(xp_Ph);
+            ext_b_Ph[1] = policies.external_fields_policy.bx2(xp_Ph);
           }
           if constexpr (HasExtBx3) {
-            ext_b_Ph[2] = external_fields.bx3(xp_Ph);
+            ext_b_Ph[2] = policies.external_fields_policy.bx3(xp_Ph);
           }
           metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd, ext_b_Ph, ext_b_Cart);
           bi_Cart[0] += ext_b_Cart[0];
@@ -390,82 +230,34 @@ namespace kernel::sr {
         }
 
         // backup fields & velocities to use later in radiative drag
-        if ((radiative_drag_flags != RadiativeDrag::NONE) or HasEmission) {
+        if ((ctx.radiative_drag_flags != RadiativeDrag::NONE) or HasEmission) {
           ei_Cart_rad[0] = ei_Cart[0];
           ei_Cart_rad[1] = ei_Cart[1];
           ei_Cart_rad[2] = ei_Cart[2];
           bi_Cart_rad[0] = bi_Cart[0];
           bi_Cart_rad[1] = bi_Cart[1];
           bi_Cart_rad[2] = bi_Cart[2];
-          u_prime[0]     = ux1(p);
-          u_prime[1]     = ux2(p);
-          u_prime[2]     = ux3(p);
+          u_prime[0]     = particles.ux1(p);
+          u_prime[1]     = particles.ux2(p);
+          u_prime[2]     = particles.ux3(p);
         }
 
         // compute the external force either user-provided or from the atmosphere model
         if constexpr (HasExtForce or Atm) {
-          real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
-          if constexpr (HasExtFx1) {
-            f_x1 = external_fields.fx1(xp_Ph);
-          }
-          if constexpr (HasExtFx2) {
-            f_x2 = external_fields.fx2(xp_Ph);
-          }
-          if constexpr (HasExtFx3) {
-            f_x3 = external_fields.fx3(xp_Ph);
-          }
-          if constexpr (Atm) {
-            if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-              if (not cmp::AlmostZero(atmosphere_gx1) and
-                  ((atmosphere_ds < ZERO or
-                    xp_Ph[0] <= atmosphere_x_surf + atmosphere_ds) and
-                   (atmosphere_ds > ZERO or
-                    xp_Ph[0] >= atmosphere_x_surf + atmosphere_ds))) {
-                if constexpr (M::CoordType == Coord::Cartesian) {
-                  f_x1 += atmosphere_gx1;
-                } else {
-                  f_x1 += atmosphere_gx1 * SQR(atmosphere_x_surf / xp_Ph[0]);
-                }
-              }
-            }
-            if constexpr (D == Dim::_2D or D == Dim::_3D) {
-              if (not cmp::AlmostZero(atmosphere_gx2) and
-                  ((atmosphere_ds < ZERO or
-                    xp_Ph[1] <= atmosphere_x_surf + atmosphere_ds) and
-                   (atmosphere_ds > ZERO or
-                    xp_Ph[1] >= atmosphere_x_surf + atmosphere_ds))) {
-                if constexpr (M::CoordType == Coord::Cartesian) {
-                  f_x2 += atmosphere_gx2;
-                } else {
-                  raise::KernelError(HERE, "Invalid force for coordinate system");
-                }
-              }
-            }
-            if constexpr (D == Dim::_3D) {
-              if (not cmp::AlmostZero(atmosphere_gx3) and
-                  ((atmosphere_ds < ZERO or
-                    xp_Ph[2] <= atmosphere_x_surf + atmosphere_ds) and
-                   (atmosphere_ds > ZERO or
-                    xp_Ph[2] >= atmosphere_x_surf + atmosphere_ds))) {
-                if constexpr (M::CoordType == Coord::Cartesian) {
-                  f_x3 += atmosphere_gx3;
-                } else {
-                  raise::KernelError(HERE, "Invalid force for coordinate system");
-                }
-              }
-            }
-          }
-          metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd,
-                                                          { f_x1, f_x2, f_x3 },
-                                                          external_force_Cart);
+          getExternalForce(xp_Cd, xp_Ph, external_force_Cart);
         }
-        if (pusher_flags & ParticlePusher::GCA) {
+
+        if (ctx.pusher_flags & ParticlePusher::GCA) {
           /* hybrid GCA/conventional mode --------------------------------- */
           const auto E2 { NORM_SQR(ei_Cart[0], ei_Cart[1], ei_Cart[2]) };
           const auto B2 { NORM_SQR(bi_Cart[0], bi_Cart[1], bi_Cart[2]) };
-          const auto rL { math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p))) *
-                          dt / (TWO * math::abs(coeff) * math::sqrt(B2)) };
-          if (B2 > ZERO && rL < gca_larmor && (E2 / B2) < gca_EovrB_sqr) {
+          const auto rL {
+            math::sqrt(
+              ONE + NORM_SQR(particles.ux1(p), particles.ux2(p), particles.ux3(p))) *
+            ctx.dt / (TWO * math::abs(normalized_dt_half) * math::sqrt(B2))
+          };
+          if (B2 > ZERO && rL < ctx.gca.larmor_max &&
+              (E2 / B2) < ctx.gca.e_ovr_b_sqr_max) {
             is_gca = true;
             // update with GCA
             if constexpr (HasExtForce or Atm) {
@@ -476,61 +268,61 @@ namespace kernel::sr {
           } else {
             // update with conventional pusher
             if constexpr (HasExtForce or Atm) {
-              ux1(p) += HALF * dt * external_force_Cart[0];
-              ux2(p) += HALF * dt * external_force_Cart[1];
-              ux3(p) += HALF * dt * external_force_Cart[2];
+              particles.ux1(p) += HALF * ctx.dt * external_force_Cart[0];
+              particles.ux2(p) += HALF * ctx.dt * external_force_Cart[1];
+              particles.ux3(p) += HALF * ctx.dt * external_force_Cart[2];
             }
-            if (pusher_flags & ParticlePusher::BORIS) {
+            if (ctx.pusher_flags & ParticlePusher::BORIS) {
               velocityEMPush_Boris(p, ei_Cart, bi_Cart);
-            } else if (pusher_flags & ParticlePusher::VAY) {
+            } else if (ctx.pusher_flags & ParticlePusher::VAY) {
               velocityEMPush_Vay(p, ei_Cart, bi_Cart);
             } else {
               raise::KernelError(HERE, "Invalid pusher algorithm for GCA mode");
             }
             if constexpr (HasExtForce or Atm) {
-              ux1(p) += HALF * dt * external_force_Cart[0];
-              ux2(p) += HALF * dt * external_force_Cart[1];
-              ux3(p) += HALF * dt * external_force_Cart[2];
+              particles.ux1(p) += HALF * ctx.dt * external_force_Cart[0];
+              particles.ux2(p) += HALF * ctx.dt * external_force_Cart[1];
+              particles.ux3(p) += HALF * ctx.dt * external_force_Cart[2];
             }
           }
         } else {
           /* conventional pusher mode ------------------------------------- */
           // update with conventional pusher
           if constexpr (HasExtForce or Atm) {
-            ux1(p) += HALF * dt * external_force_Cart[0];
-            ux2(p) += HALF * dt * external_force_Cart[1];
-            ux3(p) += HALF * dt * external_force_Cart[2];
+            particles.ux1(p) += HALF * ctx.dt * external_force_Cart[0];
+            particles.ux2(p) += HALF * ctx.dt * external_force_Cart[1];
+            particles.ux3(p) += HALF * ctx.dt * external_force_Cart[2];
           }
-          if (pusher_flags & ParticlePusher::BORIS) {
+          if (ctx.pusher_flags & ParticlePusher::BORIS) {
             velocityEMPush_Boris(p, ei_Cart, bi_Cart);
-          } else if (pusher_flags & ParticlePusher::VAY) {
+          } else if (ctx.pusher_flags & ParticlePusher::VAY) {
             velocityEMPush_Vay(p, ei_Cart, bi_Cart);
           } else {
             raise::KernelError(HERE, "Invalid pusher algorithm for GCA mode");
           }
           if constexpr (HasExtForce or Atm) {
-            ux1(p) += HALF * dt * external_force_Cart[0];
-            ux2(p) += HALF * dt * external_force_Cart[1];
-            ux3(p) += HALF * dt * external_force_Cart[2];
+            particles.ux1(p) += HALF * ctx.dt * external_force_Cart[0];
+            particles.ux2(p) += HALF * ctx.dt * external_force_Cart[1];
+            particles.ux3(p) += HALF * ctx.dt * external_force_Cart[2];
           }
         }
         // radiative drag
         if constexpr (not HasEmission) {
-          if ((not is_gca) and (radiative_drag_flags != RadiativeDrag::NONE)) {
-            u_prime[0] = HALF * (u_prime[0] + ux1(p));
-            u_prime[1] = HALF * (u_prime[1] + ux2(p));
-            u_prime[2] = HALF * (u_prime[2] + ux3(p));
-            if (radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
+          if ((not is_gca) and (ctx.radiative_drag_flags != RadiativeDrag::NONE)) {
+            u_prime[0] = HALF * (u_prime[0] + particles.ux1(p));
+            u_prime[1] = HALF * (u_prime[1] + particles.ux2(p));
+            u_prime[2] = HALF * (u_prime[2] + particles.ux3(p));
+            if (ctx.radiative_drag_flags & RadiativeDrag::SYNCHROTRON) {
               synchrotronDrag(p, u_prime, ei_Cart_rad, bi_Cart_rad);
             }
-            if (radiative_drag_flags & RadiativeDrag::COMPTON) {
+            if (ctx.radiative_drag_flags & RadiativeDrag::COMPTON) {
               inverseComptonDrag(p, u_prime);
             }
           }
         } else {
-          u_prime[0] = HALF * (u_prime[0] + ux1(p));
-          u_prime[1] = HALF * (u_prime[1] + ux2(p));
-          u_prime[2] = HALF * (u_prime[2] + ux3(p));
+          u_prime[0] = HALF * (u_prime[0] + particles.ux1(p));
+          u_prime[1] = HALF * (u_prime[1] + particles.ux2(p));
+          u_prime[2] = HALF * (u_prime[2] + particles.ux3(p));
           processEmission(p, u_prime, xp_Cd, xp_Ph, ei_Cart_rad, bi_Cart_rad);
         }
         // update position
@@ -538,111 +330,20 @@ namespace kernel::sr {
       }
     }
 
-    Inline void positionPush(bool massive, index_t p, coord_t<M::PrtlDim>& xp) const {
-      // get cartesian velocity
-      if constexpr (M::CoordType == Coord::Cartesian) {
-        // i+di push for Cartesian basis
-        const real_t dt_inv_energy {
-          massive
-            ? (dt / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
-            : (dt / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p))))
-        };
-        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-          i1_prev(p)  = i1(p);
-          dx1_prev(p) = dx1(p);
-          dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(xp, ux1(p)) *
-                    dt_inv_energy;
-          i1(p) += static_cast<int>(dx1(p) >= ONE) -
-                   static_cast<int>(dx1(p) < ZERO);
-          dx1(p) -= (dx1(p) >= ONE);
-          dx1(p) += (dx1(p) < ZERO);
-        }
-        if constexpr (D == Dim::_2D || D == Dim::_3D) {
-          i2_prev(p)  = i2(p);
-          dx2_prev(p) = dx2(p);
-          dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(xp, ux2(p)) *
-                    dt_inv_energy;
-          i2(p) += static_cast<int>(dx2(p) >= ONE) -
-                   static_cast<int>(dx2(p) < ZERO);
-          dx2(p) -= (dx2(p) >= ONE);
-          dx2(p) += (dx2(p) < ZERO);
-        }
-        if constexpr (D == Dim::_3D) {
-          i3_prev(p)  = i3(p);
-          dx3_prev(p) = dx3(p);
-          dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(xp, ux3(p)) *
-                    dt_inv_energy;
-          i3(p) += static_cast<int>(dx3(p) >= ONE) -
-                   static_cast<int>(dx3(p) < ZERO);
-          dx3(p) -= (dx3(p) >= ONE);
-          dx3(p) += (dx3(p) < ZERO);
-        }
-      } else {
-        // full Cartesian coordinate push in non-Cartesian basis
-        const real_t inv_energy {
-          massive ? ONE / math::sqrt(ONE + SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
-                  : ONE / math::sqrt(SQR(ux1(p)) + SQR(ux2(p)) + SQR(ux3(p)))
-        };
-        vec_t<Dim::_3D>     vp_Cart { ux1(p) * inv_energy,
-                                  ux2(p) * inv_energy,
-                                  ux3(p) * inv_energy };
-        // get cartesian position
-        coord_t<M::PrtlDim> xp_Cart { ZERO };
-        metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
-        // update cartesian position
-        for (auto d = 0u; d < M::PrtlDim; ++d) {
-          xp_Cart[d] += vp_Cart[d] * dt;
-        }
-        // transform back to code
-        metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xp_Cart, xp);
-
-        // update x1
-        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-          i1_prev(p)  = i1(p);
-          dx1_prev(p) = dx1(p);
-          from_Xi_to_i_di(xp[0], i1(p), dx1(p));
-        }
-
-        // update x2 & phi
-        if constexpr (D == Dim::_2D || D == Dim::_3D) {
-          i2_prev(p)  = i2(p);
-          dx2_prev(p) = dx2(p);
-          from_Xi_to_i_di(xp[1], i2(p), dx2(p));
-          if constexpr (D == Dim::_2D && M::PrtlDim == Dim::_3D) {
-            phi(p) = xp[2];
-          }
-        }
-
-        // update x3
-        if constexpr (D == Dim::_3D) {
-          i3_prev(p)  = i3(p);
-          dx3_prev(p) = dx3(p);
-          from_Xi_to_i_di(xp[2], i3(p), dx3(p));
-        }
-      }
-
-      // call custom particle position update
-      if constexpr (HasCustomPrtlUpdate) {
-        custom_prtl_update(p, xp, *this);
-      }
-
-      // apply boundary conditions
-      boundaryConditions(p, xp);
-    }
-
-    /**
-     * @brief update particle velocities
-     * @param p, e0, b0 index & interpolated fields
-     */
+    // .......................
+    // velocity pushers
+    // .......................
     Inline void velocityEMPush_Boris(index_t          p,
                                      vec_t<Dim::_3D>& e0,
                                      vec_t<Dim::_3D>& b0) const {
-      real_t COEFF { coeff };
+      real_t COEFF { normalized_dt_half };
 
       e0[0] *= COEFF;
       e0[1] *= COEFF;
       e0[2] *= COEFF;
-      vec_t<Dim::_3D> u0 { ux1(p) + e0[0], ux2(p) + e0[1], ux3(p) + e0[2] };
+      vec_t<Dim::_3D> u0 { particles.ux1(p) + e0[0],
+                           particles.ux2(p) + e0[1],
+                           particles.ux3(p) + e0[2] };
 
       COEFF *= ONE / math::sqrt(ONE + NORM_SQR(u0[0], u0[1], u0[2]));
       b0[0] *= COEFF;
@@ -660,15 +361,15 @@ namespace kernel::sr {
       u0[1] += CROSS_x2(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[1];
       u0[2] += CROSS_x3(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) + e0[2];
 
-      ux1(p) = u0[0];
-      ux2(p) = u0[1];
-      ux3(p) = u0[2];
+      particles.ux1(p) = u0[0];
+      particles.ux2(p) = u0[1];
+      particles.ux3(p) = u0[2];
     }
 
     Inline void velocityEMPush_Vay(index_t          p,
                                    vec_t<Dim::_3D>& e0,
                                    vec_t<Dim::_3D>& b0) const {
-      auto COEFF { coeff };
+      auto COEFF { normalized_dt_half };
       e0[0] *= COEFF;
       e0[1] *= COEFF;
       e0[2] *= COEFF;
@@ -677,16 +378,34 @@ namespace kernel::sr {
       b0[1] *= COEFF;
       b0[2] *= COEFF;
 
-      COEFF = ONE / math::sqrt(ONE + NORM_SQR(ux1(p), ux2(p), ux3(p)));
+      COEFF = ONE / math::sqrt(ONE + NORM_SQR(particles.ux1(p),
+                                              particles.ux2(p),
+                                              particles.ux3(p)));
 
-      vec_t<Dim::_3D> u1 {
-        (ux1(p) + TWO * e0[0] +
-         CROSS_x1(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-        (ux2(p) + TWO * e0[1] +
-         CROSS_x2(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF),
-        (ux3(p) + TWO * e0[2] +
-         CROSS_x3(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) * COEFF)
-      };
+      vec_t<Dim::_3D> u1 { (particles.ux1(p) + TWO * e0[0] +
+                            CROSS_x1(particles.ux1(p),
+                                     particles.ux2(p),
+                                     particles.ux3(p),
+                                     b0[0],
+                                     b0[1],
+                                     b0[2]) *
+                              COEFF),
+                           (particles.ux2(p) + TWO * e0[1] +
+                            CROSS_x2(particles.ux1(p),
+                                     particles.ux2(p),
+                                     particles.ux3(p),
+                                     b0[0],
+                                     b0[1],
+                                     b0[2]) *
+                              COEFF),
+                           (particles.ux3(p) + TWO * e0[2] +
+                            CROSS_x3(particles.ux1(p),
+                                     particles.ux2(p),
+                                     particles.ux3(p),
+                                     b0[0],
+                                     b0[1],
+                                     b0[2]) *
+                              COEFF) };
       COEFF = DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]);
       auto COEFF2 { ONE + NORM_SQR(u1[0], u1[1], u1[2]) -
                     NORM_SQR(b0[0], b0[1], b0[2]) };
@@ -699,18 +418,21 @@ namespace kernel::sr {
       COEFF2 = ONE / (ONE + SQR(b0[0] * COEFF) + SQR(b0[1] * COEFF) +
                       SQR(b0[2] * COEFF));
 
-      ux1(p) = COEFF2 * (u1[0] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[0] * COEFF) +
-                         u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
-      ux2(p) = COEFF2 * (u1[1] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[1] * COEFF) +
-                         u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
-      ux3(p) = COEFF2 * (u1[2] +
-                         COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
-                           (b0[2] * COEFF) +
-                         u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
+      particles.ux1(p) = COEFF2 *
+                         (u1[0] +
+                          COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                            (b0[0] * COEFF) +
+                          u1[1] * b0[2] * COEFF - u1[2] * b0[1] * COEFF);
+      particles.ux2(p) = COEFF2 *
+                         (u1[1] +
+                          COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                            (b0[1] * COEFF) +
+                          u1[2] * b0[0] * COEFF - u1[0] * b0[2] * COEFF);
+      particles.ux3(p) = COEFF2 *
+                         (u1[2] +
+                          COEFF * DOT(u1[0], u1[1], u1[2], b0[0], b0[1], b0[2]) *
+                            (b0[2] * COEFF) +
+                          u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
     }
 
     Inline void velocityEMPush_GCA(index_t          p,
@@ -731,8 +453,10 @@ namespace kernel::sr {
         b0[1] *= b_norm_inv;
         b0[2] *= b_norm_inv;
       }
-      auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
-                  coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) };
+      auto upar {
+        DOT(particles.ux1(p), particles.ux2(p), particles.ux3(p), b0[0], b0[1], b0[2]) +
+        normalized_dt_half * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2])
+      };
 
       real_t factor;
       {
@@ -747,14 +471,11 @@ namespace kernel::sr {
       const auto Gamma { math::sqrt(ONE + SQR(upar)) /
                          math::sqrt(
                            ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
-      ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
-      ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
-      ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+      particles.ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+      particles.ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+      particles.ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
     }
 
-    /**
-     * @brief velocity push with external force & EM fields in GCA mode
-     */
     Inline void velocityEMPush_GCA_ExtForce(index_t          p,
                                             vec_t<Dim::_3D>& f0,
                                             vec_t<Dim::_3D>& e0,
@@ -774,9 +495,11 @@ namespace kernel::sr {
         b0[1] *= b_norm_inv;
         b0[2] *= b_norm_inv;
       }
-      auto upar { DOT(ux1(p), ux2(p), ux3(p), b0[0], b0[1], b0[2]) +
-                  coeff * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) +
-                  dt * DOT(f0[0], f0[1], f0[2], b0[0], b0[1], b0[2]) };
+      auto upar {
+        DOT(particles.ux1(p), particles.ux2(p), particles.ux3(p), b0[0], b0[1], b0[2]) +
+        normalized_dt_half * TWO * DOT(e0[0], e0[1], e0[2], b0[0], b0[1], b0[2]) +
+        ctx.dt * DOT(f0[0], f0[1], f0[2], b0[0], b0[1], b0[2])
+      };
 
       real_t factor;
       {
@@ -791,25 +514,336 @@ namespace kernel::sr {
       const auto Gamma { math::sqrt(ONE + SQR(upar)) /
                          math::sqrt(
                            ONE - NORM_SQR(vE_Cart[0], vE_Cart[1], vE_Cart[2])) };
-      ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
-      ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
-      ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
+      particles.ux1(p) = upar * b0[0] + vE_Cart[0] * Gamma;
+      particles.ux2(p) = upar * b0[1] + vE_Cart[1] * Gamma;
+      particles.ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
     }
 
-    // Getters
-    Inline void getParticlePosition(index_t p, coord_t<M::PrtlDim>& xp) const {
-      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-        xp[0] = i_di_to_Xi(i1(p), dx1(p));
+    // .......................
+    // position pusher & bcs
+    // .......................
+    Inline void positionPush(bool massive, index_t p, coord_t<M::PrtlDim>& xp) const {
+      // get cartesian velocity
+      if constexpr (M::CoordType == Coord::Cartesian) {
+        // i+di push for Cartesian basis
+        const real_t dt_inv_energy {
+          massive
+            ? (ctx.dt / math::sqrt(ONE + SQR(particles.ux1(p)) +
+                                   SQR(particles.ux2(p)) + SQR(particles.ux3(p))))
+            : (ctx.dt / math::sqrt(SQR(particles.ux1(p)) + SQR(particles.ux2(p)) +
+                                   SQR(particles.ux3(p))))
+        };
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+          particles.i1_prev(p)  = particles.i1(p);
+          particles.dx1_prev(p) = particles.dx1(p);
+          particles.dx1(p) += metric.template transform<1, Idx::XYZ, Idx::U>(
+                                xp,
+                                particles.ux1(p)) *
+                              dt_inv_energy;
+          particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
+                             static_cast<int>(particles.dx1(p) < ZERO);
+          particles.dx1(p) -= (particles.dx1(p) >= ONE);
+          particles.dx1(p) += (particles.dx1(p) < ZERO);
+        }
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
+          particles.i2_prev(p)  = particles.i2(p);
+          particles.dx2_prev(p) = particles.dx2(p);
+          particles.dx2(p) += metric.template transform<2, Idx::XYZ, Idx::U>(
+                                xp,
+                                particles.ux2(p)) *
+                              dt_inv_energy;
+          particles.i2(p) += static_cast<int>(particles.dx2(p) >= ONE) -
+                             static_cast<int>(particles.dx2(p) < ZERO);
+          particles.dx2(p) -= (particles.dx2(p) >= ONE);
+          particles.dx2(p) += (particles.dx2(p) < ZERO);
+        }
+        if constexpr (D == Dim::_3D) {
+          particles.i3_prev(p)  = particles.i3(p);
+          particles.dx3_prev(p) = particles.dx3(p);
+          particles.dx3(p) += metric.template transform<3, Idx::XYZ, Idx::U>(
+                                xp,
+                                particles.ux3(p)) *
+                              dt_inv_energy;
+          particles.i3(p) += static_cast<int>(particles.dx3(p) >= ONE) -
+                             static_cast<int>(particles.dx3(p) < ZERO);
+          particles.dx3(p) -= (particles.dx3(p) >= ONE);
+          particles.dx3(p) += (particles.dx3(p) < ZERO);
+        }
+      } else {
+        // full Cartesian coordinate push in non-Cartesian basis
+        const real_t inv_energy {
+          massive
+            ? ONE / math::sqrt(ONE + SQR(particles.ux1(p)) +
+                               SQR(particles.ux2(p)) + SQR(particles.ux3(p)))
+            : ONE / math::sqrt(SQR(particles.ux1(p)) + SQR(particles.ux2(p)) +
+                               SQR(particles.ux3(p)))
+        };
+        vec_t<Dim::_3D>     vp_Cart { particles.ux1(p) * inv_energy,
+                                  particles.ux2(p) * inv_energy,
+                                  particles.ux3(p) * inv_energy };
+        // get cartesian position
+        coord_t<M::PrtlDim> xp_Cart { ZERO };
+        metric.template convert_xyz<Crd::Cd, Crd::XYZ>(xp, xp_Cart);
+        // update cartesian position
+        for (auto d = 0u; d < M::PrtlDim; ++d) {
+          xp_Cart[d] += vp_Cart[d] * ctx.dt;
+        }
+        // transform back to code
+        metric.template convert_xyz<Crd::XYZ, Crd::Cd>(xp_Cart, xp);
+
+        // update x1
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+          particles.i1_prev(p)  = particles.i1(p);
+          particles.dx1_prev(p) = particles.dx1(p);
+          from_Xi_to_i_di(xp[0], particles.i1(p), particles.dx1(p));
+        }
+
+        // update x2 & phi
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
+          particles.i2_prev(p)  = particles.i2(p);
+          particles.dx2_prev(p) = particles.dx2(p);
+          from_Xi_to_i_di(xp[1], particles.i2(p), particles.dx2(p));
+          if constexpr (D == Dim::_2D && M::PrtlDim == Dim::_3D) {
+            particles.phi(p) = xp[2];
+          }
+        }
+
+        // update x3
+        if constexpr (D == Dim::_3D) {
+          particles.i3_prev(p)  = particles.i3(p);
+          particles.dx3_prev(p) = particles.dx3(p);
+          from_Xi_to_i_di(xp[2], particles.i3(p), particles.dx3(p));
+        }
+
+        {
+          coord_t<M::PrtlDim> xp_old { ZERO };
+          getParticlePrevPosition(p, xp_old);
+          if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+            xp[0] = HALF * (xp[0] + xp_old[0]);
+          }
+          if constexpr (D == Dim::_2D || D == Dim::_3D) {
+            xp[1] = HALF * (xp[1] + xp_old[1]);
+          }
+          if constexpr (D == Dim::_3D) {
+            xp[2] = HALF * (xp[2] + xp_old[2]);
+          }
+        }
       }
-      if constexpr (D == Dim::_2D) {
-        xp[1] = i_di_to_Xi(i2(p), dx2(p));
-        if constexpr (M::PrtlDim == Dim::_3D) {
-          xp[2] = phi(p);
+
+      // call custom particle position update
+      if constexpr (HasCustomPrtlUpdate) {
+        policies.custom_particle_update_policy(p, ctx, bc, particles, metric);
+        getParticlePosition(p, xp);
+      }
+
+      if constexpr (M::CoordType != Coord::Cartesian) {
+        // align xp with velocity @ n+1/2
+        coord_t<M::PrtlDim> xp_old { ZERO };
+        getParticlePrevPosition(p, xp_old);
+        if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+          xp[0] = HALF * (xp[0] + xp_old[0]);
+        }
+        if constexpr (D == Dim::_2D || D == Dim::_3D) {
+          xp[1] = HALF * (xp[1] + xp_old[1]);
+        }
+        if constexpr (D == Dim::_3D) {
+          xp[2] = HALF * (xp[2] + xp_old[2]);
+        }
+      }
+
+      // apply boundary conditions
+      boundaryConditions(p, xp);
+    }
+
+    Inline void boundaryConditions(index_t              p,
+                                   coord_t<M::PrtlDim>& xp_VelAligned) const {
+      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+        auto invert_vel = false;
+        if (particles.i1(p) < 0) {
+          if (bc.is_periodic_i1min) {
+            particles.i1(p)      += ctx.ni1;
+            particles.i1_prev(p) += ctx.ni1;
+          } else if (bc.is_absorb_i1min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i1min) {
+            particles.i1(p)  = 0;
+            particles.dx1(p) = ONE - particles.dx1(p);
+            invert_vel       = true;
+          }
+        } else if (particles.i1(p) >= ctx.ni1) {
+          if (bc.is_periodic_i1max) {
+            particles.i1(p)      -= ctx.ni1;
+            particles.i1_prev(p) -= ctx.ni1;
+          } else if (bc.is_absorb_i1max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i1max) {
+            particles.i1(p)  = ctx.ni1 - 1;
+            particles.dx1(p) = ONE - particles.dx1(p);
+            invert_vel       = true;
+          }
+        }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cartesian) {
+            particles.ux1(p) = -particles.ux1(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp_VelAligned,
+              { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+              v);
+            v[0] = -v[0];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_VelAligned, v, vXYZ);
+            particles.ux1(p) = vXYZ[0];
+            particles.ux2(p) = vXYZ[1];
+            particles.ux3(p) = vXYZ[2];
+          }
+        }
+      }
+      if constexpr (D == Dim::_2D || D == Dim::_3D) {
+        auto invert_vel = false;
+        if (particles.i2(p) < 0) {
+          if (bc.is_periodic_i2min) {
+            particles.i2(p)      += ctx.ni2;
+            particles.i2_prev(p) += ctx.ni2;
+          } else if (bc.is_absorb_i2min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i2min) {
+            particles.i2(p)  = 0;
+            particles.dx2(p) = ONE - particles.dx2(p);
+            invert_vel       = true;
+          } else if (bc.is_axis_i2min) {
+            particles.i2(p)  = 0;
+            particles.dx2(p) = ONE - particles.dx2(p);
+          }
+        } else if (particles.i2(p) >= ctx.ni2) {
+          if (bc.is_periodic_i2max) {
+            particles.i2(p)      -= ctx.ni2;
+            particles.i2_prev(p) -= ctx.ni2;
+          } else if (bc.is_absorb_i2max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i2max) {
+            particles.i2(p)  = ctx.ni2 - 1;
+            particles.dx2(p) = ONE - particles.dx2(p);
+            invert_vel       = true;
+          } else if (bc.is_axis_i2max) {
+            particles.i2(p)  = ctx.ni2 - 1;
+            particles.dx2(p) = ONE - particles.dx2(p);
+          }
+        }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cartesian) {
+            particles.ux2(p) = -particles.ux2(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp_VelAligned,
+              { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+              v);
+            v[1] = -v[1];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_VelAligned, v, vXYZ);
+            particles.ux1(p) = vXYZ[0];
+            particles.ux2(p) = vXYZ[1];
+            particles.ux3(p) = vXYZ[2];
+          }
         }
       }
       if constexpr (D == Dim::_3D) {
-        xp[1] = i_di_to_Xi(i2(p), dx2(p));
-        xp[2] = i_di_to_Xi(i3(p), dx3(p));
+        auto invert_vel = false;
+        if (particles.i3(p) < 0) {
+          if (bc.is_periodic_i3min) {
+            particles.i3(p)      += ctx.ni3;
+            particles.i3_prev(p) += ctx.ni3;
+          } else if (bc.is_absorb_i3min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i3min) {
+            particles.i3(p)  = 0;
+            particles.dx3(p) = ONE - particles.dx3(p);
+            invert_vel       = true;
+          }
+        } else if (particles.i3(p) >= ctx.ni3) {
+          if (bc.is_periodic_i3max) {
+            particles.i3(p)      -= ctx.ni3;
+            particles.i3_prev(p) -= ctx.ni3;
+          } else if (bc.is_absorb_i3max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i3max) {
+            particles.i3(p)  = ctx.ni3 - 1;
+            particles.dx3(p) = ONE - particles.dx3(p);
+            invert_vel       = true;
+          }
+        }
+        if (invert_vel) {
+          if constexpr (M::CoordType == Coord::Cartesian) {
+            particles.ux3(p) = -particles.ux3(p);
+          } else {
+            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
+            metric.template transform_xyz<Idx::XYZ, Idx::U>(
+              xp_VelAligned,
+              { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+              v);
+            v[2] = -v[2];
+            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp_VelAligned, v, vXYZ);
+            particles.ux1(p) = vXYZ[0];
+            particles.ux2(p) = vXYZ[1];
+            particles.ux3(p) = vXYZ[2];
+          }
+        }
+      }
+#if defined(MPI_ENABLED)
+      if constexpr (D == Dim::_1D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1);
+      } else if constexpr (D == Dim::_2D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1,
+                                        particles.i2(p) < 0,
+                                        particles.i2(p) >= ctx.ni2);
+      } else if constexpr (D == Dim::_3D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1,
+                                        particles.i2(p) < 0,
+                                        particles.i2(p) >= ctx.ni2,
+                                        particles.i3(p) < 0,
+                                        particles.i3(p) >= ctx.ni3);
+      }
+#endif
+    }
+
+    // .......................
+    // helper functions
+    // .......................
+    Inline void getParticlePosition(index_t p, coord_t<M::PrtlDim>& xp) const {
+      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+        xp[0] = i_di_to_Xi(particles.i1(p), particles.dx1(p));
+      }
+      if constexpr (D == Dim::_2D) {
+        xp[1] = i_di_to_Xi(particles.i2(p), particles.dx2(p));
+        if constexpr (M::PrtlDim == Dim::_3D) {
+          xp[2] = particles.phi(p);
+        }
+      }
+      if constexpr (D == Dim::_3D) {
+        xp[1] = i_di_to_Xi(particles.i2(p), particles.dx2(p));
+        xp[2] = i_di_to_Xi(particles.i3(p), particles.dx3(p));
+      }
+    }
+
+    Inline void getParticlePrevPosition(index_t p, coord_t<M::PrtlDim>& xp) const {
+      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
+        xp[0] = i_di_to_Xi(particles.i1_prev(p), particles.dx1_prev(p));
+      }
+      if constexpr (D == Dim::_2D) {
+        xp[1] = i_di_to_Xi(particles.i2_prev(p), particles.dx2_prev(p));
+        if constexpr (M::PrtlDim == Dim::_3D) {
+          xp[2] = particles.phi(p);
+        }
+      }
+      if constexpr (D == Dim::_3D) {
+        xp[1] = i_di_to_Xi(particles.i2_prev(p), particles.dx2_prev(p));
+        xp[2] = i_di_to_Xi(particles.i3_prev(p), particles.dx3_prev(p));
       }
     }
 
@@ -822,8 +856,8 @@ namespace kernel::sr {
       if constexpr (O == 0u) {
 
         if constexpr (D == Dim::_1D) {
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
 
           // direct interpolation - Arno
           int indx = static_cast<int>(dx1_ + HALF);
@@ -868,10 +902,10 @@ namespace kernel::sr {
           c1    = EB(i + indx, em::bx3);
           b0[2] = c0 * pondmx + c1 * pondpx;
         } else if constexpr (D == Dim::_2D) {
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
-          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { particles.i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(particles.dx2(p)) };
 
           // direct interpolation - Arno
           int indx = static_cast<int>(dx1_ + HALF);
@@ -946,12 +980,12 @@ namespace kernel::sr {
           c10   = c010 * pondmx + c110 * pondpx;
           b0[2] = c00 * pondmy + c10 * pondpy;
         } else if constexpr (D == Dim::_3D) {
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
-          const auto dx2_ { static_cast<real_t>(dx2(p)) };
-          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { particles.i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { particles.i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(particles.dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(particles.dx3(p)) };
 
           // direct interpolation - Arno
           int indx = static_cast<int>(dx1_ + HALF);
@@ -1083,8 +1117,8 @@ namespace kernel::sr {
       } else if constexpr (O >= 1u) {
 
         if constexpr (D == Dim::_1D) {
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
           // primal and dual shape function
           real_t     Sp[O + 1], Sd[O + 1];
           // minimum contributing cells
@@ -1134,10 +1168,10 @@ namespace kernel::sr {
 
         } else if constexpr (D == Dim::_2D) {
 
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
-          const auto dx2_ { static_cast<real_t>(dx2(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { particles.i2(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(particles.dx2(p)) };
 
           // primal and dual shape function
           real_t S1p[O + 1], S1d[O + 1];
@@ -1215,12 +1249,12 @@ namespace kernel::sr {
 
         } else if constexpr (D == Dim::_3D) {
 
-          const int  i { i1(p) + static_cast<int>(N_GHOSTS) };
-          const int  j { i2(p) + static_cast<int>(N_GHOSTS) };
-          const int  k { i3(p) + static_cast<int>(N_GHOSTS) };
-          const auto dx1_ { static_cast<real_t>(dx1(p)) };
-          const auto dx2_ { static_cast<real_t>(dx2(p)) };
-          const auto dx3_ { static_cast<real_t>(dx3(p)) };
+          const int  i { particles.i1(p) + static_cast<int>(N_GHOSTS) };
+          const int  j { particles.i2(p) + static_cast<int>(N_GHOSTS) };
+          const int  k { particles.i3(p) + static_cast<int>(N_GHOSTS) };
+          const auto dx1_ { static_cast<real_t>(particles.dx1(p)) };
+          const auto dx2_ { static_cast<real_t>(particles.dx2(p)) };
+          const auto dx3_ { static_cast<real_t>(particles.dx3(p)) };
 
           // primal and dual shape function
           real_t S1p[O + 1], S1d[O + 1];
@@ -1334,157 +1368,6 @@ namespace kernel::sr {
       }
     }
 
-    // Extra
-    Inline void boundaryConditions(index_t p, coord_t<M::PrtlDim>& xp) const {
-      if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-        auto invert_vel = false;
-        if (i1(p) < 0) {
-          if (is_periodic_i1min) {
-            i1(p)      += ni1;
-            i1_prev(p) += ni1;
-          } else if (is_absorb_i1min) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i1min) {
-            i1(p)      = 0;
-            dx1(p)     = ONE - dx1(p);
-            invert_vel = true;
-          }
-        } else if (i1(p) >= ni1) {
-          if (is_periodic_i1max) {
-            i1(p)      -= ni1;
-            i1_prev(p) -= ni1;
-          } else if (is_absorb_i1max) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i1max) {
-            i1(p)      = ni1 - 1;
-            dx1(p)     = ONE - dx1(p);
-            invert_vel = true;
-          }
-        }
-        if (invert_vel) {
-          if constexpr (M::CoordType == Coord::Cartesian) {
-            ux1(p) = -ux1(p);
-          } else {
-            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
-            metric.template transform_xyz<Idx::XYZ, Idx::U>(
-              xp,
-              { ux1(p), ux2(p), ux3(p) },
-              v);
-            v[0] = -v[0];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
-            ux1(p) = vXYZ[0];
-            ux2(p) = vXYZ[1];
-            ux3(p) = vXYZ[2];
-          }
-        }
-      }
-      if constexpr (D == Dim::_2D || D == Dim::_3D) {
-        auto invert_vel = false;
-        if (i2(p) < 0) {
-          if (is_periodic_i2min) {
-            i2(p)      += ni2;
-            i2_prev(p) += ni2;
-          } else if (is_absorb_i2min) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i2min) {
-            i2(p)      = 0;
-            dx2(p)     = ONE - dx2(p);
-            invert_vel = true;
-          } else if (is_axis_i2min) {
-            i2(p)  = 0;
-            dx2(p) = ONE - dx2(p);
-          }
-        } else if (i2(p) >= ni2) {
-          if (is_periodic_i2max) {
-            i2(p)      -= ni2;
-            i2_prev(p) -= ni2;
-          } else if (is_absorb_i2max) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i2max) {
-            i2(p)      = ni2 - 1;
-            dx2(p)     = ONE - dx2(p);
-            invert_vel = true;
-          } else if (is_axis_i2max) {
-            i2(p)  = ni2 - 1;
-            dx2(p) = ONE - dx2(p);
-          }
-        }
-        if (invert_vel) {
-          if constexpr (M::CoordType == Coord::Cartesian) {
-            ux2(p) = -ux2(p);
-          } else {
-            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
-            metric.template transform_xyz<Idx::XYZ, Idx::U>(
-              xp,
-              { ux1(p), ux2(p), ux3(p) },
-              v);
-            v[1] = -v[1];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
-            ux1(p) = vXYZ[0];
-            ux2(p) = vXYZ[1];
-            ux3(p) = vXYZ[2];
-          }
-        }
-      }
-      if constexpr (D == Dim::_3D) {
-        auto invert_vel = false;
-        if (i3(p) < 0) {
-          if (is_periodic_i3min) {
-            i3(p)      += ni3;
-            i3_prev(p) += ni3;
-          } else if (is_absorb_i3min) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i3min) {
-            i3(p)      = 0;
-            dx3(p)     = ONE - dx3(p);
-            invert_vel = true;
-          }
-        } else if (i3(p) >= ni3) {
-          if (is_periodic_i3max) {
-            i3(p)      -= ni3;
-            i3_prev(p) -= ni3;
-          } else if (is_absorb_i3max) {
-            tag(p) = ParticleTag::dead;
-          } else if (is_reflect_i3max) {
-            i3(p)      = ni3 - 1;
-            dx3(p)     = ONE - dx3(p);
-            invert_vel = true;
-          }
-        }
-        if (invert_vel) {
-          if constexpr (M::CoordType == Coord::Cartesian) {
-            ux3(p) = -ux3(p);
-          } else {
-            vec_t<Dim::_3D> v { ZERO }, vXYZ { ZERO };
-            metric.template transform_xyz<Idx::XYZ, Idx::U>(
-              xp,
-              { ux1(p), ux2(p), ux3(p) },
-              v);
-            v[2] = -v[2];
-            metric.template transform_xyz<Idx::U, Idx::XYZ>(xp, v, vXYZ);
-            ux1(p) = vXYZ[0];
-            ux2(p) = vXYZ[1];
-            ux3(p) = vXYZ[2];
-          }
-        }
-      }
-#if defined(MPI_ENABLED)
-      if constexpr (D == Dim::_1D) {
-        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
-      } else if constexpr (D == Dim::_2D) {
-        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1, i2(p) < 0, i2(p) >= ni2);
-      } else if constexpr (D == Dim::_3D) {
-        tag(p) = mpi::SendTag(tag(p),
-                              i1(p) < 0,
-                              i1(p) >= ni1,
-                              i2(p) < 0,
-                              i2(p) >= ni2,
-                              i3(p) < 0,
-                              i3(p) >= ni3);
-      }
-#endif
-    }
-
     Inline void synchrotronDrag(index_t                p,
                                 vec_t<Dim::_3D>&       u_prime,
                                 const vec_t<Dim::_3D>& e0,
@@ -1531,12 +1414,73 @@ namespace kernel::sr {
                                        e_plus_beta_cross_b[1],
                                        e_plus_beta_cross_b[2]) -
                               SQR(beta_dot_e) };
-      ux1(p) += raddrag_coeff_synchrotron *
-                (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
-      ux2(p) += raddrag_coeff_synchrotron *
-                (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
-      ux3(p) += raddrag_coeff_synchrotron *
-                (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+      particles.ux1(p) += ctx.synchrotron_drag.coeff *
+                          (kappaR[0] - gamma_prime_sqr * u_prime[0] * chiR_sqr);
+      particles.ux2(p) += ctx.synchrotron_drag.coeff *
+                          (kappaR[1] - gamma_prime_sqr * u_prime[1] * chiR_sqr);
+      particles.ux3(p) += ctx.synchrotron_drag.coeff *
+                          (kappaR[2] - gamma_prime_sqr * u_prime[2] * chiR_sqr);
+    }
+
+    Inline void getExternalForce(const coord_t<M::PrtlDim>& xp_Cd,
+                                 const coord_t<M::PrtlDim>& xp_Ph,
+                                 vec_t<Dim::_3D>& external_force_Cart) const
+      requires(Atm or HasExtForce)
+    {
+      real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
+      if constexpr (HasExtFx1) {
+        f_x1 = policies.external_fields_policy.fx1(xp_Ph);
+      }
+      if constexpr (HasExtFx2) {
+        f_x2 = policies.external_fields_policy.fx2(xp_Ph);
+      }
+      if constexpr (HasExtFx3) {
+        f_x3 = policies.external_fields_policy.fx3(xp_Ph);
+      }
+      if constexpr (Atm) {
+        if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+          if (not cmp::AlmostZero(ctx.atmosphere.gx1) and
+              ((ctx.atmosphere.ds < ZERO or
+                xp_Ph[0] <= ctx.atmosphere.x_surf + ctx.atmosphere.ds) and
+               (ctx.atmosphere.ds > ZERO or
+                xp_Ph[0] >= ctx.atmosphere.x_surf + ctx.atmosphere.ds))) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
+              f_x1 += ctx.atmosphere.gx1;
+            } else {
+              f_x1 += ctx.atmosphere.gx1 * SQR(ctx.atmosphere.x_surf / xp_Ph[0]);
+            }
+          }
+        }
+        if constexpr (D == Dim::_2D or D == Dim::_3D) {
+          if (not cmp::AlmostZero(ctx.atmosphere.gx2) and
+              ((ctx.atmosphere.ds < ZERO or
+                xp_Ph[1] <= ctx.atmosphere.x_surf + ctx.atmosphere.ds) and
+               (ctx.atmosphere.ds > ZERO or
+                xp_Ph[1] >= ctx.atmosphere.x_surf + ctx.atmosphere.ds))) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
+              f_x2 += ctx.atmosphere.gx2;
+            } else {
+              raise::KernelError(HERE, "Invalid force for coordinate system");
+            }
+          }
+        }
+        if constexpr (D == Dim::_3D) {
+          if (not cmp::AlmostZero(ctx.atmosphere.gx3) and
+              ((ctx.atmosphere.ds < ZERO or
+                xp_Ph[2] <= ctx.atmosphere.x_surf + ctx.atmosphere.ds) and
+               (ctx.atmosphere.ds > ZERO or
+                xp_Ph[2] >= ctx.atmosphere.x_surf + ctx.atmosphere.ds))) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
+              f_x3 += ctx.atmosphere.gx3;
+            } else {
+              raise::KernelError(HERE, "Invalid force for coordinate system");
+            }
+          }
+        }
+      }
+      metric.template transform_xyz<Idx::T, Idx::XYZ>(xp_Cd,
+                                                      { f_x1, f_x2, f_x3 },
+                                                      external_force_Cart);
     }
 
     Inline void inverseComptonDrag(index_t p, vec_t<Dim::_3D>& u_prime) const {
@@ -1548,9 +1492,9 @@ namespace kernel::sr {
       u_prime[2]             *= gamma_prime_sqr;
       gamma_prime_sqr         = SQR(ONE / gamma_prime_sqr);
 
-      ux1(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[0];
-      ux2(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[1];
-      ux3(p) -= raddrag_coeff_compton * gamma_prime_sqr * u_prime[2];
+      particles.ux1(p) -= ctx.compton_drag.coeff * gamma_prime_sqr * u_prime[0];
+      particles.ux2(p) -= ctx.compton_drag.coeff * gamma_prime_sqr * u_prime[1];
+      particles.ux3(p) -= ctx.compton_drag.coeff * gamma_prime_sqr * u_prime[2];
     }
 
     Inline void processEmission(index_t                    p,
@@ -1563,18 +1507,18 @@ namespace kernel::sr {
     {
       typename E::Payload payload;
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };
-      const auto          emission_response = emission_policy.shouldEmit(xp_Cd,
-                                                                xp_Ph,
-                                                                u_prime,
-                                                                ep_Cart,
-                                                                bp_Cart,
-                                                                delta_u_Ph,
-                                                                payload);
+      const auto emission_response = policies.emission_policy.shouldEmit(xp_Cd,
+                                                                         xp_Ph,
+                                                                         u_prime,
+                                                                         ep_Cart,
+                                                                         bp_Cart,
+                                                                         delta_u_Ph,
+                                                                         payload);
 
       if (emission_response.second) {
-        ux1(p) += delta_u_Ph[0];
-        ux2(p) += delta_u_Ph[1];
-        ux3(p) += delta_u_Ph[2];
+        particles.ux1(p) += delta_u_Ph[0];
+        particles.ux2(p) += delta_u_Ph[1];
+        particles.ux3(p) += delta_u_Ph[2];
       }
 
       if (emission_response.first) {
@@ -1590,21 +1534,22 @@ namespace kernel::sr {
         real_t                    prtl_phi = ZERO;
         if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                       M::Dim == Dim::_3D) {
-          xi_Cd[0]  = i1(p);
-          dxi_Cd[0] = dx1(p);
+          xi_Cd[0]  = particles.i1(p);
+          dxi_Cd[0] = particles.dx1(p);
         }
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          xi_Cd[1]  = i2(p);
-          dxi_Cd[1] = dx2(p);
+          xi_Cd[1]  = particles.i2(p);
+          dxi_Cd[1] = particles.dx2(p);
           if constexpr (M::CoordType != Coord::Cartesian) {
-            prtl_phi = phi(p);
+            prtl_phi = particles.phi(p);
           }
         }
         if constexpr (M::Dim == Dim::_3D) {
-          xi_Cd[2]  = i3(p);
-          dxi_Cd[2] = dx3(p);
+          xi_Cd[2]  = particles.i3(p);
+          dxi_Cd[2] = particles.dx3(p);
         }
-        emission_policy.emit(xi_Cd, dxi_Cd, direction, weight(p), prtl_phi, payload);
+        policies.emission_policy
+          .emit(xi_Cd, dxi_Cd, direction, particles.weight(p), prtl_phi, payload);
       }
     }
   };

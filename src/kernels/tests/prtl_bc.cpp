@@ -232,23 +232,13 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   real_t     time   = ZERO;
   const auto n_iter = 100;
 
-  kernel::PusherContext pusher_ctx {};
-  pusher_ctx.pusher_flags = ParticlePusher::BORIS;
-  pusher_ctx.mass         = ONE;
-  pusher_ctx.charge       = ONE;
-  pusher_ctx.dt           = dt;
-  pusher_ctx.omegaB0      = ONE;
-  pusher_ctx.ni1          = nx1;
-  pusher_ctx.ni2          = nx2;
-  pusher_ctx.ni3          = nx3;
-  pusher_ctx.boundaries   = {
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
+  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+    { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+     { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
   };
 
-  kernel::PusherArrays pusher_arrays {};
-  pusher_arrays.sp       = 1u;
+  kernel::PusherArrays pusher_arrays { 1u };
   pusher_arrays.i1       = i1;
   pusher_arrays.i2       = i2;
   pusher_arrays.i3       = i3;
@@ -268,10 +258,26 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   pusher_arrays.tag      = tag;
 
   for (auto n { 0 }; n < n_iter; ++n) {
-    Kokkos::parallel_for(
-      "pusher",
-      CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<M>(pusher_ctx, pusher_arrays, emfield, metric));
+    Kokkos::parallel_for("pusher",
+                         CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
+                         kernel::sr::Pusher_kernel<M>(
+                           {
+                             1u,
+                             ParticlePusher::BORIS,
+                             RadiativeDrag::NONE,
+                             1.f,
+                             1.f,
+                             n_iter * dt,
+                             dt,
+                             ONE,
+                             nx1,
+                             nx2,
+                             nx3,
+                           },
+                           boundaries,
+                           pusher_arrays,
+                           emfield,
+                           metric));
 
     auto i1_  = Kokkos::create_mirror_view(i1);
     auto i2_  = Kokkos::create_mirror_view(i2);

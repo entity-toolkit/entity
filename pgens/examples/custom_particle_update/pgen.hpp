@@ -4,8 +4,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/traits.h"
-
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
@@ -130,102 +128,109 @@ namespace user {
       real_t               temp_cold, temp_hot;
       real_t               xmin, xmax;
 
-      template <class Coord, class PusherKernel>
-      Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
+      CustomPrtlUpdate(random_number_pool_t& pool,
+                       real_t                temp_cold,
+                       real_t                temp_hot,
+                       real_t                xmin,
+                       real_t                xmax)
+        : pool { pool }
+        , temp_cold { temp_cold }
+        , temp_hot { temp_hot }
+        , xmin { xmin }
+        , xmax { xmax } {}
 
-        const auto x_Cd = static_cast<real_t>(pusher.i1(p)) +
-                          static_cast<real_t>(pusher.dx1(p));
-        const auto x_Ph = pusher.metric.template convert<1, Crd::Cd, Crd::XYZ>(x_Cd);
+      Inline void operator()(index_t                      p,
+                             const kernel::PusherContext& ctx,
+                             const kernel::PusherBoundaries<M::Dim>&,
+                             const kernel::PusherArrays& particles,
+                             const M&                    metric) const {
+
+        const auto x_Cd = static_cast<real_t>(particles.i1(p)) +
+                          static_cast<real_t>(particles.dx1(p));
+        const auto x_Ph = metric.template convert<1, Crd::Cd, Crd::XYZ>(x_Cd);
         vec_t<Dim::_3D>       v { ZERO };
         const coord_t<M::Dim> x_dummy { ZERO };
 
         // step 1: calculate the particle 3 velocity
-        const real_t gamma_p = math::sqrt(
-          ONE + SQR(pusher.ux1(p)) + SQR(pusher.ux2(p)) + SQR(pusher.ux3(p)));
+        const real_t gamma_p = math::sqrt(ONE + SQR(particles.ux1(p)) +
+                                          SQR(particles.ux2(p)) +
+                                          SQR(particles.ux3(p)));
 
-        const real_t beta_x_p = math::abs(pusher.ux1(p)) / gamma_p;
-        const real_t xp_prev = i_di_to_Xi(pusher.i1_prev(p), pusher.dx1_prev(p));
+        const real_t beta_x_p = math::abs(particles.ux1(p)) / gamma_p;
+        const real_t xp_prev  = i_di_to_Xi(particles.i1_prev(p),
+                                          particles.dx1_prev(p));
 
         // Reflecting boundary that resamples velocity
         if (x_Ph < xmin) {
           arch::JuttnerSinge(v, temp_cold, pool);
 
           // calculate the time for the particle to reach the wall
-          const int      delta_i1_to_wall  = pusher.i1_prev(p);
-          const prtldx_t delta_dx1_to_wall = pusher.dx1_prev(p);
+          const int      delta_i1_to_wall  = particles.i1_prev(p);
+          const prtldx_t delta_dx1_to_wall = particles.dx1_prev(p);
           const real_t dx_to_wall = i_di_to_Xi(delta_i1_to_wall, delta_dx1_to_wall);
-          const real_t dt_to_wall =
-            dx_to_wall /
-            pusher.metric.template transform<1, Idx::XYZ, Idx::U>(x_dummy,
-                                                                  beta_x_p);
+          const real_t dt_to_wall = dx_to_wall /
+                                    metric.template transform<1, Idx::XYZ, Idx::U>(
+                                      x_dummy,
+                                      beta_x_p);
 
           // update the velocity to the post-collision value (reflection with new speed sampled from Juttner distribution)
-          pusher.ux1(p) = math::abs(v[0]);
-          pusher.ux2(p) = v[1];
-          pusher.ux3(p) = v[2];
+          particles.ux1(p) = math::abs(v[0]);
+          particles.ux2(p) = v[1];
+          particles.ux3(p) = v[2];
 
           // calculate remaining time after the collision
-          const real_t remaining_dt            = pusher.dt - dt_to_wall;
+          const real_t remaining_dt            = ctx.dt - dt_to_wall;
           const real_t remaining_dt_inv_energy = remaining_dt /
-                                                 math::sqrt(ONE +
-                                                            SQR(pusher.ux1(p)) +
-                                                            SQR(pusher.ux2(p)) +
-                                                            SQR(pusher.ux3(p)));
+                                                 math::sqrt(
+                                                   ONE + SQR(particles.ux1(p)) +
+                                                   SQR(particles.ux2(p)) +
+                                                   SQR(particles.ux3(p)));
 
           // update the position to the post-collision value (reflection with new speed sampled from Juttner distribution)
-          pusher.i1(p)  = 0;
-          pusher.dx1(p) = pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
-                            x_dummy,
-                            pusher.ux1(p)) *
-                          remaining_dt_inv_energy;
-
-          // Re-sync coordinate variable xp for subsequent boundary procedures
-          xp[0] = static_cast<real_t>(pusher.i1(p)) +
-                  static_cast<real_t>(pusher.dx1(p));
+          particles.i1(p)  = 0;
+          particles.dx1(p) = metric.template transform<1, Idx::XYZ, Idx::U>(
+                               x_dummy,
+                               particles.ux1(p)) *
+                             remaining_dt_inv_energy;
 
         } else if (x_Ph > xmax) {
           arch::JuttnerSinge(v, temp_hot, pool);
 
           // step 2: calculate the time for the particle to reach the piston
-          const int      delta_i1_to_wall  = pusher.ni1 - 1 - pusher.i1_prev(p);
-          const prtldx_t delta_dx1_to_wall = ONE - pusher.dx1_prev(p);
+          const int      delta_i1_to_wall  = ctx.ni1 - 1 - particles.i1_prev(p);
+          const prtldx_t delta_dx1_to_wall = ONE - particles.dx1_prev(p);
           const real_t dx_to_wall = i_di_to_Xi(delta_i1_to_wall, delta_dx1_to_wall);
-          const real_t dt_to_wall =
-            dx_to_wall /
-            pusher.metric.template transform<1, Idx::XYZ, Idx::U>(x_dummy,
-                                                                  beta_x_p);
+          const real_t dt_to_wall = dx_to_wall /
+                                    metric.template transform<1, Idx::XYZ, Idx::U>(
+                                      x_dummy,
+                                      beta_x_p);
 
           // update the velocity to the post-collision value (reflection with new speed sampled from Juttner distribution)
-          pusher.ux1(p) = -math::abs(v[0]);
-          pusher.ux2(p) = v[1];
-          pusher.ux3(p) = v[2];
+          particles.ux1(p) = -math::abs(v[0]);
+          particles.ux2(p) = v[1];
+          particles.ux3(p) = v[2];
 
           // step 3: calculate remaining time after the collision
-          const real_t remaining_dt            = pusher.dt - dt_to_wall;
+          const real_t remaining_dt            = ctx.dt - dt_to_wall;
           const real_t remaining_dt_inv_energy = remaining_dt /
-                                                 math::sqrt(ONE +
-                                                            SQR(pusher.ux1(p)) +
-                                                            SQR(pusher.ux2(p)) +
-                                                            SQR(pusher.ux3(p)));
+                                                 math::sqrt(
+                                                   ONE + SQR(particles.ux1(p)) +
+                                                   SQR(particles.ux2(p)) +
+                                                   SQR(particles.ux3(p)));
 
           // update the position to the post-collision value (reflection with new speed sampled from Juttner distribution)
-          pusher.i1(p)  = pusher.ni1 - 2;
-          pusher.dx1(p) = ONE -
-                          pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
-                            x_dummy,
-                            math::abs(pusher.ux1(p))) *
-                            remaining_dt_inv_energy;
-
-          // Re-sync coordinate variable xp for subsequent boundary procedures
-          xp[0] = static_cast<real_t>(pusher.i1(p)) +
-                  static_cast<real_t>(pusher.dx1(p));
+          particles.i1(p) = ctx.ni1 - 2;
+          particles.dx1(p) = ONE - metric.template transform<1, Idx::XYZ, Idx::U>(
+                                     x_dummy,
+                                     math::abs(particles.ux1(p))) *
+                                     remaining_dt_inv_energy;
         }
       }
     };
 
     template <class D>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-
+    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const
+      -> CustomPrtlUpdate {
       return CustomPrtlUpdate {
         domain.random_pool(),
         temperature / domain.species[sp - 1].mass(), // sp is 1-indexed

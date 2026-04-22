@@ -235,24 +235,13 @@ auto main(int argc, char* argv[]) -> int {
 
     auto pusher_arrays = emitting_species.PusherKernelArrays();
 
-    kernel::PusherContext pusher_ctx {};
-    pusher_ctx.pusher_flags         = emitting_species.pusher();
-    pusher_ctx.radiative_drag_flags = emitting_species.radiative_drag_flags();
-    pusher_ctx.mass                 = emitting_species.mass();
-    pusher_ctx.charge               = emitting_species.charge();
-    pusher_ctx.dt                   = delta_t;
-    pusher_ctx.omegaB0              = 1.0f;
-    pusher_ctx.ni1                  = 128u;
-    pusher_ctx.ni2                  = 1u;
-    pusher_ctx.ni3                  = 1u;
-    pusher_ctx.boundaries           = {
-      { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
+    const auto boundaries = kernel::PusherBoundaries<Dim::_1D> {
+      { { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
     };
 
     ndfield_t<Dim::_1D, 6> EB { "EB", 128u + 2u * N_GHOSTS };
 
     for (auto step = 0u; step < 7u; ++step) {
-      pusher_ctx.time      = static_cast<simtime_t>(step) * delta_t;
       auto emission_policy = EmissionPolicy<decltype(metric)> {
         step,
         emitted_species_1.npart(),
@@ -292,7 +281,18 @@ auto main(int argc, char* argv[]) -> int {
         "ParticlePusher",
         2u,
         kernel::sr::Pusher_kernel<decltype(metric), decltype(pusher_policy)>(
-          pusher_ctx,
+          { 1u,
+            emitting_species.pusher(),
+            emitting_species.radiative_drag_flags(),
+            emitting_species.mass(),
+            emitting_species.charge(),
+            static_cast<simtime_t>(step) * delta_t,
+            static_cast<real_t>(delta_t),
+            ONE,
+            128u,
+            1u,
+            1u },
+          boundaries,
           pusher_arrays,
           EB,
           metric,

@@ -44,53 +44,56 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
+template <MetricClass M>
 struct TestCustomPrtlUpdate {
-  template <class Coord, class PusherKernel>
-  Inline void operator()(index_t p, Coord& xp, const PusherKernel& pusher) const {
-    if constexpr (PusherKernel::D == Dim::_1D || PusherKernel::D == Dim::_2D ||
-                  PusherKernel::D == Dim::_3D) {
+  Inline void operator()(index_t                      p,
+                         const kernel::PusherContext& ctx,
+                         const kernel::PusherBoundaries<M::Dim>&,
+                         const kernel::PusherArrays& particles,
+                         const M&                    metric) const {
+    if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
       auto invert_vel = false;
-      if (pusher.i1(p) < 0) {
-        pusher.i1(p)  = 0;
-        pusher.dx1(p) = ONE - pusher.dx1(p);
-        invert_vel    = true;
-      } else if (pusher.i1(p) >= pusher.ni1) {
-        pusher.i1(p)  = pusher.ni1 - 1;
-        pusher.dx1(p) = ONE - pusher.dx1(p);
-        invert_vel    = true;
+      if (particles.i1(p) < 0) {
+        particles.i1(p)  = 0;
+        particles.dx1(p) = ONE - particles.dx1(p);
+        invert_vel       = true;
+      } else if (particles.i1(p) >= ctx.ni1) {
+        particles.i1(p)  = ctx.ni1 - 1;
+        particles.dx1(p) = ONE - particles.dx1(p);
+        invert_vel       = true;
       }
       if (invert_vel) {
-        pusher.ux1(p) = -pusher.ux1(p);
+        particles.ux1(p) = -particles.ux1(p);
       }
     }
-    if constexpr (PusherKernel::D == Dim::_2D || PusherKernel::D == Dim::_3D) {
+    if constexpr (M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
       auto invert_vel = false;
-      if (pusher.i2(p) < 0) {
-        pusher.i2(p)  = 0;
-        pusher.dx2(p) = ONE - pusher.dx2(p);
-        invert_vel    = true;
-      } else if (pusher.i2(p) >= pusher.ni2) {
-        pusher.i2(p)  = pusher.ni2 - 1;
-        pusher.dx2(p) = ONE - pusher.dx2(p);
-        invert_vel    = true;
+      if (particles.i2(p) < 0) {
+        particles.i2(p)  = 0;
+        particles.dx2(p) = ONE - particles.dx2(p);
+        invert_vel       = true;
+      } else if (particles.i2(p) >= ctx.ni2) {
+        particles.i2(p)  = ctx.ni2 - 1;
+        particles.dx2(p) = ONE - particles.dx2(p);
+        invert_vel       = true;
       }
       if (invert_vel) {
-        pusher.ux2(p) = -pusher.ux2(p);
+        particles.ux2(p) = -particles.ux2(p);
       }
     }
-    if constexpr (PusherKernel::D == Dim::_3D) {
+    if constexpr (M::Dim == Dim::_3D) {
       auto invert_vel = false;
-      if (pusher.i3(p) < 0) {
-        pusher.i3(p)  = 0;
-        pusher.dx3(p) = ONE - pusher.dx3(p);
-        invert_vel    = true;
-      } else if (pusher.i3(p) >= pusher.ni3) {
-        pusher.i3(p)  = pusher.ni3 - 1;
-        pusher.dx3(p) = ONE - pusher.dx3(p);
-        invert_vel    = true;
+      if (particles.i3(p) < 0) {
+        particles.i3(p)  = 0;
+        particles.dx3(p) = ONE - particles.dx3(p);
+        invert_vel       = true;
+      } else if (particles.i3(p) >= ctx.ni3) {
+        particles.i3(p)  = ctx.ni3 - 1;
+        particles.dx3(p) = ONE - particles.dx3(p);
+        invert_vel       = true;
       }
       if (invert_vel) {
-        pusher.ux3(p) = -pusher.ux3(p);
+        particles.ux3(p) = -particles.ux3(p);
       }
     }
   }
@@ -192,31 +195,13 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
     put_value<prtldx_t>(c_dx3, 0.1, 0);
   }
 
-  kernel::PusherContext r_ctx {};
-  r_ctx.pusher_flags = ParticlePusher::BORIS;
-  r_ctx.mass         = ONE;
-  r_ctx.charge       = ONE;
-  r_ctx.dt           = dt;
-  r_ctx.omegaB0      = ONE;
-  r_ctx.ni1          = nx1;
-  r_ctx.ni2          = nx2;
-  r_ctx.ni3          = nx3;
-  r_ctx.boundaries   = {
-    { PrtlBC::REFLECT, PrtlBC::REFLECT },
-    { PrtlBC::REFLECT, PrtlBC::REFLECT },
-    { PrtlBC::REFLECT, PrtlBC::REFLECT }
+  kernel::PusherBoundaries<M::Dim> boundaries {
+    { { PrtlBC::REFLECT, PrtlBC::REFLECT },
+     { PrtlBC::REFLECT, PrtlBC::REFLECT },
+     { PrtlBC::REFLECT, PrtlBC::REFLECT } }
   };
 
-  kernel::PusherContext c_ctx = r_ctx;
-  // initialize with periodic boundaries so that reflection is only handled by the custom update
-  c_ctx.boundaries            = {
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
-  };
-
-  kernel::PusherArrays r_arrays {};
-  r_arrays.sp       = 1u;
+  kernel::PusherArrays r_arrays { 1u };
   r_arrays.i1       = r_i1;
   r_arrays.i2       = r_i2;
   r_arrays.i3       = r_i3;
@@ -235,8 +220,7 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   r_arrays.phi      = phi;
   r_arrays.tag      = r_tag;
 
-  kernel::PusherArrays c_arrays {};
-  c_arrays.sp       = 1u;
+  kernel::PusherArrays c_arrays { 2u };
   c_arrays.i1       = c_i1;
   c_arrays.i2       = c_i2;
   c_arrays.i3       = c_i3;
@@ -255,29 +239,36 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   c_arrays.phi      = phi;
   c_arrays.tag      = c_tag;
 
-  // const auto no_emission      = ::traits::emission::NoPolicy_t {};
-  // const auto no_custom_update = ::traits::custom_prtl_update::NoPolicy_t {};
-  // const auto custom_update    = TestCustomPrtlUpdate {};
   const auto custom_update_policy =
     ::kernel::PusherPolicy<M,
                            ::traits::emission::NoPolicy_t,
-                           TestCustomPrtlUpdate,
+                           TestCustomPrtlUpdate<M>,
                            ::traits::extfields::NoPolicy_t,
                            false> {};
 
-  const auto n_iter = 100;
+  static constexpr auto n_iter = 100;
+
   for (auto n { 0 }; n < n_iter; ++n) {
     Kokkos::parallel_for(
       "pusher_reflect",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M>(r_ctx, r_arrays, emfield, metric));
+      kernel::sr::Pusher_kernel<M>(
+        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, dt * n, dt, ONE, nx1, nx2, nx3 },
+        boundaries,
+        r_arrays,
+        emfield,
+        metric));
+
     Kokkos::parallel_for(
       "pusher_custom",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M, decltype(custom_update_policy)>(c_ctx,
-                                                                   c_arrays,
-                                                                   emfield,
-                                                                   metric));
+      kernel::sr::Pusher_kernel<M, decltype(custom_update_policy)>(
+        { 2u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, dt * n, dt, ONE, nx1, nx2, nx3 },
+        boundaries,
+        c_arrays,
+        emfield,
+        metric,
+        custom_update_policy));
 
     auto hr_i1 = Kokkos::create_mirror_view(r_i1);
     Kokkos::deep_copy(hr_i1, r_i1);

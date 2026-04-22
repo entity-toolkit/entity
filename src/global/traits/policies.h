@@ -25,6 +25,8 @@
 
 #include "traits/archetypes.h"
 
+#include "kernels/pushers/context.h"
+
 #include <Kokkos_Pair.hpp>
 
 #include <vector>
@@ -116,5 +118,19 @@ namespace traits::custom_prtl_update {
   concept IsNoPolicy = std::is_same<std::remove_cvref_t<CPU>, NoPolicy_t>::value;
 
 } // namespace traits::custom_prtl_update
+
+template <class CPU, class M>
+concept CustomParticleUpdatePolicyClass =
+  requires(const CPU&                              cpu,
+           index_t                                 p,
+           const kernel::PusherContext&            pusher_ctx,
+           const kernel::PusherBoundaries<M::Dim>& pusher_boundaries,
+           const kernel::PusherArrays&             particles,
+           const M&                                metric) {
+    {
+      cpu(p, pusher_ctx, pusher_boundaries, particles, metric)
+    } -> std::same_as<void>;
+  } or
+  traits::custom_prtl_update::IsNoPolicy<CPU>;
 
 #endif // TRAITS_POLICIES_H

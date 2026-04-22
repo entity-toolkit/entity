@@ -145,25 +145,14 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-3 : 1e-6;
 
-  kernel::PusherContext pusher_ctx {};
-  pusher_ctx.pusher_flags = ParticlePusher::BORIS | ParticlePusher::GCA;
-  pusher_ctx.mass         = ONE;
-  pusher_ctx.charge       = ONE;
-  pusher_ctx.dt           = dt;
-  pusher_ctx.omegaB0      = omegaB0;
-  pusher_ctx.ni1          = nx1;
-  pusher_ctx.ni2          = nx2;
-  pusher_ctx.ni3          = nx3;
-  pusher_ctx.boundaries   = {
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
-    { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
+  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+    { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+     { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
+     { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
   };
-  pusher_ctx.gca_params.set("larmor_max", (real_t)10000.0);
-  pusher_ctx.gca_params.set("e_ovr_b_max", ONE);
+  const auto gca_context = kernel::PusherGCAContext { 10000.0, ONE };
 
-  kernel::PusherArrays pusher_arrays {};
-  pusher_arrays.sp       = 1u;
+  kernel::PusherArrays pusher_arrays { 1u };
   pusher_arrays.i1       = i1;
   pusher_arrays.i2       = i2;
   pusher_arrays.i3       = i3;
@@ -183,12 +172,26 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.tag      = tag;
 
   for (auto t { 0u }; t < 2000; ++t) {
-    pusher_ctx.time = t * dt;
+    auto ctx = kernel::PusherContext {
+      1u,
+      ParticlePusher::BORIS | ParticlePusher::GCA,
+      RadiativeDrag::NONE,
+      1.f,
+      1.f,
+      t * dt,
+      dt,
+      omegaB0,
+      nx1,
+      nx2,
+      nx3,
+    };
+    ctx.gca = gca_context;
 
     Kokkos::parallel_for(
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
-      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(pusher_ctx,
+      kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>>(ctx,
+                                                     boundaries,
                                                      pusher_arrays,
                                                      emfield,
                                                      metric));

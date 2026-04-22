@@ -16,7 +16,7 @@ namespace kernel {
 
   template <MetricClass            M,
             EmissionPolicyClass<M> E = ::traits::emission::NoPolicy_t,
-            class CPU                = ::traits::custom_prtl_update::NoPolicy_t,
+            CustomParticleUpdatePolicyClass<M> CPU = ::traits::custom_prtl_update::NoPolicy_t,
             ExtFieldsPolicyClass<M::Dim> F   = ::traits::extfields::NoPolicy_t,
             bool                         Atm = false>
   struct PusherPolicy {
@@ -36,8 +36,8 @@ namespace kernel {
       , external_fields_policy { external_fields_policy } {}
   };
 
-  template <MetricClass M, class D, ntt::EmissionTypeFlag E>
-  auto MakePusherPolicyEmission(D&                     domain,
+  template <MetricClass M, class DOM, ntt::EmissionTypeFlag E>
+  auto MakePusherPolicyEmission(DOM&                   domain,
                                 const prm::Parameters& params,
                                 const PusherContext&   pusher_ctx) {
     if constexpr (E == ntt::EmissionType::SYNCHROTRON) {
@@ -88,9 +88,9 @@ namespace kernel {
     }
   }
 
-  template <MetricClass M, class D, class PGen, class F>
+  template <MetricClass M, class DOM, class PGen, class F>
   void MakePusherPolicy(const PGen&                  pgen,
-                        D&                           domain,
+                        DOM&                         domain,
                         const ntt::SimulationParams& params,
                         const PusherContext&         pusher_ctx,
                         ntt::EmissionTypeFlag        emission_type,
@@ -99,13 +99,13 @@ namespace kernel {
     auto with_emission = [&](auto next) {
       switch (emission_type) {
         case ntt::EmissionType::SYNCHROTRON:
-          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::SYNCHROTRON>(
+          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::SYNCHROTRON>(
             domain,
             params,
             pusher_ctx));
           break;
         case ntt::EmissionType::COMPTON:
-          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::COMPTON>(
+          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::COMPTON>(
             domain,
             params,
             pusher_ctx));
@@ -129,7 +129,7 @@ namespace kernel {
     };
 
     auto with_custom_prtl_upd = [&](auto next) {
-      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, D>) {
+      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>) {
         next(pgen.CustomParticleUpdate(pusher_ctx.time,
                                        pusher_ctx.species_index,
                                        domain));
@@ -139,7 +139,7 @@ namespace kernel {
     };
 
     auto with_ext_fields = [&](auto next) {
-      if constexpr (::traits::pgen::HasExternalFields<PGen, D>) {
+      if constexpr (::traits::pgen::HasExternalFields<PGen, DOM>) {
         const auto [apply_extfields, external_fields] = pgen.ExternalFields(
           pusher_ctx.time,
           pusher_ctx.species_index,

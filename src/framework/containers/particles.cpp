@@ -87,8 +87,7 @@ namespace ntt {
 
   template <Dimension D, Coord::type C>
   auto Particles<D, C>::PusherKernelArrays() -> kernel::PusherArrays {
-    kernel::PusherArrays pusher_arrays {};
-    pusher_arrays.sp       = index();
+    kernel::PusherArrays pusher_arrays { index() };
     pusher_arrays.i1       = i1;
     pusher_arrays.i2       = i2;
     pusher_arrays.i3       = i3;
