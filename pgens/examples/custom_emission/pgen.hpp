@@ -5,12 +5,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/pgen.h"
+#include "traits/policies.h"
 
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
-#include "kernels/emission/traits.h"
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Pair.hpp>
@@ -160,13 +160,13 @@ namespace user {
   template <SimEngine::type S, class M>
   struct PGen : public arch::ProblemGenerator<S, M> {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
     using arch::ProblemGenerator<S, M>::D;
@@ -184,12 +184,11 @@ namespace user {
       , metadomain { metadomain }
       , emission_probability { params.template get<real_t>(
           "setup.emission_probability") } {
-      static_assert(kernel::traits::emission::IsValid<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
+      static_assert(EmissionPolicyClass<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
     }
 
-    inline auto EmissionPolicy(simtime_t,
-                               spidx_t,
-                               Domain<S, M>& domain) const -> RandomEmission<M> {
+    inline auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
+      -> RandomEmission<M> {
       return RandomEmission<M> {
         domain.random_pool(),      emission_probability,
         domain.species[1].npart(), domain.species[1].i1,

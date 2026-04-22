@@ -5,9 +5,8 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
@@ -21,8 +20,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+    template <SRMetricClass M>
     void AtmosphereParticlesIn(dir::direction_t<M::Dim>         direction,
                                Metadomain<SimEngine::SRPIC, M>& metadomain,
                                Domain<SimEngine::SRPIC, M>&     domain,
@@ -49,7 +47,7 @@ namespace ntt {
       Kokkos::deep_copy(domain.fields.bckp, ZERO);
       auto scatter_bckp = Kokkos::Experimental::create_scatter_view(
         domain.fields.bckp);
-      const auto use_weights = M::CoordType != Coord::Cart;
+      const auto use_weights = M::CoordType != Coord::Cartesian;
       const auto ni2         = domain.mesh.n_active(in::x2);
       const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
 
@@ -287,8 +285,7 @@ namespace ntt {
       return;
     }
 
-    template <class M>
-      requires metric::traits::HasD<M>
+    template <SRMetricClass M>
     void ParticleInjector(Metadomain<SimEngine::SRPIC, M>& metadomain,
                           Domain<SimEngine::SRPIC, M>&     domain,
                           const SimulationParams&          params,

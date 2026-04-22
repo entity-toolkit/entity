@@ -7,6 +7,7 @@
   #include "arch/mpi_aliases.h"
 #endif
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/tools.h"
@@ -25,8 +26,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   Metadomain<S, M>::Metadomain(unsigned int            global_ndomains,
                                const std::vector<int>& global_decomposition,
                                const std::vector<ncells_t>& global_ncells,
@@ -57,8 +57,7 @@ namespace ntt {
     metricCompatibilityCheck();
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::initialValidityCheck() const {
     // ensure everything has the correct shape
     raise::ErrorIf(g_decomposition.size() != (std::size_t)D,
@@ -95,8 +94,7 @@ namespace ntt {
 #endif // MPI_ENABLED
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::createEmptyDomains() {
     /* decompose and compute cell & domain offsets ------------------------ */
     auto d_ncells = tools::Decompose(g_ndomains, g_mesh.n_active(), g_decomposition);
@@ -191,8 +189,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::redefineNeighbors() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
@@ -232,8 +229,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::redefineBoundaries() {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       // offset of the subdomain[idx]
@@ -322,8 +318,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::finalValidityCheck() const {
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
       const auto& current_domain = g_subdomains[idx];
@@ -368,8 +363,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::metricCompatibilityCheck() const {
     const auto epsilon = std::numeric_limits<real_t>::epsilon() *
                          static_cast<real_t>(100.0);
@@ -403,8 +397,7 @@ namespace ntt {
 #endif
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::setFldsBC(const bc_in& dir, const FldsBC& new_bcs) {
     if (dir == bc_in::Mx1) {
       if constexpr (M::Dim == Dim::_1D) {
@@ -472,8 +465,7 @@ namespace ntt {
     redefineBoundaries();
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::setPrtlBC(const bc_in& dir, const PrtlBC& new_bcs) {
     if (dir == bc_in::Mx1) {
       if constexpr (M::Dim == Dim::_1D) {

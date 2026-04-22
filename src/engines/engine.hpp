@@ -17,14 +17,14 @@
 #include "global.h"
 
 #include "arch/mpi_aliases.h"
+#include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
 
 #include "archetypes/field_setter.h"
-#include "archetypes/traits.h"
 #include "engines/reporter.h"
-#include "engines/traits.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -57,8 +57,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   class Engine {
 
   protected:
@@ -128,8 +127,7 @@ namespace ntt {
     }
   };
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -140,20 +138,19 @@ namespace ntt {
     if (not is_resuming) {
       // start a new simulation with initial conditions
       logger::Checkpoint("Loading initial conditions", HERE);
-      if constexpr (arch::traits::pgen::HasInitFlds<user::PGen<S, M>>) {
+      if constexpr (::traits::pgen::HasInitFlds<user::PGen<S, M>>) {
         logger::Checkpoint("Initializing fields from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
           Kokkos::parallel_for(
             "InitFields",
             loc_dom.mesh.rangeActiveCells(),
-            arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
+            arch::SetEMFields_kernel<S, M, decltype(m_pgen.init_flds)> {
               loc_dom.fields.em,
               m_pgen.init_flds,
               loc_dom.mesh.metric });
         });
       }
-      if constexpr (
-        arch::traits::pgen::HasInitPrtls<user::PGen<S, M>, Domain<S, M>>) {
+      if constexpr (::traits::pgen::HasInitPrtls<user::PGen<S, M>, Domain<S, M>>) {
         logger::Checkpoint("Initializing particles from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
           m_pgen.InitPrtls(loc_dom);
@@ -177,8 +174,7 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
@@ -237,8 +233,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::run() {
     init();
 
@@ -270,7 +265,7 @@ namespace ntt {
       });
       // poststep (if defined)
       if constexpr (
-        arch::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
         timers.start("Custom");
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           m_pgen.CustomPostStep(step, time, dom);
@@ -289,7 +284,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
       timers.start("Output");
       if constexpr (
-        arch::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), Domain<S, M>>) {
         auto lambda_custom_field_output = [&](const std::string&    name,
                                               ndfield_t<M::Dim, 6>& buff,
                                               index_t               idx,
@@ -308,7 +303,7 @@ namespace ntt {
         print_output &= m_metadomain.Write(m_params, step, step - 1, time, time - dt);
       }
       if constexpr (
-        arch::traits::pgen::HasCustomStatOutput<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomStatOutput<decltype(m_pgen), Domain<S, M>>) {
         auto lambda_custom_stat = [&](const std::string&  name,
                                       timestep_t          step,
                                       simtime_t           time,

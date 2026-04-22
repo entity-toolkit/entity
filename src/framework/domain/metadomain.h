@@ -23,8 +23,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
@@ -52,13 +51,7 @@
 
 namespace ntt {
 
-  template <class M>
-  concept IsCompatibleWithMetadomain = metric::traits::HasD<M> &&
-                                       metric::traits::HasConvert<M> &&
-                                       metric::traits::HasTotVolume<M>;
-
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   struct Metadomain {
     static constexpr Dimension D { M::Dim };
 

@@ -15,11 +15,13 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
+
 #include "archetypes/energy_dist.h"
+#include "archetypes/field_setter.h"
 #include "archetypes/particle_injector.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/fieldsetter.hpp"
 #include "kernels/particle_moments.hpp"
 
 #include <utility>
@@ -41,7 +43,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectUniformMaxwellians(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -91,7 +93,7 @@ namespace arch {
    * @tparam S Simulation engine type
    * @tparam M Metric type
    */
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectUniformMaxwellian(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -129,8 +131,7 @@ namespace arch {
    * @tparam F Field ID for the moment to compute (e.g. FldsID::N, FldsID::T, etc.)
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
-  template <SimEngine::type S, class M, FldsID::type F, int N>
-    requires metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M, FldsID::type F, int N>
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
@@ -177,19 +178,19 @@ namespace arch {
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
 
-  template <SimEngine::type S, class M, class F>
-    requires ::metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M, class F>
   inline void UpdateEMFields(const SimulationParams& params,
                              Domain<S, M>&           domain,
                              const F&                fieldsetter) {
     if constexpr (S == SimEngine::SRPIC) {
       Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
-      Kokkos::parallel_for("UpdateEMFields",
-                           domain.mesh.rangeActiveCells(),
-                           kernel::CustomFieldsetter<S, M, F>(domain.mesh.metric,
-                                                              domain.fields.em,
-                                                              domain.fields.bckp,
-                                                              fieldsetter));
+      Kokkos::parallel_for(
+        "UpdateEMFields",
+        domain.mesh.rangeActiveCells(),
+        arch::CustomSetEMFields_kernel<S, M, F>(domain.mesh.metric,
+                                                domain.fields.em,
+                                                domain.fields.bckp,
+                                                fieldsetter));
       // comm here
     } else {
       raise::Error("Custom fieldsetter is only implemented for SRPIC", HERE);

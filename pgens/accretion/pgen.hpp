@@ -5,15 +5,14 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
-
 #include "kernels/particle_moments.hpp"
 
 namespace user {
@@ -200,16 +199,12 @@ namespace user {
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::GRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::GRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Kerr_Schild,
-                                          Metric::QKerr_Schild,
-                                          Metric::Kerr_Schild_0>::value
+      ::traits::pgen::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0> {}
     };
-    static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D>::value
-    };
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
     // for easy access to variables in the child class
     using arch::ProblemGenerator<S, M>::D;

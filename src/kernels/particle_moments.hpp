@@ -14,11 +14,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include <vector>
 
@@ -36,10 +35,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, FldsID::type F, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
+  template <SimEngine::type S, MetricClass M, FldsID::type F, unsigned short N>
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
@@ -125,7 +121,7 @@ namespace kernel {
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
                      "Rho & Charge for massless particles not defined",
                      HERE);
-      if constexpr ((M::CoordType != Coord::Cart) &&
+      if constexpr ((M::CoordType != Coord::Cartesian) &&
                     ((D == Dim::_2D) || (D == Dim::_3D))) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
@@ -138,7 +134,7 @@ namespace kernel {
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
         // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           u_Phys[0] = ux1(p);
           u_Phys[1] = ux2(p);
           u_Phys[2] = ux3(p);
@@ -197,7 +193,7 @@ namespace kernel {
       real_t          u0 { ZERO };
       // for bulk 3vel (tetrad basis)
       vec_t<Dim::_3D> u_Phys { ZERO };
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         u_Phys[0] = ux1(p);
         u_Phys[1] = ux2(p);
         u_Phys[2] = ux3(p);
@@ -264,7 +260,7 @@ namespace kernel {
       } else if constexpr (D == Dim::_2D) {
         for (auto di2 { -window }; di2 <= window; ++di2) {
           for (auto di1 { -window }; di1 <= window; ++di1) {
-            if constexpr (M::CoordType == Coord::Cart) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
               buff_access(i1(p) + di1 + N_GHOSTS,
                           i2(p) + di2 + N_GHOSTS,
                           buff_idx) += coeff;
@@ -290,7 +286,7 @@ namespace kernel {
         for (auto di3 { -window }; di3 <= window; ++di3) {
           for (auto di2 { -window }; di2 <= window; ++di2) {
             for (auto di1 { -window }; di1 <= window; ++di1) {
-              if constexpr (M::CoordType == Coord::Cart) {
+              if constexpr (M::CoordType == Coord::Cartesian) {
                 buff_access(i1(p) + di1 + N_GHOSTS,
                             i2(p) + di2 + N_GHOSTS,
                             i3(p) + di3 + N_GHOSTS,

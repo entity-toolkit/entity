@@ -14,10 +14,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "particle_shapes.hpp"
 
@@ -31,11 +30,7 @@ namespace kernel {
   /**
    * @brief Algorithm for the current deposition
    */
-  template <SimEngine::type S, class M, unsigned short O = 1u>
-    requires metric::traits::HasD<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M> &&
-               metric::traits::HasConvert_i<M> && metric::traits::HasAlpha<M>))
+  template <SimEngine::type S, MetricClass M, unsigned short O = 1u>
   class DepositCurrents_kernel {
     static_assert(O <= 11u, "Shape function order O must be <= 11");
     static constexpr auto D = M::Dim;

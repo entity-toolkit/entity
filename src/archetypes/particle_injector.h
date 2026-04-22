@@ -19,10 +19,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/archetypes.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -53,8 +53,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
+  template <SimEngine::type S, MetricClass M>
   auto DeduceRegion(const Domain<S, M>& domain, const boundaries_t<real_t>& box)
     -> std::tuple<bool, array_t<real_t*>, array_t<real_t*>> {
     if (not domain.mesh.Intersects(box)) {
@@ -108,8 +107,7 @@ namespace arch {
    *   - array_t<real_t*>: minimum coordinates of the region in computational coords
    *   - array_t<real_t*>: maximum coordinates of the region in computational coords
    */
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M>
   auto ComputeNumInject(const SimulationParams&     params,
                         const Domain<S, M>&         domain,
                         real_t                      number_density,
@@ -159,7 +157,7 @@ namespace arch {
           if (xi < xsurf - ds or xi >= xsurf) {
             return ZERO;
           } else {
-            if constexpr (C == Coord::Cart) {
+            if constexpr (C == Coord::Cartesian) {
               return nmax * math::exp(-(xsurf - xi) / height);
             } else {
               raise::KernelError(
@@ -173,7 +171,7 @@ namespace arch {
           if (xi < xsurf or xi >= xsurf + ds) {
             return ZERO;
           } else {
-            if constexpr (C == Coord::Cart) {
+            if constexpr (C == Coord::Cartesian) {
               return nmax * math::exp(-(xi - xsurf) / height);
             } else {
               return nmax * math::exp(-(xsurf / height) * (ONE - (xsurf / xi)));
@@ -200,9 +198,7 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine::type S, class M, class ED1, class ED2>
-    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
-             traits::energydist::IsValid<ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -210,10 +206,10 @@ namespace arch {
                             real_t                             number_density,
                             bool                        use_weights = false,
                             const boundaries_t<real_t>& box         = {}) {
-    raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
                    "Weights must be used for non-Cartesian coordinates",
                    HERE);
-    raise::ErrorIf((M::CoordType == Coord::Cart) && use_weights,
+    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
                    "Weights should not be used for Cartesian coordinates",
                    HERE);
     raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
@@ -276,7 +272,7 @@ namespace arch {
    * @param data Map containing all the coordinates/velocities of particles to inject
    * @param use_weights Boolean toggle to use weights or not
    */
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   inline void InjectGlobally(const Metadomain<S, M>& global_domain,
                              Domain<S, M>&           local_domain,
                              spidx_t                 spidx,
@@ -313,9 +309,7 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine::type S, class M, class ED1, class ED2, class SD>
-    requires metric::traits::HasD<M> && traits::energydist::IsValid<ED1> &&
-             traits::energydist::IsValid<ED2> && traits::spatialdist::IsValid<SD>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,
@@ -324,10 +318,10 @@ namespace arch {
                                real_t                      number_density,
                                bool                        use_weights = false,
                                const boundaries_t<real_t>& box         = {}) {
-    raise::ErrorIf((M::CoordType != Coord::Cart) && (not use_weights),
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
                    "Weights must be used for non-Cartesian coordinates",
                    HERE);
-    raise::ErrorIf((M::CoordType == Coord::Cart) && use_weights,
+    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
                    "Weights should not be used for Cartesian coordinates",
                    HERE);
     raise::ErrorIf(

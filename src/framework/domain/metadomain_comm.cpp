@@ -2,6 +2,7 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -27,7 +28,7 @@ namespace ntt {
   using address_t     = std::pair<unsigned int, int>;
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   auto GetSendRecvRanks(const Metadomain<S, M>* const metadomain,
                         Domain<S, M>&                 domain,
                         dir::direction_t<M::Dim>      direction)
@@ -110,7 +111,7 @@ namespace ntt {
     };
   }
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   auto GetSendRecvParams(const Metadomain<S, M>* const metadomain,
                          Domain<S, M>&                 domain,
                          dir::direction_t<M::Dim>      direction,
@@ -196,8 +197,7 @@ namespace ntt {
     };
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain,
                                            CommTags      tags) const {
     const auto comm_em = ((S == SimEngine::SRPIC) and
@@ -414,8 +414,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>& domain,
                                            CommTags      tags,
                                            const range_tuple_t& components) const {
@@ -571,8 +570,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::CommunicateParticles(Domain<S, M>& domain) const {
 #if defined(MPI_ENABLED)
     logger::Checkpoint("Communicating particles\n", HERE);

@@ -4,14 +4,9 @@
 #include "enums.h"
 #include "global.h"
 
-#include "utils/error.h"
-#include "utils/numeric.h"
-
-#include "archetypes/field_setter.h"
-#include "archetypes/moving_window.h"
 #include "archetypes/piston.h"
+#include "archetypes/moving_window.h"
 #include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
@@ -76,13 +71,13 @@ namespace user {
   struct PGen : public arch::ProblemGenerator<S, M> {
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
     // for easy access to variables in the child class
@@ -212,27 +207,45 @@ namespace user {
       piston_position = domain.mesh.metric.template convert<1, Crd::Cd, Crd::Ph>(
         piston_position_cd);
     }
-
     struct CustomPrtlUpdate {
-      real_t x_piston;
+      real_t x_piston; // current position of piston
       real_t v_piston;
-      bool   is_left;
-      bool   massive;
+      bool is_left;
+      bool massive;
 
-      template <class Coord, class PusherKernel>
-      Inline void operator()(index_t p, Coord& xp, PusherKernel& pusher) const {
+      Inline void operator()(index_t                      p,
+                             const kernel::PusherContext& ctx,
+                             const kernel::PusherBoundaries<M::Dim>&,
+                             const kernel::PusherArrays& particles,
+                             const M&                    metric) const {
 
-        if (arch::CrossesPiston<S, M, PusherKernel>(p, pusher, x_piston, v_piston, is_left)) {
-          arch::PistonUpdate<S, M, PusherKernel>(p, pusher, x_piston, v_piston, massive);
+        if (arch::CrossesPiston<M>(p,
+                                   ctx.dt,
+                                   particles,
+                                   metric,
+                                   x_piston,
+                                   v_piston,
+                                   is_left)) {
+          arch::PistonUpdate<M>(p,
+                                ctx.dt,
+                                particles,
+                                metric,
+                                x_piston,
+                                v_piston,
+                                massive);
         }
       }
     };
 
-    template <class D>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const {
-      return CustomPrtlUpdate { piston_position, piston_velocity, true, true };
+    template <class DOM>
+    auto CustomParticleUpdate(simtime_t time, spidx_t sp, DOM& domain) const {
+      return CustomPrtlUpdate { piston_position,
+                                piston_velocity,
+                                true,
+                                true };
     };
   };
+
 
 } // namespace user
 

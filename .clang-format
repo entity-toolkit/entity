@@ -100,6 +100,8 @@ IncludeCategories:
     Priority: 2
   - Regex: '^"utils\/.*.h"'
     Priority: 2
+  - Regex: '^"traits\/.*.h"'
+    Priority: 2
   - Regex: '^"metrics\/.*\.h"'
     Priority: 3
   - Regex: '^"framework\/.*\.h"'

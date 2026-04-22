@@ -24,11 +24,12 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(ENTITY ${PROJECT_NAME}.xc)
+set(ENTITY ${PROJECT_NAME}${pgen_suffix}.xc)
 set(SOURCES ${SRC_DIR}/entity.cpp)
 
 add_executable(${ENTITY} ${SOURCES})
-set(libs ntt_global ntt_framework ntt_metrics ntt_engines ntt_pgen)
+set(libs ntt_global ntt_framework ntt_metrics ntt_engines${pgen_suffix}
+         ntt_pgen${pgen_suffix})
 add_dependencies(${ENTITY} ${libs})
 target_link_libraries(${ENTITY} PUBLIC ${libs})
 install(TARGETS ${ENTITY} DESTINATION bin)

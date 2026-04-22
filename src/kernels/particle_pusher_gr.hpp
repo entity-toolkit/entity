@@ -18,10 +18,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -60,20 +59,11 @@ namespace kernel::gr {
 
   struct Massless_t {};
 
-  template <class M>
-  concept IsCompatibleWithPusherGR = metric::traits::HasD<M> &&
-                                     metric::traits::HasTransform<M> &&
-                                     metric::traits::HasHij<M> &&
-                                     metric::traits::HasAlpha<M> &&
-                                     metric::traits::HasBeta1<M> &&
-                                     metric::traits::HasMetricDerivatives<M>;
-
   /**
    * @brief Algorithm for the Particle pusher
    * @tparam M Metric
    */
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   class Pusher_kernel {
     static constexpr auto D = M::Dim;
 
@@ -159,8 +149,8 @@ namespace kernel::gr {
                         (boundaries[0].first == PrtlBC::HORIZON);
       is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
                         (boundaries[0].second == PrtlBC::HORIZON);
-      is_axis_i2min   = (boundaries[1].first == PrtlBC::AXIS);
-      is_axis_i2max   = (boundaries[1].second == PrtlBC::AXIS);
+      is_axis_i2min = (boundaries[1].first == PrtlBC::AXIS);
+      is_axis_i2max = (boundaries[1].second == PrtlBC::AXIS);
     }
 
     /**
@@ -318,8 +308,7 @@ namespace kernel::gr {
   /*                               Geodesic pusher */
   /* -------------------------------------------------------------------------- */
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicMomentumPush(T,
                                                      const coord_t<D>&      xp,
@@ -392,8 +381,7 @@ namespace kernel::gr {
     }
   }
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicCoordinatePush(T,
                                                        const coord_t<D>& xp,
@@ -428,8 +416,7 @@ namespace kernel::gr {
     }
   }
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   template <typename T>
   Inline void Pusher_kernel<M>::GeodesicFullPush(T,
                                                  const coord_t<D>&      xp,
@@ -503,8 +490,7 @@ namespace kernel::gr {
   /* -------------------------------------------------------------------------- */
   /*                                 Phi pusher */
   /* -------------------------------------------------------------------------- */
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   template <typename T>
   Inline void Pusher_kernel<M>::UpdatePhi(T,
                                           const coord_t<D>&      xp,
@@ -527,8 +513,7 @@ namespace kernel::gr {
     }
   }
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   template <unsigned short O>
   Inline void Pusher_kernel<M>::interpolateFields(index_t          p,
                                                   vec_t<Dim::_3D>& e0,
@@ -713,8 +698,7 @@ namespace kernel::gr {
 
   /* ------------------------------ Photon pusher ----------------------------- */
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D");
@@ -774,8 +758,7 @@ namespace kernel::gr {
 
   /* ------------------------- Massive particle pusher ------------------------ */
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D");
@@ -867,8 +850,7 @@ namespace kernel::gr {
 
   // Boundary conditions
 
-  template <class M>
-    requires IsCompatibleWithPusherGR<M>
+  template <GRMetricClass M>
   Inline void Pusher_kernel<M>::boundaryConditions(index_t p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if (i1(p) < 0 && is_absorb_i1min) {

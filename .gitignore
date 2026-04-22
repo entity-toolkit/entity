@@ -24,6 +24,7 @@ temp*/
 logs/
 *.log
 *.bak
+temp*
 
 # Trash files
 .trash/

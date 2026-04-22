@@ -20,16 +20,14 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace arch {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M>
   struct SpatialDistribution {
     static constexpr auto D = M::Dim;
 
@@ -39,7 +37,7 @@ namespace arch {
     const M metric;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   struct Uniform : public SpatialDistribution<S, M> {
     Uniform(const M& metric) : SpatialDistribution<S, M> { metric } {}
 
@@ -48,7 +46,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, class M, int N, class T>
+  template <SimEngine::type S, MetricClass M, int N, class T>
   struct Replenish : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, N> density;
@@ -95,7 +93,7 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, class M, int N>
+  template <SimEngine::type S, MetricClass M, int N>
   struct ReplenishUniform : public SpatialDistribution<S, M> {
     using SpatialDistribution<S, M>::metric;
     const ndfield_t<M::Dim, N> density;

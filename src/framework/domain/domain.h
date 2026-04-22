@@ -43,11 +43,10 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 #include "utils/reporter.h"
-
-#include "metrics/traits.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -62,8 +61,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M>
   struct Domain {
     static constexpr Dimension D { M::Dim };
 
@@ -240,7 +238,7 @@ namespace ntt {
     std::optional<random_number_pool_t> m_random_number_pool;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
     -> std::ostream& {
     os << "Domain #" << domain.index();

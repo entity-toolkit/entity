@@ -6,6 +6,7 @@
 #include "arch/kokkos_aliases.h"
 
 #include "framework/containers/species.h"
+#include "kernels/pushers/context.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -79,15 +80,14 @@ namespace ntt {
       pld_i = array_t<npart_t**> { label + "_pld_i", maxnpart, npld_i };
     }
 
-    if ((D == Dim::_2D) && (C != Coord::Cart)) {
+    if ((D == Dim::_2D) && (C != Coord::Cartesian)) {
       phi = array_t<real_t*> { label + "_phi", maxnpart };
     }
   }
 
   template <Dimension D, Coord::type C>
-  auto Particles<D, C>::PusherKernelArrays() -> kernel::sr::PusherArrays {
-    kernel::sr::PusherArrays pusher_arrays {};
-    pusher_arrays.sp       = index();
+  auto Particles<D, C>::PusherKernelArrays() -> kernel::PusherArrays {
+    kernel::PusherArrays pusher_arrays { index() };
     pusher_arrays.i1       = i1;
     pusher_arrays.i2       = i2;
     pusher_arrays.i3       = i3;
@@ -109,12 +109,12 @@ namespace ntt {
     return pusher_arrays;
   }
 
-  template struct Particles<Dim::_1D, Coord::Cart>;
-  template struct Particles<Dim::_2D, Coord::Cart>;
-  template struct Particles<Dim::_3D, Coord::Cart>;
-  template struct Particles<Dim::_2D, Coord::Sph>;
-  template struct Particles<Dim::_3D, Coord::Sph>;
-  template struct Particles<Dim::_2D, Coord::Qsph>;
-  template struct Particles<Dim::_3D, Coord::Qsph>;
+  template struct Particles<Dim::_1D, Coord::Cartesian>;
+  template struct Particles<Dim::_2D, Coord::Cartesian>;
+  template struct Particles<Dim::_3D, Coord::Cartesian>;
+  template struct Particles<Dim::_2D, Coord::Spherical>;
+  template struct Particles<Dim::_3D, Coord::Spherical>;
+  template struct Particles<Dim::_2D, Coord::Qspherical>;
+  template struct Particles<Dim::_3D, Coord::Qspherical>;
 
 } // namespace ntt

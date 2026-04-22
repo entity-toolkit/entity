@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
@@ -65,8 +66,7 @@ namespace ntt {
     curr
   };
 
-  template <class M>
-    requires traits::engine::IsCompatibleWithGRPICEngine<M, user::PGen>
+  template <GRMetricClass M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
     using pgen_t   = user::PGen<SimEngine::GRPIC, M>;
@@ -635,11 +635,11 @@ namespace ntt {
       }
       if (dim == in::x1) {
         if (g != gr_bc::curr) {
-          if constexpr (arch::traits::pgen::HasInitFlds<pgen_t>) {
+          if constexpr (::traits::pgen::HasInitFlds<pgen_t>) {
             Kokkos::parallel_for(
               "MatchBoundaries",
               CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              kernel::bc::MatchBoundaries_kernel<S, M, decltype(m_pgen.init_flds), in::x1>(
                 domain.fields.em,
                 m_pgen.init_flds,
                 domain.mesh.metric,
@@ -650,7 +650,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "MatchBoundaries",
               CreateRangePolicy<M::Dim>(range_min, range_max),
-              kernel::bc::MatchBoundaries_kernel<S, decltype(m_pgen.init_flds), M, in::x1>(
+              kernel::bc::MatchBoundaries_kernel<S, M, decltype(m_pgen.init_flds), in::x1>(
                 domain.fields.em0,
                 m_pgen.init_flds,
                 domain.mesh.metric,
@@ -680,7 +680,7 @@ namespace ntt {
       /**
        * open boundaries
        */
-      raise::ErrorIf(M::CoordType == Coord::Cart,
+      raise::ErrorIf(M::CoordType == Coord::Cartesian,
                      "Invalid coordinate type for horizon BCs",
                      HERE);
       raise::ErrorIf(direction.get_dim() != in::x1,
@@ -715,7 +715,7 @@ namespace ntt {
       /**
        * axis boundaries
        */
-      raise::ErrorIf(M::CoordType == Coord::Cart,
+      raise::ErrorIf(M::CoordType == Coord::Cartesian,
                      "Invalid coordinate type for axis BCs",
                      HERE);
       raise::ErrorIf(direction.get_dim() != in::x2,

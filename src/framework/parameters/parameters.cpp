@@ -237,7 +237,7 @@ namespace ntt {
     extra_params.setParams(extra_extra_flags, this);
 
     // @TODO: disabling stats for non-Cartesian
-    if (coord_enum != Coord::Cart) {
+    if (coord_enum != Coord::Cartesian) {
       set("output.stats.enable", false);
     }
   }

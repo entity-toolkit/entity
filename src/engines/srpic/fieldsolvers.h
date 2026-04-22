@@ -4,11 +4,11 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
 
-#include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
@@ -20,7 +20,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M>
+    template <SRMetricClass M>
     void Faraday(Domain<SimEngine::SRPIC, M>& domain,
                  const prm::Parameters&       engine_params,
                  const SimulationParams&      params,
@@ -32,7 +32,7 @@ namespace ntt {
                       params.template get<real_t>(
                         "algorithms.timestep.correction") *
                       dt;
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         const auto deltax = params.template get<real_t>(
@@ -85,7 +85,7 @@ namespace ntt {
       }
     }
 
-    template <class M>
+    template <SRMetricClass M>
     void Ampere(Domain<SimEngine::SRPIC, M>& domain,
                 const prm::Parameters&       engine_params,
                 const SimulationParams&      params,
@@ -98,7 +98,7 @@ namespace ntt {
                         "algorithms.timestep.correction") *
                       dt;
       auto range = RangeWithAxisBCs(domain);
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         // minkowski case
         const auto dx = math::sqrt(domain.mesh.metric.template h_<1, 1>({}));
         real_t     coeff1, coeff2;
@@ -126,7 +126,7 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
+    template <SRMetricClass M, class PG>
     void CurrentsAmpere(Domain<SimEngine::SRPIC, M>& domain,
                         const prm::Parameters&       engine_params,
                         const SimulationParams&      params,
@@ -137,12 +137,12 @@ namespace ntt {
       const auto q0 = params.template get<real_t>("scales.q0");
       const auto n0 = params.template get<real_t>("scales.n0");
       const auto B0 = params.template get<real_t>("scales.B0");
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         // minkowski case
         const auto V0    = params.template get<real_t>("scales.V0");
         const auto ppc0  = params.template get<real_t>("particles.ppc0");
         const auto coeff = -dt * q0 / (B0 * V0);
-        if constexpr (arch::traits::pgen::HasExtCurrent<PG>) {
+        if constexpr (::traits::pgen::HasExtCurrent<PG>) {
           const std::vector<real_t> xmin { domain.mesh.extent(in::x1).first,
                                            domain.mesh.extent(in::x2).first,
                                            domain.mesh.extent(in::x3).first };

@@ -11,15 +11,11 @@
 #ifndef ARCHETYPES_PISTON_H
 #define ARCHETYPES_PISTON_H
 
-#include "enums.h"
 #include "global.h"
 
-#include "archetypes/energy_dist.h"
-#include "framework/domain/domain.h"
-#include "framework/domain/metadomain.h"
-#include "framework/parameters/parameters.h"
+#include "traits/metric.h"
 
-#include <utility>
+#include "kernels/pushers/context.h"
 
 /* -------------------------------------------------------------------------- */
 /* Local macros    (same as in particle_pusher_sr.hpp)                        */
@@ -46,34 +42,32 @@ namespace arch {
    * piston, called to correct patticle position
    *
    * @param p Index of particle
-   * @param pusher Particle pusher engine for particle update
-   * @param piston_position Position of the piston at the start of timestep in
-   * global coordinates
+   * @param dt Timestep
+   * @param particles Particle data arrays
+   * @param metric Metric object for coordinate transformations
+   * @param piston_position Position of the piston at the start of timestep in global coordinates
    * @param piston_v Velocity of piston at current timestep
+   * @param massive Whether the particle is massive or massless (e.g. photon)
    */
-  template <SimEngine::type S, class M, class PusherKernel>
-  Inline void PistonUpdate(const index_t       p,
-                           const PusherKernel& pusher,
-                           const real_t        piston_position,
-                           const real_t        piston_v,
-                           const bool          massive) {
-
-    coord_t<M::PrtlDim> xp_Cd { ZERO };
-    pusher.getParticlePosition(p, xp_Cd);
-
+  template <CartesianMetricClass M>
+  Inline void PistonUpdate(index_t                     p,
+                           real_t                      dt,
+                           const kernel::PusherArrays& particles,
+                           const M&                    metric,
+                           real_t                      piston_position,
+                           real_t                      piston_v,
+                           bool                        massive) {
     // step 1: calculate the particle 3 velocity
     const real_t gamma_p {
-      massive
-        ? (math::sqrt(
-            ONE + SQR(pusher.ux1(p)) + SQR(pusher.ux2(p)) + SQR(pusher.ux3(p))))
-        : (math::sqrt(SQR(pusher.ux1(p)) + SQR(pusher.ux2(p)) + SQR(pusher.ux3(p))))
+      massive ? U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p))
+              : NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p))
     };
 
-    const real_t beta_x_p = pusher.ux1(p) / gamma_p;
-    const real_t xp_prev  = i_di_to_Xi(pusher.i1_prev(p), pusher.dx1_prev(p));
+    const real_t beta_x_p = particles.ux1(p) / gamma_p;
+    const real_t xp_prev = i_di_to_Xi(particles.i1_prev(p), particles.dx1_prev(p));
 
-    const real_t piston_position_local =
-      pusher.metric.template convert<1, Crd::Ph, Crd::Cd>(piston_position);
+    const real_t piston_position_local = metric.template convert<1, Crd::Ph, Crd::Cd>(
+      piston_position);
     int      i_w;
     prtldx_t dx_w;
 
@@ -82,81 +76,81 @@ namespace arch {
     const real_t piston_gamma = ONE / math::sqrt(ONE - SQR(piston_v));
 
     // step 2: calculate the time for the particle to reach the piston
-    const int      delta_i1_to_piston  = (i_w - pusher.i1_prev(p));
-    const prtldx_t delta_dx1_to_piston = (dx_w - pusher.dx1_prev(p));
+    const int      delta_i1_to_piston  = (i_w - particles.i1_prev(p));
+    const prtldx_t delta_dx1_to_piston = (dx_w - particles.dx1_prev(p));
     const real_t dx_to_piston = i_di_to_Xi(delta_i1_to_piston, delta_dx1_to_piston);
 
     const real_t dt_to_piston = dx_to_piston /
-                                pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
-                                  xp_Cd,
+                                metric.template transform<1, Idx::XYZ, Idx::U>(
+                                  {},
                                   beta_x_p - piston_v);
     // step 3: calculate remaining time after the collision
-    const real_t remaining_dt = pusher.dt - dt_to_piston;
-    // step 4: update the particle's velocity and position after the collision
+    const real_t remaining_dt = dt - dt_to_piston;
 
-    pusher.ux1(p) = -SQR(piston_gamma) * ((ONE + SQR(piston_v)) * pusher.ux1(p) -
-                                          TWO * piston_v * gamma_p);
+    // step 4: update the particle's velocity and position after the collision
+    particles.ux1(p) = -SQR(piston_gamma) *
+                       ((ONE + SQR(piston_v)) * particles.ux1(p) -
+                        TWO * piston_v * gamma_p);
 
     const real_t remaining_dt_inv_energy {
       massive
-        ? (remaining_dt / math::sqrt(ONE + SQR(pusher.ux1(p)) +
-                                     SQR(pusher.ux2(p)) + SQR(pusher.ux3(p))))
-        : (remaining_dt / math::sqrt(SQR(pusher.ux1(p)) + SQR(pusher.ux2(p)) +
-                                     SQR(pusher.ux3(p))))
+        ? (remaining_dt /
+           math::sqrt(
+             ONE + U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p))))
+        : (remaining_dt / math::sqrt(SQR(particles.ux1(p)) + SQR(particles.ux2(p)) +
+                                     SQR(particles.ux3(p))))
     };
     // define piston integer and fractional coordinate
 
     int      i_w_coll  = i_w;
-    prtldx_t dx_w_coll = dx_w +
-                         pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
-                           xp_Cd,
-                           piston_v) *
-                           dt_to_piston;
+    prtldx_t dx_w_coll = dx_w + metric.template transform<1, Idx::XYZ, Idx::U>(
+                                  {},
+                                  piston_v) *
+                                  dt_to_piston;
 
-    i_w_coll  += static_cast<int>(dx_w_coll >= ONE) -
-                 static_cast<int>(dx_w_coll < ZERO);
+    i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
+                static_cast<int>(dx_w_coll < ZERO);
     dx_w_coll -= (dx_w_coll >= ONE);
     dx_w_coll += (dx_w_coll < ZERO);
 
-    pusher.i1(p)  = i_w_coll;
-    pusher.dx1(p) = pusher.metric.template transform<1, Idx::XYZ, Idx::U>(
-                      xp_Cd,
-                      pusher.ux1(p)) *
-                      remaining_dt_inv_energy +
-                    dx_w_coll;
+    particles.i1(p) = i_w_coll;
+    particles.dx1(
+      p) = metric.template transform<1, Idx::XYZ, Idx::U>({}, particles.ux1(p)) *
+             remaining_dt_inv_energy +
+           dx_w_coll;
 
-    pusher.i1(p)  += static_cast<int>(pusher.dx1(p) >= ONE) -
-                     static_cast<int>(pusher.dx1(p) < ZERO);
-    pusher.dx1(p) -= (pusher.dx1(p) >= ONE);
-    pusher.dx1(p) += (pusher.dx1(p) < ZERO);
+    particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
+                       static_cast<int>(particles.dx1(p) < ZERO);
+    particles.dx1(p) -= (particles.dx1(p) >= ONE);
+    particles.dx1(p) += (particles.dx1(p) < ZERO);
   }
 
   /**
    * @brief Checks whether a particle reflects off a moving piston, called after particle has been moved by regular pusher
    *
    * @param p Index of particle
-   * @param pusher Particle pusher engine for particle update
+   * @param dt Timestep
+   * @param particles Particle data arrays
+   * @param metric Metric object for coordinate transformations
    * @param piston_position Position of the piston at the start of timestep in global coordinates
    * @param piston_v Velocity of piston at current timestep
    * @param is_left Is piston on the left side of the box or right side of the box
    */
-  template <SimEngine::type S, class M, class PusherKernel>
-  Inline bool CrossesPiston(const index_t       p,
-                            const PusherKernel& pusher,
-                            const real_t        piston_position,
-                            const real_t        piston_v,
-                            const bool          is_left) {
-    const real_t        x1_Cd = i_di_to_Xi(pusher.i1(p), pusher.dx1(p));
-    coord_t<M::PrtlDim> xp_Cd { ZERO };
-    pusher.getParticlePosition(p, xp_Cd);
+  template <CartesianMetricClass M>
+  Inline bool CrossesPiston(index_t                     p,
+                            real_t                      dt,
+                            const kernel::PusherArrays& particles,
+                            const M&                    metric,
+                            real_t                      piston_position,
+                            real_t                      piston_v,
+                            bool                        is_left) {
+    const real_t x1_Cd = i_di_to_Xi(particles.i1(p), particles.dx1(p));
     // x1_Cd_wallmove is not the actual particle coordinate
     // it is particle position minus how much the wall has moved in this
     // timestep This is a computational trick
     const real_t x1_Cd_wallmove =
-      x1_Cd -
-      pusher.metric.template transform<1, Idx::XYZ, Idx::U>(xp_Cd, piston_v) *
-        pusher.dt;
-    const real_t x1_Ph_wallmove = pusher.metric.template convert<1, Crd::Cd, Crd::Ph>(
+      x1_Cd - metric.template transform<1, Idx::XYZ, Idx::U>({}, piston_v) * dt;
+    const real_t x1_Ph_wallmove = metric.template convert<1, Crd::Cd, Crd::Ph>(
       x1_Cd_wallmove);
 
     if (is_left) { // if piston is moving from left, ask if particle is to the left of piston

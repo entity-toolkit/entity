@@ -112,7 +112,7 @@ namespace ntt {
       }
       std::vector<std::vector<FldsBC>> flds_bc_enum;
       std::vector<std::vector<PrtlBC>> prtl_bc_enum;
-      if (coord_enum == Coord::Cart) {
+      if (coord_enum == Coord::Cartesian) {
         raise::ErrorIf(flds_bc.size() != (std::size_t)dim,
                        "invalid `grid.boundaries.fields`",
                        HERE);
@@ -243,7 +243,7 @@ namespace ntt {
                           const boundaries_t<real_t>& extent_pairwise,
                           const toml::value&          toml_data) {
       if (needs_match_boundaries) {
-        if (coord_enum == Coord::Cart) {
+        if (coord_enum == Coord::Cartesian) {
           auto min_extent = std::numeric_limits<real_t>::max();
           for (const auto& e : extent_pairwise) {
             min_extent = std::min(min_extent, e.second - e.first);
@@ -296,7 +296,7 @@ namespace ntt {
       }
 
       if (needs_absorb_boundaries) {
-        if (coord_enum == Coord::Cart) {
+        if (coord_enum == Coord::Cartesian) {
           auto min_extent = std::numeric_limits<real_t>::max();
           for (const auto& e : extent_pairwise) {
             min_extent = std::min(min_extent, e.second - e.first);
@@ -461,7 +461,7 @@ namespace ntt {
         extent.erase(extent.begin() + (std::size_t)(dim), extent.end());
       }
       raise::ErrorIf(extent[0].size() != 2, "invalid `grid.extent[0]`", HERE);
-      if (coord_enum != Coord::Cart) {
+      if (coord_enum != Coord::Cartesian) {
         raise::ErrorIf(extent.size() > 1,
                        "invalid `grid.extent` for non-cartesian geometry",
                        HERE);
@@ -479,7 +479,7 @@ namespace ntt {
       }
 
       /* metric parameters ------------------------------------------------------ */
-      if (coord_enum == Coord::Qsph) {
+      if (coord_enum == Coord::Qspherical) {
         metric_params_short_["r0"] = metric_params["qsph_r0"];
         metric_params_short_["h"]  = metric_params["qsph_h"];
       }

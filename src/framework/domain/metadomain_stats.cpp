@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -21,8 +22,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
                                          bool                    is_resuming) {
     raise::ErrorIf(
@@ -62,7 +62,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
+  template <SimEngine::type S, MetricClass M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const M&                global_metric,
@@ -119,7 +119,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type F>
+  template <SimEngine::type S, MetricClass M, StatsID::type F>
   auto ReduceFields(Domain<S, M>*                      domain,
                     const M&                           global_metric,
                     const std::vector<unsigned short>& components) -> real_t {
@@ -181,8 +181,7 @@ namespace ntt {
     return buffer / global_metric.totVolume();
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   auto Metadomain<S, M>::WriteStats(
     const SimulationParams& params,
     timestep_t              current_step,
@@ -272,7 +271,7 @@ namespace ntt {
         }
       } else {
         raise::Error("StatsID not implemented for particular SimEngine: " +
-                       std::to_string(static_cast<int>(S)),
+                       std::string(SimEngine(S).to_string()),
                      HERE);
       }
     }

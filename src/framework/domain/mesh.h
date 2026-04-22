@@ -16,11 +16,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "framework/domain/grid.h"
 
@@ -31,8 +30,7 @@
 
 namespace ntt {
 
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M>
+  template <MetricClass M>
   struct Mesh : public Grid<M::Dim> {
     static constexpr Dimension D { M::Dim };
     using base_t = Grid<D>;
