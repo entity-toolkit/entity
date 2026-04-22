@@ -9,8 +9,8 @@
  *   - ntt::
  */
 
-#ifndef ENGINES_SRPIC_SRPIC_H
-#define ENGINES_SRPIC_SRPIC_H
+#ifndef ENGINES_SRPIC_SRPIC_HPP
+#define ENGINES_SRPIC_SRPIC_HPP
 
 #include "enums.h"
 #include "global.h"
@@ -190,4 +190,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // ENGINES_SRPIC_SRPIC_H
+#endif // ENGINES_SRPIC_SRPIC_HPP

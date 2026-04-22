@@ -22,6 +22,7 @@
 
 #include "arch/directions.h"
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "engines/srpic/utils.h"

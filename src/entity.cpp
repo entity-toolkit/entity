@@ -7,7 +7,7 @@
 #include "framework/simulation.h"
 #include "framework/specialization_registry.h"
 
-#include "engines/grpic.hpp"
+#include "engines/grpic/grpic.hpp"
 #include "engines/srpic/srpic.hpp"
 #include "pgen.hpp"
 
