@@ -193,7 +193,6 @@ auto main(int argc, char* argv[]) -> int {
           raise::ErrorIf(weight_h(p) != -1.0, "error in sorting particles", HERE);
         }
       }
-      std::cout << std::endl;
     }
 
   } catch (const std::exception& e) {

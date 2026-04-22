@@ -1,7 +1,5 @@
-#include "enums.h"
 #include "global.h"
 
-#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -12,15 +10,13 @@
 #include <mpi.h>
 
 #include <iostream>
-#include <stdexcept>
-
-using namespace ntt;
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   MPI_Init(&argc, &argv);
-
   try {
+    using namespace ntt;
+
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -99,7 +95,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     {
-      const auto left_expect = static_cast<real_t>((rank - 1 + size) % size + 1);
+      const auto left_expect  = static_cast<real_t>((rank - 1 + size) % size + 1);
       const auto right_expect = static_cast<real_t>((rank + 1) % size + 1);
 
       Kokkos::parallel_for(
@@ -231,8 +227,8 @@ auto main(int argc, char* argv[]) -> int {
           }
         });
     }
-  } catch (std::exception& e) {
-    std::cerr << "Exception: " << e.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     MPI_Finalize();
     Kokkos::finalize();
     return 1;

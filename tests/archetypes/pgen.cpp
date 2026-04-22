@@ -1,8 +1,8 @@
-#include "traits/pgen.h"
-
 #include "enums.h"
+#include "global.h"
 
 #include "traits/archetypes.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
@@ -177,8 +177,8 @@ auto main(int argc, char* argv[]) -> int {
       throw std::runtime_error("CustomPgen's ext_current should have bx3");
     }
 
-  } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }
