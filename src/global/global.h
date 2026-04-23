@@ -284,6 +284,7 @@ namespace WriteMode {
     Particles = 1 << 1,
     Spectra   = 1 << 2,
     Stats     = 1 << 3,
+    Spectra3D = 1 << 4,
   };
 } // namespace WriteMode
 
