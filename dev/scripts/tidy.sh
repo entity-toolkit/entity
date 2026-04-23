@@ -6,6 +6,7 @@ file_filter=""
 fast_mode=false
 use_changed=false
 changed_ref=""
+verify=false
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -39,9 +40,13 @@ while [[ $# -gt 0 ]]; do
 		fast_mode=true
 		shift
 		;;
+	--verify)
+		verify=true
+		shift
+		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 --build <build_dir> [--files <regex>] [--changed [<ref>]] [--fast]"
+		echo "Usage: $0 --build <build_dir> [--files <regex>] [--changed [<ref>]] [--fast] [--verify]"
 		exit 1
 		;;
 	esac
@@ -63,11 +68,18 @@ allowed_re="^${project_root}/(src|pgens)/"
 jobs="$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
 
 # Use cltcache if available for incremental runs (pip install cltcache)
-# It wraps clang-tidy as: cltcache clang-tidy <args>
+# cltcache requires explicit compiler flags via '--'; it does not support -p <build_dir>.
+# We preprocess compile_commands.json once at startup to extract per-file flags.
 tidy_bin="clang-tidy"
 tidy_prefix=""
+_cltcache=""
 if command -v cltcache &>/dev/null; then
-	tidy_prefix="cltcache"
+	_cltcache="cltcache"
+elif [[ -x "${project_root}/.venv/bin/cltcache" ]]; then
+	_cltcache="${project_root}/.venv/bin/cltcache"
+fi
+if [[ -n "$_cltcache" ]]; then
+	tidy_prefix="$_cltcache"
 	echo "Using cltcache"
 fi
 
@@ -128,15 +140,55 @@ fi
 
 total=$(echo "$file_list" | wc -l | tr -d ' ')
 
+# Precompute per-file compiler flags so cltcache can receive them via '--'.
+# Uses shlex to handle shell-quoted flags (e.g. "-D FOO=\"bar\"") correctly.
+# Strips flags irrelevant to compilation: -o, -c, -MF/-MT/-MQ/-MD/-MMD/-MP,
+# and the source file path itself.
+flags_db=""
+if [[ -n "$tidy_prefix" ]]; then
+	flags_db=$(mktemp /tmp/tidy_flags_XXXXXX.json)
+	python3 - "$build_dir/compile_commands.json" >"$flags_db" <<'PYEOF'
+import json, shlex, sys
+
+SKIP_NEXT = {"-o", "-MF", "-MT", "-MQ"}
+SKIP_SELF = {"-MD", "-MMD", "-MP"}
+
+data = json.load(open(sys.argv[1]))
+result = {}
+for e in data:
+    args = shlex.split(e.get("command", ""))
+    src = e["file"]
+    filtered, skip = [], False
+    for a in args[1:]:   # drop compiler binary
+        if skip:
+            skip = False
+            continue
+        if a in SKIP_NEXT:
+            skip = True
+            continue
+        if a in SKIP_SELF:
+            continue
+        filtered.append(a)
+    result[src] = filtered
+
+print(json.dumps(result))
+PYEOF
+fi
+
 # Temp dir: each job touches a file here when done — race-condition-free counter
 progress_dir=$(mktemp -d /tmp/tidy_progress_XXXXXX)
 
 # Write a helper script so each parallel job writes its own per-diagnostic-file logs
 # without routing through a single serial process
 tmpscript=$(mktemp /tmp/tidy_run_XXXXXX.sh)
-trap 'rm -f "$tmpscript"; rm -rf "$progress_dir"' EXIT
 
-cat > "$tmpscript" << 'ENDSCRIPT'
+cleanup() {
+	rm -f "$tmpscript" "$flags_db"
+	rm -rf "$progress_dir"
+}
+trap cleanup EXIT
+
+cat >"$tmpscript" <<'ENDSCRIPT'
 #!/usr/bin/env bash
 file="$1"
 build_dir="$2"
@@ -146,13 +198,26 @@ tidy_bin="$5"
 tidy_prefix="${6:-}"
 extra_checks="${7:-}"
 progress_dir="${8:-}"
+flags_db="${9:-}"
 allowed_re="^${project_root}/(src|pgens)/"
 
 tmpout=$(mktemp /tmp/tidy_out_XXXXXX)
 trap 'rm -f "$tmpout"' EXIT
 
-# shellcheck disable=SC2086
-$tidy_prefix "$tidy_bin" --quiet -p "$build_dir" $extra_checks "$file" > "$tmpout" 2>&1 || true
+if [[ -n "$tidy_prefix" && -n "$flags_db" ]]; then
+	# cltcache requires explicit compiler flags via '--'
+	mapfile -t compile_args < <(jq -r --arg f "$file" '(.[$f] // [])[]' "$flags_db")
+	if [[ ${#compile_args[@]} -gt 0 ]]; then
+		# shellcheck disable=SC2086
+		$tidy_prefix "$tidy_bin" --quiet $extra_checks "$file" -- "${compile_args[@]}" > "$tmpout" 2>&1 || true
+	else
+		# File not in flags db; fall back to -p (no caching for this file)
+		"$tidy_bin" --quiet -p "$build_dir" $extra_checks "$file" > "$tmpout" 2>&1 || true
+	fi
+else
+	# shellcheck disable=SC2086
+	$tidy_prefix "$tidy_bin" --quiet -p "$build_dir" $extra_checks "$file" > "$tmpout" 2>&1 || true
+fi
 
 # Route each diagnostic to the log for the file it occurs in (not the analyzed file)
 awk -v out="$out_dir" -v root="$project_root/" -v allowed="$allowed_re" '
@@ -188,7 +253,7 @@ bar_empty="----------------------------------------"
 (
 	while true; do
 		done_n=$(find "$progress_dir" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
-		filled=$(( done_n * 40 / total ))
+		filled=$((done_n * 40 / total))
 		printf "\r[%s%s] %d/%d" \
 			"${bar_full:0:$filled}" "${bar_empty:0:$((40 - filled))}" "$done_n" "$total"
 		[[ "$done_n" -ge "$total" ]] && break
@@ -199,14 +264,28 @@ bar_empty="----------------------------------------"
 progress_pid=$!
 
 echo "$file_list" | xargs -P "$jobs" -I{} \
-	"$tmpscript" {} "$build_dir" "$out_dir" "$project_root" "$tidy_bin" "$tidy_prefix" "$extra_checks" "$progress_dir"
+	"$tmpscript" {} "$build_dir" "$out_dir" "$project_root" "$tidy_bin" "$tidy_prefix" "$extra_checks" "$progress_dir" "$flags_db"
 
-wait "$progress_pid"
+kill "$progress_pid" 2>/dev/null || true
+wait "$progress_pid" 2>/dev/null || true
+printf "\r[%s] %d/%d\n" "$bar_full" "$total" "$total"
 
 # Dedup (parallel jobs may write overlapping header diagnostics from different TUs)
 find "$out_dir" -name '*.log' | while read -r log; do
-	awk '!seen[$0]++' "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+	awk '!seen[$0]++' "$log" >"$log.tmp" && mv "$log.tmp" "$log"
 	[[ ! -s "$log" ]] && rm -f "$log"
 done
 
-echo "Done. Logs written to $out_dir/"
+if [[ "$verify" == true ]]; then
+	logs=$(find "$out_dir" -name '*.log' | sort)
+	if [[ -z "$logs" ]]; then
+		echo "OK: no warnings or errors."
+		exit 0
+	else
+		echo "FAILED: clang-tidy reported issues in:"
+		echo "$logs" | sed 's/^/  /'
+		exit 1
+	fi
+else
+	echo "Done. Logs written to $out_dir/"
+fi
