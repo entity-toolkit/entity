@@ -63,3 +63,4 @@ action-token
 ignore-*
 tombi/
 tidy/
+.claude

@@ -81,7 +81,7 @@ All the unit tests are inside the `tests/` directory each within the respective 
 
 * Format of the code is enforced using `clang-format` and `cmake-format`. You can run the formatting on all files with `./dev/scripts/format.sh`.
 
-* Best practices are also enforced using `clang-tidy`; to generate recommendations for all the files, run `./dev/scripts/tidy.sh --build build_dir` where `build_dir` is the directory where the code was built, or for specific files: `./dev/scripts/tidy.sh --build build_dir --files "(file1|file2).cpp"`. The recommendations will be in the `tidy/` directory.
+* Best practices are also enforced using `clang-tidy`; to generate recommendations for all the files, run `./dev/scripts/tidy.sh --build build_dir` where `build_dir` is the directory where the code was built, or for specific files: `./dev/scripts/tidy.sh --build build_dir --files "(file1|file2).cpp"` or only for the changed files: `./dev/scripts/tidy.sh --build build_dir --changed`. The recommendations will be in the `tidy/` directory.
 
 * Use `const` and `auto` declarations where possible.
 
