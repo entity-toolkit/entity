@@ -26,13 +26,13 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCES
-  ${SRC_DIR}/global.cpp
-  ${SRC_DIR}/arch/kokkos_aliases.cpp
-  ${SRC_DIR}/utils/cargs.cpp
-  ${SRC_DIR}/utils/timer.cpp
-  ${SRC_DIR}/utils/diag.cpp
-  ${SRC_DIR}/utils/progressbar.cpp
-  ${SRC_DIR}/utils/reporter.cpp)
+    ${SRC_DIR}/global.cpp
+    ${SRC_DIR}/arch/kokkos_aliases.cpp
+    ${SRC_DIR}/utils/cargs.cpp
+    ${SRC_DIR}/utils/timer.cpp
+    ${SRC_DIR}/utils/diag.cpp
+    ${SRC_DIR}/utils/progressbar.cpp
+    ${SRC_DIR}/utils/reporter.cpp)
 if(${output})
   list(APPEND SOURCES ${SRC_DIR}/utils/param_container.cpp)
 endif()
@@ -45,7 +45,8 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
   target_link_libraries(ntt_global PRIVATE stdc++fs)
 endif()
 
-target_precompile_headers(ntt_global
+target_precompile_headers(
+  ntt_global
   PRIVATE
   <Kokkos_Core.hpp>
   <string>
@@ -65,5 +66,4 @@ target_precompile_headers(ntt_global
   "enums.h"
   "arch/kokkos_aliases.h"
   "utils/error.h"
-  "utils/numeric.h"
-)
+  "utils/numeric.h")

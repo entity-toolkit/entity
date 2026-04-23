@@ -23,9 +23,9 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <string>
 #include <utility>
 #include <vector>
-#include <string>
 
 namespace ntt {
 

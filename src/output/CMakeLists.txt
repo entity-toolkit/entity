@@ -47,4 +47,4 @@ target_include_directories(
   ntt_output
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../)
-target_precompile_headers(ntt_output  REUSE_FROM ntt_global)
+target_precompile_headers(ntt_output REUSE_FROM ntt_global)
