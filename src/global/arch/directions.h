@@ -160,8 +160,9 @@ namespace dir {
 
   template <>
   inline auto direction_t<Dim::_3D>::hash() const -> short {
-    short k1 = (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
-               (*this)[1];
+    const short k1 = (2 + (*this)[0] + (*this)[1]) *
+                       (3 + (*this)[0] + (*this)[1]) / 2 +
+                     (*this)[1];
     return (2 + k1 + (*this)[2]) * (3 + k1 + (*this)[2]) / 2 + (*this)[2];
   }
 

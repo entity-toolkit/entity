@@ -29,22 +29,24 @@
 #include "kernels/aux_fields_gr.hpp"
 #include "kernels/faraday_gr.hpp"
 
+#include <cstdint>
+
 namespace ntt {
   namespace grpic {
 
-    enum class gr_getE {
+    enum class gr_getE : uint8_t {
       D0_B,
       D_B0
     };
-    enum class gr_getH {
+    enum class gr_getH : uint8_t {
       D_B0,
       D0_B0
     };
-    enum class gr_faraday {
+    enum class gr_faraday : uint8_t {
       aux,
       main
     };
-    enum class gr_ampere {
+    enum class gr_ampere : uint8_t {
       init,
       aux,
       main

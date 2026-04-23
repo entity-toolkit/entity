@@ -70,8 +70,6 @@ namespace metric {
       set_dxMin(find_dxMin());
     }
 
-    ~KerrSchild0() = default;
-
     [[nodiscard]]
     Inline auto spin() const -> real_t {
       return a;
@@ -96,10 +94,9 @@ namespace metric {
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t            dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
           }
@@ -402,26 +399,20 @@ namespace metric {
         v_out[0] = v_in[0];
         v_out[1] = v_in[1];
         v_out[2] = v_in[2];
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::U) or // tetrad/sph -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::Sph)) // cov -> tetrad/sph
+      ) {
         v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::Sph)) or // cntrv -> tetrad/sph
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::D) // tetrad/sph -> cov
+      ) {
         v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         v_out[0] = v_in[0] * h_<1, 1>(xi);
@@ -462,7 +453,7 @@ namespace metric {
      * @note phys cntrv/cov <-> cntrv/cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, real_t v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& /*xi*/, real_t v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       static_assert(((in == Idx::U) and (out == Idx::PU)) or

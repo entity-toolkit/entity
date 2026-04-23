@@ -1,6 +1,7 @@
 #include "framework/parameters/grid.h"
 
 #include "defaults.h"
+#include "enums.h"
 #include "global.h"
 
 #include "utils/error.h"
@@ -18,9 +19,13 @@
 
 #include <toml11/toml.hpp>
 
+#include <algorithm>
+#include <cstddef>
+#include <limits>
 #include <map>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace ntt {
@@ -53,7 +58,7 @@ namespace ntt {
         "boundaries",
         "fields");
       {
-        raise::ErrorIf(flds_bc.size() < 1 || flds_bc.size() > 3,
+        raise::ErrorIf(flds_bc.empty() || flds_bc.size() > 3,
                        "invalid `grid.boundaries.fields`",
                        HERE);
         params->promiseToDefine("grid.boundaries.fields");
@@ -85,7 +90,7 @@ namespace ntt {
         "boundaries",
         "particles");
       {
-        raise::ErrorIf(prtl_bc.size() < 1 || prtl_bc.size() > 3,
+        raise::ErrorIf(prtl_bc.empty() || prtl_bc.size() > 3,
                        "invalid `grid.boundaries.particles`",
                        HERE);
         params->promiseToDefine("grid.boundaries.particles");
@@ -124,10 +129,10 @@ namespace ntt {
           prtl_bc_enum.emplace_back();
           const auto& fbc = flds_bc[d];
           const auto& pbc = prtl_bc[d];
-          raise::ErrorIf(fbc.size() < 1 || fbc.size() > 2,
+          raise::ErrorIf(fbc.empty() || fbc.size() > 2,
                          "invalid `grid.boundaries.fields`",
                          HERE);
-          raise::ErrorIf(pbc.size() < 1 || pbc.size() > 2,
+          raise::ErrorIf(pbc.empty() || pbc.size() > 2,
                          "invalid `grid.boundaries.particles`",
                          HERE);
           auto fbc_enum = FldsBC::pick(fmt::toLower(fbc[0]).c_str());
@@ -271,7 +276,7 @@ namespace ntt {
                   match_ds_array->emplace_back(ds[d][0], ds[d][0]);
                 } else if (ds[d].size() == 2) {
                   match_ds_array->emplace_back(ds[d][0], ds[d][1]);
-                } else if (ds[d].size() == 0) {
+                } else if (ds[d].empty()) {
                   match_ds_array->emplace_back();
                 } else {
                   raise::Error("invalid `grid.boundaries.match.ds`", HERE);
@@ -397,7 +402,7 @@ namespace ntt {
 
       if (domain_decomposition->size() > dim.value()) {
         domain_decomposition->erase(
-          domain_decomposition->begin() + (std::size_t)(dim.value()),
+          domain_decomposition->begin() + static_cast<long>(dim.value()),
           domain_decomposition->end());
       }
       raise::ErrorIf(domain_decomposition->size() != dim.value(),
@@ -464,7 +469,8 @@ namespace ntt {
                                                             "extent");
       extent_pairwise_.emplace();
       if (extent->size() > dim.value()) {
-        extent->erase(extent->begin() + (std::size_t)(dim.value()), extent->end());
+        extent->erase(extent->begin() + static_cast<long>(dim.value()),
+                      extent->end());
       }
       raise::ErrorIf(extent->at(0).size() != 2, "invalid `grid.extent[0]`", HERE);
       if (coord_enum != Coord::Cartesian) {

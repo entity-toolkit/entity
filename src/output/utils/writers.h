@@ -56,7 +56,7 @@ namespace out {
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
     if (!data_h.span_is_contiguous()) {
-      array_h_t<T*> data_contig_h { "data_contig_h", local_size };
+      const array_h_t<T*> data_contig_h { "data_contig_h", local_size };
       Kokkos::deep_copy(data_contig_h, data_h);
       writer.Put(var, data_contig_h.data(), adios2::Mode::Sync);
     } else {

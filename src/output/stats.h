@@ -40,8 +40,8 @@ namespace stats {
     StatsID           m_id { StatsID::INVALID };
 
   public:
-    std::vector<std::vector<unsigned short>> comp {};
-    std::vector<spidx_t>                     species {};
+    std::vector<std::vector<unsigned short>> comp;
+    std::vector<spidx_t>                     species;
 
     OutputStats(const std::string&, bool);
 
@@ -64,7 +64,7 @@ namespace stats {
     }
 
     [[nodiscard]]
-    inline auto name() const -> std::string {
+    auto name() const -> std::string {
       if (id() == StatsID::Custom) {
         return m_name;
       }
@@ -99,9 +99,9 @@ namespace stats {
     }
 
     [[nodiscard]]
-    inline auto name(std::size_t ci) const -> std::string {
+    auto name(std::size_t ci) const -> std::string {
       raise::ErrorIf(
-        comp.size() == 0,
+        comp.empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       raise::ErrorIf(
@@ -109,7 +109,7 @@ namespace stats {
         "OutputField::name(ci) called with an invalid component index",
         HERE);
       raise::ErrorIf(
-        comp[ci].size() == 0,
+        comp[ci].empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       // generate the name
@@ -127,7 +127,7 @@ namespace stats {
         for (auto& c : comp[ci]) {
           tmp += std::to_string(c);
         }
-        if (species.size() > 0) {
+        if (not species.empty()) {
           tmp += "_";
           for (auto& s : species) {
             tmp += std::to_string(s);
@@ -169,7 +169,7 @@ namespace stats {
     auto shouldWrite(timestep_t, simtime_t) -> bool;
 
     template <typename T>
-    inline void write(const T& value, bool communicate = true) const {
+    void write(const T& value, bool communicate = true) const {
       auto tot_value { static_cast<T>(0) };
 #if defined(MPI_ENABLED)
       if (communicate) {

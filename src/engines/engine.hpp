@@ -110,8 +110,6 @@ namespace ntt {
       , time { start_time }
       , step { start_step } {}
 
-    ~Engine() = default;
-
     void init();
     void print_report() const;
 
@@ -178,7 +176,7 @@ namespace ntt {
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
-    std::string report = "";
+    std::string report;
     CallOnce(
       [&](auto& metadomain, auto& params) {
         report += reporter::Backend();

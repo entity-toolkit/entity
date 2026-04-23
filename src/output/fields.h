@@ -33,8 +33,8 @@ namespace out {
     PrepareOutputFlags prepare_flag { PrepareOutput::None };
     PrepareOutputFlags interp_flag { PrepareOutput::None };
 
-    std::vector<std::vector<unsigned short>> comp {};
-    std::vector<spidx_t>                     species {};
+    std::vector<std::vector<unsigned short>> comp;
+    std::vector<spidx_t>                     species;
 
     OutputField(const SimEngine& S, const std::string&);
 
@@ -83,7 +83,7 @@ namespace out {
     }
 
     [[nodiscard]]
-    inline auto name() const -> std::string {
+    auto name() const -> std::string {
       // generate the name
       std::string tmp;
       if (id() == FldsID::Custom) {
@@ -97,7 +97,7 @@ namespace out {
         } else if (is_field() || id() == FldsID::V) {
           tmp += "i";
         }
-        if (species.size() > 0) {
+        if (not species.empty()) {
           tmp += "_";
           for (auto& s : species) {
             tmp += std::to_string(s);
@@ -116,9 +116,9 @@ namespace out {
     }
 
     [[nodiscard]]
-    inline auto name(std::size_t ci) const -> std::string {
+    auto name(std::size_t ci) const -> std::string {
       raise::ErrorIf(
-        comp.size() == 0,
+        comp.empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       raise::ErrorIf(
@@ -126,7 +126,7 @@ namespace out {
         "OutputField::name(ci) called with an invalid component index",
         HERE);
       raise::ErrorIf(
-        comp[ci].size() == 0,
+        comp[ci].empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       // generate the name
@@ -134,7 +134,7 @@ namespace out {
       for (auto& c : comp[ci]) {
         tmp += std::to_string(c);
       }
-      if (species.size() > 0) {
+      if (not species.empty()) {
         tmp += "_";
         for (auto& s : species) {
           tmp += std::to_string(s);

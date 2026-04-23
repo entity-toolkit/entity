@@ -1,5 +1,6 @@
 #include "output/writer.h"
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -18,8 +19,13 @@
   #include <mpi.h>
 #endif
 
+#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace out {
@@ -110,11 +116,12 @@ namespace out {
                                   { m_flds_l_corner_dwn[i] },
                                   { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) },
                                   adios2::ConstantDims);
-      m_io.DefineVariable<std::size_t>("N" + std::to_string(i + 1) + "l",
-                                       { 2 * domain_idx.second },
-                                       { 2 * domain_idx.first },
-                                       { 2 },
-                                       adios2::ConstantDims);
+      m_io.DefineVariable<std::size_t>(
+        "N" + std::to_string(i + 1) + "l",
+        { static_cast<unsigned long>(2 * domain_idx.second) },
+        { static_cast<unsigned long>(2 * domain_idx.first) },
+        { static_cast<unsigned long>(2) },
+        adios2::ConstantDims);
     }
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
@@ -131,16 +138,15 @@ namespace out {
   void Writer::defineFieldOutputs(const SimEngine&                S,
                                   const std::vector<std::string>& flds_out) {
     m_flds_writers.clear();
-    raise::ErrorIf((m_flds_g_shape_dwn.size() == 0) ||
-                     (m_flds_l_corner_dwn.size() == 0) ||
-                     (m_flds_l_shape_dwn.size() == 0),
+    raise::ErrorIf(m_flds_g_shape_dwn.empty() or m_flds_l_corner_dwn.empty() or
+                     m_flds_l_shape_dwn.empty(),
                    "Mesh layout must be defined before field output",
                    HERE);
     for (const auto& fld : flds_out) {
       m_flds_writers.emplace_back(S, fld);
     }
     for (const auto& fld : m_flds_writers) {
-      if (fld.comp.size() == 0) {
+      if (fld.comp.empty()) {
         // scalar
         m_io.DefineVariable<real_t>(fld.name(),
                                     m_flds_g_shape_dwn,
@@ -423,8 +429,6 @@ namespace out {
       }
       CallOnce(
         [](auto&& main_path, auto&& mode_path) {
-          const path_t main { main_path };
-          const path_t mode { mode_path };
           if (!std::filesystem::exists(main_path)) {
             std::filesystem::create_directory(main_path);
           }

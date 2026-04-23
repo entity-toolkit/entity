@@ -31,7 +31,7 @@ namespace ntt {
   namespace srpic {
 
     template <SRMetricClass M>
-    void AtmosphereParticlesIn(dir::direction_t<M::Dim>         direction,
+    void AtmosphereParticlesIn(const dir::direction_t<M::Dim>&  direction,
                                Metadomain<SimEngine::SRPIC, M>& metadomain,
                                Domain<SimEngine::SRPIC, M>&     domain,
                                const SimulationParams&          params,
@@ -292,7 +292,6 @@ namespace ntt {
       } else {
         raise::Error("Invalid dimension", HERE);
       }
-      return;
     }
 
     template <SRMetricClass M>

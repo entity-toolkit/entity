@@ -90,8 +90,8 @@ namespace arch {
       auto rand_X3 = Random<real_t>(rand_gen);
       v[0]         = rand_u * (TWO * rand_X2 - ONE);
       v[2]         = TWO * rand_u * math::sqrt(rand_X2 * (ONE - rand_X2));
-      v[1]         = v[2] * math::cos(constant::TWO_PI * rand_X3);
-      v[2]         = v[2] * math::sin(constant::TWO_PI * rand_X3);
+      v[1] = v[2] * math::cos(static_cast<real_t>(constant::TWO_PI) * rand_X3);
+      v[2] = v[2] * math::sin(static_cast<real_t>(constant::TWO_PI) * rand_X3);
 
       pool.free_state(rand_gen);
     }
@@ -113,7 +113,7 @@ namespace arch {
         randX1 = Random<real_t>(rand_gen);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = static_cast<real_t>(constant::TWO_PI) * Random<real_t>(rand_gen);
       v[0]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
       randX1 = Random<real_t>(rand_gen);
@@ -121,7 +121,7 @@ namespace arch {
         randX1 = Random<real_t>(rand_gen);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = static_cast<real_t>(constant::TWO_PI) * Random<real_t>(rand_gen);
       v[1]   = randX1 * math::cos(randX2) * math::sqrt(temp);
 
       randX1 = Random<real_t>(rand_gen);
@@ -129,7 +129,7 @@ namespace arch {
         randX1 = Random<real_t>(rand_gen);
       }
       randX1 = math::sqrt(-TWO * math::log(randX1));
-      randX2 = constant::TWO_PI * Random<real_t>(rand_gen);
+      randX2 = static_cast<real_t>(constant::TWO_PI) * Random<real_t>(rand_gen);
       v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
     } else {
       // Juttner-Synge distribution using the Sobol method - relativistic
@@ -153,8 +153,8 @@ namespace arch {
       randX2 = Random<real_t>(rand_gen);
       v[0]   = randu * (TWO * randX1 - ONE);
       v[2]   = TWO * randu * math::sqrt(randX1 * (ONE - randX1));
-      v[1]   = v[2] * math::cos(constant::TWO_PI * randX2);
-      v[2]   = v[2] * math::sin(constant::TWO_PI * randX2);
+      v[1]   = v[2] * math::cos(static_cast<real_t>(constant::TWO_PI) * randX2);
+      v[2]   = v[2] * math::sin(static_cast<real_t>(constant::TWO_PI) * randX2);
     }
     pool.free_state(rand_gen);
   }
@@ -233,7 +233,7 @@ namespace arch {
             const auto dnext = (d + 1) % 3;
             if (cmp::AlmostZero_host(drift_four_vel[dprev]) and
                 cmp::AlmostZero_host(drift_four_vel[dnext])) {
-              drift_dir = SIGN(drift_four_vel[d]) * (d + 1);
+              drift_dir = SIGN(drift_four_vel[d]) * (static_cast<real_t>(d + 1));
               break;
             }
           }

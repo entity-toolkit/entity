@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
@@ -18,6 +19,8 @@
 #if defined(MPI_ENABLED)
   #include <mpi.h>
 #endif
+
+#include <cstddef>
 
 namespace ntt {
   /* * * * * * * * *
@@ -109,7 +112,7 @@ namespace ntt {
         },
         nout);
       out_indices = array_t<npart_t*> { "out_indices", nout };
-      array_t<npart_t> out_counter { "out_counter" };
+      const array_t<npart_t> out_counter { "out_counter" };
       Kokkos::parallel_for(
         "RecordOutputIndices",
         rangeActiveParticles(),
@@ -122,13 +125,15 @@ namespace ntt {
         });
     }
 
-    npart_t nout_offset = 0;
-    npart_t nout_total  = nout;
 #if !defined(MPI_ENABLED)
+    const npart_t nout_offset = 0;
+    const npart_t nout_total  = nout;
     (void)domains_total;
     (void)domains_offset;
 #else
-    auto nout_total_vec = std::vector<npart_t>(domains_total);
+    npart_t nout_offset    = 0;
+    npart_t nout_total     = nout;
+    auto    nout_total_vec = std::vector<npart_t>(domains_total);
     MPI_Allgather(&nout,
                   1,
                   mpi::get_type<npart_t>(),
@@ -423,9 +428,8 @@ namespace ntt {
     raise::ErrorIf(npart() > 0,
                    "Particles already initialized before reading checkpoint",
                    HERE);
-    npart_t npart_offset = 0u;
-    npart_t npart_read;
 
+    npart_t npart_read;
     out::ReadVariable<npart_t>(io,
                                reader,
                                fmt::format("s%d_npart", index()),
@@ -434,8 +438,10 @@ namespace ntt {
     set_npart(npart_read);
 
 #if !defined(MPI_ENABLED)
+    const npart_t npart_offset = 0u;
     (void)domains_total;
 #else
+    npart_t npart_offset = 0u;
     {
       const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);
@@ -805,6 +811,7 @@ namespace ntt {
     }
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define PARTICLES_OUTPUT_DECLARE(D, C)                                         \
   template void Particles<D, C>::OutputDeclare(adios2::IO&) const;
 
@@ -848,5 +855,6 @@ namespace ntt {
   PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Spherical)
   PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_CHECKPOINTS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

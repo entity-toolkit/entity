@@ -202,7 +202,7 @@ void testPusher(const std::vector<std::size_t>& res) {
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
       kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(pusher_policy)>(
-        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, time, dt, ONE, nx1, nx2, nx3 },
+        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, time, dt, omegaB0, nx1, nx2, nx3 },
         boundaries,
         pusher_arrays,
         emfield,

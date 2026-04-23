@@ -153,9 +153,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto random_pool() -> random_number_pool_t& {
-      raise::ErrorIf(not m_random_number_pool.has_value(),
-                     "random_pool() called on a placeholder domain",
-                     HERE);
+      if (not m_random_number_pool.has_value()) {
+        raise::Error("random_pool() called on a placeholder domain", HERE);
+      }
       return m_random_number_pool.value();
     }
 

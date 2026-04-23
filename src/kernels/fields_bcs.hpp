@@ -529,7 +529,7 @@ namespace kernel::bc {
     const std::size_t i_edge;
     const BCTags      tags;
 
-    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+    ConductorBoundaries_kernel(ndfield_t<D, 6>& Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , tags { tags } {}

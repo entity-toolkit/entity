@@ -60,8 +60,6 @@ namespace ntt {
 
     SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
-    ~SRPICEngine() = default;
-
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
         "algorithms.fieldsolver.enable");

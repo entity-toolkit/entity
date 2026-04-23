@@ -433,8 +433,8 @@ namespace kernel {
                                   float                              charge,
                                   bool     use_weights,
                                   const M& metric)
-      : c1 { (components.size() > 0) ? components[0]
-                                     : static_cast<unsigned short>(0) }
+      : c1 { not components.empty() ? components[0]
+                                    : static_cast<unsigned short>(0) }
       , c2 { (components.size() == 2) ? components[1]
                                       : static_cast<unsigned short>(0) }
       , i1 { i1 }

@@ -59,7 +59,7 @@ namespace pbar {
     }
 
     auto average() const -> duration_t {
-      if (durations.size() > 0) {
+      if (not durations.empty()) {
         return std::accumulate(durations.begin(), durations.end(), 0.0) /
                static_cast<duration_t>(durations.size());
       } else {

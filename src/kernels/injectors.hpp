@@ -18,7 +18,6 @@
 #include "arch/kokkos_aliases.h"
 #include "traits/archetypes.h"
 #include "traits/metric.h"
-#include "traits/pgen.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -111,7 +110,6 @@ namespace kernel {
 
     UniformInjector_kernel(Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
-                           npart_t                          inject_npart,
                            npart_t                          domain_idx,
                            const M&                         metric,
                            const array_t<real_t*>&          xi_min,
@@ -348,11 +346,12 @@ namespace kernel {
       , global_metric { global_metric } {
       const auto n_inject = data.at("x1").size();
 
-      x1_min    = local_domain.mesh.extent(in::x1).first;
-      x1_max    = local_domain.mesh.extent(in::x1).second;
-      i1_offset = local_domain.offset_ncells()[0];
-
-      copy_from_vector("x1", in_x1, data, n_inject);
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        x1_min    = local_domain.mesh.extent(in::x1).first;
+        x1_max    = local_domain.mesh.extent(in::x1).second;
+        i1_offset = local_domain.offset_ncells()[0];
+        copy_from_vector("x1", in_x1, data, n_inject);
+      }
       copy_from_vector("ux1", in_ux1, data, n_inject);
       copy_from_vector("ux2", in_ux2, data, n_inject);
       copy_from_vector("ux3", in_ux3, data, n_inject);
@@ -673,9 +672,9 @@ namespace kernel {
 
     Inline void operator()(index_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
-        const auto        i1_ = COORD(i1);
-        coord_t<Dim::_1D> x_Cd { i1_ + HALF };
-        coord_t<Dim::_1D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const coord_t<Dim::_1D> x_Cd { i1_ + HALF };
+        coord_t<Dim::_1D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
         const auto ppc = injected_ppc(x_Ph);
@@ -716,11 +715,11 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
-        const auto          i1_ = COORD(i1);
-        const auto          i2_ = COORD(i2);
-        coord_t<Dim::_2D>   x_Cd { i1_ + HALF, i2_ + HALF };
-        coord_t<Dim::_2D>   x_Ph { ZERO };
-        coord_t<M::PrtlDim> x_Cd_ { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const coord_t<Dim::_2D> x_Cd { i1_ + HALF, i2_ + HALF };
+        coord_t<Dim::_2D>       x_Ph { ZERO };
+        coord_t<M::PrtlDim>     x_Cd_ { ZERO };
         x_Cd_[0] = x_Cd[0];
         x_Cd_[1] = x_Cd[1];
         if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
@@ -785,11 +784,11 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
-        const auto        i1_ = COORD(i1);
-        const auto        i2_ = COORD(i2);
-        const auto        i3_ = COORD(i3);
-        coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
-        coord_t<Dim::_3D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const auto              i3_ = COORD(i3);
+        const coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
+        coord_t<Dim::_3D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
         const auto ppc = injected_ppc(x_Ph);

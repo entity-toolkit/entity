@@ -136,15 +136,17 @@ namespace kernel {
       bool is_axis_i2min { false }, is_axis_i2max { false };
 
       PusherBoundaries(const boundaries_t<PrtlBC>& boundaries) {
-        raise::ErrorIf(boundaries.size() < 1, "boundaries defined incorrectly", HERE);
-        is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[0].first == PrtlBC::ABSORB);
-        is_absorb_i1max = (boundaries[0].second == PrtlBC::ATMOSPHERE) ||
-                          (boundaries[0].second == PrtlBC::ABSORB);
-        is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
-        is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
-        is_reflect_i1min  = (boundaries[0].first == PrtlBC::REFLECT);
-        is_reflect_i1max  = (boundaries[0].second == PrtlBC::REFLECT);
+        if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
+          raise::ErrorIf(boundaries.empty(), "boundaries defined incorrectly", HERE);
+          is_absorb_i1min = (boundaries[0].first == PrtlBC::ATMOSPHERE) ||
+                            (boundaries[0].first == PrtlBC::ABSORB);
+          is_absorb_i1max = (boundaries[0].second == PrtlBC::ATMOSPHERE) ||
+                            (boundaries[0].second == PrtlBC::ABSORB);
+          is_periodic_i1min = (boundaries[0].first == PrtlBC::PERIODIC);
+          is_periodic_i1max = (boundaries[0].second == PrtlBC::PERIODIC);
+          is_reflect_i1min  = (boundaries[0].first == PrtlBC::REFLECT);
+          is_reflect_i1max  = (boundaries[0].second == PrtlBC::REFLECT);
+        }
         if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
           raise::ErrorIf(boundaries.size() < 2,
                          "boundaries defined incorrectly",
@@ -208,18 +210,21 @@ namespace kernel {
 
     template <Dimension D>
     struct PusherBoundaries {
-      bool is_absorb_i1min { false }, is_absorb_i1max { false };
-      bool is_axis_i2min { false }, is_axis_i2max { false };
+      const bool is_absorb_i1min { false }, is_absorb_i1max { false };
+      const bool is_axis_i2min { false }, is_axis_i2max { false };
 
-      PusherBoundaries(const boundaries_t<PrtlBC>& boundaries) {
+      PusherBoundaries(const boundaries_t<PrtlBC>& boundaries)
+        : is_absorb_i1min { (validate(boundaries),
+                             (boundaries[0].first == PrtlBC::ABSORB) ||
+                               (boundaries[0].first == PrtlBC::HORIZON)) }
+        , is_absorb_i1max { (boundaries[0].second == PrtlBC::ABSORB) ||
+                            (boundaries[0].second == PrtlBC::HORIZON) }
+        , is_axis_i2min { boundaries[1].first == PrtlBC::AXIS }
+        , is_axis_i2max { boundaries[1].second == PrtlBC::AXIS } {}
 
-        raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
-        is_absorb_i1min = (boundaries[0].first == PrtlBC::ABSORB) ||
-                          (boundaries[0].first == PrtlBC::HORIZON);
-        is_absorb_i1max = (boundaries[0].second == PrtlBC::ABSORB) ||
-                          (boundaries[0].second == PrtlBC::HORIZON);
-        is_axis_i2min = (boundaries[1].first == PrtlBC::AXIS);
-        is_axis_i2max = (boundaries[1].second == PrtlBC::AXIS);
+    private:
+      static void validate(const boundaries_t<PrtlBC>& b) {
+        raise::ErrorIf(b.size() < 2, "boundaries defined incorrectly", HERE);
       }
     };
   } // namespace gr
@@ -236,25 +241,25 @@ namespace kernel {
 
     PusherArrays(spidx_t sp) : sp { sp } {}
 
-    PusherArrays(spidx_t            sp,
-                 array_t<int*>      i1,
-                 array_t<int*>      i2,
-                 array_t<int*>      i3,
-                 array_t<int*>      i1_prev,
-                 array_t<int*>      i2_prev,
-                 array_t<int*>      i3_prev,
-                 array_t<prtldx_t*> dx1,
-                 array_t<prtldx_t*> dx2,
-                 array_t<prtldx_t*> dx3,
-                 array_t<prtldx_t*> dx1_prev,
-                 array_t<prtldx_t*> dx2_prev,
-                 array_t<prtldx_t*> dx3_prev,
-                 array_t<real_t*>   ux1,
-                 array_t<real_t*>   ux2,
-                 array_t<real_t*>   ux3,
-                 array_t<real_t*>   phi,
-                 array_t<real_t*>   weight,
-                 array_t<short*>    tag)
+    PusherArrays(spidx_t             sp,
+                 array_t<int*>&      i1,
+                 array_t<int*>&      i2,
+                 array_t<int*>&      i3,
+                 array_t<int*>&      i1_prev,
+                 array_t<int*>&      i2_prev,
+                 array_t<int*>&      i3_prev,
+                 array_t<prtldx_t*>& dx1,
+                 array_t<prtldx_t*>& dx2,
+                 array_t<prtldx_t*>& dx3,
+                 array_t<prtldx_t*>& dx1_prev,
+                 array_t<prtldx_t*>& dx2_prev,
+                 array_t<prtldx_t*>& dx3_prev,
+                 array_t<real_t*>&   ux1,
+                 array_t<real_t*>&   ux2,
+                 array_t<real_t*>&   ux3,
+                 array_t<real_t*>&   phi,
+                 array_t<real_t*>&   weight,
+                 array_t<short*>&    tag)
       : sp { sp }
       , i1 { i1 }
       , i2 { i2 }

@@ -9,6 +9,7 @@
 
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
+#include "framework/domain/mesh.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
@@ -25,6 +26,8 @@
 #endif // MPI_ENABLED
 
 #include <algorithm>
+#include <cstddef>
+#include <functional>
 #include <iterator>
 #include <vector>
 
@@ -113,7 +116,7 @@ namespace ntt {
                       ndfield_t<M::Dim, 6>&              buffer,
                       idx_t                              buff_idx) {
     std::vector<spidx_t> specs = species;
-    if (specs.size() == 0) {
+    if (specs.empty()) {
       // if no species specified, take all massive species
       for (auto& sp : prtl_species) {
         if (sp.mass() > 0) {
@@ -184,7 +187,7 @@ namespace ntt {
   void ComputeVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               ndfield_t<M::Dim, 6>& EM,
                               unsigned short        buff_idx,
-                              const Mesh<M>         mesh) {
+                              const Mesh<M>&        mesh) {
     if constexpr (M::Dim == Dim::_2D) {
       const auto metric = mesh.metric;
       Kokkos::parallel_for(
@@ -313,17 +316,17 @@ namespace ntt {
 
   template <SimEngine::type S, MetricClass M>
   auto Metadomain<S, M>::Write(
-    const SimulationParams&                  params,
-    timestep_t                               current_step,
-    timestep_t                               finished_step,
-    simtime_t                                current_time,
-    simtime_t                                finished_time,
-    std::function<void(const std::string&,
-                       ndfield_t<M::Dim, 6>&,
-                       index_t,
-                       timestep_t,
-                       simtime_t,
-                       const Domain<S, M>&)> CustomFieldOutput) -> bool {
+    const SimulationParams&                         params,
+    timestep_t                                      current_step,
+    timestep_t                                      finished_step,
+    simtime_t                                       current_time,
+    simtime_t                                       finished_time,
+    const std::function<void(const std::string&,
+                             ndfield_t<M::Dim, 6>&,
+                             index_t,
+                             timestep_t,
+                             simtime_t,
+                             const Domain<S, M>&)>& CustomFieldOutput) -> bool {
     raise::ErrorIf(
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
@@ -390,8 +393,8 @@ namespace ntt {
         const auto add_ghost = (incl_ghosts ? 2 * N_GHOSTS : 0);
         const auto add_last  = (is_last ? 1 : 0);
 
-        array_t<real_t*> xc { "Xc", l_size_dwn + add_ghost };
-        array_t<real_t*> xe { "Xe", l_size_dwn + add_ghost + add_last };
+        const array_t<real_t*> xc { "Xc", l_size_dwn + add_ghost };
+        const array_t<real_t*> xe { "Xe", l_size_dwn + add_ghost + add_last };
 
         const auto offset = (incl_ghosts ? N_GHOSTS : 0);
         const auto ncells = l_size_dwn;
@@ -430,7 +433,7 @@ namespace ntt {
         Kokkos::deep_copy(local_domain->fields.bckp, ZERO);
         std::vector<std::string> names;
         std::vector<std::size_t> addresses;
-        if (fld.comp.size() == 0 || fld.comp.size() == 1) { // scalar
+        if (fld.comp.empty() || fld.comp.size() == 1) { // scalar
           names.push_back(fld.name());
           addresses.push_back(0);
           if (fld.is_moment()) {
@@ -730,15 +733,18 @@ namespace ntt {
         e_min = math::log10(e_min);
         e_max = math::log10(e_max);
       }
-      array_t<real_t*> energy { "energy", n_bins + 1 };
+      const array_t<real_t*> energy { "energy", n_bins + 1 };
       Kokkos::parallel_for(
         "GenerateEnergyBins",
         n_bins + 1,
         Lambda(index_t e) {
           if (log_bins) {
-            energy(e) = math::pow(10.0, e_min + (e_max - e_min) * e / n_bins);
+            energy(e) = math::pow(static_cast<real_t>(10),
+                                  e_min + (e_max - e_min) * static_cast<real_t>(e) /
+                                            static_cast<real_t>(n_bins));
           } else {
-            energy(e) = e_min + (e_max - e_min) * e / n_bins;
+            energy(e) = e_min + (e_max - e_min) * static_cast<real_t>(e) /
+                                  static_cast<real_t>(n_bins);
           }
         });
       for (const auto& spec : g_writer.spectraWriters()) {
@@ -789,6 +795,7 @@ namespace ntt {
     return true;
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_OUTPUT(S, M, D)                                             \
   template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,                \
                                                 const SimulationParams&);      \
@@ -798,12 +805,12 @@ namespace ntt {
     timestep_t,                                                                \
     simtime_t,                                                                 \
     simtime_t,                                                                 \
-    std::function<void(const std::string&,                                     \
-                       ndfield_t<M<D>::Dim, 6>&,                               \
-                       index_t,                                                \
-                       timestep_t,                                             \
-                       simtime_t,                                              \
-                       const Domain<S, M<D>>&)>) -> bool;
+    const std::function<void(const std::string&,                               \
+                             ndfield_t<M<D>::Dim, 6>&,                         \
+                             index_t,                                          \
+                             timestep_t,                                       \
+                             simtime_t,                                        \
+                             const Domain<S, M<D>>&)>&) -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT)
 
@@ -817,5 +824,6 @@ namespace ntt {
 
   #undef COMMVECTORPOTENTIAL
 #endif
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

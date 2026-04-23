@@ -8,6 +8,7 @@
 
 #include <adios2.h>
 
+#include <cstddef>
 #include <string>
 
 namespace out {
@@ -65,11 +66,8 @@ namespace out {
       auto       data_h = Kokkos::create_mirror_view(data);
       auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, dim2_size));
       if (!data_sub.span_is_contiguous()) {
-        Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace> data_contig_h {
-          "data_contig_h",
-          local_size,
-          dim2_size
-        };
+        const Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace>
+          data_contig_h { "data_contig_h", local_size, dim2_size };
         reader.Get(var, data_contig_h.data(), adios2::Mode::Sync);
         Kokkos::deep_copy(
           data_sub,
@@ -101,6 +99,7 @@ namespace out {
     }
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define ARRAY_READERS(T)                                                       \
   template void ReadVariable(adios2::IO&,                                      \
                              adios2::Engine&,                                  \
@@ -143,5 +142,6 @@ namespace out {
   NDFIELD_READERS(Dim::_3D, 3)
   NDFIELD_READERS(Dim::_3D, 6)
 #undef NDFIELD_READERS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace out

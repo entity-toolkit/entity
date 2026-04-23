@@ -33,23 +33,25 @@
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
 #define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
 
 #define DERIVATIVE_IN_R(func, x)                                               \
-  ((func({ x[0] + ctx.epsilon, x[1] }) - func({ x[0] - ctx.epsilon, x[1] })) / \
+  ((func({ (x)[0] + ctx.epsilon, (x)[1] }) -                                   \
+    func({ (x)[0] - ctx.epsilon, (x)[1] })) /                                  \
    (TWO * ctx.epsilon))
 
 #define DERIVATIVE_IN_TH(func, x)                                              \
-  ((func({ x[0], x[1] + ctx.epsilon }) - func({ x[0], x[1] - ctx.epsilon })) / \
+  ((func({ (x)[0], (x)[1] + ctx.epsilon }) -                                   \
+    func({ (x)[0], (x)[1] - ctx.epsilon })) /                                  \
    (TWO * ctx.epsilon))
 
 /* -------------------------------------------------------------------------- */
@@ -799,9 +801,8 @@ namespace kernel::gr {
   template <GRMetricClass M>
   Inline void Pusher_kernel<M>::boundaryConditions(index_t p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-      if (particles.i1(p) < 0 && bc.is_absorb_i1min) {
-        particles.tag(p) = ParticleTag::dead;
-      } else if (particles.i1(p) >= ctx.ni1 && bc.is_absorb_i1max) {
+      if ((particles.i1(p) < 0 && bc.is_absorb_i1min) or
+          (particles.i1(p) >= ctx.ni1 && bc.is_absorb_i1max)) {
         particles.tag(p) = ParticleTag::dead;
       }
     }

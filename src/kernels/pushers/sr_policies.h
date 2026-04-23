@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "traits/policies.h"
 #include "utils/comparators.h"
 #include "utils/param_container.h"

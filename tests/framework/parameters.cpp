@@ -360,7 +360,7 @@ auto main(int argc, char* argv[]) -> int {
                            (real_t)(1e-2),
                            "setup.myfloat");
       assert_equal<int>(params_mink_1d.get<int>("setup.myint"),
-                        (int)(123),
+                        123,
                         "setup.myint");
       assert_equal<bool>(params_mink_1d.get<bool>("setup.mybool"),
                          true,

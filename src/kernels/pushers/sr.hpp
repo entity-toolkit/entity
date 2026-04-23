@@ -39,16 +39,16 @@
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 /* -------------------------------------------------------------------------- */
 
@@ -351,7 +351,7 @@ namespace kernel::sr {
       b0[2] *= COEFF;
       COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-      vec_t<Dim::_3D> u1 {
+      const vec_t<Dim::_3D> u1 {
         (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
         (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
         (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF

@@ -22,7 +22,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 namespace kernel {
   using namespace ntt;

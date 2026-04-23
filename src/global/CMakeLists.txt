@@ -57,6 +57,7 @@ target_precompile_headers(ntt_global
   <algorithm>
   <numeric>
   <stdexcept>
+  <cstddef>
   <iostream>
   <optional>
   <utility>

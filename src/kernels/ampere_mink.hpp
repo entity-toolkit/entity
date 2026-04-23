@@ -108,19 +108,19 @@ namespace kernel::mink {
     real_t                dx;
 
   public:
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>&    E,
-                          const ndfield_t<D, 3>     J,
-                          real_t                    coeff,
-                          real_t                    ppc0,
-                          const C&                  ext_current,
-                          const std::vector<real_t> xmin,
-                          real_t                    dx)
+    CurrentsAmpere_kernel(const ndfield_t<D, 6>&     E,
+                          const ndfield_t<D, 3>&     J,
+                          real_t                     coeff,
+                          real_t                     ppc0,
+                          const C&                   ext_current,
+                          const std::vector<real_t>& xmin,
+                          real_t                     dx)
       : E { E }
       , J { J }
       , coeff { coeff }
       , ppc0 { ppc0 }
       , ext_current { ext_current }
-      , x1min { xmin.size() > 0 ? xmin[0] : ZERO }
+      , x1min { !xmin.empty() ? xmin[0] : ZERO }
       , x2min { xmin.size() > 1 ? xmin[1] : ZERO }
       , x3min { xmin.size() > 2 ? xmin[2] : ZERO }
       , dx { dx } {}

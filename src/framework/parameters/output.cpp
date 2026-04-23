@@ -6,7 +6,13 @@
 #include "utils/error.h"
 #include "utils/log.h"
 
+#include "framework/parameters/parameters.h"
+
 #include <toml11/toml.hpp>
+
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace ntt {
   namespace params {
@@ -63,7 +69,7 @@ namespace ntt {
                                                  "fields",
                                                  "custom",
                                                  std::vector<std::string> {});
-      if (flds_out.size() == 0) {
+      if (flds_out.empty()) {
         raise::Warning("No fields output specified", HERE);
       }
       fields_quantities        = flds_out;

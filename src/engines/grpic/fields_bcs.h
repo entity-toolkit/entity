@@ -25,10 +25,12 @@
 #include "framework/parameters/parameters.h"
 #include "kernels/fields_bcs.hpp"
 
+#include <cstdint>
+
 namespace ntt {
   namespace grpic {
 
-    enum class gr_bc {
+    enum class gr_bc : uint8_t {
       main,
       aux,
       curr
@@ -71,11 +73,11 @@ namespace ntt {
       boundaries_t<bool>   incl_ghosts;
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
         if (d == static_cast<unsigned short>(dim)) {
-          box.push_back({ xg_min, xg_max });
-          incl_ghosts.push_back({ false, true });
+          box.emplace_back(xg_min, xg_max);
+          incl_ghosts.emplace_back(false, true);
         } else {
           box.push_back(Range::All);
-          incl_ghosts.push_back({ true, true });
+          incl_ghosts.emplace_back(true, true);
         }
       }
       if (not domain.mesh.Intersects(box)) {

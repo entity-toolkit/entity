@@ -153,19 +153,8 @@ namespace arch {
     const real_t x1_Ph_wallmove = metric.template convert<1, Crd::Cd, Crd::Ph>(
       x1_Cd_wallmove);
 
-    if (is_left) { // if piston is moving from left, ask if particle is to the left of piston
-      if (piston_position > x1_Ph_wallmove) {
-        return true;
-      } else {
-        return false;
-      }
-    } else { // if piston is moving from the right, so ask is particle to right of piston
-      if (piston_position < x1_Ph_wallmove) {
-        return true;
-      } else {
-        return false;
-      }
-    }
+    return is_left ? piston_position > x1_Ph_wallmove
+                   : piston_position < x1_Ph_wallmove;
   }
 
 } // namespace arch

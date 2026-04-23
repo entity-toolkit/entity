@@ -135,7 +135,7 @@ namespace arch {
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
-    const std::vector<spidx_t>         species,
+    const std::vector<spidx_t>&        species,
     ndfield_t<M::Dim, N>&              buffer,
     const std::vector<unsigned short>& components = {},
     idx_t                              buffer_idx = 0u,
@@ -179,9 +179,7 @@ namespace arch {
   }
 
   template <SimEngine::type S, MetricClass M, class F>
-  inline void UpdateEMFields(const SimulationParams& params,
-                             Domain<S, M>&           domain,
-                             const F&                fieldsetter) {
+  inline void UpdateEMFields(Domain<S, M>& domain, const F& fieldsetter) {
     if constexpr (S == SimEngine::SRPIC) {
       Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
       Kokkos::parallel_for(
