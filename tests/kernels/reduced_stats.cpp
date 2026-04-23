@@ -298,7 +298,7 @@ auto main(int argc, char* argv[]) -> int {
                                                             1e-6);
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

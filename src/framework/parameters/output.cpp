@@ -107,7 +107,7 @@ namespace ntt {
                      "invalid `output.fields.downsampling`",
                      HERE);
       if (fields_downsampling->size() > dim) {
-        fields_downsampling->erase(fields_downsampling->begin() + (std::size_t)(dim),
+        fields_downsampling->erase(fields_downsampling->begin() + dim,
                                    fields_downsampling->end());
       }
       for (const auto& dwn : fields_downsampling.value()) {

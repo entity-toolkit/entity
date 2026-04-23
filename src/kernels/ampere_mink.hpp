@@ -108,8 +108,8 @@ namespace kernel::mink {
     real_t                dx;
 
   public:
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>&     E,
-                          const ndfield_t<D, 3>&     J,
+    CurrentsAmpere_kernel(ndfield_t<D, 6>&           E,
+                          ndfield_t<D, 3>&           J,
                           real_t                     coeff,
                           real_t                     ppc0,
                           const C&                   ext_current,
@@ -125,10 +125,10 @@ namespace kernel::mink {
       , x3min { xmin.size() > 2 ? xmin[2] : ZERO }
       , dx { dx } {}
 
-    CurrentsAmpere_kernel(const ndfield_t<D, 6>& E,
-                          const ndfield_t<D, 3>  J,
-                          real_t                 coeff,
-                          real_t                 inv_n0)
+    CurrentsAmpere_kernel(ndfield_t<D, 6>& E,
+                          ndfield_t<D, 3>& J,
+                          real_t           coeff,
+                          real_t           inv_n0)
       : CurrentsAmpere_kernel { E, J, coeff, inv_n0, NoCurrent_t {}, {}, ZERO } {}
 
     Inline void operator()(index_t i1) const {

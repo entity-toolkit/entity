@@ -15,9 +15,9 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "utils/param_container.h"
 
 #include "framework/containers/particles.h"
-#include "framework/parameters/parameters.h"
 #include "kernels/injectors.hpp"
 
 #include <Kokkos_Pair.hpp>

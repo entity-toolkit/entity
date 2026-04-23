@@ -93,7 +93,7 @@ namespace diag {
     if (not print_colors) {
       diag_flags ^= Diag::Colorful;
     }
-    if (species_labels.size() == 0) {
+    if (species_labels.empty()) {
       diag_flags ^= Diag::Species;
     }
     if (print_prtl_clear) {

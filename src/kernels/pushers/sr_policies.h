@@ -22,6 +22,7 @@
 #include "utils/param_container.h"
 
 #include "archetypes/emission.h"
+#include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
 
 namespace kernel::sr {

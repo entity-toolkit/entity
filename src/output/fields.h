@@ -107,10 +107,10 @@ namespace out {
         }
         if (tmp == "dive" || tmp == "divd") {
           // capitalize E/D
-          tmp[3] = std::toupper(tmp[3]);
+          tmp[3] = static_cast<char>(std::toupper(tmp[3]));
         }
         // capitalize the first letter
-        tmp[0] = std::toupper(tmp[0]);
+        tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       }
       return "f" + tmp;
     }
@@ -144,10 +144,10 @@ namespace out {
       }
       if (tmp == "dive" || tmp == "divd") {
         // capitalize E/D
-        tmp[3] = std::toupper(tmp[3]);
+        tmp[3] = static_cast<char>(std::toupper(tmp[3]));
       }
       // capitalize the first letter
-      tmp[0] = std::toupper(tmp[0]);
+      tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       return "f" + tmp;
     }
 

@@ -4,6 +4,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/mpi_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"

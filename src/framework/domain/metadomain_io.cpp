@@ -30,6 +30,7 @@
 #include <functional>
 #include <iterator>
 #include <vector>
+#include <string>
 
 namespace ntt {
 

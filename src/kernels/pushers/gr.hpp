@@ -42,7 +42,7 @@
     (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 #define DERIVATIVE_IN_R(func, x)                                               \
   ((func({ (x)[0] + ctx.epsilon, (x)[1] }) -                                   \
@@ -490,9 +490,9 @@ namespace kernel::gr {
         real_t ponpmy = ONE - dx2_;
         real_t ponppy = dx2_;
 
-        real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+        real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
         real_t pondpx = ONE - pondmx;
-        real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+        real_t pondmy = static_cast<real_t>(indy + 1) - (dx2_ + HALF);
         real_t pondpy = ONE - pondmy;
 
         // Ex1

@@ -61,7 +61,7 @@ namespace ntt {
 
     GRPICEngine(SimulationParams& params) : base_t { params } {}
 
-    ~GRPICEngine() = default;
+    ~GRPICEngine() override = default;
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(

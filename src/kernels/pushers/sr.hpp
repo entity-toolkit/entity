@@ -868,7 +868,7 @@ namespace kernel::sr {
           real_t ponpmx = ONE - dx1_;
           real_t ponppx = dx1_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
 
           // Ex1
@@ -919,9 +919,9 @@ namespace kernel::sr {
           real_t ponpmy = ONE - dx2_;
           real_t ponppy = dx2_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
-          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondmy = static_cast<real_t>(indy + 1) - (dx2_ + HALF);
           real_t pondpy = ONE - pondmy;
 
           // Ex1
@@ -1003,11 +1003,11 @@ namespace kernel::sr {
           real_t ponpmz = ONE - dx3_;
           real_t ponppz = dx3_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
-          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondmy = static_cast<real_t>(indy + 1) - (dx2_ + HALF);
           real_t pondpy = ONE - pondmy;
-          real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+          real_t pondmz = static_cast<real_t>(indz + 1) - (dx3_ + HALF);
           real_t pondpz = ONE - pondmz;
 
           // Ex1
@@ -1505,7 +1505,7 @@ namespace kernel::sr {
                                 const vec_t<Dim::_3D>&     bp_Cart) const
       requires(not ::traits::emission::IsNoPolicy<E>)
     {
-      typename E::Payload payload;
+      typename E::Payload payload {};
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };
       const auto emission_response = policies.emission_policy.shouldEmit(xp_Cd,
                                                                          xp_Ph,

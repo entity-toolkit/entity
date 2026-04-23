@@ -22,16 +22,16 @@
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 /* -------------------------------------------------------------------------- */
 
@@ -110,8 +110,8 @@ namespace arch {
 
     i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
                 static_cast<int>(dx_w_coll < ZERO);
-    dx_w_coll -= (dx_w_coll >= ONE);
-    dx_w_coll += (dx_w_coll < ZERO);
+    dx_w_coll -= static_cast<prtldx_t>(dx_w_coll >= ONE);
+    dx_w_coll += static_cast<prtldx_t>(dx_w_coll < ZERO);
 
     particles.i1(p) = i_w_coll;
     particles.dx1(
@@ -121,8 +121,8 @@ namespace arch {
 
     particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
                        static_cast<int>(particles.dx1(p) < ZERO);
-    particles.dx1(p) -= (particles.dx1(p) >= ONE);
-    particles.dx1(p) += (particles.dx1(p) < ZERO);
+    particles.dx1(p) -= static_cast<prtldx_t>(particles.dx1(p) >= ONE);
+    particles.dx1(p) += static_cast<prtldx_t>(particles.dx1(p) < ZERO);
   }
 
   /**

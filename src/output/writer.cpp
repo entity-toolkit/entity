@@ -86,10 +86,10 @@ namespace out {
                      "Downsampling with ghosts not supported",
                      HERE);
 
-      const double g = glob_shape[i];
-      const double d = m_dwn[i];
-      const double l = loc_corner[i];
-      const double n = loc_shape[i];
+      const double g = static_cast<double>(glob_shape[i]);
+      const double d = static_cast<double>(m_dwn[i]);
+      const double l = static_cast<double>(loc_corner[i]);
+      const double n = static_cast<double>(loc_shape[i]);
       const double f = math::ceil(l / d) * d - l;
       m_flds_g_shape_dwn.push_back(static_cast<ncells_t>(math::ceil(g / d)));
       m_flds_l_corner_dwn.push_back(static_cast<ncells_t>(math::ceil(l / d)));
@@ -204,7 +204,7 @@ namespace out {
       } else {
 
         const auto   dwn1          = dwn[0];
-        const double first_cell1_d = first_cell[0];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const auto   first_cell1   = first_cell[0];
 
@@ -231,8 +231,8 @@ namespace out {
       } else {
         const auto   dwn1          = dwn[0];
         const auto   dwn2          = dwn[1];
-        const double first_cell1_d = first_cell[0];
-        const double first_cell2_d = first_cell[1];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
+        const double first_cell2_d = static_cast<double>(first_cell[1]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
         const auto   first_cell1   = first_cell[0];
@@ -267,9 +267,9 @@ namespace out {
         const auto   dwn1          = dwn[0];
         const auto   dwn2          = dwn[1];
         const auto   dwn3          = dwn[2];
-        const double first_cell1_d = first_cell[0];
-        const double first_cell2_d = first_cell[1];
-        const double first_cell3_d = first_cell[2];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
+        const double first_cell2_d = static_cast<double>(first_cell[1]);
+        const double first_cell3_d = static_cast<double>(first_cell[2]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
         const double nx3_full      = field.extent(2) - 2 * N_GHOSTS;

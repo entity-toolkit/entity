@@ -43,7 +43,7 @@ namespace out {
       } else if (c == "j") {
         comps_int.push_back(-2);
       } else {
-        comps_int.push_back(std::stoi(c));
+        comps_int.push_back(static_cast<short>(std::stoi(c)));
       }
     }
     std::vector<std::vector<unsigned short>> comps_ints;

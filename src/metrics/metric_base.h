@@ -98,12 +98,6 @@ namespace metric {
       , x3_max { getExtent<D, 2, XMax>(ext) } {}
 
     [[nodiscard]]
-    virtual auto find_dxMin() const -> real_t = 0;
-
-    [[nodiscard]]
-    virtual auto totVolume() const -> real_t = 0;
-
-    [[nodiscard]]
     auto dxMin() const -> real_t {
       return dx_min;
     }

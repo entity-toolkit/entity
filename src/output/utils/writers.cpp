@@ -1,5 +1,7 @@
 #include "output/utils/writers.h"
 
+#include "global.h"
+
 #include "arch/kokkos_aliases.h"
 
 #include <adios2.h>

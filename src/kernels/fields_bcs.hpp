@@ -64,7 +64,7 @@ namespace kernel::bc {
     ncells_t extent_2 { 0u };
     bool     is_axis_i2min { false }, is_axis_i2max { false };
 
-    MatchBoundaries_kernel(ndfield_t<M::Dim, 6>        Fld,
+    MatchBoundaries_kernel(ndfield_t<M::Dim, 6>&       Fld,
                            const FS&                   fset,
                            const M&                    metric,
                            real_t                      xg_edge,

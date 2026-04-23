@@ -17,13 +17,7 @@
 
 #include "global.h"
 
-#include "arch/mpi_aliases.h"
-#include "utils/colors.h"
-#include "utils/comparators.h"
 #include "utils/error.h"
-#include "utils/formatting.h"
-#include "utils/numeric.h"
-#include "utils/tools.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"
@@ -34,7 +28,6 @@
 #include <chrono>
 #include <functional>
 #include <map>
-#include <numeric>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -95,9 +88,10 @@ namespace timer {
 #endif
       }
       auto end     = std::chrono::system_clock::now();
-      auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                       end - m_timers[name].first)
-                       .count();
+      auto elapsed = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          end - m_timers[name].first)
+          .count());
       m_timers[name].second += elapsed;
     }
 

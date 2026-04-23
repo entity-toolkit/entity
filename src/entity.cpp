@@ -13,6 +13,8 @@
 #include "engines/srpic/srpic.hpp"
 #include "pgen.hpp"
 
+#include <exception>
+#include <iostream>
 #include <type_traits>
 
 namespace ntt {

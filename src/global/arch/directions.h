@@ -108,7 +108,7 @@ namespace dir {
       for (auto i = 0u; i < this->size(); ++i) {
         if ((*this)[i] != 0) {
           raise::ErrorIf(dir > 0, "Undefined dim for non-orth direction", HERE);
-          dir = i;
+          dir = static_cast<short>(i);
         }
       }
       raise::ErrorIf(dir == -1, "Undefined dim", HERE);
@@ -154,16 +154,18 @@ namespace dir {
 
   template <>
   inline auto direction_t<Dim::_2D>::hash() const -> short {
-    return (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
-           (*this)[1];
+    return static_cast<short>(
+      (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
+      (*this)[1]);
   }
 
   template <>
   inline auto direction_t<Dim::_3D>::hash() const -> short {
-    const short k1 = (2 + (*this)[0] + (*this)[1]) *
-                       (3 + (*this)[0] + (*this)[1]) / 2 +
-                     (*this)[1];
-    return (2 + k1 + (*this)[2]) * (3 + k1 + (*this)[2]) / 2 + (*this)[2];
+    const short k1 = static_cast<short>(
+      (2 + (*this)[0] + (*this)[1]) * (3 + (*this)[0] + (*this)[1]) / 2 +
+      (*this)[1]);
+    return static_cast<short>(
+      (2 + k1 + (*this)[2]) * (3 + k1 + (*this)[2]) / 2 + (*this)[2]);
   }
 
   template <>

@@ -232,7 +232,7 @@ namespace ntt {
     [[nodiscard]]
     auto l_npart() const -> npart_t {
       const auto npart = l_npart_perspec();
-      return std::accumulate(npart.begin(), npart.end(), 0);
+      return std::accumulate(npart.begin(), npart.end(), static_cast<npart_t>(0));
     }
 
     [[nodiscard]]

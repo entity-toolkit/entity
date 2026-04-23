@@ -69,7 +69,7 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       return ONE / math::sqrt(ONE / SQR(dr) + ONE / SQR(x1_min * dtheta));
     }
@@ -78,7 +78,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {

@@ -110,7 +110,7 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
@@ -132,7 +132,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       // @TODO: Ask Alisa
       return ZERO;
     }

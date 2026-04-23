@@ -7,6 +7,7 @@
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"
+  #include "utils/tools.h"
 
   #include <mpi.h>
 #endif // MPI_ENABLED

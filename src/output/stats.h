@@ -76,7 +76,7 @@ namespace stats {
         tmp = "J.E";
       } else {
         // capitalize the first letter
-        tmp[0] = std::toupper(tmp[0]);
+        tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       }
       if (id() == StatsID::T) {
         tmp += m_name.substr(1, 2);
@@ -87,7 +87,7 @@ namespace stats {
           tmp += "i";
         }
       }
-      if (species.size() > 0) {
+      if (not species.empty()) {
         tmp += "_";
         for (auto& s : species) {
           tmp += std::to_string(s);
@@ -119,7 +119,7 @@ namespace stats {
         tmp = "ExB";
       } else {
         // capitalize the first letter
-        tmp[0] = std::toupper(tmp[0]);
+        tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       }
       if (tmp == "E^2" or tmp == "B^2") {
         tmp = fmt::format("%c%d^2", tmp[0], comp[ci][0]);

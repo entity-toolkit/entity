@@ -113,6 +113,7 @@ namespace ntt {
     void init();
     void print_report() const;
 
+    virtual ~Engine()                                         = default;
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
     void run();

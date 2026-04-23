@@ -53,8 +53,8 @@ namespace pbar {
       if (durations.size() >= capacity) {
         durations.erase(durations.begin());
       }
-      durations.push_back(
-        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_start).count());
+      durations.push_back(static_cast<duration_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_start).count()));
       prev_start = now;
     }
 
@@ -68,9 +68,10 @@ namespace pbar {
     }
 
     auto elapsed() const -> duration_t {
-      return std::chrono::duration_cast<std::chrono::microseconds>(
-               std::chrono::system_clock::now() - start)
-        .count();
+      return static_cast<duration_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::system_clock::now() - start)
+          .count());
     }
   };
 

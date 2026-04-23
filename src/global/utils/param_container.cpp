@@ -4,12 +4,15 @@
   #include "enums.h"
   #include "global.h"
 
+  #include "utils/formatting.h"
   #include "utils/log.h"
 
   #include <adios2.h>
   #include <adios2/cxx/KokkosView.h>
 
   #include <any>
+  #include <cstddef>
+  #include <exception>
   #include <functional>
   #include <map>
   #include <stdexcept>
