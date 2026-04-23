@@ -13,6 +13,7 @@
 
   #include <mpi.h>
 
+  #include <algorithm>
   #include <iterator>
 #endif // MPI_ENABLED
 
@@ -58,8 +59,10 @@ namespace diag {
     if (rank != MPI_ROOT_RANK) {
       return stats;
     }
-    const npart_t tot_npart = std::accumulate(mpi_npart.begin(), mpi_npart.end(), 0u);
-    const npart_t max_idx = std::distance(
+    const npart_t tot_npart = std::accumulate(mpi_npart.begin(),
+                                              mpi_npart.end(),
+                                              static_cast<npart_t>(0));
+    const npart_t max_idx   = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));
     const npart_t min_idx = std::distance(

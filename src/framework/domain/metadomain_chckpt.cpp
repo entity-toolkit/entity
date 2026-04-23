@@ -11,6 +11,10 @@
 #include "framework/specialization_registry.h"
 #include "output/checkpoint.h"
 
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
+
 #include <cstddef>
 #include <string>
 #include <vector>

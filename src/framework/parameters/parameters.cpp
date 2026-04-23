@@ -18,10 +18,6 @@
 
 #include <toml11/toml.hpp>
 
-#if defined(MPI_ENABLED)
-  #include <mpi.h>
-#endif
-
 #include <cstddef>
 #include <fstream>
 #include <map>

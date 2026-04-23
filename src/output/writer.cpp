@@ -348,7 +348,7 @@ namespace out {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Reduce(counts_h.data(),
                counts_h_all.data(),
-               counts_h.extent(0),
+               static_cast<int>(counts_h.extent(0)),
                mpi::get_type<real_t>(),
                MPI_SUM,
                MPI_ROOT_RANK,

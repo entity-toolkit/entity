@@ -19,6 +19,10 @@
 
 #include <toml11/toml.hpp>
 
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
+
 #include <algorithm>
 #include <cstddef>
 #include <limits>

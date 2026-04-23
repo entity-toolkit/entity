@@ -17,7 +17,11 @@
 #include <adios2.h>
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
+
+  #include <vector>
 #endif
 
 #include <cstddef>

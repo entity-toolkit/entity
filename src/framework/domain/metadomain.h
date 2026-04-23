@@ -284,7 +284,7 @@ namespace ntt {
 #endif
 
 #if defined(MPI_ENABLED)
-    int g_mpi_rank, g_mpi_size;
+    int g_mpi_rank { -1 }, g_mpi_size { -1 };
 #endif
   };
 

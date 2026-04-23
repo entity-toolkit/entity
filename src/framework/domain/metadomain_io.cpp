@@ -22,6 +22,8 @@
 #include <Kokkos_StdAlgorithms.hpp>
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
 #endif // MPI_ENABLED
 
@@ -29,8 +31,8 @@
 #include <cstddef>
 #include <functional>
 #include <iterator>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace ntt {
 
@@ -252,7 +254,7 @@ namespace ntt {
   void ExtractVectorPotential(ndfield_t<M::Dim, 6>& buffer,
                               array_t<real_t*>&     aphi_r,
                               unsigned short        buff_idx,
-                              const Mesh<M>         mesh) {
+                              const Mesh<M>&        mesh) {
     Kokkos::parallel_for(
       "AddVectorPotential",
       mesh.rangeActiveCells(),

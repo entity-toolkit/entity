@@ -10,6 +10,8 @@
   #include "utils/tools.h"
 
   #include <mpi.h>
+
+  #include <iterator>
 #endif // MPI_ENABLED
 
 #include <algorithm>
