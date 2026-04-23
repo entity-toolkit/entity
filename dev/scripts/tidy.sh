@@ -3,6 +3,9 @@ set -u
 
 build_dir=""
 file_filter=""
+fast_mode=false
+use_changed=false
+changed_ref=""
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -22,9 +25,23 @@ while [[ $# -gt 0 ]]; do
 		file_filter="$2"
 		shift 2
 		;;
+	--changed)
+		use_changed=true
+		if [[ -n "${2:-}" && "$2" != --* ]]; then
+			changed_ref="$2"
+			shift 2
+		else
+			shift
+		fi
+		;;
+	--fast)
+		# Skip clang-analyzer-* (inter-procedural analysis; ~5-10x slower than other checks)
+		fast_mode=true
+		shift
+		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 --build <build_dir> [--files <regex>]"
+		echo "Usage: $0 --build <build_dir> [--files <regex>] [--changed [<ref>]] [--fast]"
 		exit 1
 		;;
 	esac
@@ -35,10 +52,64 @@ if [[ -z "$build_dir" ]]; then
 	exit 1
 fi
 
+if [[ "$use_changed" == true && -n "$file_filter" ]]; then
+	echo "Error: --changed and --files are mutually exclusive"
+	exit 1
+fi
+
 out_dir="tidy"
 project_root="$(pwd)"
 allowed_re="^${project_root}/(src|pgens)/"
 jobs="$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
+
+# Use cltcache if available for incremental runs (pip install cltcache)
+# It wraps clang-tidy as: cltcache clang-tidy <args>
+tidy_bin="clang-tidy"
+tidy_prefix=""
+if command -v cltcache &>/dev/null; then
+	tidy_prefix="cltcache"
+	echo "Using cltcache"
+fi
+
+extra_checks=""
+if [[ "$fast_mode" == true ]]; then
+	extra_checks="--checks=-clang-analyzer-*"
+	echo "Fast mode: skipping clang-analyzer-*"
+fi
+
+# Build file_filter from git diff when --changed is given.
+# .cpp files match directly; changed headers match all .cpp files in the same directory
+# (since clang-tidy has no include graph, this is the best available heuristic).
+if [[ "$use_changed" == true ]]; then
+	if [[ -n "$changed_ref" ]]; then
+		diff_files=$(git diff --name-only "${changed_ref}...HEAD" 2>/dev/null || true)
+	else
+		diff_files=$(git diff --name-only HEAD 2>/dev/null || true)
+	fi
+
+	diff_files=$(echo "$diff_files" | grep -E '\.(cpp|h|hpp)$' || true)
+
+	if [[ -z "$diff_files" ]]; then
+		if [[ -z "$changed_ref" ]]; then
+			echo "No changed .cpp/.h files in working tree. Try --changed <ref> (e.g. --changed master)."
+		else
+			echo "No changed .cpp/.h files vs ${changed_ref}."
+		fi
+		exit 0
+	fi
+
+	file_filter=$(
+		{
+			echo "$diff_files" | grep '\.cpp$' | while IFS= read -r f; do
+				printf '%s\n' "${project_root}/${f}" | sed 's/[.]/\\./g'
+			done
+			echo "$diff_files" | grep -E '\.(h|hpp)$' | while IFS= read -r f; do
+				dir="${project_root}/$(dirname "$f")"
+				printf '%s/[^/]+\\.cpp\n' "$(printf '%s' "$dir" | sed 's/[.]/\\./g')"
+			done
+		} | sort -u | paste -sd'|' -
+	)
+fi
 
 rm -rf "$out_dir"
 mkdir -p "$out_dir"
@@ -55,33 +126,87 @@ else
 	file_list=$(jq -r '.[].file' "$build_dir/compile_commands.json" | sort -u)
 fi
 
-echo "$file_list" |
-	xargs -P "$jobs" -I{} clang-tidy -p "$build_dir" {} 2>&1 |
-	awk -v out="$out_dir" -v root="$project_root/" -v allowed="$allowed_re" '
-    /^\/?[^:]+:[0-9]+:[0-9]+:/ {
-      match($0, /^[^:]+/)
-      current_file = substr($0, 1, RLENGTH)
-      if (current_file !~ allowed) {
-        current_file = ""
-        next
-      }
-      if (index(current_file, root) == 1) {
-        current_file = substr(current_file, length(root) + 1)
-      }
-      logfile = out "/" current_file ".log"
-      cmd = "mkdir -p \"$(dirname \"" logfile "\")\""
-      system(cmd)
-      print $0 >> logfile
+total=$(echo "$file_list" | wc -l | tr -d ' ')
+
+# Temp dir: each job touches a file here when done — race-condition-free counter
+progress_dir=$(mktemp -d /tmp/tidy_progress_XXXXXX)
+
+# Write a helper script so each parallel job writes its own per-diagnostic-file logs
+# without routing through a single serial process
+tmpscript=$(mktemp /tmp/tidy_run_XXXXXX.sh)
+trap 'rm -f "$tmpscript"; rm -rf "$progress_dir"' EXIT
+
+cat > "$tmpscript" << 'ENDSCRIPT'
+#!/usr/bin/env bash
+file="$1"
+build_dir="$2"
+out_dir="$3"
+project_root="$4"
+tidy_bin="$5"
+tidy_prefix="${6:-}"
+extra_checks="${7:-}"
+progress_dir="${8:-}"
+allowed_re="^${project_root}/(src|pgens)/"
+
+tmpout=$(mktemp /tmp/tidy_out_XXXXXX)
+trap 'rm -f "$tmpout"' EXIT
+
+# shellcheck disable=SC2086
+$tidy_prefix "$tidy_bin" --quiet -p "$build_dir" $extra_checks "$file" > "$tmpout" 2>&1 || true
+
+# Route each diagnostic to the log for the file it occurs in (not the analyzed file)
+awk -v out="$out_dir" -v root="$project_root/" -v allowed="$allowed_re" '
+  /^\/?[^:]+:[0-9]+:[0-9]+:/ {
+    match($0, /^[^:]+/)
+    current_file = substr($0, 1, RLENGTH)
+    if (current_file !~ allowed) {
+      current_file = ""
       next
     }
-    current_file != "" {
-      logfile = out "/" current_file ".log"
-      print $0 >> logfile
+    if (index(current_file, root) == 1) {
+      current_file = substr(current_file, length(root) + 1)
     }
-  '
+    logfile = out "/" current_file ".log"
+    cmd = "mkdir -p \"$(dirname \"" logfile "\")\""
+    system(cmd)
+    print $0 >> logfile
+    next
+  }
+  current_file != "" {
+    logfile = out "/" current_file ".log"
+    print $0 >> logfile
+  }
+' "$tmpout"
 
-find "$out_dir" -name '*.log' | while read log; do
-	awk '!seen[$0]++' "$log" >"$log.tmp" && mv "$log.tmp" "$log"
+[[ -n "$progress_dir" ]] && touch "$progress_dir/$$.$RANDOM"
+ENDSCRIPT
+chmod +x "$tmpscript"
+
+# Progress bar — runs in background, polls the counter dir every 0.2s
+bar_full="########################################"
+bar_empty="----------------------------------------"
+(
+	while true; do
+		done_n=$(find "$progress_dir" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+		filled=$(( done_n * 40 / total ))
+		printf "\r[%s%s] %d/%d" \
+			"${bar_full:0:$filled}" "${bar_empty:0:$((40 - filled))}" "$done_n" "$total"
+		[[ "$done_n" -ge "$total" ]] && break
+		sleep 0.2
+	done
+	printf "\n"
+) &
+progress_pid=$!
+
+echo "$file_list" | xargs -P "$jobs" -I{} \
+	"$tmpscript" {} "$build_dir" "$out_dir" "$project_root" "$tidy_bin" "$tidy_prefix" "$extra_checks" "$progress_dir"
+
+wait "$progress_pid"
+
+# Dedup (parallel jobs may write overlapping header diagnostics from different TUs)
+find "$out_dir" -name '*.log' | while read -r log; do
+	awk '!seen[$0]++' "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+	[[ ! -s "$log" ]] && rm -f "$log"
 done
 
 echo "Done. Logs written to $out_dir/"
