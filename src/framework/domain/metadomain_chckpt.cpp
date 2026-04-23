@@ -11,6 +11,10 @@
 #include "framework/specialization_registry.h"
 #include "output/checkpoint.h"
 
+#include <cstddef>
+#include <string>
+#include <vector>
+
 namespace ntt {
 
   template <SimEngine::type S, MetricClass M>
@@ -157,6 +161,7 @@ namespace ntt {
       HERE);
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_CHECKPOINTS(S, M, D)                                        \
   template void Metadomain<S, M<D>>::InitCheckpointWriter(                     \
     adios2::ADIOS*,                                                            \
@@ -171,5 +176,6 @@ namespace ntt {
     const SimulationParams&);
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_CHECKPOINTS)
 #undef METADOMAIN_CHECKPOINTS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

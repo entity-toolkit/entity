@@ -167,7 +167,7 @@ namespace ntt {
 
     /* printer overload ----------------------------------------------------- */
     auto Report() const -> std::string {
-      std::string report = "";
+      std::string report;
       reporter::AddSubcategory(report,
                                4,
                                fmt::format("Domain #%d", index()).c_str());
@@ -236,7 +236,7 @@ namespace ntt {
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
-    int                         m_mpi_rank;
+    int                         m_mpi_rank { -1 };
 
     // random number pool for the domain
     std::optional<random_number_pool_t> m_random_number_pool;

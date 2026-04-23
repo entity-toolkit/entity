@@ -104,7 +104,7 @@
 #define HERE __FILE__, __func__, __LINE__
 
 namespace files {
-  enum {
+  enum : uint8_t {
     LogFile = 1,
     ErrFile,
     InfoFile
@@ -126,7 +126,7 @@ namespace ntt {
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
 
-  enum em {
+  enum em : uint8_t {
     ex1 = 0,
     ex2 = 1,
     ex3 = 2,
@@ -141,18 +141,18 @@ namespace ntt {
     hx3 = 5
   };
 
-  enum cur {
+  enum cur : uint8_t {
     jx1 = 0,
     jx2 = 1,
     jx3 = 2
   };
 
-  enum pldi {
+  enum pldi : uint8_t {
     spcCtr = 0,
     domIdx = 1
   };
 
-  enum ParticleTag : short {
+  enum ParticleTag : short { // NOLINT
     dead = 0,
     alive
   };
@@ -165,13 +165,13 @@ namespace ntt {
 
 /* global scope enums & aliases --------------------------------------------- */
 
-enum Dimension : unsigned short {
+enum Dimension : uint8_t {
   _1D = 1,
   _2D = 2,
   _3D = 3
 };
 
-enum class CellLayer {
+enum class CellLayer : uint8_t {
   allLayer,
   activeLayer,
   minGhostLayer,
@@ -180,7 +180,7 @@ enum class CellLayer {
   maxGhostLayer
 };
 
-enum class Idx {
+enum class Idx : uint8_t {
   U,   // contravariant
   D,   // covariant
   T,   // tetrad
@@ -190,20 +190,20 @@ enum class Idx {
   PD,  // physical covariant
 };
 
-enum class Crd {
+enum class Crd : uint8_t {
   Cd,  // code units
   Ph,  // physical units
   XYZ, // Cartesian
   Sph, // spherical
 };
 
-enum class in : unsigned short {
+enum class in : uint8_t {
   x1 = 0,
   x2 = 1,
   x3 = 2,
 };
 
-enum class bc_in : short {
+enum class bc_in : int8_t {
   Mx1 = -1,
   Px1 = 1,
   Mx2 = -2,
@@ -218,7 +218,7 @@ using box_region_t = CellLayer[D];
 /* config flags ------------------------------------------------------------- */
 
 namespace PrepareOutput {
-  enum PrepareOutputFlags_ {
+  enum PrepareOutputFlags_ : uint8_t {
     None                        = 0,
     InterpToCellCenterFromEdges = 1 << 0,
     InterpToCellCenterFromFaces = 1 << 1,
@@ -228,10 +228,10 @@ namespace PrepareOutput {
   };
 } // namespace PrepareOutput
 
-typedef int PrepareOutputFlags;
+using PrepareOutputFlags = uint8_t;
 
 namespace Timer {
-  enum TimerFlags_ {
+  enum TimerFlags_ : uint8_t {
     None              = 0,
     PrintTotal        = 1 << 0,
     PrintTitle        = 1 << 1,
@@ -244,10 +244,10 @@ namespace Timer {
   };
 } // namespace Timer
 
-typedef int TimerFlags;
+using TimerFlags = uint8_t;
 
 namespace Diag {
-  enum DiagFlags_ {
+  enum DiagFlags_ : uint8_t {
     None     = 0,
     Progress = 1 << 0,
     Timers   = 1 << 1,
@@ -258,10 +258,10 @@ namespace Diag {
 
 } // namespace Diag
 
-typedef int DiagFlags;
+using DiagFlags = uint8_t;
 
 namespace Comm {
-  enum CommTags_ {
+  enum CommTags_ : uint16_t {
     None = 0,
     E    = 1 << 0,
     B    = 1 << 1,
@@ -275,10 +275,10 @@ namespace Comm {
   };
 } // namespace Comm
 
-typedef int CommTags;
+using CommTags = uint16_t;
 
 namespace WriteMode {
-  enum WriteModeTags_ {
+  enum WriteModeTags_ : uint8_t {
     None      = 0,
     Fields    = 1 << 0,
     Particles = 1 << 1,
@@ -287,10 +287,10 @@ namespace WriteMode {
   };
 } // namespace WriteMode
 
-typedef int WriteModeTags;
+using WriteModeTags = uint8_t;
 
 namespace BC {
-  enum BCTags_ {
+  enum BCTags_ : uint16_t {
     None = 0,
     Ex1  = 1 << 0,
     Ex2  = 1 << 1,
@@ -315,16 +315,16 @@ namespace BC {
   };
 } // namespace BC
 
-typedef int BCTags;
+using BCTags = uint16_t;
 
 namespace Inj {
-  enum InjTags_ {
+  enum InjTags_ : uint8_t {
     None        = 0,
     AssumeEmpty = 1 << 0,
   };
 } // namespace Inj
 
-typedef int InjTags;
+using InjTags = uint8_t;
 
 /* aliases ------------------------------------------------------------------ */
 

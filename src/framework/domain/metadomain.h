@@ -154,8 +154,9 @@ namespace ntt {
       timestep_t,
       simtime_t,
       simtime_t,
-      std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> =
-        nullptr) -> bool;
+      const std::function<
+        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
+      -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);
@@ -248,9 +249,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto species_labels() const -> std::vector<std::string> {
-      std::vector<std::string> labels;
-      for (const auto& sp : g_species_params) {
-        labels.push_back(sp.label());
+      std::vector<std::string> labels(g_species_params.size());
+      for (std::size_t i = 0; i < g_species_params.size(); ++i) {
+        labels[i] = g_species_params[i].label();
       }
       return labels;
     }

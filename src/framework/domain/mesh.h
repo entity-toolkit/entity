@@ -64,7 +64,8 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersection(boundaries_t<real_t> box) const -> boundaries_t<real_t> {
+    auto Intersection(const boundaries_t<real_t>& box) const
+      -> boundaries_t<real_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       boundaries_t<real_t> intersection;
       auto                 d = 0;
@@ -84,7 +85,7 @@ namespace ntt {
           } else {
             x_max = std::max(extent()[d].first,
                              std::min(extent()[d].second, b.second));
-            intersection.push_back({ x_min, x_max });
+            intersection.emplace_back(x_min, x_max);
           }
         }
         ++d;
@@ -130,7 +131,7 @@ namespace ntt {
       boundaries_t<ncells_t> range;
       if (not Intersects(box)) {
         for (auto i { 0u }; i < box.size(); ++i) {
-          range.push_back({ 0, 0 });
+          range.emplace_back(0, 0);
         }
         return range;
       }
@@ -181,13 +182,14 @@ namespace ntt {
             xi_max_Cd = std::min(xi_max_Cd,
                                  static_cast<real_t>(this->n_active()[d]));
           }
-          range.push_back({ static_cast<ncells_t>(xi_min_Cd) +
-                              (incl_ghosts[d].first ? 0 : N_GHOSTS),
-                            static_cast<ncells_t>(xi_max_Cd) +
-                              (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
+          range.emplace_back(static_cast<ncells_t>(xi_min_Cd) +
+                               (incl_ghosts[d].first ? 0 : N_GHOSTS),
+                             static_cast<ncells_t>(xi_max_Cd) +
+                               (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS));
         }
         ++d;
       }
+
       return range;
     }
   };

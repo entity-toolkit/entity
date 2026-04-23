@@ -1,7 +1,9 @@
 #include "engines/reporter.h"
 
 #include "enums.h"
+#include "global.h"
 
+#include "utils/formatting.h"
 #include "utils/reporter.h"
 
 #include "framework/parameters/parameters.h"
@@ -19,7 +21,7 @@ namespace ntt {
                               timestep_t                       max_steps,
                               const std::vector<unsigned int>& ndomains_per_dim,
                               unsigned int ndomains) -> std::string {
-    std::string report = "";
+    std::string report;
     /*
      * Simulation configs
      */
