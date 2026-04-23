@@ -44,7 +44,7 @@ namespace user {
     const real_t amplitude, omega;
     const real_t t_transition, t_duration;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>&)
+    PGen(const SimulationParams& p, const Metadomain<S, M>&)
       : arch::ProblemGenerator<S, M> { p }
       , amplitude { p.template get<real_t>("setup.amplitude", ONE) }
       , omega { p.template get<real_t>("setup.omega", ONE) }

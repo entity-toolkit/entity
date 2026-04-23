@@ -75,11 +75,11 @@ namespace user {
 
     const Metadomain<S, M>& metadomain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain } {}
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto temperature = params.template get<real_t>("setup.temperature");
       const auto drift_amplitude = params.template get<real_t>(
         "setup.drift_amplitude");

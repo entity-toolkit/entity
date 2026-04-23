@@ -93,9 +93,9 @@ namespace user {
       const auto rnd       = Random<real_t>(generator);
       random_pool.free_state(generator);
       if (rnd < probability) {
-        delta_u_Ph[0] = -0.1 * u_Ph[0];
-        delta_u_Ph[1] = -0.1 * u_Ph[1];
-        delta_u_Ph[2] = -0.1 * u_Ph[2];
+        delta_u_Ph[0] = -static_cast<real_t>(0.1) * u_Ph[0];
+        delta_u_Ph[1] = -static_cast<real_t>(0.1) * u_Ph[1];
+        delta_u_Ph[2] = -static_cast<real_t>(0.1) * u_Ph[2];
 
         const auto uSqr          = NORM_SQR(u_Ph[0], u_Ph[1], u_Ph[2]);
         const auto gammaSqr      = ONE + uSqr;
@@ -179,7 +179,7 @@ namespace user {
 
     InitFields<D> init_flds {};
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain }
       , emission_probability { params.template get<real_t>(
@@ -187,7 +187,7 @@ namespace user {
       static_assert(EmissionPolicyClass<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
     }
 
-    inline auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
+    auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
       -> RandomEmission<M> {
       return RandomEmission<M> {
         domain.random_pool(),      emission_probability,
@@ -201,7 +201,7 @@ namespace user {
       };
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto empty  = std::vector<real_t> {};
       const auto x1_arr = params.template get<std::vector<real_t>>(
         "setup.x1_arr",

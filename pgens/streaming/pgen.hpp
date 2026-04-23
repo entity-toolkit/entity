@@ -71,7 +71,7 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , drifts_in_x { p.template get<prmvec_t>("setup.drifts_in_x", prmvec_t {}) }
       , drifts_in_y { p.template get<prmvec_t>("setup.drifts_in_y", prmvec_t {}) }
@@ -116,7 +116,7 @@ namespace user {
                      HERE);
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto nspec = domain.species.size();
       for (auto n = 0u; n < nspec; n += 2) {
         const auto drift_1 = prmvec_t { drifts_in_x[n],

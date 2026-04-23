@@ -79,19 +79,19 @@ namespace user {
       }
     }
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx3(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx1(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx2(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx3(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
@@ -184,8 +184,8 @@ namespace user {
     }
 
   private:
-    tuple_t<real_t, M::Dim> x_min;
-    tuple_t<real_t, M::Dim> x_max;
+    tuple_t<real_t, M::Dim> x_min { ZERO };
+    tuple_t<real_t, M::Dim> x_max { ZERO };
     const real_t            sigma_thr;
     const real_t            dens_thr;
     const real_t            inv_n0;
@@ -218,7 +218,7 @@ namespace user {
     InitFields<M, D>        init_flds;
     const Metadomain<S, M>* metadomain;
 
-    inline PGen(SimulationParams& p, const Metadomain<S, M>& m)
+    PGen(SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , xi_min { p.template get<std::vector<real_t>>("setup.xi_min") }
       , xi_max { p.template get<std::vector<real_t>>("setup.xi_max") }
@@ -232,7 +232,7 @@ namespace user {
       , init_flds { m.mesh().metric, m_eps }
       , metadomain { &m } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    void InitPrtls(Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool(),
                                                       temperature);
@@ -253,7 +253,7 @@ namespace user {
         true);
     }
 
-    void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
+    void CustomPostStep(std::size_t, long double /*time*/, Domain<S, M>& local_domain) {
       const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
                                                       local_domain.random_pool(),
                                                       temperature);

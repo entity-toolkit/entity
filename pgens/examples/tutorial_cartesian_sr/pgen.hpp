@@ -119,18 +119,18 @@ namespace user {
     };
 
     // DipoleField<M::Dim> init_flds;
-    inline auto ExternalFields(simtime_t, spidx_t, const Domain<S, M>&) const
+    auto ExternalFields(simtime_t, spidx_t, const Domain<S, M>&) const
       -> std::pair<bool, DipoleField<M::Dim>> {
       return { true, DipoleField<M::Dim> {} };
     }
 
     const Metadomain<S, M>& metadomain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain } {}
 
-    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t /*step*/, simtime_t /*time*/, Domain<S, M>& domain) {
       const auto temperature = this->params.template get<real_t>(
         "setup.temperature");
       const auto drift_vel = this->params.template get<real_t>(

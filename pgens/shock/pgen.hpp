@@ -97,7 +97,7 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
+    PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
@@ -115,8 +115,6 @@ namespace user {
       , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
       , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
 
-    inline PGen() {}
-
     auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
     }
@@ -125,9 +123,7 @@ namespace user {
       -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
-      } else if (comp == em::ex2) {
-        return { ZERO, true };
-      } else if (comp == em::ex3) {
+      } else if ((comp == em::ex2) or (comp == em::ex3)) {
         return { ZERO, true };
       } else if (comp == em::bx1) {
         return { init_flds.bx1({ ZERO }), true };
@@ -141,7 +137,7 @@ namespace user {
       }
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
 
       /*
        *  Plasma setup as partially filled box
@@ -167,7 +163,7 @@ namespace user {
       for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
         if (d == static_cast<decltype(d)>(in::x1)) {
-          box.push_back({ xg_min, xg_max });
+          box.emplace_back(xg_min, xg_max);
         } else {
           // inject into full range in other directions
           box.push_back(Range::All);
@@ -235,7 +231,7 @@ namespace user {
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ false, false });
+        incl_ghosts.emplace_back(false, false);
       }
 
       // define box to reset fields
@@ -243,7 +239,7 @@ namespace user {
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
-          purge_box.push_back({ xmin, global_xmax });
+          purge_box.emplace_back(xmin, global_xmax);
         } else {
           purge_box.push_back(Range::All);
         }
@@ -305,7 +301,7 @@ namespace user {
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
-          inj_box.push_back({ xmin, xmax });
+          inj_box.emplace_back(xmin, xmax);
         } else {
           inj_box.push_back(Range::All);
         }

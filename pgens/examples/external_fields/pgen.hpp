@@ -71,7 +71,7 @@ namespace user {
 
     const Metadomain<S, M>& metadomain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
       : arch::ProblemGenerator<S, M> { p }
       , metadomain { metadomain } {}
 
@@ -80,9 +80,7 @@ namespace user {
      *
      * @note apply_external_fields is true for species other than 1 (i.e., 2 and 3 in this case)
      */
-    inline auto ExternalFields(simtime_t           time,
-                               spidx_t             sp,
-                               const Domain<S, M>& domain) const
+    auto ExternalFields(simtime_t time, spidx_t sp, const Domain<S, M>& /*domain*/) const
       -> std::pair<bool, ExtFields<M::Dim>> {
       // apply only to species 2 and 3
       return {
@@ -91,7 +89,7 @@ namespace user {
       };
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto prtls = params.template get<std::vector<std::vector<real_t>>>(
         "setup.prtls");
       const auto prtl_species = params.template get<std::vector<int>>(

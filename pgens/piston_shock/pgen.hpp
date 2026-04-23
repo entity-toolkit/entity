@@ -4,6 +4,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/piston.h"
 #include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
@@ -44,7 +46,7 @@ namespace user {
     // piston properties
     const real_t piston_velocity, piston_initial_position;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
       , global_xmin { global_domain.mesh().extent(in::x1).first }
@@ -57,7 +59,7 @@ namespace user {
       , temperature_ratio { p.template get<real_t>(
           "setup.temperature_ratio") } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    void InitPrtls(Domain<S, M>& local_domain) {
       real_t xg_min = global_xmin + piston_initial_position;
       real_t xg_max = global_xmax;
 
@@ -67,7 +69,7 @@ namespace user {
       for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
         if (d == static_cast<decltype(d)>(in::x1)) {
-          box.push_back({ xg_min, xg_max });
+          box.emplace_back(xg_min, xg_max);
         } else {
           // inject into full range in other directions
           box.push_back(Range::All);
@@ -132,7 +134,7 @@ namespace user {
     };
 
     template <class DOM>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, DOM& domain) const {
+    auto CustomParticleUpdate(simtime_t time, spidx_t /*sp*/, DOM& /*domain*/) const {
       return CustomPrtlUpdate { piston_initial_position +
                                   static_cast<real_t>(time) * piston_velocity,
                                 piston_velocity,

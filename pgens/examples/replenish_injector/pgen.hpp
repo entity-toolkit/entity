@@ -33,10 +33,11 @@ namespace user {
       // example of a non-uniform target density that peaks at the center of the domain
       real_t r2 { ZERO };
       for (auto d = 0u; d < D; ++d) {
-        r2 += SQR(x_Ph[d] - 0.5);
+        r2 += SQR(x_Ph[d] - HALF);
       }
-      return std::exp(
-        -r2 / SQR(0.2)); // <-- characteristic width of the density profile
+      return std::exp(-r2 / SQR(static_cast<real_t>(0.2)));
+      //                                                ^
+      //                        characteristic width of the density profile
     }
   };
 
@@ -61,12 +62,12 @@ namespace user {
 
     const std::string target_density;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& /*metadomain*/)
       : arch::ProblemGenerator<S, M> { p }
       , target_density { params.template get<std::string>(
           "setup.target_density") } {}
 
-    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t /*time*/, Domain<S, M>& domain) {
       if (step % 100u != 0u) {
         return;
       }

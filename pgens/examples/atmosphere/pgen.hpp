@@ -29,7 +29,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& /*metadomain*/)
       : arch::ProblemGenerator<S, M> { p } {}
   };
 

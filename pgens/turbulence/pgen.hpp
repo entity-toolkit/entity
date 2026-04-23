@@ -107,7 +107,7 @@ namespace user {
 #endif // MPI_ENABLED
       return new_seed;
     } else {
-      return static_cast<unsigned int>(seed);
+      return seed;
     }
   }
 
@@ -169,15 +169,20 @@ namespace user {
       auto k_host = Kokkos::create_mirror_view(k);
       if constexpr (D == Dim::_2D) {
         for (auto i = 0u; i < n_modes; i++) {
-          k_host(0, i) = constant::TWO_PI * wavenumbers[i][0] / Lx;
-          k_host(1, i) = constant::TWO_PI * wavenumbers[i][1] / Ly;
+          k_host(0, i) = static_cast<real_t>(constant::TWO_PI) *
+                         wavenumbers[i][0] / Lx;
+          k_host(1, i) = static_cast<real_t>(constant::TWO_PI) *
+                         wavenumbers[i][1] / Ly;
         }
       }
       if constexpr (D == Dim::_3D) {
         for (auto i = 0u; i < n_modes; i++) {
-          k_host(0, i) = constant::TWO_PI * wavenumbers[i][0] / Lx;
-          k_host(1, i) = constant::TWO_PI * wavenumbers[i][1] / Ly;
-          k_host(2, i) = constant::TWO_PI * wavenumbers[i][2] / Lz;
+          k_host(0, i) = static_cast<real_t>(constant::TWO_PI) *
+                         wavenumbers[i][0] / Lx;
+          k_host(1, i) = static_cast<real_t>(constant::TWO_PI) *
+                         wavenumbers[i][1] / Ly;
+          k_host(2, i) = static_cast<real_t>(constant::TWO_PI) *
+                         wavenumbers[i][2] / Lz;
         }
       }
       // initializing initial complex amplitudes
@@ -197,12 +202,13 @@ namespace user {
         auto k_perp = math::sqrt(
           k_host(0, i) * k_host(0, i) + k_host(1, i) * k_host(1, i));
         real_t phase = static_cast<real_t>(rand()) /
-                       static_cast<real_t>(RAND_MAX) * constant::TWO_PI;
+                       static_cast<real_t>(RAND_MAX) *
+                       static_cast<real_t>(constant::TWO_PI);
         A0_host(i)     = dB / math::sqrt((real_t)n_modes) / k_perp * prefac;
         a_real_host(i) = A0_host(i) * math::cos(phase);
         a_imag_host(i) = A0_host(i) * math::sin(phase);
         phase = static_cast<real_t>(rand()) / static_cast<real_t>(RAND_MAX) *
-                constant::TWO_PI;
+                static_cast<real_t>(constant::TWO_PI);
         a_imag_inv_host(i) = A0_host(i) * math::cos(phase);
         a_real_inv_host(i) = A0_host(i) * math::sin(phase);
       }
@@ -318,7 +324,7 @@ namespace user {
     ExternalCurrent<D> ext_current;
     InitFields<D>      init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , temperature { p.template get<real_t>("setup.temperature") }
       , dB { p.template get<real_t>("setup.dB", ONE) }
@@ -342,7 +348,7 @@ namespace user {
                     ext_current.a_real_inv,
                     ext_current.a_imag_inv } {};
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       arch::InjectUniformMaxwellian<S, M>(params, domain, ONE, temperature, { 1, 2 });
     }
 

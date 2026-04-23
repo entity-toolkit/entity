@@ -16,7 +16,7 @@
 
 #include <string>
 
-enum InitFieldGeometry {
+enum class InitFieldGeometry : uint8_t {
   Wald,
   Vertical,
 };
@@ -247,7 +247,7 @@ namespace user {
     InitFields<M, D>        init_flds;
     const Metadomain<S, M>& global_domain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { m }
       , init_flds { m.mesh().metric,

@@ -165,7 +165,7 @@ namespace user {
 
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, Metadomain<S, M>& m)
+    PGen(const SimulationParams& p, Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , bg_B { p.template get<real_t>("setup.bg_B", 1.0) }
       , bg_Bguide { p.template get<real_t>("setup.bg_Bguide", 0.0) }
@@ -186,8 +186,6 @@ namespace user {
       , metadomain { m }
       , init_flds { bg_B, bg_Bguide, cs_width, cs_y } {}
 
-    inline PGen() {}
-
     auto MatchFieldsInX1(simtime_t) const -> BoundaryFieldsInX1<D> {
       return BoundaryFieldsInX1<D> { bg_B,     bg_Bguide, (real_t)0.1,
                                      cs_width, cs_x,      cs_y };
@@ -197,7 +195,7 @@ namespace user {
       return BoundaryFieldsInX2<D> { bg_B, bg_Bguide, cs_width, cs_y };
     }
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    void InitPrtls(Domain<S, M>& local_domain) {
       // background
       arch::InjectUniformMaxwellian<S, M>(params,
                                           local_domain,

@@ -16,7 +16,7 @@
 namespace user {
   using namespace ntt;
 
-  enum class FieldGeometry {
+  enum class FieldGeometry : uint8_t {
     dipole,
     monopole
   };
@@ -104,7 +104,7 @@ namespace user {
     const std::string field_geom;
     InitFields<D>     init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
       : arch::ProblemGenerator<S, M>(p)
       , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
@@ -112,8 +112,6 @@ namespace user {
                 p.template get<real_t>("setup.period", ONE) }
       , field_geom { p.template get<std::string>("setup.field_geometry", "dipole") }
       , init_flds { Bsurf, Rstar, field_geom } {}
-
-    inline PGen() {}
 
     auto AtmFields(simtime_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega, field_geom };

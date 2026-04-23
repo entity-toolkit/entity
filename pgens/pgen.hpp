@@ -38,7 +38,7 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>&)
+    PGen(const SimulationParams& p, const Metadomain<S, M>&)
       : arch::ProblemGenerator<S, M> { p } {
       const auto message = fmt::format(
         "Problem generator initialized with `%s` engine and `%dD %s` metric",

@@ -50,10 +50,10 @@ namespace user {
     using arch::ProblemGenerator<S, M>::C;
     using arch::ProblemGenerator<S, M>::params;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& /*metadomain*/)
       : arch::ProblemGenerator<S, M> { p } {}
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto sdist = CustomSpatialDistribution<M::Dim> {};
       const auto edist = arch::Maxwellian<S, M> { domain.mesh.metric,
                                                   domain.random_pool(),

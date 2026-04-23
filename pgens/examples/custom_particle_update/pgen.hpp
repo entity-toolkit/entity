@@ -4,6 +4,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/problem_generator.h"
@@ -12,21 +14,18 @@
 
 #include <vector>
 
-/* -------------------------------------------------------------------------- */
-/* Local macros    (same as in particle_pusher_sr.hpp)                        */
-/* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 namespace user {
   using namespace ntt;
@@ -54,7 +53,7 @@ namespace user {
 
     const real_t temperature, temperature_gradient;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
       : arch::ProblemGenerator<S, M> { p }
       , global_domain { global_domain }
       , temperature { params.template get<real_t>("setup.temperature", 0.0) }
@@ -62,7 +61,7 @@ namespace user {
         params.template get<real_t>("setup.temperature_gradient", 0.0)
       } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    void InitPrtls(Domain<S, M>& local_domain) {
       const auto empty = std::vector<real_t> {};
       const auto x1_e  = params.template get<std::vector<real_t>>("setup.x1_e",
                                                                  empty);
@@ -229,7 +228,7 @@ namespace user {
     };
 
     template <class D>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const
+    auto CustomParticleUpdate(simtime_t /*time*/, spidx_t sp, D& domain) const
       -> CustomPrtlUpdate {
       return CustomPrtlUpdate {
         domain.random_pool(),
