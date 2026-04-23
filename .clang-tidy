@@ -1,0 +1,35 @@
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  clang-analyzer-*,
+  clang-diagnostic-*,
+  misc-include-cleaner,
+  misc-const-correctness,
+  misc-unused-parameters,
+  misc-unused-using-decls,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-slicing,
+  cppcoreguidelines-virtual-class-destructor,
+  cppcoreguidelines-prefer-member-initializer,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-default-member-init,
+  modernize-use-emplace,
+  modernize-loop-convert,
+  modernize-make-unique,
+  modernize-make-shared,
+  modernize-use-using,
+  readability-container-size-empty,
+  readability-redundant-*,
+  readability-simplify-boolean-expr,
+  readability-misleading-indentation,
+  readability-inconsistent-declaration-parameter-name,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions
+WarningsAsErrors: "*"
+HeaderFilterRegex: "src/.*"
+FormatStyle: file
+SystemHeaders: false
+CheckOptions:
+  misc-include-cleaner.IgnoreHeaders: 'adios2\.h;adios2/.*;Kokkos_.*\.hpp'
