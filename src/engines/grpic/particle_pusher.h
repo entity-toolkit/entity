@@ -1,3 +1,12 @@
+/**
+ * @file engines/grpic/particle_pusher.h
+ * @brief Particle pusher routines for the GRPIC engine
+ * @implements
+ *   - ntt::grpic::ParticlePush<> -> void
+ * @namespaces:
+ *   - ntt::grpic::
+ */
+
 #ifndef ENGINES_GRPIC_PARTICLE_PUSHER_H
 #define ENGINES_GRPIC_PARTICLE_PUSHER_H
 

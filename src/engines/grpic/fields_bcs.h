@@ -1,3 +1,17 @@
+/**
+ * @file engines/grpic/fields_bcs.h
+ * @brief Field boundary condition routines for the GRPIC engine
+ * @implements
+ *   - enum ntt::grpic::gr_bc
+ *   - ntt::grpic::MatchFieldsIn<> -> void
+ *   - ntt::grpic::HorizonFieldsIn<> -> void
+ *   - ntt::grpic::AxisFieldsIn<> -> void
+ *   - ntt::grpic::CustomFieldsIn<> -> void
+ *   - ntt::grpic::FieldBoundaries<> -> void
+ * @namespaces:
+ *   - ntt::grpic::
+ */
+
 #ifndef ENGINES_GRPIC_FIELDS_BCS_H
 #define ENGINES_GRPIC_FIELDS_BCS_H
 

@@ -1,3 +1,13 @@
+/**
+ * @file engines/grpic/currents.h
+ * @brief Current deposition and filtering routines for the GRPIC engine
+ * @implements
+ *   - ntt::grpic::CurrentsDeposit<> -> void
+ *   - ntt::grpic::CurrentsFilter<> -> void
+ * @namespaces:
+ *   - ntt::grpic::
+ */
+
 #ifndef ENGINES_GRPIC_CURRENTS_H
 #define ENGINES_GRPIC_CURRENTS_H
 

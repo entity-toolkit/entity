@@ -1,3 +1,21 @@
+/**
+ * @file engines/grpic/fieldsolvers.h
+ * @brief Field solver routines (Faraday, Ampere, auxiliary fields) for the GRPIC engine
+ * @implements
+ *   - enum ntt::grpic::gr_getE
+ *   - enum ntt::grpic::gr_getH
+ *   - enum ntt::grpic::gr_faraday
+ *   - enum ntt::grpic::gr_ampere
+ *   - ntt::grpic::range_with_axis_BCs<> -> auto
+ *   - ntt::grpic::ComputeAuxE<> -> void
+ *   - ntt::grpic::ComputeAuxH<> -> void
+ *   - ntt::grpic::Faraday<> -> void
+ *   - ntt::grpic::Ampere<> -> void
+ *   - ntt::grpic::AmpereCurrents<> -> void
+ * @namespaces:
+ *   - ntt::grpic::
+ */
+
 #ifndef ENGINES_GRPIC_FIELDSOLVERS_H
 #define ENGINES_GRPIC_FIELDSOLVERS_H
 

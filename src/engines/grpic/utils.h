@@ -1,3 +1,15 @@
+/**
+ * @file engines/grpic/utils.h
+ * @brief Utility functions used by the GRPIC engine
+ * @implements
+ *   - ntt::grpic::SwapFields<> -> void
+ *   - ntt::grpic::CopyFields<> -> void
+ *   - ntt::grpic::TimeAverageDB<> -> void
+ *   - ntt::grpic::TimeAverageJ<> -> void
+ * @namespaces:
+ *   - ntt::grpic::
+ */
+
 #ifndef ENGINES_GRPIC_UTILS_H
 #define ENGINES_GRPIC_UTILS_H
 

@@ -1,5 +1,5 @@
 /**
- * @file kernels/particle_pusher_gr.hpp
+ * @file kernels/pushers/gr.hpp
  * @brief Implementation of the particle pusher for GR
  * @implements
  *   - kernel::gr::Pusher_kernel<>
@@ -11,8 +11,8 @@
  *   - 3D implementation
  */
 
-#ifndef KERNELS_PARTICLE_PUSHER_GR_HPP
-#define KERNELS_PARTICLE_PUSHER_GR_HPP
+#ifndef KERNELS_PUSHERS_GR_HPP
+#define KERNELS_PUSHERS_GR_HPP
 
 #include "global.h"
 

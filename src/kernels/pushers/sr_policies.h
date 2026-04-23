@@ -1,5 +1,16 @@
-#ifndef KERNELS_PUSHERS_POLICIES_H
-#define KERNELS_PUSHERS_POLICIES_H
+/**
+ * @file kernels/pushers/sr_policies.h
+ * @brief Policy structs and factory functions for configuring SR particle pusher behavior
+ * @implements
+ *   - kernel::sr::PusherPolicy<>
+ *   - kernel::sr::MakePusherPolicyEmission<> -> auto
+ *   - kernel::sr::MakePusherPolicy<> -> void
+ * @namespaces:
+ *   - kernel::sr::
+ */
+
+#ifndef KERNELS_PUSHERS_SR_POLICIES_H
+#define KERNELS_PUSHERS_SR_POLICIES_H
 
 #include "enums.h"
 #include "global.h"
