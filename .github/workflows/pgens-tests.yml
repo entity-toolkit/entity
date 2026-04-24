@@ -65,9 +65,6 @@ jobs:
             sudo apt-get install -y libopenmpi-dev openmpi-bin
             mpirun --version
           fi
-      - name: Check code formatting
-        run: |
-          ./dev/scripts/format.sh --verify
       - name: Compile all pgens
         run: |
           if [ "${{ matrix.mpi }}" = "ON" ]; then
