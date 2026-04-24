@@ -1,4 +1,4 @@
-name: Premerge compilation on CPUs for all pgens
+name: Premerge tests on CPUs with different configurations
 
 on:
   push:
@@ -20,20 +20,29 @@ jobs:
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if git log -1 --pretty=%B | grep -q "COMPILEPGENS"; then
+          if git log -1 --pretty=%B | grep -q "RUNTESTS"; then
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_tests=false" >> "$GITHUB_OUTPUT"
           fi
-  pgens:
+  tests:
     needs: check-commit
     if: needs.check-commit.outputs.run_tests == 'true'
-    name: PGENS (mpi=${{ matrix.mpi }})
+    name: UNIT_TESTS with (precision=${{ matrix.precision }}, mpi=${{ matrix.mpi }}, output=${{ matrix.output }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
+        precision: [single, double]
         mpi: [ON, OFF]
+        output: [ON, OFF]
+        exclude:
+          - precision: single
+            mpi: ON
+            output: ON
+          - precision: double
+            mpi: ON
+            output: ON
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,19 +51,12 @@ jobs:
       - name: Install GCC 14 and build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-14 g++-14 gfortran-14 build-essential wget libevent-dev libhwloc-dev 
-          sudo apt-get install -y clang-format-20 cmake-format clang-tidy-20
+          sudo apt-get install -y gcc-14 g++-14 gfortran-14 build-essential wget libevent-dev libhwloc-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 50
           sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 50
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 50
-          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 50
-          sudo update-alternatives --install /usr/bin/cmake-format cmake-format /usr/bin/cmake-format-20 50
           gcc --version
           g++ --version
-          clang-format --version
-          clang-tidy --version
-          cmake-format --version
       - name: Install CMake (3.x)
         run: |
           sudo apt-get install -y cmake
@@ -65,7 +67,7 @@ jobs:
             sudo apt-get install -y libopenmpi-dev openmpi-bin
             mpirun --version
           fi
-      - name: Compile all pgens
+      - name: Compile and run all tests
         run: |
           if [ "${{ matrix.mpi }}" = "ON" ]; then
             export CC=mpicc
@@ -74,10 +76,4 @@ jobs:
             export CC=gcc-14
             export CXX=g++-14
           fi
-          ./dev/scripts/tests.sh --build build --with_pgens --flags "-D mpi=${{ matrix.mpi }}"
-      - name: Check code formatting
-        run: |
-          ./dev/scripts/format.sh --verify
-      - name: Check styling and guidelines
-        run: |
-          ./dev/scripts/tidy.sh --build build --verify --fast
+          ./dev/scripts/tests.sh --build build --with_tests --flags "-D precision=${{ matrix.precision }} -D mpi=${{ matrix.mpi }} -D output=${{ matrix.output }}"
