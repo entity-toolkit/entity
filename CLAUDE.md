@@ -72,7 +72,7 @@ The code is tested using the `./dev/scripts/tests.sh` script which compiles all 
 Example:
 
 ```sh
-./dev/scripts/tests.sh --build build_dir --flags "-D mpi=ON"
+./dev/scripts/tests.sh --build build_dir --flags "-D mpi=ON" --with_pgens --with_tests
 ```
 
 All the unit tests are inside the `tests/` directory each within the respective subdirectory; e.g., tests for `src/kernels` are in `tests/kernels`. When testing, build the tests both with and without MPI and, ideally, with and without GPU (when available).
