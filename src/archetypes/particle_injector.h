@@ -199,7 +199,7 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -309,7 +309,7 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2, SpatialDistClass SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,

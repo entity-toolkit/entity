@@ -212,10 +212,9 @@ namespace user {
       const auto cs_temperature = HALF * sigma / cs_overdensity;
 
       // current layer
-      auto       edist_cs = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                             local_domain.random_pool(),
-                                             cs_temperature,
-                                                   { ZERO, ZERO, cs_drift_u });
+      auto edist_cs = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        local_domain.random_pool(),
+        cs_temperature);
       const auto sdist_cs = CurrentLayer<S, M>(local_domain.mesh.metric,
                                                cs_width,
                                                cs_x,
@@ -239,9 +238,9 @@ namespace user {
         metadomain.setPrtlBC(bc_in::Px1, PrtlBC::ABSORB);
       }
 
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool(),
-                                                      bg_temperature);
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        domain.random_pool(),
+        bg_temperature);
 
       const auto dx = domain.mesh.metric.template sqrt_h_<1, 1>({});
 

@@ -2,17 +2,11 @@
  * @file archetypes/energy_dist.h
  * @brief Defines an archetype for energy distributions
  * @implements
- *   - arch::EnergyDistribution<>
- *   - arch::Cold<> : arch::EnergyDistribution<>
- *   - arch::Powerlaw<> : arch::EnergyDistribution<>
- *   - arch::Maxwellian<> : arch::EnergyDistribution<>
+ *   - arch::energy_dist::Cold<>
+ *   - arch::energy_dist::Powerlaw<>
+ *   - arch::energy_dist::Maxwellian<>
  * @namespaces:
- *   - arch::
- * @note
- * The class returns a random velocity according to a coded distribution
- * For Cartesian: the returned velocity is in the global Cartesian basis
- * For non-Cartesian SR: the returned velocity is in the tetrad basis
- * For GR: the returned velocity is in the covariant basis
+ *   - arch::energy_dist::
  */
 
 #ifndef ARCHETYPES_ENERGY_DIST_HPP
@@ -22,7 +16,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -30,24 +23,12 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
-namespace arch {
+namespace arch::energy_dist {
   using namespace ntt;
 
-  template <SimEngine::type S, MetricClass M>
-  struct EnergyDistribution {
-    static constexpr auto D = M::Dim;
-
-    EnergyDistribution(const M& metric) : metric { metric } {}
-
-  protected:
-    const M metric;
-  };
-
-  template <SimEngine::type S, MetricClass M>
-  struct Cold : public EnergyDistribution<S, M> {
-    Cold(const M& metric) : EnergyDistribution<S, M> { metric } {}
-
-    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
+  template <Dimension D>
+  struct Cold {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& v) const {
 
       v[0] = ZERO;
       v[1] = ZERO;
@@ -55,22 +36,16 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, MetricClass M>
-  struct Powerlaw : public EnergyDistribution<S, M> {
-    using EnergyDistribution<S, M>::metric;
+  template <Dimension D>
+  struct Powerlaw {
 
-    Powerlaw(const M&              metric,
-             random_number_pool_t& pool,
-             real_t                g_min,
-             real_t                g_max,
-             real_t                pl_ind)
-      : EnergyDistribution<S, M> { metric }
-      , g_min { g_min }
+    Powerlaw(random_number_pool_t& pool, real_t g_min, real_t g_max, real_t pl_ind)
+      : g_min { g_min }
       , g_max { g_max }
       , pl_ind { pl_ind }
       , pool { pool } {}
 
-    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& v) const {
       auto rand_gen = pool.get_state();
       auto rand_X1  = Random<real_t>(rand_gen);
       auto rand_gam = ONE;
@@ -159,7 +134,7 @@ namespace arch {
     pool.free_state(rand_gen);
   }
 
-  template <SimEngine::type S, bool CanBoost>
+  template <bool CanBoost>
   Inline void SampleFromMaxwellian(vec_t<Dim::_3D>&            v,
                                    const random_number_pool_t& pool,
                                    real_t                      temperature,
@@ -198,16 +173,12 @@ namespace arch {
     }
   }
 
-  template <SimEngine::type S, MetricClass M>
-  struct Maxwellian : public EnergyDistribution<S, M> {
-    using EnergyDistribution<S, M>::metric;
-
-    Maxwellian(const M&                   metric,
-               random_number_pool_t&      pool,
+  template <Dimension D, Coord::type C>
+  struct Maxwellian {
+    Maxwellian(random_number_pool_t&      pool,
                real_t                     temperature,
                const std::vector<real_t>& drift_four_vel = { ZERO, ZERO, ZERO })
-      : EnergyDistribution<S, M> { metric }
-      , pool { pool }
+      : pool { pool }
       , temperature { temperature } {
       raise::ErrorIf(drift_four_vel.size() != 3,
                      "Maxwellian: Drift velocity must be a 3D vector",
@@ -215,7 +186,7 @@ namespace arch {
       raise::ErrorIf(temperature < ZERO,
                      "Maxwellian: Temperature must be non-negative",
                      HERE);
-      if constexpr (M::CoordType == Coord::Cartesian) {
+      if constexpr (C == Coord::Cartesian) {
         drift_4vel = NORM(drift_four_vel[0], drift_four_vel[1], drift_four_vel[2]);
         if (cmp::AlmostZero_host(drift_4vel)) {
           drift_dir = 0;
@@ -242,13 +213,13 @@ namespace arch {
                        "Maxwellian: Incorrect drift direction",
                        HERE);
         raise::ErrorIf(
-          drift_dir != 0 and (M::CoordType != Coord::Cartesian),
+          drift_dir != 0 and (C != Coord::Cartesian),
           "Maxwellian: Boosting is only supported in Cartesian coordinates",
           HERE);
       }
     }
 
-    Inline void operator()(const coord_t<M::Dim>&, vec_t<Dim::_3D>& v) const {
+    Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& v) const {
       if (cmp::AlmostZero(temperature)) {
         v[0] = ZERO;
         v[1] = ZERO;
@@ -257,7 +228,7 @@ namespace arch {
         JuttnerSinge(v, temperature, pool);
       }
       // @note: boost only when using cartesian coordinates
-      if constexpr (M::CoordType == Coord::Cartesian) {
+      if constexpr (C == Coord::Cartesian) {
         if (drift_dir != 0) {
           // Boost an isotropic Maxwellian with a drift velocity using
           // flipping method https://arxiv.org/pdf/1504.03910.pdf
@@ -320,6 +291,6 @@ namespace arch {
     short drift_dir { 0 };
   };
 
-} // namespace arch
+} // namespace arch::energy_dist
 
 #endif // ARCHETYPES_ENERGY_DIST_HPP

@@ -143,8 +143,7 @@ namespace user {
                                                          domain,
                                                          { 1u, 2u },
                                                          domain.fields.buff);
-      const auto energy_dist = arch::Maxwellian<S, M>(
-        domain.mesh.metric,
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
         domain.random_pool(),
         temperature,                // <-- target temperature for injection
         { drift_vel, ZERO, ZERO }); // <-- drift 4-velocity

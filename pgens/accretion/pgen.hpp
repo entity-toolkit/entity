@@ -233,9 +233,9 @@ namespace user {
       , metadomain { &m } {}
 
     void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool(),
-                                                      temperature);
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        local_domain.random_pool(),
+        temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,
                                                         sigma_max / sigma0,
@@ -254,9 +254,9 @@ namespace user {
     }
 
     void CustomPostStep(std::size_t, long double /*time*/, Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool(),
-                                                      temperature);
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        local_domain.random_pool(),
+        temperature);
       const auto spatial_dist = PointDistribution<S, M>(xi_min,
                                                         xi_max,
                                                         sigma_max / sigma0,

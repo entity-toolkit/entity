@@ -405,9 +405,9 @@ namespace user {
         });
 
       // particle escape (resample velocities)
-      const auto energy_dist = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                      domain.random_pool(),
-                                                      temperature);
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        domain.random_pool(),
+        temperature);
       for (const auto& sp : { 0, 1 }) {
         if (domain.species[sp].npld_r() > 1) {
           const auto& ux1   = domain.species[sp].ux1;

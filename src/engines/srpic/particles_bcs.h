@@ -109,8 +109,7 @@ namespace ntt {
         metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
       }
 
-      const auto maxwellian = arch::Maxwellian<SimEngine::SRPIC, M> {
-        domain.mesh.metric,
+      const auto maxwellian = arch::energy_dist::Maxwellian<M::Dim, M::CoordType> {
         domain.random_pool(),
         temp
       };

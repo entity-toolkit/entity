@@ -161,7 +161,7 @@ namespace user {
 
         // Reflecting boundary that resamples velocity
         if (x_Ph < xmin) {
-          arch::JuttnerSinge(v, temp_cold, pool);
+          arch::energy_dist::JuttnerSinge(v, temp_cold, pool);
 
           // calculate the time for the particle to reach the wall
           const int      delta_i1_to_wall  = particles.i1_prev(p);
@@ -193,7 +193,7 @@ namespace user {
                              remaining_dt_inv_energy;
 
         } else if (x_Ph > xmax) {
-          arch::JuttnerSinge(v, temp_hot, pool);
+          arch::energy_dist::JuttnerSinge(v, temp_hot, pool);
 
           // step 2: calculate the time for the particle to reach the piston
           const int      delta_i1_to_wall  = ctx.ni1 - 1 - particles.i1_prev(p);

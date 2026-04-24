@@ -55,9 +55,9 @@ namespace user {
 
     void InitPrtls(Domain<S, M>& domain) {
       const auto sdist = CustomSpatialDistribution<M::Dim> {};
-      const auto edist = arch::Maxwellian<S, M> { domain.mesh.metric,
-                                                  domain.random_pool(),
-                                                  static_cast<real_t>(0.1) };
+      const auto edist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        domain.random_pool(),
+        static_cast<real_t>(0.1));
 
       // distributions are then passed to the nonuniform particle injector
       // function (same energy distribution is used for both species)

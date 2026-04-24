@@ -79,7 +79,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
   struct UniformInjector_kernel {
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
@@ -519,7 +519,7 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2, SpatialDistClass SD>
   struct NonUniformInjector_kernel {
 
     const real_t ppc0;

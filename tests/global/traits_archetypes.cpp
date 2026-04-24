@@ -16,8 +16,8 @@ struct ValidEnrgDist {
   void operator()(const coord_t<Dimension::_2D>&, vec_t<Dim::_3D>&) const {}
 };
 
-struct NoD_EnrgDist {
-  void operator()(const coord_t<Dimension::_2D>&, vec_t<Dim::_3D>&) const {}
+struct WrongD_EnrgDist {
+  void operator()(const coord_t<Dimension::_3D>&, vec_t<Dim::_3D>&) const {}
 };
 
 struct WrongReturn_EnrgDist {
@@ -28,9 +28,9 @@ struct WrongReturn_EnrgDist {
   }
 };
 
-static_assert(EnrgDistClass<ValidEnrgDist>);
-static_assert(not EnrgDistClass<NoD_EnrgDist>);
-static_assert(not EnrgDistClass<WrongReturn_EnrgDist>);
+static_assert(EnrgDistClass<ValidEnrgDist, Dimension::_2D>);
+static_assert(not EnrgDistClass<WrongD_EnrgDist, Dimension::_2D>);
+static_assert(not EnrgDistClass<WrongReturn_EnrgDist, Dimension::_2D>);
 
 // --- SpatialDistClass ---
 

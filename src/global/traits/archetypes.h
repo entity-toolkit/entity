@@ -26,10 +26,10 @@
 
 #include <Kokkos_Pair.hpp>
 
-template <class ED>
-concept EnrgDistClass = requires(const ED&             edist,
-                                 const coord_t<ED::D>& x_Ph,
-                                 vec_t<Dim::_3D>&      v) {
+template <class ED, Dimension D>
+concept EnrgDistClass = requires(const ED&         edist,
+                                 const coord_t<D>& x_Ph,
+                                 vec_t<Dim::_3D>&  v) {
   { edist(x_Ph, v) } -> std::same_as<void>;
 };
 

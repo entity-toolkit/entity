@@ -114,8 +114,7 @@ namespace user {
         Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
       }
 
-      const auto energy_dist = arch::Maxwellian<S, M>(
-        domain.mesh.metric,
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
         domain.random_pool(),
         0.2); // <-- target temperature for injection
       if (target_density == "uniform") {

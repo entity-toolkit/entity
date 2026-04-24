@@ -68,9 +68,9 @@ void testEnergyDist(const std::vector<std::size_t>&      res,
 
   M metric { res, extent, params };
 
-  random_number_pool_t pool { constant::RandomSeed };
-  Maxwellian<S, M>     maxw { metric, pool, ONE };
-  Kokkos::parallel_for("Maxwellian", 100, Caller<Maxwellian<S, M>, M::Dim>(maxw));
+  random_number_pool_t                          pool { constant::RandomSeed };
+  energy_dist::Maxwellian<M::Dim, M::CoordType> maxw { pool, ONE };
+  Kokkos::parallel_for("Maxwellian", 100, Caller<decltype(maxw), M::Dim>(maxw));
 }
 
 auto main(int argc, char* argv[]) -> int {

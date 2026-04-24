@@ -33,7 +33,7 @@ namespace user {
     Inline void operator()(const coord_t<D>& x_Ph, vec_t<Dim::_3D>& v) const {
       // sample a static 3D maxwellian + drift in x1 direction with sinusoidal spatial dependence
       // @NOTE: for relativistic drift, use the built-in drifting Maxwellian
-      arch::JuttnerSinge(v, temperature, random_pool);
+      arch::energy_dist::JuttnerSinge(v, temperature, random_pool);
       v[0] += drift_amplitude * math::sin(x_Ph[0] * kx);
     }
 
