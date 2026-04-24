@@ -2,12 +2,11 @@
  * @file archetypes/spatial_dist.h
  * @brief Spatial distribution class passed to injectors
  * @implements
- *   - arch::SpatialDistribution<>
- *   - arch::Uniform<> : arch::SpatialDistribution<>
- *   - arch::Replenish<> : arch::SpatialDistribution<>
- *   - arch::ReplenishUniform<> : arch::SpatialDistribution<>
+ *   - arch::spatial_dist::Uniform<>
+ *   - arch::spatial_dist::Replenish<>
+ *   - arch::spatial_dist::ReplenishUniform<>
  * @namespaces:
- *   - arch::
+ *   - arch::spatial_dist::
  * @note
  * Instances of these functors take coordinate position in code units
  * and return a number between 0 and 1 that represents the spatial distribution
@@ -16,7 +15,6 @@
 #ifndef ARCHETYPES_SPATIAL_DIST_HPP
 #define ARCHETYPES_SPATIAL_DIST_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -24,31 +22,21 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-namespace arch {
+namespace arch::spatial_dist {
   using namespace ntt;
 
-  template <SimEngine::type S, MetricClass M>
-  struct SpatialDistribution {
-    static constexpr auto D = M::Dim;
+  template <Dimension D>
+  struct Uniform {
 
-    SpatialDistribution(const M& metric) : metric { metric } {}
-
-  protected:
-    const M metric;
-  };
-
-  template <SimEngine::type S, MetricClass M>
-  struct Uniform : public SpatialDistribution<S, M> {
-    Uniform(const M& metric) : SpatialDistribution<S, M> { metric } {}
-
-    Inline auto operator()(const coord_t<M::Dim>&) const -> real_t {
+    Inline auto operator()(const coord_t<D>&) const -> real_t {
       return ONE;
     }
   };
 
-  template <SimEngine::type S, MetricClass M, int N, class T>
-  struct Replenish : public SpatialDistribution<S, M> {
-    using SpatialDistribution<S, M>::metric;
+  template <MetricClass M, int N, class T>
+  struct Replenish {
+    const M metric;
+
     const ndfield_t<M::Dim, N> density;
     const idx_t                idx;
 
@@ -60,7 +48,7 @@ namespace arch {
               idx_t                       idx,
               const T&                    target_density,
               real_t                      target_max_density)
-      : SpatialDistribution<S, M> { metric }
+      : metric { metric }
       , density { density }
       , idx { idx }
       , target_density { target_density }
@@ -93,9 +81,9 @@ namespace arch {
     }
   };
 
-  template <SimEngine::type S, MetricClass M, int N>
-  struct ReplenishUniform : public SpatialDistribution<S, M> {
-    using SpatialDistribution<S, M>::metric;
+  template <MetricClass M, int N>
+  struct ReplenishUniform {
+    const M                    metric;
     const ndfield_t<M::Dim, N> density;
     const idx_t                idx;
 
@@ -105,7 +93,7 @@ namespace arch {
                      const ndfield_t<M::Dim, N>& density,
                      idx_t                       idx,
                      real_t                      target_density)
-      : SpatialDistribution<S, M> { metric }
+      : metric { metric }
       , density { density }
       , idx { idx }
       , target_density { target_density } {}
@@ -136,6 +124,6 @@ namespace arch {
     }
   };
 
-} // namespace arch
+} // namespace arch::spatial_dist
 
 #endif // ARCHETYPES_SPATIAL_DIST_HPP

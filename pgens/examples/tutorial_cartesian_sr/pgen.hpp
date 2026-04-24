@@ -149,7 +149,7 @@ namespace user {
         { drift_vel, ZERO, ZERO }); // <-- drift 4-velocity
 
       // pass the computed density to the replenisher
-      const auto replenish_sdist = arch::ReplenishUniform<S, M, 3>(
+      const auto replenish_sdist = arch::spatial_dist::ReplenishUniform<M, 3>(
         domain.mesh.metric,
         domain.fields.buff,
         0u,   // <-- index in buff where the density is stored

@@ -114,180 +114,43 @@ namespace ntt {
         temp
       };
 
+      auto do_inject = [&]<bool P, in O>() {
+        auto target_density =
+          arch::AtmosphereDensityProfile<M::Dim, M::CoordType, P, O> { nmax,
+                                                                       height,
+                                                                       x_surf,
+                                                                       ds };
+        const auto spatial_dist =
+          arch::spatial_dist::Replenish<M, 6, decltype(target_density)> {
+            domain.mesh.metric,
+            domain.fields.bckp,
+            0,
+            target_density,
+            nmax
+          };
+        arch::InjectNonUniform<SimEngine::SRPIC,
+                               M,
+                               decltype(maxwellian),
+                               decltype(maxwellian),
+                               decltype(spatial_dist)>(
+          params,
+          domain,
+          { species.first, species.second },
+          { maxwellian, maxwellian },
+          spatial_dist,
+          nmax,
+          use_weights);
+      };
+
       if (dim == in::x1) {
-        if (sign > 0) {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, true, in::x1> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        } else {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, false, in::x1> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        }
+        sign > 0 ? do_inject.template operator()<true, in::x1>()
+                 : do_inject.template operator()<false, in::x1>();
       } else if (dim == in::x2) {
-        if (sign > 0) {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, true, in::x2> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        } else {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, false, in::x2> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        }
+        sign > 0 ? do_inject.template operator()<true, in::x2>()
+                 : do_inject.template operator()<false, in::x2>();
       } else if (dim == in::x3) {
-        if (sign > 0) {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, true, in::x3> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        } else {
-          auto target_density =
-            arch::AtmosphereDensityProfile<M::Dim, M::CoordType, false, in::x3> {
-              nmax,
-              height,
-              x_surf,
-              ds
-            };
-          const auto spatial_dist =
-            arch::Replenish<SimEngine::SRPIC, M, 6, decltype(target_density)> {
-              domain.mesh.metric,
-              domain.fields.bckp,
-              0,
-              target_density,
-              nmax
-            };
-          arch::InjectNonUniform<SimEngine::SRPIC,
-                                 M,
-                                 decltype(maxwellian),
-                                 decltype(maxwellian),
-                                 decltype(spatial_dist)>(
-            params,
-            domain,
-            { species.first, species.second },
-            { maxwellian, maxwellian },
-            spatial_dist,
-            nmax,
-            use_weights);
-        }
+        sign > 0 ? do_inject.template operator()<true, in::x3>()
+                 : do_inject.template operator()<false, in::x3>();
       } else {
         raise::Error("Invalid dimension", HERE);
       }

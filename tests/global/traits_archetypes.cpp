@@ -11,8 +11,6 @@ using namespace ntt;
 // --- EnrgDistClass ---
 
 struct ValidEnrgDist {
-  static constexpr Dimension D { Dimension::_2D };
-
   void operator()(const coord_t<Dimension::_2D>&, vec_t<Dim::_3D>&) const {}
 };
 
@@ -21,8 +19,6 @@ struct WrongD_EnrgDist {
 };
 
 struct WrongReturn_EnrgDist {
-  static constexpr Dimension D { Dimension::_2D };
-
   int operator()(const coord_t<Dimension::_2D>&, vec_t<Dim::_3D>&) const {
     return 0;
   }
@@ -35,30 +31,26 @@ static_assert(not EnrgDistClass<WrongReturn_EnrgDist, Dimension::_2D>);
 // --- SpatialDistClass ---
 
 struct ValidSpatialDist {
-  static constexpr Dimension D { Dimension::_1D };
-
   real_t operator()(const coord_t<Dimension::_1D>&) const {
     return ZERO;
   }
 };
 
-struct NoD_SpatialDist {
-  real_t operator()(const coord_t<Dimension::_1D>&) const {
+struct WrongD_SpatialDist {
+  real_t operator()(const coord_t<Dimension::_3D>&) const {
     return ZERO;
   }
 };
 
 struct WrongArg_SpatialDist {
-  static constexpr Dimension D { Dimension::_1D };
-
   real_t operator()(real_t) const {
     return ZERO;
   }
 };
 
-static_assert(SpatialDistClass<ValidSpatialDist>);
-static_assert(not SpatialDistClass<NoD_SpatialDist>);
-static_assert(not SpatialDistClass<WrongArg_SpatialDist>);
+static_assert(SpatialDistClass<ValidSpatialDist, Dimension::_1D>);
+static_assert(not SpatialDistClass<WrongD_SpatialDist, Dimension::_2D>);
+static_assert(not SpatialDistClass<WrongArg_SpatialDist, Dimension::_1D>);
 
 // --- Individual field component traits ---
 

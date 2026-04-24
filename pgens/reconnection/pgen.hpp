@@ -19,15 +19,14 @@
 namespace user {
   using namespace ntt;
 
-  template <SimEngine::type S, class M>
-  struct CurrentLayer : public arch::SpatialDistribution<S, M> {
-    CurrentLayer(const M& metric, real_t cs_width, real_t center_x, real_t cs_y)
-      : arch::SpatialDistribution<S, M> { metric }
-      , cs_width { cs_width }
+  template <Dimension D>
+  struct CurrentLayer {
+    CurrentLayer(real_t cs_width, real_t center_x, real_t cs_y)
+      : cs_width { cs_width }
       , center_x { center_x }
       , cs_y { cs_y } {}
 
-    Inline auto operator()(const coord_t<M::Dim>& x_Ph) const -> real_t {
+    Inline auto operator()(const coord_t<D>& x_Ph) const -> real_t {
       return ONE / SQR(math::cosh((x_Ph[1] - cs_y) / cs_width)) *
              (ONE - math::exp(-SQR((x_Ph[0] - center_x) / cs_width)));
     }
@@ -215,10 +214,7 @@ namespace user {
       auto edist_cs = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
         local_domain.random_pool(),
         cs_temperature);
-      const auto sdist_cs = CurrentLayer<S, M>(local_domain.mesh.metric,
-                                               cs_width,
-                                               cs_x,
-                                               cs_y);
+      const auto sdist_cs = CurrentLayer<M::Dim>(cs_width, cs_x, cs_y);
       arch::InjectNonUniform<S, M, decltype(edist_cs), decltype(edist_cs), decltype(sdist_cs)>(
         params,
         local_domain,
@@ -285,7 +281,7 @@ namespace user {
         Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
       }
 
-      const auto replenish_sdist = arch::ReplenishUniform<S, M, 3>(
+      const auto replenish_sdist = arch::spatial_dist::ReplenishUniform<M, 3>(
         domain.mesh.metric,
         domain.fields.buff,
         0u,

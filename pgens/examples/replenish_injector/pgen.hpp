@@ -119,7 +119,7 @@ namespace user {
         0.2); // <-- target temperature for injection
       if (target_density == "uniform") {
         // pass the computed density to the replenisher
-        const auto replenish_sdist = arch::ReplenishUniform<S, M, 3>(
+        const auto replenish_sdist = arch::spatial_dist::ReplenishUniform<M, 3>(
           domain.mesh.metric,
           domain.fields.buff,
           0u,   // <-- index in buff where the density is stored
@@ -134,7 +134,7 @@ namespace user {
       } else {
         const auto target_density_profile = NonUniformTargetDensity<D> {};
         const auto replenish_sdist =
-          arch::Replenish<S, M, 3, decltype(target_density_profile)>(
+          arch::spatial_dist::Replenish<M, 3, decltype(target_density_profile)>(
             domain.mesh.metric,
             domain.fields.buff,
             0u, // <-- index in buff where the density is stored

@@ -519,7 +519,11 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2, SpatialDistClass SD>
+  template <SimEngine::type          S,
+            MetricClass              M,
+            EnrgDistClass<M::Dim>    ED1,
+            EnrgDistClass<M::Dim>    ED2,
+            SpatialDistClass<M::Dim> SD>
   struct NonUniformInjector_kernel {
 
     const real_t ppc0;

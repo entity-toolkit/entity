@@ -33,8 +33,8 @@ concept EnrgDistClass = requires(const ED&         edist,
   { edist(x_Ph, v) } -> std::same_as<void>;
 };
 
-template <class SD>
-concept SpatialDistClass = requires(const SD& sdist, const coord_t<SD::D>& x_Ph) {
+template <class SD, Dimension D>
+concept SpatialDistClass = requires(const SD& sdist, const coord_t<D>& x_Ph) {
   { sdist(x_Ph) } -> std::convertible_to<real_t>;
 };
 
