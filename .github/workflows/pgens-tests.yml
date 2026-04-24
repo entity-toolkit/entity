@@ -48,8 +48,8 @@ jobs:
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 50
           sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 50
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 50
-          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 50
+          sudo ln -sf /usr/bin/clang-format-20 /usr/bin/clang-format
+          sudo ln -sf /usr/bin/clang-tidy-20 /usr/bin/clang-tidy
           gcc --version
           g++ --version
           clang-format --version
