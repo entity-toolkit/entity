@@ -43,13 +43,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-14 g++-14 gfortran-14 build-essential wget libevent-dev libhwloc-dev 
-          sudo apt-get install -y clang-format-20 cmake-format clang-tidy-20
+          sudo apt-get install -y clang-format-20 clang-tidy-20
+          pip3 install cmake-format --break-system-packages
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 50
           sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 50
           sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-20 50
           sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-20 50
-          sudo update-alternatives --install /usr/bin/cmake-format cmake-format /usr/bin/cmake-format-20 50
           gcc --version
           g++ --version
           clang-format --version
@@ -65,6 +65,9 @@ jobs:
             sudo apt-get install -y libopenmpi-dev openmpi-bin
             mpirun --version
           fi
+      - name: Check code formatting
+        run: |
+          ./dev/scripts/format.sh --verify
       - name: Compile all pgens
         run: |
           if [ "${{ matrix.mpi }}" = "ON" ]; then
@@ -75,9 +78,6 @@ jobs:
             export CXX=g++-14
           fi
           ./dev/scripts/tests.sh --build build --with_pgens --flags "-D mpi=${{ matrix.mpi }}"
-      - name: Check code formatting
-        run: |
-          ./dev/scripts/format.sh --verify
       - name: Check styling and guidelines
         run: |
           ./dev/scripts/tidy.sh --build build --verify --fast
