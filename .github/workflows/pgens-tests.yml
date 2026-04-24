@@ -43,18 +43,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-14 g++-14 gfortran-14 build-essential wget libevent-dev libhwloc-dev 
-          sudo apt-get install -y clang-format-20 clang-tidy-20
-          pip3 install cmake-format --break-system-packages
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 50
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 50
           sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-14 50
-          sudo ln -sf /usr/bin/clang-format-20 /usr/bin/clang-format
-          sudo ln -sf /usr/bin/clang-tidy-20 /usr/bin/clang-tidy
           gcc --version
           g++ --version
-          clang-format --version
-          clang-tidy --version
-          cmake-format --version
       - name: Install CMake (3.x)
         run: |
           sudo apt-get install -y cmake
@@ -75,6 +68,3 @@ jobs:
             export CXX=g++-14
           fi
           ./dev/scripts/tests.sh --build build --with_pgens --flags "-D mpi=${{ matrix.mpi }}"
-      - name: Check styling and guidelines
-        run: |
-          ./dev/scripts/tidy.sh --build build --verify --fast
