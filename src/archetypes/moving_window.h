@@ -13,12 +13,8 @@
 #include "enums.h"
 #include "global.h"
 
-#include "archetypes/energy_dist.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "framework/parameters/parameters.h"
-
-#include <utility>
 
 namespace arch {
 
@@ -141,9 +137,9 @@ namespace arch {
 
    */
   template <SimEngine::type S, CartesianMetricClass M, in o>
-  Inline void MoveWindow(Domain<S, M>&     domain,
-                         Metadomain<S, M>& global_domain,
-                         const int         window_shift) {
+  Inline void MoveWindow(Domain<S, M>&           domain,
+                         const Metadomain<S, M>& metadomain,
+                         int                     window_shift) {
 
     /*
       move particles in the window back by the window size
@@ -271,9 +267,9 @@ namespace arch {
     }
 
     // synch ghost zones after moving the window
-    global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+    metadomain.CommunicateFields(domain, Comm::E | Comm::B);
     // communicate particles after moving
-    global_domain.CommunicateParticles(domain);
+    metadomain.CommunicateParticles(domain);
 
     // ToDo: Update metric
   }
