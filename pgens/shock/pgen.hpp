@@ -9,7 +9,6 @@
 #include "utils/numeric.h"
 
 #include "archetypes/field_setter.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
@@ -67,7 +66,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -78,13 +78,8 @@ namespace user {
     static constexpr auto dimensions {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
-
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
-    Metadomain<S, M>& global_domain;
+    const SimulationParams& params;
+    Metadomain<S, M>&       metadomain;
 
     // domain properties
     const real_t  global_xmin, global_xmax;
@@ -97,23 +92,29 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain }
-      , global_xmin { global_domain.mesh().extent(in::x1).first }
-      , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , drift_ux { p.template get<real_t>("setup.drift_ux") }
-      , temperature { p.template get<real_t>("setup.temperature") }
-      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
-      , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
-      , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
-      , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
+    PGen(const SimulationParams& p, Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m }
+      , global_xmin { metadomain.mesh().extent(in::x1).first }
+      , global_xmax { metadomain.mesh().extent(in::x1).second }
+      , drift_ux { params.template get<real_t>("setup.drift_ux") }
+      , temperature { params.template get<real_t>("setup.temperature") }
+      , temperature_ratio { params.template get<real_t>(
+          "setup.temperature_ratio") }
+      , Bmag { params.template get<real_t>("setup.Bmag", ZERO) }
+      , Btheta { params.template get<real_t>("setup.Btheta", ZERO) }
+      , Bphi { params.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
-      , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
-      , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
-      , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
-      , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
-      , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
+      , filling_fraction { params.template get<real_t>("setup.filling_fraction",
+                                                       1.0) }
+      , injector_velocity { params.template get<real_t>(
+          "setup.injector_velocity",
+          1.0) }
+      , injection_start { params.template get<real_t>("setup.injection_start", 0.0) }
+      , injection_frequency { params.template get<int>(
+          "setup.injection_frequency",
+          100) }
+      , dt { params.template get<real_t>("algorithms.timestep.dt") } {}
 
     auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
@@ -258,7 +259,7 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
-      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+      metadomain.CommunicateFields(domain, Comm::E | Comm::B);
 
       /*
         tag particles inside the injection zone as dead

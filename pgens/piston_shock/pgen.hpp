@@ -7,7 +7,6 @@
 #include "traits/pgen.h"
 
 #include "archetypes/piston.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -18,8 +17,8 @@ namespace user {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -31,12 +30,8 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
-    const Metadomain<S, M>& global_domain;
+    const SimulationParams& params;
+    const Metadomain<S, M>& metadomain;
 
     // domain properties
     const real_t global_xmin, global_xmax;
@@ -46,11 +41,11 @@ namespace user {
     // piston properties
     const real_t piston_velocity, piston_initial_position;
 
-    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain }
-      , global_xmin { global_domain.mesh().extent(in::x1).first }
-      , global_xmax { global_domain.mesh().extent(in::x1).second }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m }
+      , global_xmin { metadomain.mesh().extent(in::x1).first }
+      , global_xmax { metadomain.mesh().extent(in::x1).second }
       , piston_velocity { p.template get<real_t>("setup.piston_velocity", 0.0) }
       , piston_initial_position { p.template get<real_t>(
           "setup.piston_initial_position",
@@ -138,7 +133,7 @@ namespace user {
       return CustomPrtlUpdate { piston_initial_position +
                                   static_cast<real_t>(time) * piston_velocity,
                                 piston_velocity,
-                                global_domain.mesh().extent(in::x1).second,
+                                metadomain.mesh().extent(in::x1).second,
                                 true,
                                 true };
     };

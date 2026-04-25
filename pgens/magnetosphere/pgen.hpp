@@ -8,8 +8,8 @@
 #include "traits/pgen.h"
 #include "utils/numeric.h"
 
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 #include <string>
 
@@ -85,7 +85,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -95,18 +96,12 @@ namespace user {
     };
     static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
     const real_t      Bsurf, Rstar, Omega;
     const std::string field_geom;
     InitFields<D>     init_flds;
 
     PGen(const SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
+      : Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
       , Omega { static_cast<real_t>(constant::TWO_PI) /
                 p.template get<real_t>("setup.period", ONE) }

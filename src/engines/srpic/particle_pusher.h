@@ -26,10 +26,12 @@
 #include "kernels/pushers/sr.hpp"
 #include "kernels/pushers/sr_policies.h"
 
+#include "engines/engine.hpp"
+
 namespace ntt {
   namespace srpic {
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void ParticlePush(Domain<SimEngine::SRPIC, M>& domain,
                       const Grid<M::Dim>&          global_grid,
                       const M&                     global_metric,

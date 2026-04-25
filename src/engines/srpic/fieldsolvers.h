@@ -28,6 +28,8 @@
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"
 
+#include "engines/engine.hpp"
+
 namespace ntt {
   namespace srpic {
 
@@ -137,7 +139,7 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void CurrentsAmpere(Domain<SimEngine::SRPIC, M>& domain,
                         const prm::Parameters&       engine_params,
                         const SimulationParams&      params,

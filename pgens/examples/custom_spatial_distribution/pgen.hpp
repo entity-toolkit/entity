@@ -8,7 +8,6 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -34,8 +33,7 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
@@ -45,13 +43,10 @@ namespace user {
     static constexpr auto dimensions {
       ::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
-
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
     PGen(const SimulationParams& p, const Metadomain<S, M>& /*metadomain*/)
-      : arch::ProblemGenerator<S, M> { p } {}
+      : params { p } {}
 
     void InitPrtls(Domain<S, M>& domain) {
       const auto sdist = CustomSpatialDistribution<M::Dim> {};

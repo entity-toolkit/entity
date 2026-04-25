@@ -6,7 +6,6 @@
 
 #include "traits/pgen.h"
 
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -28,7 +27,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
@@ -37,16 +37,11 @@ namespace user {
     };
     static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_1D> {} };
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
     const real_t amplitude, omega;
     const real_t t_transition, t_duration;
 
     PGen(const SimulationParams& p, const Metadomain<S, M>&)
-      : arch::ProblemGenerator<S, M> { p }
-      , amplitude { p.template get<real_t>("setup.amplitude", ONE) }
+      : amplitude { p.template get<real_t>("setup.amplitude", ONE) }
       , omega { p.template get<real_t>("setup.omega", ONE) }
       , t_transition { p.template get<real_t>("setup.t_transition") }
       , t_duration { p.template get<real_t>("setup.t_duration") } {}

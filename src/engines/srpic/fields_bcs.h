@@ -30,6 +30,8 @@
 #include "framework/parameters/parameters.h"
 #include "kernels/fields_bcs.hpp"
 
+#include "engines/engine.hpp"
+
 namespace ntt {
   namespace srpic {
 
@@ -55,7 +57,7 @@ namespace ntt {
                                                                       boundaries));
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void MatchFieldsIn(const dir::direction_t<M::Dim>& direction,
                        Domain<SimEngine::SRPIC, M>&    domain,
                        const Grid<M::Dim>&             global_grid,
@@ -234,7 +236,7 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void FixedFieldsIn(const dir::direction_t<M::Dim>& direction,
                        Domain<SimEngine::SRPIC, M>&    domain,
                        const PG&                       pgen,
@@ -468,7 +470,7 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void AtmosphereFieldsIn(const dir::direction_t<M::Dim>& direction,
                             Domain<SimEngine::SRPIC, M>&    domain,
                             const M&                        global_metric,
@@ -616,7 +618,7 @@ namespace ntt {
       raise::Error("Custom boundaries not implemented", HERE);
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void FieldBoundaries(Domain<SimEngine::SRPIC, M>& domain,
                          const M&                     global_metric,
                          const Grid<M::Dim>&          global_grid,

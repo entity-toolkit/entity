@@ -8,7 +8,6 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
@@ -31,8 +30,8 @@ namespace user {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -44,18 +43,15 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
-    const Metadomain<S, M>& global_domain;
+    const Metadomain<S, M>& metadomain;
 
     const real_t temperature, temperature_gradient;
 
-    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m }
       , temperature { params.template get<real_t>("setup.temperature", 0.0) }
       , temperature_gradient {
         params.template get<real_t>("setup.temperature_gradient", 0.0)
@@ -114,8 +110,8 @@ namespace user {
         data_i["phi"] = phi_i;
       }
 
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)1, data_e);
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)2, data_i);
+      arch::InjectGlobally<S, M>(metadomain, local_domain, (spidx_t)1, data_e);
+      arch::InjectGlobally<S, M>(metadomain, local_domain, (spidx_t)2, data_i);
     }
 
     auto FixFieldsConst(const bc_in&, const em&) const -> std::pair<real_t, bool> {
@@ -234,8 +230,8 @@ namespace user {
         domain.random_pool(),
         temperature / domain.species[sp - 1].mass(), // sp is 1-indexed
         temperature_gradient * temperature / domain.species[sp - 1].mass(),
-        global_domain.mesh().extent(in::x1).first, // xmin
-        global_domain.mesh().extent(in::x1).second // xmax
+        metadomain.mesh().extent(in::x1).first, // xmin
+        metadomain.mesh().extent(in::x1).second // xmax
       };
     }
   };

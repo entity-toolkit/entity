@@ -7,7 +7,6 @@
 #include "traits/pgen.h"
 
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
@@ -107,7 +106,7 @@ namespace user {
   }
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
@@ -124,22 +123,21 @@ namespace user {
       return { true, DipoleField<M::Dim> {} };
     }
 
+    const SimulationParams& params;
     const Metadomain<S, M>& metadomain;
 
-    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p }
-      , metadomain { metadomain } {}
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m } {}
 
     void CustomPostStep(timestep_t /*step*/, simtime_t /*time*/, Domain<S, M>& domain) {
-      const auto temperature = this->params.template get<real_t>(
-        "setup.temperature");
-      const auto drift_vel = this->params.template get<real_t>(
-        "setup.drift_vel");
-      const auto inject_xrange = this->params.template get<std::vector<real_t>>(
+      const auto temperature = params.template get<real_t>("setup.temperature");
+      const auto drift_vel   = params.template get<real_t>("setup.drift_vel");
+      const auto inject_xrange = params.template get<std::vector<real_t>>(
         "setup.inject_xrange");
       // compute the density of species #1 and #2
       // and save in the field buffer (index 0)
-      arch::ComputeMomentWithSpecies<S, M, FldsID::N, 3>(this->params,
+      arch::ComputeMomentWithSpecies<S, M, FldsID::N, 3>(params,
                                                          domain,
                                                          { 1u, 2u },
                                                          domain.fields.buff);
@@ -155,7 +153,7 @@ namespace user {
         0u,   // <-- index in buff where the density is stored
         ONE); // <-- target density for replenishment
       arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(replenish_sdist)>(
-        this->params,
+        params,
         domain,
         {
           1u,
@@ -167,10 +165,9 @@ namespace user {
         false,
         { { inject_xrange[0], inject_xrange[1] }, Range::All, Range::All }); // <-- injection region
 
-      const auto r_purge   = this->params.template get<real_t>("setup.r_purge");
-      const auto r_plummet = this->params.template get<real_t>(
-        "setup.r_plummet");
-      const auto plummet_speed = this->params.template get<real_t>(
+      const auto r_purge       = params.template get<real_t>("setup.r_purge");
+      const auto r_plummet     = params.template get<real_t>("setup.r_plummet");
+      const auto plummet_speed = params.template get<real_t>(
         "setup.plummet_speed");
       // particles below r_plummet, gain a constant speed towards the origin,
       // and are removed when they reach r_purge

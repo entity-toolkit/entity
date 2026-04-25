@@ -25,6 +25,8 @@
 #include "framework/parameters/parameters.h"
 #include "kernels/fields_bcs.hpp"
 
+#include "engines/engine.hpp"
+
 #include <cstdint>
 
 namespace ntt {
@@ -36,7 +38,7 @@ namespace ntt {
       curr
     };
 
-    template <GRMetricClass M, class PG>
+    template <GRMetricClass M, PGenClass<SimEngine::GRPIC, M> PG>
     void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
                        Domain<SimEngine::GRPIC, M>& domain,
                        const Grid<M::Dim>&          global_grid,
@@ -229,7 +231,7 @@ namespace ntt {
       raise::Error("Custom boundaries not implemented", HERE);
     }
 
-    template <GRMetricClass M, class PG>
+    template <GRMetricClass M, PGenClass<SimEngine::GRPIC, M> PG>
     void FieldBoundaries(Domain<SimEngine::GRPIC, M>& domain,
                          const Grid<M::Dim>&          global_grid,
                          const PG&                    pgen,

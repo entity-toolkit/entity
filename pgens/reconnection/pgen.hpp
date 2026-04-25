@@ -10,7 +10,6 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/spatial_dist.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
@@ -137,7 +136,8 @@ namespace user {
 
   // constant particle density for particle boundaries
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -149,10 +149,8 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
+    Metadomain<S, M>&       metadomain;
 
     const real_t    bg_B, bg_Bguide, bg_temperature, inj_ypad;
     const real_t    cs_width, cs_overdensity, cs_x, cs_y;
@@ -160,29 +158,27 @@ namespace user {
     const simtime_t t_open;
     bool            bc_opened { false };
 
-    Metadomain<S, M>& metadomain;
-
     InitFields<D> init_flds;
 
     PGen(const SimulationParams& p, Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , bg_B { p.template get<real_t>("setup.bg_B", 1.0) }
-      , bg_Bguide { p.template get<real_t>("setup.bg_Bguide", 0.0) }
-      , bg_temperature { p.template get<real_t>("setup.bg_temperature", 0.001) }
-      , inj_ypad { p.template get<real_t>("setup.inj_ypad", (real_t)0.05) }
-      , cs_width { p.template get<real_t>("setup.cs_width") }
-      , cs_overdensity { p.template get<real_t>("setup.cs_overdensity") }
+      : params { p }
+      , metadomain { m }
+      , bg_B { params.template get<real_t>("setup.bg_B", 1.0) }
+      , bg_Bguide { params.template get<real_t>("setup.bg_Bguide", 0.0) }
+      , bg_temperature { params.template get<real_t>("setup.bg_temperature", 0.001) }
+      , inj_ypad { params.template get<real_t>("setup.inj_ypad", (real_t)0.05) }
+      , cs_width { params.template get<real_t>("setup.cs_width") }
+      , cs_overdensity { params.template get<real_t>("setup.cs_overdensity") }
       , cs_x { INV_2 *
                (m.mesh().extent(in::x1).second + m.mesh().extent(in::x1).first) }
       , cs_y { INV_2 *
                (m.mesh().extent(in::x2).second + m.mesh().extent(in::x2).first) }
       , ymin { m.mesh().extent(in::x2).first }
       , ymax { m.mesh().extent(in::x2).second }
-      , t_open { p.template get<simtime_t>(
+      , t_open { params.template get<simtime_t>(
           "setup.t_open",
           1.5 * HALF *
             (m.mesh().extent(in::x1).second - m.mesh().extent(in::x1).first)) }
-      , metadomain { m }
       , init_flds { bg_B, bg_Bguide, cs_width, cs_y } {}
 
     auto MatchFieldsInX1(simtime_t) const -> BoundaryFieldsInX1<D> {

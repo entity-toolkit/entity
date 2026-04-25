@@ -15,17 +15,6 @@ struct StubFieldSetter {
   }
 };
 
-// --- HasD ---
-
-struct WithD {
-  static constexpr Dimension D { Dimension::_1D };
-};
-
-struct NoD {};
-
-static_assert(traits::pgen::HasD<WithD>);
-static_assert(not traits::pgen::HasD<NoD>);
-
 // --- HasInitFlds / HasExtCurrent ---
 
 struct WithInitFlds {
@@ -37,9 +26,9 @@ struct WithExtCurrent {
 };
 
 static_assert(traits::pgen::HasInitFlds<WithInitFlds>);
-static_assert(not traits::pgen::HasInitFlds<NoD>);
+static_assert(not traits::pgen::HasInitFlds<WithExtCurrent>);
 static_assert(traits::pgen::HasExtCurrent<WithExtCurrent>);
-static_assert(not traits::pgen::HasExtCurrent<NoD>);
+static_assert(not traits::pgen::HasExtCurrent<WithInitFlds>);
 
 // --- HasEmissionPolicy / HasCustomPrtlUpdate ---
 
@@ -52,9 +41,11 @@ struct WithCustomPrtlUpdate {
 };
 
 static_assert(traits::pgen::HasEmissionPolicy<WithEmissionPolicy, DummyDomain>);
-static_assert(not traits::pgen::HasEmissionPolicy<NoD, DummyDomain>);
+static_assert(
+  not traits::pgen::HasEmissionPolicy<WithCustomPrtlUpdate, DummyDomain>);
 static_assert(traits::pgen::HasCustomPrtlUpdate<WithCustomPrtlUpdate, DummyDomain>);
-static_assert(not traits::pgen::HasCustomPrtlUpdate<NoD, DummyDomain>);
+static_assert(
+  not traits::pgen::HasCustomPrtlUpdate<WithEmissionPolicy, DummyDomain>);
 
 // --- HasExternalFields ---
 // return type must expose .first as bool and .second as anything
@@ -76,7 +67,6 @@ struct BadExternalFields {
 
 static_assert(traits::pgen::HasExternalFields<WithExternalFields, DummyDomain>);
 static_assert(not traits::pgen::HasExternalFields<BadExternalFields, DummyDomain>);
-static_assert(not traits::pgen::HasExternalFields<NoD, DummyDomain>);
 
 // --- HasInitPrtls ---
 
@@ -85,7 +75,7 @@ struct WithInitPrtls {
 };
 
 static_assert(traits::pgen::HasInitPrtls<WithInitPrtls, DummyDomain>);
-static_assert(not traits::pgen::HasInitPrtls<NoD, DummyDomain>);
+static_assert(not traits::pgen::HasInitPrtls<WithExternalFields, DummyDomain>);
 
 // --- HasAtmFields / HasMatchFields / HasMatchFieldsInX1/X2/X3 ---
 
@@ -116,8 +106,8 @@ static_assert(traits::pgen::HasMatchFields<WithAllMatchFields>);
 static_assert(traits::pgen::HasMatchFieldsInX1<WithAllMatchFields>);
 static_assert(traits::pgen::HasMatchFieldsInX2<WithAllMatchFields>);
 static_assert(traits::pgen::HasMatchFieldsInX3<WithAllMatchFields>);
-static_assert(not traits::pgen::HasAtmFields<NoD>);
-static_assert(not traits::pgen::HasMatchFields<NoD>);
+static_assert(not traits::pgen::HasAtmFields<WithExternalFields>);
+static_assert(not traits::pgen::HasMatchFields<WithExternalFields>);
 
 // --- HasFixFieldsConst ---
 
@@ -136,7 +126,6 @@ struct BadFixFieldsConst {
 };
 
 static_assert(traits::pgen::HasFixFieldsConst<WithFixFieldsConst>);
-static_assert(not traits::pgen::HasFixFieldsConst<NoD>);
 static_assert(not traits::pgen::HasFixFieldsConst<BadFixFieldsConst>);
 
 // --- HasCustomPostStep ---
@@ -146,7 +135,6 @@ struct WithCustomPostStep {
 };
 
 static_assert(traits::pgen::HasCustomPostStep<WithCustomPostStep, DummyDomain>);
-static_assert(not traits::pgen::HasCustomPostStep<NoD, DummyDomain>);
 
 // --- HasCustomFieldOutput ---
 
@@ -162,8 +150,9 @@ struct WithCustomFieldOutput {
 };
 
 static_assert(
-  traits::pgen::HasCustomFieldOutput<WithCustomFieldOutput, DummyDomain>);
-static_assert(not traits::pgen::HasCustomFieldOutput<NoD, DummyDomain>);
+  traits::pgen::HasCustomFieldOutput<WithCustomFieldOutput, Dimension::_2D, DummyDomain>);
+static_assert(
+  not traits::pgen::HasCustomFieldOutput<WithCustomFieldOutput, Dimension::_3D, DummyDomain>);
 
 // --- HasCustomStatOutput ---
 
@@ -174,7 +163,8 @@ struct WithCustomStatOutput {
 };
 
 static_assert(traits::pgen::HasCustomStatOutput<WithCustomStatOutput, DummyDomain>);
-static_assert(not traits::pgen::HasCustomStatOutput<NoD, DummyDomain>);
+static_assert(
+  not traits::pgen::HasCustomStatOutput<WithCustomFieldOutput, DummyDomain>);
 
 auto main() -> int {
   return 0;

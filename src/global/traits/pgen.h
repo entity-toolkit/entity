@@ -3,7 +3,6 @@
  * @brief Traits and concepts for detecting problem generator interface methods
  * @implements
  *   - traits::pgen::compatible_with<>
- *   - traits::pgen::HasD<>
  *   - traits::pgen::HasInitFlds<>
  *   - traits::pgen::HasEmissionPolicy<>
  *   - traits::pgen::HasCustomPrtlUpdate<>
@@ -36,34 +35,29 @@ namespace traits::pgen {
   struct compatible_with {};
 
   template <class PG>
-  concept HasD = requires {
-    { PG::D } -> std::convertible_to<Dimension>;
-  };
-
-  template <class PG>
   concept HasInitFlds = requires(const PG& pgen) { pgen.init_flds; };
 
-  template <class PG, class D>
+  template <class PG, class DOM>
   concept HasEmissionPolicy = requires(const PG& pgen,
                                        simtime_t time,
                                        spidx_t   sp,
-                                       D&        domain) {
+                                       DOM&      domain) {
     pgen.EmissionPolicy(time, sp, domain);
   };
 
-  template <class PG, class D>
+  template <class PG, class DOM>
   concept HasCustomPrtlUpdate = requires(const PG& pgen,
                                          simtime_t time,
                                          spidx_t   sp,
-                                         D&        domain) {
+                                         DOM&      domain) {
     pgen.CustomParticleUpdate(time, sp, domain);
   };
 
-  template <class PG, class D>
+  template <class PG, class DOM>
   concept HasExternalFields = requires(const PG& pgen,
                                        simtime_t time,
                                        spidx_t   sp,
-                                       D&        domain) {
+                                       DOM&      domain) {
     requires std::same_as<bool, decltype(pgen.ExternalFields(time, sp, domain).first)>;
     pgen.ExternalFields(time, sp, domain).second;
   };
@@ -111,30 +105,30 @@ namespace traits::pgen {
     } -> std::convertible_to<std::pair<real_t, bool>>;
   };
 
-  template <class PG, class D>
-  concept HasCustomPostStep = requires(PG& pgen, timestep_t s, simtime_t t, D& domain) {
+  template <class PG, class DOM>
+  concept HasCustomPostStep = requires(PG& pgen, timestep_t s, simtime_t t, DOM& domain) {
     { pgen.CustomPostStep(s, t, domain) } -> std::same_as<void>;
   };
 
-  template <class PG, class D>
-  concept HasCustomFieldOutput = requires(PG&                  pgen,
-                                          const std::string&   name,
-                                          ndfield_t<PG::D, 6>& buff,
-                                          index_t              idx,
-                                          timestep_t           step,
-                                          simtime_t            time,
-                                          const D&             dom) {
+  template <class PG, Dimension D, class DOM>
+  concept HasCustomFieldOutput = requires(PG&                pgen,
+                                          const std::string& name,
+                                          ndfield_t<D, 6>&   buff,
+                                          index_t            idx,
+                                          timestep_t         step,
+                                          simtime_t          time,
+                                          const DOM&         dom) {
     {
       pgen.CustomFieldOutput(name, buff, idx, step, time, dom)
     } -> std::same_as<void>;
   };
 
-  template <class PG, class D>
+  template <class PG, class DOM>
   concept HasCustomStatOutput = requires(PG&                pgen,
                                          const std::string& name,
                                          timestep_t         s,
                                          simtime_t          t,
-                                         const D&           dom) {
+                                         const DOM&         dom) {
     { pgen.CustomStat(name, s, t, dom) } -> std::convertible_to<real_t>;
   };
 

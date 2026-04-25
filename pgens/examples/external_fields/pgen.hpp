@@ -7,8 +7,8 @@
 #include "traits/pgen.h"
 
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 #include <Kokkos_Pair.hpp>
 
@@ -54,7 +54,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
@@ -65,15 +66,12 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
+    const SimulationParams& params;
     const Metadomain<S, M>& metadomain;
 
-    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p }
-      , metadomain { metadomain } {}
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m } {}
 
     /*
      * @returns a pair of (apply_external_fields, external_fields)
@@ -103,8 +101,8 @@ namespace user {
                        "setup.prtls should be a vector of vectors of size 3+D",
                        HERE);
         for (auto p = 0u; p < prtls.size(); ++p) {
-          const auto prtl      = prtls[p];
-          const auto prtl_spec = prtl_species[p];
+          const auto& prtl      = prtls[p];
+          const auto  prtl_spec = prtl_species[p];
           std::map<std::string, std::vector<real_t>> data_arr;
           data_arr["x1"] = { prtl[0] };
           if constexpr (D == Dim::_2D or D == Dim::_3D) {

@@ -11,8 +11,8 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 #include "kernels/particle_moments.hpp"
 
 namespace user {
@@ -194,7 +194,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::GRPIC> {}
@@ -204,10 +205,7 @@ namespace user {
     };
     static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
     const std::vector<real_t> xi_min;
     const std::vector<real_t> xi_max;
@@ -217,16 +215,16 @@ namespace user {
     const Metadomain<S, M>* metadomain;
 
     PGen(SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , xi_min { p.template get<std::vector<real_t>>("setup.xi_min") }
-      , xi_max { p.template get<std::vector<real_t>>("setup.xi_max") }
-      , sigma_max { p.template get<real_t>("setup.sigma_max") }
-      , sigma0 { p.template get<real_t>("scales.sigma0") }
-      , multiplicity { p.template get<real_t>("setup.multiplicity") }
-      , nGJ { p.template get<real_t>("scales.B0") *
-              SQR(p.template get<real_t>("scales.skindepth0")) }
-      , temperature { p.template get<real_t>("setup.temperature") }
-      , m_eps { p.template get<real_t>("setup.m_eps") }
+      : params { p }
+      , xi_min { params.template get<std::vector<real_t>>("setup.xi_min") }
+      , xi_max { params.template get<std::vector<real_t>>("setup.xi_max") }
+      , sigma_max { params.template get<real_t>("setup.sigma_max") }
+      , sigma0 { params.template get<real_t>("scales.sigma0") }
+      , multiplicity { params.template get<real_t>("setup.multiplicity") }
+      , nGJ { params.template get<real_t>("scales.B0") *
+              SQR(params.template get<real_t>("scales.skindepth0")) }
+      , temperature { params.template get<real_t>("setup.temperature") }
+      , m_eps { params.template get<real_t>("setup.m_eps") }
       , init_flds { m.mesh().metric, m_eps }
       , metadomain { &m } {}
 

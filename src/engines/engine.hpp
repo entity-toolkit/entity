@@ -57,6 +57,11 @@
 
 namespace ntt {
 
+  template <class PG, SimEngine::type S, class M>
+  concept PGenClass = requires(SimulationParams& p, Metadomain<S, M>& m) {
+    PG { p, m };
+  };
+
   template <SimEngine::type S, MetricClass M>
   class Engine {
 
@@ -191,8 +196,9 @@ namespace ntt {
                                          metadomain.ndomains_per_dim(),
                                          metadomain.ndomains());
         const auto pgen_name  = std::string(PGEN);
-        report += ReportPgenConfig<decltype(m_pgen), Domain<S, M>>(m_pgen,
-                                                                   pgen_name);
+        report += ReportPgenConfig<decltype(m_pgen), M::Dim, Domain<S, M>>(
+          m_pgen,
+          pgen_name);
         if (metadomain.species_params().size() > 0) {
           report += "\n";
           reporter::AddCategory(report, 4, "Particles");
@@ -283,7 +289,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
       timers.start("Output");
       if constexpr (
-        ::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), M::Dim, Domain<S, M>>) {
         auto lambda_custom_field_output = [&](const std::string&    name,
                                               ndfield_t<M::Dim, 6>& buff,
                                               index_t               idx,

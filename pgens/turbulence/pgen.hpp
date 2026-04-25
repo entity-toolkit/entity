@@ -10,7 +10,6 @@
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
@@ -296,8 +295,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines = ::traits::pgen::compatible_with<SimEngine::SRPIC> {};
     static constexpr auto metrics =
@@ -305,10 +304,7 @@ namespace user {
     static constexpr auto dimensions =
       ::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {};
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
     const real_t                     temperature, dB, omega_0, gamma_0;
     const real_t                     Lx, Ly, Lz, escape_dist;
@@ -325,13 +321,13 @@ namespace user {
     InitFields<D>      init_flds;
 
     PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , temperature { p.template get<real_t>("setup.temperature") }
-      , dB { p.template get<real_t>("setup.dB", ONE) }
-      , omega_0 { p.template get<real_t>("setup.omega_0") }
-      , gamma_0 { p.template get<real_t>("setup.gamma_0") }
+      : params { p }
+      , temperature { params.template get<real_t>("setup.temperature") }
+      , dB { params.template get<real_t>("setup.dB", ONE) }
+      , omega_0 { params.template get<real_t>("setup.omega_0") }
+      , gamma_0 { params.template get<real_t>("setup.gamma_0") }
       , wavenumbers { init_wavenumbers<D>() }
-      , random_seed { p.template get<unsigned int>("setup.seed", 0) }
+      , random_seed { params.template get<unsigned int>("setup.seed", 0) }
       , random_pool { init_pool(random_seed) }
       , Lx { global_domain.mesh().extent(in::x1).second -
              global_domain.mesh().extent(in::x1).first }
@@ -339,7 +335,7 @@ namespace user {
              global_domain.mesh().extent(in::x2).first }
       , Lz { global_domain.mesh().extent(in::x3).second -
              global_domain.mesh().extent(in::x3).first }
-      , escape_dist { p.template get<real_t>("setup.escape_dist", HALF * Lx) }
+      , escape_dist { params.template get<real_t>("setup.escape_dist", HALF * Lx) }
       , ext_current { dB, omega_0, gamma_0, wavenumbers, init_pool(random_seed),
                       Lx, Ly,      Lz }
       , init_flds { ext_current.k,

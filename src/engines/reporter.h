@@ -32,7 +32,7 @@ namespace ntt {
                               const std::vector<unsigned int>&,
                               unsigned int) -> std::string;
 
-  template <class PG, class Dom>
+  template <class PG, Dimension D, class Dom>
   inline auto ReportPgenConfig(const PG& /*pgen*/, const std::string& pgen_name)
     -> std::string {
     std::string report;
@@ -105,11 +105,12 @@ namespace ntt {
                        "EmissionPolicy",
                        "%s",
                        BoolToOnOff(::traits::pgen::HasEmissionPolicy<PG, Dom>));
-    reporter::AddParam(report,
-                       8,
-                       "CustomFieldOutput",
-                       "%s",
-                       BoolToOnOff(::traits::pgen::HasCustomFieldOutput<PG, Dom>));
+    reporter::AddParam(
+      report,
+      8,
+      "CustomFieldOutput",
+      "%s",
+      BoolToOnOff(::traits::pgen::HasCustomFieldOutput<PG, D, Dom>));
     reporter::AddParam(report,
                        8,
                        "CustomStatOutput",
