@@ -20,7 +20,7 @@ jobs:
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if git log -1 --pretty=%B | grep -q "COMPILEPGENS"; then
+          if git log -1 --pretty=%B | grep -q "RUNPGENS"; then
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_tests=false" >> "$GITHUB_OUTPUT"
@@ -67,4 +67,4 @@ jobs:
             export CC=gcc-14
             export CXX=g++-14
           fi
-          ./dev/scripts/tests.sh --build build --with_pgens --flags "-D mpi=${{ matrix.mpi }}"
+          ./dev/scripts/tests.sh --build build --with_pgens --flags "-D mpi=${{ matrix.mpi }} -D output=OFF"
