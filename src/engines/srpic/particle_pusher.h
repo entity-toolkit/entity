@@ -14,6 +14,7 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/policies.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
@@ -149,16 +150,38 @@ namespace ntt {
           species.emission_policy_flag(),
           has_atmosphere,
           [&](const auto& policies) {
+            using policy_t = std::decay_t<decltype(policies)>;
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, std::decay_t<decltype(policies)>> {
-                pusher_ctx,
-                pusher_boundaries,
-                pusher_arrays,
-                domain.fields.em,
-                domain.mesh.metric,
-                policies });
+              kernel::sr::Pusher_kernel<M, policy_t> { pusher_ctx,
+                                                       pusher_boundaries,
+                                                       pusher_arrays,
+                                                       domain.fields.em,
+                                                       domain.mesh.metric,
+                                                       policies });
+            // if emission takes place, update the npart and counter of emitted species
+            if constexpr (
+              not ::traits::emission::IsNoPolicy<typename policy_t::EmissionPolicy>) {
+              const auto& emission_policy = policies.emission_policy;
+              const auto emitted_species = emission_policy.emitted_species_indices();
+              const auto n_inj = emission_policy.numbers_injected();
+              raise::ErrorIf(emitted_species.size() != n_inj.size(),
+                             "Emission policy emitted_species_indices and "
+                             "numbers_injected must have the same size",
+                             HERE);
+              for (auto i = 0u; i < emitted_species.size(); ++i) {
+                const auto sp_idx = emitted_species[i];
+                raise::ErrorIf(sp_idx > domain.species.size(),
+                               "Invalid emitted species index from custom "
+                               "emission policy",
+                               HERE);
+                domain.species[sp_idx - 1].set_npart(
+                  domain.species[sp_idx - 1].npart() + n_inj[i]);
+                domain.species[sp_idx - 1].set_counter(
+                  domain.species[sp_idx - 1].counter() + n_inj[i]);
+              }
+            }
           });
       }
     }
