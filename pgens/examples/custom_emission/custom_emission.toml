@@ -52,7 +52,7 @@
   emission_probability = 0.05
 
 [output]
-  interval = 1
+  interval = 10
 
   [output.fields]
     quantities = ["N_1", "N_2", "B"]

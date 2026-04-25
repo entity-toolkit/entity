@@ -1,5 +1,5 @@
 [simulation]
-  name    = "atmosphere_no_g"
+  name    = "atmosphere"
   engine  = "srpic"
   runtime = 1.0
 
