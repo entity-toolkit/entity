@@ -92,10 +92,10 @@ namespace logger {
     if (not fpath.empty() and not fs::exists(fpath)) {
       fs::create_directory(fpath);
     }
-    fs::path outfile_path { fs::path { fpath } / outfile_name };
-    fs::path logfile_path { fs::path { fpath } / logfile_name };
-    fs::path infofile_path { fs::path { fpath } / infofile_name };
-    fs::path errfile_path { fs::path { fpath } / errfile_name };
+    const fs::path outfile_path { fs::path { fpath } / outfile_name };
+    const fs::path logfile_path { fs::path { fpath } / logfile_name };
+    const fs::path infofile_path { fs::path { fpath } / infofile_name };
+    const fs::path errfile_path { fs::path { fpath } / errfile_name };
     fs::remove(outfile_path);
     fs::remove(logfile_path);
     fs::remove(infofile_path);

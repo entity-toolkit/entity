@@ -66,6 +66,9 @@ namespace ntt {
         return static_cast<const Derived&>(*this);
       }
 
+      EnumBase() = default;
+      friend Derived;
+
     public:
       constexpr bool operator==(Derived o) const noexcept {
         return d().val == o.val;
@@ -311,7 +314,7 @@ namespace ntt {
   };
 
   namespace ParticlePusher {
-    enum ParticlePusherFlags_ {
+    enum ParticlePusherFlags_ : uint8_t {
       NONE   = 0,
       PHOTON = 1 << 0,
       BORIS  = 1 << 1,
@@ -323,7 +326,7 @@ namespace ntt {
       if (flags == NONE) {
         return "none";
       } else {
-        std::string result = "";
+        std::string result;
         if (flags & PHOTON) {
           result += "photon";
         } else if (flags & BORIS) {
@@ -342,10 +345,10 @@ namespace ntt {
     }
   } // namespace ParticlePusher
 
-  typedef int ParticlePusherFlags;
+  using ParticlePusherFlags = uint8_t;
 
   namespace RadiativeDrag {
-    enum RadiativeDragFlags_ {
+    enum RadiativeDragFlags_ : uint8_t {
       NONE        = 0,
       SYNCHROTRON = 1 << 0,
       COMPTON     = 1 << 1,
@@ -355,7 +358,7 @@ namespace ntt {
       if (flags == NONE) {
         return "none";
       } else {
-        std::string result = "";
+        std::string result;
         if (flags & SYNCHROTRON) {
           result += "synchrotron";
         }
@@ -370,10 +373,10 @@ namespace ntt {
     }
   } // namespace RadiativeDrag
 
-  typedef int RadiativeDragFlags;
+  using RadiativeDragFlags = uint8_t;
 
   namespace EmissionType {
-    enum EmissionTypeFlag_ {
+    enum EmissionTypeFlag_ : uint8_t {
       NONE        = 0,
       SYNCHROTRON = 1,
       COMPTON     = 2,
@@ -396,7 +399,7 @@ namespace ntt {
     }
   } // namespace EmissionType
 
-  typedef int EmissionTypeFlag;
+  using EmissionTypeFlag = uint8_t;
 
 } // namespace ntt
 

@@ -1,5 +1,5 @@
 /**
- * @file archetypes/field_setter.hpp
+ * @file archetypes/field_setter.h
  * @brief Defines kernels which populate the EM fields with user-defined values
  * conditionally or unconditionally
  * @implements
@@ -309,10 +309,10 @@ namespace arch {
 
     const FS fieldsetter;
 
-    CustomSetEMFields_kernel(const M&               metric,
-                             ndfield_t<D, 6>&       fields,
-                             const ndfield_t<D, 6>& buffer,
-                             const FS&              fieldsetter)
+    CustomSetEMFields_kernel(const M&         metric,
+                             ndfield_t<D, 6>& fields,
+                             const ndfield_t<D, 6>& /*buffer*/,
+                             const FS& fieldsetter)
       : metric { metric }
       , fields { fields }
       , fieldsetter { fieldsetter } {}

@@ -2,14 +2,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/policies.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
 
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
 #include "kernels/pushers/sr.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -145,12 +143,12 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-3 : 1e-6;
 
-  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+  const auto boundaries = kernel::sr::PusherBoundaries<M::Dim> {
     { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
   };
-  const auto gca_context = kernel::PusherGCAContext { 10000.0, ONE };
+  const auto gca_context = kernel::sr::PusherGCAContext { 10000.0, ONE };
 
   kernel::PusherArrays pusher_arrays { 1u };
   pusher_arrays.i1       = i1;
@@ -172,7 +170,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.tag      = tag;
 
   for (auto t { 0u }; t < 2000; ++t) {
-    auto ctx = kernel::PusherContext {
+    auto ctx = kernel::sr::PusherContext {
       1u,
       ParticlePusher::BORIS | ParticlePusher::GCA,
       RadiativeDrag::NONE,

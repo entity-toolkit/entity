@@ -56,7 +56,6 @@ namespace ntt {
   public:
     ParticleSpecies()
       : m_index { 0u }
-      , m_label { "" }
       , m_mass { 0.0 }
       , m_charge { 0.0 }
       , m_maxnpart { 0 }
@@ -98,7 +97,7 @@ namespace ntt {
                     unsigned short      npld_r,
                     unsigned short      npld_i)
       : m_index { index }
-      , m_label { std::move(label) }
+      , m_label { label }
       , m_mass { m }
       , m_charge { ch }
       , m_maxnpart { maxnpart }
@@ -198,7 +197,7 @@ namespace ntt {
 
     /* reporter -------------------------------------------------------------- */
     auto Report() const -> std::string {
-      std::string report = "";
+      std::string report;
       reporter::AddSubcategory(report,
                                4,
                                fmt::format("Species #%d", index()).c_str());

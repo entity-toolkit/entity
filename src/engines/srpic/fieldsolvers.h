@@ -1,3 +1,14 @@
+/**
+ * @file engines/srpic/fieldsolvers.h
+ * @brief Field solver routines (Faraday, Ampere) for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::Faraday<> -> void
+ *   - ntt::srpic::Ampere<> -> void
+ *   - ntt::srpic::CurrentsAmpere<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_FIELDSOLVERS_H
 #define ENGINES_SRPIC_FIELDSOLVERS_H
 
@@ -16,6 +27,8 @@
 #include "kernels/ampere_sr.hpp"
 #include "kernels/faraday_mink.hpp"
 #include "kernels/faraday_sr.hpp"
+
+#include "engines/engine.hpp"
 
 namespace ntt {
   namespace srpic {
@@ -126,7 +139,7 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void CurrentsAmpere(Domain<SimEngine::SRPIC, M>& domain,
                         const prm::Parameters&       engine_params,
                         const SimulationParams&      params,

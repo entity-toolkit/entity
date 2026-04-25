@@ -145,7 +145,7 @@ void testPusher(const std::vector<std::size_t>& res) {
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-2 : 1e-3;
 
-  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+  const auto boundaries = kernel::sr::PusherBoundaries<M::Dim> {
     { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }

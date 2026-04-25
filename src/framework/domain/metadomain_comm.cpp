@@ -2,11 +2,14 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "arch/kokkos_aliases.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
+#include "utils/numeric.h"
 
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/specialization_registry.h"
 
@@ -20,6 +23,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -29,9 +33,9 @@ namespace ntt {
   using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
 
   template <SimEngine::type S, MetricClass M>
-  auto GetSendRecvRanks(const Metadomain<S, M>* const metadomain,
-                        Domain<S, M>&                 domain,
-                        dir::direction_t<M::Dim>      direction)
+  auto GetSendRecvRanks(const Metadomain<S, M>* const   metadomain,
+                        Domain<S, M>&                   domain,
+                        const dir::direction_t<M::Dim>& direction)
     -> std::pair<address_t, address_t> {
     const Domain<S, M>* send_to_nghbr_ptr   = nullptr;
     const Domain<S, M>* recv_from_nghbr_ptr = nullptr;
@@ -213,7 +217,7 @@ namespace ntt {
                    "CommunicateFields called with no task",
                    HERE);
 
-    std::string comms = "";
+    std::string comms;
     if (tags & Comm::E) {
       comms += "E ";
     }
@@ -429,7 +433,7 @@ namespace ntt {
                    HERE);
     const auto synchronize = true;
 
-    std::string comms = "";
+    std::string comms;
     if (comm_j) {
       comms += "J ";
     }
@@ -661,6 +665,7 @@ namespace ntt {
 #endif
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_COMM(S, M, D)                                               \
   template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,       \
                                                        CommTags) const;        \
@@ -671,7 +676,7 @@ namespace ntt {
   template void Metadomain<S, M<D>>::CommunicateParticles(Domain<S, M<D>>&) const;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
-
 #undef METADOMAIN_COMM
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

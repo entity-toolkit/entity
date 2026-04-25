@@ -1,15 +1,14 @@
 #include "traits/pgen.h"
 
 #include "enums.h"
+#include "global.h"
 
 #include "traits/archetypes.h"
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
 
-#include "archetypes/problem_generator.h"
 #include "framework/domain/domain.h"
-#include "framework/parameters/parameters.h"
 
 #include <Kokkos_Core.hpp>
 
@@ -47,9 +46,8 @@ struct ExtCurrent {
 };
 
 template <SimEngine::type S, class M>
-struct CustomPgen : public arch::ProblemGenerator<S, M> {
-  CustomPgen(const SimulationParams& params = {})
-    : arch::ProblemGenerator<S, M> { params } {}
+struct CustomPgen {
+  CustomPgen() {}
 
   CustomFieldsetter<M::Dim> init_flds {};
   ExtCurrent<M::Dim>        ext_current {};
@@ -147,6 +145,7 @@ auto main(int argc, char* argv[]) -> int {
     }
     if constexpr (not ::traits::pgen::HasCustomFieldOutput<
                     decltype(custom_pgen),
+                    Dim::_1D,
                     Domain<SimEngine::SRPIC, metric::Minkowski<Dim::_1D>>>) {
       throw std::runtime_error("CustomPgen should have CustomFieldOutput");
     }
@@ -177,8 +176,8 @@ auto main(int argc, char* argv[]) -> int {
       throw std::runtime_error("CustomPgen's ext_current should have bx3");
     }
 
-  } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

@@ -4,36 +4,34 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
 #include <vector>
 
-/* -------------------------------------------------------------------------- */
-/* Local macros    (same as in particle_pusher_sr.hpp)                        */
-/* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 namespace user {
   using namespace ntt;
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -45,24 +43,21 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
-    const Metadomain<S, M>& global_domain;
+    const Metadomain<S, M>& metadomain;
 
     const real_t temperature, temperature_gradient;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m }
       , temperature { params.template get<real_t>("setup.temperature", 0.0) }
       , temperature_gradient {
         params.template get<real_t>("setup.temperature_gradient", 0.0)
       } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
+    void InitPrtls(Domain<S, M>& local_domain) {
       const auto empty = std::vector<real_t> {};
       const auto x1_e  = params.template get<std::vector<real_t>>("setup.x1_e",
                                                                  empty);
@@ -115,8 +110,8 @@ namespace user {
         data_i["phi"] = phi_i;
       }
 
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)1, data_e);
-      arch::InjectGlobally<S, M>(global_domain, local_domain, (spidx_t)2, data_i);
+      arch::InjectGlobally<S, M>(metadomain, local_domain, (spidx_t)1, data_e);
+      arch::InjectGlobally<S, M>(metadomain, local_domain, (spidx_t)2, data_i);
     }
 
     auto FixFieldsConst(const bc_in&, const em&) const -> std::pair<real_t, bool> {
@@ -139,9 +134,9 @@ namespace user {
         , xmin { xmin }
         , xmax { xmax } {}
 
-      Inline void operator()(index_t                      p,
-                             const kernel::PusherContext& ctx,
-                             const kernel::PusherBoundaries<M::Dim>&,
+      Inline void operator()(index_t                          p,
+                             const kernel::sr::PusherContext& ctx,
+                             const kernel::sr::PusherBoundaries<M::Dim>&,
                              const kernel::PusherArrays& particles,
                              const M&                    metric) const {
 
@@ -162,7 +157,7 @@ namespace user {
 
         // Reflecting boundary that resamples velocity
         if (x_Ph < xmin) {
-          arch::JuttnerSinge(v, temp_cold, pool);
+          arch::energy_dist::JuttnerSinge(v, temp_cold, pool);
 
           // calculate the time for the particle to reach the wall
           const int      delta_i1_to_wall  = particles.i1_prev(p);
@@ -194,7 +189,7 @@ namespace user {
                              remaining_dt_inv_energy;
 
         } else if (x_Ph > xmax) {
-          arch::JuttnerSinge(v, temp_hot, pool);
+          arch::energy_dist::JuttnerSinge(v, temp_hot, pool);
 
           // step 2: calculate the time for the particle to reach the piston
           const int      delta_i1_to_wall  = ctx.ni1 - 1 - particles.i1_prev(p);
@@ -229,14 +224,14 @@ namespace user {
     };
 
     template <class D>
-    auto CustomParticleUpdate(simtime_t time, spidx_t sp, D& domain) const
+    auto CustomParticleUpdate(simtime_t /*time*/, spidx_t sp, D& domain) const
       -> CustomPrtlUpdate {
       return CustomPrtlUpdate {
         domain.random_pool(),
         temperature / domain.species[sp - 1].mass(), // sp is 1-indexed
         temperature_gradient * temperature / domain.species[sp - 1].mass(),
-        global_domain.mesh().extent(in::x1).first, // xmin
-        global_domain.mesh().extent(in::x1).second // xmax
+        metadomain.mesh().extent(in::x1).first, // xmin
+        metadomain.mesh().extent(in::x1).second // xmax
       };
     }
   };

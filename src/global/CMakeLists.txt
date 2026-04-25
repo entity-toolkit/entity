@@ -44,3 +44,26 @@ target_include_directories(
 if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
   target_link_libraries(ntt_global PRIVATE stdc++fs)
 endif()
+
+target_precompile_headers(
+  ntt_global
+  PRIVATE
+  <Kokkos_Core.hpp>
+  <string>
+  <vector>
+  <map>
+  <memory>
+  <filesystem>
+  <chrono>
+  <algorithm>
+  <numeric>
+  <stdexcept>
+  <cstddef>
+  <iostream>
+  <optional>
+  <utility>
+  "global.h"
+  "enums.h"
+  "arch/kokkos_aliases.h"
+  "utils/error.h"
+  "utils/numeric.h")

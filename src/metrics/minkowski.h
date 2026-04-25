@@ -70,13 +70,11 @@ namespace metric {
       }
     }
 
-    ~Minkowski() = default;
-
     /**
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       return dx / math::sqrt(static_cast<real_t>(D));
     }
 
@@ -84,7 +82,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         return x1_max - x1_min;
       } else if constexpr (D == Dim::_2D) {
@@ -261,24 +259,21 @@ namespace metric {
     Inline auto transform(const coord_t<D>& xi, real_t v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
-      if constexpr (i > static_cast<idx_t>(D)) {
+      if constexpr ((i > static_cast<idx_t>(D)) or
+                    ((in == Idx::T && out == Idx::XYZ) or
+                     (in == Idx::XYZ && out == Idx::T)) // tetrad <-> cart
+      ) {
         return v_in;
-      } else if constexpr ((in == Idx::T && out == Idx::XYZ) ||
-                           (in == Idx::XYZ && out == Idx::T)) {
-        // tetrad <-> cart
-        return v_in;
-      } else if constexpr ((in == Idx::T || in == Idx::XYZ) && out == Idx::U) {
-        // tetrad/cart -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::XYZ) && out == Idx::U) or // tetrad/cart -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::XYZ)) // cov -> tetrad/cart
+      ) {
         return v_in / sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::XYZ)) {
-        // cntrv -> tetrad/cart
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::XYZ)) or // cntrv -> tetrad/cart
+        ((in == Idx::T || in == Idx::XYZ) && out == Idx::D) // tetrad/cart -> cov
+      ) {
         return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr ((in == Idx::T || in == Idx::XYZ) && out == Idx::D) {
-        // tetrad/cart -> cov
-        return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::XYZ)) {
-        // cov -> tetrad/cart
-        return v_in / sqrt_h_<i, i>(xi);
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         return v_in * h_<i, i>(xi);

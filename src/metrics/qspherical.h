@@ -81,17 +81,17 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -1.0 };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t i_ { (real_t)(i) + HALF };
-          real_t j_ { (real_t)(j) + HALF };
-          real_t dx1_ { h_<1, 1>({ i_, j_ }) };
-          real_t dx2_ { h_<2, 2>({ i_, j_ }) };
-          real_t dx = 1.0 / math::sqrt(1.0 / dx1_ + 1.0 / dx2_);
-          if ((min_dx >= dx) || (min_dx < 0.0)) {
+          const real_t i_ { static_cast<real_t>(i) + HALF };
+          const real_t j_ { static_cast<real_t>(j) + HALF };
+          const real_t dx1_ { h_<1, 1>({ i_, j_ }) };
+          const real_t dx2_ { h_<2, 2>({ i_, j_ }) };
+          const real_t dx = ONE / math::sqrt(ONE / dx1_ + ONE / dx2_);
+          if ((min_dx >= dx) || (min_dx < ZERO)) {
             min_dx = dx;
           }
         }
@@ -103,7 +103,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {
@@ -314,18 +314,16 @@ namespace metric {
                     (in == Idx::Sph && out == Idx::T)) {
         // tetrad <-> sph
         return v_in;
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::U) or // tetrad/sph -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::Sph)) // cov -> tetrad/sph
+      ) {
         return v_in / sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::Sph)) or // cntrv -> tetrad/sph
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::D) // tetrad/sph -> cov
+      ) {
         return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        return v_in / sqrt_h_<i, i>(xi);
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         return v_in * h_<i, i>(xi);
@@ -472,7 +470,7 @@ namespace metric {
         using namespace constant;
         // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2
         // + 108 h Pi y - 108 h y^2))])^(1/3)
-        double                  R { math::pow(
+        const double            R { math::pow(
           -9.0 * SQR(h) * (PI - 2.0 * theta) +
             SQRT3 * math::sqrt((CUBE(h) * ((4.0 - h) * SQR(PI + h * TWO_PI) -
                                            108.0 * h * PI * theta +

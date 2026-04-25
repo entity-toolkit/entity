@@ -19,4 +19,4 @@ data.particles.sel(sp=2).isel(t=0).phase_plot(
 )
 ax2.set(xlabel="$x$", ylabel="$u_y$", ylim=(-1.5, 1.5))
 
-plt.show()
+plt.savefig("custom_energy_distribution.png", bbox_inches="tight")

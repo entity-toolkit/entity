@@ -1,5 +1,6 @@
 #include "output/writer.h"
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -18,8 +19,13 @@
   #include <mpi.h>
 #endif
 
+#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace out {
@@ -80,10 +86,10 @@ namespace out {
                      "Downsampling with ghosts not supported",
                      HERE);
 
-      const double g = glob_shape[i];
-      const double d = m_dwn[i];
-      const double l = loc_corner[i];
-      const double n = loc_shape[i];
+      const double g = static_cast<double>(glob_shape[i]);
+      const double d = static_cast<double>(m_dwn[i]);
+      const double l = static_cast<double>(loc_corner[i]);
+      const double n = static_cast<double>(loc_shape[i]);
       const double f = math::ceil(l / d) * d - l;
       m_flds_g_shape_dwn.push_back(static_cast<ncells_t>(math::ceil(g / d)));
       m_flds_l_corner_dwn.push_back(static_cast<ncells_t>(math::ceil(l / d)));
@@ -110,11 +116,12 @@ namespace out {
                                   { m_flds_l_corner_dwn[i] },
                                   { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) },
                                   adios2::ConstantDims);
-      m_io.DefineVariable<std::size_t>("N" + std::to_string(i + 1) + "l",
-                                       { 2 * domain_idx.second },
-                                       { 2 * domain_idx.first },
-                                       { 2 },
-                                       adios2::ConstantDims);
+      m_io.DefineVariable<std::size_t>(
+        "N" + std::to_string(i + 1) + "l",
+        { static_cast<unsigned long>(2 * domain_idx.second) },
+        { static_cast<unsigned long>(2 * domain_idx.first) },
+        { static_cast<unsigned long>(2) },
+        adios2::ConstantDims);
     }
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
@@ -131,16 +138,15 @@ namespace out {
   void Writer::defineFieldOutputs(const SimEngine&                S,
                                   const std::vector<std::string>& flds_out) {
     m_flds_writers.clear();
-    raise::ErrorIf((m_flds_g_shape_dwn.size() == 0) ||
-                     (m_flds_l_corner_dwn.size() == 0) ||
-                     (m_flds_l_shape_dwn.size() == 0),
+    raise::ErrorIf(m_flds_g_shape_dwn.empty() or m_flds_l_corner_dwn.empty() or
+                     m_flds_l_shape_dwn.empty(),
                    "Mesh layout must be defined before field output",
                    HERE);
     for (const auto& fld : flds_out) {
       m_flds_writers.emplace_back(S, fld);
     }
     for (const auto& fld : m_flds_writers) {
-      if (fld.comp.size() == 0) {
+      if (fld.comp.empty()) {
         // scalar
         m_io.DefineVariable<real_t>(fld.name(),
                                     m_flds_g_shape_dwn,
@@ -198,7 +204,7 @@ namespace out {
       } else {
 
         const auto   dwn1          = dwn[0];
-        const double first_cell1_d = first_cell[0];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const auto   first_cell1   = first_cell[0];
 
@@ -225,8 +231,8 @@ namespace out {
       } else {
         const auto   dwn1          = dwn[0];
         const auto   dwn2          = dwn[1];
-        const double first_cell1_d = first_cell[0];
-        const double first_cell2_d = first_cell[1];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
+        const double first_cell2_d = static_cast<double>(first_cell[1]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
         const auto   first_cell1   = first_cell[0];
@@ -261,9 +267,9 @@ namespace out {
         const auto   dwn1          = dwn[0];
         const auto   dwn2          = dwn[1];
         const auto   dwn3          = dwn[2];
-        const double first_cell1_d = first_cell[0];
-        const double first_cell2_d = first_cell[1];
-        const double first_cell3_d = first_cell[2];
+        const double first_cell1_d = static_cast<double>(first_cell[0]);
+        const double first_cell2_d = static_cast<double>(first_cell[1]);
+        const double first_cell3_d = static_cast<double>(first_cell[2]);
         const double nx1_full      = field.extent(0) - 2 * N_GHOSTS;
         const double nx2_full      = field.extent(1) - 2 * N_GHOSTS;
         const double nx3_full      = field.extent(2) - 2 * N_GHOSTS;
@@ -342,7 +348,7 @@ namespace out {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Reduce(counts_h.data(),
                counts_h_all.data(),
-               counts_h.extent(0),
+               static_cast<int>(counts_h.extent(0)),
                mpi::get_type<real_t>(),
                MPI_SUM,
                MPI_ROOT_RANK,
@@ -423,8 +429,6 @@ namespace out {
       }
       CallOnce(
         [](auto&& main_path, auto&& mode_path) {
-          const path_t main { main_path };
-          const path_t mode { mode_path };
           if (!std::filesystem::exists(main_path)) {
             std::filesystem::create_directory(main_path);
           }

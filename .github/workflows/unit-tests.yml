@@ -1,4 +1,4 @@
-name: CPU Compilation/Unit Tests
+name: Premerge tests on CPUs with different configurations
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if git log -1 --pretty=%B | grep -q "CPUTEST"; then
+          if git log -1 --pretty=%B | grep -q "RUNTESTS"; then
             echo "run_tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "run_tests=false" >> "$GITHUB_OUTPUT"
@@ -28,7 +28,7 @@ jobs:
   tests:
     needs: check-commit
     if: needs.check-commit.outputs.run_tests == 'true'
-    name: UNIT_TESTS (precision=${{ matrix.precision }}, mpi=${{ matrix.mpi }}, output=${{ matrix.output }})
+    name: UNIT_TESTS with (precision=${{ matrix.precision }}, mpi=${{ matrix.mpi }}, output=${{ matrix.output }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -67,7 +67,7 @@ jobs:
             sudo apt-get install -y libopenmpi-dev openmpi-bin
             mpirun --version
           fi
-      - name: Configure
+      - name: Compile and run all tests
         run: |
           if [ "${{ matrix.mpi }}" = "ON" ]; then
             export CC=mpicc
@@ -76,8 +76,4 @@ jobs:
             export CC=gcc-14
             export CXX=g++-14
           fi
-          ./dev/scripts/premerge.sh build "-D TESTS=ON -D precision=${{ matrix.precision }} -D mpi=${{ matrix.mpi }} -D output=${{ matrix.output }}"
-      - name: Compile
-        run: cmake --build build -j "$(nproc)"
-      - name: Run tests
-        run: ctest --test-dir build --output-on-failure
+          ./dev/scripts/tests.sh --build build --with_tests --flags "-D precision=${{ matrix.precision }} -D mpi=${{ matrix.mpi }} -D output=${{ matrix.output }}"

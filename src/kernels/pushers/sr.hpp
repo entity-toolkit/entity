@@ -1,5 +1,5 @@
 /**
- * @file kernels/pushers/sr.h
+ * @file kernels/pushers/sr.hpp
  * @brief Particle pusher for the SR
  * @implements
  *   - kernel::sr::Pusher_kernel<>
@@ -28,7 +28,7 @@
 
 #include "kernels/particle_shapes.hpp"
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
+#include "kernels/pushers/sr_policies.h"
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -39,16 +39,16 @@
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 /* -------------------------------------------------------------------------- */
 
@@ -59,7 +59,7 @@ namespace kernel::sr {
    * @tparam M Metric
    * @tparam P Extra policies
    */
-  template <SRMetricClass M, class P = ::kernel::PusherPolicy<M>>
+  template <SRMetricClass M, class P = PusherPolicy<M>>
   struct Pusher_kernel {
     using E                   = typename P::EmissionPolicy;
     using PUPD                = typename P::CustomParticleUpdatePolicy;
@@ -351,7 +351,7 @@ namespace kernel::sr {
       b0[2] *= COEFF;
       COEFF  = TWO / (ONE + NORM_SQR(b0[0], b0[1], b0[2]));
 
-      vec_t<Dim::_3D> u1 {
+      const vec_t<Dim::_3D> u1 {
         (u0[0] + CROSS_x1(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
         (u0[1] + CROSS_x2(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF,
         (u0[2] + CROSS_x3(u0[0], u0[1], u0[2], b0[0], b0[1], b0[2])) * COEFF
@@ -868,7 +868,7 @@ namespace kernel::sr {
           real_t ponpmx = ONE - dx1_;
           real_t ponppx = dx1_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
 
           // Ex1
@@ -919,9 +919,9 @@ namespace kernel::sr {
           real_t ponpmy = ONE - dx2_;
           real_t ponppy = dx2_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
-          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondmy = static_cast<real_t>(indy + 1) - (dx2_ + HALF);
           real_t pondpy = ONE - pondmy;
 
           // Ex1
@@ -1003,11 +1003,11 @@ namespace kernel::sr {
           real_t ponpmz = ONE - dx3_;
           real_t ponppz = dx3_;
 
-          real_t pondmx = static_cast<real_t>(indx + ONE) - (dx1_ + HALF);
+          real_t pondmx = static_cast<real_t>(indx + 1) - (dx1_ + HALF);
           real_t pondpx = ONE - pondmx;
-          real_t pondmy = static_cast<real_t>(indy + ONE) - (dx2_ + HALF);
+          real_t pondmy = static_cast<real_t>(indy + 1) - (dx2_ + HALF);
           real_t pondpy = ONE - pondmy;
-          real_t pondmz = static_cast<real_t>(indz + ONE) - (dx3_ + HALF);
+          real_t pondmz = static_cast<real_t>(indz + 1) - (dx3_ + HALF);
           real_t pondpz = ONE - pondmz;
 
           // Ex1
@@ -1505,7 +1505,7 @@ namespace kernel::sr {
                                 const vec_t<Dim::_3D>&     bp_Cart) const
       requires(not ::traits::emission::IsNoPolicy<E>)
     {
-      typename E::Payload payload;
+      typename E::Payload payload {};
       vec_t<Dim::_3D>     delta_u_Ph { ZERO };
       const auto emission_response = policies.emission_policy.shouldEmit(xp_Cd,
                                                                          xp_Ph,

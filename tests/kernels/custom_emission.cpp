@@ -1,7 +1,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/policies.h"
 
 #include "metrics/minkowski.h"
 
@@ -235,7 +234,7 @@ auto main(int argc, char* argv[]) -> int {
 
     auto pusher_arrays = emitting_species.PusherKernelArrays();
 
-    const auto boundaries = kernel::PusherBoundaries<Dim::_1D> {
+    const auto boundaries = kernel::sr::PusherBoundaries<Dim::_1D> {
       { { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
     };
 
@@ -274,7 +273,7 @@ auto main(int argc, char* argv[]) -> int {
         emitted_species_2.pld_i
       };
       const auto pusher_policy =
-        ::kernel::PusherPolicy<decltype(metric), decltype(emission_policy)> {
+        ::kernel::sr::PusherPolicy<decltype(metric), decltype(emission_policy)> {
           emission_policy
         };
       Kokkos::parallel_for(

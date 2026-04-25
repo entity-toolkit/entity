@@ -1,10 +1,9 @@
-#include "traits/policies.h"
-
 #include "global.h"
 
-#include "kernels/pushers/context.h"
-
+#include "traits/policies.h"
 #include "utils/numeric.h"
+
+#include "kernels/pushers/context.h"
 
 #include <Kokkos_Pair.hpp>
 
@@ -14,7 +13,7 @@ using namespace ntt;
 
 // Minimal mock metric providing PrtlDim and Dim
 struct MockMetric {
-  static constexpr Dimension Dim     { Dimension::_2D };
+  static constexpr Dimension Dim { Dimension::_2D };
   static constexpr Dimension PrtlDim { Dimension::_2D };
 };
 
@@ -27,21 +26,24 @@ static_assert(not traits::emission::IsNoPolicy<MockMetric>);
 static_assert(traits::extfields::IsNoPolicy<traits::extfields::NoPolicy_t>);
 static_assert(not traits::extfields::IsNoPolicy<int>);
 
-static_assert(traits::custom_prtl_update::IsNoPolicy<traits::custom_prtl_update::NoPolicy_t>);
+static_assert(
+  traits::custom_prtl_update::IsNoPolicy<traits::custom_prtl_update::NoPolicy_t>);
 static_assert(not traits::custom_prtl_update::IsNoPolicy<int>);
 
 // NoPolicy satisfies the composite concepts
 static_assert(EmissionPolicyClass<traits::emission::NoPolicy_t, MockMetric>);
 
 struct MockFieldSetter {
-  real_t ex1(const coord_t<Dimension::_2D>&) const { return ZERO; }
+  real_t ex1(const coord_t<Dimension::_2D>&) const {
+    return ZERO;
+  }
 };
 
 static_assert(ExtFieldsPolicyClass<traits::extfields::NoPolicy_t, Dimension::_2D>);
 static_assert(ExtFieldsPolicyClass<MockFieldSetter, Dimension::_2D>);
 
-static_assert(CustomParticleUpdatePolicyClass<traits::custom_prtl_update::NoPolicy_t,
-                                              MockMetric>);
+static_assert(
+  CustomParticleUpdatePolicyClass<traits::custom_prtl_update::NoPolicy_t, MockMetric>);
 
 // --- EmissionPolicyClass with a real emission policy ---
 
@@ -50,17 +52,21 @@ struct MockPayload {};
 struct ValidEmissionPolicy {
   using Payload = MockPayload;
 
-  std::vector<npart_t> numbers_injected() { return {}; }
+  std::vector<npart_t> numbers_injected() {
+    return {};
+  }
 
-  std::vector<spidx_t> emitted_species_indices() const { return {}; }
+  std::vector<spidx_t> emitted_species_indices() const {
+    return {};
+  }
 
   Kokkos::pair<bool, bool> shouldEmit(const coord_t<Dimension::_2D>&,
-                                       const coord_t<Dimension::_2D>&,
-                                       const vec_t<Dim::_3D>&,
-                                       const vec_t<Dim::_3D>&,
-                                       const vec_t<Dim::_3D>&,
-                                       vec_t<Dim::_3D>&,
-                                       Payload&) const {
+                                      const coord_t<Dimension::_2D>&,
+                                      const vec_t<Dim::_3D>&,
+                                      const vec_t<Dim::_3D>&,
+                                      const vec_t<Dim::_3D>&,
+                                      vec_t<Dim::_3D>&,
+                                      Payload&) const {
     return { false, false };
   }
 
@@ -83,8 +89,13 @@ static_assert(EmissionPolicyClass<ValidEmissionPolicy, MockMetric>);
 
 // Missing Payload fails the concept
 struct NoPayload_EmissionPolicy {
-  std::vector<npart_t> numbers_injected() { return {}; }
-  std::vector<spidx_t> emitted_species_indices() const { return {}; }
+  std::vector<npart_t> numbers_injected() {
+    return {};
+  }
+
+  std::vector<spidx_t> emitted_species_indices() const {
+    return {};
+  }
 };
 
 static_assert(not traits::emission::HasPayload<NoPayload_EmissionPolicy>);
@@ -93,7 +104,9 @@ static_assert(not EmissionPolicyClass<NoPayload_EmissionPolicy, MockMetric>);
 // --- ExtFieldsPolicyClass ---
 
 struct WithFx1 {
-  real_t fx1(const coord_t<Dimension::_2D>&) const { return ZERO; }
+  real_t fx1(const coord_t<Dimension::_2D>&) const {
+    return ZERO;
+  }
 };
 
 struct Empty {};
@@ -105,8 +118,8 @@ static_assert(not ExtFieldsPolicyClass<Empty, Dimension::_2D>);
 
 struct ValidCustomPrtlUpdate {
   void operator()(index_t,
-                  const kernel::PusherContext&,
-                  const kernel::PusherBoundaries<Dimension::_2D>&,
+                  const kernel::sr::PusherContext&,
+                  const kernel::sr::PusherBoundaries<Dimension::_2D>&,
                   const kernel::PusherArrays&,
                   const MockMetric&) const {}
 };
@@ -116,8 +129,8 @@ static_assert(CustomParticleUpdatePolicyClass<ValidCustomPrtlUpdate, MockMetric>
 // Wrong signature: missing the metric argument
 struct BadCustomPrtlUpdate {
   void operator()(index_t,
-                  const kernel::PusherContext&,
-                  const kernel::PusherBoundaries<Dimension::_2D>&,
+                  const kernel::sr::PusherContext&,
+                  const kernel::sr::PusherBoundaries<Dimension::_2D>&,
                   const kernel::PusherArrays&) const {}
 };
 

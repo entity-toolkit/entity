@@ -10,8 +10,8 @@
 #include "metrics/minkowski.h"
 
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
 #include "kernels/pushers/sr.hpp"
+#include "kernels/pushers/sr_policies.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -163,16 +163,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   plog::init(plog::verbose, &file_appender);
   PLOGD << "t,i1,i2,i3,dx1,dx2,dx3,ux1,ux2,ux3";
 
-  // kernel::PusherContext pusher_ctx {};
-  // pusher_ctx.pusher_flags = ParticlePusher::BORIS;
-  // pusher_ctx.mass         = ONE;
-  // pusher_ctx.charge       = ONE;
-  // pusher_ctx.dt           = dt;
-  // pusher_ctx.omegaB0      = omegaB0;
-  // pusher_ctx.ni1          = nx1;
-  // pusher_ctx.ni2          = nx2;
-  // pusher_ctx.ni3          = nx3;
-  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+  const auto boundaries = kernel::sr::PusherBoundaries<M::Dim> {
     { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
@@ -197,11 +188,12 @@ void testPusher(const std::vector<std::size_t>& res) {
   pusher_arrays.phi      = phi;
   pusher_arrays.tag      = tag;
 
-  const auto pusher_policy = ::kernel::PusherPolicy<Minkowski<Dim::_3D>,
-                                                    ::traits::emission::NoPolicy_t,
-                                                    ::traits::custom_prtl_update::NoPolicy_t,
-                                                    decltype(ext_force),
-                                                    false> { {}, {}, ext_force };
+  const auto pusher_policy =
+    ::kernel::sr::PusherPolicy<Minkowski<Dim::_3D>,
+                               ::traits::emission::NoPolicy_t,
+                               ::traits::custom_prtl_update::NoPolicy_t,
+                               decltype(ext_force),
+                               false> { {}, {}, ext_force };
 
   for (auto t { 0u }; t < 100; ++t) {
     const real_t time = t * dt;
@@ -210,7 +202,7 @@ void testPusher(const std::vector<std::size_t>& res) {
       "pusher",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
       kernel::sr::Pusher_kernel<Minkowski<Dim::_3D>, decltype(pusher_policy)>(
-        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, time, dt, ONE, nx1, nx2, nx3 },
+        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, time, dt, omegaB0, nx1, nx2, nx3 },
         boundaries,
         pusher_arrays,
         emfield,

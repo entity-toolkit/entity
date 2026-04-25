@@ -7,18 +7,21 @@
   #include "arch/mpi_aliases.h"
 #endif
 
+#include "arch/directions.h"
 #include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 #include "utils/tools.h"
 
-#include "framework/domain/domain.h"
+#include "framework/containers/species.h"
 #include "framework/specialization_registry.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
 #endif
 
+#include <cstddef>
 #include <limits>
 #include <map>
 #include <string>
@@ -278,7 +281,7 @@ namespace ntt {
         current_domain.mesh.set_prtl_bc(direction, prtl_bc);
       }
       // setting boundaries in non-orthogonal (corner) directions
-      for (auto direction : dir::Directions<D>::all) {
+      for (const auto& direction : dir::Directions<D>::all) {
         auto assoc_orth = direction.get_assoc_orth();
         if (assoc_orth.size() == 1) {
           // skip the orthogonal directions
@@ -287,7 +290,7 @@ namespace ntt {
         // if one of the boundaries is not periodic, then use it
         // otherwise, use periodic
         FldsBC flds_bc { FldsBC::INVALID };
-        for (auto dir : assoc_orth) {
+        for (const auto& dir : assoc_orth) {
           const auto fldsbc_in_dir = current_domain.mesh.flds_bc_in(dir);
           if (fldsbc_in_dir != FldsBC::PERIODIC) {
             flds_bc = fldsbc_in_dir;
@@ -297,7 +300,7 @@ namespace ntt {
           }
         }
         PrtlBC prtl_bc { PrtlBC::INVALID };
-        for (auto dir : assoc_orth) {
+        for (const auto& dir : assoc_orth) {
           const auto prtlbc_in_dir = current_domain.mesh.prtl_bc_in(dir);
           if (prtlbc_in_dir != PrtlBC::PERIODIC) {
             prtl_bc = prtlbc_in_dir;
@@ -533,10 +536,10 @@ namespace ntt {
     redefineBoundaries();
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_STRUCT(S, M, D) template struct Metadomain<S, M<D>>;
-
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_STRUCT)
-
 #undef METADOMAIN_STRUCT
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

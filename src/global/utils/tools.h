@@ -282,9 +282,9 @@ namespace tools {
     bool m_initialized { false };
 
     std::string m_type;
-    timestep_t  m_interval;
-    simtime_t   m_interval_time;
-    bool        m_use_time;
+    timestep_t  m_interval { 0u };
+    simtime_t   m_interval_time { -1.0 };
+    bool        m_use_time { false };
 
     timestamp_t m_start_walltime;
     timestamp_t m_end_walltime;

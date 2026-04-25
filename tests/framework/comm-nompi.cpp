@@ -1,4 +1,3 @@
-#include "enums.h"
 #include "global.h"
 
 #include "arch/directions.h"
@@ -8,13 +7,10 @@
 #include "framework/domain/comm_nompi.hpp"
 
 #include <iostream>
-#include <stdexcept>
-
-using namespace ntt;
 
 auto main(int argc, char* argv[]) -> int {
-  Kokkos::initialize(argc, argv);
-
+  using namespace ntt;
+  GlobalInitialize(argc, argv);
   try {
     const std::size_t nx1 = 15, nx2 = 15;
     ndfield_t<Dim::_2D, 3> fld { "fld", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
@@ -110,9 +106,8 @@ auto main(int argc, char* argv[]) -> int {
                                           comp_slice,
                                           true);
     }
-    // add buffers
     Kokkos::parallel_for(
-      "Fill",
+      "AddBuffers",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
       Lambda(index_t i1, index_t i2) {
@@ -121,9 +116,8 @@ auto main(int argc, char* argv[]) -> int {
         }
       });
 
-    // check
     Kokkos::parallel_for(
-      "Fill",
+      "Check",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
       Lambda(index_t i1, index_t i2) {
@@ -137,12 +131,11 @@ auto main(int argc, char* argv[]) -> int {
           raise::KernelError(HERE, "fld2 wrong after comm");
         }
       });
-  } catch (std::exception& e) {
-    std::cerr << "Exception: " << e.what() << std::endl;
-    Kokkos::finalize();
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
+    GlobalFinalize();
     return 1;
   }
-
-  Kokkos::finalize();
+  GlobalFinalize();
   return 0;
 }

@@ -37,7 +37,9 @@ auto main(int argc, char* argv[]) -> int {
 
   try {
     raise::ErrorIf(p.get<int>("a") != 1, "Failed to get int", HERE);
-    raise::ErrorIf(p.get<std::string>("b") != "hello world", "Failed to get string", HERE);
+    raise::ErrorIf(p.get<std::string>("b") != "hello world",
+                   "Failed to get string",
+                   HERE);
     raise::ErrorIf(p.get<double>("c") != 3.14, "Failed to get double", HERE);
     raise::ErrorIf(p.get<std::vector<bool>>("d") != d_vec,
                    "Failed to get vector of bools",
@@ -62,7 +64,9 @@ auto main(int argc, char* argv[]) -> int {
     raise::ErrorIf(p.stringize<std::string>("b") != "hello world",
                    "Wrong stringize for string",
                    HERE);
-    raise::ErrorIf(p.stringize<double>("c") != "3.14", "Wrong stringize for double", HERE);
+    raise::ErrorIf(p.stringize<double>("c") != "3.14",
+                   "Wrong stringize for double",
+                   HERE);
     raise::ErrorIf(p.stringize<bool>("d") != "[true, true, false]",
                    "Wrong stringize for vector of bools",
                    HERE);

@@ -65,24 +65,20 @@ namespace metric {
       set_dxMin(find_dxMin());
     }
 
-    ~Spherical() = default;
-
     /**
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
-      auto dx1 { dr };
-      auto dx2 { x1_min * dtheta };
-      return ONE / math::sqrt(ONE / SQR(dx1) + ONE / SQR(dx2));
+      return ONE / math::sqrt(ONE / SQR(dr) + ONE / SQR(x1_min * dtheta));
     }
 
     /**
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {
@@ -282,18 +278,16 @@ namespace metric {
                     (in == Idx::Sph && out == Idx::T)) {
         // tetrad <-> sph
         return v_in;
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::U) or // tetrad/sph -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::Sph)) // cov -> tetrad/sph
+      ) {
         return v_in / sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::Sph)) or // cntrv -> tetrad/sph
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::D) // tetrad/sph -> cov
+      ) {
         return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        return v_in * sqrt_h_<i, i>(xi);
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        return v_in / sqrt_h_<i, i>(xi);
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         return v_in * h_<i, i>(xi);

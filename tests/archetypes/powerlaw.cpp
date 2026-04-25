@@ -89,20 +89,17 @@ void testEnergyDist(const std::vector<std::size_t>&      res,
 
   M metric { res, extent, params };
 
-  random_number_pool_t pool { constant::RandomSeed };
-  Powerlaw<S, M>       plaw { metric,
-                        pool,
-                        static_cast<real_t>(10),
-                        static_cast<real_t>(1000),
-                        static_cast<real_t>(-2.5) };
-  Kokkos::parallel_for("Powerlaw", 100, Caller<Powerlaw<S, M>, S, M>(metric, plaw));
+  random_number_pool_t          pool { constant::RandomSeed };
+  energy_dist::Powerlaw<M::Dim> plaw { pool,
+                                       static_cast<real_t>(10),
+                                       static_cast<real_t>(1000),
+                                       static_cast<real_t>(-2.5) };
+  Kokkos::parallel_for("Powerlaw", 100, Caller<decltype(plaw), S, M>(metric, plaw));
 }
 
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
-
   try {
-    using namespace ntt;
     testEnergyDist<SimEngine::SRPIC, Minkowski<Dim::_1D>>(
       {
         10
@@ -163,8 +160,8 @@ auto main(int argc, char* argv[]) -> int {
       { { 1.0, 100.0 } },
       { { "a", 0.9 } });
 
-  } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

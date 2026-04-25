@@ -1,3 +1,5 @@
+#include "framework/parameters/parameters.h"
+
 #include "defaults.h"
 #include "enums.h"
 #include "global.h"
@@ -6,7 +8,6 @@
 #include "utils/error.h"
 
 #include "framework/containers/species.h"
-#include "framework/parameters/parameters.h"
 
 #include <toml11/toml.hpp>
 
@@ -358,9 +359,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<real_t>(params_mink_1d.get<real_t>("setup.myfloat"),
                            (real_t)(1e-2),
                            "setup.myfloat");
-      assert_equal<int>(params_mink_1d.get<int>("setup.myint"),
-                        (int)(123),
-                        "setup.myint");
+      assert_equal<int>(params_mink_1d.get<int>("setup.myint"), 123, "setup.myint");
       assert_equal<bool>(params_mink_1d.get<bool>("setup.mybool"),
                          true,
                          "setup.mybool");

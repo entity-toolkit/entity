@@ -3,6 +3,10 @@
  * @brief Defines the metadata for particle spectra
  * @implements
  *   - out::OutputSpectra
+ * @cpp:
+ *   - spectra.cpp
+ * @namespaces:
+ *   - out::
  */
 
 #ifndef OUTPUT_SPECTRA_H

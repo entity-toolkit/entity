@@ -1,3 +1,12 @@
+/**
+ * @file engines/srpic/particle_pusher.h
+ * @brief Particle pusher routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::ParticlePush<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_PARTICLE_PUSHER_H
 #define ENGINES_SRPIC_PARTICLE_PUSHER_H
 
@@ -5,6 +14,7 @@
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/policies.h"
 #include "utils/log.h"
 #include "utils/numeric.h"
 #include "utils/param_container.h"
@@ -14,13 +24,15 @@
 #include "framework/domain/grid.h"
 #include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
-#include "kernels/pushers/policies.h"
 #include "kernels/pushers/sr.hpp"
+#include "kernels/pushers/sr_policies.h"
+
+#include "engines/engine.hpp"
 
 namespace ntt {
   namespace srpic {
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void ParticlePush(Domain<SimEngine::SRPIC, M>& domain,
                       const Grid<M::Dim>&          global_grid,
                       const M&                     global_metric,
@@ -78,7 +90,7 @@ namespace ntt {
                       species.npart()),
           HERE);
 
-        kernel::PusherContext pusher_ctx {
+        kernel::sr::PusherContext pusher_ctx {
           species.index(),
           species.pusher(),
           species.radiative_drag_flags(),
@@ -93,21 +105,21 @@ namespace ntt {
         };
 
         if (species.pusher() & ParticlePusher::GCA) {
-          pusher_ctx.gca = kernel::PusherGCAContext(
+          pusher_ctx.gca = kernel::sr::PusherGCAContext(
             params.template get<real_t>("algorithms.gca.larmor_max"),
             params.template get<real_t>("algorithms.gca.e_ovr_b_max"));
         }
 
         if (has_atmosphere) {
-          pusher_ctx.atmosphere = kernel::PusherAtmosphereContext(gx1,
-                                                                  gx2,
-                                                                  gx3,
-                                                                  x_surf,
-                                                                  ds);
+          pusher_ctx.atmosphere = kernel::sr::PusherAtmosphereContext(gx1,
+                                                                      gx2,
+                                                                      gx3,
+                                                                      x_surf,
+                                                                      ds);
         }
 
         if (species.radiative_drag_flags() & RadiativeDrag::SYNCHROTRON) {
-          pusher_ctx.synchrotron_drag = kernel::PusherSynchrotronDragContext(
+          pusher_ctx.synchrotron_drag = kernel::sr::PusherSynchrotronDragContext(
             dt,
             pusher_ctx.omegaB0,
             params.template get<real_t>("radiation.drag.synchrotron.gamma_rad"),
@@ -115,20 +127,22 @@ namespace ntt {
         }
 
         if (species.radiative_drag_flags() & RadiativeDrag::COMPTON) {
-          pusher_ctx.compton_drag = kernel::PusherComptonDragContext(
+          pusher_ctx.compton_drag = kernel::sr::PusherComptonDragContext(
             dt,
             pusher_ctx.omegaB0,
             params.template get<real_t>("radiation.drag.compton.gamma_rad"),
             species.mass());
         }
 
-        auto pusher_boundaries = kernel::PusherBoundaries<M::Dim> {
+        auto pusher_boundaries = kernel::sr::PusherBoundaries<M::Dim> {
           domain.mesh.prtl_bc()
         };
 
         auto pusher_arrays = species.PusherKernelArrays();
 
-        kernel::MakePusherPolicy<decltype(domain.mesh.metric), decltype(domain), decltype(pgen)>(
+        kernel::sr::MakePusherPolicy<decltype(domain.mesh.metric),
+                                     decltype(domain),
+                                     decltype(pgen)>(
           pgen,
           domain,
           params,
@@ -136,16 +150,38 @@ namespace ntt {
           species.emission_policy_flag(),
           has_atmosphere,
           [&](const auto& policies) {
+            using policy_t = std::decay_t<decltype(policies)>;
             Kokkos::parallel_for(
               "ParticlePusher",
               species.rangeActiveParticles(),
-              kernel::sr::Pusher_kernel<M, std::decay_t<decltype(policies)>> {
-                pusher_ctx,
-                pusher_boundaries,
-                pusher_arrays,
-                domain.fields.em,
-                domain.mesh.metric,
-                policies });
+              kernel::sr::Pusher_kernel<M, policy_t> { pusher_ctx,
+                                                       pusher_boundaries,
+                                                       pusher_arrays,
+                                                       domain.fields.em,
+                                                       domain.mesh.metric,
+                                                       policies });
+            // if emission takes place, update the npart and counter of emitted species
+            if constexpr (
+              not ::traits::emission::IsNoPolicy<typename policy_t::EmissionPolicy>) {
+              const auto& emission_policy = policies.emission_policy;
+              const auto emitted_species = emission_policy.emitted_species_indices();
+              const auto n_inj = emission_policy.numbers_injected();
+              raise::ErrorIf(emitted_species.size() != n_inj.size(),
+                             "Emission policy emitted_species_indices and "
+                             "numbers_injected must have the same size",
+                             HERE);
+              for (auto i = 0u; i < emitted_species.size(); ++i) {
+                const auto sp_idx = emitted_species[i];
+                raise::ErrorIf(sp_idx > domain.species.size(),
+                               "Invalid emitted species index from custom "
+                               "emission policy",
+                               HERE);
+                domain.species[sp_idx - 1].set_npart(
+                  domain.species[sp_idx - 1].npart() + n_inj[i]);
+                domain.species[sp_idx - 1].set_counter(
+                  domain.species[sp_idx - 1].counter() + n_inj[i]);
+              }
+            }
           });
       }
     }

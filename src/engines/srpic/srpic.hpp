@@ -1,17 +1,16 @@
 /**
- * @file engines/srpic.hpp
- * @brief Simulation engien class which specialized on SRPIC
+ * @file engines/srpic/srpic.hpp
+ * @brief Simulation engine class which specializes on SRPIC
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
  *   - ntt::
- * @macros:
  */
 
-#ifndef ENGINES_SRPIC_SRPIC_H
-#define ENGINES_SRPIC_SRPIC_H
+#ifndef ENGINES_SRPIC_SRPIC_HPP
+#define ENGINES_SRPIC_SRPIC_HPP
 
 #include "enums.h"
 #include "global.h"
@@ -61,7 +60,7 @@ namespace ntt {
 
     SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
-    ~SRPICEngine() = default;
+    ~SRPICEngine() override = default;
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
@@ -191,4 +190,4 @@ namespace ntt {
 
 } // namespace ntt
 
-#endif // ENGINES_SRPIC_SRPIC_H
+#endif // ENGINES_SRPIC_SRPIC_HPP

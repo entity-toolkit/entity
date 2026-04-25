@@ -9,7 +9,6 @@
 #include "traits/policies.h"
 
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 #include "kernels/injectors.hpp"
 
@@ -93,9 +92,9 @@ namespace user {
       const auto rnd       = Random<real_t>(generator);
       random_pool.free_state(generator);
       if (rnd < probability) {
-        delta_u_Ph[0] = -0.1 * u_Ph[0];
-        delta_u_Ph[1] = -0.1 * u_Ph[1];
-        delta_u_Ph[2] = -0.1 * u_Ph[2];
+        delta_u_Ph[0] = -static_cast<real_t>(0.1) * u_Ph[0];
+        delta_u_Ph[1] = -static_cast<real_t>(0.1) * u_Ph[1];
+        delta_u_Ph[2] = -static_cast<real_t>(0.1) * u_Ph[2];
 
         const auto uSqr          = NORM_SQR(u_Ph[0], u_Ph[1], u_Ph[2]);
         const auto gammaSqr      = ONE + uSqr;
@@ -158,7 +157,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
@@ -169,25 +169,22 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
+    const SimulationParams& params;
     const Metadomain<S, M>& metadomain;
 
     const real_t emission_probability;
 
     InitFields<D> init_flds {};
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
+      : params { p }
       , metadomain { metadomain }
       , emission_probability { params.template get<real_t>(
           "setup.emission_probability") } {
       static_assert(EmissionPolicyClass<RandomEmission<M>, M>, "RandomEmission does not satisfy the requirements of an emission policy");
     }
 
-    inline auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
+    auto EmissionPolicy(simtime_t, spidx_t, Domain<S, M>& domain) const
       -> RandomEmission<M> {
       return RandomEmission<M> {
         domain.random_pool(),      emission_probability,
@@ -201,7 +198,7 @@ namespace user {
       };
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto empty  = std::vector<real_t> {};
       const auto x1_arr = params.template get<std::vector<real_t>>(
         "setup.x1_arr",

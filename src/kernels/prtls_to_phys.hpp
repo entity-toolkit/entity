@@ -53,7 +53,7 @@ namespace kernel {
 
   public:
     PrtlToPhys_kernel(npart_t                   stride,
-                      array_t<npart_t*>         out_indices,
+                      array_t<npart_t*>&        out_indices,
                       array_t<real_t*>&         buff_x1,
                       array_t<real_t*>&         buff_x2,
                       array_t<real_t*>&         buff_x3,

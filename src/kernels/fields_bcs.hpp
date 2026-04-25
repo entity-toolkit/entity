@@ -64,7 +64,7 @@ namespace kernel::bc {
     ncells_t extent_2 { 0u };
     bool     is_axis_i2min { false }, is_axis_i2max { false };
 
-    MatchBoundaries_kernel(ndfield_t<M::Dim, 6>        Fld,
+    MatchBoundaries_kernel(ndfield_t<M::Dim, 6>&       Fld,
                            const FS&                   fset,
                            const M&                    metric,
                            real_t                      xg_edge,
@@ -529,7 +529,7 @@ namespace kernel::bc {
     const std::size_t i_edge;
     const BCTags      tags;
 
-    ConductorBoundaries_kernel(ndfield_t<D, 6> Fld, std::size_t i_edge, BCTags tags)
+    ConductorBoundaries_kernel(ndfield_t<D, 6>& Fld, std::size_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , tags { tags } {}

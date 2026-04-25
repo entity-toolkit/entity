@@ -1,3 +1,13 @@
+/**
+ * @file engines/reporter.h
+ * @brief Functions for reporting simulation and problem generator configuration
+ * @implements
+ *   - ntt::ReportSimulationConfig -> std::string
+ *   - ntt::ReportPgenConfig<> -> std::string
+ * @namespaces:
+ *   - ntt::
+ */
+
 #ifndef ENGINES_REPORTER_H
 #define ENGINES_REPORTER_H
 
@@ -22,11 +32,11 @@ namespace ntt {
                               const std::vector<unsigned int>&,
                               unsigned int) -> std::string;
 
-  template <class PG, class Dom>
-  inline auto ReportPgenConfig(const PG& pgen, const std::string& pgen_name)
+  template <class PG, Dimension D, class Dom>
+  inline auto ReportPgenConfig(const PG& /*pgen*/, const std::string& pgen_name)
     -> std::string {
-    std::string report  = "";
-    report             += "\n";
+    std::string report;
+    report += "\n";
     reporter::AddCategory(report, 4, "Problem generator");
     reporter::AddParam(report, 6, "Name", "%s", pgen_name.c_str());
     reporter::AddSubcategory(report, 6, "Methods defined");
@@ -95,11 +105,12 @@ namespace ntt {
                        "EmissionPolicy",
                        "%s",
                        BoolToOnOff(::traits::pgen::HasEmissionPolicy<PG, Dom>));
-    reporter::AddParam(report,
-                       8,
-                       "CustomFieldOutput",
-                       "%s",
-                       BoolToOnOff(::traits::pgen::HasCustomFieldOutput<PG, Dom>));
+    reporter::AddParam(
+      report,
+      8,
+      "CustomFieldOutput",
+      "%s",
+      BoolToOnOff(::traits::pgen::HasCustomFieldOutput<PG, D, Dom>));
     reporter::AddParam(report,
                        8,
                        "CustomStatOutput",

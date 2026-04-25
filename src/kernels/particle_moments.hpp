@@ -39,7 +39,7 @@ namespace kernel {
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
-    static_assert(!((S == SimEngine::GRPIC) && (F == FldsID::V)),
+    static_assert((S != SimEngine::GRPIC) || (F != FldsID::V),
                   "Bulk velocity not supported for GRPIC");
     static_assert((F == FldsID::Rho) || (F == FldsID::Charge) || (F == FldsID::N) ||
                     (F == FldsID::Nppc) || (F == FldsID::T) || (F == FldsID::V),
@@ -89,8 +89,8 @@ namespace kernel {
                            ncells_t                           ni2,
                            real_t                             inv_n0,
                            unsigned short                     window)
-      : c1 { (components.size() > 0) ? components[0]
-                                     : static_cast<unsigned short>(0) }
+      : c1 { not components.empty() ? components[0]
+                                    : static_cast<unsigned short>(0) }
       , c2 { (components.size() == 2) ? components[1]
                                       : static_cast<unsigned short>(0) }
       , Buff { scatter_buff }

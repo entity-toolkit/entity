@@ -27,9 +27,6 @@ void errorIf(bool condition, const std::string& message) {
   }
 }
 
-const real_t eps = std::is_same_v<real_t, double> ? (real_t)(1e-6)
-                                                  : (real_t)(1e-3);
-
 Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
   if ((a - b) >= eps * math::max(math::fabs(a), math::fabs(b))) {
     Kokkos::printf("%.12e != %.12e %s\n", a, b, msg);
@@ -43,7 +40,7 @@ Inline auto equal(real_t a, real_t b, const char* msg, real_t eps) -> bool {
 }
 
 template <typename T>
-void put_value(array_t<T*> arr, T value, int i) {
+void put_value(const array_t<T*>& arr, T value, int i) {
   auto arr_h = Kokkos::create_mirror_view(arr);
   arr_h(i)   = value;
   Kokkos::deep_copy(arr, arr_h);
@@ -100,14 +97,14 @@ void testDeposit(const std::vector<std::size_t>&      res,
   const real_t   xi = (real_t)i0 + (real_t)dxi, xf = (real_t)i0f + (real_t)dxf;
   const real_t   yi = (real_t)j0 + (real_t)dyi, yf = (real_t)j0f + (real_t)dyf;
 
-  const real_t xr = 0.5 * (xi + xf);
-  const real_t yr = 0.5 * (yi + yf);
+  const real_t xr = HALF * (xi + xf);
+  const real_t yr = HALF * (yi + yf);
 
-  const real_t Wx1 = 0.5 * (xi + xr) - (real_t)i0;
-  const real_t Wx2 = 0.5 * (xf + xr) - (real_t)i0;
+  const real_t Wx1 = HALF * (xi + xr) - (real_t)i0;
+  const real_t Wx2 = HALF * (xf + xr) - (real_t)i0;
 
-  const real_t Wy1 = 0.5 * (yi + yr) - (real_t)j0;
-  const real_t Wy2 = 0.5 * (yf + yr) - (real_t)j0;
+  const real_t Wy1 = HALF * (yi + yr) - (real_t)j0;
+  const real_t Wy2 = HALF * (yf + yr) - (real_t)j0;
 
   const real_t Fx1 = (xr - xi);
   const real_t Fx2 = (xf - xr);
@@ -115,8 +112,8 @@ void testDeposit(const std::vector<std::size_t>&      res,
   const real_t Fy1 = (yr - yi);
   const real_t Fy2 = (yf - yr);
 
-  const real_t Fz1 = HALF * uz / math::sqrt(1.0 + uz * uz);
-  const real_t Fz2 = HALF * uz / math::sqrt(1.0 + uz * uz);
+  const real_t Fz1 = HALF * uz / math::sqrt(ONE + uz * uz);
+  const real_t Fz2 = HALF * uz / math::sqrt(ONE + uz * uz);
 
   const real_t Jx1 = Fx1 * (1 - Wy1) + Fx2 * (1 - Wy2);
   const real_t Jx2 = Fx1 * Wy1 + Fx2 * Wy2;
@@ -290,7 +287,7 @@ auto main(int argc, char* argv[]) -> int {
     testDepositForShapeOrder<11u>();
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

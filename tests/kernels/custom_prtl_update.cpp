@@ -28,9 +28,9 @@ void errorIf(bool condition, const std::string& message = "") {
   }
 }
 
-Inline auto equal(real_t a, real_t b, const std::string& msg) -> bool {
+auto equal(real_t a, real_t b, const std::string& msg) -> bool {
   if (not(math::abs(a - b) < 1e-4)) {
-    Kokkos::printf("%.12e != %.12e %s\n", a, b, msg.c_str());
+    printf("%.12e != %.12e %s\n", a, b, msg.c_str());
     return false;
   }
   return true;
@@ -46,9 +46,9 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 
 template <MetricClass M>
 struct TestCustomPrtlUpdate {
-  Inline void operator()(index_t                      p,
-                         const kernel::PusherContext& ctx,
-                         const kernel::PusherBoundaries<M::Dim>&,
+  Inline void operator()(index_t                          p,
+                         const kernel::sr::PusherContext& ctx,
+                         const kernel::sr::PusherBoundaries<M::Dim>&,
                          const kernel::PusherArrays& particles,
                          const M&                    metric) const {
     if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
@@ -195,7 +195,7 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
     put_value<prtldx_t>(c_dx3, 0.1, 0);
   }
 
-  kernel::PusherBoundaries<M::Dim> boundaries {
+  kernel::sr::PusherBoundaries<M::Dim> boundaries {
     { { PrtlBC::REFLECT, PrtlBC::REFLECT },
      { PrtlBC::REFLECT, PrtlBC::REFLECT },
      { PrtlBC::REFLECT, PrtlBC::REFLECT } }
@@ -240,11 +240,11 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   c_arrays.tag      = c_tag;
 
   const auto custom_update_policy =
-    ::kernel::PusherPolicy<M,
-                           ::traits::emission::NoPolicy_t,
-                           TestCustomPrtlUpdate<M>,
-                           ::traits::extfields::NoPolicy_t,
-                           false> {};
+    ::kernel::sr::PusherPolicy<M,
+                               ::traits::emission::NoPolicy_t,
+                               TestCustomPrtlUpdate<M>,
+                               ::traits::extfields::NoPolicy_t,
+                               false> {};
 
   static constexpr auto n_iter = 100;
 

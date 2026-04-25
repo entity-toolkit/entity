@@ -79,7 +79,8 @@ namespace arch {
     domain.mesh.metric.template convert<Crd::Ph, Crd::Cd>(xCorner_max_Ph,
                                                           xCorner_max_Cd);
 
-    array_t<real_t*> xi_min { "xi_min", M::Dim }, xi_max { "xi_max", M::Dim };
+    const array_t<real_t*> xi_min { "xi_min", M::Dim },
+      xi_max { "xi_max", M::Dim };
 
     auto xi_min_h = Kokkos::create_mirror_view(xi_min);
     auto xi_max_h = Kokkos::create_mirror_view(xi_max);
@@ -198,7 +199,7 @@ namespace arch {
    * @tparam ED1 Energy distribution type for species 1
    * @tparam ED2 Energy distribution type for species 2
    */
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
   inline void InjectUniform(const SimulationParams&            params,
                             Domain<S, M>&                      domain,
                             const std::pair<spidx_t, spidx_t>& species,
@@ -226,7 +227,7 @@ namespace arch {
       boundaries_t<real_t> nonempty_box;
       for (auto d { 0u }; d < M::Dim; ++d) {
         if (d < box.size()) {
-          nonempty_box.push_back({ box[d].first, box[d].second });
+          nonempty_box.emplace_back(box[d].first, box[d].second);
         } else {
           nonempty_box.push_back(Range::All);
         }
@@ -244,7 +245,6 @@ namespace arch {
                            kernel::UniformInjector_kernel<S, M, ED1, ED2>(
                              domain.species[species.first - 1],
                              domain.species[species.second - 1],
-                             nparticles,
                              domain.index(),
                              domain.mesh.metric,
                              xi_min,
@@ -309,7 +309,11 @@ namespace arch {
    * @tparam ED2 Energy distribution type for species 2
    * @tparam SD Spatial distribution type
    */
-  template <SimEngine::type S, MetricClass M, EnrgDistClass ED1, EnrgDistClass ED2, SpatialDistClass SD>
+  template <SimEngine::type          S,
+            MetricClass              M,
+            EnrgDistClass<M::Dim>    ED1,
+            EnrgDistClass<M::Dim>    ED2,
+            SpatialDistClass<M::Dim> SD>
   inline void InjectNonUniform(const SimulationParams&            params,
                                Domain<S, M>&                      domain,
                                const std::pair<spidx_t, spidx_t>& species,
@@ -339,7 +343,7 @@ namespace arch {
     }
     {
       range_t<M::Dim> cell_range;
-      if (box.size() == 0) {
+      if (box.empty()) {
         cell_range = domain.mesh.rangeActiveCells();
       } else {
         boundaries_t<real_t> reduced_box(box);
@@ -351,7 +355,7 @@ namespace arch {
                        HERE);
         boundaries_t<bool> incl_ghosts;
         for (auto d = 0; d < M::Dim; ++d) {
-          incl_ghosts.push_back({ false, false });
+          incl_ghosts.emplace_back(false, false);
         }
         const auto extent = domain.mesh.ExtentToRange(reduced_box, incl_ghosts);
         tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };

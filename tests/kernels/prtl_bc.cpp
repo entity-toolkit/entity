@@ -2,7 +2,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/policies.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 
@@ -29,9 +28,9 @@ void errorIf(bool condition, const std::string& message = "") {
   }
 }
 
-Inline auto equal(real_t a, real_t b, const std::string& msg) -> bool {
+auto equal(real_t a, real_t b, const std::string& msg) -> bool {
   if (not(math::abs(a - b) < 1e-4)) {
-    Kokkos::printf("%.12e != %.12e %s\n", a, b, msg.c_str());
+    printf("%.12e != %.12e %s\n", a, b, msg.c_str());
     return false;
   }
   return true;
@@ -93,7 +92,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
                                      res.at(2) + 2 * N_GHOSTS };
   }
 
-  const short        sp_idx = 1;
+  const spidx_t      sp_idx = 1;
   // allocate two particles
   array_t<int*>      i1 { "i1", 2 };
   array_t<int*>      i2 { "i2", 2 };
@@ -232,7 +231,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   real_t     time   = ZERO;
   const auto n_iter = 100;
 
-  const auto boundaries = kernel::PusherBoundaries<M::Dim> {
+  const auto boundaries = kernel::sr::PusherBoundaries<M::Dim> {
     { { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC },
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
@@ -262,7 +261,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
                          CreateRangePolicy<Dim::_1D>({ 0 }, { 2 }),
                          kernel::sr::Pusher_kernel<M>(
                            {
-                             1u,
+                             sp_idx,
                              ParticlePusher::BORIS,
                              RadiativeDrag::NONE,
                              1.f,
@@ -411,7 +410,7 @@ auto main(int argc, char* argv[]) -> int {
     testPeriodicBC<SimEngine::SRPIC, Minkowski<Dim::_3D>>(res3d, ext3d, {});
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

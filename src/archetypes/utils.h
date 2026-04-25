@@ -59,14 +59,14 @@ namespace arch {
     const auto temperature_1 = temperatures.first / mass_1;
     const auto temperature_2 = temperatures.second / mass_2;
 
-    const auto maxwellian_1 = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                     domain.random_pool(),
-                                                     temperature_1,
-                                                     drift_four_vels.first);
-    const auto maxwellian_2 = arch::Maxwellian<S, M>(domain.mesh.metric,
-                                                     domain.random_pool(),
-                                                     temperature_2,
-                                                     drift_four_vels.second);
+    const auto maxwellian_1 = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+      domain.random_pool(),
+      temperature_1,
+      drift_four_vels.first);
+    const auto maxwellian_2 = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+      domain.random_pool(),
+      temperature_2,
+      drift_four_vels.second);
 
     arch::InjectUniform<S, M, decltype(maxwellian_1), decltype(maxwellian_2)>(
       params,
@@ -135,7 +135,7 @@ namespace arch {
   inline void ComputeMomentWithSpecies(
     const SimulationParams&            params,
     Domain<S, M>&                      domain,
-    const std::vector<spidx_t>         species,
+    const std::vector<spidx_t>&        species,
     ndfield_t<M::Dim, N>&              buffer,
     const std::vector<unsigned short>& components = {},
     idx_t                              buffer_idx = 0u,
@@ -179,9 +179,7 @@ namespace arch {
   }
 
   template <SimEngine::type S, MetricClass M, class F>
-  inline void UpdateEMFields(const SimulationParams& params,
-                             Domain<S, M>&           domain,
-                             const F&                fieldsetter) {
+  inline void UpdateEMFields(Domain<S, M>& domain, const F& fieldsetter) {
     if constexpr (S == SimEngine::SRPIC) {
       Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
       Kokkos::parallel_for(

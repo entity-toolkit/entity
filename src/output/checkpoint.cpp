@@ -2,6 +2,7 @@
 
 #include "global.h"
 
+#include "arch/mpi_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -9,6 +10,8 @@
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
 
+#include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <string>
 
@@ -62,12 +65,12 @@ namespace checkpoint {
       const auto metafilename = m_checkpoint_root /
                                 fmt::format("meta-%08lu.toml", step);
       m_writer = m_io.Open(filename, adios2::Mode::Write);
-      m_written.push_back({ filename, metafilename });
+      m_written.emplace_back(filename, metafilename);
       logger::Checkpoint(fmt::format("Writing checkpoint to %s and %s",
                                      filename.c_str(),
                                      metafilename.c_str()),
                          HERE);
-    } catch (std::exception& e) {
+    } catch (const std::exception& e) {
       raise::Fatal(e.what(), HERE);
     }
 

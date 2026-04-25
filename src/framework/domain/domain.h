@@ -6,6 +6,10 @@
  * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
+ * @cpp:
+ *   - domain.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  * @note
@@ -149,9 +153,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto random_pool() -> random_number_pool_t& {
-      raise::ErrorIf(not m_random_number_pool.has_value(),
-                     "random_pool() called on a placeholder domain",
-                     HERE);
+      if (not m_random_number_pool.has_value()) {
+        raise::Error("random_pool() called on a placeholder domain", HERE);
+      }
       return m_random_number_pool.value();
     }
 
@@ -163,7 +167,7 @@ namespace ntt {
 
     /* printer overload ----------------------------------------------------- */
     auto Report() const -> std::string {
-      std::string report = "";
+      std::string report;
       reporter::AddSubcategory(report,
                                4,
                                fmt::format("Domain #%d", index()).c_str());
@@ -232,7 +236,7 @@ namespace ntt {
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
-    int                         m_mpi_rank;
+    int                         m_mpi_rank { -1 };
 
     // random number pool for the domain
     std::optional<random_number_pool_t> m_random_number_pool;

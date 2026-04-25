@@ -8,7 +8,6 @@
 #include <Kokkos_Core.hpp>
 
 #include <iostream>
-#include <stdexcept>
 
 using namespace ntt;
 using namespace metric;
@@ -61,8 +60,8 @@ auto main(int argc, char* argv[]) -> int {
         }
       }
     }
-  } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

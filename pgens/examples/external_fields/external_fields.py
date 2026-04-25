@@ -20,4 +20,4 @@ ax.scatter(
 )
 ax.set(xlim=(-1, 1), ylim=(-1, 1), xlabel=r"$x$", ylabel=r"$y$", aspect=1)
 
-plt.show()
+plt.savefig("external_fields.png", bbox_inches="tight")

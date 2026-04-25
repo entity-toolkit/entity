@@ -1,3 +1,14 @@
+/**
+ * @file engines/srpic/currents.h
+ * @brief Current deposition and filtering routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::CallDepositKernel<> -> void
+ *   - ntt::srpic::CurrentsDeposit<> -> void
+ *   - ntt::srpic::CurrentsFilter<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_CURRENTS_H
 #define ENGINES_SRPIC_CURRENTS_H
 

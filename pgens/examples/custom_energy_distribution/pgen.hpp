@@ -8,7 +8,6 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -33,7 +32,7 @@ namespace user {
     Inline void operator()(const coord_t<D>& x_Ph, vec_t<Dim::_3D>& v) const {
       // sample a static 3D maxwellian + drift in x1 direction with sinusoidal spatial dependence
       // @NOTE: for relativistic drift, use the built-in drifting Maxwellian
-      arch::JuttnerSinge(v, temperature, random_pool);
+      arch::energy_dist::JuttnerSinge(v, temperature, random_pool);
       v[0] += drift_amplitude * math::sin(x_Ph[0] * kx);
     }
 
@@ -57,7 +56,7 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
 
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
@@ -69,17 +68,14 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
+    const SimulationParams& params;
     const Metadomain<S, M>& metadomain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p }
-      , metadomain { metadomain } {}
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m } {}
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto temperature = params.template get<real_t>("setup.temperature");
       const auto drift_amplitude = params.template get<real_t>(
         "setup.drift_amplitude");

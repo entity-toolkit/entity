@@ -1,8 +1,8 @@
 /**
  * @file kernels/particle_shapes.hpp
  * @brief Functions to compute particle shapes at specific locations on the grid.
- * @implements:
- *   - order_2<> -> void
+ * @implements
+ *   - prtl_shape::order_2<> -> void
  * @namespaces:
  *   - prtl_shape::
  */

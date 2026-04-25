@@ -32,11 +32,15 @@ void testVec() {
   raise::ErrorIf(not cmp::AlmostEqual(NORM_SQR(a1, a2, a3), c_one),
                  "NORM_SQR of a != 1",
                  HERE);
-  raise::ErrorIf(not cmp::AlmostEqual(NORM(a1, a2, a3), c_one), "NORM of a != 1", HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM(a1, a2, a3), c_one),
+                 "NORM of a != 1",
+                 HERE);
   raise::ErrorIf(not cmp::AlmostEqual(NORM_SQR(b1, b2, b3), c_one),
                  "NORM_SQR of b != 1",
                  HERE);
-  raise::ErrorIf(not cmp::AlmostEqual(NORM(b1, b2, b3), c_one), "NORM of b != 1", HERE);
+  raise::ErrorIf(not cmp::AlmostEqual(NORM(b1, b2, b3), c_one),
+                 "NORM of b != 1",
+                 HERE);
 
   const T c1 = CROSS_x1(a1, a2, a3, b1, b2, b3);
   const T c2 = CROSS_x2(a1, a2, a3, b1, b2, b3);

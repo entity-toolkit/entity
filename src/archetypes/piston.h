@@ -22,16 +22,16 @@
 /* -------------------------------------------------------------------------- */
 #define from_Xi_to_i(XI, I)                                                    \
   {                                                                            \
-    I = static_cast<int>((XI + 1)) - 1;                                        \
+    (I) = static_cast<int>(((XI) + 1)) - 1;                                    \
   }
 
 #define from_Xi_to_i_di(XI, I, DI)                                             \
   {                                                                            \
     from_Xi_to_i((XI), (I));                                                   \
-    DI = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);               \
+    (DI) = static_cast<prtldx_t>((XI)) - static_cast<prtldx_t>(I);             \
   }
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 /* -------------------------------------------------------------------------- */
 
@@ -65,21 +65,9 @@ namespace arch {
     const real_t x1_Ph_wallmove = metric.template convert<1, Crd::Cd, Crd::Ph>(
       x1_Cd_wallmove);
 
-    if (is_left) { // if piston is moving from left, ask if particle is to the left of piston
-      if (piston_position > x1_Ph_wallmove) {
-        return true;
-      } else {
-        return false;
-      }
-    } else { // if piston is moving from the right, so ask is particle to right of piston
-      if (piston_position < x1_Ph_wallmove) {
-        return true;
-      } else {
-        return false;
-      }
-    }
+    return is_left ? piston_position > x1_Ph_wallmove
+                   : piston_position < x1_Ph_wallmove;
   }
-
 
   /**
    * @brief Updates particle position and velocity if it reflects off a moving
@@ -103,13 +91,7 @@ namespace arch {
                      bool                        massive) {
 
     // check if particle actually crosses the piston, if not return
-    if (!CrossesPiston<M>(p,
-                        dt,
-                        particles,
-                        metric,
-                        piston_position,
-                        piston_v,
-                        true)) {
+    if (!CrossesPiston<M>(p, dt, particles, metric, piston_position, piston_v, true)) {
       return;
     }
     // step 1: calculate the particle 3 velocity
@@ -165,8 +147,8 @@ namespace arch {
 
     i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
                 static_cast<int>(dx_w_coll < ZERO);
-    dx_w_coll -= (dx_w_coll >= ONE);
-    dx_w_coll += (dx_w_coll < ZERO);
+    dx_w_coll -= static_cast<prtldx_t>(dx_w_coll >= ONE);
+    dx_w_coll += static_cast<prtldx_t>(dx_w_coll < ZERO);
 
     particles.i1(p) = i_w_coll;
     particles.dx1(
@@ -176,8 +158,8 @@ namespace arch {
 
     particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
                        static_cast<int>(particles.dx1(p) < ZERO);
-    particles.dx1(p) -= (particles.dx1(p) >= ONE);
-    particles.dx1(p) += (particles.dx1(p) < ZERO);
+    particles.dx1(p) -= static_cast<prtldx_t>(particles.dx1(p) >= ONE);
+    particles.dx1(p) += static_cast<prtldx_t>(particles.dx1(p) < ZERO);
   }
 
 } // namespace arch

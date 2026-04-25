@@ -26,15 +26,15 @@
 
 #include <Kokkos_Pair.hpp>
 
-template <class ED>
-concept EnrgDistClass = requires(const ED&             edist,
-                                 const coord_t<ED::D>& x_Ph,
-                                 vec_t<Dim::_3D>&      v) {
+template <class ED, Dimension D>
+concept EnrgDistClass = requires(const ED&         edist,
+                                 const coord_t<D>& x_Ph,
+                                 vec_t<Dim::_3D>&  v) {
   { edist(x_Ph, v) } -> std::same_as<void>;
 };
 
-template <class SD>
-concept SpatialDistClass = requires(const SD& sdist, const coord_t<SD::D>& x_Ph) {
+template <class SD, Dimension D>
+concept SpatialDistClass = requires(const SD& sdist, const coord_t<D>& x_Ph) {
   { sdist(x_Ph) } -> std::convertible_to<real_t>;
 };
 

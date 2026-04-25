@@ -1,3 +1,19 @@
+/**
+ * @file engines/srpic/fields_bcs.h
+ * @brief Field boundary condition routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::CallMatchFields<> -> void
+ *   - ntt::srpic::MatchFieldsIn<> -> void
+ *   - ntt::srpic::AxisFieldsIn<> -> void
+ *   - ntt::srpic::FixedFieldsIn<> -> void
+ *   - ntt::srpic::PerfectConductorFieldsIn<> -> void
+ *   - ntt::srpic::AtmosphereFieldsIn<> -> void
+ *   - ntt::srpic::CustomFieldsIn<> -> void
+ *   - ntt::srpic::FieldBoundaries<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_FIELDS_BCS_H
 #define ENGINES_SRPIC_FIELDS_BCS_H
 
@@ -6,12 +22,15 @@
 
 #include "arch/directions.h"
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 #include "kernels/fields_bcs.hpp"
+
+#include "engines/engine.hpp"
 
 namespace ntt {
   namespace srpic {
@@ -38,14 +57,14 @@ namespace ntt {
                                                                       boundaries));
     }
 
-    template <SRMetricClass M, class PG>
-    void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
-                       Domain<SimEngine::SRPIC, M>& domain,
-                       const Grid<M::Dim>&          global_grid,
-                       const PG&                    pgen,
-                       const prm::Parameters&       engine_params,
-                       const SimulationParams&      params,
-                       BCTags                       tags) {
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void MatchFieldsIn(const dir::direction_t<M::Dim>& direction,
+                       Domain<SimEngine::SRPIC, M>&    domain,
+                       const Grid<M::Dim>&             global_grid,
+                       const PG&                       pgen,
+                       const prm::Parameters&          engine_params,
+                       const SimulationParams&         params,
+                       BCTags                          tags) {
       const auto time     = engine_params.get<simtime_t>("time");
       /**
        * matching boundaries
@@ -71,15 +90,15 @@ namespace ntt {
       boundaries_t<bool>   incl_ghosts;
       for (dim_t d { 0 }; d < M::Dim; ++d) {
         if (d == static_cast<dim_t>(dim)) {
-          box.push_back({ xg_min, xg_max });
+          box.emplace_back(xg_min, xg_max);
           if (sign > 0) {
-            incl_ghosts.push_back({ false, true });
+            incl_ghosts.emplace_back(false, true);
           } else {
-            incl_ghosts.push_back({ true, false });
+            incl_ghosts.emplace_back(true, false);
           }
         } else {
           box.push_back(Range::All);
-          incl_ghosts.push_back({ true, true });
+          incl_ghosts.emplace_back(true, true);
         }
       }
       if (not domain.mesh.Intersects(box)) {
@@ -182,9 +201,9 @@ namespace ntt {
     }
 
     template <SRMetricClass M>
-    void AxisFieldsIn(dir::direction_t<M::Dim>     direction,
-                      Domain<SimEngine::SRPIC, M>& domain,
-                      BCTags                       tags) {
+    void AxisFieldsIn(const dir::direction_t<M::Dim>& direction,
+                      Domain<SimEngine::SRPIC, M>&    domain,
+                      BCTags                          tags) {
       /**
        * axis boundaries
        */
@@ -217,12 +236,12 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
-    void FixedFieldsIn(dir::direction_t<M::Dim>     direction,
-                       Domain<SimEngine::SRPIC, M>& domain,
-                       const PG&                    pgen,
-                       const prm::Parameters&       engine_params,
-                       BCTags                       tags) {
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void FixedFieldsIn(const dir::direction_t<M::Dim>& direction,
+                       Domain<SimEngine::SRPIC, M>&    domain,
+                       const PG&                       pgen,
+                       const prm::Parameters&          engine_params,
+                       BCTags                          tags) {
       if constexpr (::traits::pgen::HasFixFieldsConst<PG>) {
         const auto time = engine_params.get<simtime_t>("time");
         /**
@@ -330,9 +349,9 @@ namespace ntt {
     }
 
     template <SRMetricClass M>
-    void PerfectConductorFieldsIn(dir::direction_t<M::Dim>     direction,
-                                  Domain<SimEngine::SRPIC, M>& domain,
-                                  BCTags                       tags) {
+    void PerfectConductorFieldsIn(const dir::direction_t<M::Dim>& direction,
+                                  Domain<SimEngine::SRPIC, M>&    domain,
+                                  BCTags                          tags) {
       /**
        * perfect conductor field boundaries
        */
@@ -451,15 +470,15 @@ namespace ntt {
       }
     }
 
-    template <SRMetricClass M, class PG>
-    void AtmosphereFieldsIn(dir::direction_t<M::Dim>     direction,
-                            Domain<SimEngine::SRPIC, M>& domain,
-                            const M&                     global_metric,
-                            const Grid<M::Dim>&          global_grid,
-                            const PG&                    pgen,
-                            const SimulationParams&      params,
-                            const prm::Parameters&       engine_params,
-                            BCTags                       tags) {
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void AtmosphereFieldsIn(const dir::direction_t<M::Dim>& direction,
+                            Domain<SimEngine::SRPIC, M>&    domain,
+                            const M&                        global_metric,
+                            const Grid<M::Dim>&             global_grid,
+                            const PG&                       pgen,
+                            const SimulationParams&         params,
+                            const prm::Parameters&          engine_params,
+                            BCTags                          tags) {
       /**
        * atmosphere field boundaries
        */
@@ -475,15 +494,15 @@ namespace ntt {
         boundaries_t<bool>   incl_ghosts;
         for (auto d { 0u }; d < M::Dim; ++d) {
           if (d == dd) {
-            box.push_back({ xg_min, xg_max });
+            box.emplace_back(xg_min, xg_max);
             if (sign > 0) {
-              incl_ghosts.push_back({ false, true });
+              incl_ghosts.emplace_back(false, true);
             } else {
-              incl_ghosts.push_back({ true, false });
+              incl_ghosts.emplace_back(true, false);
             }
           } else {
             box.push_back(Range::All);
-            incl_ghosts.push_back({ true, true });
+            incl_ghosts.emplace_back(true, true);
           }
         }
         if (not domain.mesh.Intersects(box)) {
@@ -590,16 +609,16 @@ namespace ntt {
     }
 
     template <SRMetricClass M>
-    void CustomFieldsIn(dir::direction_t<M::Dim>     direction,
-                        Domain<SimEngine::SRPIC, M>& domain,
-                        BCTags                       tags) {
+    void CustomFieldsIn(const dir::direction_t<M::Dim>& direction,
+                        Domain<SimEngine::SRPIC, M>&    domain,
+                        BCTags                          tags) {
       (void)direction;
       (void)domain;
       (void)tags;
       raise::Error("Custom boundaries not implemented", HERE);
     }
 
-    template <SRMetricClass M, class PG>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void FieldBoundaries(Domain<SimEngine::SRPIC, M>& domain,
                          const M&                     global_metric,
                          const Grid<M::Dim>&          global_grid,

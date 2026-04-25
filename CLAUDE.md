@@ -67,17 +67,25 @@ entity
 
 ## Testing
 
-The code is tested using the `./dev/scripts/premerge.sh` script which formats all the files using `clang-format` and `cmake-format`, compiles all the available problem generators as well as unit tests and runs the tests using `ctest`. 
-
-Example:
+The code is tested using the `./dev/scripts/tests.sh` script which compiles and runs all the unit tests using `ctest`:
 
 ```sh
-./dev/scripts/premerge.sh build "-D mpi=ON"
+./dev/scripts/tests.sh --build build_dir --flags "-D mpi=ON" --with_tests
 ```
 
-All the unit tests are inside the `tests/` directory each within the respective subdirectory; e.g., tests for `src/kernels` are in `tests/kernels`.
+All the unit tests are inside the `tests/` directory each within the respective subdirectory; e.g., tests for `src/kernels` are in `tests/kernels`. When testing, build the tests both with and without MPI and, ideally, with and without GPU (when available).
+
+You can also compile all the problem generators:
+
+```sh
+./dev/scripts/tests.sh --build build_dir --flags "-D mpi=ON" --with_pgens
+```
 
 ## Code guidelines
+
+* Format of the code is enforced using `clang-format` and `cmake-format`. You can run the formatting on all files with `./dev/scripts/format.sh`.
+
+* Best practices are also enforced using `clang-tidy`; to generate recommendations for all the files, run `./dev/scripts/tidy.sh --build build_dir` where `build_dir` is the directory where the code was built, or for specific files: `./dev/scripts/tidy.sh --build build_dir --files "(file1|file2).cpp"` or only for the changed files: `./dev/scripts/tidy.sh --build build_dir --changed`. The recommendations will be in the `tidy/` directory.
 
 * Use `const` and `auto` declarations where possible.
 

@@ -71,7 +71,7 @@ namespace kernel {
 
     Inline void operator()(index_t i1) const {
       if constexpr (D == Dim::_1D) {
-        real_t          i1_ { COORD(i1) };
+        const real_t    i1_ { COORD(i1) };
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;
         if (flags & PrepareOutput::InterpToCellCenterFromEdges) {
@@ -120,8 +120,8 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (D == Dim::_2D) {
-        real_t i1_ { COORD(i1) };
-        real_t i2_ { COORD(i2) };
+        const real_t i1_ { COORD(i1) };
+        const real_t i2_ { COORD(i2) };
 
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;
@@ -174,9 +174,9 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (D == Dim::_3D) {
-        real_t i1_ { COORD(i1) };
-        real_t i2_ { COORD(i2) };
-        real_t i3_ { COORD(i3) };
+        const real_t i1_ { COORD(i1) };
+        const real_t i2_ { COORD(i2) };
+        const real_t i3_ { COORD(i3) };
 
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;

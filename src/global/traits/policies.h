@@ -1,21 +1,25 @@
 /**
  * @file traits/policies.h
- * @brief Concepts and traits for pusher policies
+ * @brief Concepts and traits for pusher policies (emission, external fields, custom particle update)
  * @implements
- *   - emission::NoPolicy_t - A placeholder policy that does nothing, used when no emission is desired
- *   - emission::IsNoPolicy - Concept to check if a given policy is NoPolicy_t
- *   - emission::HasPayload - Checks if the emission policy defines a Payload type
- *   - emission::HasNumbersInjected - Checks if the pusher policy has a
- *     - numbers_injected() method that returns a vector of npart_t
- *   - emission::HasEmittedSpeciesIndices - Checks if the pusher policy has an
- *     - emitted_species_indices() method that returns a vector of spidx_t
- *   - emission::HasShouldEmit - Checks if the pusher policy has a shouldEmit()
- *     - method with the correct signature that returns a Kokkos::pair<bool, bool>
- *   - emission::HasEmit - Checks if the pusher policy has an emit() method with
- *     - the correct signature that returns void
- *   - EmissionPolicyClass - Checks if a class satisfies all the requirements to be an emission policy
+ *   - traits::emission::NoPolicy_t
+ *   - traits::emission::IsNoPolicy<>
+ *   - traits::emission::HasPayload<>
+ *   - traits::emission::HasNumbersInjected<>
+ *   - traits::emission::HasEmittedSpeciesIndices<>
+ *   - traits::emission::HasShouldEmit<>
+ *   - traits::emission::HasEmit<>
+ *   - EmissionPolicyClass<>
+ *   - traits::extfields::NoPolicy_t
+ *   - traits::extfields::IsNoPolicy<>
+ *   - ExtFieldsPolicyClass<>
+ *   - traits::custom_prtl_update::NoPolicy_t
+ *   - traits::custom_prtl_update::IsNoPolicy<>
+ *   - CustomParticleUpdatePolicyClass<>
  * @namespaces:
- *   - traits::
+ *   - traits::emission::
+ *   - traits::extfields::
+ *   - traits::custom_prtl_update::
  */
 
 #ifndef TRAITS_POLICIES_H
@@ -121,12 +125,12 @@ namespace traits::custom_prtl_update {
 
 template <class CPU, class M>
 concept CustomParticleUpdatePolicyClass =
-  requires(const CPU&                              cpu,
-           index_t                                 p,
-           const kernel::PusherContext&            pusher_ctx,
-           const kernel::PusherBoundaries<M::Dim>& pusher_boundaries,
-           const kernel::PusherArrays&             particles,
-           const M&                                metric) {
+  requires(const CPU&                                  cpu,
+           index_t                                     p,
+           const kernel::sr::PusherContext&            pusher_ctx,
+           const kernel::sr::PusherBoundaries<M::Dim>& pusher_boundaries,
+           const kernel::PusherArrays&                 particles,
+           const M&                                    metric) {
     {
       cpu(p, pusher_ctx, pusher_boundaries, particles, metric)
     } -> std::same_as<void>;

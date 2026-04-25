@@ -95,8 +95,6 @@ namespace metric {
       set_dxMin(find_dxMin());
     }
 
-    ~QKerrSchild() = default;
-
     [[nodiscard]]
     Inline auto spin() const -> real_t {
       return a;
@@ -116,15 +114,15 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t dx = ONE / (alpha(ij) * std::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t            dx = ONE /
+                            (alpha(ij) * std::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
                              beta1(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
@@ -138,7 +136,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       // @TODO: Ask Alisa
       return ZERO;
     }
@@ -765,7 +763,7 @@ namespace metric {
         using namespace constant;
         // R = (-9 h^2 (Pi - 2 y) + Sqrt[3] Sqrt[-(h^3 ((-4 + h) (Pi + 2 h Pi)^2
         // + 108 h Pi y - 108 h y^2))])^(1/3)
-        double                  R { math::pow(
+        const double            R { math::pow(
           -9.0 * SQR(h0) * (PI - 2.0 * theta) +
             SQRT3 * math::sqrt((CUBE(h0) * ((4.0 - h0) * SQR(PI + h0 * TWO_PI) -
                                             108.0 * h0 * PI * theta +

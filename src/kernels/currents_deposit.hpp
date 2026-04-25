@@ -1,5 +1,5 @@
 /**
- * @file kernels/current_deposit.hpp
+ * @file kernels/currents_deposit.hpp
  * @brief Covariant algorithms for the current deposition
  * @implements
  *   - kernel::DepositCurrents_kernel<>
@@ -22,7 +22,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 namespace kernel {
   using namespace ntt;

@@ -11,12 +11,11 @@
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 
-#include "archetypes/problem_generator.h"
 #include "framework/domain/metadomain.h"
 
 #include <string>
 
-enum InitFieldGeometry {
+enum class InitFieldGeometry : uint8_t {
   Wald,
   Vertical,
 };
@@ -229,7 +228,8 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
       ::traits::pgen::compatible_with<SimEngine::GRPIC> {}
@@ -239,18 +239,10 @@ namespace user {
     };
     static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    InitFields<M, D> init_flds;
 
-    InitFields<M, D>        init_flds;
-    const Metadomain<S, M>& global_domain;
-
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { m }
-      , init_flds { m.mesh().metric,
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : init_flds { m.mesh().metric,
                     p.template get<std::string>("setup.init_field", "wald") } {}
   };
 

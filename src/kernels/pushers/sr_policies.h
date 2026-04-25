@@ -1,18 +1,31 @@
-#ifndef KERNELS_PUSHERS_POLICIES_H
-#define KERNELS_PUSHERS_POLICIES_H
+/**
+ * @file kernels/pushers/sr_policies.h
+ * @brief Policy structs and factory functions for configuring SR particle pusher behavior
+ * @implements
+ *   - kernel::sr::PusherPolicy<>
+ *   - kernel::sr::MakePusherPolicyEmission<> -> auto
+ *   - kernel::sr::MakePusherPolicy<> -> void
+ * @namespaces:
+ *   - kernel::sr::
+ */
+
+#ifndef KERNELS_PUSHERS_SR_POLICIES_H
+#define KERNELS_PUSHERS_SR_POLICIES_H
 
 #include "enums.h"
 #include "global.h"
 
 #include "traits/metric.h"
+#include "traits/pgen.h"
 #include "traits/policies.h"
 #include "utils/comparators.h"
 #include "utils/param_container.h"
 
 #include "archetypes/emission.h"
+#include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
 
-namespace kernel {
+namespace kernel::sr {
 
   template <MetricClass            M,
             EmissionPolicyClass<M> E = ::traits::emission::NoPolicy_t,
@@ -170,6 +183,6 @@ namespace kernel {
     });
   }
 
-} // namespace kernel
+} // namespace kernel::sr
 
 #endif // KERNELS_PUSHERS_POLICIES_H

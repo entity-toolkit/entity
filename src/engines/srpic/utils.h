@@ -1,3 +1,12 @@
+/**
+ * @file engines/srpic/utils.h
+ * @brief Utility functions used by the SRPIC engine
+ * @implements
+ *   - ntt::srpic::GetAtmosphereExtent<> -> std::tuple<short, in, real_t, real_t>
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_UTILS_H
 #define ENGINES_SRPIC_UTILS_H
 
@@ -36,10 +45,10 @@ namespace ntt {
      * in this case the function returns { -1, in::x1, xg_min, xg_max }
      */
     template <SRMetricClass M>
-    auto GetAtmosphereExtent(dir::direction_t<M::Dim> direction,
-                             const M&                 global_metric,
-                             const Grid<M::Dim>&      global_grid,
-                             const SimulationParams&  params)
+    auto GetAtmosphereExtent(const dir::direction_t<M::Dim>& direction,
+                             const M&                        global_metric,
+                             const Grid<M::Dim>&             global_grid,
+                             const SimulationParams&         params)
       -> std::tuple<short, in, real_t, real_t> {
       const auto sign     = direction.get_sign();
       const auto dim      = direction.get_dim();

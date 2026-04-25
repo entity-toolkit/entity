@@ -12,10 +12,13 @@
   #include "arch/mpi_aliases.h"
 
   #include <mpi.h>
+
+  #include <algorithm>
+  #include <iterator>
 #endif // MPI_ENABLED
 
 #include <iomanip>
-#include <iostream>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -30,7 +33,7 @@ namespace diag {
         100.0f * static_cast<float>(part) / static_cast<float>(maxpart));
     };
 #if !defined(MPI_ENABLED)
-    stats.push_back({ npart, percentage(npart, maxnpart) });
+    stats.emplace_back(npart, percentage(npart, maxnpart));
 #else
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -56,18 +59,20 @@ namespace diag {
     if (rank != MPI_ROOT_RANK) {
       return stats;
     }
-    const npart_t tot_npart = std::accumulate(mpi_npart.begin(), mpi_npart.end(), 0u);
-    const npart_t max_idx = std::distance(
+    const npart_t tot_npart = std::accumulate(mpi_npart.begin(),
+                                              mpi_npart.end(),
+                                              static_cast<npart_t>(0));
+    const npart_t max_idx   = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));
     const npart_t min_idx = std::distance(
       mpi_npart.begin(),
       std::min_element(mpi_npart.begin(), mpi_npart.end()));
-    stats.push_back({ tot_npart, 0u });
-    stats.push_back({ mpi_npart[min_idx],
-                      percentage(mpi_npart[min_idx], mpi_maxnpart[min_idx]) });
-    stats.push_back({ mpi_npart[max_idx],
-                      percentage(mpi_npart[max_idx], mpi_maxnpart[max_idx]) });
+    stats.emplace_back(tot_npart, 0u);
+    stats.emplace_back(mpi_npart[min_idx],
+                       percentage(mpi_npart[min_idx], mpi_maxnpart[min_idx]));
+    stats.emplace_back(mpi_npart[max_idx],
+                       percentage(mpi_npart[max_idx], mpi_maxnpart[max_idx]));
 #endif
     return stats;
   }
@@ -91,7 +96,7 @@ namespace diag {
     if (not print_colors) {
       diag_flags ^= Diag::Colorful;
     }
-    if (species_labels.size() == 0) {
+    if (species_labels.empty()) {
       diag_flags ^= Diag::Species;
     }
     if (print_prtl_clear) {
@@ -136,10 +141,10 @@ namespace diag {
     if (diag_flags & Diag::Timers) {
       const auto total_npart = std::accumulate(species_npart.begin(),
                                                species_npart.end(),
-                                               0);
+                                               static_cast<npart_t>(0));
       const auto timer_diag = timers.printAll(timer_flags, total_npart, ncells);
       CallOnce([&]() {
-        ss << std::endl << timer_diag << std::endl;
+        ss << '\n' << timer_diag << '\n';
       });
     }
 
@@ -167,7 +172,7 @@ namespace diag {
 #endif
       for (auto i = 0u; i < species_labels.size(); ++i) {
         const auto part_stats = npart_stats(species_npart[i], species_maxnpart[i]);
-        if (part_stats.size() == 0) {
+        if (part_stats.empty()) {
           continue;
         }
         const auto tot_npart = part_stats[0].first;
@@ -221,7 +226,7 @@ namespace diag {
 #endif
       }
       CallOnce([&]() {
-        ss << std::endl;
+        ss << '\n';
       });
     }
 
@@ -235,7 +240,7 @@ namespace diag {
 
     // separator
     CallOnce([&]() {
-      ss << std::setw(80) << std::setfill('.') << "" << std::endl << std::endl;
+      ss << std::setw(80) << std::setfill('.') << "" << '\n' << '\n';
     });
 
     info::Print(ss.str(), diag_flags & Diag::Colorful, true, true, false);
