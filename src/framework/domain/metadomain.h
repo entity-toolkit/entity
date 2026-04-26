@@ -10,6 +10,7 @@
  *   - metadomain_chckpt.cpp
  *   - metadomain_io.cpp
  *   - metadomain_stats.cpp
+ *   - metadomain_reshape.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -95,6 +96,9 @@ namespace ntt {
     void SynchronizeFields(Domain<S, M>&,
                            CommTags,
                            const range_tuple_t& = { 0, 0 }) const;
+#if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
+    void CommunicateVectorPotential(unsigned short);
+#endif
     void CommunicateParticles(Domain<S, M>&) const;
     void SortParticles(simtime_t,
                        timestep_t,
@@ -125,6 +129,11 @@ namespace ntt {
 
     ~Metadomain() = default;
 
+    /* domain update-related ------------------------------------------------ */
+    void ShiftByCells(int, in = in::x1)
+      requires(CartesianMetricClass<M>);
+
+    /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
     void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
@@ -278,9 +287,6 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
-  #if defined(MPI_ENABLED)
-    void CommunicateVectorPotential(unsigned short);
-  #endif
 #endif
 
 #if defined(MPI_ENABLED)

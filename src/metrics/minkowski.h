@@ -70,6 +70,11 @@ namespace metric {
       }
     }
 
+    [[nodiscard]]
+    auto get_dx() const -> real_t {
+      return dx;
+    }
+
     /**
      * minimum effective cell size for a given metric (in physical units)
      */

@@ -137,9 +137,9 @@ namespace arch {
 
    */
   template <SimEngine::type S, CartesianMetricClass M, in o>
-  Inline void MoveWindow(Domain<S, M>&           domain,
-                         const Metadomain<S, M>& metadomain,
-                         int                     window_shift) {
+  Inline void MoveWindow(Domain<S, M>&     domain,
+                         Metadomain<S, M>& metadomain,
+                         int               window_shift) {
 
     /*
       move particles in the window back by the window size
@@ -271,7 +271,7 @@ namespace arch {
     // communicate particles after moving
     metadomain.CommunicateParticles(domain);
 
-    // ToDo: Update metric
+    metadomain.ShiftByCells(window_shift, o);
   }
 } // namespace arch
 

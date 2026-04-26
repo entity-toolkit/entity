@@ -47,6 +47,11 @@ namespace ntt {
   MACRO(SimEngine::GRPIC, metric::QKerrSchild, Dim::_2D)                       \
   MACRO(SimEngine::GRPIC, metric::KerrSchild0, Dim::_2D)
 
+#define NTT_FOREACH_CARTESIAN_SPECIALIZATION(MACRO)                            \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D)                         \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_3D)
+
 #define NTT_BUILD_SPECIALIZATION_ENTRY(S, M, D) SpecializationEntry<S, M, D> {},
 
   inline constexpr auto kSpecializations = std::tuple { NTT_FOREACH_SPECIALIZATION(

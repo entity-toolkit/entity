@@ -43,7 +43,7 @@ namespace user {
       ::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
     const SimulationParams& params;
-    const Metadomain<S, M>& metadomain;
+    Metadomain<S, M>&       metadomain;
 
     struct MovingWindow {
       int    pos_i { -1 };
@@ -59,10 +59,10 @@ namespace user {
         vel_Cd = metric.template transform<1, Idx::XYZ, Idx::U>({}, velocity);
       }
 
-      void update(real_t                  dt,
-                  int                     shift,
-                  const Metadomain<S, M>& metadomain,
-                  Domain<S, M>&           domain) {
+      void update(real_t            dt,
+                  int               shift,
+                  Metadomain<S, M>& metadomain,
+                  Domain<S, M>&     domain) {
         pos_di += vel_Cd * dt;
         pos_i  += static_cast<int>(pos_di >= ONE);
         pos_di -= static_cast<real_t>(pos_di >= ONE);
