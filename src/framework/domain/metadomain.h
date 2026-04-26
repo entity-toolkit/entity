@@ -155,6 +155,8 @@ namespace ntt {
                          simtime_t) -> bool;
 
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
+    void redecomposeFromCheckpoint(const std::vector<std::vector<ncells_t>>&,
+                                   const std::vector<boundaries_t<real_t>>&);
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);
