@@ -33,11 +33,8 @@ def plot(t, data):
         xlabel=r"$x$",
         ylabel=r"$y$",
         title=rf"$t={{{t:.2f}}}$",
-        xlim=(0, 1), # Hayk: This needs to be adaptive
-        ylim=(0, 1),
     )
 
 
 moving_window = nt2.Data("moving_window")
 moving_window.makeMovie(plot, framerate=10)
-
