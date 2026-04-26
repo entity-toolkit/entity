@@ -1,3 +1,15 @@
+/**
+ * @file framework/specialization_registry.h
+ * @brief Registry of all supported engine/metric/dimension specializations
+ * @implements
+ *   - ntt::SpecializationEntry<>
+ *   - ntt::for_each_specialization<> -> void
+ *   - macro NTT_FOREACH_SPECIALIZATION
+ *   - macro NTT_BUILD_SPECIALIZATION_ENTRY
+ * @namespaces:
+ *   - ntt::
+ */
+
 #ifndef FRAMEWORK_SPECIALIZATION_REGISTRY_H
 #define FRAMEWORK_SPECIALIZATION_REGISTRY_H
 

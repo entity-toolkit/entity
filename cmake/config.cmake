@@ -73,11 +73,12 @@ function(set_problem_generator pgen_name)
     message(FATAL_ERROR "pgen.hpp file not found in ${pgen_path}")
   endif()
 
-  add_library(ntt_pgen INTERFACE)
-  target_link_libraries(ntt_pgen INTERFACE ntt_global ntt_framework
-                                           ntt_archetypes ntt_kernels)
+  set(PGEN_TARGET ntt_pgen${pgen_suffix})
+  add_library(${PGEN_TARGET} INTERFACE)
+  target_link_libraries(${PGEN_TARGET} INTERFACE ntt_global ntt_framework
+                                                 ntt_archetypes ntt_kernels)
 
-  target_include_directories(ntt_pgen INTERFACE ${pgen_path})
+  target_include_directories(${PGEN_TARGET} INTERFACE ${pgen_path})
 
   set(PGEN
       ${pgen_name}

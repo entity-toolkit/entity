@@ -1,6 +1,7 @@
 /**
  * @file framework/domain/metadomain.h
- * @brief ...
+ * @brief Global metadomain class managing domain decomposition, inter-domain
+ * communication, I/O, and checkpointing
  * @implements
  *   - ntt::Metadomain<>
  * @cpp:
@@ -23,8 +24,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-
-#include "metrics/traits.h"
+#include "traits/metric.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
@@ -46,19 +46,14 @@
 
 #include <functional>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace ntt {
 
-  template <class M>
-  concept IsCompatibleWithMetadomain = metric::traits::HasD<M> &&
-                                       metric::traits::HasConvert<M> &&
-                                       metric::traits::HasTotVolume<M>;
-
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   struct Metadomain {
     static constexpr Dimension D { M::Dim };
 
@@ -137,12 +132,12 @@ namespace ntt {
                timestep_t,
                simtime_t,
                simtime_t,
-               std::function<void(const std::string&,
-                                  ndfield_t<M::Dim, 6>&,
-                                  index_t,
-                                  timestep_t,
-                                  simtime_t,
-                                  const Domain<S, M>&)> = nullptr) -> bool;
+               const std::function<void(const std::string&,
+                                        ndfield_t<M::Dim, 6>&,
+                                        index_t,
+                                        timestep_t,
+                                        simtime_t,
+                                        const Domain<S, M>&)>& = nullptr) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -160,8 +155,9 @@ namespace ntt {
       timestep_t,
       simtime_t,
       simtime_t,
-      std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> =
-        nullptr) -> bool;
+      const std::function<
+        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
+      -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);
@@ -234,16 +230,16 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_npart() const -> std::size_t {
+    auto l_npart() const -> npart_t {
       const auto npart = l_npart_perspec();
-      return std::accumulate(npart.begin(), npart.end(), 0);
+      return std::accumulate(npart.begin(), npart.end(), static_cast<npart_t>(0));
     }
 
     [[nodiscard]]
-    auto l_ncells() const -> std::size_t {
-      std::size_t ncells_local = 0;
+    auto l_ncells() const -> ncells_t {
+      ncells_t ncells_local = 0;
       for (const auto& ldidx : l_subdomain_indices()) {
-        std::size_t ncells = 1;
+        ncells_t ncells = 1;
         for (const auto& n : g_subdomains[ldidx].mesh.n_all()) {
           ncells *= n;
         }
@@ -254,9 +250,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto species_labels() const -> std::vector<std::string> {
-      std::vector<std::string> labels;
-      for (const auto& sp : g_species_params) {
-        labels.push_back(sp.label());
+      std::vector<std::string> labels(g_species_params.size());
+      for (std::size_t i = 0; i < g_species_params.size(); ++i) {
+        labels[i] = g_species_params[i].label();
       }
       return labels;
     }
@@ -288,7 +284,7 @@ namespace ntt {
 #endif
 
 #if defined(MPI_ENABLED)
-    int g_mpi_rank, g_mpi_size;
+    int g_mpi_rank { -1 }, g_mpi_size { -1 };
 #endif
   };
 

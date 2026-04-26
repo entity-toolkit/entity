@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -31,12 +32,12 @@ namespace pbar {
       { "min",   6e7 },
       {  "hr", 3.6e9 }
     };
-    auto it    = std::find_if(units.begin(), units.end(), [&u](const auto& pr) {
+    auto it = std::find_if(units.begin(), units.end(), [&u](const auto& pr) {
       return pr.first == u;
     });
-    int  u_idx = (it != units.end()) ? std::distance(units.begin(), it) : -1;
+    const long u_idx = (it != units.end()) ? std::distance(units.begin(), it) : -1;
     raise::ErrorIf(u_idx < 0, "Invalid unit", HERE);
-    int shift = 0;
+    long shift = 0;
     if (t < 1) {
       shift = -1;
     } else if (1e3 <= t && t < 1e6) {
@@ -48,8 +49,8 @@ namespace pbar {
     } else if (3.6e9 <= t) {
       shift += 4;
     }
-    auto newu_idx = std::min(std::max(0, u_idx + shift),
-                             static_cast<int>(units.size()));
+    auto newu_idx = std::min(std::max(0L, u_idx + shift),
+                             static_cast<long>(units.size()));
     return { t * (units[u_idx].second / units[newu_idx].second),
              units[newu_idx].first };
   }
@@ -104,9 +105,9 @@ namespace pbar {
 
     std::stringstream ss;
 
-    ss << "Timestep duration: " << c_bmagenta << avg << c_reset << std::endl;
-    ss << "Remaining time: " << c_bmagenta << remain << c_reset << std::endl;
-    ss << "Elapsed time: " << c_bmagenta << elapsed << c_reset << std::endl;
+    ss << "Timestep duration: " << c_bmagenta << avg << c_reset << '\n';
+    ss << "Remaining time: " << c_bmagenta << remain << c_reset << '\n';
+    ss << "Elapsed time: " << c_bmagenta << elapsed << c_reset << '\n';
     ss << params::start;
     for (auto i { 0 }; i < nfilled; ++i) {
       ss << params::fill;

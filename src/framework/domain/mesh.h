@@ -16,11 +16,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "framework/domain/grid.h"
 
@@ -31,8 +30,7 @@
 
 namespace ntt {
 
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert_i<M>
+  template <MetricClass M>
   struct Mesh : public Grid<M::Dim> {
     static constexpr Dimension D { M::Dim };
     using base_t = Grid<D>;
@@ -66,7 +64,8 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersection(boundaries_t<real_t> box) const -> boundaries_t<real_t> {
+    auto Intersection(const boundaries_t<real_t>& box) const
+      -> boundaries_t<real_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       boundaries_t<real_t> intersection;
       auto                 d = 0;
@@ -86,7 +85,7 @@ namespace ntt {
           } else {
             x_max = std::max(extent()[d].first,
                              std::min(extent()[d].second, b.second));
-            intersection.push_back({ x_min, x_max });
+            intersection.emplace_back(x_min, x_max);
           }
         }
         ++d;
@@ -101,7 +100,7 @@ namespace ntt {
      * @note pass Range::All to select the entire dimension
      */
     [[nodiscard]]
-    auto Intersects(boundaries_t<real_t> box) const -> bool {
+    auto Intersects(const boundaries_t<real_t>& box) const -> bool {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       const auto intersection = Intersection(box);
       for (const auto& i : intersection) {
@@ -123,7 +122,8 @@ namespace ntt {
      * @note indices are already shifted by N_GHOSTS (i.e. they start at N_GHOSTS not 0)
      */
     [[nodiscard]]
-    auto ExtentToRange(boundaries_t<real_t> box, boundaries_t<bool> incl_ghosts) const
+    auto ExtentToRange(const boundaries_t<real_t>& box,
+                       const boundaries_t<bool>&   incl_ghosts) const
       -> boundaries_t<ncells_t> {
       raise::ErrorIf(box.size() != M::Dim, "Invalid box dimension", HERE);
       raise::ErrorIf(incl_ghosts.size() != M::Dim,
@@ -132,7 +132,7 @@ namespace ntt {
       boundaries_t<ncells_t> range;
       if (not Intersects(box)) {
         for (auto i { 0u }; i < box.size(); ++i) {
-          range.push_back({ 0, 0 });
+          range.emplace_back(0, 0);
         }
         return range;
       }
@@ -183,13 +183,14 @@ namespace ntt {
             xi_max_Cd = std::min(xi_max_Cd,
                                  static_cast<real_t>(this->n_active()[d]));
           }
-          range.push_back({ static_cast<ncells_t>(xi_min_Cd) +
-                              (incl_ghosts[d].first ? 0 : N_GHOSTS),
-                            static_cast<ncells_t>(xi_max_Cd) +
-                              (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS) });
+          range.emplace_back(static_cast<ncells_t>(xi_min_Cd) +
+                               (incl_ghosts[d].first ? 0 : N_GHOSTS),
+                             static_cast<ncells_t>(xi_max_Cd) +
+                               (incl_ghosts[d].second ? 2 * N_GHOSTS : N_GHOSTS));
         }
         ++d;
       }
+
       return range;
     }
   };

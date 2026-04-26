@@ -59,10 +59,10 @@ namespace metric {
     }
 
   public:
-    static constexpr const char*       Label { "kerr_schild" };
-    static constexpr Dimension         PrtlDim { D };
-    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Sph };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild };
+    static constexpr const char*      Label { "kerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
+    static constexpr ntt::Metric      MetricType { ntt::Metric::Kerr_Schild };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -91,8 +91,6 @@ namespace metric {
       set_dxMin(find_dxMin());
     }
 
-    ~KerrSchild() = default;
-
     [[nodiscard]]
     Inline auto spin() const -> real_t {
       return a;
@@ -112,15 +110,15 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t dx = ONE / (alpha(ij) * math::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t            dx = ONE /
+                            (alpha(ij) * math::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
                              beta1(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
@@ -134,7 +132,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       // @TODO: Ask Alisa
       return ZERO;
     }
@@ -601,7 +599,7 @@ namespace metric {
      * @note phys cntrv/cov <-> cntrv/cov
      */
     template <idx_t i, Idx in, Idx out>
-    Inline auto transform(const coord_t<D>& xi, real_t v_in) const -> real_t {
+    Inline auto transform(const coord_t<D>& /*xi*/, real_t v_in) const -> real_t {
       static_assert(i > 0 && i <= 3, "Invalid index i");
       static_assert(in != out, "Invalid vector transformation");
       static_assert(((in == Idx::U) and (out == Idx::PU)) or

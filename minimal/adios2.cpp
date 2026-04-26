@@ -366,7 +366,8 @@ template <typename T>
 auto define_constdim_array(adios2::IO&                     io,
                            const std::vector<std::size_t>& glob_shape,
                            const std::vector<std::size_t>& loc_corner,
-                           const std::vector<std::size_t>& loc_shape) -> std::string {
+                           const std::vector<std::size_t>& loc_shape)
+  -> std::string {
   const std::string arrname = "ConstantDimArr" +
                               std::to_string(glob_shape.size()) +
                               "D::" + std::string(typeid(T).name());

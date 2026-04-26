@@ -224,7 +224,7 @@ namespace ntt {
 
     // number of arrays of each type to send/recv
     const unsigned short NREALS = 4 + static_cast<unsigned short>(
-                                        D == Dim::_2D and C != Coord::Cart);
+                                        D == Dim::_2D and C != Coord::Cartesian);
     const unsigned short NINTS   = 2 * static_cast<unsigned short>(D);
     const unsigned short NPRTLDX = 2 * static_cast<unsigned short>(D);
     const unsigned short NPLDS_R = npld_r();
@@ -381,13 +381,13 @@ namespace ntt {
                                              const dir::map_t<D, int>&,        \
                                              const dir::map_t<D, int>&);
 
-  PARTICLES_COMM(Dim::_1D, Coord::Cart)
-  PARTICLES_COMM(Dim::_2D, Coord::Cart)
-  PARTICLES_COMM(Dim::_3D, Coord::Cart)
-  PARTICLES_COMM(Dim::_2D, Coord::Sph)
-  PARTICLES_COMM(Dim::_2D, Coord::Qsph)
-  PARTICLES_COMM(Dim::_3D, Coord::Sph)
-  PARTICLES_COMM(Dim::_3D, Coord::Qsph)
+  PARTICLES_COMM(Dim::_1D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_2D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_3D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_2D, Coord::Spherical)
+  PARTICLES_COMM(Dim::_2D, Coord::Qspherical)
+  PARTICLES_COMM(Dim::_3D, Coord::Spherical)
+  PARTICLES_COMM(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_COMM
 
 } // namespace ntt

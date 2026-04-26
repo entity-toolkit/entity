@@ -6,7 +6,13 @@
 #include "utils/error.h"
 #include "utils/log.h"
 
+#include "framework/parameters/parameters.h"
+
 #include <toml11/toml.hpp>
+
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace ntt {
   namespace params {
@@ -26,28 +32,29 @@ namespace ntt {
         "separate_files=false is deprecated",
         HERE);
 
+      categories.emplace();
       for (const auto& category : { "fields", "particles", "spectra", "stats" }) {
-        const auto q_int            = toml::find_or<timestep_t>(toml_data,
+        const auto q_int               = toml::find_or<timestep_t>(toml_data,
                                                      "output",
                                                      category,
                                                      "interval",
                                                      0);
-        const auto q_int_time       = toml::find_or<simtime_t>(toml_data,
+        const auto q_int_time          = toml::find_or<simtime_t>(toml_data,
                                                          "output",
                                                          category,
                                                          "interval_time",
                                                          -1.0);
-        categories[category].enable = toml::find_or(toml_data,
-                                                    "output",
-                                                    category,
-                                                    "enable",
-                                                    true);
+        (*categories)[category].enable = toml::find_or(toml_data,
+                                                       "output",
+                                                       category,
+                                                       "enable",
+                                                       true);
         if ((q_int == 0) and (q_int_time == -1.0)) {
-          categories[category].interval      = global_interval;
-          categories[category].interval_time = global_interval_time;
+          (*categories)[category].interval      = global_interval.value();
+          (*categories)[category].interval_time = global_interval_time.value();
         } else {
-          categories[category].interval      = q_int;
-          categories[category].interval_time = q_int_time;
+          (*categories)[category].interval      = q_int;
+          (*categories)[category].interval_time = q_int_time;
         }
       }
 
@@ -62,7 +69,7 @@ namespace ntt {
                                                  "fields",
                                                  "custom",
                                                  std::vector<std::string> {});
-      if (flds_out.size() == 0) {
+      if (flds_out.empty()) {
         raise::Warning("No fields output specified", HERE);
       }
       fields_quantities        = flds_out;
@@ -72,13 +79,14 @@ namespace ntt {
                                         "fields",
                                         "mom_smooth",
                                         defaults::output::mom_smooth);
+      fields_downsampling.emplace();
       try {
         auto field_dwn_ = toml::find<std::vector<unsigned int>>(toml_data,
                                                                 "output",
                                                                 "fields",
                                                                 "downsampling");
-        for (auto i = 0u; i < field_dwn_.size(); ++i) {
-          fields_downsampling.push_back(field_dwn_[i]);
+        for (const auto& dwn : field_dwn_) {
+          fields_downsampling->push_back(dwn);
         }
       } catch (...) {
         try {
@@ -87,22 +95,22 @@ namespace ntt {
                                                      "fields",
                                                      "downsampling");
           for (auto i = 0u; i < dim; ++i) {
-            fields_downsampling.push_back(field_dwn_);
+            fields_downsampling->push_back(field_dwn_);
           }
         } catch (...) {
           for (auto i = 0u; i < dim; ++i) {
-            fields_downsampling.push_back(1u);
+            fields_downsampling->push_back(1u);
           }
         }
       }
-      raise::ErrorIf(fields_downsampling.size() > 3,
+      raise::ErrorIf(fields_downsampling->size() > 3,
                      "invalid `output.fields.downsampling`",
                      HERE);
-      if (fields_downsampling.size() > dim) {
-        fields_downsampling.erase(fields_downsampling.begin() + (std::size_t)(dim),
-                                  fields_downsampling.end());
+      if (fields_downsampling->size() > dim) {
+        fields_downsampling->erase(fields_downsampling->begin() + dim,
+                                   fields_downsampling->end());
       }
-      for (const auto& dwn : fields_downsampling) {
+      for (const auto& dwn : fields_downsampling.value()) {
         raise::ErrorIf(dwn == 0, "downsampling factor must be nonzero", HERE);
       }
 
@@ -159,8 +167,8 @@ namespace ntt {
       /* Debug ---------------------------------------------------------------- */
       debug_as_is = toml::find_or(toml_data, "output", "debug", "as_is", false);
       debug_ghosts = toml::find_or(toml_data, "output", "debug", "ghosts", false);
-      if (debug_ghosts) {
-        for (const auto& dwn : fields_downsampling) {
+      if (debug_ghosts.value()) {
+        for (const auto& dwn : fields_downsampling.value()) {
           raise::ErrorIf(
             dwn != 1,
             "full resolution required when outputting with ghost cells",
@@ -170,34 +178,34 @@ namespace ntt {
     }
 
     void Output::setParams(SimulationParams* params) const {
-      params->set("output.format", format);
-      params->set("output.interval", global_interval);
-      params->set("output.interval_time", global_interval_time);
-      for (const auto& [category, cat_params] : categories) {
+      params->set("output.format", format.value());
+      params->set("output.interval", global_interval.value());
+      params->set("output.interval_time", global_interval_time.value());
+      for (const auto& [category, cat_params] : categories.value()) {
         params->set("output." + category + ".enable", cat_params.enable);
         params->set("output." + category + ".interval", cat_params.interval);
         params->set("output." + category + ".interval_time",
                     cat_params.interval_time);
       }
 
-      params->set("output.fields.quantities", fields_quantities);
-      params->set("output.fields.custom", fields_custom_quantities);
-      params->set("output.fields.mom_smooth", fields_mom_smooth);
-      params->set("output.fields.downsampling", fields_downsampling);
+      params->set("output.fields.quantities", fields_quantities.value());
+      params->set("output.fields.custom", fields_custom_quantities.value());
+      params->set("output.fields.mom_smooth", fields_mom_smooth.value());
+      params->set("output.fields.downsampling", fields_downsampling.value());
 
-      params->set("output.particles.species", particles_species);
-      params->set("output.particles.stride", particles_stride);
+      params->set("output.particles.species", particles_species.value());
+      params->set("output.particles.stride", particles_stride.value());
 
-      params->set("output.spectra.e_min", spectra_e_min);
-      params->set("output.spectra.e_max", spectra_e_max);
-      params->set("output.spectra.log_bins", spectra_log_bins);
-      params->set("output.spectra.n_bins", spectra_n_bins);
+      params->set("output.spectra.e_min", spectra_e_min.value());
+      params->set("output.spectra.e_max", spectra_e_max.value());
+      params->set("output.spectra.log_bins", spectra_log_bins.value());
+      params->set("output.spectra.n_bins", spectra_n_bins.value());
 
-      params->set("output.stats.quantities", stats_quantities);
-      params->set("output.stats.custom", stats_custom_quantities);
+      params->set("output.stats.quantities", stats_quantities.value());
+      params->set("output.stats.custom", stats_custom_quantities.value());
 
-      params->set("output.debug.as_is", debug_as_is);
-      params->set("output.debug.ghosts", debug_ghosts);
+      params->set("output.debug.as_is", debug_as_is.value());
+      params->set("output.debug.ghosts", debug_ghosts.value());
     }
 
   } // namespace params

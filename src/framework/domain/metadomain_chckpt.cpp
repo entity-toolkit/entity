@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -10,10 +11,17 @@
 #include "framework/specialization_registry.h"
 #include "output/checkpoint.h"
 
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
+
+#include <cstddef>
+#include <string>
+#include <vector>
+
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
                                               const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
@@ -63,8 +71,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
                                          timestep_t              current_step,
                                          timestep_t              finished_step,
@@ -110,8 +117,7 @@ namespace ntt {
     return true;
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::ContinueFromCheckpoint(adios2::ADIOS* ptr_adios,
                                                 const SimulationParams& params) {
     raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
@@ -159,6 +165,7 @@ namespace ntt {
       HERE);
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_CHECKPOINTS(S, M, D)                                        \
   template void Metadomain<S, M<D>>::InitCheckpointWriter(                     \
     adios2::ADIOS*,                                                            \
@@ -173,5 +180,6 @@ namespace ntt {
     const SimulationParams&);
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_CHECKPOINTS)
 #undef METADOMAIN_CHECKPOINTS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

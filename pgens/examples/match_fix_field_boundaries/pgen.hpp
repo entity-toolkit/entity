@@ -4,8 +4,8 @@
 #include "enums.h"
 #include "global.h"
 
-#include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
+#include "traits/pgen.h"
+
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -27,27 +27,21 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
-    static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D>::value
-    };
-
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_1D> {} };
 
     const real_t amplitude, omega;
     const real_t t_transition, t_duration;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>&)
-      : arch::ProblemGenerator<S, M> { p }
-      , amplitude { p.template get<real_t>("setup.amplitude", ONE) }
+    PGen(const SimulationParams& p, const Metadomain<S, M>&)
+      : amplitude { p.template get<real_t>("setup.amplitude", ONE) }
       , omega { p.template get<real_t>("setup.omega", ONE) }
       , t_transition { p.template get<real_t>("setup.t_transition") }
       , t_duration { p.template get<real_t>("setup.t_duration") } {}
@@ -66,9 +60,8 @@ namespace user {
      *
      * @return Pair of (value to set, whether to set it or not)
      */
-    auto FixFieldsConst(simtime_t    time,
-                        const bc_in& bc,
-                        em           comp) const -> std::pair<real_t, bool> {
+    auto FixFieldsConst(simtime_t time, const bc_in& bc, em comp) const
+      -> std::pair<real_t, bool> {
       if (bc == bc_in::Mx1) {
         const auto phase { time * omega };
         real_t     ampl { ZERO };

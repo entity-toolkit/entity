@@ -11,6 +11,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <fstream>
 #include <iomanip>
 #include <string>
 #include <vector>
@@ -29,7 +30,7 @@ namespace stats {
       return;
     }
     // determine the stats ID
-    const auto pos = name.find("_");
+    const auto pos = name.find('_');
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
     if ((name_raw[0] != 'E') and (name_raw[0] != 'B') and
         (name_raw[0] != 'J') and (name_raw[0] != 'N')) {
@@ -93,7 +94,7 @@ namespace stats {
             StatsOut << std::setw(io_precision + 8) << stat.name() << ",";
           }
         }
-        StatsOut << std::endl;
+        StatsOut << '\n';
         StatsOut.close();
       },
       m_fname,
@@ -104,7 +105,7 @@ namespace stats {
     CallOnce(
       [](auto& fname) {
         std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-        StatsOut << std::endl;
+        StatsOut << '\n';
         StatsOut.close();
       },
       m_fname);

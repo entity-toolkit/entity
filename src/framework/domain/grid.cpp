@@ -1,5 +1,6 @@
 #include "framework/domain/grid.h"
 
+#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
@@ -9,42 +10,34 @@ namespace ntt {
 
   template <>
   auto Grid<Dim::_1D>::rangeAllCells() const -> range_t<Dim::_1D> {
-    box_region_t<Dim::_1D> region { CellLayer::allLayer };
-    return rangeCells(region);
+    return rangeCells({ CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_2D>::rangeAllCells() const -> range_t<Dim::_2D> {
-    box_region_t<Dim::_2D> region { CellLayer::allLayer, CellLayer::allLayer };
-    return rangeCells(region);
+    return rangeCells({ CellLayer::allLayer, CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_3D>::rangeAllCells() const -> range_t<Dim::_3D> {
-    box_region_t<Dim::_3D> region { CellLayer::allLayer,
-                                    CellLayer::allLayer,
-                                    CellLayer::allLayer };
-    return rangeCells(region);
+    return rangeCells(
+      { CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_1D>::rangeActiveCells() const -> range_t<Dim::_1D> {
-    box_region_t<Dim::_1D> region { CellLayer::activeLayer };
-    return rangeCells(region);
+    return rangeCells({ CellLayer::activeLayer });
   }
 
   template <>
   auto Grid<Dim::_2D>::rangeActiveCells() const -> range_t<Dim::_2D> {
-    box_region_t<Dim::_2D> region { CellLayer::activeLayer, CellLayer::activeLayer };
-    return rangeCells(region);
+    return rangeCells({ CellLayer::activeLayer, CellLayer::activeLayer });
   }
 
   template <>
   auto Grid<Dim::_3D>::rangeActiveCells() const -> range_t<Dim::_3D> {
-    box_region_t<Dim::_3D> region { CellLayer::activeLayer,
-                                    CellLayer::activeLayer,
-                                    CellLayer::activeLayer };
-    return rangeCells(region);
+    return rangeCells(
+      { CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer });
   }
 
   template <Dimension D>
@@ -123,42 +116,34 @@ namespace ntt {
 
   template <>
   auto Grid<Dim::_1D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_1D> {
-    box_region_t<Dim::_1D> region { CellLayer::allLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost({ CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_2D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_2D> {
-    box_region_t<Dim::_2D> region { CellLayer::allLayer, CellLayer::allLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost({ CellLayer::allLayer, CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_3D>::rangeAllCellsOnHost() const -> range_h_t<Dim::_3D> {
-    box_region_t<Dim::_3D> region { CellLayer::allLayer,
-                                    CellLayer::allLayer,
-                                    CellLayer::allLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost(
+      { CellLayer::allLayer, CellLayer::allLayer, CellLayer::allLayer });
   }
 
   template <>
   auto Grid<Dim::_1D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_1D> {
-    box_region_t<Dim::_1D> region { CellLayer::activeLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost({ CellLayer::activeLayer });
   }
 
   template <>
   auto Grid<Dim::_2D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_2D> {
-    box_region_t<Dim::_2D> region { CellLayer::activeLayer, CellLayer::activeLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost({ CellLayer::activeLayer, CellLayer::activeLayer });
   }
 
   template <>
   auto Grid<Dim::_3D>::rangeActiveCellsOnHost() const -> range_h_t<Dim::_3D> {
-    box_region_t<Dim::_3D> region { CellLayer::activeLayer,
-                                    CellLayer::activeLayer,
-                                    CellLayer::activeLayer };
-    return rangeCellsOnHost(region);
+    return rangeCellsOnHost(
+      { CellLayer::activeLayer, CellLayer::activeLayer, CellLayer::activeLayer });
   }
 
   template <Dimension D>

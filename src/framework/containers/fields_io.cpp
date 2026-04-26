@@ -9,10 +9,6 @@
 
 #include <adios2.h>
 
-#if defined(MPI_ENABLED)
-  #include <mpi.h>
-#endif
-
 #include <vector>
 
 namespace ntt {

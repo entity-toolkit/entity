@@ -1,5 +1,9 @@
 #include "enums.h"
+#include "global.h"
 
+#include "traits/metric.h"
+
+#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
@@ -8,8 +12,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::SortParticles(simtime_t,
                                        timestep_t step,
                                        const SimulationParams&,
@@ -30,6 +33,7 @@ namespace ntt {
     }
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_COMM(S, M, D)                                               \
   template void Metadomain<S, M<D>>::SortParticles(simtime_t,                  \
                                                    timestep_t,                 \
@@ -37,7 +41,7 @@ namespace ntt {
                                                    Domain<S, M<D>>&) const;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
-
 #undef METADOMAIN_COMM
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt
