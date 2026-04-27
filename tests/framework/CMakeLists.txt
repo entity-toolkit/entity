@@ -56,6 +56,16 @@ else()
   gen_test(comm-nompi false)
 endif()
 
+if(${output})
+  if(${mpi})
+    gen_test(checkpoint-extents true)
+    gen_test(checkpoint-data true)
+  else()
+    gen_test(checkpoint-extents false)
+    gen_test(checkpoint-data false)
+  endif()
+endif()
+
 # this test is only run manually to ensure ...
 # ... command line args are working properly ...
 # ... and that the logging is done correctly
