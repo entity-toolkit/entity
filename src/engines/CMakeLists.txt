@@ -47,4 +47,3 @@ target_include_directories(
   ${ENGINES}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../
   INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../)
-target_precompile_headers(${ENGINES} REUSE_FROM ntt_global)
