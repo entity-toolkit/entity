@@ -45,7 +45,8 @@ namespace ntt {
          const boundaries_t<real_t>&          ext,
          const std::map<std::string, real_t>& metric_params)
       : Grid<D> { res, ext }
-      , metric { res, ext, metric_params } {}
+      , metric { res, ext, metric_params }
+      , m_metric_params_raw { metric_params } {}
 
     Mesh(const std::vector<ncells_t>&         res,
          const boundaries_t<real_t>&          ext,
@@ -53,9 +54,16 @@ namespace ntt {
          const boundaries_t<FldsBC>&          flds_bc,
          const boundaries_t<PrtlBC>&          prtl_bc)
       : Grid<D> { res, ext, flds_bc, prtl_bc }
-      , metric { res, ext, metric_params } {}
+      , metric { res, ext, metric_params }
+      , m_metric_params_raw { metric_params } {}
 
     ~Mesh() = default;
+
+    void set_extent(const boundaries_t<real_t>& new_extent) {
+      m_extent = new_extent;
+      metric.~M();
+      new (&metric) M { this->m_resolution, new_extent, m_metric_params_raw };
+    }
 
     /**
      * @brief Get the intersection of the mesh with a box
@@ -193,6 +201,9 @@ namespace ntt {
 
       return range;
     }
+
+  private:
+    std::map<std::string, real_t> m_metric_params_raw;
   };
 } // namespace ntt
 

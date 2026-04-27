@@ -49,6 +49,7 @@ entity
 │   └── entity.cpp               #   main entry-point
 ├── tests                        # unit tests for all submodules
 ├── .clang-format                # code formatting guidelines for clang-format
+├── .clang-tidy                  # configurations for the clang-tidy
 ├── .gitattributes
 ├── .gitignore
 ├── .gitmodules
@@ -59,9 +60,7 @@ entity
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
-├── conda-entity-nompi.sh
 ├── dependencies.py              # deployment scripts on various machines
-├── docker-compose.yml
 └── input.example.toml           # most complete toml file with all possible input options
 ```
 

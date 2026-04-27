@@ -4,13 +4,14 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
 #include "traits/pgen.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/spatial_dist.h"
+#include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
-#include "kernels/particle_moments.hpp"
 
 namespace user {
   using namespace ntt;
@@ -34,7 +35,7 @@ namespace user {
       for (auto d = 0u; d < D; ++d) {
         r2 += SQR(x_Ph[d] - HALF);
       }
-      return std::exp(-r2 / SQR(static_cast<real_t>(0.2)));
+      return math::exp(-r2 / SQR(static_cast<real_t>(0.2)));
       //                                                ^
       //                        characteristic width of the density profile
     }
@@ -70,46 +71,12 @@ namespace user {
       }
       // perform replenishment and injection every 100 timesteps
 
-      { // compute density of species #1 and #2
-
-        //   saves the density to domain.fields.buff(:,:,:,0)
-        const auto ni2    = domain.mesh.n_active(in::x2);
-        const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
-
-        auto scatter_buff = Kokkos::Experimental::create_scatter_view(
-          domain.fields.buff);
-        Kokkos::deep_copy(domain.fields.buff, ZERO);
-        for (const auto sp : std::vector<spidx_t> { 1, 2 }) {
-          const auto& prtl_spec = domain.species[sp - 1];
-          Kokkos::parallel_for("ComputeDensity",
-                               prtl_spec.rangeActiveParticles(),
-                               kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>(
-                                 {},
-                                 scatter_buff,
-                                 0u,
-                                 prtl_spec.i1,
-                                 prtl_spec.i2,
-                                 prtl_spec.i3,
-                                 prtl_spec.dx1,
-                                 prtl_spec.dx2,
-                                 prtl_spec.dx3,
-                                 prtl_spec.ux1,
-                                 prtl_spec.ux2,
-                                 prtl_spec.ux3,
-                                 prtl_spec.phi,
-                                 prtl_spec.weight,
-                                 prtl_spec.tag,
-                                 prtl_spec.mass(),
-                                 prtl_spec.charge(),
-                                 false,
-                                 domain.mesh.metric,
-                                 domain.mesh.flds_bc(),
-                                 ni2,
-                                 inv_n0,
-                                 0u));
-        }
-        Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
-      }
+      // compute the density of species #1 and #2
+      // and save in the field buffer (index 0)
+      arch::ComputeMomentWithSpecies<S, M, FldsID::N, 3>(params,
+                                                         domain,
+                                                         { 1u, 2u },
+                                                         domain.fields.buff);
 
       const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
         domain.random_pool(),

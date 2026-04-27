@@ -38,7 +38,39 @@
 namespace arch {
 
   /**
-   * @brief Updates particle position and velocity if it reflects off a moiving
+   * @brief Checks whether a particle reflects off a moving piston, called after particle has been moved by regular pusher
+   *
+   * @param p Index of particle
+   * @param dt Timestep
+   * @param particles Particle data arrays
+   * @param metric Metric object for coordinate transformations
+   * @param piston_position Position of the piston at the start of timestep in global coordinates
+   * @param piston_v Velocity of piston at current timestep
+   * @param is_left Is piston on the left side of the box or right side of the box
+   */
+  template <CartesianMetricClass M>
+  Inline bool CrossesPiston(index_t                     p,
+                            real_t                      dt,
+                            const kernel::PusherArrays& particles,
+                            const M&                    metric,
+                            real_t                      piston_position,
+                            real_t                      piston_v,
+                            bool                        is_left) {
+    const real_t x1_Cd = i_di_to_Xi(particles.i1(p), particles.dx1(p));
+    // x1_Cd_wallmove is not the actual particle coordinate
+    // it is particle position minus how much the wall has moved in this
+    // timestep This is a computational trick
+    const real_t x1_Cd_wallmove =
+      x1_Cd - metric.template transform<1, Idx::XYZ, Idx::U>({}, piston_v) * dt;
+    const real_t x1_Ph_wallmove = metric.template convert<1, Crd::Cd, Crd::Ph>(
+      x1_Cd_wallmove);
+
+    return is_left ? piston_position > x1_Ph_wallmove
+                   : piston_position < x1_Ph_wallmove;
+  }
+
+  /**
+   * @brief Updates particle position and velocity if it reflects off a moving
    * piston, called to correct patticle position
    *
    * @param p Index of particle
@@ -50,13 +82,18 @@ namespace arch {
    * @param massive Whether the particle is massive or massless (e.g. photon)
    */
   template <CartesianMetricClass M>
-  Inline void PistonUpdate(index_t                     p,
-                           real_t                      dt,
-                           const kernel::PusherArrays& particles,
-                           const M&                    metric,
-                           real_t                      piston_position,
-                           real_t                      piston_v,
-                           bool                        massive) {
+  Inline void Piston(index_t                     p,
+                     real_t                      dt,
+                     const kernel::PusherArrays& particles,
+                     const M&                    metric,
+                     real_t                      piston_position,
+                     real_t                      piston_v,
+                     bool                        massive) {
+
+    // check if particle actually crosses the piston, if not return
+    if (!CrossesPiston<M>(p, dt, particles, metric, piston_position, piston_v, true)) {
+      return;
+    }
     // step 1: calculate the particle 3 velocity
     const real_t gamma_p {
       massive ? U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p))
@@ -93,23 +130,20 @@ namespace arch {
                         TWO * piston_v * gamma_p);
 
     const real_t remaining_dt_inv_energy {
-      massive
-        ? (remaining_dt /
-           math::sqrt(
-             ONE + U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p))))
-        : (remaining_dt / math::sqrt(SQR(particles.ux1(p)) + SQR(particles.ux2(p)) +
-                                     SQR(particles.ux3(p))))
+      massive ? (remaining_dt /
+                 U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)))
+              : (remaining_dt /
+                 NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p)))
     };
     // define piston integer and fractional coordinate
-
     int      i_w_coll  = i_w;
     prtldx_t dx_w_coll = dx_w + metric.template transform<1, Idx::XYZ, Idx::U>(
                                   {},
                                   piston_v) *
                                   dt_to_piston;
 
-    i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
-                static_cast<int>(dx_w_coll < ZERO);
+    i_w_coll  += static_cast<int>(dx_w_coll >= ONE) -
+                 static_cast<int>(dx_w_coll < ZERO);
     dx_w_coll -= static_cast<prtldx_t>(dx_w_coll >= ONE);
     dx_w_coll += static_cast<prtldx_t>(dx_w_coll < ZERO);
 
@@ -119,42 +153,10 @@ namespace arch {
              remaining_dt_inv_energy +
            dx_w_coll;
 
-    particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
-                       static_cast<int>(particles.dx1(p) < ZERO);
+    particles.i1(p)  += static_cast<int>(particles.dx1(p) >= ONE) -
+                        static_cast<int>(particles.dx1(p) < ZERO);
     particles.dx1(p) -= static_cast<prtldx_t>(particles.dx1(p) >= ONE);
     particles.dx1(p) += static_cast<prtldx_t>(particles.dx1(p) < ZERO);
-  }
-
-  /**
-   * @brief Checks whether a particle reflects off a moving piston, called after particle has been moved by regular pusher
-   *
-   * @param p Index of particle
-   * @param dt Timestep
-   * @param particles Particle data arrays
-   * @param metric Metric object for coordinate transformations
-   * @param piston_position Position of the piston at the start of timestep in global coordinates
-   * @param piston_v Velocity of piston at current timestep
-   * @param is_left Is piston on the left side of the box or right side of the box
-   */
-  template <CartesianMetricClass M>
-  Inline bool CrossesPiston(index_t                     p,
-                            real_t                      dt,
-                            const kernel::PusherArrays& particles,
-                            const M&                    metric,
-                            real_t                      piston_position,
-                            real_t                      piston_v,
-                            bool                        is_left) {
-    const real_t x1_Cd = i_di_to_Xi(particles.i1(p), particles.dx1(p));
-    // x1_Cd_wallmove is not the actual particle coordinate
-    // it is particle position minus how much the wall has moved in this
-    // timestep This is a computational trick
-    const real_t x1_Cd_wallmove =
-      x1_Cd - metric.template transform<1, Idx::XYZ, Idx::U>({}, piston_v) * dt;
-    const real_t x1_Ph_wallmove = metric.template convert<1, Crd::Cd, Crd::Ph>(
-      x1_Cd_wallmove);
-
-    return is_left ? piston_position > x1_Ph_wallmove
-                   : piston_position < x1_Ph_wallmove;
   }
 
 } // namespace arch
