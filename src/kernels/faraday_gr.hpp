@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -29,9 +28,7 @@ namespace kernel::gr {
    * @brief `d(Bin)^i / dt = -curl E_j`, `Bout += dt * d(Bin)/dt`
    * @tparam M Metric
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M>
+  template <GRMetricClass M>
   class Faraday_kernel {
     static constexpr auto D = M::Dim;
 

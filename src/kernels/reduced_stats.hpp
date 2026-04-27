@@ -15,18 +15,13 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
-    requires metric::traits::HasD<M> &&
-             (metric::traits::HasTransform_i<M> || (I == 0)) &&
-             metric::traits::HasTransform<M> && metric::traits::HasSqrtDetH<M> &&
-             (I <= 3)
+  template <SimEngine::type S, MetricClass M, StatsID::type F, unsigned short I = 0>
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 
@@ -400,12 +395,9 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
-    requires metric::traits::HasD<M> &&
-             (((S == SimEngine::SRPIC) && metric::traits::HasTransformXYZ<M>) ||
-              ((S == SimEngine::GRPIC) && metric::traits::HasTransform<M>)) &&
-             ((P == StatsID::Rho) || (P == StatsID::Charge) ||
-              (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
+  template <SimEngine::type S, MetricClass M, StatsID::type P>
+    requires((P == StatsID::Rho) || (P == StatsID::Charge) ||
+             (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
   class ReducedParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
@@ -441,8 +433,8 @@ namespace kernel {
                                   float                              charge,
                                   bool     use_weights,
                                   const M& metric)
-      : c1 { (components.size() > 0) ? components[0]
-                                     : static_cast<unsigned short>(0) }
+      : c1 { not components.empty() ? components[0]
+                                    : static_cast<unsigned short>(0) }
       , c2 { (components.size() == 2) ? components[1]
                                       : static_cast<unsigned short>(0) }
       , i1 { i1 }
@@ -498,7 +490,7 @@ namespace kernel {
           if constexpr (S == SimEngine::SRPIC) {
             // SR
             // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-            if constexpr (M::CoordType == Coord::Cart) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
               u_Phys[0] = ux1(p);
               u_Phys[1] = ux2(p);
               u_Phys[2] = ux3(p);

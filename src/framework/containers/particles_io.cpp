@@ -1,6 +1,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/log.h"
@@ -15,8 +17,14 @@
 #include <adios2.h>
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
+
+  #include <vector>
 #endif
+
+#include <cstddef>
 
 namespace ntt {
   /* * * * * * * * *
@@ -24,8 +32,9 @@ namespace ntt {
    * * * * * * * * */
   template <Dimension D, Coord::type C>
   void Particles<D, C>::OutputDeclare(adios2::IO& io) const {
-    const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cart)) ? 1
-                                                                            : 0;
+    const auto n_addition_coords = ((D == Dim::_2D) and (C != Coord::Cartesian))
+                                     ? 1
+                                     : 0;
     for (auto d { 0u }; d < D + n_addition_coords; ++d) {
       io.DefineVariable<real_t>(fmt::format("pX%d_%d", d + 1, index()),
                                 { adios2::UnknownDim },
@@ -78,7 +87,7 @@ namespace ntt {
   }
 
   template <Dimension D, Coord::type C>
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   void Particles<D, C>::OutputWrite(adios2::IO&     io,
                                     adios2::Engine& writer,
                                     npart_t         prtl_stride,
@@ -107,7 +116,7 @@ namespace ntt {
         },
         nout);
       out_indices = array_t<npart_t*> { "out_indices", nout };
-      array_t<npart_t> out_counter { "out_counter" };
+      const array_t<npart_t> out_counter { "out_counter" };
       Kokkos::parallel_for(
         "RecordOutputIndices",
         rangeActiveParticles(),
@@ -120,13 +129,15 @@ namespace ntt {
         });
     }
 
-    npart_t nout_offset = 0;
-    npart_t nout_total  = nout;
 #if !defined(MPI_ENABLED)
+    const npart_t nout_offset = 0;
+    const npart_t nout_total  = nout;
     (void)domains_total;
     (void)domains_offset;
 #else
-    auto nout_total_vec = std::vector<npart_t>(domains_total);
+    npart_t nout_offset    = 0;
+    npart_t nout_total     = nout;
+    auto    nout_total_vec = std::vector<npart_t>(domains_total);
     MPI_Allgather(&nout,
                   1,
                   mpi::get_type<npart_t>(),
@@ -154,7 +165,7 @@ namespace ntt {
     if constexpr (D == Dim::_2D or D == Dim::_3D) {
       buff_x2 = array_t<real_t*> { "x2", nout };
     }
-    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cartesian))) {
       buff_x3 = array_t<real_t*> { "x3", nout };
     }
     array_t<real_t**>  buff_pldr;
@@ -250,7 +261,7 @@ namespace ntt {
                                 nout_total,
                                 nout_offset);
     }
-    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cart))) {
+    if constexpr (D == Dim::_3D or ((D == Dim::_2D) and (C != Coord::Cartesian))) {
       out::Write1DArray<real_t>(io,
                                 writer,
                                 fmt::format("pX3_%d", index()),
@@ -374,7 +385,7 @@ namespace ntt {
                                   { adios2::UnknownDim });
     }
 
-    if constexpr (D == Dim::_2D and C != ntt::Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != ntt::Coord::Cartesian) {
       io.DefineVariable<real_t>(fmt::format("s%d_phi", index()),
                                 { adios2::UnknownDim },
                                 { adios2::UnknownDim },
@@ -421,9 +432,8 @@ namespace ntt {
     raise::ErrorIf(npart() > 0,
                    "Particles already initialized before reading checkpoint",
                    HERE);
-    npart_t npart_offset = 0u;
-    npart_t npart_read;
 
+    npart_t npart_read;
     out::ReadVariable<npart_t>(io,
                                reader,
                                fmt::format("s%d_npart", index()),
@@ -432,8 +442,10 @@ namespace ntt {
     set_npart(npart_read);
 
 #if !defined(MPI_ENABLED)
+    const npart_t npart_offset = 0u;
     (void)domains_total;
 #else
+    npart_t npart_offset = 0u;
     {
       const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);
@@ -536,7 +548,7 @@ namespace ntt {
                                  npart_offset);
     }
 
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       out::Read1DArray<real_t>(io,
                                reader,
                                fmt::format("s%d_phi", index()),
@@ -638,7 +650,7 @@ namespace ntt {
     out::WriteVariable<npart_t>(io,
                                 writer,
                                 fmt::format("s%d_counter", index()),
-                                npart(),
+                                counter(),
                                 domains_total,
                                 domains_offset);
 
@@ -735,7 +747,7 @@ namespace ntt {
                                   npart_offset);
     }
 
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       out::Write1DArray<real_t>(io,
                                 writer,
                                 fmt::format("s%d_phi", index()),
@@ -803,16 +815,17 @@ namespace ntt {
     }
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define PARTICLES_OUTPUT_DECLARE(D, C)                                         \
   template void Particles<D, C>::OutputDeclare(adios2::IO&) const;
 
-  PARTICLES_OUTPUT_DECLARE(Dim::_1D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cart)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Sph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qsph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Sph)
-  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Qsph)
+  PARTICLES_OUTPUT_DECLARE(Dim::_1D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Cartesian)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Spherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_2D, Coord::Qspherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Spherical)
+  PARTICLES_OUTPUT_DECLARE(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_OUTPUT_DECLARE
 
 #define PARTICLES_OUTPUT_WRITE(S, M, D)                                        \
@@ -838,13 +851,14 @@ namespace ntt {
                                                  std::size_t,                  \
                                                  std::size_t) const;
 
-  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cart)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Sph)
-  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Qsph)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Sph)
-  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qsph)
+  PARTICLES_CHECKPOINTS(Dim::_1D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Cartesian)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Spherical)
+  PARTICLES_CHECKPOINTS(Dim::_2D, Coord::Qspherical)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Spherical)
+  PARTICLES_CHECKPOINTS(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_CHECKPOINTS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

@@ -133,9 +133,9 @@ namespace info {
           }
           if (stdout) {
             if (colored) {
-              PLOG(plog::none) << msg << std::endl;
+              PLOG(plog::none) << msg << '\n';
             } else {
-              PLOG(plog::none) << msg_nocol << std::endl;
+              PLOG(plog::none) << msg_nocol << '\n';
             }
           }
         },
@@ -150,9 +150,9 @@ namespace info {
       }
       if (stdout) {
         if (colored) {
-          PLOG(plog::none) << msg << std::endl;
+          PLOG(plog::none) << msg << '\n';
         } else {
-          PLOG(plog::none) << msg_nocol << std::endl;
+          PLOG(plog::none) << msg_nocol << '\n';
         }
       }
     }

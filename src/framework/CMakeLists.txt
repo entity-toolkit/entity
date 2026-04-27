@@ -18,6 +18,7 @@
 # * domain/metadomain_chckpt.cpp
 # * domain/metadomain_stats.cpp
 # * domain/metadomain_io.cpp
+# * domain/metadomain_reshape.cpp
 # * containers/particles.cpp
 # * containers/particles_comm.cpp
 # * containers/particles_io.cpp
@@ -58,6 +59,7 @@ set(SOURCES
     ${SRC_DIR}/domain/metadomain_sort.cpp
     ${SRC_DIR}/domain/metadomain_lb.cpp
     ${SRC_DIR}/domain/metadomain_stats.cpp
+    ${SRC_DIR}/domain/metadomain_reshape.cpp
     ${SRC_DIR}/containers/particles.cpp
     ${SRC_DIR}/containers/particles_sort.cpp
     ${SRC_DIR}/containers/fields.cpp)
@@ -75,7 +77,7 @@ add_library(ntt_framework ${SOURCES})
 set(libs ntt_global ntt_metrics ntt_kernels ntt_output)
 add_dependencies(ntt_framework ${libs})
 target_link_libraries(ntt_framework PUBLIC ${libs})
-if (NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
+if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "AppleClang")
   target_link_libraries(ntt_framework PRIVATE stdc++fs)
 endif()
 

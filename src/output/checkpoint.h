@@ -30,14 +30,14 @@ namespace checkpoint {
     adios2::IO     m_io;
     adios2::Engine m_writer;
 
-    tools::Tracker m_tracker {};
+    tools::Tracker m_tracker;
 
     bool m_writing_mode { false };
 
     std::vector<std::pair<std::string, std::string>> m_written;
 
-    int    m_keep;
-    bool   m_enabled;
+    int    m_keep { -1 };
+    bool   m_enabled { false };
     path_t m_checkpoint_root;
 
   public:

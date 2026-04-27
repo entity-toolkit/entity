@@ -7,7 +7,7 @@ This code of conduct outlines shared principles and expectations for all partici
 - If you contribute something to the repository, it becomes part of the project and thus will also be regarded as open-source.
 
 # Contributions and Credit
-- The only attribution we strongly encourage is a citation of either the code repository, or the corresponding method papers (coming soon).
+- The only attribution we strongly encourage is a citation of either the code repository, or the corresponding method papers (see `CITATION`).
 - All contributions are made voluntarily, and there is no expectation of recognition of isolated individuals.
 - There's no built-in expectation of credit or authorship for modules or changes pushed to the repository. Anyone is free to use any part of the code with no attribution to the author of any specific module or algorithm. 
 - The code is there for everyone to use, and its only goal is to enable the community to produce exciting science!
@@ -24,6 +24,6 @@ This code of conduct outlines shared principles and expectations for all partici
 
 # Community and Participation
 - Everyone is welcome in the community.
-- Joining meetings on Zoom, using the Slack workspace, giving feedback, taking part in decision making and planning, or following development doesn't require any special status -- it's open to all.
+- Joining online meetings on Zoom/Slack, using the Slack workspace, giving feedback, taking part in decision making and planning, or following development doesn't require any special status -- it's open to all.
 
 Finally, while we cannot enforce it, we strongly encourage any projects that build on this code to be open source too. If you build upon this project, we welcome transparency and openness in spirit. You may contribute to the code as much or as little as you like; all effort is appreciated, none is required.

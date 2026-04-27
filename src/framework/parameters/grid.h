@@ -20,6 +20,7 @@
 #include <toml11/toml.hpp>
 
 #include <map>
+#include <optional>
 #include <tuple>
 #include <vector>
 
@@ -27,19 +28,19 @@ namespace ntt {
   namespace params {
 
     struct Boundaries {
-      const bool           needs_match_boundaries;
-      boundaries_t<real_t> match_ds_array;
+      const bool                          needs_match_boundaries;
+      std::optional<boundaries_t<real_t>> match_ds_array;
 
-      const bool needs_absorb_boundaries;
-      real_t     absorb_ds;
+      const bool            needs_absorb_boundaries;
+      std::optional<real_t> absorb_ds;
 
-      const bool                  needs_atmosphere_boundaries;
-      real_t                      atmosphere_temperature;
-      real_t                      atmosphere_height;
-      real_t                      atmosphere_density;
-      real_t                      atmosphere_g;
-      real_t                      atmosphere_ds;
-      std::pair<spidx_t, spidx_t> atmosphere_species;
+      const bool                                 needs_atmosphere_boundaries;
+      std::optional<real_t>                      atmosphere_temperature;
+      std::optional<real_t>                      atmosphere_height;
+      std::optional<real_t>                      atmosphere_density;
+      std::optional<real_t>                      atmosphere_g;
+      std::optional<real_t>                      atmosphere_ds;
+      std::optional<std::pair<spidx_t, spidx_t>> atmosphere_species;
 
       Boundaries(bool needs_match, bool needs_absorb, bool needs_atmosphere)
         : needs_match_boundaries { needs_match }
@@ -54,27 +55,28 @@ namespace ntt {
     };
 
     struct Grid {
-      unsigned int     number_of_domains;
-      std::vector<int> domain_decomposition;
-      unsigned int     load_balancing_interval;
-      std::vector<int> load_balancing_dimensions;
-      bool             load_balancing_enable;
-      unsigned int     load_balancing_max_iterations;
-      real_t           load_balancing_tolerance;
+      std::optional<unsigned int>     number_of_domains;
+      std::optional<std::vector<int>> domain_decomposition;
+      std::optional<unsigned int>     load_balancing_interval;
+      std::optional<std::vector<int>> load_balancing_dimensions;
+      std::optional<bool>             load_balancing_enable;
+      std::optional<unsigned int>     load_balancing_max_iterations;
+      std::optional<real_t>           load_balancing_tolerance;
 
-      std::vector<ncells_t> resolution;
-      Dimension             dim;
 
-      std::vector<std::vector<real_t>> extent;
-      boundaries_t<real_t>             extent_pairwise_;
+      std::optional<std::vector<ncells_t>> resolution;
+      std::optional<Dimension>             dim;
 
-      Metric                        metric_enum = Metric::INVALID;
-      Coord                         coord_enum  = Coord::INVALID;
-      std::map<std::string, real_t> metric_params;
-      std::map<std::string, real_t> metric_params_short_;
+      std::optional<std::vector<std::vector<real_t>>> extent;
+      std::optional<boundaries_t<real_t>>             extent_pairwise_;
 
-      real_t scale_dx0;
-      real_t scale_V0;
+      Metric metric_enum = Metric::INVALID;
+      Coord  coord_enum  = Coord::INVALID;
+      std::optional<std::map<std::string, real_t>> metric_params;
+      std::optional<std::map<std::string, real_t>> metric_params_short_;
+
+      std::optional<real_t> scale_dx0;
+      std::optional<real_t> scale_V0;
 
       void read(const SimEngine&, const toml::value&);
       void setParams(SimulationParams*) const;

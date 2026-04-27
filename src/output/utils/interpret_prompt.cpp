@@ -12,8 +12,8 @@ namespace out {
 
   auto InterpretSpecies(const std::string& in) -> std::vector<spidx_t> {
     std::vector<spidx_t> species;
-    if (in.find("_") < in.size()) {
-      auto species_str = fmt::splitString(in.substr(in.find("_") + 1), "_");
+    if (in.find('_') < in.size()) {
+      auto species_str = fmt::splitString(in.substr(in.find('_') + 1), "_");
       for (const auto& specie : species_str) {
         species.push_back((spidx_t)(std::stoi(specie)));
       }
@@ -43,7 +43,7 @@ namespace out {
       } else if (c == "j") {
         comps_int.push_back(-2);
       } else {
-        comps_int.push_back(std::stoi(c));
+        comps_int.push_back(static_cast<short>(std::stoi(c)));
       }
     }
     std::vector<std::vector<unsigned short>> comps_ints;

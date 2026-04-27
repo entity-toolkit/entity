@@ -1,0 +1,52 @@
+[simulation]
+  name    = "match_field_boundaries"
+  engine  = "srpic"
+  runtime = 2.0
+
+[grid]
+  resolution = [2048]
+  extent     = [[0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["FIXED", "MATCH"]]
+    particles = [["REFLECT", "ABSORB"]]
+
+    [grid.boundaries.match]
+      ds = 0.05
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 1.0
+
+[setup]
+
+  amplitude    = 1.0
+  omega        = 500.0
+  t_transition = 0.1
+  t_duration   = 0.25
+
+[output]
+  interval_time = 0.01
+
+  [output.fields]
+    quantities = ["E", "B"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0

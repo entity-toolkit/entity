@@ -6,6 +6,10 @@
  * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
+ * @cpp:
+ *   - domain.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  * @note
@@ -43,11 +47,10 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
 #include "utils/reporter.h"
-
-#include "metrics/traits.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -62,8 +65,7 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M>
+  template <SimEngine::type S, MetricClass M>
   struct Domain {
     static constexpr Dimension D { M::Dim };
 
@@ -151,9 +153,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto random_pool() -> random_number_pool_t& {
-      raise::ErrorIf(not m_random_number_pool.has_value(),
-                     "random_pool() called on a placeholder domain",
-                     HERE);
+      if (not m_random_number_pool.has_value()) {
+        raise::Error("random_pool() called on a placeholder domain", HERE);
+      }
       return m_random_number_pool.value();
     }
 
@@ -165,7 +167,7 @@ namespace ntt {
 
     /* printer overload ----------------------------------------------------- */
     auto Report() const -> std::string {
-      std::string report = "";
+      std::string report;
       reporter::AddSubcategory(report,
                                4,
                                fmt::format("Domain #%d", index()).c_str());
@@ -234,13 +236,13 @@ namespace ntt {
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
-    int                         m_mpi_rank;
+    int                         m_mpi_rank { -1 };
 
     // random number pool for the domain
     std::optional<random_number_pool_t> m_random_number_pool;
   };
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
     -> std::ostream& {
     os << "Domain #" << domain.index();

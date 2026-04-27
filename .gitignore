@@ -24,6 +24,8 @@ temp*/
 logs/
 *.log
 *.bak
+temp*
+tmp*
 
 # Trash files
 .trash/
@@ -61,3 +63,5 @@ action-token
 *.vim
 ignore-*
 tombi/
+tidy/
+.claude

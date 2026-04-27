@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::sr {
   using namespace ntt;
@@ -28,9 +27,7 @@ namespace kernel::sr {
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
    * space (diagonal metric)
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M>
+  template <SRMetricClass M>
   class Faraday_kernel {
     static constexpr auto D = M::Dim;
 

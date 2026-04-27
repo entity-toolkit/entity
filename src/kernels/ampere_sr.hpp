@@ -1,5 +1,5 @@
 /**
- * @file kernels/ampere_gr.hpp
+ * @file kernels/ampere_sr.hpp
  * @brief Algorithms for Ampere's law in curvilinear SR
  * @implements
  *   - kernel::sr::Ampere_kernel<>
@@ -17,10 +17,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::sr {
   using namespace ntt;
@@ -29,9 +28,7 @@ namespace kernel::sr {
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space
    * @tparam M Metric
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
+  template <SRMetricClass M>
   class Ampere_kernel {
     static constexpr auto D = M::Dim;
 
@@ -123,9 +120,7 @@ namespace kernel::sr {
   /**
    * @brief Add the currents to the E field with the appropriate conversion
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
+  template <SRMetricClass M>
   class CurrentsAmpere_kernel {
     static constexpr auto     D     = M::Dim;
     static constexpr ncells_t i2min = N_GHOSTS;

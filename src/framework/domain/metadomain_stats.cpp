@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -8,6 +9,7 @@
 
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
+#include "framework/domain/mesh.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
@@ -18,11 +20,13 @@
 #include <Kokkos_StdAlgorithms.hpp>
 
 #include <filesystem>
+#include <functional>
+#include <string>
+#include <vector>
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
                                          bool                    is_resuming) {
     raise::ErrorIf(
@@ -62,7 +66,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
+  template <SimEngine::type S, MetricClass M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const M&                global_metric,
@@ -70,7 +74,7 @@ namespace ntt {
                       const std::vector<spidx_t>&        species,
                       const std::vector<unsigned short>& components) -> real_t {
     std::vector<spidx_t> specs = species;
-    if (specs.size() == 0) {
+    if (specs.empty()) {
       // if no species specified, take all massive species
       for (auto& sp : prtl_species) {
         if (sp.mass() > 0) {
@@ -119,13 +123,13 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type F>
+  template <SimEngine::type S, MetricClass M, StatsID::type F>
   auto ReduceFields(Domain<S, M>*                      domain,
                     const M&                           global_metric,
                     const std::vector<unsigned short>& components) -> real_t {
     auto buffer { ZERO };
     if constexpr (F == StatsID::JdotE) {
-      if (components.size() == 0) {
+      if (components.empty()) {
         Kokkos::parallel_reduce(
           "ReduceFields",
           domain->mesh.rangeActiveCells(),
@@ -181,15 +185,15 @@ namespace ntt {
     return buffer / global_metric.totVolume();
   }
 
-  template <SimEngine::type S, class M>
-    requires IsCompatibleWithMetadomain<M>
+  template <SimEngine::type S, MetricClass M>
   auto Metadomain<S, M>::WriteStats(
     const SimulationParams& params,
     timestep_t              current_step,
     timestep_t              finished_step,
     simtime_t               current_time,
     simtime_t               finished_time,
-    std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> CustomStat)
+    const std::function<
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& CustomStat)
     -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
@@ -272,7 +276,7 @@ namespace ntt {
         }
       } else {
         raise::Error("StatsID not implemented for particular SimEngine: " +
-                       std::to_string(static_cast<int>(S)),
+                       std::string(SimEngine(S).to_string()),
                      HERE);
       }
     }
@@ -280,21 +284,22 @@ namespace ntt {
     return true;
   }
 
-#define METADOMAIN_STATS(S, M, D)                                                 \
-  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,     \
-                                                     bool);                       \
-  template auto Metadomain<S, M<D>>::WriteStats(                                  \
-    const SimulationParams&,                                                      \
-    timestep_t,                                                                   \
-    timestep_t,                                                                   \
-    simtime_t,                                                                    \
-    simtime_t,                                                                    \
-    std::function<                                                                \
-      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>) \
+  // NOLINTBEGIN(bugprone-macro-parentheses)
+#define METADOMAIN_STATS(S, M, D)                                                  \
+  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,      \
+                                                     bool);                        \
+  template auto Metadomain<S, M<D>>::WriteStats(                                   \
+    const SimulationParams&,                                                       \
+    timestep_t,                                                                    \
+    timestep_t,                                                                    \
+    simtime_t,                                                                     \
+    simtime_t,                                                                     \
+    const std::function<                                                           \
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>&) \
     -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_STATS)
-
 #undef METADOMAIN_STATS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

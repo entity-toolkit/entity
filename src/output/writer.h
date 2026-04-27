@@ -1,6 +1,15 @@
 /**
  * @file output/writer.h
  * @brief Writer class which takes care of data output
+ * @implements
+ *   - out::Writer
+ * @cpp:
+ *   - writer.cpp
+ * @namespaces:
+ *   - out::
+ * @macros:
+ *   - MPI_ENABLED
+ *   - OUTPUT_ENABLED
  */
 
 #ifndef OUTPUT_WRITER_H
@@ -52,7 +61,7 @@ namespace out {
     adios2::Dims m_flds_l_corner_dwn;
     adios2::Dims m_flds_l_shape_dwn;
 
-    bool        m_flds_ghosts;
+    bool        m_flds_ghosts { false };
     std::string m_engine;
     path_t      m_root;
 

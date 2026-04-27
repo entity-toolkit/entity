@@ -97,14 +97,6 @@ namespace metric {
       , x3_min { getExtent<D, 2, XMin>(ext) }
       , x3_max { getExtent<D, 2, XMax>(ext) } {}
 
-    ~MetricBase() = default;
-
-    [[nodiscard]]
-    virtual auto find_dxMin() const -> real_t = 0;
-
-    [[nodiscard]]
-    virtual auto totVolume() const -> real_t = 0;
-
     [[nodiscard]]
     auto dxMin() const -> real_t {
       return dx_min;
@@ -115,7 +107,7 @@ namespace metric {
     }
 
   protected:
-    real_t dx_min;
+    real_t dx_min { ZERO };
 
     // max of coordinates in code units
     const real_t nx1, nx2, nx3;

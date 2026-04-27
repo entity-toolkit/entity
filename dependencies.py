@@ -134,10 +134,8 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         modules_in_module = "\n".join(
             [f"module load {module}" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/kokkos"
-        install_path = (
-            f"{prefix}/kokkos/{version}/{backend}{f'_{arch}' if arch else ''}"
-        )
+        src_path = os.path.join(prefix, "src", "kokkos")
+        install_path = os.path.join(prefix, "kokkos", version, backend, arch.lower() if arch else "")
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
@@ -205,8 +203,8 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         modules_in_module = "\n".join(
             [f"module load {module}" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/adios2"
-        install_path = f"{prefix}/adios2/{version}/{mpi_mode}"
+        src_path = os.path.join(prefix, "src", "adios2")
+        install_path = os.path.join(prefix, "adios2", version, mpi_mode)
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Adios2 install path {install_path} already exists and overwrite is disabled"
@@ -295,7 +293,7 @@ def InstallNt2pyScript(settings: Settings) -> str:
 
 PRESETS = {
     "rusty": {
-        "module_loads": ["openmpi/5.0.6.lua", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
+        "module_loads": ["openmpi/cuda-4.1.8", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
         "kokkos_backend": "cuda",
         "kokkos_arch": "AMPERE80",
         "adios2_mpi": "mpi",
@@ -367,13 +365,9 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "kokkos",
-                settings.kokkos_backend
-                + (
-                    f"_{settings.kokkos_arch.strip()}"
-                    if settings.kokkos_arch.strip()
-                    else ""
-                ),
                 settings.kokkos_version,
+                settings.kokkos_backend, 
+                settings.kokkos_arch.strip().lower(),
             )
             os.makedirs(os.path.dirname(kokkos_modfile_file), exist_ok=True)
             if os.path.exists(kokkos_modfile_file) and not settings.overwrite:
@@ -387,8 +381,8 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "adios2",
-                settings.adios2_mpi,
                 settings.adios2_version,
+                settings.adios2_mpi,
             )
             os.makedirs(os.path.dirname(adios2_modfile_file), exist_ok=True)
             if os.path.exists(adios2_modfile_file) and not settings.overwrite:

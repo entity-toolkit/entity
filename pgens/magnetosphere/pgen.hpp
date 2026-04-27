@@ -5,18 +5,18 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
-#include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 #include <string>
 
 namespace user {
   using namespace ntt;
 
-  enum class FieldGeometry {
+  enum class FieldGeometry : uint8_t {
     dipole,
     monopole
   };
@@ -85,37 +85,28 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Spherical, Metric::QSpherical>::value
+      ::traits::pgen::compatible_with<Metric::Spherical, Metric::QSpherical> {}
     };
-    static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D>::value
-    };
-
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
     const real_t      Bsurf, Rstar, Omega;
     const std::string field_geom;
     InitFields<D>     init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : Bsurf { p.template get<real_t>("setup.Bsurf", ONE) }
       , Rstar { m.mesh().extent(in::x1).first }
       , Omega { static_cast<real_t>(constant::TWO_PI) /
                 p.template get<real_t>("setup.period", ONE) }
       , field_geom { p.template get<std::string>("setup.field_geometry", "dipole") }
       , init_flds { Bsurf, Rstar, field_geom } {}
-
-    inline PGen() {}
 
     auto AtmFields(simtime_t time) const -> DriveFields<D> {
       return DriveFields<D> { time, Bsurf, Rstar, Omega, field_geom };

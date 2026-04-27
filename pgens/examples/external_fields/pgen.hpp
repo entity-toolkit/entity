@@ -4,10 +4,11 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 #include <Kokkos_Pair.hpp>
 
@@ -22,10 +23,28 @@ namespace user {
   struct ExtFields {
     ExtFields(simtime_t time, spidx_t sp) : time { time }, sp { sp } {}
 
+    /*
+     * Particle's equation of motion is:
+     *
+     * du / dt = f_ext + (q / mc) * ((E + E_ext) + v x (B + B_ext))
+     *
+     * in dimensionless terms:
+     *
+     * du / dt = f_ext + (q / m) / (q0 / m0) * omegaB0 * ((e + e_ext) + v x (b + b_ext))
+     *
+     * - f_ext is the external force-field (acceleration) defined here
+     * - E and B are interpolated fields from the grid
+     * - e = E / B0 and b = B / B0
+     * - e_ext = E_ext / B0 and b_ext = B_ext / B0 are the dimensionless external fields defined here
+     *
+     */
+
+    // f_ext: external force-field (acceleration):
     Inline auto fx1(const coord_t<D>&) const -> real_t {
       return (sp % 2u == 0u) ? -HALF : HALF;
     }
 
+    // b_ext: external magnetic field:
     Inline auto bx3(const coord_t<D>&) const -> real_t {
       return ONE + 0.2 * time;
     }
@@ -35,30 +54,31 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+      ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
     };
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
+    const SimulationParams& params;
     const Metadomain<S, M>& metadomain;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p }
-      , metadomain { metadomain } {}
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m } {}
 
-    inline auto ExternalFields(simtime_t           time,
-                               spidx_t             sp,
-                               const Domain<S, M>& domain) const
+    /*
+     * @returns a pair of (apply_external_fields, external_fields)
+     *
+     * @note apply_external_fields is true for species other than 1 (i.e., 2 and 3 in this case)
+     */
+    auto ExternalFields(simtime_t time, spidx_t sp, const Domain<S, M>& /*domain*/) const
       -> std::pair<bool, ExtFields<M::Dim>> {
       // apply only to species 2 and 3
       return {
@@ -67,7 +87,7 @@ namespace user {
       };
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto prtls = params.template get<std::vector<std::vector<real_t>>>(
         "setup.prtls");
       const auto prtl_species = params.template get<std::vector<int>>(
@@ -81,8 +101,8 @@ namespace user {
                        "setup.prtls should be a vector of vectors of size 3+D",
                        HERE);
         for (auto p = 0u; p < prtls.size(); ++p) {
-          const auto prtl      = prtls[p];
-          const auto prtl_spec = prtl_species[p];
+          const auto& prtl      = prtls[p];
+          const auto  prtl_spec = prtl_species[p];
           std::map<std::string, std::vector<real_t>> data_arr;
           data_arr["x1"] = { prtl[0] };
           if constexpr (D == Dim::_2D or D == Dim::_3D) {
