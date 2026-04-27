@@ -130,23 +130,20 @@ namespace arch {
                         TWO * piston_v * gamma_p);
 
     const real_t remaining_dt_inv_energy {
-      massive
-        ? (remaining_dt /
-           math::sqrt(
-             ONE + U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p))))
-        : (remaining_dt / math::sqrt(SQR(particles.ux1(p)) + SQR(particles.ux2(p)) +
-                                     SQR(particles.ux3(p))))
+      massive ? (remaining_dt /
+                 U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)))
+              : (remaining_dt /
+                 NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p)))
     };
     // define piston integer and fractional coordinate
-
     int      i_w_coll  = i_w;
     prtldx_t dx_w_coll = dx_w + metric.template transform<1, Idx::XYZ, Idx::U>(
                                   {},
                                   piston_v) *
                                   dt_to_piston;
 
-    i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
-                static_cast<int>(dx_w_coll < ZERO);
+    i_w_coll  += static_cast<int>(dx_w_coll >= ONE) -
+                 static_cast<int>(dx_w_coll < ZERO);
     dx_w_coll -= static_cast<prtldx_t>(dx_w_coll >= ONE);
     dx_w_coll += static_cast<prtldx_t>(dx_w_coll < ZERO);
 
@@ -156,8 +153,8 @@ namespace arch {
              remaining_dt_inv_energy +
            dx_w_coll;
 
-    particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
-                       static_cast<int>(particles.dx1(p) < ZERO);
+    particles.i1(p)  += static_cast<int>(particles.dx1(p) >= ONE) -
+                        static_cast<int>(particles.dx1(p) < ZERO);
     particles.dx1(p) -= static_cast<prtldx_t>(particles.dx1(p) >= ONE);
     particles.dx1(p) += static_cast<prtldx_t>(particles.dx1(p) < ZERO);
   }
