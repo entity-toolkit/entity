@@ -12,6 +12,7 @@
 
 #include <toml11/toml.hpp>
 
+#include <sstream>
 #include <string>
 
 namespace ntt {

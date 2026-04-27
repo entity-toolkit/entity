@@ -1,3 +1,14 @@
+/**
+ * @file engines/srpic/currents.h
+ * @brief Current deposition and filtering routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::CallDepositKernel<> -> void
+ *   - ntt::srpic::CurrentsDeposit<> -> void
+ *   - ntt::srpic::CurrentsFilter<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_CURRENTS_H
 #define ENGINES_SRPIC_CURRENTS_H
 
@@ -5,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/log.h"
 #include "utils/param_container.h"
-
-#include "metrics/traits.h"
 
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
@@ -19,8 +29,7 @@
 namespace ntt {
   namespace srpic {
 
-    template <class M, unsigned short O>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+    template <SRMetricClass M, unsigned short O>
     void CallDepositKernel(const Particles<M::Dim, M::CoordType>& species,
                            const M&                               local_metric,
                            const scatter_ndfield_t<M::Dim, 3>&    scatter_cur,
@@ -52,7 +61,7 @@ namespace ntt {
                              dt));
     }
 
-    template <class M>
+    template <SRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::SRPIC, M>& domain,
                          const prm::Parameters&       engine_params) {
       const auto dt = engine_params.get<real_t>("dt");
@@ -77,8 +86,7 @@ namespace ntt {
       Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
     }
 
-    template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasCoordType<M>
+    template <SRMetricClass M>
     void CurrentsFilter(Metadomain<SimEngine::SRPIC, M>& metadomain,
                         Domain<SimEngine::SRPIC, M>&     domain,
                         const SimulationParams&          params) {

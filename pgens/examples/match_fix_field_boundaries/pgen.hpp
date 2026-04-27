@@ -4,8 +4,8 @@
 #include "enums.h"
 #include "global.h"
 
-#include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
+#include "traits/pgen.h"
+
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -13,41 +13,35 @@ namespace user {
 
   template <Dimension D>
   struct ZeroFields {
-    auto ex2(const coord_t<D>&) const -> real_t {
+    Inline auto ex2(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    auto ex3(const coord_t<D>&) const -> real_t {
+    Inline auto ex3(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
-    auto bx1(const coord_t<D>&) const -> real_t {
+    Inline auto bx1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
-    static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_1D>::value
-    };
-
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_1D> {} };
 
     const real_t amplitude, omega;
     const real_t t_transition, t_duration;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>&)
-      : arch::ProblemGenerator<S, M> { p }
-      , amplitude { p.template get<real_t>("setup.amplitude", ONE) }
+    PGen(const SimulationParams& p, const Metadomain<S, M>&)
+      : amplitude { p.template get<real_t>("setup.amplitude", ONE) }
       , omega { p.template get<real_t>("setup.omega", ONE) }
       , t_transition { p.template get<real_t>("setup.t_transition") }
       , t_duration { p.template get<real_t>("setup.t_duration") } {}

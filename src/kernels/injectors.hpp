@@ -16,12 +16,11 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/archetypes.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
-
-#include "archetypes/traits.h"
 #include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 
@@ -62,7 +61,7 @@ namespace kernel {
       i3_arr(p)  = xi_Cd[2];
       dx3_arr(p) = dxi_Cd[2];
     }
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       phi_arr(p) = phi;
     }
     ux1_arr(p)    = v_Cd[0];
@@ -80,12 +79,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, class ED1, class ED2>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
-             arch::traits::energydist::IsValid<ED1> &&
-             arch::traits::energydist::IsValid<ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
   struct UniformInjector_kernel {
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
@@ -116,7 +110,6 @@ namespace kernel {
 
     UniformInjector_kernel(Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
-                           npart_t                          inject_npart,
                            npart_t                          domain_idx,
                            const M&                         metric,
                            const array_t<real_t*>&          xi_min,
@@ -226,7 +219,7 @@ namespace kernel {
       { // generate the velocity
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           energy_dist_1(x_Ph, v1);
           energy_dist_2(x_Ph, v2);
         } else if constexpr (S == SimEngine::SRPIC) {
@@ -250,7 +243,7 @@ namespace kernel {
         }
       }
       real_t weight = ONE;
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
         weight                = sqrt_det_h * inv_V0;
       }
@@ -295,10 +288,7 @@ namespace kernel {
     }
   }; // struct UniformInjector_kernel
 
-  template <SimEngine::type S, class M>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
+  template <SimEngine::type S, MetricClass M>
   struct GlobalInjector_kernel {
     static constexpr auto D = M::Dim;
 
@@ -356,11 +346,12 @@ namespace kernel {
       , global_metric { global_metric } {
       const auto n_inject = data.at("x1").size();
 
-      x1_min    = local_domain.mesh.extent(in::x1).first;
-      x1_max    = local_domain.mesh.extent(in::x1).second;
-      i1_offset = local_domain.offset_ncells()[0];
-
-      copy_from_vector("x1", in_x1, data, n_inject);
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        x1_min    = local_domain.mesh.extent(in::x1).first;
+        x1_max    = local_domain.mesh.extent(in::x1).second;
+        i1_offset = local_domain.offset_ncells()[0];
+        copy_from_vector("x1", in_x1, data, n_inject);
+      }
       copy_from_vector("ux1", in_ux1, data, n_inject);
       copy_from_vector("ux2", in_ux2, data, n_inject);
       copy_from_vector("ux3", in_ux3, data, n_inject);
@@ -373,7 +364,7 @@ namespace kernel {
         i2_offset = local_domain.offset_ncells()[1];
         copy_from_vector("x2", in_x2, data, n_inject);
       }
-      if constexpr (D == Dim::_2D and M::CoordType != Coord::Cart) {
+      if constexpr (D == Dim::_2D and M::CoordType != Coord::Cartesian) {
         copy_from_vector("phi", in_phi, data, n_inject);
       }
       if constexpr (D == Dim::_3D) {
@@ -449,10 +440,10 @@ namespace kernel {
           x_Cd_[0] = x_Cd[0];
           x_Cd_[1] = x_Cd[1];
 
-          if constexpr (M::CoordType != Coord::Cart) {
+          if constexpr (M::CoordType != Coord::Cartesian) {
             phi = in_phi(p);
           }
-          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
+          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
             x_Cd_[2] = phi;
           }
 
@@ -528,14 +519,11 @@ namespace kernel {
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine::type S, class M, class ED1, class ED2, class SD>
-    requires metric::traits::HasD<M> && metric::traits::HasConvert<M> &&
-             metric::traits::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>)) &&
-             arch::traits::energydist::IsValid<ED1> &&
-             arch::traits::energydist::IsValid<ED2> &&
-             arch::traits::spatialdist::IsValid<SD>
+  template <SimEngine::type          S,
+            MetricClass              M,
+            EnrgDistClass<M::Dim>    ED1,
+            EnrgDistClass<M::Dim>    ED2,
+            SpatialDistClass<M::Dim> SD>
   struct NonUniformInjector_kernel {
 
     const real_t ppc0;
@@ -688,9 +676,9 @@ namespace kernel {
 
     Inline void operator()(index_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
-        const auto        i1_ = COORD(i1);
-        coord_t<Dim::_1D> x_Cd { i1_ + HALF };
-        coord_t<Dim::_1D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const coord_t<Dim::_1D> x_Cd { i1_ + HALF };
+        coord_t<Dim::_1D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
         const auto ppc = injected_ppc(x_Ph);
@@ -699,7 +687,7 @@ namespace kernel {
         }
 
         auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
+        if constexpr (M::CoordType != Coord::Cartesian) {
           weight = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
         }
         for (auto p { 0u }; p < ppc; ++p) {
@@ -731,14 +719,14 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
-        const auto          i1_ = COORD(i1);
-        const auto          i2_ = COORD(i2);
-        coord_t<Dim::_2D>   x_Cd { i1_ + HALF, i2_ + HALF };
-        coord_t<Dim::_2D>   x_Ph { ZERO };
-        coord_t<M::PrtlDim> x_Cd_ { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const coord_t<Dim::_2D> x_Cd { i1_ + HALF, i2_ + HALF };
+        coord_t<Dim::_2D>       x_Ph { ZERO };
+        coord_t<M::PrtlDim>     x_Cd_ { ZERO };
         x_Cd_[0] = x_Cd[0];
         x_Cd_[1] = x_Cd[1];
-        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
+        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
           x_Cd_[2] = ZERO;
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
@@ -749,7 +737,7 @@ namespace kernel {
         }
 
         auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
+        if constexpr (M::CoordType != Coord::Cartesian) {
           weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
         }
         for (auto p { 0u }; p < ppc; ++p) {
@@ -800,11 +788,11 @@ namespace kernel {
 
     Inline void operator()(index_t i1, index_t i2, index_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
-        const auto        i1_ = COORD(i1);
-        const auto        i2_ = COORD(i2);
-        const auto        i3_ = COORD(i3);
-        coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
-        coord_t<Dim::_3D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const auto              i3_ = COORD(i3);
+        const coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
+        coord_t<Dim::_3D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
         const auto ppc = injected_ppc(x_Ph);
@@ -813,7 +801,7 @@ namespace kernel {
         }
 
         auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
+        if constexpr (M::CoordType != Coord::Cartesian) {
           weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
                    inv_V0;
         }

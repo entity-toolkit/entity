@@ -4,10 +4,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/pgen.h"
+
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
-#include "archetypes/traits.h"
 #include "framework/domain/metadomain.h"
 
 namespace user {
@@ -33,30 +33,26 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
     static constexpr auto engines {
-      arch::traits::pgen::compatible_with<SimEngine::SRPIC>::value
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
     static constexpr auto metrics {
-      arch::traits::pgen::compatible_with<Metric::Minkowski>::value
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
     };
     static constexpr auto dimensions {
-      arch::traits::pgen::compatible_with<Dim::_2D, Dim::_3D>::value
+      ::traits::pgen::compatible_with<Dim::_2D, Dim::_3D> {}
     };
+    const SimulationParams& params;
 
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    PGen(const SimulationParams& p, const Metadomain<S, M>& /*metadomain*/)
+      : params { p } {}
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& metadomain)
-      : arch::ProblemGenerator<S, M> { p } {}
-
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto sdist = CustomSpatialDistribution<M::Dim> {};
-      const auto edist = arch::Maxwellian<S, M> { domain.mesh.metric,
-                                                  domain.random_pool(),
-                                                  static_cast<real_t>(0.1) };
+      const auto edist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        domain.random_pool(),
+        static_cast<real_t>(0.1));
 
       // distributions are then passed to the nonuniform particle injector
       // function (same energy distribution is used for both species)

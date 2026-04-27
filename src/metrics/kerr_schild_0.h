@@ -39,10 +39,10 @@ namespace metric {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char* Label { "kerr_schild_0" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild_0 };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
+    static constexpr const char*      Label { "kerr_schild_0" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Metric      MetricType { ntt::Metric::Kerr_Schild_0 };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -70,8 +70,6 @@ namespace metric {
       set_dxMin(find_dxMin());
     }
 
-    ~KerrSchild0() = default;
-
     [[nodiscard]]
     Inline auto spin() const -> real_t {
       return a;
@@ -91,15 +89,14 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t            dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
           }
@@ -112,7 +109,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {
@@ -402,26 +399,20 @@ namespace metric {
         v_out[0] = v_in[0];
         v_out[1] = v_in[1];
         v_out[2] = v_in[2];
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::U) or // tetrad/sph -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::Sph)) // cov -> tetrad/sph
+      ) {
         v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::Sph)) or // cntrv -> tetrad/sph
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::D) // tetrad/sph -> cov
+      ) {
         v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         v_out[0] = v_in[0] * h_<1, 1>(xi);
@@ -451,6 +442,53 @@ namespace metric {
           v_out[2] = v_in[2];
         } else {
           v_out[2] = v_in[2] * dphi_inv;
+        }
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
+    }
+
+    /**
+     * component-wise vector transformations
+     * @note phys cntrv/cov <-> cntrv/cov
+     */
+    template <idx_t i, Idx in, Idx out>
+    Inline auto transform(const coord_t<D>& /*xi*/, real_t v_in) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(((in == Idx::U) and (out == Idx::PU)) or
+                      ((in == Idx::PU) and (out == Idx::U)) or
+                      ((in == Idx::D) and (out == Idx::PD)) or
+                      ((in == Idx::PD) and (out == Idx::D)),
+                    "Invalid vector transformation: only cntrv/cov <-> phys "
+                    "cntrv/cov allowed");
+      if constexpr ((in == Idx::PU && out == Idx::U) ||
+                    (in == Idx::D && out == Idx::PD)) {
+        // phys cntrv -> cntrv || cov -> phys cov
+        if constexpr (i == 1) {
+          return v_in * dr_inv;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta_inv;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi_inv;
+          }
+        }
+      } else if constexpr ((in == Idx::U && out == Idx::PU) ||
+                           (in == Idx::PD && out == Idx::D)) {
+        // cntrv -> phys cntrv || phys cov -> cov
+        if constexpr (i == 1) {
+          return v_in * dr;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi;
+          }
         }
       } else {
         raise::KernelError(HERE, "Invalid transformation");

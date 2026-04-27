@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -28,10 +27,7 @@ namespace kernel::gr {
    * @brief Kernel for computing E
    * @tparam M Metric
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
+  template <GRMetricClass M>
   class ComputeAuxE_kernel {
     static constexpr auto D = M::Dim;
 
@@ -137,10 +133,7 @@ namespace kernel::gr {
    * @brief Kernel for computing H
    * @tparam M Metric
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             metric::traits::HasSqrtDetHTilde<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasAlpha<M> && metric::traits::HasBeta1<M>
+  template <GRMetricClass M>
   class ComputeAuxH_kernel {
     static constexpr auto D = M::Dim;
 

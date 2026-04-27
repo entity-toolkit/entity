@@ -46,10 +46,10 @@ namespace ntt {
     }
   }
 
-  template struct Fields<Dim::_1D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::type::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::type::GRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::type::GRPIC>;
+  template struct Fields<Dim::_1D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_2D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_3D, SimEngine::SRPIC>;
+  template struct Fields<Dim::_2D, SimEngine::GRPIC>;
+  template struct Fields<Dim::_3D, SimEngine::GRPIC>;
 
 } // namespace ntt

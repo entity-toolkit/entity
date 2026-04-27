@@ -14,11 +14,12 @@
 #ifndef GLOBAL_ARCH_MPI_ALIASES_H
 #define GLOBAL_ARCH_MPI_ALIASES_H
 
-#include <cstdint>
 #include <utility>
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
+
+  #include <cstdint>
 #endif
 
 #if !defined(MPI_ENABLED)
@@ -67,9 +68,8 @@ namespace mpi {
       return MPI_UNSIGNED_LONG;
     } else if constexpr (std::is_same<T, signed long long int>::value) {
       return MPI_LONG_LONG;
-    } else if constexpr (std::is_same<T, unsigned long long int>::value) {
-      return MPI_UNSIGNED_LONG_LONG;
-    } else if constexpr (std::is_same<T, std::size_t>::value) {
+    } else if constexpr (std::is_same<T, unsigned long long int>::value or
+                         std::is_same<T, std::size_t>::value) {
       return MPI_UNSIGNED_LONG_LONG;
     } else if constexpr (std::is_same<T, float>::value) {
       return MPI_FLOAT;

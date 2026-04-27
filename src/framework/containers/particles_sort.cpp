@@ -2,6 +2,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/error.h"
 #include "utils/sorting.h"
 
 #include "framework/containers/particles.h"
@@ -12,6 +13,7 @@
 #include <Kokkos_StdAlgorithms.hpp>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ntt {
@@ -46,8 +48,8 @@ namespace ntt {
     }
 
     // count the offsets on the host and copy to device
-    array_t<npart_t*> tag_offsets("tag_offsets", num_tags - 3);
-    auto              tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
+    const array_t<npart_t*> tag_offsets("tag_offsets", num_tags - 3);
+    auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
 
     tag_offsets_h(0) = npptag_vec[2]; // offset for tag = 3
     for (auto t { 1u }; t < num_tags - 3; ++t) {
@@ -60,8 +62,8 @@ namespace ntt {
 
   template <typename T>
   void RemoveDeadInArray(array_t<T*>& arr, const array_t<npart_t*>& indices_alive) {
-    npart_t n_alive = indices_alive.extent(0);
-    auto    buffer  = Kokkos::View<T*>("buffer", n_alive);
+    const npart_t n_alive = indices_alive.extent(0);
+    auto          buffer  = Kokkos::View<T*>("buffer", n_alive);
     Kokkos::parallel_for(
       "PopulateBufferAlive",
       n_alive,
@@ -74,8 +76,8 @@ namespace ntt {
 
   template <typename T>
   void RemoveDeadInArray(array_t<T**>& arr, const array_t<npart_t*>& indices_alive) {
-    npart_t n_alive = indices_alive.extent(0);
-    auto    buffer  = array_t<T**> { "buffer", n_alive, arr.extent(1) };
+    const npart_t n_alive = indices_alive.extent(0);
+    auto          buffer  = array_t<T**> { "buffer", n_alive, arr.extent(1) };
     Kokkos::parallel_for(
       "PopulateBufferAlive",
       CreateRangePolicy<Dim::_2D>({ 0, 0 }, { n_alive, arr.extent(1) }),
@@ -106,8 +108,8 @@ namespace ntt {
       n_alive,
       n_dead);
 
-    array_t<npart_t*> indices_alive { "indices_alive", n_alive };
-    array_t<npart_t*> alive_counter { "counter_alive", 1 };
+    const array_t<npart_t*> indices_alive { "indices_alive", n_alive };
+    const array_t<npart_t*> alive_counter { "counter_alive", 1 };
 
     Kokkos::parallel_for(
       "AliveIndices",
@@ -153,7 +155,7 @@ namespace ntt {
     RemoveDeadInArray(ux3, indices_alive);
     RemoveDeadInArray(weight, indices_alive);
 
-    if constexpr (D == Dim::_2D && C != Coord::Cart) {
+    if constexpr (D == Dim::_2D && C != Coord::Cartesian) {
       RemoveDeadInArray(phi, indices_alive);
     }
 
@@ -229,7 +231,7 @@ namespace ntt {
     sorter.sort(Kokkos::subview(ux3, slice));
     sorter.sort(Kokkos::subview(weight, slice));
     sorter.sort(Kokkos::subview(tag, slice));
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       sorter.sort(Kokkos::subview(phi, slice));
     }
     for (auto pldr { 0u }; pldr < npld_r(); ++pldr) {
@@ -246,13 +248,13 @@ namespace ntt {
   template void Particles<D, C>::RemoveDead();                                 \
   template void Particles<D, C>::SortSpatially(const Grid<D>&);
 
-  PARTICLES_SORT(Dim::_1D, Coord::Cart)
-  PARTICLES_SORT(Dim::_2D, Coord::Cart)
-  PARTICLES_SORT(Dim::_3D, Coord::Cart)
-  PARTICLES_SORT(Dim::_2D, Coord::Sph)
-  PARTICLES_SORT(Dim::_2D, Coord::Qsph)
-  PARTICLES_SORT(Dim::_3D, Coord::Sph)
-  PARTICLES_SORT(Dim::_3D, Coord::Qsph)
+  PARTICLES_SORT(Dim::_1D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_2D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_3D, Coord::Cartesian)
+  PARTICLES_SORT(Dim::_2D, Coord::Spherical)
+  PARTICLES_SORT(Dim::_2D, Coord::Qspherical)
+  PARTICLES_SORT(Dim::_3D, Coord::Spherical)
+  PARTICLES_SORT(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_SORT
 
 } // namespace ntt
