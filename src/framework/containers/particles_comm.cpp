@@ -28,7 +28,9 @@ namespace ntt {
                    npart_t      nsend,
                    npart_t      nrecv,
                    npart_t      offset) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
+#endif
       MPI_Sendrecv(send_arr.data(),
                    nsend,
                    mpi::get_type<T>(),
@@ -41,27 +43,6 @@ namespace ntt {
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
-#else
-      const auto slice = std::make_pair(offset, offset + nrecv);
-
-      auto send_arr_h = Kokkos::create_mirror_view(send_arr);
-      auto recv_arr_h = Kokkos::create_mirror_view(
-        Kokkos::subview(recv_arr, slice));
-      Kokkos::deep_copy(send_arr_h, send_arr);
-      MPI_Sendrecv(send_arr_h.data(),
-                   nsend,
-                   mpi::get_type<T>(),
-                   send_rank,
-                   0,
-                   recv_arr_h.data(),
-                   nrecv,
-                   mpi::get_type<T>(),
-                   recv_rank,
-                   0,
-                   MPI_COMM_WORLD,
-                   MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(Kokkos::subview(recv_arr, slice), recv_arr_h);
-#endif
     }
 
     void send_recv_count(int      send_rank,
@@ -98,18 +79,17 @@ namespace ntt {
 
     template <typename T>
     void send(array_t<T*>& send_arr, int send_rank, npart_t nsend) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
-      MPI_Send(send_arr.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
-#else
-      auto send_arr_h = Kokkos::create_mirror_view(send_arr);
-      Kokkos::deep_copy(send_arr_h, send_arr);
-      MPI_Send(send_arr_h.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
 #endif
+      MPI_Send(send_arr.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
     }
 
     template <typename T>
     void recv(array_t<T*>& recv_arr, int recv_rank, npart_t nrecv, npart_t offset) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
+#endif
       MPI_Recv(recv_arr.data() + offset,
                nrecv,
                mpi::get_type<T>(),
@@ -117,20 +97,6 @@ namespace ntt {
                0,
                MPI_COMM_WORLD,
                MPI_STATUS_IGNORE);
-#else
-      const auto slice = std::make_pair(offset, offset + nrecv);
-
-      auto recv_arr_h = Kokkos::create_mirror_view(
-        Kokkos::subview(recv_arr, slice));
-      MPI_Recv(recv_arr_h.data(),
-               nrecv,
-               mpi::get_type<T>(),
-               recv_rank,
-               0,
-               MPI_COMM_WORLD,
-               MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(Kokkos::subview(recv_arr, slice), recv_arr_h);
-#endif
     }
 
     template <typename T>
@@ -232,8 +198,8 @@ namespace ntt {
 
     // buffers to store recv data
     const auto       npart_recv = std::accumulate(npptag_recv_vec.begin(),
-                                            npptag_recv_vec.end(),
-                                            static_cast<npart_t>(0));
+                                                  npptag_recv_vec.end(),
+                                                  static_cast<npart_t>(0));
     array_t<int*>    recv_buff_int { "recv_buff_int", npart_recv * NINTS };
     array_t<real_t*> recv_buff_real { "recv_buff_real", npart_recv * NREALS };
     array_t<prtldx_t*> recv_buff_prtldx { "recv_buff_prtldx", npart_recv * NPRTLDX };

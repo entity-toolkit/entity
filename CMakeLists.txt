@@ -54,10 +54,6 @@ set(mpi
   ${default_mpi}
   CACHE BOOL "Use MPI")
 
-set(gpu_aware_mpi
-  ${default_gpu_aware_mpi}
-  CACHE BOOL "Enable GPU-aware MPI")
-
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -142,15 +138,6 @@ if(${mpi})
   include_directories(${MPI_CXX_INCLUDE_PATH})
   add_compile_options("-D MPI_ENABLED")
   set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
-  if(${DEVICE_ENABLED})
-    if(${gpu_aware_mpi})
-      add_compile_options("-D GPU_AWARE_MPI")
-    endif()
-  else()
-    set(gpu_aware_mpi
-      OFF
-      CACHE BOOL "Use explicit copy when using MPI + GPU")
-  endif()
 endif()
 
 # Output

@@ -33,7 +33,9 @@ namespace comm {
                    int           recv_rank,
                    ncells_t      nsend,
                    ncells_t      nrecv) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
+#endif
       MPI_Sendrecv(send_arr.data(),
                    nsend,
                    mpi::get_type<real_t>(),
@@ -46,45 +48,22 @@ namespace comm {
                    0,
                    MPI_COMM_WORLD,
                    MPI_STATUS_IGNORE);
-#else
-      auto send_arr_h = Kokkos::create_mirror_view(send_arr);
-      auto recv_arr_h = Kokkos::create_mirror_view(recv_arr);
-      Kokkos::deep_copy(send_arr_h, send_arr);
-      MPI_Sendrecv(send_arr_h.data(),
-                   nsend,
-                   mpi::get_type<real_t>(),
-                   send_rank,
-                   0,
-                   recv_arr_h.data(),
-                   nrecv,
-                   mpi::get_type<real_t>(),
-                   recv_rank,
-                   0,
-                   MPI_COMM_WORLD,
-                   MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(recv_arr, recv_arr_h);
-#endif
     }
 
     template <unsigned short D>
     void send(ndarray_t<D>& send_arr, int send_rank, ncells_t nsend) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
-      MPI_Send(send_arr.data(), nsend, mpi::get_type<real_t>(), send_rank, 0, MPI_COMM_WORLD);
-#else
-      auto send_arr_h = Kokkos::create_mirror_view(send_arr);
-      Kokkos::deep_copy(send_arr_h, send_arr);
-      MPI_Send(send_arr_h.data(),
-               nsend,
-               mpi::get_type<real_t>(),
-               send_rank,
-               0,
-               MPI_COMM_WORLD);
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
 #endif
+      MPI_Send(send_arr.data(), nsend, mpi::get_type<real_t>(), send_rank, 0, MPI_COMM_WORLD);
+
     }
 
     template <unsigned short D>
     void recv(ndarray_t<D>& recv_arr, int recv_rank, ncells_t nrecv) {
-#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
+#if defined(DEVICE_ENABLED)
+      Kokkos::fence();
+#endif
       MPI_Recv(recv_arr.data(),
                nrecv,
                mpi::get_type<real_t>(),
@@ -92,17 +71,6 @@ namespace comm {
                0,
                MPI_COMM_WORLD,
                MPI_STATUS_IGNORE);
-#else
-      auto recv_arr_h = Kokkos::create_mirror_view(recv_arr);
-      MPI_Recv(recv_arr_h.data(),
-               nrecv,
-               mpi::get_type<real_t>(),
-               recv_rank,
-               0,
-               MPI_COMM_WORLD,
-               MPI_STATUS_IGNORE);
-      Kokkos::deep_copy(recv_arr, recv_arr_h);
-#endif
     }
 
     template <unsigned short D>

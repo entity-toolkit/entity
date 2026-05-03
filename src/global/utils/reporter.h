@@ -20,7 +20,6 @@
  *   - DEVICE_ENABLED
  *   - DEBUG
  *   - SINGLE_PRECISION
- *   - GPU_AWARE_MPI
  */
 
 #ifndef GLOBAL_UTILS_REPORTER_H

@@ -111,17 +111,6 @@ printchoices(
   "${Green}"
   MPI_REPORT
   46)
-if(${mpi} AND ${DEVICE_ENABLED})
-  printchoices(
-    "GPU-aware MPI"
-    "gpu_aware_mpi"
-    "${ON_OFF_VALUES}"
-    ${gpu_aware_mpi}
-    OFF
-    "${Green}"
-    GPU_AWARE_MPI_REPORT
-    46)
-endif()
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -192,10 +181,6 @@ string(
   "  "
   ${MPI_REPORT}
   "\n")
-
-if(${mpi} AND ${DEVICE_ENABLED})
-  string(APPEND REPORT_TEXT "  " ${GPU_AWARE_MPI_REPORT} "\n")
-endif()
 
 string(
   APPEND

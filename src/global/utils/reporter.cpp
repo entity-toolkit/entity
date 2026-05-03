@@ -185,14 +185,6 @@ namespace reporter {
     AddParam(report, 4, "HIP", "%s", hip_version.c_str());
 #endif
     AddParam(report, 4, "MPI", "%s", mpi_version.c_str());
-#if defined(MPI_ENABLED) && defined(DEVICE_ENABLED)
-  #if defined(GPU_AWARE_MPI)
-    const std::string gpu_aware_mpi = "ON";
-  #else
-    const std::string gpu_aware_mpi = "OFF";
-  #endif
-    AddParam(report, 4, "GPU-aware MPI", "%s", gpu_aware_mpi.c_str());
-#endif
     AddParam(report, 4, "Kokkos", "%s", kokkos_version.c_str());
     AddParam(report, 4, "ADIOS2", "%s", adios2_version.c_str());
     AddParam(report, 4, "Precision", "%s", precision);
@@ -245,11 +237,6 @@ namespace reporter {
     AddParam(report, 4, "MPI_ENABLED", "%s", "OFF");
 #endif
 
-#if defined(GPU_AWARE_MPI)
-    AddParam(report, 4, "GPU_AWARE_MPI", "%s", "ON");
-#else
-    AddParam(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
-#endif
     report += "\n";
     return report;
   }
