@@ -3,6 +3,7 @@
 #include "traits/policies.h"
 #include "utils/numeric.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 
 #include <Kokkos_Pair.hpp>
@@ -120,7 +121,7 @@ struct ValidCustomPrtlUpdate {
   void operator()(index_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
-                  const kernel::PusherArrays&,
+                  const ntt::ParticleArrays&,
                   const MockMetric&) const {}
 };
 
@@ -131,7 +132,7 @@ struct BadCustomPrtlUpdate {
   void operator()(index_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
-                  const kernel::PusherArrays&) const {}
+                  const ntt::ParticleArrays&) const {}
 };
 
 static_assert(not CustomParticleUpdatePolicyClass<BadCustomPrtlUpdate, MockMetric>);

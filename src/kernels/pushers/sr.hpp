@@ -26,6 +26,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/particle_shapes.hpp"
 #include "kernels/pushers/context.h"
 #include "kernels/pushers/sr_policies.h"
@@ -86,7 +87,7 @@ namespace kernel::sr {
 
     const PusherContext       ctx;
     const PusherBoundaries<D> bc;
-    PusherArrays              particles;
+    ParticleArrays            particles;
 
     const randacc_ndfield_t<D, 6> EB;
 
@@ -97,7 +98,7 @@ namespace kernel::sr {
 
     Pusher_kernel(const PusherContext&           pusher_ctx,
                   const PusherBoundaries<D>&     pusher_boundaries,
-                  PusherArrays&                  pusher_arrays,
+                  ParticleArrays&                pusher_arrays,
                   const randacc_ndfield_t<D, 6>& EB,
                   const M&                       metric,
                   const P&                       policies = {})

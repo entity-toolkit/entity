@@ -10,9 +10,11 @@
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
 #include "archetypes/piston.h"
+#include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
+#include "kernels/pushers/context.h"
 
 namespace user {
   using namespace ntt;
@@ -80,8 +82,8 @@ namespace user {
       Inline void operator()(index_t                          p,
                              const kernel::sr::PusherContext& ctx,
                              const kernel::sr::PusherBoundaries<M::Dim>&,
-                             const kernel::PusherArrays& particles,
-                             const M&                    metric) const {
+                             const ParticleArrays& particles,
+                             const M&              metric) const {
 
         real_t piston_pos;
         if (x_piston > global_xmax) {

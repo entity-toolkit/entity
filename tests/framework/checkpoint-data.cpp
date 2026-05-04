@@ -16,10 +16,10 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 
+#include "metrics/minkowski.h"
+
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
-
-#include "metrics/minkowski.h"
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
@@ -50,30 +50,34 @@ auto main(int argc, char* argv[]) -> int {
     using M = Minkowski<Dim::_1D>;
 
     const std::vector<ncells_t> res { 64 };
-    const boundaries_t<real_t>  init_extent { { static_cast<real_t>(0.0),
-                                                static_cast<real_t>(10.0) } };
-    const boundaries_t<FldsBC>  fldsbc { { FldsBC::PERIODIC, FldsBC::PERIODIC } };
-    const boundaries_t<PrtlBC>  prtlbc { { PrtlBC::PERIODIC, PrtlBC::PERIODIC } };
-    const std::vector<int>      decomp { -1 };
+    const boundaries_t<real_t>  init_extent {
+       { static_cast<real_t>(0.0), static_cast<real_t>(10.0) }
+    };
+    const boundaries_t<FldsBC> fldsbc {
+      { FldsBC::PERIODIC, FldsBC::PERIODIC }
+    };
+    const boundaries_t<PrtlBC> prtlbc {
+      { PrtlBC::PERIODIC, PrtlBC::PERIODIC }
+    };
+    const std::vector<int> decomp { -1 };
 
-    const std::vector<ParticleSpecies> species_params { ParticleSpecies {
-      static_cast<spidx_t>(1),
-      "e-",
-      1.0f,
-      -1.0f,
-      static_cast<npart_t>(10),
-      timestep_t { 0 },
-      timestep_t { 0 },
-      ParticlePusher::BORIS,
-      false,
-      RadiativeDrag::NONE,
-      EmissionType::NONE,
-      static_cast<unsigned short>(0),
-      static_cast<unsigned short>(0) } };
+    const std::vector<ParticleSpecies> species_params {
+      ParticleSpecies { static_cast<spidx_t>(1),
+                       "e-", 1.0f,
+                       -1.0f,
+                       static_cast<npart_t>(10),
+                       timestep_t { 0 },
+                       timestep_t { 0 },
+                       ParticlePusher::BORIS,
+                       false, RadiativeDrag::NONE,
+                       EmissionType::NONE,
+                       static_cast<unsigned short>(0),
+                       static_cast<unsigned short>(0) }
+    };
 
 #if !defined(MPI_ENABLED)
-    const unsigned int ndomains { 1 };
-    adios2::ADIOS      adios;
+    const unsigned int          ndomains { 1 };
+    adios2::ADIOS               adios;
     // non-MPI: single domain, sizes always match (equal-sizes path)
     const std::vector<ncells_t> saved_ncells_per_dom { 64 };
 #else
@@ -85,7 +89,7 @@ auto main(int argc, char* argv[]) -> int {
     raise::ErrorIf(mpi_size != 2, "this test requires exactly 2 MPI ranks", HERE);
     // asymmetric split: 40+24=64; exercises redecomposeFromCheckpoint
     const std::vector<ncells_t> saved_ncells_per_dom { 40, 24 };
-    const real_t x_split = init_extent[0].second *
+    const real_t                x_split = init_extent[0].second *
                            static_cast<real_t>(saved_ncells_per_dom[0]) /
                            static_cast<real_t>(64);
 #endif
@@ -99,9 +103,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // ── Write phase ───────────────────────────────────────────────────────────
     {
-      Metadomain<SimEngine::SRPIC, M> md {
-        ndomains, decomp, res, init_extent, fldsbc, prtlbc, {}, species_params
-      };
+      Metadomain<SimEngine::SRPIC, M> md { ndomains, decomp, res, init_extent,
+                                           fldsbc,   prtlbc, {},  species_params };
 
 #if defined(MPI_ENABLED)
       // Simulate load balancing: [32, 32] → [40, 24]
@@ -111,7 +114,7 @@ auto main(int argc, char* argv[]) -> int {
           { { x_split, init_extent[0].second } } });
 #endif
 
-      auto* local     = md.subdomain_ptr(md.l_subdomain_indices()[0]);
+      auto*      local = md.subdomain_ptr(md.l_subdomain_indices()[0]);
       const auto n_all = local->mesh.n_all()[0];
 
       // set em::ex1(i) = real_t(i) over all cells including ghost cells
@@ -129,10 +132,10 @@ auto main(int argc, char* argv[]) -> int {
       {
         auto i1_h  = Kokkos::create_mirror_view(sp.i1);
         auto dx1_h = Kokkos::create_mirror_view(sp.dx1);
-        i1_h(0)  = prtl_i1_0;
-        dx1_h(0) = static_cast<prtldx_t>(prtl_dx1_0);
-        i1_h(1)  = prtl_i1_1;
-        dx1_h(1) = static_cast<prtldx_t>(prtl_dx1_1);
+        i1_h(0)    = prtl_i1_0;
+        dx1_h(0)   = static_cast<prtldx_t>(prtl_dx1_0);
+        i1_h(1)    = prtl_i1_1;
+        dx1_h(1)   = static_cast<prtldx_t>(prtl_dx1_1);
         Kokkos::deep_copy(sp.i1, i1_h);
         Kokkos::deep_copy(sp.dx1, dx1_h);
       }
@@ -147,12 +150,11 @@ auto main(int argc, char* argv[]) -> int {
 
       md.InitCheckpointWriter(&adios, params);
 
-      const auto wrote = md.WriteCheckpoint(
-        params,
-        checkpoint_step,
-        checkpoint_step,
-        simtime_t { 0.0 },
-        simtime_t { 0.0 });
+      const auto wrote = md.WriteCheckpoint(params,
+                                            checkpoint_step,
+                                            checkpoint_step,
+                                            simtime_t { 0.0 },
+                                            simtime_t { 0.0 });
       raise::ErrorIf(not wrote, "checkpoint was not written", HERE);
     }
 
@@ -160,9 +162,9 @@ auto main(int argc, char* argv[]) -> int {
     {
       // fresh metadomain with the original (uniform) decomposition
       // MPI: [32, 32] — mismatch with saved [40, 24] → reconstruction triggered
-      Metadomain<SimEngine::SRPIC, M> md2 {
-        ndomains, decomp, res, init_extent, fldsbc, prtlbc, {}, species_params
-      };
+      Metadomain<SimEngine::SRPIC, M> md2 { ndomains,    decomp,        res,
+                                            init_extent, fldsbc,        prtlbc,
+                                            {},          species_params };
 
       SimulationParams params2;
       params2.set("checkpoint.read_path", std::string { CHECKPOINT_DIR });
@@ -170,18 +172,17 @@ auto main(int argc, char* argv[]) -> int {
 
       md2.ContinueFromCheckpoint(&adios, params2);
 
-      auto*      local       = md2.subdomain_ptr(md2.l_subdomain_indices()[0]);
-      const auto lidx        = md2.l_subdomain_indices()[0];
-      const auto exp_ncells  = saved_ncells_per_dom[lidx];
-      const auto exp_n_all   = exp_ncells + 2 * N_GHOSTS;
+      auto*      local      = md2.subdomain_ptr(md2.l_subdomain_indices()[0]);
+      const auto lidx       = md2.l_subdomain_indices()[0];
+      const auto exp_ncells = saved_ncells_per_dom[lidx];
+      const auto exp_n_all  = exp_ncells + 2 * N_GHOSTS;
 
       // 1. field array size reflects saved (possibly reconstructed) ncells
-      raise::ErrorIf(
-        local->fields.em.extent(0) != exp_n_all,
-        fmt::format("field em extent: got %lu, expected %lu",
-                    local->fields.em.extent(0),
-                    exp_n_all),
-        HERE);
+      raise::ErrorIf(local->fields.em.extent(0) != exp_n_all,
+                     fmt::format("field em extent: got %lu, expected %lu",
+                                 local->fields.em.extent(0),
+                                 exp_n_all),
+                     HERE);
 
       // 2. field values survive the round-trip
       {
@@ -200,12 +201,11 @@ auto main(int argc, char* argv[]) -> int {
 
       // 3. particle count and coordinates survive the round-trip
       auto& sp = local->species[0];
-      raise::ErrorIf(
-        sp.npart() != npart_placed,
-        fmt::format("particle count: got %lu, expected %lu",
-                    sp.npart(),
-                    npart_placed),
-        HERE);
+      raise::ErrorIf(sp.npart() != npart_placed,
+                     fmt::format("particle count: got %lu, expected %lu",
+                                 sp.npart(),
+                                 npart_placed),
+                     HERE);
       {
         auto i1_h  = Kokkos::create_mirror_view(sp.i1);
         auto dx1_h = Kokkos::create_mirror_view(sp.dx1);
@@ -233,12 +233,16 @@ auto main(int argc, char* argv[]) -> int {
 
   } catch (const std::exception& e) {
     std::cerr << e.what() << '\n';
-    cleanup();
+    CallOnce([&] {
+      cleanup();
+    });
     GlobalFinalize();
     return 1;
   }
 
-  cleanup();
+  CallOnce([&] {
+    cleanup();
+  });
   GlobalFinalize();
   return 0;
 }

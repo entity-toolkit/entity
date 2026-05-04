@@ -27,7 +27,7 @@ Inline void CheckValue<Dim::_1D>(index_t              p,
                                  const array_t<int*>&,
                                  const array_t<short*>&    tag,
                                  const array_t<ncells_t*>& tile_indices,
-                                 ncells_t                  nt1,
+                                 ncells_t,
                                  ncells_t,
                                  ncells_t,
                                  ncells_t ntiles,
@@ -51,8 +51,8 @@ Inline void CheckValue<Dim::_2D>(index_t              p,
                                  const array_t<int*>&,
                                  const array_t<short*>&    tag,
                                  const array_t<ncells_t*>& tile_indices,
-                                 ncells_t                  nt1,
-                                 ncells_t                  nt2,
+                                 ncells_t,
+                                 ncells_t nt2,
                                  ncells_t,
                                  ncells_t ntiles,
                                  ncells_t ts) {
@@ -62,8 +62,8 @@ Inline void CheckValue<Dim::_2D>(index_t              p,
     }
     return;
   }
-  const auto ti = static_cast<npart_t>(i2(p) / ts) * nt1 +
-                  static_cast<npart_t>(i1(p) / ts);
+  const auto ti = static_cast<npart_t>(i1(p) / ts) * nt2 +
+                  static_cast<npart_t>(i2(p) / ts);
   if (tile_indices(p) != ti) {
     raise::KernelError(HERE, "Alive particle assigned to wrong tile index");
   }
@@ -76,21 +76,21 @@ Inline void CheckValue<Dim::_3D>(index_t                   p,
                                  const array_t<int*>&      i3,
                                  const array_t<short*>&    tag,
                                  const array_t<ncells_t*>& tile_indices,
-                                 ncells_t                  nt1,
-                                 ncells_t                  nt2,
-                                 ncells_t                  nt3,
-                                 ncells_t                  ntiles,
-                                 ncells_t                  ts) {
+                                 ncells_t,
+                                 ncells_t nt2,
+                                 ncells_t nt3,
+                                 ncells_t ntiles,
+                                 ncells_t ts) {
   if (tag(p) != ntt::ParticleTag::alive) {
     if (tile_indices(p) != ntiles + 1u) {
       raise::KernelError(HERE, "Dead particle assigned to wrong tile index");
     }
     return;
   }
-  const auto ti = (static_cast<npart_t>(i3(p) / ts) * nt2 +
+  const auto ti = (static_cast<npart_t>(i1(p) / ts) * nt2 +
                    static_cast<npart_t>(i2(p) / ts)) *
-                    nt1 +
-                  static_cast<npart_t>(i1(p) / ts);
+                    nt3 +
+                  static_cast<npart_t>(i3(p) / ts);
   if (tile_indices(p) != ti) {
     raise::KernelError(HERE, "Alive particle assigned to wrong tile index");
   }
@@ -170,9 +170,9 @@ auto main(int argc, char* argv[]) -> int {
         npart,
         Lambda(index_t p) {
           auto gen = random_pool.get_state();
-          i1(p)    = gen.urand(0u, nx1);
-          i2(p)    = gen.urand(0u, nx2);
-          i3(p)    = gen.urand(0u, nx3);
+          i1(p)    = static_cast<int>(gen.urand(0u, nx1));
+          i2(p)    = static_cast<int>(gen.urand(0u, nx2));
+          i3(p)    = static_cast<int>(gen.urand(0u, nx3));
           tag(p) = (gen.drand() > 0.01) ? ParticleTag::alive : ParticleTag::dead;
           random_pool.free_state(gen);
           if (tag(p) == ParticleTag::dead) {
@@ -218,9 +218,9 @@ auto main(int argc, char* argv[]) -> int {
           npart,
           Lambda(index_t p) {
             const auto cell_idx = p % ncells;
-            i1(p)               = cell_idx % nx1;
-            i2(p)               = cell_idx / nx1;
-            tag(p)              = ParticleTag::alive;
+            i1(p)  = static_cast<int>(cell_idx) % static_cast<int>(nx1);
+            i2(p)  = static_cast<int>(cell_idx) / static_cast<int>(nx1);
+            tag(p) = ParticleTag::alive;
           });
         Kokkos::parallel_for("Tiling",
                              npart,
@@ -238,8 +238,8 @@ auto main(int argc, char* argv[]) -> int {
           npart,
           Lambda(index_t p) {
             const auto tile_idx = tile_indices(p);
-            const auto t1       = tile_idx % nt1;
-            const auto t2       = tile_idx / nt1;
+            const auto t1       = tile_idx / nt2;
+            const auto t2       = tile_idx % nt2;
             const auto i1_min   = t1 * tile_size;
             const auto i1_max   = math::min(i1_min + tile_size, nx1);
             const auto i2_min   = t2 * tile_size;
@@ -275,8 +275,8 @@ auto main(int argc, char* argv[]) -> int {
             }
             current_tile = ti_h(p);
           }
-          const auto t1     = current_tile % nt1;
-          const auto t2     = current_tile / nt1;
+          const auto t1     = current_tile / nt2;
+          const auto t2     = current_tile % nt2;
           const auto i1_min = t1 * tile_size;
           const auto i1_max = math::min(i1_min + tile_size, nx1);
           const auto i2_min = t2 * tile_size;
@@ -305,7 +305,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

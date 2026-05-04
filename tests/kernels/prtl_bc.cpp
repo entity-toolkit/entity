@@ -7,6 +7,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 #include "kernels/pushers/sr.hpp"
 
@@ -75,7 +76,8 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
     nx3 = static_cast<int>(res.at(2));
   }
 
-  const real_t dt    = 0.1 * (ext.at(0).second - ext.at(0).first) / sx;
+  const real_t dt = static_cast<real_t>(0.1) *
+                    (ext.at(0).second - ext.at(0).first) / sx;
   const real_t coeff = HALF * dt;
 
   ndfield_t<M::Dim, 6> emfield;
@@ -117,27 +119,27 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
   real_t xi_1 = ZERO, yi_1 = ZERO, zi_1 = ZERO;
   real_t xi_2 = ZERO, yi_2 = ZERO, zi_2 = ZERO;
   if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-    xi_1 = 0.515460 * sx + ext.at(0).first;
-    xi_2 = 0.149088 * sx + ext.at(0).first;
+    xi_1 = static_cast<real_t>(0.515460) * sx + ext.at(0).first;
+    xi_2 = static_cast<real_t>(0.149088) * sx + ext.at(0).first;
   }
   if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-    yi_1 = 0.340680 * sy + ext.at(1).first;
-    yi_2 = 0.997063 * sy + ext.at(1).first;
+    yi_1 = static_cast<real_t>(0.340680) * sy + ext.at(1).first;
+    yi_2 = static_cast<real_t>(0.997063) * sy + ext.at(1).first;
   }
   if constexpr (M::Dim == Dim::_3D) {
-    zi_1 = 0.940722 * sz + ext.at(2).first;
-    zi_2 = 0.607354 * sz + ext.at(2).first;
+    zi_1 = static_cast<real_t>(0.940722) * sz + ext.at(2).first;
+    zi_2 = static_cast<real_t>(0.607354) * sz + ext.at(2).first;
   }
   real_t ux_1    = 0.569197;
   real_t uy_1    = 0.716085;
   real_t uz_1    = 0.760101;
-  real_t gamma_1 = math::sqrt(1.0 + SQR(ux_1) + SQR(uy_1) + SQR(uz_1));
+  real_t gamma_1 = math::sqrt(ONE + SQR(ux_1) + SQR(uy_1) + SQR(uz_1));
 
   // init parameters of prtl #2
   real_t ux_2    = -0.872069;
   real_t uy_2    = 0.0484461;
   real_t uz_2    = -0.613575;
-  real_t gamma_2 = math::sqrt(1.0 + SQR(ux_2) + SQR(uy_2) + SQR(uz_2));
+  real_t gamma_2 = math::sqrt(ONE + SQR(ux_2) + SQR(uy_2) + SQR(uz_2));
 
   {
     coord_t<M::PrtlDim> xCd { ZERO }, xi { ZERO };
@@ -237,7 +239,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
      { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
   };
 
-  kernel::PusherArrays pusher_arrays { 1u };
+  ntt::ParticleArrays pusher_arrays { 1u };
   pusher_arrays.i1       = i1;
   pusher_arrays.i2       = i2;
   pusher_arrays.i3       = i3;

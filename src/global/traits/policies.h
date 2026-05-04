@@ -29,6 +29,7 @@
 
 #include "traits/archetypes.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 
 #include <Kokkos_Pair.hpp>
@@ -129,7 +130,7 @@ concept CustomParticleUpdatePolicyClass =
            index_t                                     p,
            const kernel::sr::PusherContext&            pusher_ctx,
            const kernel::sr::PusherBoundaries<M::Dim>& pusher_boundaries,
-           const kernel::PusherArrays&                 particles,
+           const ntt::ParticleArrays&                  particles,
            const M&                                    metric) {
     {
       cpu(p, pusher_ctx, pusher_boundaries, particles, metric)

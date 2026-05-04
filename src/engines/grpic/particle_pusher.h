@@ -54,7 +54,7 @@ namespace ntt {
         const auto pusher_boundaries = kernel::gr::PusherBoundaries<M::Dim> {
           domain.mesh.prtl_bc()
         };
-        auto pusher_arrays = species.PusherKernelArrays();
+        // auto pusher_arrays = species.PusherKernelArrays();
 
         if (species.pusher() == ParticlePusher::PHOTON) {
           const auto range_policy =
@@ -65,7 +65,7 @@ namespace ntt {
                                range_policy,
                                kernel::gr::Pusher_kernel<M>(pusher_ctx,
                                                             pusher_boundaries,
-                                                            pusher_arrays,
+                                                            species,
                                                             domain.fields.em,
                                                             domain.fields.em0,
                                                             domain.mesh.metric));
@@ -78,7 +78,7 @@ namespace ntt {
                                range_policy,
                                kernel::gr::Pusher_kernel<M>(pusher_ctx,
                                                             pusher_boundaries,
-                                                            pusher_arrays,
+                                                            species,
                                                             domain.fields.em,
                                                             domain.fields.em0,
                                                             domain.mesh.metric));

@@ -7,6 +7,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 #include "kernels/pushers/sr.hpp"
 
@@ -62,9 +63,9 @@ void testPusher(const std::vector<std::size_t>& res) {
     {}
   };
 
-  const int nx1 = res[0];
-  const int nx2 = res[1];
-  const int nx3 = res[2];
+  const auto nx1 = static_cast<int>(res[0]);
+  const auto nx2 = static_cast<int>(res[1]);
+  const auto nx3 = static_cast<int>(res[2]);
 
   const auto range_ext = CreateRangePolicy<Dim::_3D>(
     { 0, 0, 0 },
@@ -122,9 +123,9 @@ void testPusher(const std::vector<std::size_t>& res) {
   put_value<int>(i1, (int)(x1_0), 0);
   put_value<int>(i2, (int)(x2_0), 0);
   put_value<int>(i3, (int)(x3_0), 0);
-  put_value<prtldx_t>(dx1, (prtldx_t)(x1_0 - (int)(x1_0)), 0);
-  put_value<prtldx_t>(dx2, (prtldx_t)(x2_0 - (int)(x2_0)), 0);
-  put_value<prtldx_t>(dx3, (prtldx_t)(x3_0 - (int)(x3_0)), 0);
+  put_value<prtldx_t>(dx1, (prtldx_t)(x1_0 - math::floor(x1_0)), 0);
+  put_value<prtldx_t>(dx2, (prtldx_t)(x2_0 - math::floor(x2_0)), 0);
+  put_value<prtldx_t>(dx3, (prtldx_t)(x3_0 - math::floor(x3_0)), 0);
   put_value<real_t>(ux1, ux1_0, 0);
   put_value<real_t>(ux2, ux2_0, 0);
   put_value<real_t>(ux3, ux3_0, 0);
@@ -133,9 +134,9 @@ void testPusher(const std::vector<std::size_t>& res) {
   put_value<int>(i1, (int)(x1_0), 1);
   put_value<int>(i2, (int)(x2_0), 1);
   put_value<int>(i3, (int)(x3_0), 1);
-  put_value<prtldx_t>(dx1, (prtldx_t)(x1_0 - (int)(x1_0)), 1);
-  put_value<prtldx_t>(dx2, (prtldx_t)(x2_0 - (int)(x2_0)), 1);
-  put_value<prtldx_t>(dx3, (prtldx_t)(x3_0 - (int)(x3_0)), 1);
+  put_value<prtldx_t>(dx1, (prtldx_t)(x1_0 - math::floor(x1_0)), 1);
+  put_value<prtldx_t>(dx2, (prtldx_t)(x2_0 - math::floor(x2_0)), 1);
+  put_value<prtldx_t>(dx3, (prtldx_t)(x3_0 - math::floor(x3_0)), 1);
   put_value<real_t>(ux1, -ux1_0, 1);
   put_value<real_t>(ux2, -ux2_0, 1);
   put_value<real_t>(ux3, -ux3_0, 1);
@@ -150,7 +151,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   };
   const auto gca_context = kernel::sr::PusherGCAContext { 10000.0, ONE };
 
-  kernel::PusherArrays pusher_arrays { 1u };
+  ntt::ParticleArrays pusher_arrays { 1u };
   pusher_arrays.i1       = i1;
   pusher_arrays.i2       = i2;
   pusher_arrays.i3       = i3;
@@ -176,7 +177,7 @@ void testPusher(const std::vector<std::size_t>& res) {
       RadiativeDrag::NONE,
       1.f,
       1.f,
-      t * dt,
+      static_cast<real_t>(t) * dt,
       dt,
       omegaB0,
       nx1,
@@ -219,7 +220,7 @@ auto main(int argc, char* argv[]) -> int {
     testPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>>({ 10, 10, 10 });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

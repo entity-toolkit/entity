@@ -95,15 +95,17 @@ auto main(int argc, char* argv[]) -> int {
           raise::ErrorIf(weight_h(p) != -1.0, "error in sorting particles", HERE);
         }
         if (p < 59u) {
-          raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + 0.5,
+          raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + static_cast<real_t>(0.5),
                          "error in sorting particle real payload 0",
                          HERE);
-          raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + 10.5,
+          raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
                          "error in sorting particle real payload 1",
                          HERE);
-          raise::ErrorIf(pld_i_h(p, 0) != static_cast<npart_t>(weight_h(p) + 10.0),
-                         "error in sorting particle integer payload 0",
-                         HERE);
+          raise::ErrorIf(
+            pld_i_h(p, 0) !=
+              static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
+            "error in sorting particle integer payload 0",
+            HERE);
         }
       }
     }

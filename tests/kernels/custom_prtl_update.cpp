@@ -7,6 +7,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 #include "kernels/pushers/sr.hpp"
 
@@ -49,8 +50,8 @@ struct TestCustomPrtlUpdate {
   Inline void operator()(index_t                          p,
                          const kernel::sr::PusherContext& ctx,
                          const kernel::sr::PusherBoundaries<M::Dim>&,
-                         const kernel::PusherArrays& particles,
-                         const M&                    metric) const {
+                         const ntt::ParticleArrays& particles,
+                         const M& /*metric*/) const {
     if constexpr (M::Dim == Dim::_1D || M::Dim == Dim::_2D || M::Dim == Dim::_3D) {
       auto invert_vel = false;
       if (particles.i1(p) < 0) {
@@ -120,7 +121,8 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
     nx3 = static_cast<int>(res.at(2));
   }
 
-  const real_t dt = 0.1 * (ext.at(0).second - ext.at(0).first) /
+  const real_t dt = static_cast<real_t>(0.1) *
+                    (ext.at(0).second - ext.at(0).first) /
                     static_cast<real_t>(nx1);
 
   ndfield_t<M::Dim, 6> emfield;
@@ -201,7 +203,7 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
      { PrtlBC::REFLECT, PrtlBC::REFLECT } }
   };
 
-  kernel::PusherArrays r_arrays { 1u };
+  ntt::ParticleArrays r_arrays { 1u };
   r_arrays.i1       = r_i1;
   r_arrays.i2       = r_i2;
   r_arrays.i3       = r_i3;
@@ -220,7 +222,7 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   r_arrays.phi      = phi;
   r_arrays.tag      = r_tag;
 
-  kernel::PusherArrays c_arrays { 2u };
+  ntt::ParticleArrays c_arrays { 2u };
   c_arrays.i1       = c_i1;
   c_arrays.i2       = c_i2;
   c_arrays.i3       = c_i3;
@@ -249,21 +251,39 @@ void testCustomPrtlUpdate(const std::vector<std::size_t>&      res,
   static constexpr auto n_iter = 100;
 
   for (auto n { 0 }; n < n_iter; ++n) {
-    Kokkos::parallel_for(
-      "pusher_reflect",
-      CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
-      kernel::sr::Pusher_kernel<M>(
-        { 1u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, dt * n, dt, ONE, nx1, nx2, nx3 },
-        boundaries,
-        r_arrays,
-        emfield,
-        metric));
+    Kokkos::parallel_for("pusher_reflect",
+                         CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
+                         kernel::sr::Pusher_kernel<M>({ 1u,
+                                                        ParticlePusher::BORIS,
+                                                        RadiativeDrag::NONE,
+                                                        1.f,
+                                                        1.f,
+                                                        dt * static_cast<real_t>(n),
+                                                        dt,
+                                                        ONE,
+                                                        nx1,
+                                                        nx2,
+                                                        nx3 },
+                                                      boundaries,
+                                                      r_arrays,
+                                                      emfield,
+                                                      metric));
 
     Kokkos::parallel_for(
       "pusher_custom",
       CreateRangePolicy<Dim::_1D>({ 0 }, { 1 }),
       kernel::sr::Pusher_kernel<M, decltype(custom_update_policy)>(
-        { 2u, ParticlePusher::BORIS, RadiativeDrag::NONE, 1.f, 1.f, dt * n, dt, ONE, nx1, nx2, nx3 },
+        { 2u,
+          ParticlePusher::BORIS,
+          RadiativeDrag::NONE,
+          1.f,
+          1.f,
+          dt * static_cast<real_t>(n),
+          dt,
+          ONE,
+          nx1,
+          nx2,
+          nx3 },
         boundaries,
         c_arrays,
         emfield,
@@ -354,7 +374,7 @@ auto main(int argc, char* argv[]) -> int {
     testCustomPrtlUpdate<SimEngine::SRPIC, Minkowski<Dim::_3D>>(res3d, ext3d, {});
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

@@ -10,7 +10,6 @@
  *   - kernel::sr::PusherBoundaries<>
  *   - kernel::gr::PusherContext
  *   - kernel::gr::PusherBoundaries<>
- *   - kernel::PusherArrays
  * @namespaces:
  *   - kernel::
  */
@@ -228,61 +227,6 @@ namespace kernel {
       }
     };
   } // namespace gr
-
-  struct PusherArrays {
-    array_t<int*>      i1, i2, i3;
-    array_t<int*>      i1_prev, i2_prev, i3_prev;
-    array_t<prtldx_t*> dx1, dx2, dx3;
-    array_t<prtldx_t*> dx1_prev, dx2_prev, dx3_prev;
-    array_t<real_t*>   ux1, ux2, ux3;
-    array_t<real_t*>   phi;
-    array_t<real_t*>   weight;
-    array_t<short*>    tag;
-
-    PusherArrays(spidx_t sp) : sp { sp } {}
-
-    PusherArrays(spidx_t             sp,
-                 array_t<int*>&      i1,
-                 array_t<int*>&      i2,
-                 array_t<int*>&      i3,
-                 array_t<int*>&      i1_prev,
-                 array_t<int*>&      i2_prev,
-                 array_t<int*>&      i3_prev,
-                 array_t<prtldx_t*>& dx1,
-                 array_t<prtldx_t*>& dx2,
-                 array_t<prtldx_t*>& dx3,
-                 array_t<prtldx_t*>& dx1_prev,
-                 array_t<prtldx_t*>& dx2_prev,
-                 array_t<prtldx_t*>& dx3_prev,
-                 array_t<real_t*>&   ux1,
-                 array_t<real_t*>&   ux2,
-                 array_t<real_t*>&   ux3,
-                 array_t<real_t*>&   phi,
-                 array_t<real_t*>&   weight,
-                 array_t<short*>&    tag)
-      : sp { sp }
-      , i1 { i1 }
-      , i2 { i2 }
-      , i3 { i3 }
-      , i1_prev { i1_prev }
-      , i2_prev { i2_prev }
-      , i3_prev { i3_prev }
-      , dx1 { dx1 }
-      , dx2 { dx2 }
-      , dx3 { dx3 }
-      , dx1_prev { dx1_prev }
-      , dx2_prev { dx2_prev }
-      , dx3_prev { dx3_prev }
-      , ux1 { ux1 }
-      , ux2 { ux2 }
-      , ux3 { ux3 }
-      , phi { phi }
-      , weight { weight }
-      , tag { tag } {}
-
-  private:
-    spidx_t sp;
-  };
 
 } // namespace kernel
 
