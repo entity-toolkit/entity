@@ -12,7 +12,7 @@ auto main(int argc, char* argv[]) -> int {
   using namespace ntt;
   GlobalInitialize(argc, argv);
   try {
-    const std::size_t nx1 = 15, nx2 = 15;
+    const ncells_t nx1 = 15, nx2 = 15;
     ndfield_t<Dim::_2D, 3> fld { "fld", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
     ndfield_t<Dim::_2D, 3> buff { "buff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
 
@@ -20,7 +20,7 @@ auto main(int argc, char* argv[]) -> int {
       "Fill",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         if ((i1 >= 2 * N_GHOSTS) and (i1 < nx1) and (i2 >= 2 * N_GHOSTS) and
             (i2 < nx2)) {
           fld(i1, i2, 0) = 4.0;
@@ -40,42 +40,39 @@ auto main(int argc, char* argv[]) -> int {
       });
     Kokkos::deep_copy(buff, ZERO);
 
-    const auto send_slice = std::vector<range_tuple_t> {
+    const auto send_slice = std::vector<cell_range_t> {
       { nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS },
       { nx2 + N_GHOSTS, nx2 + 2 * N_GHOSTS }
     };
-    const auto recv_slice = std::vector<range_tuple_t> {
+    const auto recv_slice = std::vector<cell_range_t> {
       { N_GHOSTS, 2 * N_GHOSTS },
       { N_GHOSTS, 2 * N_GHOSTS }
     };
-    const auto comp_slice = range_tuple_t(cur::jx1, cur::jx3 + 1);
+    const auto comp_slice = cell_range_t(cur::jx1, cur::jx3 + 1);
 
     const auto i_min = [](in c) {
       switch (c) {
         case in::x1:
-          return (std::size_t)N_GHOSTS;
         case in::x2:
-          return (std::size_t)N_GHOSTS;
         case in::x3:
-          return (std::size_t)N_GHOSTS;
+          return N_GHOSTS;
       }
-      return (std::size_t)0;
+      return 0u;
     };
     const auto i_max = [](in c) {
       switch (c) {
         case in::x1:
-          return nx1 + N_GHOSTS;
         case in::x2:
           return nx2 + N_GHOSTS;
         case in::x3:
-          return (std::size_t)0;
+          return 0u;
       }
-      return (std::size_t)0;
+      return 0u;
     };
     const in components[] = { in::x1, in::x2, in::x3 };
     for (auto& direction : dir::Directions<Dim::_2D>::all) {
-      auto send_slice = std::vector<range_tuple_t> {};
-      auto recv_slice = std::vector<range_tuple_t> {};
+      auto send_slice = std::vector<cell_range_t> {};
+      auto recv_slice = std::vector<cell_range_t> {};
       for (std::size_t d { 0 }; d < direction.size(); ++d) {
         const auto c   = components[d];
         const auto dir = direction[d];
@@ -110,7 +107,7 @@ auto main(int argc, char* argv[]) -> int {
       "AddBuffers",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         for (auto k { 0 }; k < 3; ++k) {
           fld(i1, i2, k) += buff(i1, i2, k);
         }
@@ -120,7 +117,7 @@ auto main(int argc, char* argv[]) -> int {
       "Check",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         if (fld(i1, i2, 0) != 4.0) {
           raise::KernelError(HERE, "fld0 wrong after comm");
         }

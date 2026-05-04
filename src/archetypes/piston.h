@@ -15,7 +15,7 @@
 
 #include "traits/metric.h"
 
-#include "kernels/pushers/context.h"
+#include "framework/containers/particles.h"
 
 /* -------------------------------------------------------------------------- */
 /* Local macros    (same as in particle_pusher_sr.hpp)                        */
@@ -49,13 +49,13 @@ namespace arch {
    * @param is_left Is piston on the left side of the box or right side of the box
    */
   template <CartesianMetricClass M>
-  Inline bool CrossesPiston(index_t                     p,
-                            real_t                      dt,
-                            const kernel::PusherArrays& particles,
-                            const M&                    metric,
-                            real_t                      piston_position,
-                            real_t                      piston_v,
-                            bool                        is_left) {
+  Inline bool CrossesPiston(prtlidx_t                  p,
+                            real_t                     dt,
+                            const ntt::ParticleArrays& particles,
+                            const M&                   metric,
+                            real_t                     piston_position,
+                            real_t                     piston_v,
+                            bool                       is_left) {
     const real_t x1_Cd = i_di_to_Xi(particles.i1(p), particles.dx1(p));
     // x1_Cd_wallmove is not the actual particle coordinate
     // it is particle position minus how much the wall has moved in this
@@ -82,13 +82,13 @@ namespace arch {
    * @param massive Whether the particle is massive or massless (e.g. photon)
    */
   template <CartesianMetricClass M>
-  Inline void Piston(index_t                     p,
-                     real_t                      dt,
-                     const kernel::PusherArrays& particles,
-                     const M&                    metric,
-                     real_t                      piston_position,
-                     real_t                      piston_v,
-                     bool                        massive) {
+  Inline void Piston(prtlidx_t                  p,
+                     real_t                     dt,
+                     const ntt::ParticleArrays& particles,
+                     const M&                   metric,
+                     real_t                     piston_position,
+                     real_t                     piston_v,
+                     bool                       massive) {
 
     // check if particle actually crosses the piston, if not return
     if (!CrossesPiston<M>(p, dt, particles, metric, piston_position, piston_v, true)) {
@@ -142,8 +142,8 @@ namespace arch {
                                   piston_v) *
                                   dt_to_piston;
 
-    i_w_coll  += static_cast<int>(dx_w_coll >= ONE) -
-                 static_cast<int>(dx_w_coll < ZERO);
+    i_w_coll += static_cast<int>(dx_w_coll >= ONE) -
+                static_cast<int>(dx_w_coll < ZERO);
     dx_w_coll -= static_cast<prtldx_t>(dx_w_coll >= ONE);
     dx_w_coll += static_cast<prtldx_t>(dx_w_coll < ZERO);
 
@@ -153,8 +153,8 @@ namespace arch {
              remaining_dt_inv_energy +
            dx_w_coll;
 
-    particles.i1(p)  += static_cast<int>(particles.dx1(p) >= ONE) -
-                        static_cast<int>(particles.dx1(p) < ZERO);
+    particles.i1(p) += static_cast<int>(particles.dx1(p) >= ONE) -
+                       static_cast<int>(particles.dx1(p) < ZERO);
     particles.dx1(p) -= static_cast<prtldx_t>(particles.dx1(p) >= ONE);
     particles.dx1(p) += static_cast<prtldx_t>(particles.dx1(p) < ZERO);
   }

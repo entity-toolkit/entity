@@ -34,7 +34,7 @@ namespace metric {
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
-    const real_t a, rg_, rh_;
+    const real_t a { ZERO }, rg_ { ONE }, rh_ { TWO };
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
@@ -58,9 +58,6 @@ namespace metric {
                 const boundaries_t<real_t>&  ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
-      , a { ZERO }
-      , rg_ { ONE }
-      , rh_ { TWO }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
       , dphi { (x3_max - x3_min) / nx3 }

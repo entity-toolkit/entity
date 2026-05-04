@@ -227,10 +227,14 @@ using range_h_t = typename kokkos_aliases_hidden::range_h_impl<D>::type;
 
 /**
  * @brief Function template for generating 1D Kokkos range policy for particles.
- * @param p1 `npart_t`: min.
- * @param p2 `npart_t`: max.
+ * @tparam D Dimension
+ * @param p1 array of size D `npart_t`: min.
+ * @param p2 array of size D `npart_t`: max.
+ * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
-auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
+template <Dimension D>
+auto CreateParticleRangePolicy(const tuple_t<npart_t, D>&,
+                               const tuple_t<npart_t, D>&) -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy.
@@ -255,7 +259,8 @@ auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
 // Random number pool/generator type alias
-using random_number_pool_t = Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace>;
+// (using math:: instead of Kokkos:: to suppress compiler warning on unused namespace alias)
+using random_number_pool_t = math::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace>;
 using random_generator_t = typename random_number_pool_t::generator_type;
 
 // Random number generator functions

@@ -14,7 +14,7 @@ void testParticles(
   const std::string&       label,
   float                    m,
   float                    ch,
-  std::size_t              maxnpart,
+  npart_t                  maxnpart,
   timestep_t               clearing_interval,
   timestep_t               spatial_sorting_interval,
   ntt::ParticlePusherFlags pusher,

@@ -138,8 +138,6 @@ namespace ntt {
           domain.mesh.prtl_bc()
         };
 
-        auto pusher_arrays = species.PusherKernelArrays();
-
         kernel::sr::MakePusherPolicy<decltype(domain.mesh.metric),
                                      decltype(domain),
                                      decltype(pgen)>(
@@ -156,7 +154,7 @@ namespace ntt {
               species.rangeActiveParticles(),
               kernel::sr::Pusher_kernel<M, policy_t> { pusher_ctx,
                                                        pusher_boundaries,
-                                                       pusher_arrays,
+                                                       species,
                                                        domain.fields.em,
                                                        domain.mesh.metric,
                                                        policies });

@@ -25,8 +25,21 @@
  *   - type list_t
  *   - type coord_t
  *   - type vec_t
- *   - type index_t
- *   - type range_tuple_t
+ *   - type duration_t
+ *   - type simtime_t
+ *   - type timestep_t
+ *   - type ncells_t
+ *   - type npart_t
+ *   - type timestamp_t
+ *   - type cellidx_t
+ *   - type prtlidx_t
+ *   - type idx_t
+ *   - type spidx_t
+ *   - type dim_t
+ *   - type path_t
+ *   - type cell_range_t
+ *   - type prtl_slice_t
+ *   - type boundaries_t
  *   - ntt::GlobalInitialize -> void
  *   - ntt::GlobalFinalize -> void
  *   - enum ntt::DiagFlags
@@ -93,6 +106,7 @@
 #define GLOBAL_GLOBAL_H
 
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <utility>
@@ -115,11 +129,10 @@ namespace ntt {
 
 #if !defined(SHAPE_ORDER)
   #define SHAPE_ORDER 0
-  inline constexpr std::size_t N_GHOSTS = 2;
+  inline constexpr uint32_t N_GHOSTS = 2;
 #else  // SHAPE_ORDER
-  inline constexpr std::size_t N_GHOSTS = static_cast<std::size_t>(
-                                            (SHAPE_ORDER + 1) / 2) +
-                                          1;
+  inline constexpr uint32_t N_GHOSTS = static_cast<uint32_t>((SHAPE_ORDER + 1) / 2) +
+                                       1;
 #endif // SHAPE_ORDER
 
 // Coordinate shift to account for ghost cells
@@ -366,23 +379,25 @@ using vec_t = tuple_t<real_t, D>;
 // time/duration
 using duration_t = double;
 using simtime_t  = double;
-using timestep_t = std::size_t;
-using ncells_t   = std::size_t;
-using npart_t    = unsigned long int;
+using timestep_t = uint32_t;
+using ncells_t   = uint32_t;
+using npart_t    = uint32_t;
 
 // walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
 
 // index/number
-using index_t = const std::size_t;
-using idx_t   = unsigned short;
-using spidx_t = unsigned short;
-using dim_t   = unsigned short;
+using cellidx_t = const ncells_t;
+using prtlidx_t = const npart_t;
+using idx_t     = uint8_t;
+using spidx_t   = uint8_t;
+using dim_t     = uint8_t;
 
 // utility
 using path_t = std::filesystem::path;
 
-using range_tuple_t = std::pair<ncells_t, ncells_t>;
+using cell_range_t = std::pair<ncells_t, ncells_t>;
+using prtl_slice_t = std::pair<npart_t, npart_t>;
 
 template <typename T>
 using boundaries_t = std::vector<std::pair<T, T>>;

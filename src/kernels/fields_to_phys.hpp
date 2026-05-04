@@ -69,7 +69,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const real_t    i1_ { COORD(i1) };
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
@@ -118,7 +118,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -172,7 +172,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };

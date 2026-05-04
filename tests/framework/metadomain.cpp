@@ -40,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
       4u, { -1, -1 },
        res, extent, fldsbc, prtlbc, params, {}
     };
-    std::size_t nx1 { 0 }, nx2 { 0 };
+    ncells_t nx1 { 0 }, nx2 { 0 };
     raise::ErrorIf(metadomain.mesh().n_active() != res,
                    "Mesh::n_active() failed",
                    HERE);

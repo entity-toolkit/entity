@@ -2,7 +2,8 @@
  * @file framework/containers/particles.h
  * @brief Definition of the particle container class
  * @implements
- *   - ntt::Particles<> : ntt::ParticleSpecies
+ *   - ntt::ParticleArrays
+ *   - ntt::Particles<> : ntt::ParticleSpecies, ntt::ParticleArrays
  * @cpp:
  *   - particles.cpp
  *   - particles_io.cpp
@@ -20,7 +21,6 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "traits/metric.h"
 #include "utils/error.h"
@@ -28,7 +28,10 @@
 
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
-#include "kernels/pushers/context.h"
+
+#if defined(MPI_ENABLED)
+  #include "arch/directions.h"
+#endif
 
 #include <Kokkos_Core.hpp>
 
@@ -41,26 +44,11 @@
 
 namespace ntt {
 
-  /**
-   * @brief Container class to carry particle information for a specific species
-   * @tparam D The dimension of the simulation
-   * @tparam S The simulation engine being used
-   */
-  template <Dimension D, Coord::type C>
-  struct Particles : public ParticleSpecies {
-  private:
-    // Number of currently active (used) particles
-    npart_t m_npart { 0 };
-    npart_t m_counter { 0 };
-    bool    m_is_sorted { false };
+  struct ParticleArrays {
+    const spidx_t sp;
 
-#if !defined(MPI_ENABLED)
-    const std::size_t m_ntags { 2 };
-#else // MPI_ENABLED
-    const std::size_t m_ntags { (std::size_t)(2 + math::pow(3, (int)D) - 1) };
-#endif
+    ParticleArrays(spidx_t sp = 0u) : sp { sp } {}
 
-  public:
     // Cell indices of the current particle
     array_t<int*>      i1, i2, i3;
     // Displacement of a particle within the cell
@@ -80,7 +68,29 @@ namespace ntt {
     array_t<npart_t**> pld_i;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>   phi;
+  };
 
+  /**
+   * @brief Container class to carry particle information for a specific species
+   * @tparam D The dimension of the simulation
+   * @tparam S The simulation engine being used
+   */
+  template <Dimension D, Coord::type C>
+  struct Particles : public ParticleSpecies,
+                     public ParticleArrays {
+  private:
+    // Number of currently active (used) particles
+    npart_t m_npart { 0 };
+    npart_t m_counter { 0 };
+    bool    m_is_sorted { false };
+
+#if !defined(MPI_ENABLED)
+    const uint8_t m_ntags { 2u };
+#else // MPI_ENABLED
+    const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
+#endif
+
+  public:
     // for empty allocation
     Particles() {}
 
@@ -144,7 +154,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     auto rangeActiveParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, npart());
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { npart() });
     }
 
     /**
@@ -152,7 +162,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     auto rangeAllParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, maxnpart());
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { maxnpart() });
     }
 
     /* getters -------------------------------------------------------------- */
@@ -184,7 +194,7 @@ namespace ntt {
      * @brief Get the number of distinct tags possible
      */
     [[nodiscard]]
-    auto ntags() const -> std::size_t {
+    auto ntags() const -> uint8_t {
       return m_ntags;
     }
 
@@ -273,12 +283,6 @@ namespace ntt {
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
-
-    /**
-     * @brief Get the arrays required for the particle pusher kernel
-     * @returns The struct of arrays for the particle pusher kernel
-     */
-    auto PusherKernelArrays() -> kernel::PusherArrays;
 
 #if defined(MPI_ENABLED)
     /**

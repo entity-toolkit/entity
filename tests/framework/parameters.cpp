@@ -322,7 +322,7 @@ auto main(int argc, char* argv[]) -> int {
       assert_equal<std::string>(species[0].label(), "e-", "species[0].label");
       assert_equal(species[0].mass(), 1.0f, "species[0].mass");
       assert_equal(species[0].charge(), -1.0f, "species[0].charge");
-      assert_equal<std::size_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
+      assert_equal<npart_t>(species[0].maxnpart(), 100, "species[0].maxnpart");
       assert_equal(species[0].clearing_interval(),
                    static_cast<timestep_t>(50u),
                    "species[0].clearing_interval");

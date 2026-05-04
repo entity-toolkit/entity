@@ -366,7 +366,7 @@ namespace ntt {
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
 
-        std::vector<std::size_t> xi_min, xi_max;
+        std::vector<ncells_t> xi_min, xi_max;
 
         const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
@@ -397,7 +397,7 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
-        std::size_t i_edge;
+        ncells_t i_edge;
         if (sign > 0) {
           i_edge = domain.mesh.i_max(dim);
         } else {
@@ -509,15 +509,15 @@ namespace ntt {
           return;
         }
         const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<std::size_t, M::Dim> range_min { 0 };
-        tuple_t<std::size_t, M::Dim> range_max { 0 };
+        tuple_t<ncells_t, M::Dim> range_min { 0 };
+        tuple_t<ncells_t, M::Dim> range_max { 0 };
 
         for (auto d { 0u }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto        atm_fields = pgen.AtmFields(time);
-        std::size_t il_edge;
+        auto     atm_fields = pgen.AtmFields(time);
+        ncells_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {

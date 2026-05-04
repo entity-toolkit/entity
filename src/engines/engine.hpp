@@ -292,7 +292,7 @@ namespace ntt {
         ::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), M::Dim, Domain<S, M>>) {
         auto lambda_custom_field_output = [&](const std::string&    name,
                                               ndfield_t<M::Dim, 6>& buff,
-                                              index_t               idx,
+                                              cellidx_t             idx,
                                               timestep_t            step,
                                               simtime_t             time,
                                               const Domain<S, M>&   dom) {

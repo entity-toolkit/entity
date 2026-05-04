@@ -247,7 +247,7 @@ namespace user {
       }
 
       const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
+      tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
         x_max[d] = extent[d].second;
@@ -277,7 +277,7 @@ namespace user {
         Kokkos::parallel_for(
           "RemoveParticles",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             // check if the particle is already dead
             if (tag(p) == ParticleTag::dead) {
               return;

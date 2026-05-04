@@ -4,7 +4,6 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "utils/comparators.h"
 #include "utils/numeric.h"
 
 #include "metrics/kerr_schild.h"
@@ -20,7 +19,6 @@
 #include <map>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 void errorIf(bool condition, const std::string& message) {
@@ -33,7 +31,7 @@ using namespace ntt;
 using namespace metric;
 
 template <typename M>
-void testFlds2Phys(const std::vector<std::size_t>&      res,
+void testFlds2Phys(const std::vector<ncells_t>&         res,
                    const boundaries_t<real_t>&          ext,
                    const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2);
@@ -175,7 +173,7 @@ auto main(int argc, char* argv[]) -> int {
       { { "a", 0.9 } });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

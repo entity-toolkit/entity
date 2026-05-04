@@ -34,7 +34,7 @@ void errorIf(bool condition, const std::string& message) {
 }
 
 template <typename T>
-void put_value(array_t<T*>& arr, T v, index_t p) {
+void put_value(array_t<T*>& arr, T v, prtlidx_t p) {
   auto h = Kokkos::create_mirror_view(arr);
   Kokkos::deep_copy(h, arr);
   h(p) = v;
@@ -44,7 +44,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 inline static constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
 
 template <SimEngine::type S, typename M>
-void testParticleMoments(const std::vector<std::size_t>&      res,
+void testParticleMoments(const std::vector<ncells_t>&         res,
                          const boundaries_t<real_t>&          ext,
                          const std::map<std::string, real_t>& params = {},
                          const real_t                         acc    = ONE) {
@@ -292,7 +292,7 @@ auto main(int argc, char* argv[]) -> int {
       10);
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

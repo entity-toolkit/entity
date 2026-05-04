@@ -90,7 +90,7 @@ namespace kernel::bc {
       return math::tanh(dx * FOUR / dx_abs);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
         const auto i1_ = COORD(i1);
 
@@ -173,7 +173,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);
@@ -343,7 +343,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);
@@ -525,16 +525,16 @@ namespace kernel::bc {
     static_assert(static_cast<dim_t>(o) < static_cast<dim_t>(D),
                   "Invalid component index");
 
-    ndfield_t<D, 6>   Fld;
-    const std::size_t i_edge;
-    const BCTags      tags;
+    ndfield_t<D, 6> Fld;
+    const ncells_t  i_edge;
+    const BCTags    tags;
 
-    ConductorBoundaries_kernel(ndfield_t<D, 6>& Fld, std::size_t i_edge, BCTags tags)
+    ConductorBoundaries_kernel(ndfield_t<D, 6>& Fld, ncells_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , tags { tags } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (tags & BC::E) {
           if (i1 == 0) {
@@ -575,7 +575,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
@@ -651,7 +651,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
@@ -825,7 +825,7 @@ namespace kernel::bc {
   struct AxisBoundaries_kernel {
     ndfield_t<D, 6> Fld;
     const ncells_t  i_edge;
-    const bool      setE, setB;
+    const bool      setE { false }, setB { false };
 
     AxisBoundaries_kernel(ndfield_t<D, 6> Fld, ncells_t i_edge, BCTags tags)
       : Fld { Fld }
@@ -833,7 +833,7 @@ namespace kernel::bc {
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
       , setB { tags & BC::Bx1 or tags & BC::Bx2 or tags & BC::Bx3 } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_2D) {
         // ! TODO: not all components are necessary
         if constexpr (not P) {
@@ -896,7 +896,7 @@ namespace kernel::bc {
       , i_edge { i_edge + N_GHOSTS }
       , tags { tags } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const auto        i1_ = COORD(i1);
         coord_t<Dim::_1D> x_Ph_0 { ZERO };
@@ -971,7 +971,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const auto        i1_ = COORD(i1);
         const auto        i2_ = COORD(i2);
@@ -1065,7 +1065,7 @@ namespace kernel::bc {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const auto        i1_ = COORD(i1);
         const auto        i2_ = COORD(i2);
@@ -1186,15 +1186,15 @@ namespace kernel::bc {
 
     template <Dimension D>
     struct HorizonBoundaries_kernel {
-      ndfield_t<D, 6>   Fld;
-      const std::size_t i1_min;
-      const bool        setE, setB;
-      const std::size_t nfilter;
+      ndfield_t<D, 6> Fld;
+      const ncells_t  i1_min;
+      const bool      setE { false }, setB { false };
+      const ncells_t  nfilter;
 
       HorizonBoundaries_kernel(ndfield_t<D, 6> Fld,
-                               std::size_t     i1_min,
+                               ncells_t        i1_min,
                                BCTags          tags,
-                               std::size_t     nfilter)
+                               ncells_t        nfilter)
         : Fld { Fld }
         , i1_min { i1_min }
         , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
@@ -1203,7 +1203,7 @@ namespace kernel::bc {
                  (tags & BC::Hx1 or tags & BC::Hx2 or tags & BC::Hx3) }
         , nfilter { nfilter } {}
 
-      Inline void operator()(index_t i2) const {
+      Inline void operator()(cellidx_t i2) const {
         if constexpr (D == Dim::_2D) {
           if (setE) {
             for (unsigned short i = 0; i <= 2 + nfilter; ++i) {
@@ -1258,7 +1258,7 @@ namespace kernel::bc {
         , xg_edge { xg_edge }
         , dx_abs { dx_abs } {}
 
-      Inline void operator()(index_t i1, index_t i2) const {
+      Inline void operator()(cellidx_t i1, cellidx_t i2) const {
         if constexpr (M::Dim == Dim::_2D) {
           const auto      i1_ = COORD(i1);
           const auto      i2_ = COORD(i2);

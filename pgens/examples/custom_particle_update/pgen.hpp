@@ -8,8 +8,10 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
+#include "framework/containers/particles.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
+#include "kernels/pushers/context.h"
 
 #include <vector>
 
@@ -134,11 +136,11 @@ namespace user {
         , xmin { xmin }
         , xmax { xmax } {}
 
-      Inline void operator()(index_t                          p,
+      Inline void operator()(prtlidx_t                        p,
                              const kernel::sr::PusherContext& ctx,
                              const kernel::sr::PusherBoundaries<M::Dim>&,
-                             const kernel::PusherArrays& particles,
-                             const M&                    metric) const {
+                             const ntt::ParticleArrays& particles,
+                             const M&                   metric) const {
 
         const auto x_Cd = static_cast<real_t>(particles.i1(p)) +
                           static_cast<real_t>(particles.dx1(p));

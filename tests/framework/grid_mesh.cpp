@@ -17,7 +17,7 @@ auto main(int argc, char* argv[]) -> int {
   using namespace metric;
   GlobalInitialize(argc, argv);
   try {
-    const auto res = std::vector<std::size_t> { 10, 10, 10 };
+    const auto res = std::vector<ncells_t> { 10, 10, 10 };
     const auto ext = boundaries_t<real_t> {
       { -1.0, 1.0 },
       { -1.0, 1.0 },

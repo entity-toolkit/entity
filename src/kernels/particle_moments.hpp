@@ -129,7 +129,7 @@ namespace kernel {
       }
     }
 
-    Inline auto computeStressEnergyComponent(index_t p) const -> real_t {
+    Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
@@ -189,7 +189,7 @@ namespace kernel {
       return T_component;
     }
 
-    Inline auto computeBulk3VelocityTimesMass(index_t p) const -> real_t {
+    Inline auto computeBulk3VelocityTimesMass(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       // for bulk 3vel (tetrad basis)
       vec_t<Dim::_3D> u_Phys { ZERO };
@@ -219,7 +219,7 @@ namespace kernel {
       return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       if (tag(p) == ParticleTag::dead) {
         return;
       }
@@ -347,7 +347,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (not cmp::AlmostZero(Rho(i1, c_rho))) {
           Vector(i1, c_v1) /= Rho(i1, c_rho);
@@ -361,7 +361,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if (not cmp::AlmostZero(Rho(i1, i2, c_rho))) {
           Vector(i1, i2, c_v1) /= Rho(i1, i2, c_rho);
@@ -375,7 +375,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if (not cmp::AlmostZero(Rho(i1, i2, i3, c_rho))) {
           Vector(i1, i2, i3, c_v1) /= Rho(i1, i2, i3, c_rho);

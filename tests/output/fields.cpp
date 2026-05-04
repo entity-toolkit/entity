@@ -106,7 +106,7 @@ auto main() -> int {
       raise::ErrorIf(t.comp.size() != 6, "T should have 6 component", HERE);
     }
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     return 1;
   }
   return 0;

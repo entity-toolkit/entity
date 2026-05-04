@@ -55,7 +55,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr ncells_t i2min { N_GHOSTS };
         const real_t       i1_ { COORD(i1) };
@@ -108,7 +108,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {
@@ -160,7 +160,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -208,7 +208,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {

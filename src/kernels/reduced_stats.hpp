@@ -37,7 +37,7 @@ namespace kernel {
       , J { J }
       , metric { metric } {}
 
-    Inline void operator()(index_t i1, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, real_t& buff) const {
       const auto i1_ = COORD(i1);
       if constexpr (F == StatsID::B2) {
         if constexpr (I == 1) {
@@ -140,7 +140,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, real_t& buff) const {
       const auto i1_ = COORD(i1);
       const auto i2_ = COORD(i2);
       if constexpr (F == StatsID::B2) {
@@ -254,7 +254,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3, real_t& buff) const {
       const auto i1_ = COORD(i1);
       const auto i2_ = COORD(i2);
       const auto i3_ = COORD(i3);
@@ -460,7 +460,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t p, real_t& buff) const {
+    Inline void operator()(prtlidx_t p, real_t& buff) const {
       if (tag(p) != ParticleTag::alive) {
         return;
       }

@@ -108,7 +108,7 @@ namespace ntt {
       Kokkos::parallel_reduce(
         "CountOutputParticles",
         rangeActiveParticles(),
-        Lambda(index_t p, npart_t & l_nout) {
+        Lambda(prtlidx_t p, npart_t & l_nout) {
           if ((tag_d(p) == ParticleTag::alive) and
               (pld_i_d(p, pldi::spcCtr) % prtl_stride == 0)) {
             l_nout += 1;
@@ -120,7 +120,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "RecordOutputIndices",
         rangeActiveParticles(),
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           if ((tag_d(p) == ParticleTag::alive) and
               (pld_i_d(p, pldi::spcCtr) % prtl_stride == 0)) {
             const auto p_out   = Kokkos::atomic_fetch_add(&out_counter(), 1);

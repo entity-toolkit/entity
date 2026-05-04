@@ -35,9 +35,9 @@ Inline auto equal(const vec_t<D>& a,
 }
 
 template <Dimension D>
-Inline void unravel(std::size_t                    idx,
-                    tuple_t<std::size_t, D>&       ijk,
-                    const tuple_t<std::size_t, D>& res) {
+Inline void unravel(ncells_t                    idx,
+                    tuple_t<ncells_t, D>&       ijk,
+                    const tuple_t<ncells_t, D>& res) {
   for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
@@ -45,7 +45,7 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<std::size_t>&      res,
+void testMetric(const std::vector<ncells_t>&         res,
                 const boundaries_t<real_t>&          ext,
                 const real_t                         acc    = ONE,
                 const std::map<std::string, real_t>& params = {}) {
@@ -56,9 +56,9 @@ void testMetric(const std::vector<std::size_t>&      res,
     errorIf(e.first >= e.second, "e.first >= e.second");
   }
 
-  M                            metric(res, ext, params);
-  tuple_t<std::size_t, M::Dim> res_tup;
-  std::size_t                  npts = 1;
+  M                         metric(res, ext, params);
+  tuple_t<ncells_t, M::Dim> res_tup;
+  ncells_t                  npts = 1;
   for (auto d = 0; d < M::Dim; ++d) {
     res_tup[d]  = res[d];
     npts       *= res[d];
@@ -69,8 +69,8 @@ void testMetric(const std::vector<std::size_t>&      res,
   Kokkos::parallel_for(
     "h_ij/hij",
     npts,
-    Lambda(index_t n) {
-      tuple_t<std::size_t, M::Dim> idx;
+    Lambda(cellidx_t n) {
+      tuple_t<ncells_t, M::Dim> idx;
       unravel<M::Dim>(n, idx, res_tup);
       coord_t<M::Dim> x_Code { ZERO };
       coord_t<M::Dim> x_Phys { ZERO };
@@ -193,7 +193,7 @@ auto main(int argc, char* argv[]) -> int {
       { { "r0", -TWO }, { "h", ZERO }, { "a", (real_t)0.8 } });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

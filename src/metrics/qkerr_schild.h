@@ -33,7 +33,7 @@ namespace metric {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t a, rg_, rh_;
+    const real_t a, rg_ { ONE }, rh_;
 
     const real_t r0, h0;
     const real_t chi_min, eta_min, phi_min;
@@ -78,7 +78,6 @@ namespace metric {
                 const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
-      , rg_ { ONE }
       , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
       , r0 { params.at("r0") }
       , h0 { params.at("h") }

@@ -143,7 +143,7 @@ struct WithCustomFieldOutput {
 
   void CustomFieldOutput(const std::string&,
                          ndfield_t<Dimension::_2D, 6>&,
-                         index_t,
+                         uint32_t,
                          timestep_t,
                          simtime_t,
                          const DummyDomain&) {}

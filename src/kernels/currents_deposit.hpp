@@ -105,7 +105,7 @@ namespace kernel {
      * @brief Iteration of the loop over particles.
      * @param p index.
      */
-    Inline auto operator()(index_t p) const -> void {
+    Inline auto operator()(prtlidx_t p) const -> void {
       if (tag(p) == ParticleTag::dead) {
         return;
       }

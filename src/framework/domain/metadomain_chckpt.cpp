@@ -17,6 +17,7 @@
   #include <mpi.h>
 #endif
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <string>
@@ -178,21 +179,20 @@ namespace ntt {
       for (const auto& n : ncells_at_pos) {
         total += n;
       }
-      raise::ErrorIf(
-        total != g_mesh.n_active()[d],
-        fmt::format(
-          "total cells in dim %d changed between checkpoint (%lu) and current (%lu); "
-          "changing total domain size is not supported",
-          d + 1,
-          total,
-          g_mesh.n_active()[d]),
-        HERE);
+      raise::ErrorIf(total != g_mesh.n_active()[d],
+                     fmt::format("total cells in dim %d changed between "
+                                 "checkpoint (%lu) and current (%lu); "
+                                 "changing total domain size is not supported",
+                                 d + 1,
+                                 total,
+                                 g_mesh.n_active()[d]),
+                     HERE);
 
       ncells_t              running { 0 };
       std::vector<ncells_t> offset_at_pos(g_ndomains_per_dim[d], 0);
       for (unsigned int nd { 0 }; nd < g_ndomains_per_dim[d]; ++nd) {
-        offset_at_pos[nd] = running;
-        running += ncells_at_pos[nd];
+        offset_at_pos[nd]  = running;
+        running           += ncells_at_pos[nd];
       }
       for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
         offset_ncells_per_dom[idx][d] = offset_at_pos[g_domain_offsets[idx][d]];
@@ -268,12 +268,12 @@ namespace ntt {
 
     // Phase 1: read all subdomain metadata to detect size changes
     std::vector<std::vector<ncells_t>> saved_ncells(g_ndomains,
-                                                     std::vector<ncells_t>(M::Dim));
+                                                    std::vector<ncells_t>(M::Dim));
     std::vector<boundaries_t<real_t>>  saved_extents(g_ndomains);
     boundaries_t<real_t>               global_extent;
     for (auto d { 0u }; d < M::Dim; ++d) {
       global_extent.emplace_back(std::numeric_limits<real_t>::max(),
-                                  std::numeric_limits<real_t>::lowest());
+                                 std::numeric_limits<real_t>::lowest());
     }
 
     bool needs_reconstruction = false;

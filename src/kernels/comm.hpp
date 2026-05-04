@@ -27,8 +27,8 @@ namespace kernel::comm {
     const array_t<int*> shifts_in_x1, shifts_in_x2, shifts_in_x3;
     array_t<npart_t*>   outgoing_indices;
 
-    const npart_t     npart, npart_alive, npart_dead;
-    const std::size_t ntags;
+    const npart_t npart, npart_alive, npart_dead;
+    const uint8_t ntags;
 
     array_t<int*>         i1, i1_prev, i2, i2_prev, i3, i3_prev;
     const array_t<short*> tag;
@@ -45,7 +45,7 @@ namespace kernel::comm {
                                 npart_t                  npart,
                                 npart_t                  npart_alive,
                                 npart_t                  npart_dead,
-                                std::size_t              ntags,
+                                uint8_t                  ntags,
                                 array_t<int*>&           i1,
                                 array_t<int*>&           i1_prev,
                                 array_t<int*>&           i2,
@@ -72,7 +72,7 @@ namespace kernel::comm {
       , tag_offsets { tag_offsets }
       , current_offset { "current_offset", ntags } {}
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       if (tag(p) != ParticleTag::alive) {
         // dead or to-be-sent
         auto idx_for_tag = Kokkos::atomic_fetch_add(&current_offset(tag(p)), 1);
@@ -190,7 +190,7 @@ namespace kernel::comm {
       , tag { tag }
       , outgoing_indices { outgoing_indices } {}
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       const auto idx = outgoing_indices(idx_offset + p);
       if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         send_buff_int(NINTS * p + 0)      = i1(idx);
@@ -294,7 +294,7 @@ namespace kernel::comm {
       , NPLDS_R { NPLDS_R }
       , NPLDS_I { NPLDS_I }
       , npart { npart }
-      , npart_holes { outgoing_indices.extent(0) }
+      , npart_holes { static_cast<npart_t>(outgoing_indices.extent(0)) }
       , i1 { i1 }
       , i1_prev { i1_prev }
       , i2 { i2 }
@@ -317,7 +317,7 @@ namespace kernel::comm {
       , tag { tag }
       , outgoing_indices { outgoing_indices } {}
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       npart_t idx;
       if (p >= npart_holes) {
         idx = npart + p - npart_holes;

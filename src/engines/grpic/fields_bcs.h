@@ -86,8 +86,8 @@ namespace ntt {
         return;
       }
       const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> range_min { 0 };
-      tuple_t<std::size_t, M::Dim> range_max { 0 };
+      tuple_t<ncells_t, M::Dim> range_min { 0 };
+      tuple_t<ncells_t, M::Dim> range_max { 0 };
 
       for (unsigned short d { 0 }; d < M::Dim; ++d) {
         range_min[d] = intersect_range[d].first;

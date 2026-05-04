@@ -30,7 +30,7 @@
 namespace ntt {
 
   using address_t     = std::pair<unsigned int, int>;
-  using comm_params_t = std::pair<address_t, std::vector<range_tuple_t>>;
+  using comm_params_t = std::pair<address_t, std::vector<cell_range_t>>;
 
   template <SimEngine::type S, MetricClass M>
   auto GetSendRecvRanks(const Metadomain<S, M>* const   metadomain,
@@ -133,8 +133,8 @@ namespace ntt {
         { { 0, -1 }, {} }
       };
     }
-    auto     send_slice   = std::vector<range_tuple_t> {};
-    auto     recv_slice   = std::vector<range_tuple_t> {};
+    auto     send_slice   = std::vector<cell_range_t> {};
+    auto     recv_slice   = std::vector<cell_range_t> {};
     const in components[] = { in::x1, in::x2, in::x3 };
     // find the field components and indices to be sent/received
     for (auto d { 0u }; d < direction.size(); ++d) {
@@ -246,31 +246,31 @@ namespace ntt {
      * on a single rank, however that is not yet implemented
      */
     // establish the last index ranges for fields (i.e., components)
-    auto comp_range_fld = range_tuple_t {};
-    auto comp_range_cur = range_tuple_t {};
+    auto comp_range_fld = cell_range_t {};
+    auto comp_range_cur = cell_range_t {};
     if constexpr (S == SimEngine::GRPIC) {
       if (((tags & Comm::D) and (tags & Comm::B)) or
           ((tags & Comm::D0) and (tags & Comm::B0)) or
           ((tags & Comm::E) and (tags & Comm::H))) {
-        comp_range_fld = range_tuple_t(em::dx1, em::bx3 + 1);
+        comp_range_fld = cell_range_t(em::dx1, em::bx3 + 1);
       } else if ((tags & Comm::D) or (tags & Comm::D0) or (tags & Comm::E)) {
-        comp_range_fld = range_tuple_t(em::dx1, em::dx3 + 1);
+        comp_range_fld = cell_range_t(em::dx1, em::dx3 + 1);
       } else if ((tags & Comm::B) or (tags & Comm::B0) or (tags & Comm::H)) {
-        comp_range_fld = range_tuple_t(em::bx1, em::bx3 + 1);
+        comp_range_fld = cell_range_t(em::bx1, em::bx3 + 1);
       }
     } else if constexpr (S == SimEngine::SRPIC) {
       if ((tags & Comm::E) and (tags & Comm::B)) {
-        comp_range_fld = range_tuple_t(em::ex1, em::bx3 + 1);
+        comp_range_fld = cell_range_t(em::ex1, em::bx3 + 1);
       } else if (tags & Comm::E) {
-        comp_range_fld = range_tuple_t(em::ex1, em::ex3 + 1);
+        comp_range_fld = cell_range_t(em::ex1, em::ex3 + 1);
       } else if (tags & Comm::B) {
-        comp_range_fld = range_tuple_t(em::bx1, em::bx3 + 1);
+        comp_range_fld = cell_range_t(em::bx1, em::bx3 + 1);
       }
     } else {
       raise::Error("Unknown simulation engine", HERE);
     }
     if (comm_j) {
-      comp_range_cur = range_tuple_t(cur::jx1, cur::jx3 + 1);
+      comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
     }
     // traverse in all directions and send/recv the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
@@ -380,17 +380,17 @@ namespace ntt {
   }
 
   template <Dimension D, int N>
-  void AddBufferedFields(ndfield_t<D, N>&     field,
-                         ndfield_t<D, N>&     buffer,
-                         const range_t<D>&    range_policy,
-                         const range_tuple_t& components) {
+  void AddBufferedFields(ndfield_t<D, N>&    field,
+                         ndfield_t<D, N>&    buffer,
+                         const range_t<D>&   range_policy,
+                         const cell_range_t& components) {
     const auto cmin = components.first;
     const auto cmax = components.second;
     if constexpr (D == Dim::_1D) {
       Kokkos::parallel_for(
         "AddBufferedFields",
         range_policy,
-        Lambda(index_t i1) {
+        Lambda(cellidx_t i1) {
           for (auto c { cmin }; c < cmax; ++c) {
             field(i1, c) += buffer(i1, c);
           }
@@ -399,7 +399,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "AddBufferedFields",
         range_policy,
-        Lambda(index_t i1, index_t i2) {
+        Lambda(cellidx_t i1, cellidx_t i2) {
           for (auto c { cmin }; c < cmax; ++c) {
             field(i1, i2, c) += buffer(i1, i2, c);
           }
@@ -408,7 +408,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "AddBuffers",
         range_policy,
-        Lambda(index_t i1, index_t i2, index_t i3) {
+        Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
           for (auto c { cmin }; c < cmax; ++c) {
             field(i1, i2, i3, c) += buffer(i1, i2, i3, c);
           }
@@ -421,7 +421,7 @@ namespace ntt {
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>& domain,
                                            CommTags      tags,
-                                           const range_tuple_t& components) const {
+                                           const cell_range_t& components) const {
     const bool comm_j    = (tags & Comm::J);
     const bool comm_bckp = (tags & Comm::Bckp);
     const bool comm_buff = (tags & Comm::Buff);
@@ -445,9 +445,9 @@ namespace ntt {
     }
     logger::Checkpoint(fmt::format("Synchronizing %s\n", comms.c_str()), HERE);
 
-    auto comp_range_cur = range_tuple_t {};
+    auto comp_range_cur = cell_range_t {};
     if (comm_j) {
-      comp_range_cur = range_tuple_t(cur::jx1, cur::jx3 + 1);
+      comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
       Kokkos::deep_copy(domain.fields.buff, ZERO);
     }
     ndfield_t<M::Dim, 6> bckp_recv;
@@ -666,13 +666,12 @@ namespace ntt {
   }
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
-#define METADOMAIN_COMM(S, M, D)                                               \
-  template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,       \
-                                                       CommTags) const;        \
-  template void Metadomain<S, M<D>>::SynchronizeFields(Domain<S, M<D>>&,       \
-                                                       CommTags,               \
-                                                       const range_tuple_t&)   \
-    const;                                                                     \
+#define METADOMAIN_COMM(S, M, D)                                                   \
+  template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,           \
+                                                       CommTags) const;            \
+  template void Metadomain<S, M<D>>::SynchronizeFields(Domain<S, M<D>>&,           \
+                                                       CommTags,                   \
+                                                       const cell_range_t&) const; \
   template void Metadomain<S, M<D>>::CommunicateParticles(Domain<S, M<D>>&) const;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
