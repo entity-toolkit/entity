@@ -49,7 +49,7 @@ namespace arch {
    * @param is_left Is piston on the left side of the box or right side of the box
    */
   template <CartesianMetricClass M>
-  Inline bool CrossesPiston(index_t                    p,
+  Inline bool CrossesPiston(prtlidx_t                  p,
                             real_t                     dt,
                             const ntt::ParticleArrays& particles,
                             const M&                   metric,
@@ -82,7 +82,7 @@ namespace arch {
    * @param massive Whether the particle is massive or massless (e.g. photon)
    */
   template <CartesianMetricClass M>
-  Inline void Piston(index_t                    p,
+  Inline void Piston(prtlidx_t                  p,
                      real_t                     dt,
                      const ntt::ParticleArrays& particles,
                      const M&                   metric,

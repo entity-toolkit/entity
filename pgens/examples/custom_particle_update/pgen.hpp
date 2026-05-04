@@ -136,7 +136,7 @@ namespace user {
         , xmin { xmin }
         , xmax { xmax } {}
 
-      Inline void operator()(index_t                          p,
+      Inline void operator()(prtlidx_t                        p,
                              const kernel::sr::PusherContext& ctx,
                              const kernel::sr::PusherBoundaries<M::Dim>&,
                              const ntt::ParticleArrays& particles,

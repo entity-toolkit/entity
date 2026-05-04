@@ -32,10 +32,10 @@ Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
 }
 
 template <Dimension D>
-void testAmpere(const std::vector<std::size_t>&);
+void testAmpere(const std::vector<ncells_t>&);
 
 template <>
-void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
+void testAmpere<Dim::_1D>(const std::vector<ncells_t>& res) {
   errorIf(res.size() != 1, "res.size() != 1");
 
   const real_t sx     = constant::TWO_PI;
@@ -52,7 +52,7 @@ void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_for(
     "init 1D",
     range_ext,
-    Lambda(index_t i1) {
+    Lambda(cellidx_t i1) {
       const coord_t<Dim::_1D> x_Code { COORD(i1) + HALF };
       coord_t<Dim::_1D>       x_Cart { ZERO };
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code, x_Cart);
@@ -74,7 +74,7 @@ void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_reduce(
     "check ampere 1D",
     range,
-    Lambda(index_t i1, unsigned long& wrongs) {
+    Lambda(cellidx_t i1, unsigned long& wrongs) {
       const coord_t<Dim::_1D> x_Code { COORD(i1) };
       coord_t<Dim::_1D>       x_Cart { ZERO };
       metric.template convert_xyz<Crd::Cd, Crd::XYZ>(x_Code, x_Cart);
@@ -100,7 +100,7 @@ void testAmpere<Dim::_1D>(const std::vector<std::size_t>& res) {
 }
 
 template <>
-void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
+void testAmpere<Dim::_2D>(const std::vector<ncells_t>& res) {
   errorIf(res.size() != 2, "res.size() != 2");
 
   using namespace ntt;
@@ -110,14 +110,14 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
     res,
     { { ZERO, sx }, { ZERO, sy } }
   };
-  auto              emfield = ndfield_t<Dim::_2D, 6> { "emfield",
-                                                       res[0] + 2 * N_GHOSTS,
-                                                       res[1] + 2 * N_GHOSTS };
-  const std::size_t i1min = N_GHOSTS, i1max = res[0] + N_GHOSTS;
-  const std::size_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
-  const auto        range     = CreateRangePolicy<Dim::_2D>({ i1min, i2min },
-                                                            { i1max, i2max });
-  const auto        range_ext = CreateRangePolicy<Dim::_2D>(
+  auto           emfield = ndfield_t<Dim::_2D, 6> { "emfield",
+                                                    res[0] + 2 * N_GHOSTS,
+                                                    res[1] + 2 * N_GHOSTS };
+  const ncells_t i1min = N_GHOSTS, i1max = res[0] + N_GHOSTS;
+  const ncells_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
+  const auto     range     = CreateRangePolicy<Dim::_2D>({ i1min, i2min },
+                                                         { i1max, i2max });
+  const auto     range_ext = CreateRangePolicy<Dim::_2D>(
     { 0, 0 },
     { res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS });
   const auto dx      = (metric.x1_max - metric.x1_min) / (real_t)metric.nx1;
@@ -126,7 +126,7 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_for(
     "init 2D",
     range_ext,
-    Lambda(index_t i1, index_t i2) {
+    Lambda(cellidx_t i1, cellidx_t i2) {
       const coord_t<Dim::_2D> x_Code_p0 { COORD(i1) + HALF, COORD(i2) };
       const coord_t<Dim::_2D> x_Code_0p { COORD(i1), COORD(i2) + HALF };
       const coord_t<Dim::_2D> x_Code_pp { COORD(i1) + HALF, COORD(i2) + HALF };
@@ -163,7 +163,7 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_reduce(
     "check ampere 2D",
     range,
-    Lambda(index_t i1, index_t i2, unsigned long& wrongs) {
+    Lambda(cellidx_t i1, cellidx_t i2, unsigned long& wrongs) {
       const coord_t<Dim::_2D> x_Code_00 { COORD(i1), COORD(i2) };
       const coord_t<Dim::_2D> x_Code_p0 { COORD(i1) + HALF, COORD(i2) };
       const coord_t<Dim::_2D> x_Code_0p { COORD(i1), COORD(i2) + HALF };
@@ -205,7 +205,7 @@ void testAmpere<Dim::_2D>(const std::vector<std::size_t>& res) {
 }
 
 template <>
-void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
+void testAmpere<Dim::_3D>(const std::vector<ncells_t>& res) {
   errorIf(res.size() != 3, "res.size() != 3");
 
   using namespace ntt;
@@ -215,16 +215,16 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
     res,
     { { ZERO, sx }, { ZERO, sy }, { ZERO, sz } }
   };
-  auto              emfield = ndfield_t<Dim::_3D, 6> { "emfield",
-                                                       res[0] + 2 * N_GHOSTS,
-                                                       res[1] + 2 * N_GHOSTS,
-                                                       res[2] + 2 * N_GHOSTS };
-  const std::size_t i1min = N_GHOSTS, i1max = res[0] + N_GHOSTS;
-  const std::size_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
-  const std::size_t i3min = N_GHOSTS, i3max = res[2] + N_GHOSTS;
-  const auto        range = CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
-                                                        { i1max, i2max, i3max });
-  const auto        range_ext = CreateRangePolicy<Dim::_3D>(
+  auto           emfield = ndfield_t<Dim::_3D, 6> { "emfield",
+                                                    res[0] + 2 * N_GHOSTS,
+                                                    res[1] + 2 * N_GHOSTS,
+                                                    res[2] + 2 * N_GHOSTS };
+  const ncells_t i1min = N_GHOSTS, i1max = res[0] + N_GHOSTS;
+  const ncells_t i2min = N_GHOSTS, i2max = res[1] + N_GHOSTS;
+  const ncells_t i3min = N_GHOSTS, i3max = res[2] + N_GHOSTS;
+  const auto     range = CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
+                                                     { i1max, i2max, i3max });
+  const auto     range_ext = CreateRangePolicy<Dim::_3D>(
     { 0, 0, 0 },
     { res[0] + 2 * N_GHOSTS, res[1] + 2 * N_GHOSTS, res[2] + 2 * N_GHOSTS });
   const auto dx      = (metric.x1_max - metric.x1_min) / (real_t)metric.nx1;
@@ -233,7 +233,7 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_for(
     "init 3D",
     range_ext,
-    Lambda(index_t i1, index_t i2, index_t i3) {
+    Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
       const coord_t<Dim::_3D> x_Code_0pp { COORD(i1),
                                            COORD(i2) + HALF,
                                            COORD(i3) + HALF };
@@ -287,7 +287,7 @@ void testAmpere<Dim::_3D>(const std::vector<std::size_t>& res) {
   Kokkos::parallel_reduce(
     "check ampere 3D",
     range,
-    Lambda(index_t i1, index_t i2, index_t i3, unsigned long& wrongs) {
+    Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3, unsigned long& wrongs) {
       const coord_t<Dim::_3D> x_Code_p00 { COORD(i1) + HALF, COORD(i2), COORD(i3) };
       const coord_t<Dim::_3D> x_Code_0p0 { COORD(i1), COORD(i2) + HALF, COORD(i3) };
       const coord_t<Dim::_3D> x_Code_00p { COORD(i1), COORD(i2), COORD(i3) + HALF };
@@ -361,7 +361,7 @@ auto main(int argc, char* argv[]) -> int {
     testAmpere<Dim::_3D>({ 32, 64, 32 });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

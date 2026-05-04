@@ -36,11 +36,11 @@ namespace metric {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t a, rg_, rh_;
+    const real_t a, rg_ { ONE }, rh_;
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const bool   small_angle;
+    const bool   small_angle { false };
 
     Inline auto Delta(real_t r) const -> real_t {
       return SQR(r) - TWO * r + SQR(a);
@@ -79,7 +79,6 @@ namespace metric {
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
-      , rg_ { ONE }
       , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }

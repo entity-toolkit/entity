@@ -60,7 +60,7 @@ namespace arch {
 
     ~SetEMFields_kernel() = default;
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const auto        i1_ = COORD(i1);
         coord_t<Dim::_1D> x_Phys { ZERO };
@@ -109,7 +109,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);
@@ -197,7 +197,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const auto        i1_ = COORD(i1);
         const auto        i2_ = COORD(i2);
@@ -317,7 +317,7 @@ namespace arch {
       , fields { fields }
       , fieldsetter { fieldsetter } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const auto i1_ = COORD(i1);
         coord_t<D> x_Ph { ZERO };
@@ -417,7 +417,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);
@@ -557,7 +557,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);

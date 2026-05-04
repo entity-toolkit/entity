@@ -67,7 +67,7 @@ auto main(int argc, char* argv[]) -> int {
       "code-phys",
       CreateRangePolicy<Dim::_3D>({ N_GHOSTS, N_GHOSTS, N_GHOSTS },
                                   { nx + N_GHOSTS, ny + N_GHOSTS, nz + N_GHOSTS }),
-      Lambda(index_t i1, index_t i2, index_t i3, unsigned long& wrongs) {
+      Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3, unsigned long& wrongs) {
         const coord_t<Dim::_3D> x_Code { COORD(i1), COORD(i2), COORD(i3) };
         coord_t<Dim::_3D>       x_Sph { ZERO, ZERO, ZERO };
         coord_t<Dim::_3D>       x_Phys { ZERO, ZERO, ZERO };
@@ -89,7 +89,7 @@ auto main(int argc, char* argv[]) -> int {
       all_wrongs);
     errorIf(all_wrongs != 0u, "code-phys-sph transformations failed");
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     ntt::GlobalFinalize();
     return 1;
   }

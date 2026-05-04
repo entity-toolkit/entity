@@ -38,7 +38,7 @@ auto equal(real_t a, real_t b, const std::string& msg) -> bool {
 }
 
 template <typename T>
-void put_value(array_t<T*>& arr, T v, index_t p) {
+void put_value(array_t<T*>& arr, T v, prtlidx_t p) {
   auto h = Kokkos::create_mirror_view(arr);
   Kokkos::deep_copy(h, arr);
   h(p) = v;
@@ -46,7 +46,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 }
 
 template <SimEngine::type S, typename M>
-void testPeriodicBC(const std::vector<std::size_t>&      res,
+void testPeriodicBC(const std::vector<ncells_t>&         res,
                     const boundaries_t<real_t>&          ext,
                     const std::map<std::string, real_t>& params = {}) {
   errorIf(res.size() != M::Dim, "res.size() != M::Dim");
@@ -143,7 +143,7 @@ void testPeriodicBC(const std::vector<std::size_t>&      res,
 
   {
     coord_t<M::PrtlDim> xCd { ZERO }, xi { ZERO };
-    std::size_t         prtl_idx;
+    npart_t             prtl_idx;
 
     // set up particle #1
     prtl_idx = 0;
@@ -392,20 +392,20 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    const std::vector<std::size_t> res1d { 50 };
-    const boundaries_t<real_t>     ext1d {
-          { 0.0, 1000.0 },
+    const std::vector<ncells_t> res1d { 50 };
+    const boundaries_t<real_t>  ext1d {
+       { 0.0, 1000.0 },
     };
-    const std::vector<std::size_t> res2d { 30, 20 };
-    const boundaries_t<real_t>     ext2d {
-          { -15.0, 15.0 },
-          { -10.0, 10.0 },
+    const std::vector<ncells_t> res2d { 30, 20 };
+    const boundaries_t<real_t>  ext2d {
+       { -15.0, 15.0 },
+       { -10.0, 10.0 },
     };
-    const std::vector<std::size_t> res3d { 10, 10, 10 };
-    const boundaries_t<real_t>     ext3d {
-          { 0.0, 1.0 },
-          { 0.0, 1.0 },
-          { 0.0, 1.0 }
+    const std::vector<ncells_t> res3d { 10, 10, 10 };
+    const boundaries_t<real_t>  ext3d {
+       { 0.0, 1.0 },
+       { 0.0, 1.0 },
+       { 0.0, 1.0 }
     };
     testPeriodicBC<SimEngine::SRPIC, Minkowski<Dim::_1D>>(res1d, ext1d, {});
     testPeriodicBC<SimEngine::SRPIC, Minkowski<Dim::_2D>>(res2d, ext2d, {});

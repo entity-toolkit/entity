@@ -28,31 +28,31 @@ auto main(int argc, char* argv[]) -> int {
       "Fill",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         if ((i1 >= N_GHOSTS) and (i1 < N_GHOSTS + nx1) and (i2 >= N_GHOSTS) and
             (i2 < N_GHOSTS + nx2)) {
-          fld(i1, i2, 0) = static_cast<real_t>(rank + 1) + 4.0;
-          fld(i1, i2, 1) = static_cast<real_t>(rank + 1) + 12.0;
-          fld(i1, i2, 2) = static_cast<real_t>(rank + 1) + 20.0;
+          fld(i1, i2, 0) = static_cast<real_t>(rank + 1 + 4.0);
+          fld(i1, i2, 1) = static_cast<real_t>(rank + 1 + 12.0);
+          fld(i1, i2, 2) = static_cast<real_t>(rank + 1 + 20.0);
         }
       });
 
     {
       // send right, recv left
-      const int          send_idx  = (rank + 1) % size;
-      const int          recv_idx  = (rank - 1 + size) % size;
-      const unsigned int send_rank = (unsigned int)send_idx;
-      const unsigned int recv_rank = (unsigned int)recv_idx;
+      const int send_idx  = (rank + 1) % size;
+      const int recv_idx  = (rank - 1 + size) % size;
+      const int send_rank = send_idx;
+      const int recv_rank = recv_idx;
 
-      const std::vector<range_tuple_t> send_slice {
+      const std::vector<cell_range_t> send_slice {
         {      nx1, nx1 + N_GHOSTS },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const std::vector<range_tuple_t> recv_slice {
+      const std::vector<cell_range_t> recv_slice {
         {        0,       N_GHOSTS },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const range_tuple_t comp_slice { 0, 3 };
+      const cell_range_t comp_slice { 0, 3 };
       comm::CommunicateField<Dim::_2D, 3>((unsigned int)(rank),
                                           fld,
                                           fld,
@@ -67,20 +67,20 @@ auto main(int argc, char* argv[]) -> int {
     }
     {
       // recv right, send left
-      const int          send_idx  = (rank - 1 + size) % size;
-      const int          recv_idx  = (rank + 1) % size;
-      const unsigned int send_rank = (unsigned int)send_idx;
-      const unsigned int recv_rank = (unsigned int)recv_idx;
+      const int send_idx  = (rank - 1 + size) % size;
+      const int recv_idx  = (rank + 1) % size;
+      const int send_rank = send_idx;
+      const int recv_rank = recv_idx;
 
-      const std::vector<range_tuple_t> send_slice {
+      const std::vector<cell_range_t> send_slice {
         { N_GHOSTS,   N_GHOSTS + 2 },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const std::vector<range_tuple_t> recv_slice {
+      const std::vector<cell_range_t> recv_slice {
         { nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS },
         {       N_GHOSTS,     nx2 + N_GHOSTS }
       };
-      const range_tuple_t comp_slice { 0, 3 };
+      const cell_range_t comp_slice { 0, 3 };
       comm::CommunicateField<Dim::_2D, 3>((unsigned int)(rank),
                                           fld,
                                           fld,
@@ -101,7 +101,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "Check",
         CreateRangePolicy<Dim::_1D>({ N_GHOSTS }, { nx2 + N_GHOSTS }),
-        Lambda(index_t i2) {
+        Lambda(cellidx_t i2) {
           for (auto i1 { 0u }; i1 < N_GHOSTS; ++i1) {
             if (fld(i1, i2, 0) != left_expect + 4.0) {
               raise::KernelError(HERE, "Left boundary not correct for #0");
@@ -131,7 +131,7 @@ auto main(int argc, char* argv[]) -> int {
       "Carve",
       CreateRangePolicy<Dim::_2D>({ 0, 0 },
                                   { nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         if (((i1 >= N_GHOSTS) and (i1 < 2 * N_GHOSTS)) or
             ((i1 >= nx1) and (i1 < nx1 + N_GHOSTS))) {
           fld(i1, i2, 0) = ZERO;
@@ -142,20 +142,20 @@ auto main(int argc, char* argv[]) -> int {
 
     {
       // send right, recv left
-      const int          send_idx  = (rank + 1) % size;
-      const int          recv_idx  = (rank - 1 + size) % size;
-      const unsigned int send_rank = (unsigned int)send_idx;
-      const unsigned int recv_rank = (unsigned int)recv_idx;
+      const int send_idx  = (rank + 1) % size;
+      const int recv_idx  = (rank - 1 + size) % size;
+      const int send_rank = send_idx;
+      const int recv_rank = recv_idx;
 
-      const std::vector<range_tuple_t> send_slice {
+      const std::vector<cell_range_t> send_slice {
         { nx1 + N_GHOSTS, nx1 + 2 * N_GHOSTS },
         {       N_GHOSTS,     nx2 + N_GHOSTS }
       };
-      const std::vector<range_tuple_t> recv_slice {
+      const std::vector<cell_range_t> recv_slice {
         { N_GHOSTS,   2 * N_GHOSTS },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const range_tuple_t comp_slice { 0, 3 };
+      const cell_range_t comp_slice { 0, 3 };
       comm::CommunicateField<Dim::_2D, 3>((unsigned int)(rank),
                                           fld,
                                           fld,
@@ -170,20 +170,20 @@ auto main(int argc, char* argv[]) -> int {
     }
     {
       // recv right, send left
-      const int          send_idx  = (rank - 1 + size) % size;
-      const int          recv_idx  = (rank + 1) % size;
-      const unsigned int send_rank = (unsigned int)send_idx;
-      const unsigned int recv_rank = (unsigned int)recv_idx;
+      const int send_idx  = (rank - 1 + size) % size;
+      const int recv_idx  = (rank + 1) % size;
+      const int send_rank = send_idx;
+      const int recv_rank = recv_idx;
 
-      const std::vector<range_tuple_t> send_slice {
+      const std::vector<cell_range_t> send_slice {
         {        0,       N_GHOSTS },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const std::vector<range_tuple_t> recv_slice {
+      const std::vector<cell_range_t> recv_slice {
         {      nx1, nx1 + N_GHOSTS },
         { N_GHOSTS, nx2 + N_GHOSTS }
       };
-      const range_tuple_t comp_slice { 0, 3 };
+      const cell_range_t comp_slice { 0, 3 };
       comm::CommunicateField<Dim::_2D, 3>((unsigned int)(rank),
                                           fld,
                                           fld,
@@ -202,7 +202,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "Check",
         CreateRangePolicy<Dim::_1D>({ N_GHOSTS }, { nx2 + N_GHOSTS }),
-        Lambda(index_t i2) {
+        Lambda(cellidx_t i2) {
           for (auto i1 { N_GHOSTS }; i1 < 2 * N_GHOSTS; ++i1) {
             if (fld(i1, i2, 0) != expect + 4.0) {
               raise::KernelError(HERE, "Left boundary not correct for #0");

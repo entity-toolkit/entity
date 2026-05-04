@@ -40,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           if (p < 66u) {
             tag_p(p) = (p % 10u == 0u) ? ntt::ParticleTag::dead
                                        : ntt::ParticleTag::alive;
@@ -137,7 +137,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           if (p < 66u) {
             tag_p(p) = (p % 10u == 0u) ? ntt::ParticleTag::dead
                                        : ntt::ParticleTag::alive;

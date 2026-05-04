@@ -105,12 +105,12 @@ namespace kernel::gr {
     /**
      * @brief Main pusher subroutine for photon particles.
      */
-    Inline void operator()(Massless_t, index_t) const;
+    Inline void operator()(Massless_t, prtlidx_t) const;
 
     /**
      * @brief Main pusher subroutine for massive particles.
      */
-    Inline void operator()(Massive_t, index_t) const;
+    Inline void operator()(Massive_t, prtlidx_t) const;
 
     /**
      * @brief Iterative geodesic pusher substep for momentum only.
@@ -225,7 +225,7 @@ namespace kernel::gr {
      * @param b interpolated b-field vector of size 3 [return].
      */
     template <unsigned short O>
-    Inline void interpolateFields(index_t          p,
+    Inline void interpolateFields(prtlidx_t        p,
                                   vec_t<Dim::_3D>& e,
                                   vec_t<Dim::_3D>& b) const;
 
@@ -250,7 +250,7 @@ namespace kernel::gr {
     }
 
     // Extra
-    Inline void boundaryConditions(index_t) const;
+    Inline void boundaryConditions(prtlidx_t) const;
   };
 
   /* -------------------------------------------------------------------------- */
@@ -464,7 +464,7 @@ namespace kernel::gr {
 
   template <GRMetricClass M>
   template <unsigned short O>
-  Inline void Pusher_kernel<M>::interpolateFields(index_t          p,
+  Inline void Pusher_kernel<M>::interpolateFields(prtlidx_t        p,
                                                   vec_t<Dim::_3D>& e0,
                                                   vec_t<Dim::_3D>& b0) const {
 
@@ -648,7 +648,7 @@ namespace kernel::gr {
   /* ------------------------------ Photon pusher ----------------------------- */
 
   template <GRMetricClass M>
-  Inline void Pusher_kernel<M>::operator()(Massless_t, index_t p) const {
+  Inline void Pusher_kernel<M>::operator()(Massless_t, prtlidx_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Photon pusher not implemented for 1D");
     } else if constexpr (D == Dim::_2D) {
@@ -708,7 +708,7 @@ namespace kernel::gr {
   /* ------------------------- Massive particle pusher ------------------------ */
 
   template <GRMetricClass M>
-  Inline void Pusher_kernel<M>::operator()(Massive_t, index_t p) const {
+  Inline void Pusher_kernel<M>::operator()(Massive_t, prtlidx_t p) const {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "Massive pusher not implemented for 1D");
     } else if constexpr (D == Dim::_2D) {
@@ -800,7 +800,7 @@ namespace kernel::gr {
   // Boundary conditions
 
   template <GRMetricClass M>
-  Inline void Pusher_kernel<M>::boundaryConditions(index_t p) const {
+  Inline void Pusher_kernel<M>::boundaryConditions(prtlidx_t p) const {
     if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
       if ((particles.i1(p) < 0 && bc.is_absorb_i1min) or
           (particles.i1(p) >= ctx.ni1 && bc.is_absorb_i1max)) {

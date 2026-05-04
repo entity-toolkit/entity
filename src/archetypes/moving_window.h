@@ -37,7 +37,7 @@ namespace arch {
       , window_shift { window_shift }
       , tags { tags } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (tags & BC::E) {
           Fld(i1, em::ex1) = backup_Fld(i1 + window_shift, em::ex1);
@@ -56,7 +56,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
@@ -88,7 +88,7 @@ namespace arch {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if constexpr (o == in::x1) {
           if (tags & BC::E) {
@@ -155,7 +155,7 @@ namespace arch {
         Kokkos::parallel_for(
           "MoveParticles",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             // shift particle position back by window update frequency
             i1(p) -= window_shift;
           });
@@ -170,7 +170,7 @@ namespace arch {
           Kokkos::parallel_for(
             "MoveParticles",
             species.rangeActiveParticles(),
-            Lambda(index_t p) {
+            Lambda(prtlidx_t p) {
               // shift particle position back by window update frequency
               i2(p) -= window_shift;
             });
@@ -188,7 +188,7 @@ namespace arch {
           Kokkos::parallel_for(
             "MoveParticles",
             species.rangeActiveParticles(),
-            Lambda(index_t p) {
+            Lambda(prtlidx_t p) {
               // shift particle position back by window update frequency
               i3(p) -= window_shift;
             });
@@ -201,8 +201,8 @@ namespace arch {
     }
 
     // shift fields in the window back by the window size
-    std::vector<std::size_t> xi_min, xi_max;
-    const std::vector<in>    all_dirs { in::x1, in::x2, in::x3 };
+    std::vector<ncells_t> xi_min, xi_max;
+    const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
     for (auto d { 0u }; d < M::Dim; ++d) {
       const auto dd = all_dirs[d];
       if (o == dd) {

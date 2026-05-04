@@ -30,7 +30,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "NpartPerTag",
       rangeActiveParticles(),
-      Lambda(index_t p) {
+      Lambda(prtlidx_t p) {
         auto npptag_acc = npptag_scat.access();
         if (this_tag(p) < 0 || this_tag(p) >= static_cast<short>(num_tags)) {
           raise::KernelError(HERE, "Invalid tag value");
@@ -67,7 +67,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "PopulateBufferAlive",
       n_alive,
-      Lambda(index_t p) { buffer(p) = arr(indices_alive(p)); });
+      Lambda(prtlidx_t p) { buffer(p) = arr(indices_alive(p)); });
 
     Kokkos::deep_copy(
       Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n_alive)),
@@ -80,8 +80,12 @@ namespace ntt {
     auto          buffer  = array_t<T**> { "buffer", n_alive, arr.extent(1) };
     Kokkos::parallel_for(
       "PopulateBufferAlive",
-      CreateRangePolicy<Dim::_2D>({ 0, 0 }, { n_alive, arr.extent(1) }),
-      Lambda(index_t p, index_t l) { buffer(p, l) = arr(indices_alive(p), l); });
+      CreateParticleRangePolicy<Dim::_2D>(
+        { 0, 0 },
+        { n_alive, static_cast<npart_t>(arr.extent(1)) }),
+      Lambda(prtlidx_t p, prtlidx_t l) {
+        buffer(p, l) = arr(indices_alive(p), l);
+      });
 
     Kokkos::deep_copy(
       Kokkos::subview(arr,
@@ -98,7 +102,7 @@ namespace ntt {
     Kokkos::parallel_reduce(
       "CountDeadAlive",
       rangeActiveParticles(),
-      Lambda(index_t p, npart_t & nalive, npart_t & ndead) {
+      Lambda(prtlidx_t p, npart_t & nalive, npart_t & ndead) {
         nalive += (this_tag(p) == ParticleTag::alive);
         ndead  += (this_tag(p) == ParticleTag::dead);
         if (this_tag(p) != ParticleTag::alive and this_tag(p) != ParticleTag::dead) {
@@ -114,7 +118,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "AliveIndices",
       rangeActiveParticles(),
-      Lambda(index_t p) {
+      Lambda(prtlidx_t p) {
         if (this_tag(p) == ParticleTag::alive) {
           const auto idx     = Kokkos::atomic_fetch_add(&alive_counter(0), 1);
           indices_alive(idx) = p;
@@ -199,7 +203,7 @@ namespace ntt {
                                                                tag,
                                                                cell_indices,
                                                                grid.n_active() });
-    const auto slice = range_tuple_t(0, npart());
+    const auto slice = prtl_slice_t(0, npart());
 
     using sorter_op_t = Kokkos::BinOp1D<decltype(cell_indices)>;
     using sorter_t    = Kokkos::BinSort<decltype(cell_indices), sorter_op_t>;

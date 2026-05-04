@@ -45,7 +45,7 @@ void check_value(unsigned int       t,
 }
 
 template <typename T>
-void put_value(array_t<T*>& arr, T v, index_t p) {
+void put_value(array_t<T*>& arr, T v, prtlidx_t p) {
   auto h = Kokkos::create_mirror_view(arr);
   Kokkos::deep_copy(h, arr);
   h(p) = v;
@@ -53,7 +53,7 @@ void put_value(array_t<T*>& arr, T v, index_t p) {
 }
 
 template <SimEngine::type S, typename M>
-void testPusher(const std::vector<std::size_t>& res) {
+void testPusher(const std::vector<ncells_t>& res) {
   static_assert(M::Dim == 3);
   raise::ErrorIf(res.size() != M::Dim, "res.size() != M::Dim", HERE);
 
@@ -92,7 +92,7 @@ void testPusher(const std::vector<std::size_t>& res) {
   Kokkos::parallel_for(
     "init 3D",
     range_ext,
-    Lambda(index_t i1, index_t i2, index_t i3) {
+    Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
       emfield(i1, i2, i3, em::ex1) = ZERO;
       emfield(i1, i2, i3, em::ex2) = ZERO;
       emfield(i1, i2, i3, em::ex3) = ZERO;

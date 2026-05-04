@@ -127,7 +127,7 @@ namespace traits::custom_prtl_update {
 template <class CPU, class M>
 concept CustomParticleUpdatePolicyClass =
   requires(const CPU&                                  cpu,
-           index_t                                     p,
+           prtlidx_t                                   p,
            const kernel::sr::PusherContext&            pusher_ctx,
            const kernel::sr::PusherBoundaries<M::Dim>& pusher_boundaries,
            const ntt::ParticleArrays&                  particles,

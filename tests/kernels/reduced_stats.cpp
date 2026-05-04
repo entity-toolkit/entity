@@ -28,15 +28,15 @@ public:
     raise::ErrorIf(c_ >= N, "c > N", HERE);
   }
 
-  Inline void operator()(index_t i1) const {
+  Inline void operator()(cellidx_t i1) const {
     arr(i1, c) = v;
   }
 
-  Inline void operator()(index_t i1, index_t i2) const {
+  Inline void operator()(cellidx_t i1, cellidx_t i2) const {
     arr(i1, i2, c) = v;
   }
 
-  Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+  Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
     arr(i1, i2, i3, c) = v;
   }
 };
@@ -81,9 +81,9 @@ auto almost_equal(real_t a, real_t b, real_t acc) -> bool {
 }
 
 template <SimEngine::type S, class M>
-void testReducedStats(const std::vector<std::size_t>& res,
-                      const boundaries_t<real_t>&     ext,
-                      const real_t                    acc) {
+void testReducedStats(const std::vector<ncells_t>& res,
+                      const boundaries_t<real_t>&  ext,
+                      const real_t                 acc) {
   raise::ErrorIf(res.size() != M::Dim, "Invalid resolution size", HERE);
 
   M metric { res, ext, {} };

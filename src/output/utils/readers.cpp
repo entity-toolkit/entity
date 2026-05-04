@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <string>
+#include <utility>
 
 namespace out {
 
@@ -40,7 +41,7 @@ namespace out {
     auto var = io.InquireVariable<T>(quantity);
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ local_offset }, { local_size }));
-      const auto slice  = range_tuple_t(0, local_size);
+      const auto slice  = std::pair<size_t, size_t>(0, local_size);
       auto       data_h = Kokkos::create_mirror_view(data);
       reader.Get(var, Kokkos::subview(data_h, slice).data(), adios2::Mode::Sync);
       Kokkos::deep_copy(Kokkos::subview(data, slice),
@@ -62,16 +63,19 @@ namespace out {
     if (var) {
       var.SetSelection(adios2::Box<adios2::Dims>({ local_offset * dim2_size },
                                                  { local_size * dim2_size }));
-      const auto slice  = range_tuple_t(0, local_size);
-      auto       data_h = Kokkos::create_mirror_view(data);
-      auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, dim2_size));
+      const auto slice    = std::pair<size_t, size_t>(0, local_size);
+      auto       data_h   = Kokkos::create_mirror_view(data);
+      auto       data_sub = Kokkos::subview(data_h,
+                                      slice,
+                                      std::pair<size_t, size_t>(0, dim2_size));
       if (!data_sub.span_is_contiguous()) {
         const Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace>
           data_contig_h { "data_contig_h", local_size, dim2_size };
         reader.Get(var, data_contig_h.data(), adios2::Mode::Sync);
-        Kokkos::deep_copy(
-          data_sub,
-          Kokkos::subview(data_contig_h, slice, range_tuple_t(0, dim2_size)));
+        Kokkos::deep_copy(data_sub,
+                          Kokkos::subview(data_contig_h,
+                                          slice,
+                                          std::pair<size_t, size_t>(0, dim2_size)));
       } else {
         reader.Get(var, data_sub.data(), adios2::Mode::Sync);
       }

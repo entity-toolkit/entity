@@ -190,7 +190,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       coord_t<M::Dim>           x_Cd { ZERO };
       tuple_t<int, M::Dim>      xi_Cd { 0 };
       tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
@@ -395,7 +395,7 @@ namespace kernel {
       return idx_h();
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       bool                 should_inject { false };
       tuple_t<int, D>      xi_Cd { 0 };
       tuple_t<prtldx_t, D> dxi_Cd { static_cast<prtldx_t>(0) };
@@ -624,7 +624,7 @@ namespace kernel {
       return ppc;
     }
 
-    Inline void inject1(const index_t                    index,
+    Inline void inject1(const prtlidx_t                  index,
                         const tuple_t<int, M::Dim>&      xi_Cd,
                         const tuple_t<prtldx_t, M::Dim>& dxi_Cd,
                         const vec_t<Dim::_3D>&           v_Cd,
@@ -649,7 +649,7 @@ namespace kernel {
       // clang-format on
     }
 
-    Inline void inject2(const index_t                    index,
+    Inline void inject2(const prtlidx_t                  index,
                         const tuple_t<int, M::Dim>&      xi_Cd,
                         const tuple_t<prtldx_t, M::Dim>& dxi_Cd,
                         const vec_t<Dim::_3D>&           v_Cd,
@@ -674,7 +674,7 @@ namespace kernel {
       // clang-format on
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
         const auto              i1_ = COORD(i1);
         const coord_t<Dim::_1D> x_Cd { i1_ + HALF };
@@ -717,7 +717,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
         const auto              i1_ = COORD(i1);
         const auto              i2_ = COORD(i2);
@@ -786,7 +786,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
         const auto              i1_ = COORD(i1);
         const auto              i2_ = COORD(i2);

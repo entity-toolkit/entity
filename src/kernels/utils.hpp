@@ -30,7 +30,7 @@ namespace kernel {
       raise::ErrorIf(buff_idx >= N, "Invalid component index", HERE);
     }
 
-    Inline void operator()(index_t i1, real_t& lsum) const {
+    Inline void operator()(cellidx_t i1, real_t& lsum) const {
       if constexpr (D == Dim::_1D) {
         lsum += buff(i1, buff_idx);
       } else {
@@ -40,7 +40,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, real_t& lsum) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, real_t& lsum) const {
       if (D == Dim::_2D) {
         lsum += buff(i1, i2, buff_idx);
       } else {
@@ -50,7 +50,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3, real_t& lsum) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3, real_t& lsum) const {
       if (D == Dim::_3D) {
         lsum += buff(i1, i2, i3, buff_idx);
       } else {

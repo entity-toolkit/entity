@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <string>
+#include <utility>
 
 namespace out {
 
@@ -32,7 +33,7 @@ namespace out {
                     std::size_t        local_size,
                     std::size_t        global_size,
                     std::size_t        local_offset) {
-    const auto slice = range_tuple_t(0, local_size);
+    const auto slice = std::pair<size_t, size_t>(0, local_size);
     auto       var   = io.InquireVariable<T>(name);
     var.SetShape({ global_size });
     var.SetSelection(adios2::Box<adios2::Dims>({ local_offset }, { local_size }));
@@ -52,7 +53,7 @@ namespace out {
                     std::size_t         local_size,
                     std::size_t         global_size,
                     std::size_t         local_offset) {
-    const auto slice = range_tuple_t(0, local_size);
+    const auto slice = std::pair<size_t, size_t>(0, local_size);
     auto       var   = io.InquireVariable<T>(name);
 
     var.SetShape({ global_size * dim2_size });
@@ -61,7 +62,9 @@ namespace out {
 
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, dim2_size));
+    auto data_sub = Kokkos::subview(data_h,
+                                    slice,
+                                    std::pair<size_t, size_t>(0, dim2_size));
     if (!data_sub.span_is_contiguous()) {
       const Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace>
         data_contig_h { "data_contig_h", local_size, dim2_size };

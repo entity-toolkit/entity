@@ -120,7 +120,7 @@ auto main(int argc, char* argv[]) -> int {
       // set em::ex1(i) = real_t(i) over all cells including ghost cells
       {
         auto em_h = Kokkos::create_mirror_view(local->fields.em);
-        for (std::size_t i { 0 }; i < n_all; ++i) {
+        for (ncells_t i { 0 }; i < n_all; ++i) {
           em_h(i, em::ex1) = static_cast<real_t>(i);
         }
         Kokkos::deep_copy(local->fields.em, em_h);
@@ -188,7 +188,7 @@ auto main(int argc, char* argv[]) -> int {
       {
         auto em_h = Kokkos::create_mirror_view(local->fields.em);
         Kokkos::deep_copy(em_h, local->fields.em);
-        for (std::size_t i { 0 }; i < exp_n_all; ++i) {
+        for (ncells_t i { 0 }; i < exp_n_all; ++i) {
           raise::ErrorIf(
             not cmp::AlmostEqual(em_h(i, em::ex1), static_cast<real_t>(i)),
             fmt::format("em::ex1 mismatch at i=%lu: got %f, expected %f",

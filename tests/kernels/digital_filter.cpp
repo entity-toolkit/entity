@@ -29,7 +29,7 @@ void errorIf(bool condition, const std::string& message) {
 }
 
 template <typename M>
-void testFilter(const std::vector<std::size_t>&      res,
+void testFilter(const std::vector<ncells_t>&         res,
                 const boundaries_t<real_t>&          ext,
                 const std::map<std::string, real_t>& params = {}) {
   static_assert(M::Dim == 2);
@@ -59,7 +59,7 @@ void testFilter(const std::vector<std::size_t>&      res,
   ndfield_t<Dim::_2D, 3> J { "J", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
   ndfield_t<Dim::_2D, 3> Jbuff { "Jbuff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
 
-  tuple_t<std::size_t, Dim::_2D> size;
+  tuple_t<ncells_t, Dim::_2D> size;
   size[0]                                   = nx1;
   size[1]                                   = nx2;
   auto J_h                                  = Kokkos::create_mirror_view(J);
@@ -79,17 +79,17 @@ void testFilter(const std::vector<std::size_t>&      res,
   Kokkos::parallel_reduce(
     "SumJx1",
     range,
-    Lambda(index_t i, index_t j, real_t & sum) { sum += J(i, j, cur::jx1); },
+    Lambda(cellidx_t i, cellidx_t j, real_t & sum) { sum += J(i, j, cur::jx1); },
     SumJx1);
   Kokkos::parallel_reduce(
     "SumJx2",
     range,
-    Lambda(index_t i, index_t j, real_t & sum) { sum += J(i, j, cur::jx2); },
+    Lambda(cellidx_t i, cellidx_t j, real_t & sum) { sum += J(i, j, cur::jx2); },
     SumJx2);
   Kokkos::parallel_reduce(
     "SumJx3",
     range,
-    Lambda(index_t i, index_t j, real_t & sum) { sum += J(i, j, cur::jx3); },
+    Lambda(cellidx_t i, cellidx_t j, real_t & sum) { sum += J(i, j, cur::jx3); },
     SumJx3);
 
   Kokkos::deep_copy(J_h, J);
@@ -134,7 +134,7 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    const auto res      = std::vector<std::size_t> { 10, 10 };
+    const auto res      = std::vector<ncells_t> { 10, 10 };
     const auto r_extent = boundaries_t<real_t> {
       { 0.0, 100.0 }
     };
@@ -175,7 +175,7 @@ auto main(int argc, char* argv[]) -> int {
     });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

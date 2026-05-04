@@ -8,7 +8,7 @@
 #include <iostream>
 
 template <Dimension D>
-Inline void CheckValue(index_t,
+Inline void CheckValue(prtlidx_t,
                        const array_t<int*>&,
                        const array_t<int*>&,
                        const array_t<int*>&,
@@ -21,7 +21,7 @@ Inline void CheckValue(index_t,
                        ncells_t);
 
 template <>
-Inline void CheckValue<Dim::_1D>(index_t              p,
+Inline void CheckValue<Dim::_1D>(prtlidx_t            p,
                                  const array_t<int*>& i1,
                                  const array_t<int*>&,
                                  const array_t<int*>&,
@@ -45,7 +45,7 @@ Inline void CheckValue<Dim::_1D>(index_t              p,
 }
 
 template <>
-Inline void CheckValue<Dim::_2D>(index_t              p,
+Inline void CheckValue<Dim::_2D>(prtlidx_t            p,
                                  const array_t<int*>& i1,
                                  const array_t<int*>& i2,
                                  const array_t<int*>&,
@@ -70,7 +70,7 @@ Inline void CheckValue<Dim::_2D>(index_t              p,
 }
 
 template <>
-Inline void CheckValue<Dim::_3D>(index_t                   p,
+Inline void CheckValue<Dim::_3D>(prtlidx_t                 p,
                                  const array_t<int*>&      i1,
                                  const array_t<int*>&      i2,
                                  const array_t<int*>&      i3,
@@ -129,7 +129,7 @@ void test_tiling(const array_t<int*>&         i1,
     Kokkos::parallel_for(
       "Checking",
       npart,
-      Lambda(index_t p) {
+      Lambda(prtlidx_t p) {
         CheckValue<D>(p, i1, i2, i3, tag, tile_indices, nt1, nt2, nt3, ntiles, ts);
       });
 
@@ -137,7 +137,7 @@ void test_tiling(const array_t<int*>&         i1,
     Kokkos::parallel_reduce(
       "CountAliveInTiles",
       ntiles,
-      Lambda(index_t t, npart_t & count) { count += num_ppt(t); },
+      Lambda(prtlidx_t t, npart_t & count) { count += num_ppt(t); },
       tot_alive);
     raise::ErrorIf(tot_alive != npart - ndead,
                    "Error in counting particles per tile",
@@ -168,7 +168,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "Initialize",
         npart,
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           auto gen = random_pool.get_state();
           i1(p)    = static_cast<int>(gen.urand(0u, nx1));
           i2(p)    = static_cast<int>(gen.urand(0u, nx2));
@@ -216,7 +216,7 @@ auto main(int argc, char* argv[]) -> int {
         Kokkos::parallel_for(
           "Initialize",
           npart,
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             const auto cell_idx = p % ncells;
             i1(p)  = static_cast<int>(cell_idx) % static_cast<int>(nx1);
             i2(p)  = static_cast<int>(cell_idx) / static_cast<int>(nx1);
@@ -236,7 +236,7 @@ auto main(int argc, char* argv[]) -> int {
         Kokkos::parallel_for(
           "CheckOutOfBounds",
           npart,
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             const auto tile_idx = tile_indices(p);
             const auto t1       = tile_idx / nt2;
             const auto t2       = tile_idx % nt2;

@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iterator>
 #include <string>
@@ -162,10 +163,10 @@ namespace ntt {
   }
 
   template <Dimension D, int N, int M>
-  void DeepCopyFields(ndfield_t<D, N>&     fld_from,
-                      ndfield_t<D, M>&     fld_to,
-                      const range_tuple_t& from,
-                      const range_tuple_t& to) {
+  void DeepCopyFields(ndfield_t<D, N>&    fld_from,
+                      ndfield_t<D, M>&    fld_to,
+                      const cell_range_t& from,
+                      const cell_range_t& to) {
     for (auto d { 0u }; d < D; ++d) {
       raise::ErrorIf(fld_from.extent(d) != fld_to.extent(d),
                      "Fields have different sizes " +
@@ -196,7 +197,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "ComputeVectorPotential",
         mesh.rangeActiveCells(),
-        Lambda(index_t i1, index_t i2) {
+        Lambda(cellidx_t i1, cellidx_t i2) {
           const real_t   i1_ { COORD(i1) };
           const ncells_t k_min = 0;
           const ncells_t k_max = (i2 - (N_GHOSTS));
@@ -224,10 +225,10 @@ namespace ntt {
       //   "ComputeVectorPotential",
       //   policy,
       //   Lambda(const TeamPolicy::member_type& team_member) {
-      //     index_t i1 = team_member.league_rank();
+      //     cellidx_t i1 = team_member.league_rank();
       //     Kokkos::parallel_scan(
       //       Kokkos::TeamThreadRange(team_member, nx2),
-      //       [=](index_t i2, real_t& update, const bool final_pass) {
+      //       [=](cellidx_t i2, real_t& update, const bool final_pass) {
       //         const auto i1_ { static_cast<real_t>(i1) };
       //         const auto i2_ { static_cast<real_t>(i2) };
       //         const real_t sqrt_detH_ijM { metric.sqrt_det_h({ i1_, i2_ - HALF }) };
@@ -258,7 +259,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "AddVectorPotential",
       mesh.rangeActiveCells(),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         buffer(i1, i2, buff_idx) += aphi_r(i1 - N_GHOSTS);
       });
   }
@@ -326,7 +327,7 @@ namespace ntt {
     simtime_t                                       finished_time,
     const std::function<void(const std::string&,
                              ndfield_t<M::Dim, 6>&,
-                             index_t,
+                             uint32_t,
                              timestep_t,
                              simtime_t,
                              const Domain<S, M>&)>& CustomFieldOutput) -> bool {
@@ -407,7 +408,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "GenerateMesh",
           ncells,
-          Lambda(index_t i_dwn) {
+          Lambda(cellidx_t i_dwn) {
             const auto      i  = first_cell + i_dwn * dwn_in_dim;
             const auto      i_ = static_cast<real_t>(i);
             coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
@@ -435,7 +436,7 @@ namespace ntt {
       for (auto& fld : g_writer.fieldWriters()) {
         Kokkos::deep_copy(local_domain->fields.bckp, ZERO);
         std::vector<std::string> names;
-        std::vector<std::size_t> addresses;
+        std::vector<size_t>      addresses;
         if (fld.comp.empty() || fld.comp.size() == 1) { // scalar
           names.push_back(fld.name());
           addresses.push_back(0);
@@ -616,7 +617,7 @@ namespace ntt {
           } else {
             // copy fields to bckp (:, 0, 1, 2)
             // if as-is specified ==> copy directly to 3, 4, 5
-            range_tuple_t copy_to = { 0, 3 };
+            cell_range_t copy_to = { 0, 3 };
             if (output_asis) {
               copy_to = { 3, 6 };
             }
@@ -661,8 +662,8 @@ namespace ntt {
             if (not output_asis) {
               // copy fields from bckp(:, 0, 1, 2) -> bckp(:, 3, 4, 5)
               // converting to proper basis and properly interpolating
-              list_t<idx_t, 3> comp_from = { 0, 1, 2 };
-              list_t<idx_t, 3> comp_to   = { 3, 4, 5 };
+              list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
+              list_t<unsigned short, 3> comp_to   = { 3, 4, 5 };
               DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.bckp,
                                            local_domain->fields.bckp,
                                            { 0, 3 },
@@ -740,7 +741,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "GenerateEnergyBins",
         n_bins + 1,
-        Lambda(index_t e) {
+        Lambda(uint32_t e) {
           if (log_bins) {
             energy(e) = math::pow(static_cast<real_t>(10),
                                   e_min + (e_max - e_min) * static_cast<real_t>(e) /
@@ -763,7 +764,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "ComputeSpectra",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             if (tag(p) != ParticleTag::alive) {
               return;
             }
@@ -810,7 +811,7 @@ namespace ntt {
     simtime_t,                                                                 \
     const std::function<void(const std::string&,                               \
                              ndfield_t<M<D>::Dim, 6>&,                         \
-                             index_t,                                          \
+                             uint32_t,                                         \
                              timestep_t,                                       \
                              simtime_t,                                        \
                              const Domain<S, M<D>>&)>&) -> bool;

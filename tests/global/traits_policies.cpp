@@ -118,7 +118,7 @@ static_assert(not ExtFieldsPolicyClass<Empty, Dimension::_2D>);
 // --- CustomParticleUpdatePolicyClass with a real updater ---
 
 struct ValidCustomPrtlUpdate {
-  void operator()(index_t,
+  void operator()(prtlidx_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
                   const ntt::ParticleArrays&,
@@ -129,7 +129,7 @@ static_assert(CustomParticleUpdatePolicyClass<ValidCustomPrtlUpdate, MockMetric>
 
 // Wrong signature: missing the metric argument
 struct BadCustomPrtlUpdate {
-  void operator()(index_t,
+  void operator()(prtlidx_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
                   const ntt::ParticleArrays&) const {}

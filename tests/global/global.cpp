@@ -43,8 +43,10 @@ auto main(int argc, char* argv[]) -> int {
   static_assert(std::is_same_v<vec_t<Dim::_2D>, tuple_t<real_t, Dim::_2D>>);
   static_assert(std::is_same_v<vec_t<Dim::_3D>, tuple_t<real_t, Dim::_3D>>);
 
-  static_assert(std::is_same_v<range_tuple_t, std::pair<std::size_t, std::size_t>>);
-  static_assert(std::is_same_v<index_t, const std::size_t>);
+  static_assert(std::is_same_v<prtl_slice_t, std::pair<npart_t, npart_t>>);
+  static_assert(std::is_same_v<cell_range_t, std::pair<ncells_t, ncells_t>>);
+  static_assert(std::is_same_v<cellidx_t, const ncells_t>);
+  static_assert(std::is_same_v<prtlidx_t, const npart_t>);
 
   try {
     GlobalInitialize(argc, argv);
@@ -52,7 +54,7 @@ auto main(int argc, char* argv[]) -> int {
     raise::ErrorIf(not Kokkos::is_initialized(), "Kokkos was not initialized", HERE);
 
   } catch (std::exception& err) {
-    std::cerr << err.what() << std::endl;
+    std::cerr << err.what() << '\n';
     GlobalFinalize();
     return 1;
   }

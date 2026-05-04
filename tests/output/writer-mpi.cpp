@@ -47,7 +47,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "fill",
         CreateRangePolicy<Dim::_1D>({ i1min }, { i1max }),
-        Lambda(index_t i1) {
+        Lambda(cellidx_t i1) {
           const auto i1_ = static_cast<real_t>(i1);
           field(i1, 0)   = i1_;
           field(i1, 1)   = -i1_;
@@ -99,7 +99,7 @@ auto main(int argc, char* argv[]) -> int {
             fs::path(fmt::format("fields.%08u.bp", time)),
           adios2::Mode::Read);
         for (auto st = 0u; reader.BeginStep() == adios2::StepStatus::OK; ++st) {
-          raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
+          raise::ErrorIf(io.InquireAttribute<ncells_t>("NGhosts").Data()[0] != 0,
                          "NGhosts is not correct",
                          HERE);
           raise::ErrorIf(
@@ -160,7 +160,7 @@ auto main(int argc, char* argv[]) -> int {
               Kokkos::parallel_for(
                 "check",
                 CreateRangePolicy<Dim::_1D>({ 0 }, { l_size_dwn }),
-                Lambda(index_t i1) {
+                Lambda(cellidx_t i1) {
                   if (not cmp::AlmostEqual(
                         field_read(i1),
                         field(i1 * dwn1 + first_cell + i1min, cntr))) {
@@ -186,7 +186,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     CallOnce([]() {
       cleanup();
     });

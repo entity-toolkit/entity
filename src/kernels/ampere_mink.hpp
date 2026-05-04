@@ -45,7 +45,7 @@ namespace kernel::mink {
       , coeff1 { coeff1 }
       , coeff2 { coeff2 } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         EB(i1, em::ex2) += coeff1 * (EB(i1 - 1, em::bx3) - EB(i1, em::bx3));
         EB(i1, em::ex3) += coeff1 * (EB(i1, em::bx2) - EB(i1 - 1, em::bx2));
@@ -54,7 +54,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         EB(i1, i2, em::ex1) += coeff1 *
                                (EB(i1, i2, em::bx3) - EB(i1, i2 - 1, em::bx3));
@@ -68,7 +68,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         EB(i1, i2, i3, em::ex1) += coeff1 * (EB(i1, i2, i3 - 1, em::bx2) -
                                              EB(i1, i2, i3, em::bx2) +
@@ -131,7 +131,7 @@ namespace kernel::mink {
                           real_t           inv_n0)
       : CurrentsAmpere_kernel { E, J, coeff, inv_n0, NoCurrent_t {}, {}, ZERO } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if constexpr (ExtCurrent) {
           const auto i1_ = COORD(i1);
@@ -153,7 +153,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if constexpr (ExtCurrent) {
           const auto i1_ = COORD(i1);
@@ -180,7 +180,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if constexpr (ExtCurrent) {
           const auto i1_           = COORD(i1);

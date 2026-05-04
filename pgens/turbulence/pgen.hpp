@@ -359,7 +359,7 @@ namespace user {
       Kokkos::parallel_for(
         "Antenna amplitudes",
         wavenumbers.size(),
-        ClassLambda(index_t i) {
+        ClassLambda(cellidx_t i) {
           auto       generator  = random_pool.get_state();
           const auto u_imag     = Random<real_t>(generator) - HALF;
           const auto u_real     = Random<real_t>(generator) - HALF;
@@ -415,7 +415,7 @@ namespace user {
           Kokkos::parallel_for(
             "UpdatePld",
             domain.species[sp].npart(),
-            Lambda(index_t p) {
+            Lambda(prtlidx_t p) {
               if (tag(p) == ParticleTag::dead) {
                 return;
               }

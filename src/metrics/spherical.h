@@ -33,7 +33,7 @@ namespace metric {
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const bool   small_angle;
+    const bool   small_angle { false };
 
   public:
     static constexpr const char*      Label { "spherical" };

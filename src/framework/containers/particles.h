@@ -85,9 +85,9 @@ namespace ntt {
     bool    m_is_sorted { false };
 
 #if !defined(MPI_ENABLED)
-    const std::size_t m_ntags { 2 };
+    const uint8_t m_ntags { 2u };
 #else // MPI_ENABLED
-    const std::size_t m_ntags { (std::size_t)(2 + math::pow(3, (int)D) - 1) };
+    const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
 #endif
 
   public:
@@ -154,7 +154,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     auto rangeActiveParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, npart());
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { npart() });
     }
 
     /**
@@ -162,7 +162,7 @@ namespace ntt {
      * @returns A 1D Kokkos range policy of size of `npart`
      */
     auto rangeAllParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, maxnpart());
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { maxnpart() });
     }
 
     /* getters -------------------------------------------------------------- */
@@ -194,7 +194,7 @@ namespace ntt {
      * @brief Get the number of distinct tags possible
      */
     [[nodiscard]]
-    auto ntags() const -> std::size_t {
+    auto ntags() const -> uint8_t {
       return m_ntags;
     }
 

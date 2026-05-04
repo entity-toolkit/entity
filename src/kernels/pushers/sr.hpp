@@ -114,7 +114,7 @@ namespace kernel::sr {
                      HERE);
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       if (particles.tag(p) != ParticleTag::alive) {
         if (particles.tag(p) != ParticleTag::dead) {
           raise::KernelError(HERE, "Invalid particle tag in pusher");
@@ -334,7 +334,7 @@ namespace kernel::sr {
     // .......................
     // velocity pushers
     // .......................
-    Inline void velocityEMPush_Boris(index_t          p,
+    Inline void velocityEMPush_Boris(prtlidx_t        p,
                                      vec_t<Dim::_3D>& e0,
                                      vec_t<Dim::_3D>& b0) const {
       real_t COEFF { normalized_dt_half };
@@ -367,7 +367,7 @@ namespace kernel::sr {
       particles.ux3(p) = u0[2];
     }
 
-    Inline void velocityEMPush_Vay(index_t          p,
+    Inline void velocityEMPush_Vay(prtlidx_t        p,
                                    vec_t<Dim::_3D>& e0,
                                    vec_t<Dim::_3D>& b0) const {
       auto COEFF { normalized_dt_half };
@@ -436,7 +436,7 @@ namespace kernel::sr {
                           u1[0] * b0[1] * COEFF - u1[1] * b0[0] * COEFF);
     }
 
-    Inline void velocityEMPush_GCA(index_t          p,
+    Inline void velocityEMPush_GCA(prtlidx_t        p,
                                    vec_t<Dim::_3D>& e0,
                                    vec_t<Dim::_3D>& b0) const {
       const auto eb_sqr { NORM_SQR(e0[0], e0[1], e0[2]) +
@@ -477,7 +477,7 @@ namespace kernel::sr {
       particles.ux3(p) = upar * b0[2] + vE_Cart[2] * Gamma;
     }
 
-    Inline void velocityEMPush_GCA_ExtForce(index_t          p,
+    Inline void velocityEMPush_GCA_ExtForce(prtlidx_t        p,
                                             vec_t<Dim::_3D>& f0,
                                             vec_t<Dim::_3D>& e0,
                                             vec_t<Dim::_3D>& b0) const {
@@ -523,7 +523,7 @@ namespace kernel::sr {
     // .......................
     // position pusher & bcs
     // .......................
-    Inline void positionPush(bool massive, index_t p, coord_t<M::PrtlDim>& xp) const {
+    Inline void positionPush(bool massive, prtlidx_t p, coord_t<M::PrtlDim>& xp) const {
       // get cartesian velocity
       if constexpr (M::CoordType == Coord::Cartesian) {
         // i+di push for Cartesian basis
@@ -656,7 +656,7 @@ namespace kernel::sr {
       boundaryConditions(p, xp);
     }
 
-    Inline void boundaryConditions(index_t              p,
+    Inline void boundaryConditions(prtlidx_t            p,
                                    coord_t<M::PrtlDim>& xp_VelAligned) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
         auto invert_vel = false;
@@ -816,7 +816,7 @@ namespace kernel::sr {
     // .......................
     // helper functions
     // .......................
-    Inline void getParticlePosition(index_t p, coord_t<M::PrtlDim>& xp) const {
+    Inline void getParticlePosition(prtlidx_t p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
         xp[0] = i_di_to_Xi(particles.i1(p), particles.dx1(p));
       }
@@ -832,7 +832,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void getParticlePrevPosition(index_t p, coord_t<M::PrtlDim>& xp) const {
+    Inline void getParticlePrevPosition(prtlidx_t p, coord_t<M::PrtlDim>& xp) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
         xp[0] = i_di_to_Xi(particles.i1_prev(p), particles.dx1_prev(p));
       }
@@ -849,7 +849,7 @@ namespace kernel::sr {
     }
 
     template <unsigned short O>
-    Inline void getInterpolatedEMFields(index_t          p,
+    Inline void getInterpolatedEMFields(prtlidx_t        p,
                                         vec_t<Dim::_3D>& e0,
                                         vec_t<Dim::_3D>& b0) const {
 
@@ -1369,7 +1369,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void synchrotronDrag(index_t                p,
+    Inline void synchrotronDrag(prtlidx_t              p,
                                 vec_t<Dim::_3D>&       u_prime,
                                 const vec_t<Dim::_3D>& e0,
                                 const vec_t<Dim::_3D>& b0) const {
@@ -1484,7 +1484,7 @@ namespace kernel::sr {
                                                       external_force_Cart);
     }
 
-    Inline void inverseComptonDrag(index_t p, vec_t<Dim::_3D>& u_prime) const {
+    Inline void inverseComptonDrag(prtlidx_t p, vec_t<Dim::_3D>& u_prime) const {
       real_t gamma_prime_sqr  = ONE / math::sqrt(ONE + NORM_SQR(u_prime[0],
                                                                u_prime[1],
                                                                u_prime[2]));
@@ -1498,7 +1498,7 @@ namespace kernel::sr {
       particles.ux3(p) -= ctx.compton_drag.coeff * gamma_prime_sqr * u_prime[2];
     }
 
-    Inline void processEmission(index_t                    p,
+    Inline void processEmission(prtlidx_t                  p,
                                 vec_t<Dim::_3D>&           u_prime,
                                 const coord_t<M::PrtlDim>& xp_Cd,
                                 const coord_t<M::PrtlDim>& xp_Ph,
