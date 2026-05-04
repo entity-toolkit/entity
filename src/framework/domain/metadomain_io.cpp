@@ -289,15 +289,26 @@ namespace ntt {
                               std::make_pair(N_GHOSTS, N_GHOSTS + nx1),
                               N_GHOSTS + nx2 - 1,
                               buff_idx));
+#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
             MPI_Send(aphi_r.data(),
                      nx1,
                      mpi::get_type<real_t>(),
                      rank_recv,
                      0,
                      MPI_COMM_WORLD);
-          } else if (static_cast<unsigned int>(local_domain->mpi_rank()) ==
-                     rank_recv) {
+#else
+            auto aphi_r_h = Kokkos::create_mirror_view(aphi_r);
+            Kokkos::deep_copy(aphi_r_h, aphi_r);
+            MPI_Send(aphi_r_h.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_recv,
+                     0,
+                     MPI_COMM_WORLD);
+#endif
+          } else if (local_domain->mpi_rank() == rank_recv) {
             array_t<real_t*> aphi_r { "Aphi_r", nx1 };
+#if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
             MPI_Recv(aphi_r.data(),
                      nx1,
                      mpi::get_type<real_t>(),
@@ -305,6 +316,17 @@ namespace ntt {
                      0,
                      MPI_COMM_WORLD,
                      MPI_STATUS_IGNORE);
+#else
+            auto aphi_r_h = Kokkos::create_mirror_view(aphi_r);
+            MPI_Recv(aphi_r_h.data(),
+                     nx1,
+                     mpi::get_type<real_t>(),
+                     rank_send,
+                     0,
+                     MPI_COMM_WORLD,
+                     MPI_STATUS_IGNORE);
+            Kokkos::deep_copy(aphi_r, aphi_r_h);
+#endif
             ExtractVectorPotential<S, M>(buffer, aphi_r, buff_idx, local_domain->mesh);
           }
         }
@@ -486,18 +508,6 @@ namespace ntt {
                                                  {},
                                                  local_domain->fields.bckp,
                                                  c);
-            } else if (fld.id() == FldsID::V) {
-              if constexpr (S != SimEngine::GRPIC) {
-                ComputeMoments<S, M, FldsID::V>(params,
-                                                local_domain->mesh,
-                                                local_domain->species,
-                                                fld.species,
-                                                fld.comp[0],
-                                                local_domain->fields.bckp,
-                                                c);
-              } else {
-                raise::Error("Bulk velocity not supported for GRPIC", HERE);
-              }
             } else {
               raise::Error("Wrong moment requested for output", HERE);
             }
