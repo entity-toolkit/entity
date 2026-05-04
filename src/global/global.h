@@ -381,7 +381,7 @@ using duration_t = double;
 using simtime_t  = double;
 using timestep_t = uint32_t;
 using ncells_t   = uint32_t;
-using npart_t    = uint64_t;
+using npart_t    = uint32_t;
 
 // walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
