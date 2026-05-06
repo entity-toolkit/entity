@@ -14,7 +14,7 @@ if(${PGEN_FOUND})
       "Problem generators"
       "pgens"
       "${problem_generators}"
-      "${pgens}"
+      "${pgens_short}"
       ""
       "${Blue}"
       PGEN_REPORT
