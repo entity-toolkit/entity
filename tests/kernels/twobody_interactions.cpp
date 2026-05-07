@@ -1,3 +1,5 @@
+#include "kernels/twobody_interactions.hpp"
+
 #include "enums.h"
 #include "global.h"
 
@@ -5,7 +7,6 @@
 #include "utils/error.h"
 
 #include "framework/containers/particles.h"
-#include "kernels/twobody_interactions.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -91,25 +92,61 @@ auto main(int argc, char* argv[]) -> int {
     const std::vector<ncells_t> ncells    = { nx1, nx2 };
     const ncells_t              ntx2      = static_cast<ncells_t>(
       math::ceil(static_cast<double>(nx2) / static_cast<double>(tile_size)));
-    const npart_t        npart       = 1000u;
+    const npart_t        npart = 1000u;
     random_number_pool_t random_pool { 12345u };
 
-    Particles<Dim::_2D, Coord::Cartesian> sp1 {
-      1u, "sp1", 1.0f, 1.0f, npart, 0u, 0u, ParticlePusher::BORIS, false,
-      RadiativeDrag::NONE, EmissionType::NONE, 0u, 0u
-    };
-    Particles<Dim::_2D, Coord::Cartesian> sp2 {
-      2u, "sp2", 1.0f, 1.0f, npart, 0u, 0u, ParticlePusher::BORIS, false,
-      RadiativeDrag::NONE, EmissionType::NONE, 0u, 0u
-    };
-    Particles<Dim::_2D, Coord::Cartesian> sp3 {
-      3u, "sp3", 1.0f, 1.0f, npart, 0u, 0u, ParticlePusher::BORIS, false,
-      RadiativeDrag::NONE, EmissionType::NONE, 0u, 0u
-    };
-    Particles<Dim::_2D, Coord::Cartesian> sp4 {
-      4u, "sp4", 1.0f, 1.0f, npart, 0u, 0u, ParticlePusher::BORIS, false,
-      RadiativeDrag::NONE, EmissionType::NONE, 0u, 0u
-    };
+    Particles<Dim::_2D, Coord::Cartesian> sp1 { 1u,
+                                                "sp1",
+                                                1.0f,
+                                                1.0f,
+                                                npart,
+                                                0u,
+                                                0u,
+                                                ParticlePusher::BORIS,
+                                                false,
+                                                RadiativeDrag::NONE,
+                                                EmissionType::NONE,
+                                                0u,
+                                                0u };
+    Particles<Dim::_2D, Coord::Cartesian> sp2 { 2u,
+                                                "sp2",
+                                                1.0f,
+                                                1.0f,
+                                                npart,
+                                                0u,
+                                                0u,
+                                                ParticlePusher::BORIS,
+                                                false,
+                                                RadiativeDrag::NONE,
+                                                EmissionType::NONE,
+                                                0u,
+                                                0u };
+    Particles<Dim::_2D, Coord::Cartesian> sp3 { 3u,
+                                                "sp3",
+                                                1.0f,
+                                                1.0f,
+                                                npart,
+                                                0u,
+                                                0u,
+                                                ParticlePusher::BORIS,
+                                                false,
+                                                RadiativeDrag::NONE,
+                                                EmissionType::NONE,
+                                                0u,
+                                                0u };
+    Particles<Dim::_2D, Coord::Cartesian> sp4 { 4u,
+                                                "sp4",
+                                                1.0f,
+                                                1.0f,
+                                                npart,
+                                                0u,
+                                                0u,
+                                                ParticlePusher::BORIS,
+                                                false,
+                                                RadiativeDrag::NONE,
+                                                EmissionType::NONE,
+                                                0u,
+                                                0u };
 
     for (auto* sp : { &sp1, &sp2, &sp3, &sp4 }) {
       sp->set_npart(npart);
@@ -117,13 +154,12 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     const std::vector<const Particles<Dim::_2D, Coord::Cartesian>*> group1 = { &sp1,
-                                                                                &sp2 };
+                                                                               &sp2 };
     const std::vector<const Particles<Dim::_2D, Coord::Cartesian>*> group2 = { &sp3,
-                                                                                &sp4 };
+                                                                               &sp4 };
 
-    auto policy = SameTilePolicy { sp1.i1, sp1.i2, sp2.i1, sp2.i2,
-                                   sp3.i1, sp3.i2, sp4.i1, sp4.i2,
-                                   tile_size, ntx2 };
+    auto policy = SameTilePolicy { sp1.i1, sp1.i2, sp2.i1, sp2.i2,    sp3.i1,
+                                   sp3.i2, sp4.i1, sp4.i2, tile_size, ntx2 };
 
     kernel::mink::TwoBodyInteraction<Dim::_2D>(group1,
                                                group2,

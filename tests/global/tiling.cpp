@@ -1,5 +1,6 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/formatting.h"
 #include "utils/numeric.h"
 #include "utils/sorting.h"
 
@@ -121,27 +122,37 @@ void test_tiling(const array_t<int*>&         i1,
 
     const auto ntiles = nt1 * nt2 * nt3;
 
-    array_t<npart_t*> num_ppt { "num_ppt", 0u };
-    Kokkos::parallel_for(
-      "Tiling",
-      npart,
-      sort::PositionToTileIndex<D, true> { i1, i2, i3, tag, tile_indices, ncells, ts, num_ppt });
+    auto position_to_tile_kernel = sort::PositionToTileIndex<D, true> {
+      i1, i2, i3, tag, tile_indices, ncells, ts
+    };
+    Kokkos::parallel_for("Tiling", npart, position_to_tile_kernel);
+    const auto num_ppt = position_to_tile_kernel.num_ppt;
     Kokkos::parallel_for(
       "Checking",
       npart,
       Lambda(prtlidx_t p) {
         CheckValue<D>(p, i1, i2, i3, tag, tile_indices, nt1, nt2, nt3, ntiles, ts);
       });
+    raise::ErrorIf(
+      num_ppt.extent(0) != ntiles,
+      fmt::format("num_ppt size does not match number of tiles %u != %u",
+                  num_ppt.extent(0),
+                  ntiles),
+      HERE);
 
     npart_t tot_alive = 0u;
     Kokkos::parallel_reduce(
       "CountAliveInTiles",
       ntiles,
-      Lambda(prtlidx_t t, npart_t & count) { count += num_ppt(t); },
+      Lambda(cellidx_t t, npart_t & count) { count += num_ppt(t); },
       tot_alive);
-    raise::ErrorIf(tot_alive != npart - ndead,
-                   "Error in counting particles per tile",
-                   HERE);
+    raise::ErrorIf(
+      tot_alive != npart - ndead,
+      fmt::format("Error in counting particles per tile: %u != %u - %u",
+                  tot_alive,
+                  npart,
+                  ndead),
+      HERE);
   }
 }
 

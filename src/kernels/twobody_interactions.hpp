@@ -32,11 +32,13 @@ namespace kernel::mink {
       CollisionSpecies(spidx_t                   sp,
                        npart_t                   npart,
                        const array_t<ncells_t*>& tileidx,
-                       const array_t<npart_t*>&  num_ppt)
+                       const array_t<npart_t*>&  num_ppt,
+                       ncells_t                  num_tiles)
         : sp { sp }
         , npart { npart }
         , tileidx { tileidx }
-        , num_ppt { num_ppt } {}
+        , num_ppt { num_ppt }
+        , num_tiles { num_tiles } {}
     };
 
     template <Dimension D>
@@ -50,29 +52,28 @@ namespace kernel::mink {
 
       ncells_t num_tiles { 0u };
 
-      CollisionGroup(const std::vector<const Particles<D, Coord::Cartesian>*>& particles,
-                     const std::vector<ncells_t>& ncells,
-                     ncells_t                     tile_size,
-                     random_number_pool_t&        random_pool) {
+      CollisionGroup(
+        const std::vector<const Particles<D, Coord::Cartesian>*>& particles,
+        const std::vector<ncells_t>&                              ncells,
+        ncells_t                                                  tile_size,
+        random_number_pool_t&                                     random_pool) {
         for (const auto* species : particles) {
-          const auto             npart_s = species->npart();
-          array_t<ncells_t*>     tileidx { "tile_idx", npart_s };
-          array_t<npart_t*>      num_ppt_s {};
-          group.emplace_back(species->sp, npart_s, tileidx, num_ppt_s);
+          const auto         npart_s = species->npart();
+          array_t<ncells_t*> tileidx { "tile_idx", npart_s };
           auto tile_indexing_kernel = sort::PositionToTileIndex<D, true>(
             species->i1,
             species->i2,
             species->i3,
             species->tag,
-            group.back().tileidx,
+            tileidx,
             ncells,
-            tile_size,
-            group.back().num_ppt);
-          Kokkos::parallel_for("TileIndexing",
-                               species->npart(),
-                               tile_indexing_kernel);
-          group.back().num_tiles = tile_indexing_kernel.total_tiles;
-
+            tile_size);
+          Kokkos::parallel_for("TileIndexing", species->npart(), tile_indexing_kernel);
+          group.emplace_back(species->sp,
+                             npart_s,
+                             tileidx,
+                             tile_indexing_kernel.num_ppt,
+                             tile_indexing_kernel.total_tiles);
           if (num_tiles == 0u) {
             num_tiles = group.back().num_tiles;
           } else if (num_tiles != group.back().num_tiles) {
@@ -159,7 +160,7 @@ namespace kernel::mink {
     const std::vector<ncells_t>&                              ncells,
     ncells_t                                                  tile_size,
     random_number_pool_t&                                     random_pool,
-    const I&                                                  interaction_policy) {
+    const I& interaction_policy) {
     const auto group1 = CollisionGroup<D>(species1, ncells, tile_size, random_pool);
     const auto group2 = CollisionGroup<D>(species2, ncells, tile_size, random_pool);
     raise::ErrorIf(group1.num_tiles != group2.num_tiles,
