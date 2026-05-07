@@ -121,7 +121,7 @@ void test_tiling(const array_t<int*>&         i1,
 
     const auto ntiles = nt1 * nt2 * nt3;
 
-    array_t<npart_t*> num_ppt { "num_ppt", ntiles };
+    array_t<npart_t*> num_ppt { "num_ppt", 0u };
     Kokkos::parallel_for(
       "Tiling",
       npart,

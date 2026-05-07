@@ -79,18 +79,19 @@ namespace sort {
                         const array_t<short*>&       tag,
                         array_t<ncells_t*>&          tile_indices,
                         const std::vector<ncells_t>& ncells,
-                        ncells_t                     tile_size = 1u,
-                        const array_t<npart_t*>& num_ppt = { "num_ppt", 0u })
+                        ncells_t                     tile_size = 1u)
       : i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
       , tag { tag }
       , tile_indices { tile_indices }
       , tile_size { tile_size }
-      , num_ppt { num_ppt }
       , ntx2 { 1u }
       , ntx3 { 1u }
       , total_tiles { 1u } {
+      if constexpr (Count) {
+        raise::Error("num_ppt must be provided if Count is true", HERE);
+      }
       raise::ErrorIf(ncells.size() < static_cast<std::size_t>(D),
                      "ncells size must match D",
                      HERE);
@@ -109,10 +110,23 @@ namespace sort {
           static_cast<double>(ncells[2]) / static_cast<double>(tile_size)));
         total_tiles *= ntx3;
       }
+    }
+
+    PositionToTileIndex(const array_t<int*>&         i1,
+                        const array_t<int*>&         i2,
+                        const array_t<int*>&         i3,
+                        const array_t<short*>&       tag,
+                        array_t<ncells_t*>&          tile_indices,
+                        const std::vector<ncells_t>& ncells,
+                        ncells_t                     tile_size,
+                        array_t<npart_t*>&           num_ppt)
+      : PositionToTileIndex(i1, i2, i3, tag, tile_indices, ncells, tile_size) {
       if constexpr (Count) {
-        raise::ErrorIf(num_ppt.extent(0) != total_tiles,
-                       "num_ppt must have extent equal to total tiles",
-                       HERE);
+        raise::ErrorIf(num_ppt.extent(0) != 0u, "num_ppt must be empty", HERE);
+        Kokkos::realloc(num_ppt, total_tiles);
+        this->num_ppt = num_ppt;
+      } else {
+        raise::Error("num_ppt must not be provided if Count is false", HERE);
       }
     }
 
