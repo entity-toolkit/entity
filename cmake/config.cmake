@@ -7,7 +7,7 @@ function(set_precision precision_name)
   if(${PRECISION_FOUND} EQUAL -1)
     message(
       FATAL_ERROR
-      "Invalid precision: ${precision_name}\nValid options are: ${precisions}"
+        "Invalid precision: ${precision_name}\nValid options are: ${precisions}"
     )
   endif()
 
@@ -35,23 +35,21 @@ function(get_available_pgens available_pgens)
   foreach(PGEN ${BASE_PGENS})
     get_filename_component(PGEN_NAME ${PGEN} DIRECTORY)
     string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/pgens/" "" PGEN_NAME
-      ${PGEN_NAME})
+                   ${PGEN_NAME})
     list(APPEND available_pgens ${PGEN_NAME})
   endforeach()
 
-  # @TODO: for now, dropping support for Entity pgens
-  # file(GLOB_RECURSE EXTRA_PGENS
-  #   "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/**/pgen.hpp")
-  # foreach(EXTRA_PGEN ${EXTRA_PGENS})
-  #   get_filename_component(EXTRA_PGEN_NAME ${EXTRA_PGEN} DIRECTORY)
-  #   string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/" ""
-  #     EXTRA_PGEN_NAME ${EXTRA_PGEN_NAME})
-  #   list(APPEND available_pgens "pgens/${EXTRA_PGEN_NAME}")
+  # @TODO: for now, dropping support for Entity pgens file(GLOB_RECURSE
+  # EXTRA_PGENS "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/**/pgen.hpp")
+  # foreach(EXTRA_PGEN ${EXTRA_PGENS}) get_filename_component(EXTRA_PGEN_NAME
+  # ${EXTRA_PGEN} DIRECTORY) string(REPLACE
+  # "${CMAKE_CURRENT_SOURCE_DIR}/extern/entity-pgens/" "" EXTRA_PGEN_NAME
+  # ${EXTRA_PGEN_NAME}) list(APPEND available_pgens "pgens/${EXTRA_PGEN_NAME}")
   # endforeach()
 
   set(available_pgens
-    ${available_pgens}
-    PARENT_SCOPE)
+      ${available_pgens}
+      PARENT_SCOPE)
 endfunction()
 
 function(set_problem_generator pgen_name)
@@ -81,17 +79,17 @@ function(set_problem_generator pgen_name)
   set(PGEN_TARGET ntt_pgen${pgen_suffix})
   add_library(${PGEN_TARGET} INTERFACE)
   target_link_libraries(${PGEN_TARGET} INTERFACE ntt_global ntt_framework
-    ntt_archetypes ntt_kernels)
+                                                 ntt_archetypes ntt_kernels)
 
   target_include_directories(${PGEN_TARGET} INTERFACE ${pgen_path})
 
   set(PGEN
-    ${pgen_name}
-    PARENT_SCOPE)
+      ${pgen_name}
+      PARENT_SCOPE)
   set(PGEN_FOUND
-    TRUE
-    PARENT_SCOPE)
+      TRUE
+      PARENT_SCOPE)
   set(available_pgens
-    ${available_pgens}
-    PARENT_SCOPE)
+      ${available_pgens}
+      PARENT_SCOPE)
 endfunction()
