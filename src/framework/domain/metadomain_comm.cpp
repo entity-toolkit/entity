@@ -349,19 +349,6 @@ namespace ntt {
                                             false);
         }
       } else {
-        if (comm_em) {
-          comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                            domain.fields.em,
-                                            domain.fields.em,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_fld,
-                                            false);
-        }
         if (comm_j) {
           comm::CommunicateField<M::Dim, 3>(domain.index(),
                                             domain.fields.cur,
