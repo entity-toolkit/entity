@@ -28,6 +28,11 @@ namespace ntt {
                    npart_t      nsend,
                    npart_t      nrecv,
                    npart_t      offset) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Sendrecv(send_arr.data(),
                    nsend,
@@ -98,6 +103,11 @@ namespace ntt {
 
     template <typename T>
     void send(array_t<T*>& send_arr, int send_rank, npart_t nsend) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Send(send_arr.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
 #else
@@ -109,6 +119,11 @@ namespace ntt {
 
     template <typename T>
     void recv(array_t<T*>& recv_arr, int recv_rank, npart_t nrecv, npart_t offset) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Recv(recv_arr.data() + offset,
                nrecv,

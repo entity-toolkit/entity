@@ -33,6 +33,11 @@ namespace comm {
                    int           recv_rank,
                    ncells_t      nsend,
                    ncells_t      nrecv) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Sendrecv(send_arr.data(),
                    nsend,
@@ -68,6 +73,11 @@ namespace comm {
 
     template <unsigned short D>
     void send(ndarray_t<D>& send_arr, int send_rank, ncells_t nsend) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Send(send_arr.data(), nsend, mpi::get_type<real_t>(), send_rank, 0, MPI_COMM_WORLD);
 #else
@@ -84,6 +94,11 @@ namespace comm {
 
     template <unsigned short D>
     void recv(ndarray_t<D>& recv_arr, int recv_rank, ncells_t nrecv) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Recv(recv_arr.data(),
                nrecv,
