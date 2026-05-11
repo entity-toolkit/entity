@@ -145,8 +145,9 @@ namespace traits::twobodyinteractions {
                              spidx_t  sp1,
                              npart_t  p1,
                              spidx_t  sp2,
-                             npart_t  p2) {
-    { interaction_policy(sp1, p1, sp2, p2) } -> std::same_as<void>;
+                             npart_t  p2,
+                             real_t   tile_vol) {
+    { interaction_policy(sp1, p1, sp2, p2, tile_vol) } -> std::same_as<void>;
   };
 
 } // namespace traits::twobodyinteractions
