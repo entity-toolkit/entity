@@ -25,27 +25,33 @@ namespace ntt {
     const auto        num_tags = ntags();
     array_t<npart_t*> npptag { "nparts_per_tag", ntags() };
 
-    // count # of particles per each tag
-    auto npptag_scat = Kokkos::Experimental::create_scatter_view(npptag);
+    // count # of particles per each tag, skipping the alive bin in-kernel.
+    constexpr short tag_alive_s = static_cast<short>(ParticleTag::alive);
     Kokkos::parallel_for(
       "NpartPerTag",
       rangeActiveParticles(),
       Lambda(prtlidx_t p) {
-        auto npptag_acc = npptag_scat.access();
-        if (this_tag(p) < 0 || this_tag(p) >= static_cast<short>(num_tags)) {
+        const short t = this_tag(p);
+        if (t < 0 || t >= static_cast<short>(num_tags)) {
           raise::KernelError(HERE, "Invalid tag value");
         }
-        npptag_acc(this_tag(p)) += 1;
+        if (t != tag_alive_s) {
+          Kokkos::atomic_add(&npptag(t), static_cast<npart_t>(1));
+        }
       });
-    Kokkos::Experimental::contribute(npptag, npptag_scat);
 
-    // copy the count to a vector on the host
+    // copy the count to a vector on the host and reconstruct the alive bin
     auto npptag_h = Kokkos::create_mirror_view(npptag);
     Kokkos::deep_copy(npptag_h, npptag);
     std::vector<npart_t> npptag_vec(num_tags);
+    npart_t              non_alive_total = 0;
     for (auto t { 0u }; t < num_tags; ++t) {
       npptag_vec[t] = npptag_h(t);
+      if (static_cast<short>(t) != tag_alive_s) {
+        non_alive_total += npptag_h(t);
+      }
     }
+    npptag_vec[tag_alive_s] = npart() - non_alive_total;
 
     // count the offsets on the host and copy to device
     const array_t<npart_t*> tag_offsets("tag_offsets", num_tags - 3);
