@@ -695,7 +695,6 @@ namespace ntt {
                                      addresses[2],  // c_u2 (column for u^2)
                                      addresses[3],  // c_u3 (column for u^3)
                                      local_domain->mesh.metric));
-              SynchronizeFields(*local_domain, Comm::Bckp, { addresses[0], addresses[3] + 1 });
               // Transform spatial components to physical basis for output
               // u^0 (Gamma/alpha) remains unitless, only u^i transform
               Kokkos::parallel_for("Transform4VelocitySpatialToPhysical",
