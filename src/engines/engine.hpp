@@ -127,6 +127,7 @@ namespace ntt {
       auto parameters = prm::Parameters {};
       parameters.set("dt", static_cast<real_t>(dt));
       parameters.set("time", static_cast<simtime_t>(time));
+      parameters.set("step", static_cast<timestep_t>(step));
       return parameters;
     }
   };
