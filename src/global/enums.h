@@ -322,7 +322,7 @@ namespace ntt {
       GCA    = 1 << 3,
     };
 
-    inline auto to_string(int flags) -> std::string {
+    inline auto to_string(uint8_t flags) -> std::string {
       if (flags == NONE) {
         return "none";
       } else {
@@ -354,7 +354,7 @@ namespace ntt {
       COMPTON     = 1 << 1,
     };
 
-    inline auto to_string(int flags) -> std::string {
+    inline auto to_string(uint8_t flags) -> std::string {
       if (flags == NONE) {
         return "none";
       } else {
@@ -383,7 +383,7 @@ namespace ntt {
       CUSTOM      = 3,
     };
 
-    inline auto to_string(int flags) -> std::string {
+    inline auto to_string(uint8_t flags) -> std::string {
       switch (flags) {
         case NONE:
           return "none";

@@ -74,6 +74,8 @@ inline constexpr double INV_64        = 0.015625;
 #define HEAVISIDE(x) (((x) <= ZERO) ? ZERO : ONE)
 #define SQR(x)       ((x) * (x))
 #define CUBE(x)      ((x) * (x) * (x))
+#define POW4(x)      ((x) * (x) * (x) * (x))
+#define POW5(x)      ((x) * (x) * (x) * (x) * (x))
 
 #define DOT(ax1, ax2, ax3, bx1, bx2, bx3)                                      \
   ((ax1) * (bx1) + (ax2) * (bx2) + (ax3) * (bx3))

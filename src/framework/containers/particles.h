@@ -45,7 +45,7 @@
 namespace ntt {
 
   struct ParticleArrays {
-    const spidx_t sp;
+    spidx_t sp;
 
     ParticleArrays(spidx_t sp = 0u) : sp { sp } {}
 
