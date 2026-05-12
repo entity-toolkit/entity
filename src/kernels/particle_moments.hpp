@@ -482,8 +482,8 @@ namespace kernel {
           Vector(i1, i2, c_u3) = ZERO;
         };
 
-        // ZAMO fallback for empty cells
-        if (cmp::AlmostZero(N_cntrv[0])) {
+        // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
+        if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
           zamo_fallback_2d();
           return;
         }
@@ -495,8 +495,8 @@ namespace kernel {
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
-        // ZAMO fallback for spacelike or null flux
-        if (N_norm_sq >= ZERO) {
+        // ZAMO fallback for spacelike, null, or NaN
+        if (not (N_norm_sq < ZERO)) {
           zamo_fallback_2d();
           return;
         }
@@ -541,8 +541,8 @@ namespace kernel {
           Vector(i1, i2, i3, c_u3) = ZERO;
         };
 
-        // ZAMO fallback for empty cells
-        if (cmp::AlmostZero(N_cntrv[0])) {
+        // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
+        if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
           zamo_fallback_3d();
           return;
         }
@@ -554,8 +554,8 @@ namespace kernel {
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
-        // ZAMO fallback for spacelike or null flux
-        if (N_norm_sq >= ZERO) {
+        // ZAMO fallback for spacelike, null, or NaN
+        if (not (N_norm_sq < ZERO)) {
           zamo_fallback_3d();
           return;
         }
