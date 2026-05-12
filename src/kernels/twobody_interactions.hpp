@@ -1,3 +1,12 @@
+/**
+ * @file kernels/twobody_interactions.hpp
+ * @brief Generic two-body interaction kernel that can be used to implement various
+ * types of collisions between species, e.g. Compton scattering, Breit-Wheeler pair production, etc.
+ * @implements
+ *   - kernel::mink::TwoBodyInteraction<>
+ * @namespaces:
+ *   - arch::mink::
+ */
 #ifndef KERNELS_TWOBODY_INTERACTIONS_HPP
 #define KERNELS_TWOBODY_INTERACTIONS_HPP
 

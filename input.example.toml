@@ -272,6 +272,29 @@
       #     @from: `.gamma_qed`
       #     @value: `(1 / gamma_qed)^2`
 
+[two_body]
+  # Nominal Thomson optical depth: `tau = n0 * sigma_T * 1` over a distance of 1 in physical units (n0 = nominal density)
+  #   @type: float
+  #   @default: 1.0
+  thomson_optical_depth = ""
+
+  [[two_body.interaction]]
+    # Type of the two-body interaction
+    #   @required
+    #   @type: string
+    #   @enum: "Compton"
+    type = ""
+    # First group of species indices participating in the interaction
+    #   @required
+    #   @type: array<ushort>
+    #   @note: array indexing starting at 1
+    group1 = ""
+    # Second group of species indices participating in the interaction
+    #   @type: array<ushort>
+    #   @note: array indexing starting at 1
+    #   @note: For interactions between particles of the same group, leave `group2` empty
+    group2 = ""
+
 [algorithms]
   # Number of current smoothing passes
   #   @type: ushort [>= 0]
