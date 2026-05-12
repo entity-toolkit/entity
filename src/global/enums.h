@@ -401,6 +401,29 @@ namespace ntt {
 
   using EmissionTypeFlag = uint8_t;
 
+  namespace TwoBodyInteraction {
+    enum TwoBodyInteractionFlag_ : uint8_t {
+      NONE    = 0,
+      COMPTON = 1,
+      CUSTOM  = 2,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      switch (flags) {
+        case NONE:
+          return "none";
+        case COMPTON:
+          return "compton";
+        case CUSTOM:
+          return "custom";
+        default:
+          return "unknown";
+      }
+    }
+  } // namespace TwoBodyInteraction
+
+  using TwoBodyInteractionFlag = uint8_t;
+
 } // namespace ntt
 
 #endif // GLOBAL_ENUMS_H
