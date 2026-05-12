@@ -12,6 +12,7 @@
 #ifndef FRAMEWORK_PARAMETERS_EXTRA_H
 #define FRAMEWORK_PARAMETERS_EXTRA_H
 
+#include "enums.h"
 #include "global.h"
 
 #include "framework/parameters/parameters.h"
@@ -24,6 +25,13 @@
 
 namespace ntt {
   namespace params {
+
+    struct TwoBodyInteractionParams {
+      TwoBodyInteractionFlag type;
+      std::vector<spidx_t>   group1;
+      std::vector<spidx_t>   group2;
+      timestep_t             interval;
+    };
 
     struct Extra {
       // radiative drag parameters
@@ -44,6 +52,10 @@ namespace ntt {
       std::optional<spidx_t> compton_photon_species;
       std::optional<real_t>  compton_nominal_probability;
       std::optional<real_t>  compton_nominal_photon_energy;
+
+      // two-body interaction parameters
+      std::optional<real_t>                 twobody_thomson_optical_depth;
+      std::vector<TwoBodyInteractionParams> twobody_interactions;
 
       void read(const std::map<std::string, bool>&,
                 const toml::value&,

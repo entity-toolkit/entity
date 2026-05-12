@@ -420,6 +420,19 @@ namespace ntt {
           return "unknown";
       }
     }
+
+    inline auto from_string(const std::string& s) -> uint8_t {
+      if (fmt::toLower(s) == "none") {
+        return NONE;
+      } else if (fmt::toLower(s) == "compton") {
+        return COMPTON;
+      } else if (fmt::toLower(s) == "custom") {
+        return CUSTOM;
+      } else {
+        raise::Error(fmt::format("Invalid TwoBodyInteraction type: %s", s), HERE);
+        return NONE;
+      }
+    }
   } // namespace TwoBodyInteraction
 
   using TwoBodyInteractionFlag = uint8_t;
