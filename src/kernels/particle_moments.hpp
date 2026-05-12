@@ -482,7 +482,7 @@ namespace kernel {
           Vector(i1, i2, c_u3) = ZERO;
         };
 
-        // rest frame for empty cells
+        // ZAMO fallback for empty cells
         if (cmp::AlmostZero(N_cntrv[0])) {
           zamo_fallback_2d();
           return;
@@ -495,7 +495,7 @@ namespace kernel {
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
-        // ZAMO fallback for cells with insufficient particles
+        // ZAMO fallback for spacelike or null flux
         if (N_norm_sq >= ZERO) {
           zamo_fallback_2d();
           return;
@@ -509,10 +509,7 @@ namespace kernel {
           Vector(i1, i2, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, c_u3) = N_cntrv[3] / norm;
         } else {
-          Vector(i1, i2, c_u0) = ONE;
-          Vector(i1, i2, c_u1) = ZERO;
-          Vector(i1, i2, c_u2) = ZERO;
-          Vector(i1, i2, c_u3) = ZERO;
+          zamo_fallback_2d();
         }
       } else {
         raise::KernelError(
@@ -534,12 +531,19 @@ namespace kernel {
         N_cntrv[2] = Flux(i1, i2, i3, c_u2);  // N^2
         N_cntrv[3] = Flux(i1, i2, i3, c_u3);  // N^3
 
-        // Rest frame for empty cells
-        if (cmp::AlmostZero(N_cntrv[0])) {
-          Vector(i1, i2, i3, c_u0) = ONE;
-          Vector(i1, i2, i3, c_u1) = ZERO;
+        // ZAMO fallback for empty or pathological cells
+        const auto zamo_fallback_3d = [&]() {
+          const real_t al = metric.alpha(x_Code);
+          const real_t b1 = metric.beta1(x_Code);
+          Vector(i1, i2, i3, c_u0) = ONE / al;
+          Vector(i1, i2, i3, c_u1) = -b1 / al;
           Vector(i1, i2, i3, c_u2) = ZERO;
           Vector(i1, i2, i3, c_u3) = ZERO;
+        };
+
+        // ZAMO fallback for empty cells
+        if (cmp::AlmostZero(N_cntrv[0])) {
+          zamo_fallback_3d();
           return;
         }
 
@@ -550,16 +554,13 @@ namespace kernel {
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
         real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
-        // Set to rest frame for cells with insufficient particles
-        if (cmp::AlmostZero(N_norm_sq) || N_norm_sq >= ZERO) {
-          Vector(i1, i2, i3, c_u0) = ONE;
-          Vector(i1, i2, i3, c_u1) = ZERO;
-          Vector(i1, i2, i3, c_u2) = ZERO;
-          Vector(i1, i2, i3, c_u3) = ZERO;
+        // ZAMO fallback for spacelike or null flux
+        if (N_norm_sq >= ZERO) {
+          zamo_fallback_3d();
           return;
         }
 
-        real_t norm = math::sqrt(-N_norm_sq);  // sqrt(-N_ν N^ν) for timelike vector
+        real_t norm = math::sqrt(-N_norm_sq);
 
         if (not cmp::AlmostZero(norm)) {
           Vector(i1, i2, i3, c_u0) = N_cntrv[0] / norm;
@@ -567,10 +568,7 @@ namespace kernel {
           Vector(i1, i2, i3, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, i3, c_u3) = N_cntrv[3] / norm;
         } else {
-          Vector(i1, i2, i3, c_u0) = ONE;
-          Vector(i1, i2, i3, c_u1) = ZERO;
-          Vector(i1, i2, i3, c_u2) = ZERO;
-          Vector(i1, i2, i3, c_u3) = ZERO;
+          zamo_fallback_3d();
         }
       } else {
         raise::KernelError(
