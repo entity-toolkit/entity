@@ -429,7 +429,8 @@ namespace ntt {
       } else if (fmt::toLower(s) == "custom") {
         return CUSTOM;
       } else {
-        raise::Error(fmt::format("Invalid TwoBodyInteraction type: %s", s), HERE);
+        raise::Error(fmt::format("Invalid TwoBodyInteraction type: %s", s.c_str()),
+                     HERE);
         return NONE;
       }
     }

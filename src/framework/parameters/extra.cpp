@@ -124,15 +124,18 @@ namespace ntt {
       // find two-body interactions
       const auto twobody_tab = toml::find_or<toml::array>(toml_data,
                                                           "two_body",
-                                                          "interactions",
+                                                          "interaction",
                                                           toml::array {});
       for (const auto& tbint : twobody_tab) {
         twobody_interactions.push_back(TwoBodyInteractionParams {
           .type = TwoBodyInteraction::from_string(
             toml::find<std::string>(tbint, "type")),
-          .group1   = toml::find<std::vector<spidx_t>>(tbint, "group1"),
-          .group2   = toml::find_or<std::vector<spidx_t>>(tbint, "group2", {}),
-          .interval = toml::find_or<timestep_t>(tbint, "interval", 1) });
+          .group1    = toml::find<std::vector<spidx_t>>(tbint, "group1"),
+          .group2    = toml::find_or<std::vector<spidx_t>>(tbint, "group2", {}),
+          .interval  = toml::find_or<timestep_t>(tbint, "interval", 1),
+          .tile_size = toml::find_or<ncells_t>(tbint, "tile_size", 4u),
+          .recoil1   = toml::find_or<bool>(tbint, "recoil1", true),
+          .recoil2   = toml::find_or<bool>(tbint, "recoil2", true) });
       }
     }
 
@@ -182,7 +185,7 @@ namespace ntt {
 
       params->set("two_body.thomson_optical_depth",
                   twobody_thomson_optical_depth.value());
-      params->set("two_body.interactions", twobody_interactions);
+      params->set("two_body.interaction", twobody_interactions);
     }
   } // namespace params
 } // namespace ntt

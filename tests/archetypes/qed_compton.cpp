@@ -160,13 +160,14 @@ auto main(int argc, char* argv[]) -> int {
       { ZERO, ONE },
       { -ONE, ONE }
     };
+    const auto ppc0 = static_cast<real_t>(npart) / (nx1 * nx2);
 
     prm::Parameters params;
-    params.set("qed.compton_scattering.nominal_probability_density",
+    params.set("compton_scattering.nominal_probability_density",
                static_cast<real_t>(1e-3));
-    params.set("qed.compton_scattering.Thomson_limit", static_cast<real_t>(1e-4));
 
-    auto policy = arch::qed::ComptonScattering<Dim::_2D>(params, random_pool);
+    auto policy = arch::qed::ComptonScattering<Dim::_2D, true, true>(params,
+                                                                     random_pool);
     policy.species[0] = static_cast<const ParticleArrays&>(sp1);
     policy.species[1] = static_cast<const ParticleArrays&>(sp2);
     policy.species[2] = static_cast<const ParticleArrays&>(sp3);
@@ -198,6 +199,7 @@ auto main(int argc, char* argv[]) -> int {
                                                  ncells,
                                                  extent,
                                                  tile_size,
+                                                 ppc0,
                                                  random_pool,
                                                  policy);
     }

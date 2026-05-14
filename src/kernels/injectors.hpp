@@ -5,6 +5,7 @@
  *   - kernel::UniformInjector_kernel<>
  *   - kernel::GlobalInjector_kernel<>
  *   - kernel::NonUniformInjector_kernel<>
+ *   - kernel::SingleSpeciesUniformInjector_kernel<>
  * @namespaces:
  *   - kernel::
  */
@@ -852,6 +853,131 @@ namespace kernel {
       }
     }
   }; // struct NonUniformInjector_kernel
+
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  struct SingleSpeciesUniformInjector_kernel {
+
+    ParticleArrays particles;
+
+    const npart_t          offset;
+    const npart_t          domain_idx, cntr;
+    const bool             use_tracking;
+    const M                metric;
+    const array_t<real_t*> xi_min, xi_max;
+    const ED               energy_dist;
+    const real_t           inv_V0;
+    random_number_pool_t   random_pool;
+
+    SingleSpeciesUniformInjector_kernel(Particles<M::Dim, M::CoordType>& particles,
+                                        npart_t                 domain_idx,
+                                        const M&                metric,
+                                        const array_t<real_t*>& xi_min,
+                                        const array_t<real_t*>& xi_max,
+                                        const ED&               energy_dist,
+                                        real_t                  inv_V0,
+                                        random_number_pool_t&   random_pool)
+      : particles { particles }
+      , offset { particles.npart() }
+      , domain_idx { domain_idx }
+      , cntr { particles.counter() }
+      , use_tracking { particles.use_tracking() }
+      , metric { metric }
+      , xi_min { xi_min }
+      , xi_max { xi_max }
+      , energy_dist { energy_dist }
+      , inv_V0 { inv_V0 }
+      , random_pool { random_pool } {
+      if (use_tracking) {
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(particles.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(particles.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+    }
+
+    Inline void operator()(prtlidx_t p) const {
+      coord_t<M::Dim>           x_Cd { ZERO };
+      tuple_t<int, M::Dim>      xi_Cd { 0 };
+      tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
+      vec_t<Dim::_3D>           v { ZERO, ZERO, ZERO };
+      { // generate a random coordinate
+        auto rand_gen = random_pool.get_state();
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+          xi_Cd[0]  = static_cast<int>(x_Cd[0]);
+          dxi_Cd[0] = static_cast<prtldx_t>(x_Cd[0] - xi_Cd[0]);
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          dxi_Cd[1] = static_cast<prtldx_t>(x_Cd[1] - xi_Cd[1]);
+        }
+        if constexpr (M::Dim == Dim::_3D) {
+          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+          xi_Cd[2]  = static_cast<int>(x_Cd[2]);
+          dxi_Cd[2] = static_cast<prtldx_t>(x_Cd[2] - xi_Cd[2]);
+        }
+        random_pool.free_state(rand_gen);
+      }
+      { // generate the velocity
+        coord_t<M::Dim> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        if constexpr (M::CoordType == Coord::Cartesian) {
+          energy_dist(x_Ph, v);
+        } else if constexpr (S == SimEngine::SRPIC) {
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          x_Cd_[2] = ZERO; // phi = 0
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v);
+        } else if constexpr (S == SimEngine::GRPIC) {
+          vec_t<Dim::_3D> v_Ph { ZERO, ZERO, ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v);
+        } else {
+          raise::KernelError(HERE, "Unknown simulation engine");
+        }
+      }
+      real_t weight = ONE;
+      if constexpr (M::CoordType != Coord::Cartesian) {
+        const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
+        weight                = sqrt_det_h * inv_V0;
+      }
+      // clang-format off
+      if (not use_tracking) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset, 
+          particles.i1, particles.i2, particles.i3,
+          particles.dx1, particles.dx2, particles.dx3,
+          particles.ux1, particles.ux2, particles.ux3,
+          particles.phi, particles.weight, particles.tag, particles.pld_i,
+          xi_Cd, dxi_Cd, v, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset, 
+          particles.i1, particles.i2, particles.i3,
+          particles.dx1, particles.dx2, particles.dx3,
+          particles.ux1, particles.ux2, particles.ux3,
+          particles.phi, particles.weight, particles.tag, particles.pld_i,
+          xi_Cd, dxi_Cd, v, weight, ZERO, 
+          domain_idx, cntr + p);
+      }
+      // clang-format on
+    }
+  }; // struct SingleSpeciesUniformInjector_kernel
 
 } // namespace kernel
 

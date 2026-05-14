@@ -31,6 +31,9 @@ namespace ntt {
       std::vector<spidx_t>   group1;
       std::vector<spidx_t>   group2;
       timestep_t             interval;
+      ncells_t               tile_size;
+      bool                   recoil1;
+      bool                   recoil2;
     };
 
     struct Extra {

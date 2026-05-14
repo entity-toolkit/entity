@@ -138,4 +138,43 @@ concept CustomParticleUpdatePolicyClass =
   } or
   traits::custom_prtl_update::IsNoPolicy<CPU>;
 
+<<<<<<< HEAD
+=======
+namespace traits::twobodyinteractions {
+
+  template <class I>
+  concept HasSpecies = requires(I& interaction_policy) {
+    { interaction_policy.species } -> std::convertible_to<ntt::ParticleArrays*>;
+  };
+
+  template <class I>
+  concept HasShouldInteract = requires(const I& interaction_policy,
+                                       spidx_t  sp1,
+                                       npart_t  p1,
+                                       spidx_t  sp2,
+                                       npart_t  p2,
+                                       real_t   tile_weight) {
+    {
+      interaction_policy.should_interact(sp1, p1, sp2, p2, tile_weight)
+    } -> std::same_as<bool>;
+  };
+
+  template <class I>
+  concept HasInteraction = requires(const I& interaction_policy,
+                                    spidx_t  sp1,
+                                    npart_t  p1,
+                                    spidx_t  sp2,
+                                    npart_t  p2) {
+    { interaction_policy(sp1, p1, sp2, p2) } -> std::same_as<void>;
+  };
+
+} // namespace traits::twobodyinteractions
+
+template <class I>
+concept TwoBodyInteractionPolicyClass =
+  traits::twobodyinteractions::HasSpecies<I> and
+  traits::twobodyinteractions::HasShouldInteract<I> and
+  traits::twobodyinteractions::HasInteraction<I>;
+
+>>>>>>> a09db826 (qed incorporated)
 #endif // TRAITS_POLICIES_H
