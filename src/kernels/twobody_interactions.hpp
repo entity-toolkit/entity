@@ -73,32 +73,32 @@ namespace kernel::mink {
     }
 
     template <Dimension D>
-    Inline auto TileIdxToVolume(ncells_t tile_idx,
-                                ncells_t tile_size,
-                                ncells_t ntx2,
-                                ncells_t ntx3,
-                                ncells_t nx1,
-                                ncells_t nx2,
-                                ncells_t nx3) -> real_t {
-      real_t   tile_volume { ONE };
+    Inline auto NCellsOnTile(ncells_t tile_idx,
+                             ncells_t tile_size,
+                             ncells_t ntx2,
+                             ncells_t ntx3,
+                             ncells_t nx1,
+                             ncells_t nx2,
+                             ncells_t nx3) -> ncells_t {
+      ncells_t ncells_on_tile { 1 };
       ncells_t ti { 0u }, tj { 0u }, tk { 0u };
       UnravelTileIdx<D>(tile_idx, ntx2, ntx3, ti, tj, tk);
       if constexpr ((D == Dim::_1D) or (D == Dim::_2D) or (D == Dim::_3D)) {
         const auto i1_min  = ti * tile_size;
         const auto i1_max  = math::min(i1_min + tile_size, nx1);
-        tile_volume       *= static_cast<real_t>(i1_max - i1_min);
+        ncells_on_tile    *= (i1_max - i1_min);
       }
       if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
         const auto i2_min  = tj * tile_size;
         const auto i2_max  = math::min(i2_min + tile_size, nx2);
-        tile_volume       *= static_cast<real_t>(i2_max - i2_min);
+        ncells_on_tile    *= (i2_max - i2_min);
       }
       if constexpr (D == Dim::_3D) {
         const auto i3_min  = tk * tile_size;
         const auto i3_max  = math::min(i3_min + tile_size, nx3);
-        tile_volume       *= static_cast<real_t>(i3_max - i3_min);
+        ncells_on_tile    *= (i3_max - i3_min);
       }
-      return tile_volume;
+      return ncells_on_tile;
     }
 
     template <Dimension D>
@@ -112,11 +112,10 @@ namespace kernel::mink {
 
       ncells_t num_tiles { 0u };
 
-      CollisionGroup(
-        const std::vector<const Particles<D, Coord::Cartesian>*>& particles,
-        const std::vector<ncells_t>&                              ncells,
-        ncells_t                                                  tile_size,
-        random_number_pool_t&                                     random_pool) {
+      CollisionGroup(const std::vector<Particles<D, Coord::Cartesian>*>& particles,
+                     const std::vector<ncells_t>& ncells,
+                     ncells_t                     tile_size,
+                     random_number_pool_t&        random_pool) {
         for (const auto* species : particles) {
           const auto         npart_s = species->npart();
           array_t<ncells_t*> tileidx { "tile_idx", npart_s };
@@ -215,13 +214,14 @@ namespace kernel::mink {
 
   template <Dimension D, TwoBodyInteractionPolicyClass I>
   void TwoBodyInteraction(
-    const std::vector<const Particles<D, Coord::Cartesian>*>& species1,
-    const std::vector<const Particles<D, Coord::Cartesian>*>& species2,
-    const std::vector<ncells_t>&                              ncells,
-    const boundaries_t<real_t>&                               domain_extent,
-    ncells_t                                                  tile_size,
-    random_number_pool_t&                                     random_pool,
-    const I& interaction_policy) {
+    const std::vector<Particles<D, Coord::Cartesian>*>& species1,
+    const std::vector<Particles<D, Coord::Cartesian>*>& species2,
+    const std::vector<ncells_t>&                        ncells,
+    const boundaries_t<real_t>&                         domain_extent,
+    ncells_t                                            tile_size,
+    real_t                                              ppc0,
+    random_number_pool_t&                               random_pool,
+    I&                                                  interaction_policy) {
     raise::ErrorIf(species1.empty() or species2.empty(),
                    "species groups must be non-empty",
                    HERE);
@@ -231,7 +231,7 @@ namespace kernel::mink {
     raise::ErrorIf(domain_extent.size() != static_cast<std::size_t>(D),
                    "domain_extent size must match D",
                    HERE);
-    // compute base tile volume in physical units
+    // compute base cell volume in physical units
     real_t cell_volume { ONE };
     for (int d = 0; d < static_cast<int>(D); ++d) {
       cell_volume *= static_cast<real_t>(
@@ -252,6 +252,56 @@ namespace kernel::mink {
     const auto& combined_num_ppt2 = group2.combined_num_ppt;
     const auto& tile_offsets1     = group1.tile_offsets;
     const auto& tile_offsets2     = group2.tile_offsets;
+
+    // fill species in the interaction policy
+    for (auto& sp1 : species1) {
+      interaction_policy.species[sp1->sp - 1] = static_cast<const ParticleArrays&>(
+        *sp1);
+    }
+    for (auto& sp2 : species2) {
+      interaction_policy.species[sp2->sp - 1] = static_cast<const ParticleArrays&>(
+        *sp2);
+    }
+
+    // total particle weight on each tile
+    auto weights_on_tile1 = array_t<real_t*> { "weights_on_tile1", num_tiles };
+    auto weights_on_tile2 = array_t<real_t*> { "weights_on_tile2", num_tiles };
+    Kokkos::parallel_for(
+      "ComputeWeightsOnTiles",
+      Kokkos::TeamPolicy<>(num_tiles, Kokkos::AUTO),
+      Lambda(const Kokkos::TeamPolicy<>::member_type& team) {
+        const ncells_t t = team.league_rank();
+
+        const auto o1              = tile_offsets1(t);
+        const auto num_ppt1        = combined_num_ppt1(t);
+        real_t     weight_on_tile1 = ZERO;
+        Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(team, num_ppt1),
+          [&](prtlidx_t i, real_t& lsum) {
+            const auto sp1 = static_cast<spidx_t>(combined_idx1(o1 + i) >> 56);
+            const auto p1  = static_cast<npart_t>(combined_idx1(o1 + i) &
+                                                 ((1ull << 56) - 1));
+
+            lsum += interaction_policy.species[sp1 - 1].weight(p1);
+          },
+          weight_on_tile1);
+        weights_on_tile1(t) = weight_on_tile1;
+
+        const auto o2              = tile_offsets2(t);
+        const auto num_ppt2        = combined_num_ppt2(t);
+        real_t     weight_on_tile2 = ZERO;
+        Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(team, num_ppt2),
+          [&](prtlidx_t i, real_t& lsum) {
+            const auto sp2 = static_cast<spidx_t>(combined_idx2(o2 + i) >> 56);
+            const auto p2  = static_cast<npart_t>(combined_idx2(o2 + i) &
+                                                 ((1ull << 56) - 1));
+
+            lsum += interaction_policy.species[sp2 - 1].weight(p2);
+          },
+          weight_on_tile2);
+        weights_on_tile2(t) = weight_on_tile2;
+      });
 
     // number of cells in each direction
     ncells_t nx1 { 1u }, nx2 { 1u }, nx3 { 1u };
@@ -274,13 +324,18 @@ namespace kernel::mink {
         math::ceil(static_cast<double>(nx3) / static_cast<double>(tile_size)));
     }
 
+    array_t<uint64_t* [2]> interaction_pairs { "interaction_pairs",
+                                               combined_idx1.extent(0) };
+    array_t<npart_t>       counter { "counter" };
+
     Kokkos::parallel_for(
-      "EmitPairs",
+      "PopulateInteractionPairs",
       Kokkos::TeamPolicy<>(num_tiles, Kokkos::AUTO),
       Lambda(const Kokkos::TeamPolicy<>::member_type& team) {
         const ncells_t t = team.league_rank();
-        const auto     tile_volume =
-          TileIdxToVolume<D>(t, tile_size, ntx2, ntx3, nx1, nx2, nx3) * cell_volume;
+        const auto     tile_weight =
+          math::max(weights_on_tile1(t), weights_on_tile2(t)) /
+          (NCellsOnTile<D>(t, tile_size, ntx2, ntx3, nx1, nx2, nx3) * ppc0);
 
         const auto k  = math::min(combined_num_ppt1(t), combined_num_ppt2(t));
         const auto o1 = tile_offsets1(t);
@@ -295,8 +350,26 @@ namespace kernel::mink {
                                                ((1ull << 56) - 1));
           const auto p2 = static_cast<npart_t>(combined_idx2(o2 + i) &
                                                ((1ull << 56) - 1));
-          interaction_policy(sp1, p1, sp2, p2, tile_volume);
+          if (interaction_policy.should_interact(sp1, p1, sp2, p2, tile_weight)) {
+            const auto idx            = Kokkos::atomic_fetch_add(&counter(), 1);
+            interaction_pairs(idx, 0) = combined_idx1(o1 + i);
+            interaction_pairs(idx, 1) = combined_idx2(o2 + i);
+          }
         });
+      });
+    auto counter_h = Kokkos::create_mirror_view(counter);
+    Kokkos::deep_copy(counter_h, counter);
+    Kokkos::parallel_for(
+      "ProcessInteractions",
+      counter_h(),
+      Lambda(prtlidx_t idx) {
+        const auto sp1 = static_cast<spidx_t>(interaction_pairs(idx, 0) >> 56);
+        const auto sp2 = static_cast<spidx_t>(interaction_pairs(idx, 1) >> 56);
+        const auto p1  = static_cast<npart_t>(interaction_pairs(idx, 0) &
+                                             ((1ull << 56) - 1));
+        const auto p2  = static_cast<npart_t>(interaction_pairs(idx, 1) &
+                                             ((1ull << 56) - 1));
+        interaction_policy(sp1, p1, sp2, p2);
       });
   }
 

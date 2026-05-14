@@ -24,32 +24,25 @@
 namespace arch::qed {
   using namespace ntt;
 
-  template <Dimension D>
+  template <Dimension D, bool R1, bool R2>
   struct ComptonScattering {
     static constexpr spidx_t MAXSP    = 16u;
     static constexpr int     MAX_ITER = 10;
 
     ParticleArrays          species[MAXSP];
     static constexpr real_t low_energy_limit = static_cast<real_t>(2e-3);
+    static constexpr real_t Thomson_limit    = static_cast<real_t>(1e-3);
 
     const real_t         nominal_probability_density;
-    const real_t         Thomson_limit;
     random_number_pool_t random_pool;
 
     ComptonScattering(const prm::Parameters& params,
                       random_number_pool_t&  random_pool)
       : nominal_probability_density { params.template get<real_t>(
-          "qed.compton_scattering.nominal_probability_density") }
-      , Thomson_limit { params.template get<real_t>(
-          "qed.compton_scattering.Thomson_limit") }
+          "compton_scattering.nominal_probability_density") }
       , random_pool { random_pool } {
       if (nominal_probability_density <= ZERO) {
         raise::Error("nominal_probability must be in the range (0, 1]", HERE);
-      }
-      if (Thomson_limit <= ZERO or Thomson_limit > low_energy_limit) {
-        raise::Error(
-          "Thomson_limit must be in the range (0, small_energy_limit]",
-          HERE);
       }
     }
 
@@ -79,30 +72,31 @@ namespace arch::qed {
     /*
      * Calculate the Klein-Nishina cross section for a photon with energy e_ in the lepton rest frame
      * @param e_: photon energy in the lepton rest frame
-     * @return: pair of (is_KN_regime, f_KN) where
-     *  - is_KN_regime: whether the photon energy is in the Klein-Nishina regime (e_ > Thomson_limit)
-     *  - f_KN: the Klein-Nishina cross section normalized to the Thomson cross section
+     * @return f_KN: the Klein-Nishina cross section normalized to the Thomson cross section
      * @note for e_ > low_energy_limit, full Klein-Nishina formula
      * @note for Thomson_limit < e_ <= low_energy_limit, 2nd order expansion of the Klein-Nishina formula
      * @note for e_ <= Thomson_limit, return 1 (Thomson limit)
      */
-    Inline auto KNCrossSection(real_t e_) const -> Kokkos::pair<bool, real_t> {
+    Inline auto KNCrossSection(double e_) const -> real_t {
       if (e_ > Thomson_limit) {
         if (e_ < low_energy_limit) {
           // correctly handle the e_ << 1 limit using 2nd order expansion of f_KN
-          return { true, ONE - TWO * e_ + static_cast<real_t>(5.2) * SQR(e_) };
+          return static_cast<real_t>(1.0 - 2.0 * e_ + 5.2 * SQR(e_));
         } else {
-          return { true,
-                   static_cast<real_t>(0.375) *
-                     ((ONE - TWO / e_ - TWO / SQR(e_)) * math::log(ONE + TWO * e_) +
-                      HALF + FOUR / e_ - HALF / SQR(ONE + TWO * e_)) /
-                     e_ };
+          return static_cast<real_t>(
+            0.375 *
+            ((1.0 - 2.0 / e_ - 2.0 / SQR(e_)) * math::log(1.0 + 2.0 * e_) +
+             0.5 + 4.0 / e_ - 0.5 / SQR(1.0 + 2.0 * e_)) /
+            e_);
         }
       } else {
-        return { false, ONE };
+        return ONE;
       }
     }
 
+    /*
+     * Sample a cosine theta value from the Thomson scattering cross section
+     */
     Inline auto RandomCosTheta_Th() const -> real_t {
       auto       gen_ = random_pool.get_state();
       const auto rnd_ = Random<real_t>(gen_);
@@ -114,6 +108,9 @@ namespace arch::qed {
       return u - ONE / u;
     }
 
+    /*
+     * Sample a cosine theta from the Klein-Nishina scattering cross section
+     */
     Inline auto RandomCosTheta_KN(double e_) const -> real_t {
       auto       gen_ = random_pool.get_state();
       const auto rnd_ = Random<double>(gen_);
@@ -215,11 +212,42 @@ namespace arch::qed {
                           rand_sintheta_ * rand_sinphi_ * c_[2]);
     }
 
-    Inline void operator()(spidx_t sp1,
-                           npart_t p1,
-                           spidx_t sp2,
-                           npart_t p2,
-                           real_t  tile_volume) const {
+    Inline auto should_interact(spidx_t sp1,
+                                npart_t p1,
+                                spidx_t sp2,
+                                npart_t p2,
+                                real_t  tile_weight) const -> bool {
+      // values with "_" are in the lepton rest-frame
+      const vec_t<Dim::_3D> lepton_u { species[sp1 - 1].ux1(p1),
+                                       species[sp1 - 1].ux2(p1),
+                                       species[sp1 - 1].ux3(p1) };
+      const auto lepton_gamma  = U2GAMMA(lepton_u[0], lepton_u[1], lepton_u[2]);
+      const auto lepton_weight = species[sp1 - 1].weight(p1);
+
+      const vec_t<Dim::_3D> photon_p { species[sp2 - 1].ux1(p2),
+                                       species[sp2 - 1].ux2(p2),
+                                       species[sp2 - 1].ux3(p2) };
+      const auto photon_energy = NORM(photon_p[0], photon_p[1], photon_p[2]);
+      const auto photon_weight = species[sp2 - 1].weight(p2);
+
+      // boost photon momentum to lepton rest frame
+      vec_t<Dim::_3D> photon_p_ { ZERO, ZERO, ZERO };
+      real_t          photon_energy_ { ZERO };
+
+      LorentzBoost(lepton_u, lepton_gamma, photon_p, photon_energy, photon_p_, photon_energy_);
+
+      const auto f_KN = KNCrossSection(photon_energy_);
+
+      auto       gen = random_pool.get_state();
+      const auto rnd = Random<real_t>(gen);
+      random_pool.free_state(gen);
+
+      return rnd <
+             (tile_weight * nominal_probability_density * f_KN * photon_energy_ *
+              lepton_weight * photon_weight / (photon_energy * lepton_gamma));
+    }
+
+    Inline void operator()(spidx_t sp1, npart_t p1, spidx_t sp2, npart_t p2) const {
       // @TODO coord/vec conversion
       // values with "_" are in the lepton rest-frame
       const vec_t<Dim::_3D> lepton_u { species[sp1 - 1].ux1(p1),
@@ -240,43 +268,35 @@ namespace arch::qed {
 
       LorentzBoost(lepton_u, lepton_gamma, photon_p, photon_energy, photon_p_, photon_energy_);
 
-      const auto [KN_regime, f_KN]      = KNCrossSection(photon_energy_);
-      const auto scattering_probability = nominal_probability_density * f_KN *
-                                          photon_energy_ * lepton_weight *
-                                          photon_weight /
-                                          (photon_energy * lepton_gamma *
-                                           tile_volume);
-      auto       gen = random_pool.get_state();
-      const auto rnd = Random<real_t>(gen);
-      random_pool.free_state(gen);
+      vec_t<Dim::_3D> photon_pnew_ { ZERO, ZERO, ZERO },
+        photon_pnew { ZERO, ZERO, ZERO };
+      real_t photon_energy_new_ { ZERO }, photon_energy_new { ZERO };
 
-      if (rnd < scattering_probability) {
-        vec_t<Dim::_3D> photon_pnew_ { ZERO, ZERO, ZERO },
-          photon_pnew { ZERO, ZERO, ZERO };
-        real_t photon_energy_new_ { ZERO }, photon_energy_new { ZERO };
-
-        ScatterPhoton(KN_regime,
-                      photon_p_,
-                      photon_energy_,
-                      photon_pnew_,
-                      photon_energy_new_);
-        LorentzBoost({ -lepton_u[0], -lepton_u[1], -lepton_u[2] },
-                     lepton_gamma,
-                     photon_pnew_,
-                     photon_energy_new_,
-                     photon_pnew,
-                     photon_energy_new);
+      ScatterPhoton(photon_energy_ > Thomson_limit,
+                    photon_p_,
+                    photon_energy_,
+                    photon_pnew_,
+                    photon_energy_new_);
+      LorentzBoost({ -lepton_u[0], -lepton_u[1], -lepton_u[2] },
+                   lepton_gamma,
+                   photon_pnew_,
+                   photon_energy_new_,
+                   photon_pnew,
+                   photon_energy_new);
+      if constexpr (R1) {
         species[sp1 - 1].ux1(p1) += (photon_p[0] - photon_pnew[0]) *
                                     photon_weight / lepton_weight;
         species[sp1 - 1].ux2(p1) += (photon_p[1] - photon_pnew[1]) *
                                     photon_weight / lepton_weight;
         species[sp1 - 1].ux3(p1) += (photon_p[2] - photon_pnew[2]) *
                                     photon_weight / lepton_weight;
+      }
 
+      if constexpr (R2) {
         species[sp2 - 1].ux1(p2) = photon_pnew[0];
         species[sp2 - 1].ux2(p2) = photon_pnew[1];
         species[sp2 - 1].ux3(p2) = photon_pnew[2];
-      } // not interacting
+      }
     }
   };
 

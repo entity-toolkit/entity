@@ -249,8 +249,8 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
-       "ParticleSort", "Output",
-       "Checkpoint" },
+       "TwoBodyInteractions", "ParticleSort",
+       "Output", "Checkpoint" },
       []() {
         Kokkos::fence();
        },

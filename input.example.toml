@@ -298,6 +298,18 @@
     #   @type: uint
     #   @default: 1
     interval = ""
+    # Size of interaction tile in number of cells
+    #   @type: uint
+    #   @default: 4
+    tile_size = ""
+    # Whether to apply recoil on species of group1
+    #  @type: bool
+    #  @default: true
+    recoil1 = ""
+    # Whether to apply recoil on species of group2
+    #  @type: bool
+    #  @default: true
+    recoil2 = ""
 
 [algorithms]
   # Number of current smoothing passes
