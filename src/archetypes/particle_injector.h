@@ -389,6 +389,73 @@ namespace arch {
     }
   }
 
+  /**
+   * @brief Injects uniform number density of a single species everywhere in the domain
+   * @param domain Domain object
+   * @param species Species index
+   * @param energy_dist Energy distribution objects
+   * @param number_density Number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in global coords
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam ED Energy distribution type
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  inline void InjectUniform(const SimulationParams&     params,
+                            Domain<S, M>&               domain,
+                            spidx_t                     species,
+                            const ED&                   energy_dist,
+                            real_t                      number_density,
+                            bool                        use_weights = false,
+                            const boundaries_t<real_t>& box         = {}) {
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
+                   "Weights must be used for non-Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
+                   "Weights should not be used for Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
+                   "Weights must be enabled from the input file to use them in "
+                   "the injector",
+                   HERE);
+    if (domain.species[species - 1].charge() != 0.0f) {
+      raise::Warning("Charge of the injected species is non-zero", HERE);
+    }
+
+    {
+      boundaries_t<real_t> nonempty_box;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        if (d < box.size()) {
+          nonempty_box.emplace_back(box[d].first, box[d].second);
+        } else {
+          nonempty_box.push_back(Range::All);
+        }
+      }
+      const auto result = ComputeNumInject(params, domain, number_density, nonempty_box);
+      if (not std::get<0>(result)) {
+        return;
+      }
+      const auto nparticles = std::get<1>(result);
+      const auto xi_min     = std::get<2>(result);
+      const auto xi_max     = std::get<3>(result);
+
+      Kokkos::parallel_for("InjectUniform",
+                           nparticles,
+                           kernel::SingleSpeciesUniformInjector_kernel<S, M, ED>(
+                             domain.species[species - 1],
+                             domain.index(),
+                             domain.mesh.metric,
+                             xi_min,
+                             xi_max,
+                             energy_dist,
+                             ONE / params.template get<real_t>("scales.V0"),
+                             domain.random_pool()));
+      domain.species[species - 1].set_npart(
+        domain.species[species - 1].npart() + nparticles);
+    }
+  }
+
 } // namespace arch
 
 #endif // ARCHETYPES_PARTICLE_INJECTOR_H
