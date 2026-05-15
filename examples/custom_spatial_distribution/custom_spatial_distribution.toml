@@ -27,7 +27,8 @@
     CFL = 0.5
 
 [particles]
-  ppc0 = 16.0
+  ppc0        = 16.0
+  use_weights = true
 
   [[particles.species]]
     label    = "e+"

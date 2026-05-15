@@ -21,14 +21,16 @@ namespace user {
 
     // the only requirement for the spatial distribution is to have this operator()
     //   that takes in a position and returns the number density in that region (in units of n0)
-    Inline auto operator()(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto operator()(const coord_t<D>& x_Ph) const
+      -> Kokkos::pair<real_t, real_t> {
       const auto ndens = ONE -
                          (SQR(x_Ph[1] - math::pow(math::abs(x_Ph[0]), THIRD)) +
                           SQR(x_Ph[0]));
       if (ndens < ZERO) {
-        return ZERO;
+        return { ZERO, ZERO };
       }
-      return ndens;
+      const auto rad = math::sqrt(SQR(x_Ph[0]) + SQR(x_Ph[1] - HALF));
+      return { ndens, rad };
     }
   };
 
@@ -62,7 +64,8 @@ namespace user {
         { 1u, 2u },
         { edist, edist },
         sdist,
-        ONE);
+        ONE,
+        true);
     }
   };
 
