@@ -18,6 +18,7 @@
 #define FRAMEWORK_PARAMETERS_PARAMETERS_H
 
 #include "utils/param_container.h"
+
 #include <toml11/toml.hpp>
 
 #include <string>
@@ -31,9 +32,9 @@ namespace ntt {
     SimulationParams(const SimulationParams&) = default;
 
     SimulationParams& operator=(const SimulationParams& other) {
-      vars     = std::move(other.vars);
-      promises = std::move(other.promises);
-      raw_data = std::move(other.raw_data);
+      vars     = other.vars;
+      promises = other.promises;
+      raw_data = other.raw_data;
       return *this;
     }
 

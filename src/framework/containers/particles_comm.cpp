@@ -10,7 +10,6 @@
 #include "utils/log.h"
 
 #include "framework/containers/particles.h"
-
 #include "kernels/comm.hpp"
 
 #include <mpi.h>
@@ -29,6 +28,11 @@ namespace ntt {
                    npart_t      nsend,
                    npart_t      nrecv,
                    npart_t      offset) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Sendrecv(send_arr.data(),
                    nsend,
@@ -99,6 +103,11 @@ namespace ntt {
 
     template <typename T>
     void send(array_t<T*>& send_arr, int send_rank, npart_t nsend) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Send(send_arr.data(), nsend, mpi::get_type<T>(), send_rank, 0, MPI_COMM_WORLD);
 #else
@@ -110,6 +119,11 @@ namespace ntt {
 
     template <typename T>
     void recv(array_t<T*>& recv_arr, int recv_rank, npart_t nrecv, npart_t offset) {
+#if defined(DEVICE_ENABLED)
+      // guard for Intel GPUs.
+      // Should be a null-operation for other architectures.
+      Kokkos::fence();
+#endif
 #if !defined(DEVICE_ENABLED) || defined(GPU_AWARE_MPI)
       MPI_Recv(recv_arr.data() + offset,
                nrecv,
@@ -225,7 +239,7 @@ namespace ntt {
 
     // number of arrays of each type to send/recv
     const unsigned short NREALS = 4 + static_cast<unsigned short>(
-                                        D == Dim::_2D and C != Coord::Cart);
+                                        D == Dim::_2D and C != Coord::Cartesian);
     const unsigned short NINTS   = 2 * static_cast<unsigned short>(D);
     const unsigned short NPRTLDX = 2 * static_cast<unsigned short>(D);
     const unsigned short NPLDS_R = npld_r();
@@ -382,13 +396,13 @@ namespace ntt {
                                              const dir::map_t<D, int>&,        \
                                              const dir::map_t<D, int>&);
 
-  PARTICLES_COMM(Dim::_1D, Coord::Cart)
-  PARTICLES_COMM(Dim::_2D, Coord::Cart)
-  PARTICLES_COMM(Dim::_3D, Coord::Cart)
-  PARTICLES_COMM(Dim::_2D, Coord::Sph)
-  PARTICLES_COMM(Dim::_2D, Coord::Qsph)
-  PARTICLES_COMM(Dim::_3D, Coord::Sph)
-  PARTICLES_COMM(Dim::_3D, Coord::Qsph)
+  PARTICLES_COMM(Dim::_1D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_2D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_3D, Coord::Cartesian)
+  PARTICLES_COMM(Dim::_2D, Coord::Spherical)
+  PARTICLES_COMM(Dim::_2D, Coord::Qspherical)
+  PARTICLES_COMM(Dim::_3D, Coord::Spherical)
+  PARTICLES_COMM(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_COMM
 
 } // namespace ntt

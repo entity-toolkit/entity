@@ -17,10 +17,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -30,9 +29,7 @@ namespace kernel::gr {
    * @brief `d(Din)^i / dt = curl H_j`, `Dout += dt * d(Din)/dt`.
    * @tparam M Metric.
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
+  template <GRMetricClass M>
   class Ampere_kernel {
     static constexpr auto D = M::Dim;
 
@@ -65,7 +62,7 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr ncells_t i2min { N_GHOSTS };
         const real_t       i1_ { COORD(i1) };
@@ -108,9 +105,7 @@ namespace kernel::gr {
   /**
    * @brief Add the currents to the D field with the appropriate conversion.
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M> && metric::traits::HasPolarArea<M>
+  template <GRMetricClass M>
   class CurrentsAmpere_kernel {
     static constexpr auto D = M::Dim;
 
@@ -145,7 +140,7 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr ncells_t i2min { N_GHOSTS };
         const real_t       i1_ { COORD(i1) };

@@ -17,10 +17,10 @@
 #include "enums.h"
 
 #include "utils/error.h"
-#include <toml11/toml.hpp>
 
-#include "engines/traits.h"
 #include "framework/parameters/parameters.h"
+
+#include <toml11/toml.hpp>
 
 namespace ntt {
 
@@ -36,8 +36,7 @@ namespace ntt {
     ~Simulation();
 
     template <template <class> class E, template <Dimension> class M, Dimension D>
-      requires traits::engine::HasRun<E<M<D>>>
-    inline void run() {
+    void run() {
       using engine_t = E<M<D>>;
       try {
         engine_t engine { m_params };
@@ -48,17 +47,17 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    inline auto requested_dimension() const -> Dimension {
+    auto requested_dimension() const -> Dimension {
       return m_requested_dimension;
     }
 
     [[nodiscard]]
-    inline auto requested_engine() const -> SimEngine {
+    auto requested_engine() const -> SimEngine {
       return m_requested_engine;
     }
 
     [[nodiscard]]
-    inline auto requested_metric() const -> Metric {
+    auto requested_metric() const -> Metric {
       return m_requested_metric;
     }
   };

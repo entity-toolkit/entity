@@ -6,10 +6,8 @@
  * @namespaces:
  *   - ntt::
  * @macros:
- *   - MPI
- *   - DEBUG
+ *   - MPI_ENABLED
  *   - OUTPUT_ENABLED
- *   - CUDA_ENABLED
  */
 
 #ifndef ENGINES_ENGINE_H
@@ -19,21 +17,22 @@
 #include "global.h"
 
 #include "arch/mpi_aliases.h"
+#include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/diag.h"
 #include "utils/reporter.h"
 #include "utils/timer.h"
-#include <toml11/toml.hpp>
 
 #include "archetypes/field_setter.h"
-#include "archetypes/traits.h"
 #include "engines/reporter.h"
-#include "engines/traits.h"
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 
 #include "pgen.hpp"
+
+#include <toml11/toml.hpp>
 
 #if defined(OUTPUT_ENABLED)
   #include <adios2.h>
@@ -58,8 +57,12 @@
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <class PG, SimEngine::type S, class M>
+  concept PGenClass = requires(SimulationParams& p, Metadomain<S, M>& m) {
+    PG { p, m };
+  };
+
+  template <SimEngine::type S, MetricClass M>
   class Engine {
 
   protected:
@@ -112,11 +115,10 @@ namespace ntt {
       , time { start_time }
       , step { start_step } {}
 
-    ~Engine() = default;
-
     void init();
     void print_report() const;
 
+    virtual ~Engine()                                        = default;
     virtual void step_forward(timer::Timers&, Domain<S, M>&) = 0;
 
     void run();
@@ -129,8 +131,7 @@ namespace ntt {
     }
   };
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::init() {
     m_metadomain.InitStatsWriter(m_params, is_resuming);
 #if defined(OUTPUT_ENABLED)
@@ -141,20 +142,19 @@ namespace ntt {
     if (not is_resuming) {
       // start a new simulation with initial conditions
       logger::Checkpoint("Loading initial conditions", HERE);
-      if constexpr (arch::traits::pgen::HasInitFlds<user::PGen<S, M>>) {
+      if constexpr (::traits::pgen::HasInitFlds<user::PGen<S, M>>) {
         logger::Checkpoint("Initializing fields from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
           Kokkos::parallel_for(
             "InitFields",
             loc_dom.mesh.rangeActiveCells(),
-            arch::SetEMFields_kernel<decltype(m_pgen.init_flds), S, M> {
+            arch::SetEMFields_kernel<S, M, decltype(m_pgen.init_flds)> {
               loc_dom.fields.em,
               m_pgen.init_flds,
               loc_dom.mesh.metric });
         });
       }
-      if constexpr (
-        arch::traits::pgen::HasInitPrtls<user::PGen<S, M>, Domain<S, M>>) {
+      if constexpr (::traits::pgen::HasInitPrtls<user::PGen<S, M>, Domain<S, M>>) {
         logger::Checkpoint("Initializing particles from problem generator", HERE);
         m_metadomain.runOnLocalDomains([&](auto& loc_dom) {
           m_pgen.InitPrtls(loc_dom);
@@ -178,19 +178,16 @@ namespace ntt {
     print_report();
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::print_report() const {
     const auto colored_stdout = m_params.template get<bool>(
       "diagnostics.colored_stdout");
-    std::string report = "";
+    std::string report;
     CallOnce(
       [&](auto& metadomain, auto& params) {
-        const auto pgen  = std::string(PGEN);
-        report          += reporter::Backend();
+        report += reporter::Backend();
 
-        report += ReportSimulationConfig(params,
-                                         pgen,
+        report               += ReportSimulationConfig(params,
                                          S,
                                          Metric(M::MetricType),
                                          dt,
@@ -198,6 +195,10 @@ namespace ntt {
                                          max_steps,
                                          metadomain.ndomains_per_dim(),
                                          metadomain.ndomains());
+        const auto pgen_name  = std::string(PGEN);
+        report += ReportPgenConfig<decltype(m_pgen), M::Dim, Domain<S, M>>(
+          m_pgen,
+          pgen_name);
         if (metadomain.species_params().size() > 0) {
           report += "\n";
           reporter::AddCategory(report, 4, "Particles");
@@ -237,8 +238,7 @@ namespace ntt {
     }
   }
 
-  template <SimEngine::type S, class M>
-    requires traits::engine::IsCompatibleWithEngine<S, M, user::PGen>
+  template <SimEngine::type S, MetricClass M>
   void Engine<S, M>::run() {
     init();
 
@@ -248,7 +248,7 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
-       "PrtlClear", "Output",
+       "ParticleSort", "Output",
        "Checkpoint" },
       []() {
         Kokkos::fence();
@@ -270,7 +270,7 @@ namespace ntt {
       });
       // poststep (if defined)
       if constexpr (
-        arch::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
         timers.start("Custom");
         m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
           m_pgen.CustomPostStep(step, time, dom);
@@ -289,10 +289,10 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
       timers.start("Output");
       if constexpr (
-        arch::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomFieldOutput<decltype(m_pgen), M::Dim, Domain<S, M>>) {
         auto lambda_custom_field_output = [&](const std::string&    name,
                                               ndfield_t<M::Dim, 6>& buff,
-                                              index_t               idx,
+                                              cellidx_t             idx,
                                               timestep_t            step,
                                               simtime_t             time,
                                               const Domain<S, M>&   dom) {
@@ -308,7 +308,7 @@ namespace ntt {
         print_output &= m_metadomain.Write(m_params, step, step - 1, time, time - dt);
       }
       if constexpr (
-        arch::traits::pgen::HasCustomStatOutput<decltype(m_pgen), Domain<S, M>>) {
+        ::traits::pgen::HasCustomStatOutput<decltype(m_pgen), Domain<S, M>>) {
         auto lambda_custom_stat = [&](const std::string&  name,
                                       timestep_t          step,
                                       simtime_t           time,

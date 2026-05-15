@@ -1,5 +1,5 @@
 /**
- * @file framework/parameters/algorithms.h
+ * @file framework/parameters/extra.h
  * @brief Auxiliary functions for reading in extra physics parameters
  * @implements
  *   - ntt::params::Extra
@@ -14,11 +14,12 @@
 
 #include "global.h"
 
-#include <toml11/toml.hpp>
-
 #include "framework/parameters/parameters.h"
 
+#include <toml11/toml.hpp>
+
 #include <map>
+#include <optional>
 #include <string>
 
 namespace ntt {
@@ -26,23 +27,23 @@ namespace ntt {
 
     struct Extra {
       // radiative drag parameters
-      real_t synchrotron_gamma_rad;
-      real_t compton_gamma_rad;
+      std::optional<real_t> synchrotron_gamma_rad;
+      std::optional<real_t> compton_gamma_rad;
 
       // emission parameters
-      real_t  synchrotron_energy_min;
-      real_t  synchrotron_gamma_qed;
-      real_t  synchrotron_photon_weight;
-      spidx_t synchrotron_photon_species;
-      real_t  synchrotron_nominal_probability;
-      real_t  synchrotron_nominal_photon_energy;
+      std::optional<real_t>  synchrotron_energy_min;
+      std::optional<real_t>  synchrotron_gamma_qed;
+      std::optional<real_t>  synchrotron_photon_weight;
+      std::optional<spidx_t> synchrotron_photon_species;
+      std::optional<real_t>  synchrotron_nominal_probability;
+      std::optional<real_t>  synchrotron_nominal_photon_energy;
 
-      real_t  compton_energy_min;
-      real_t  compton_gamma_qed;
-      real_t  compton_photon_weight;
-      spidx_t compton_photon_species;
-      real_t  compton_nominal_probability;
-      real_t  compton_nominal_photon_energy;
+      std::optional<real_t>  compton_energy_min;
+      std::optional<real_t>  compton_gamma_qed;
+      std::optional<real_t>  compton_photon_weight;
+      std::optional<spidx_t> compton_photon_species;
+      std::optional<real_t>  compton_nominal_probability;
+      std::optional<real_t>  compton_nominal_photon_energy;
 
       void read(const std::map<std::string, bool>&,
                 const toml::value&,

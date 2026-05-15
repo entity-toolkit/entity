@@ -10,7 +10,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <cctype>
 #include <string>
 #include <vector>
 
@@ -21,7 +20,7 @@ namespace out {
   OutputField::OutputField(const SimEngine& S, const std::string& name)
     : m_name { name } {
     // determine the field ID
-    const auto pos = name.find("_");
+    const auto pos = name.find('_');
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
     if ((fmt::toLower(name_raw) != "dive") and
         (fmt::toLower(name_raw) != "divd")) {

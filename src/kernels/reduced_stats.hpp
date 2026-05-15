@@ -15,18 +15,13 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, StatsID::type F, unsigned short I = 0>
-    requires metric::traits::HasD<M> &&
-             (metric::traits::HasTransform_i<M> || I == 0) &&
-             metric::traits::HasTransform<M> && metric::traits::HasSqrtDetH<M> &&
-             (I <= 3)
+  template <SimEngine::type S, MetricClass M, StatsID::type F, uint8_t I = 0>
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 
@@ -42,7 +37,7 @@ namespace kernel {
       , J { J }
       , metric { metric } {}
 
-    Inline void operator()(index_t i1, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, real_t& buff) const {
       const auto i1_ = COORD(i1);
       if constexpr (F == StatsID::B2) {
         if constexpr (I == 1) {
@@ -145,7 +140,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, real_t& buff) const {
       const auto i1_ = COORD(i1);
       const auto i2_ = COORD(i2);
       if constexpr (F == StatsID::B2) {
@@ -259,7 +254,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3, real_t& buff) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3, real_t& buff) const {
       const auto i1_ = COORD(i1);
       const auto i2_ = COORD(i2);
       const auto i3_ = COORD(i3);
@@ -400,16 +395,13 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, StatsID::type P>
-    requires metric::traits::HasD<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              S == SimEngine::GRPIC && metric::traits::HasTransform<M>) &&
-             ((P == StatsID::Rho) || (P == StatsID::Charge) ||
-              (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
+  template <SimEngine::type S, MetricClass M, StatsID::type P>
+    requires((P == StatsID::Rho) || (P == StatsID::Charge) ||
+             (P == StatsID::N) || (P == StatsID::Npart) || (P == StatsID::T))
   class ReducedParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
-    const unsigned short     c1, c2;
+    const uint8_t            c1, c2;
     const array_t<int*>      i1, i2, i3;
     const array_t<prtldx_t*> dx1, dx2, dx3;
     const array_t<real_t*>   ux1, ux2, ux3;
@@ -424,27 +416,25 @@ namespace kernel {
     const real_t contrib;
 
   public:
-    ReducedParticleMoments_kernel(const std::vector<unsigned short>& components,
-                                  const array_t<int*>&               i1,
-                                  const array_t<int*>&               i2,
-                                  const array_t<int*>&               i3,
-                                  const array_t<prtldx_t*>&          dx1,
-                                  const array_t<prtldx_t*>&          dx2,
-                                  const array_t<prtldx_t*>&          dx3,
-                                  const array_t<real_t*>&            ux1,
-                                  const array_t<real_t*>&            ux2,
-                                  const array_t<real_t*>&            ux3,
-                                  const array_t<real_t*>&            phi,
-                                  const array_t<real_t*>&            weight,
-                                  const array_t<short*>&             tag,
-                                  float                              mass,
-                                  float                              charge,
-                                  bool     use_weights,
-                                  const M& metric)
-      : c1 { (components.size() > 0) ? components[0]
-                                     : static_cast<unsigned short>(0) }
-      , c2 { (components.size() == 2) ? components[1]
-                                      : static_cast<unsigned short>(0) }
+    ReducedParticleMoments_kernel(const std::vector<uint8_t>& components,
+                                  const array_t<int*>&        i1,
+                                  const array_t<int*>&        i2,
+                                  const array_t<int*>&        i3,
+                                  const array_t<prtldx_t*>&   dx1,
+                                  const array_t<prtldx_t*>&   dx2,
+                                  const array_t<prtldx_t*>&   dx3,
+                                  const array_t<real_t*>&     ux1,
+                                  const array_t<real_t*>&     ux2,
+                                  const array_t<real_t*>&     ux3,
+                                  const array_t<real_t*>&     phi,
+                                  const array_t<real_t*>&     weight,
+                                  const array_t<short*>&      tag,
+                                  float                       mass,
+                                  float                       charge,
+                                  bool                        use_weights,
+                                  const M&                    metric)
+      : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
+      , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , i1 { i1 }
       , i2 { i2 }
       , i3 { i3 }
@@ -468,7 +458,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t p, real_t& buff) const {
+    Inline void operator()(prtlidx_t p, real_t& buff) const {
       if (tag(p) != ParticleTag::alive) {
         return;
       }
@@ -498,7 +488,7 @@ namespace kernel {
           if constexpr (S == SimEngine::SRPIC) {
             // SR
             // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-            if constexpr (M::CoordType == Coord::Cart) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
               u_Phys[0] = ux1(p);
               u_Phys[1] = ux2(p);
               u_Phys[2] = ux3(p);

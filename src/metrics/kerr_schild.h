@@ -36,11 +36,11 @@ namespace metric {
     // Spin parameter, in [0,1[
     // and horizon size in units of rg
     // all physical extents are in units of rg
-    const real_t a, rg_, rh_;
+    const real_t a, rg_ { ONE }, rh_;
 
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const bool   small_angle;
+    const bool   small_angle { false };
 
     Inline auto Delta(real_t r) const -> real_t {
       return SQR(r) - TWO * r + SQR(a);
@@ -59,10 +59,10 @@ namespace metric {
     }
 
   public:
-    static constexpr const char*       Label { "kerr_schild" };
-    static constexpr Dimension         PrtlDim { D };
-    static constexpr ntt::Coord::type  CoordType { ntt::Coord::Sph };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild };
+    static constexpr const char*      Label { "kerr_schild" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
+    static constexpr ntt::Metric      MetricType { ntt::Metric::Kerr_Schild };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -79,7 +79,6 @@ namespace metric {
                const std::map<std::string, real_t>& params)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
-      , rg_ { ONE }
       , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
@@ -90,8 +89,6 @@ namespace metric {
       , small_angle { HALF * dtheta < constant::SMALL_ANGLE } {
       set_dxMin(find_dxMin());
     }
-
-    ~KerrSchild() = default;
 
     [[nodiscard]]
     Inline auto spin() const -> real_t {
@@ -112,15 +109,15 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t dx = ONE / (alpha(ij) * math::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t            dx = ONE /
+                            (alpha(ij) * math::sqrt(h<1, 1>(ij) + h<2, 2>(ij)) +
                              beta1(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
@@ -134,7 +131,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       // @TODO: Ask Alisa
       return ZERO;
     }
@@ -228,16 +225,18 @@ namespace metric {
       static_assert(j >= 0 && j <= 3, "Invalid index j");
       if constexpr (i == 0 && j == 0) {
         // g_00
-        return - (ONE - z(x[0] * dr + x1_min, x[1] * dtheta + x2_min)); 
-      } else if constexpr ((i == 0 && j == 1) ||  (i == 1 && j == 0)) {
+        return -(ONE - z(x[0] * dr + x1_min, x[1] * dtheta + x2_min));
+      } else if constexpr ((i == 0 && j == 1) || (i == 1 && j == 0)) {
         // g_01 or g_10
         return dr * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
-      } else if constexpr ((i == 0 && j == 3) ||  (i == 3 && j == 0)) {
+      } else if constexpr ((i == 0 && j == 3) || (i == 3 && j == 0)) {
         // g_03 or g_30
         if constexpr (D == Dim::_2D) {
-          return - a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) * SQR(math::sin(x[1] * dtheta + x2_min));
+          return -a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) *
+                 SQR(math::sin(x[1] * dtheta + x2_min));
         } else {
-          return - dphi * a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) * SQR(math::sin(x[1] * dtheta + x2_min));
+          return -dphi * a * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min) *
+                 SQR(math::sin(x[1] * dtheta + x2_min));
         }
       } else if constexpr (i == 1 && j == 1) {
         // g_11
@@ -266,13 +265,14 @@ namespace metric {
       static_assert(j >= 0 && j <= 3, "Invalid index j");
       if constexpr (i == 0 && j == 0) {
         // g^00
-        return - (ONE + z(x[0] * dr + x1_min, x[1] * dtheta + x2_min)); 
-      } else if constexpr ((i == 0 && j == 1) ||  (i == 1 && j == 0)) {
+        return -(ONE + z(x[0] * dr + x1_min, x[1] * dtheta + x2_min));
+      } else if constexpr ((i == 0 && j == 1) || (i == 1 && j == 0)) {
         // g^01 or g^10
         return dr_inv * z(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
       } else if constexpr (i == 1 && j == 1) {
         // g^11
-        return SQR(dr_inv) * Delta(x[0] * dr + x1_min)/ Sigma(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
+        return SQR(dr_inv) * Delta(x[0] * dr + x1_min) /
+               Sigma(x[0] * dr + x1_min, x[1] * dtheta + x2_min);
       } else if constexpr (i == 2 && j == 2) {
         // g^22
         return h<2, 2>(x);
@@ -519,15 +519,15 @@ namespace metric {
     Inline auto polar_area(real_t x1) const -> real_t {
       if (small_angle) {
         return dr * (SQR(x1 * dr + x1_min) + SQR(a)) *
-              math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
+               math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
                                   (SQR(x1 * dr + x1_min) + SQR(a))) *
                (static_cast<real_t>(48) - SQR(dtheta)) * SQR(dtheta) /
                static_cast<real_t>(384);
       } else {
         return dr * (SQR(x1 * dr + x1_min) + SQR(a)) *
-              math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
+               math::sqrt(ONE + TWO * (x1 * dr + x1_min) /
                                   (SQR(x1 * dr + x1_min) + SQR(a))) *
-              (ONE - math::cos(HALF * dtheta));
+               (ONE - math::cos(HALF * dtheta));
       }
     }
 
@@ -668,11 +668,14 @@ namespace metric {
     /**
      * u_0 from covariant velocity components
      */
-    Inline auto u_0(const coord_t<D>& xi, const vec_t<Dim::_3D>& u_i, const real_t norm) const {
+    Inline auto u_0(const coord_t<D>&      xi,
+                    const vec_t<Dim::_3D>& u_i,
+                    const real_t           norm) const {
       const real_t A { g<0, 0>(xi) };
-      const real_t B { - TWO * g<0, 1>(xi) * u_i[0] };
+      const real_t B { -TWO * g<0, 1>(xi) * u_i[0] };
       const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
-                       g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
+                       g<3, 3>(xi) * SQR(u_i[2]) +
+                       TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
       return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
     }
 
@@ -689,15 +692,66 @@ namespace metric {
       if constexpr (in == Idx::D && out == Idx::U) {
         // cov -> cntrv
         v_out[0] = v_in[0] * g<0, 0>(xi) + v_in[1] * g<0, 1>(xi);
-        v_out[1] = v_in[0] * g<1, 0>(xi) + v_in[1] * g<1, 1>(xi) + v_in[3] * g<1, 3>(xi);
+        v_out[1] = v_in[0] * g<1, 0>(xi) + v_in[1] * g<1, 1>(xi) +
+                   v_in[3] * g<1, 3>(xi);
         v_out[2] = v_in[2] * g<2, 2>(xi);
         v_out[3] = v_in[1] * g<3, 1>(xi) + v_in[3] * g<3, 3>(xi);
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
-        v_out[0] = v_in[0] * g_<0, 0>(xi) + v_in[1] * g_<0, 1>(xi) + v_in[3] * g_<0, 3>(xi);
-        v_out[1] = v_in[0] * g_<1, 0>(xi) + v_in[1] * g_<1, 1>(xi) + v_in[3] * g_<1, 3>(xi);
+        v_out[0] = v_in[0] * g_<0, 0>(xi) + v_in[1] * g_<0, 1>(xi) +
+                   v_in[3] * g_<0, 3>(xi);
+        v_out[1] = v_in[0] * g_<1, 0>(xi) + v_in[1] * g_<1, 1>(xi) +
+                   v_in[3] * g_<1, 3>(xi);
         v_out[2] = v_in[2] * g_<2, 2>(xi);
-        v_out[3] = v_in[0] * g_<3, 0>(xi) + v_in[1] * g_<3, 1>(xi) + v_in[3] * g_<3, 3>(xi);
+        v_out[3] = v_in[0] * g_<3, 0>(xi) + v_in[1] * g_<3, 1>(xi) +
+                   v_in[3] * g_<3, 3>(xi);
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
+    }
+
+    /**
+     * component-wise vector transformations
+     * @note phys cntrv/cov <-> cntrv/cov
+     */
+    template <idx_t i, Idx in, Idx out>
+    Inline auto transform(const coord_t<D>& /*xi*/, real_t v_in) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(((in == Idx::U) and (out == Idx::PU)) or
+                      ((in == Idx::PU) and (out == Idx::U)) or
+                      ((in == Idx::D) and (out == Idx::PD)) or
+                      ((in == Idx::PD) and (out == Idx::D)),
+                    "Invalid vector transformation: only cntrv/cov <-> phys "
+                    "cntrv/cov allowed");
+      if constexpr ((in == Idx::PU && out == Idx::U) ||
+                    (in == Idx::D && out == Idx::PD)) {
+        // phys cntrv -> cntrv || cov -> phys cov
+        if constexpr (i == 1) {
+          return v_in * dr_inv;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta_inv;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi_inv;
+          }
+        }
+      } else if constexpr ((in == Idx::U && out == Idx::PU) ||
+                           (in == Idx::PD && out == Idx::D)) {
+        // cntrv -> phys cntrv || phys cov -> cov
+        if constexpr (i == 1) {
+          return v_in * dr;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi;
+          }
+        }
       } else {
         raise::KernelError(HERE, "Invalid transformation");
       }

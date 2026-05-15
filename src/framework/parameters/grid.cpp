@@ -1,12 +1,12 @@
 #include "framework/parameters/grid.h"
 
 #include "defaults.h"
+#include "enums.h"
 #include "global.h"
 
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include <toml11/toml.hpp>
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -17,9 +17,19 @@
 
 #include "framework/parameters/parameters.h"
 
+#include <toml11/toml.hpp>
+
+#if defined(MPI_ENABLED)
+  #include <mpi.h>
+#endif
+
+#include <algorithm>
+#include <cstddef>
+#include <limits>
 #include <map>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace ntt {
@@ -52,7 +62,7 @@ namespace ntt {
         "boundaries",
         "fields");
       {
-        raise::ErrorIf(flds_bc.size() < 1 || flds_bc.size() > 3,
+        raise::ErrorIf(flds_bc.empty() || flds_bc.size() > 3,
                        "invalid `grid.boundaries.fields`",
                        HERE);
         params->promiseToDefine("grid.boundaries.fields");
@@ -84,7 +94,7 @@ namespace ntt {
         "boundaries",
         "particles");
       {
-        raise::ErrorIf(prtl_bc.size() < 1 || prtl_bc.size() > 3,
+        raise::ErrorIf(prtl_bc.empty() || prtl_bc.size() > 3,
                        "invalid `grid.boundaries.particles`",
                        HERE);
         params->promiseToDefine("grid.boundaries.particles");
@@ -111,7 +121,7 @@ namespace ntt {
       }
       std::vector<std::vector<FldsBC>> flds_bc_enum;
       std::vector<std::vector<PrtlBC>> prtl_bc_enum;
-      if (coord_enum == Coord::Cart) {
+      if (coord_enum == Coord::Cartesian) {
         raise::ErrorIf(flds_bc.size() != (std::size_t)dim,
                        "invalid `grid.boundaries.fields`",
                        HERE);
@@ -119,14 +129,14 @@ namespace ntt {
                        "invalid `grid.boundaries.particles`",
                        HERE);
         for (auto d { 0u }; d < (dim_t)dim; ++d) {
-          flds_bc_enum.push_back({});
-          prtl_bc_enum.push_back({});
-          const auto fbc = flds_bc[d];
-          const auto pbc = prtl_bc[d];
-          raise::ErrorIf(fbc.size() < 1 || fbc.size() > 2,
+          flds_bc_enum.emplace_back();
+          prtl_bc_enum.emplace_back();
+          const auto& fbc = flds_bc[d];
+          const auto& pbc = prtl_bc[d];
+          raise::ErrorIf(fbc.empty() || fbc.size() > 2,
                          "invalid `grid.boundaries.fields`",
                          HERE);
-          raise::ErrorIf(pbc.size() < 1 || pbc.size() > 2,
+          raise::ErrorIf(pbc.empty() || pbc.size() > 2,
                          "invalid `grid.boundaries.particles`",
                          HERE);
           auto fbc_enum = FldsBC::pick(fmt::toLower(fbc[0]).c_str());
@@ -135,35 +145,35 @@ namespace ntt {
             raise::ErrorIf(fbc_enum != FldsBC::PERIODIC,
                            "invalid `grid.boundaries.fields`",
                            HERE);
-            flds_bc_enum.back().push_back(FldsBC(FldsBC::PERIODIC));
-            flds_bc_enum.back().push_back(FldsBC(FldsBC::PERIODIC));
+            flds_bc_enum.back().emplace_back(FldsBC::PERIODIC);
+            flds_bc_enum.back().emplace_back(FldsBC::PERIODIC);
           } else {
             raise::ErrorIf(fbc_enum == FldsBC::PERIODIC,
                            "invalid `grid.boundaries.fields`",
                            HERE);
-            flds_bc_enum.back().push_back(fbc_enum);
+            flds_bc_enum.back().emplace_back(fbc_enum);
             auto fbc_enum = FldsBC::pick(fmt::toLower(fbc[1]).c_str());
             raise::ErrorIf(fbc_enum == FldsBC::PERIODIC,
                            "invalid `grid.boundaries.fields`",
                            HERE);
-            flds_bc_enum.back().push_back(fbc_enum);
+            flds_bc_enum.back().emplace_back(fbc_enum);
           }
           if (pbc.size() == 1) {
             raise::ErrorIf(pbc_enum != PrtlBC::PERIODIC,
                            "invalid `grid.boundaries.particles`",
                            HERE);
-            prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
-            prtl_bc_enum.back().push_back(PrtlBC(PrtlBC::PERIODIC));
+            prtl_bc_enum.back().emplace_back(PrtlBC::PERIODIC);
+            prtl_bc_enum.back().emplace_back(PrtlBC::PERIODIC);
           } else {
             raise::ErrorIf(pbc_enum == PrtlBC::PERIODIC,
                            "invalid `grid.boundaries.particles`",
                            HERE);
-            prtl_bc_enum.back().push_back(pbc_enum);
+            prtl_bc_enum.back().emplace_back(pbc_enum);
             auto pbc_enum = PrtlBC::pick(fmt::toLower(pbc[1]).c_str());
             raise::ErrorIf(pbc_enum == PrtlBC::PERIODIC,
                            "invalid `grid.boundaries.particles`",
                            HERE);
-            prtl_bc_enum.back().push_back(pbc_enum);
+            prtl_bc_enum.back().emplace_back(pbc_enum);
           }
         }
       } else {
@@ -231,8 +241,8 @@ namespace ntt {
           prtl_bc_enum[d].size() != 2,
           fmt::format("invalid inferred `grid.boundaries.particles[%d]`", d),
           HERE);
-        flds_bc_pairwise.push_back({ flds_bc_enum[d][0], flds_bc_enum[d][1] });
-        prtl_bc_pairwise.push_back({ prtl_bc_enum[d][0], prtl_bc_enum[d][1] });
+        flds_bc_pairwise.emplace_back(flds_bc_enum[d][0], flds_bc_enum[d][1]);
+        prtl_bc_pairwise.emplace_back(prtl_bc_enum[d][0], prtl_bc_enum[d][1]);
       }
       return { flds_bc_pairwise, prtl_bc_pairwise };
     }
@@ -242,7 +252,8 @@ namespace ntt {
                           const boundaries_t<real_t>& extent_pairwise,
                           const toml::value&          toml_data) {
       if (needs_match_boundaries) {
-        if (coord_enum == Coord::Cart) {
+        match_ds_array.emplace();
+        if (coord_enum == Coord::Cartesian) {
           auto min_extent = std::numeric_limits<real_t>::max();
           for (const auto& e : extent_pairwise) {
             min_extent = std::min(min_extent, e.second - e.first);
@@ -251,7 +262,7 @@ namespace ntt {
           try {
             auto ds = toml::find<real_t>(toml_data, "grid", "boundaries", "match", "ds");
             for (auto d = 0u; d < dim; ++d) {
-              match_ds_array.push_back({ ds, ds });
+              match_ds_array->emplace_back(ds, ds);
             }
           } catch (...) {
             try {
@@ -266,18 +277,18 @@ namespace ntt {
                              HERE);
               for (auto d = 0u; d < dim; ++d) {
                 if (ds[d].size() == 1) {
-                  match_ds_array.push_back({ ds[d][0], ds[d][0] });
+                  match_ds_array->emplace_back(ds[d][0], ds[d][0]);
                 } else if (ds[d].size() == 2) {
-                  match_ds_array.push_back({ ds[d][0], ds[d][1] });
-                } else if (ds[d].size() == 0) {
-                  match_ds_array.push_back({});
+                  match_ds_array->emplace_back(ds[d][0], ds[d][1]);
+                } else if (ds[d].empty()) {
+                  match_ds_array->emplace_back();
                 } else {
                   raise::Error("invalid `grid.boundaries.match.ds`", HERE);
                 }
               }
             } catch (...) {
               for (auto d = 0u; d < dim; ++d) {
-                match_ds_array.push_back({ default_ds, default_ds });
+                match_ds_array->emplace_back(default_ds, default_ds);
               }
             }
           }
@@ -290,12 +301,12 @@ namespace ntt {
             "match",
             "ds",
             r_extent * defaults::bc::match::ds_frac);
-          match_ds_array.push_back({ ds, ds });
+          match_ds_array->emplace_back(ds, ds);
         }
       }
 
       if (needs_absorb_boundaries) {
-        if (coord_enum == Coord::Cart) {
+        if (coord_enum == Coord::Cartesian) {
           auto min_extent = std::numeric_limits<real_t>::max();
           for (const auto& e : extent_pairwise) {
             min_extent = std::min(min_extent, e.second - e.first);
@@ -335,7 +346,7 @@ namespace ntt {
                                                 "density");
         atmosphere_ds =
           toml::find_or(toml_data, "grid", "boundaries", "atmosphere", "ds", ZERO);
-        atmosphere_g       = atmosphere_temperature / atmosphere_height;
+        atmosphere_g = atmosphere_temperature.value() / atmosphere_height.value();
         atmosphere_species = toml::find<std::pair<spidx_t, spidx_t>>(
           toml_data,
           "grid",
@@ -347,19 +358,21 @@ namespace ntt {
 
     void Boundaries::setParams(SimulationParams* params) const {
       if (needs_match_boundaries) {
-        params->set("grid.boundaries.match.ds", match_ds_array);
+        params->set("grid.boundaries.match.ds", match_ds_array.value());
       }
       if (needs_absorb_boundaries) {
-        params->set("grid.boundaries.absorb.ds", absorb_ds);
+        params->set("grid.boundaries.absorb.ds", absorb_ds.value());
       }
       if (needs_atmosphere_boundaries) {
         params->set("grid.boundaries.atmosphere.temperature",
-                    atmosphere_temperature);
-        params->set("grid.boundaries.atmosphere.density", atmosphere_density);
-        params->set("grid.boundaries.atmosphere.height", atmosphere_height);
-        params->set("grid.boundaries.atmosphere.ds", atmosphere_ds);
-        params->set("grid.boundaries.atmosphere.g", atmosphere_g);
-        params->set("grid.boundaries.atmosphere.species", atmosphere_species);
+                    atmosphere_temperature.value());
+        params->set("grid.boundaries.atmosphere.density",
+                    atmosphere_density.value());
+        params->set("grid.boundaries.atmosphere.height", atmosphere_height.value());
+        params->set("grid.boundaries.atmosphere.ds", atmosphere_ds.value());
+        params->set("grid.boundaries.atmosphere.g", atmosphere_g.value());
+        params->set("grid.boundaries.atmosphere.species",
+                    atmosphere_species.value());
       }
     }
 
@@ -386,16 +399,17 @@ namespace ntt {
 
       /* resolution and dimension ------------------------------------------- */
       resolution = toml::find<std::vector<ncells_t>>(toml_data, "grid", "resolution");
-      raise::ErrorIf(resolution.size() < 1 || resolution.size() > 3,
+      raise::ErrorIf(resolution->empty() or resolution->size() > 3,
                      "invalid `grid.resolution`",
                      HERE);
-      dim = static_cast<Dimension>(resolution.size());
+      dim = static_cast<Dimension>(resolution->size());
 
-      if (domain_decomposition.size() > dim) {
-        domain_decomposition.erase(domain_decomposition.begin() + (std::size_t)(dim),
-                                   domain_decomposition.end());
+      if (domain_decomposition->size() > dim.value()) {
+        domain_decomposition->erase(
+          domain_decomposition->begin() + static_cast<long>(dim.value()),
+          domain_decomposition->end());
       }
-      raise::ErrorIf(domain_decomposition.size() != dim,
+      raise::ErrorIf(domain_decomposition->size() != dim.value(),
                      "invalid `simulation.domain.decomposition`",
                      HERE);
 
@@ -403,6 +417,8 @@ namespace ntt {
       metric_enum = Metric::pick(
         fmt::toLower(toml::find<std::string>(toml_data, "grid", "metric", "metric"))
           .c_str());
+      metric_params.emplace();
+      metric_params_short_.emplace();
       std::string coord;
       if (metric_enum == Metric::Minkowski) {
         raise::ErrorIf(engine_enum != SimEngine::SRPIC,
@@ -412,42 +428,42 @@ namespace ntt {
       } else if (metric_enum == Metric::QKerr_Schild or
                  metric_enum == Metric::QSpherical) {
         // quasi-spherical geometry
-        raise::ErrorIf(dim == Dim::_1D,
+        raise::ErrorIf(dim.value() == Dim::_1D,
                        "not enough dimensions for qspherical geometry",
                        HERE);
-        raise::ErrorIf(dim == Dim::_3D,
+        raise::ErrorIf(dim.value() == Dim::_3D,
                        "3D not implemented for qspherical geometry",
                        HERE);
-        coord                    = "qsph";
-        metric_params["qsph_r0"] = toml::find_or(toml_data,
-                                                 "grid",
-                                                 "metric",
-                                                 "qsph_r0",
-                                                 defaults::qsph::r0);
-        metric_params["qsph_h"]  = toml::find_or(toml_data,
-                                                "grid",
-                                                "metric",
-                                                "qsph_h",
-                                                defaults::qsph::h);
+        coord                       = "qsph";
+        (*metric_params)["qsph_r0"] = toml::find_or(toml_data,
+                                                    "grid",
+                                                    "metric",
+                                                    "qsph_r0",
+                                                    defaults::qsph::r0);
+        (*metric_params)["qsph_h"]  = toml::find_or(toml_data,
+                                                   "grid",
+                                                   "metric",
+                                                   "qsph_h",
+                                                   defaults::qsph::h);
       } else {
         // spherical geometry
-        raise::ErrorIf(dim == Dim::_1D,
+        raise::ErrorIf(dim.value() == Dim::_1D,
                        "not enough dimensions for spherical geometry",
                        HERE);
-        raise::ErrorIf(dim == Dim::_3D,
+        raise::ErrorIf(dim.value() == Dim::_3D,
                        "3D not implemented for spherical geometry",
                        HERE);
         coord = "sph";
       }
       if ((engine_enum == SimEngine::GRPIC) &&
           (metric_enum != Metric::Kerr_Schild_0)) {
-        const auto ks_a        = toml::find_or(toml_data,
+        const auto ks_a           = toml::find_or(toml_data,
                                         "grid",
                                         "metric",
                                         "ks_a",
                                         defaults::ks::a);
-        metric_params["ks_a"]  = ks_a;
-        metric_params["ks_rh"] = ONE + math::sqrt(ONE - SQR(ks_a));
+        (*metric_params)["ks_a"]  = ks_a;
+        (*metric_params)["ks_rh"] = ONE + math::sqrt(ONE - SQR(ks_a));
       }
       coord_enum = Coord::pick(coord.c_str());
 
@@ -455,74 +471,85 @@ namespace ntt {
       extent = toml::find<std::vector<std::vector<real_t>>>(toml_data,
                                                             "grid",
                                                             "extent");
-
-      if (extent.size() > dim) {
-        extent.erase(extent.begin() + (std::size_t)(dim), extent.end());
+      extent_pairwise_.emplace();
+      if (extent->size() > dim.value()) {
+        extent->erase(extent->begin() + static_cast<long>(dim.value()),
+                      extent->end());
       }
-      raise::ErrorIf(extent[0].size() != 2, "invalid `grid.extent[0]`", HERE);
-      if (coord_enum != Coord::Cart) {
-        raise::ErrorIf(extent.size() > 1,
+      raise::ErrorIf(extent->at(0).size() != 2, "invalid `grid.extent[0]`", HERE);
+      if (coord_enum != Coord::Cartesian) {
+        raise::ErrorIf(extent->size() > 1,
                        "invalid `grid.extent` for non-cartesian geometry",
                        HERE);
-        extent.push_back({ ZERO, constant::PI });
-        if (dim == Dim::_3D) {
-          extent.push_back({ ZERO, TWO * constant::PI });
+        extent->push_back({ ZERO, constant::PI });
+        if (dim.value() == Dim::_3D) {
+          extent->push_back({ ZERO, TWO * constant::PI });
         }
       }
-      raise::ErrorIf(extent.size() != dim, "invalid inferred `grid.extent`", HERE);
-      for (auto d { 0u }; d < (dim_t)dim; ++d) {
-        raise::ErrorIf(extent[d].size() != 2,
+      raise::ErrorIf(extent->size() != dim.value(),
+                     "invalid inferred `grid.extent`",
+                     HERE);
+      for (auto d { 0u }; d < (dim_t)(dim.value()); ++d) {
+        raise::ErrorIf(extent->at(d).size() != 2,
                        fmt::format("invalid inferred `grid.extent[%d]`", d),
                        HERE);
-        extent_pairwise_.push_back({ extent[d][0], extent[d][1] });
+        extent_pairwise_->emplace_back(extent->at(d)[0], extent->at(d)[1]);
       }
 
       /* metric parameters ------------------------------------------------------ */
-      if (coord_enum == Coord::Qsph) {
-        metric_params_short_["r0"] = metric_params["qsph_r0"];
-        metric_params_short_["h"]  = metric_params["qsph_h"];
+      if (coord_enum == Coord::Qspherical) {
+        (*metric_params_short_)["r0"] = (*metric_params)["qsph_r0"];
+        (*metric_params_short_)["h"]  = (*metric_params)["qsph_h"];
       }
       if ((engine_enum == SimEngine::GRPIC) &&
           (metric_enum != Metric::Kerr_Schild_0)) {
-        metric_params_short_["a"] = metric_params["ks_a"];
+        (*metric_params_short_)["a"] = (*metric_params)["ks_a"];
       }
       // set("grid.metric.params", params);
 
       std::pair<real_t, real_t> dx0_V0;
       if (metric_enum == Metric::Minkowski) {
         if (dim == Dim::_1D) {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_1D>>(resolution,
-                                                           extent_pairwise_,
-                                                           metric_params_short_);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_1D>>(
+            resolution.value(),
+            extent_pairwise_.value(),
+            metric_params_short_.value());
         } else if (dim == Dim::_2D) {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_2D>>(resolution,
-                                                           extent_pairwise_,
-                                                           metric_params_short_);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_2D>>(
+            resolution.value(),
+            extent_pairwise_.value(),
+            metric_params_short_.value());
         } else {
-          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_3D>>(resolution,
-                                                           extent_pairwise_,
-                                                           metric_params_short_);
+          dx0_V0 = get_dx0_V0<metric::Minkowski<Dim::_3D>>(
+            resolution.value(),
+            extent_pairwise_.value(),
+            metric_params_short_.value());
         }
       } else if (metric_enum == Metric::Spherical) {
-        dx0_V0 = get_dx0_V0<metric::Spherical<Dim::_2D>>(resolution,
-                                                         extent_pairwise_,
-                                                         metric_params_short_);
+        dx0_V0 = get_dx0_V0<metric::Spherical<Dim::_2D>>(
+          resolution.value(),
+          extent_pairwise_.value(),
+          metric_params_short_.value());
       } else if (metric_enum == Metric::QSpherical) {
-        dx0_V0 = get_dx0_V0<metric::QSpherical<Dim::_2D>>(resolution,
-                                                          extent_pairwise_,
-                                                          metric_params_short_);
+        dx0_V0 = get_dx0_V0<metric::QSpherical<Dim::_2D>>(
+          resolution.value(),
+          extent_pairwise_.value(),
+          metric_params_short_.value());
       } else if (metric_enum == Metric::Kerr_Schild) {
-        dx0_V0 = get_dx0_V0<metric::KerrSchild<Dim::_2D>>(resolution,
-                                                          extent_pairwise_,
-                                                          metric_params_short_);
+        dx0_V0 = get_dx0_V0<metric::KerrSchild<Dim::_2D>>(
+          resolution.value(),
+          extent_pairwise_.value(),
+          metric_params_short_.value());
       } else if (metric_enum == Metric::Kerr_Schild_0) {
-        dx0_V0 = get_dx0_V0<metric::KerrSchild0<Dim::_2D>>(resolution,
-                                                           extent_pairwise_,
-                                                           metric_params_short_);
+        dx0_V0 = get_dx0_V0<metric::KerrSchild0<Dim::_2D>>(
+          resolution.value(),
+          extent_pairwise_.value(),
+          metric_params_short_.value());
       } else if (metric_enum == Metric::QKerr_Schild) {
-        dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(resolution,
-                                                           extent_pairwise_,
-                                                           metric_params_short_);
+        dx0_V0 = get_dx0_V0<metric::QKerrSchild<Dim::_2D>>(
+          resolution.value(),
+          extent_pairwise_.value(),
+          metric_params_short_.value());
       }
       auto [dx0, V0] = dx0_V0;
       scale_dx0      = dx0;
@@ -530,21 +557,21 @@ namespace ntt {
     }
 
     void Grid::setParams(SimulationParams* params) const {
-      params->set("simulation.domain.number", number_of_domains);
-      params->set("simulation.domain.decomposition", domain_decomposition);
+      params->set("simulation.domain.number", number_of_domains.value());
+      params->set("simulation.domain.decomposition", domain_decomposition.value());
 
-      params->set("grid.resolution", resolution);
-      params->set("grid.dim", dim);
+      params->set("grid.resolution", resolution.value());
+      params->set("grid.dim", dim.value());
       params->set("grid.metric.metric", metric_enum);
       params->set("grid.metric.coord", coord_enum);
-      for (const auto& [key, value] : metric_params) {
+      for (const auto& [key, value] : metric_params.value()) {
         params->set("grid.metric." + key, value);
       }
-      params->set("grid.metric.params", metric_params_short_);
-      params->set("grid.extent", extent_pairwise_);
+      params->set("grid.metric.params", metric_params_short_.value());
+      params->set("grid.extent", extent_pairwise_.value());
 
-      params->set("scales.dx0", scale_dx0);
-      params->set("scales.V0", scale_V0);
+      params->set("scales.dx0", scale_dx0.value());
+      params->set("scales.V0", scale_V0.value());
     }
 
   } // namespace params

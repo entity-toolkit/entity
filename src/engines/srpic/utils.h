@@ -1,3 +1,12 @@
+/**
+ * @file engines/srpic/utils.h
+ * @brief Utility functions used by the SRPIC engine
+ * @implements
+ *   - ntt::srpic::GetAtmosphereExtent<> -> std::tuple<short, in, real_t, real_t>
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_UTILS_H
 #define ENGINES_SRPIC_UTILS_H
 
@@ -5,9 +14,8 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "framework/domain/domain.h"
 #include "framework/domain/grid.h"
@@ -36,12 +44,11 @@ namespace ntt {
      *
      * in this case the function returns { -1, in::x1, xg_min, xg_max }
      */
-    template <class M>
-      requires metric::traits::HasD<M> && metric::traits::HasConvert<M>
-    auto GetAtmosphereExtent(dir::direction_t<M::Dim> direction,
-                             const M&                 global_metric,
-                             const Grid<M::Dim>&      global_grid,
-                             const SimulationParams&  params)
+    template <SRMetricClass M>
+    auto GetAtmosphereExtent(const dir::direction_t<M::Dim>& direction,
+                             const M&                        global_metric,
+                             const Grid<M::Dim>&             global_grid,
+                             const SimulationParams&         params)
       -> std::tuple<short, in, real_t, real_t> {
       const auto sign     = direction.get_sign();
       const auto dim      = direction.get_dim();
@@ -49,7 +56,7 @@ namespace ntt {
                               "algorithms.current_filters") +
                             2;
       const auto buffer_ncells = min_buff > 5 ? min_buff : 5;
-      if (M::CoordType != Coord::Cart and (dim != in::x1 or sign > 0)) {
+      if (M::CoordType != Coord::Cartesian and (dim != in::x1 or sign > 0)) {
         raise::Error("For non-cartesian coordinates atmosphere BCs is "
                      "possible only in -x1 (@ rmin)",
                      HERE);
@@ -93,11 +100,11 @@ namespace ntt {
       return { sign, dim, xg_min, xg_max };
     }
 
-    template <class M>
+    template <SRMetricClass M>
     auto RangeWithAxisBCs(const Domain<SimEngine::SRPIC, M>& domain)
       -> range_t<M::Dim> {
       auto range = domain.mesh.rangeActiveCells();
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         /**
          * @brief taking one extra cell in the x2 direction if AXIS BCs
          */

@@ -14,11 +14,13 @@
 
 #include "global.h"
 
-#include <toml11/toml.hpp>
-
 #include "framework/parameters/parameters.h"
 
+#include <toml11/toml.hpp>
+
+#include <cstddef>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -32,31 +34,31 @@ namespace ntt {
     };
 
     struct Output {
-      std::string format;
+      std::optional<std::string> format;
 
-      timestep_t global_interval;
-      simtime_t  global_interval_time;
+      std::optional<timestep_t> global_interval;
+      std::optional<simtime_t>  global_interval_time;
 
-      std::map<std::string, OutputCategory> categories;
+      std::optional<std::map<std::string, OutputCategory>> categories;
 
-      std::vector<std::string>  fields_quantities;
-      std::vector<std::string>  fields_custom_quantities;
-      unsigned short            fields_mom_smooth;
-      std::vector<unsigned int> fields_downsampling;
+      std::optional<std::vector<std::string>>  fields_quantities;
+      std::optional<std::vector<std::string>>  fields_custom_quantities;
+      std::optional<unsigned short>            fields_mom_smooth;
+      std::optional<std::vector<unsigned int>> fields_downsampling;
 
-      std::vector<spidx_t> particles_species;
-      npart_t              particles_stride;
+      std::optional<std::vector<spidx_t>> particles_species;
+      std::optional<npart_t>              particles_stride;
 
-      real_t      spectra_e_min;
-      real_t      spectra_e_max;
-      bool        spectra_log_bins;
-      std::size_t spectra_n_bins;
+      std::optional<real_t>      spectra_e_min;
+      std::optional<real_t>      spectra_e_max;
+      std::optional<bool>        spectra_log_bins;
+      std::optional<std::size_t> spectra_n_bins;
 
-      std::vector<std::string> stats_quantities;
-      std::vector<std::string> stats_custom_quantities;
+      std::optional<std::vector<std::string>> stats_quantities;
+      std::optional<std::vector<std::string>> stats_custom_quantities;
 
-      bool debug_as_is;
-      bool debug_ghosts;
+      std::optional<bool> debug_as_is;
+      std::optional<bool> debug_ghosts;
 
       void read(Dimension, std::size_t, const toml::value&);
       void setParams(SimulationParams*) const;

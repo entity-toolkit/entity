@@ -47,37 +47,40 @@ using array_mirror_t = typename array_t<T>::host_mirror_type;
 template <typename T>
 using scatter_array_t = Kokkos::Experimental::ScatterView<T>;
 
-// Array aliases of arbitrary type and dimensions (up to 3)
+// Array aliases of arbitrary type and dimensions (up to 4)
 namespace kokkos_aliases_hidden {
   // c++ magic
-  template <unsigned short D>
-  struct ndarray_impl {
+  template <unsigned short D, typename T>
+  struct nddata_impl {
     using type = void;
   };
 
-  template <>
-  struct ndarray_impl<1> {
-    using type = array_t<real_t*>;
+  template <typename T>
+  struct nddata_impl<1, T> {
+    using type = array_t<T*>;
   };
 
-  template <>
-  struct ndarray_impl<2> {
-    using type = array_t<real_t**>;
+  template <typename T>
+  struct nddata_impl<2, T> {
+    using type = array_t<T**>;
   };
 
-  template <>
-  struct ndarray_impl<3> {
-    using type = array_t<real_t***>;
+  template <typename T>
+  struct nddata_impl<3, T> {
+    using type = array_t<T***>;
   };
 
-  template <>
-  struct ndarray_impl<4> {
-    using type = array_t<real_t****>;
+  template <typename T>
+  struct nddata_impl<4, T> {
+    using type = array_t<T****>;
   };
 } // namespace kokkos_aliases_hidden
 
+template <unsigned short D, typename T>
+using nddata_t = typename kokkos_aliases_hidden::nddata_impl<D, T>::type;
+
 template <unsigned short D>
-using ndarray_t = typename kokkos_aliases_hidden::ndarray_impl<D>::type;
+using ndarray_t = typename kokkos_aliases_hidden::nddata_impl<D, real_t>::type;
 
 namespace kokkos_aliases_hidden {
   // c++ magic
@@ -224,10 +227,14 @@ using range_h_t = typename kokkos_aliases_hidden::range_h_impl<D>::type;
 
 /**
  * @brief Function template for generating 1D Kokkos range policy for particles.
- * @param p1 `npart_t`: min.
- * @param p2 `npart_t`: max.
+ * @tparam D Dimension
+ * @param p1 array of size D `npart_t`: min.
+ * @param p2 array of size D `npart_t`: max.
+ * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
-auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
+template <Dimension D>
+auto CreateParticleRangePolicy(const tuple_t<npart_t, D>&,
+                               const tuple_t<npart_t, D>&) -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy.
@@ -237,8 +244,8 @@ auto CreateParticleRangePolicy(npart_t, npart_t) -> range_t<Dim::_1D>;
  * @returns Kokkos::RangePolicy or Kokkos::MDRangePolicy in the accelerator execution space.
  */
 template <Dimension D>
-auto CreateRangePolicy(const tuple_t<ncells_t, D>&,
-                       const tuple_t<ncells_t, D>&) -> range_t<D>;
+auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
+  -> range_t<D>;
 
 /**
  * @brief Function template for generating ND Kokkos range policy on the host.
@@ -252,7 +259,8 @@ auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
 // Random number pool/generator type alias
-using random_number_pool_t = Kokkos::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace>;
+// (using math:: instead of Kokkos:: to suppress compiler warning on unused namespace alias)
+using random_number_pool_t = math::Random_XorShift64_Pool<Kokkos::DefaultExecutionSpace>;
 using random_generator_t = typename random_number_pool_t::generator_type;
 
 // Random number generator functions

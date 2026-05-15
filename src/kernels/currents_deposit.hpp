@@ -1,5 +1,5 @@
 /**
- * @file kernels/current_deposit.hpp
+ * @file kernels/currents_deposit.hpp
  * @brief Covariant algorithms for the current deposition
  * @implements
  *   - kernel::DepositCurrents_kernel<>
@@ -14,16 +14,15 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 #include "particle_shapes.hpp"
 
 #include <Kokkos_Core.hpp>
 
-#define i_di_to_Xi(I, DI) static_cast<real_t>((I)) + static_cast<real_t>((DI))
+#define i_di_to_Xi(I, DI) (static_cast<real_t>((I)) + static_cast<real_t>((DI)))
 
 namespace kernel {
   using namespace ntt;
@@ -31,11 +30,7 @@ namespace kernel {
   /**
    * @brief Algorithm for the current deposition
    */
-  template <SimEngine::type S, class M, unsigned short O = 1u>
-    requires metric::traits::HasD<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M> &&
-               metric::traits::HasConvert_i<M> && metric::traits::HasAlpha<M>))
+  template <SimEngine::type S, MetricClass M, unsigned short O = 1u>
   class DepositCurrents_kernel {
     static_assert(O <= 11u, "Shape function order O must be <= 11");
     static constexpr auto D = M::Dim;
@@ -110,7 +105,7 @@ namespace kernel {
      * @brief Iteration of the loop over particles.
      * @param p index.
      */
-    Inline auto operator()(index_t p) const -> void {
+    Inline auto operator()(prtlidx_t p) const -> void {
       if (tag(p) == ParticleTag::dead) {
         return;
       }

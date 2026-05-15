@@ -1,31 +1,29 @@
 /**
- * @file engines/srpic.hpp
- * @brief Simulation engien class which specialized on SRPIC
+ * @file engines/srpic/srpic.hpp
+ * @brief Simulation engine class which specializes on SRPIC
  * @implements
  *   - ntt::SRPICEngine<> : ntt::Engine<>
  * @cpp:
  *   - srpic.cpp
  * @namespaces:
  *   - ntt::
- * @macros:
  */
 
-#ifndef ENGINES_SRPIC_SRPIC_H
-#define ENGINES_SRPIC_SRPIC_H
+#ifndef ENGINES_SRPIC_SRPIC_HPP
+#define ENGINES_SRPIC_SRPIC_HPP
 
 #include "enums.h"
 #include "global.h"
 
+#include "traits/metric.h"
 #include "utils/numeric.h"
 #include "utils/timer.h"
-#include <toml11/toml.hpp>
 
 #include "engines/srpic/currents.h"
 #include "engines/srpic/fields_bcs.h"
 #include "engines/srpic/fieldsolvers.h"
 #include "engines/srpic/particle_pusher.h"
 #include "engines/srpic/particles_bcs.h"
-#include "engines/traits.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 
@@ -34,11 +32,11 @@
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <toml11/toml.hpp>
 
 namespace ntt {
 
-  template <class M>
-    requires traits::engine::IsCompatibleWithSRPICEngine<M, user::PGen>
+  template <SRMetricClass M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
     using base_t   = Engine<SimEngine::SRPIC, M>;
@@ -62,15 +60,13 @@ namespace ntt {
 
     SRPICEngine(const SimulationParams& params) : base_t { params } {}
 
-    ~SRPICEngine() = default;
+    ~SRPICEngine() override = default;
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
       const auto fieldsolver_enabled = m_params.template get<bool>(
         "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.deposit.enable");
-      const auto clear_interval = m_params.template get<std::size_t>(
-        "particles.clear_interval");
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
@@ -186,14 +182,12 @@ namespace ntt {
         timers.stop("Injector");
       }
 
-      if (clear_interval > 0 and step % clear_interval == 0 and step > 0) {
-        timers.start("PrtlClear");
-        m_metadomain.RemoveDeadParticles(dom);
-        timers.stop("PrtlClear");
-      }
+      timers.start("ParticleSort");
+      m_metadomain.SortParticles(time, step, m_params, dom);
+      timers.stop("ParticleSort");
     }
   };
 
 } // namespace ntt
 
-#endif // ENGINES_SRPIC_SRPIC_H
+#endif // ENGINES_SRPIC_SRPIC_HPP

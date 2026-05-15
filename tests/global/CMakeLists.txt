@@ -1,0 +1,46 @@
+# cmake-lint: disable=C0103,C0111
+# ------------------------------
+# @brief: Generates tests for the `ntt_global` module
+#
+# @uses:
+#
+# * kokkos [required]
+# * plog [required]
+# * mpi [optional]
+#
+# !TODO:
+#
+# * add optional tests for the `mpi_aliases.h`
+# ------------------------------
+
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../)
+
+function(gen_test title)
+  set(exec test-global-${title}.xc)
+  set(src ${title}.cpp)
+  add_executable(${exec} ${src})
+
+  set(libs ntt_global)
+  add_dependencies(${exec} ${libs})
+  if(title STREQUAL "traits_policies")
+    # this test additionally needs ntt_kernels
+    list(APPEND libs ntt_kernels)
+  endif()
+  target_link_libraries(${exec} PRIVATE ${libs})
+
+  add_test(NAME "GLOBAL::${title}" COMMAND "${exec}")
+endfunction()
+
+gen_test(global)
+gen_test(enums)
+gen_test(kokkos_aliases)
+gen_test(directions)
+gen_test(comparators)
+gen_test(numeric)
+gen_test(param_container)
+gen_test(sorting)
+gen_test(tiling)
+gen_test(traits_archetypes)
+gen_test(traits_metric)
+gen_test(traits_pgen)
+gen_test(traits_policies)

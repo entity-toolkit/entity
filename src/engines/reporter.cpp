@@ -1,7 +1,9 @@
 #include "engines/reporter.h"
 
 #include "enums.h"
+#include "global.h"
 
+#include "utils/formatting.h"
 #include "utils/reporter.h"
 
 #include "framework/parameters/parameters.h"
@@ -12,7 +14,6 @@
 namespace ntt {
 
   auto ReportSimulationConfig(const SimulationParams&          params,
-                              const std::string&               pgen,
                               SimEngine                        S,
                               Metric                           M,
                               real_t                           dt,
@@ -20,7 +21,7 @@ namespace ntt {
                               timestep_t                       max_steps,
                               const std::vector<unsigned int>& ndomains_per_dim,
                               unsigned int ndomains) -> std::string {
-    std::string report = "";
+    std::string report;
     /*
      * Simulation configs
      */
@@ -30,8 +31,7 @@ namespace ntt {
                        "Name",
                        "%s",
                        params.template get<std::string>("simulation.name").c_str());
-    reporter::AddParam(report, 4, "Problem generator", "%s", pgen.c_str());
-    reporter::AddParam(report, 4, "Engine", "%s", S.to_string());
+    reporter::AddParam(report, 4, "Engine", "%s", SimEngine(S).to_string());
     reporter::AddParam(report, 4, "Metric", "%s", M.to_string());
 #if SHAPE_ORDER == 0
     reporter::AddParam(report, 4, "Deposit", "%s", "zigzag");

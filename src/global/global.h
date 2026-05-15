@@ -25,8 +25,21 @@
  *   - type list_t
  *   - type coord_t
  *   - type vec_t
- *   - type index_t
- *   - type range_tuple_t
+ *   - type duration_t
+ *   - type simtime_t
+ *   - type timestep_t
+ *   - type ncells_t
+ *   - type npart_t
+ *   - type timestamp_t
+ *   - type cellidx_t
+ *   - type prtlidx_t
+ *   - type idx_t
+ *   - type spidx_t
+ *   - type dim_t
+ *   - type path_t
+ *   - type cell_range_t
+ *   - type prtl_slice_t
+ *   - type boundaries_t
  *   - ntt::GlobalInitialize -> void
  *   - ntt::GlobalFinalize -> void
  *   - enum ntt::DiagFlags
@@ -93,6 +106,7 @@
 #define GLOBAL_GLOBAL_H
 
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <utility>
@@ -104,7 +118,7 @@
 #define HERE __FILE__, __func__, __LINE__
 
 namespace files {
-  enum {
+  enum : uint8_t {
     LogFile = 1,
     ErrFile,
     InfoFile
@@ -115,18 +129,17 @@ namespace ntt {
 
 #if !defined(SHAPE_ORDER)
   #define SHAPE_ORDER 0
-  inline constexpr std::size_t N_GHOSTS = 2;
+  inline constexpr uint32_t N_GHOSTS = 2;
 #else  // SHAPE_ORDER
-  inline constexpr std::size_t N_GHOSTS = static_cast<std::size_t>(
-                                            (SHAPE_ORDER + 1) / 2) +
-                                          1;
+  inline constexpr uint32_t N_GHOSTS = static_cast<uint32_t>((SHAPE_ORDER + 1) / 2) +
+                                       1;
 #endif // SHAPE_ORDER
 
 // Coordinate shift to account for ghost cells
 #define COORD(I)                                                               \
   (static_cast<real_t>(static_cast<int>((I)) - static_cast<int>(N_GHOSTS)))
 
-  enum em {
+  enum em : uint8_t {
     ex1 = 0,
     ex2 = 1,
     ex3 = 2,
@@ -141,18 +154,18 @@ namespace ntt {
     hx3 = 5
   };
 
-  enum cur {
+  enum cur : uint8_t {
     jx1 = 0,
     jx2 = 1,
     jx3 = 2
   };
 
-  enum pldi {
+  enum pldi : uint8_t {
     spcCtr = 0,
     domIdx = 1
   };
 
-  enum ParticleTag : short {
+  enum ParticleTag : short { // NOLINT
     dead = 0,
     alive
   };
@@ -165,14 +178,14 @@ namespace ntt {
 
 /* global scope enums & aliases --------------------------------------------- */
 
-enum Dimension : unsigned short {
+enum Dimension : uint8_t {
   _1D = 1,
   _2D = 2,
   _3D = 3,
   _4D = 4
 };
 
-enum class CellLayer {
+enum class CellLayer : uint8_t {
   allLayer,
   activeLayer,
   minGhostLayer,
@@ -181,7 +194,7 @@ enum class CellLayer {
   maxGhostLayer
 };
 
-enum class Idx {
+enum class Idx : uint8_t {
   U,   // contravariant
   D,   // covariant
   T,   // tetrad
@@ -191,20 +204,20 @@ enum class Idx {
   PD,  // physical covariant
 };
 
-enum class Crd {
+enum class Crd : uint8_t {
   Cd,  // code units
   Ph,  // physical units
   XYZ, // Cartesian
   Sph, // spherical
 };
 
-enum class in : unsigned short {
+enum class in : uint8_t {
   x1 = 0,
   x2 = 1,
   x3 = 2,
 };
 
-enum class bc_in : short {
+enum class bc_in : int8_t {
   Mx1 = -1,
   Px1 = 1,
   Mx2 = -2,
@@ -219,7 +232,7 @@ using box_region_t = CellLayer[D];
 /* config flags ------------------------------------------------------------- */
 
 namespace PrepareOutput {
-  enum PrepareOutputFlags_ {
+  enum PrepareOutputFlags_ : uint8_t {
     None                        = 0,
     InterpToCellCenterFromEdges = 1 << 0,
     InterpToCellCenterFromFaces = 1 << 1,
@@ -229,26 +242,26 @@ namespace PrepareOutput {
   };
 } // namespace PrepareOutput
 
-typedef int PrepareOutputFlags;
+using PrepareOutputFlags = uint8_t;
 
 namespace Timer {
-  enum TimerFlags_ {
-    None            = 0,
-    PrintTotal      = 1 << 0,
-    PrintTitle      = 1 << 1,
-    AutoConvert     = 1 << 2,
-    PrintOutput     = 1 << 3,
-    PrintPrtlClear  = 1 << 4,
-    PrintCheckpoint = 1 << 5,
-    PrintNormed     = 1 << 6,
-    Default         = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
+  enum TimerFlags_ : uint8_t {
+    None              = 0,
+    PrintTotal        = 1 << 0,
+    PrintTitle        = 1 << 1,
+    AutoConvert       = 1 << 2,
+    PrintOutput       = 1 << 3,
+    PrintParticleSort = 1 << 4,
+    PrintCheckpoint   = 1 << 5,
+    PrintNormed       = 1 << 6,
+    Default           = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
   };
 } // namespace Timer
 
-typedef int TimerFlags;
+using TimerFlags = uint8_t;
 
 namespace Diag {
-  enum DiagFlags_ {
+  enum DiagFlags_ : uint8_t {
     None     = 0,
     Progress = 1 << 0,
     Timers   = 1 << 1,
@@ -259,10 +272,10 @@ namespace Diag {
 
 } // namespace Diag
 
-typedef int DiagFlags;
+using DiagFlags = uint8_t;
 
 namespace Comm {
-  enum CommTags_ {
+  enum CommTags_ : uint16_t {
     None = 0,
     E    = 1 << 0,
     B    = 1 << 1,
@@ -276,10 +289,10 @@ namespace Comm {
   };
 } // namespace Comm
 
-typedef int CommTags;
+using CommTags = uint16_t;
 
 namespace WriteMode {
-  enum WriteModeTags_ {
+  enum WriteModeTags_ : uint8_t {
     None      = 0,
     Fields    = 1 << 0,
     Particles = 1 << 1,
@@ -288,10 +301,10 @@ namespace WriteMode {
   };
 } // namespace WriteMode
 
-typedef int WriteModeTags;
+using WriteModeTags = uint8_t;
 
 namespace BC {
-  enum BCTags_ {
+  enum BCTags_ : uint16_t {
     None = 0,
     Ex1  = 1 << 0,
     Ex2  = 1 << 1,
@@ -316,16 +329,16 @@ namespace BC {
   };
 } // namespace BC
 
-typedef int BCTags;
+using BCTags = uint16_t;
 
 namespace Inj {
-  enum InjTags_ {
+  enum InjTags_ : uint8_t {
     None        = 0,
     AssumeEmpty = 1 << 0,
   };
 } // namespace Inj
 
-typedef int InjTags;
+using InjTags = uint8_t;
 
 /* aliases ------------------------------------------------------------------ */
 
@@ -367,23 +380,25 @@ using vec_t = tuple_t<real_t, D>;
 // time/duration
 using duration_t = double;
 using simtime_t  = double;
-using timestep_t = std::size_t;
-using ncells_t   = std::size_t;
-using npart_t    = unsigned long int;
+using timestep_t = uint32_t;
+using ncells_t   = uint32_t;
+using npart_t    = uint32_t;
 
 // walltime
 using timestamp_t = std::chrono::time_point<std::chrono::system_clock>;
 
 // index/number
-using index_t = const std::size_t;
-using idx_t   = unsigned short;
-using spidx_t = unsigned short;
-using dim_t   = unsigned short;
+using cellidx_t = const ncells_t;
+using prtlidx_t = const npart_t;
+using idx_t     = uint8_t;
+using spidx_t   = uint8_t;
+using dim_t     = uint8_t;
 
 // utility
 using path_t = std::filesystem::path;
 
-using range_tuple_t = std::pair<ncells_t, ncells_t>;
+using cell_range_t = std::pair<ncells_t, ncells_t>;
+using prtl_slice_t = std::pair<npart_t, npart_t>;
 
 template <typename T>
 using boundaries_t = std::vector<std::pair<T, T>>;

@@ -1,3 +1,19 @@
+/**
+ * @file engines/srpic/fields_bcs.h
+ * @brief Field boundary condition routines for the SRPIC engine
+ * @implements
+ *   - ntt::srpic::CallMatchFields<> -> void
+ *   - ntt::srpic::MatchFieldsIn<> -> void
+ *   - ntt::srpic::AxisFieldsIn<> -> void
+ *   - ntt::srpic::FixedFieldsIn<> -> void
+ *   - ntt::srpic::PerfectConductorFieldsIn<> -> void
+ *   - ntt::srpic::AtmosphereFieldsIn<> -> void
+ *   - ntt::srpic::CustomFieldsIn<> -> void
+ *   - ntt::srpic::FieldBoundaries<> -> void
+ * @namespaces:
+ *   - ntt::srpic::
+ */
+
 #ifndef ENGINES_SRPIC_FIELDS_BCS_H
 #define ENGINES_SRPIC_FIELDS_BCS_H
 
@@ -5,22 +21,21 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
-
-#include "archetypes/traits.h"
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
-
 #include "kernels/fields_bcs.hpp"
+
+#include "engines/engine.hpp"
 
 namespace ntt {
   namespace srpic {
 
-    template <class M, class T, in O>
-      requires metric::traits::HasD<M>
+    template <SRMetricClass M, class T, in O>
     void CallMatchFields(ndfield_t<M::Dim, 6>&       fields,
                          const boundaries_t<FldsBC>& boundaries,
                          const T&                    match_fields,
@@ -33,7 +48,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "MatchFields",
         CreateRangePolicy<M::Dim>(range_min, range_max),
-        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, T, M, O>(fields,
+        kernel::bc::MatchBoundaries_kernel<SimEngine::SRPIC, M, T, O>(fields,
                                                                       match_fields,
                                                                       metric,
                                                                       xg_edge,
@@ -42,15 +57,14 @@ namespace ntt {
                                                                       boundaries));
     }
 
-    template <class M, class PG>
-      requires metric::traits::HasD<M>
-    void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
-                       Domain<SimEngine::SRPIC, M>& domain,
-                       const Grid<M::Dim>&          global_grid,
-                       const PG&                    pgen,
-                       const prm::Parameters&       engine_params,
-                       const SimulationParams&      params,
-                       BCTags                       tags) {
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void MatchFieldsIn(const dir::direction_t<M::Dim>& direction,
+                       Domain<SimEngine::SRPIC, M>&    domain,
+                       const Grid<M::Dim>&             global_grid,
+                       const PG&                       pgen,
+                       const prm::Parameters&          engine_params,
+                       const SimulationParams&         params,
+                       BCTags                          tags) {
       const auto time     = engine_params.get<simtime_t>("time");
       /**
        * matching boundaries
@@ -76,15 +90,15 @@ namespace ntt {
       boundaries_t<bool>   incl_ghosts;
       for (dim_t d { 0 }; d < M::Dim; ++d) {
         if (d == static_cast<dim_t>(dim)) {
-          box.push_back({ xg_min, xg_max });
+          box.emplace_back(xg_min, xg_max);
           if (sign > 0) {
-            incl_ghosts.push_back({ false, true });
+            incl_ghosts.emplace_back(false, true);
           } else {
-            incl_ghosts.push_back({ true, false });
+            incl_ghosts.emplace_back(true, false);
           }
         } else {
           box.push_back(Range::All);
-          incl_ghosts.push_back({ true, true });
+          incl_ghosts.emplace_back(true, true);
         }
       }
       if (not domain.mesh.Intersects(box)) {
@@ -100,7 +114,7 @@ namespace ntt {
       }
 
       if (dim == in::x1) {
-        if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+        if constexpr (::traits::pgen::HasMatchFields<PG>) {
           auto match_fields = pgen.MatchFields(time);
           CallMatchFields<M, decltype(match_fields), in::x1>(domain.fields.em,
                                                              domain.mesh.flds_bc(),
@@ -111,7 +125,7 @@ namespace ntt {
                                                              tags,
                                                              range_min,
                                                              range_max);
-        } else if constexpr (arch::traits::pgen::HasMatchFieldsInX1<PG>) {
+        } else if constexpr (::traits::pgen::HasMatchFieldsInX1<PG>) {
           auto match_fields = pgen.MatchFieldsInX1(time);
           CallMatchFields<M, decltype(match_fields), in::x1>(domain.fields.em,
                                                              domain.mesh.flds_bc(),
@@ -125,7 +139,7 @@ namespace ntt {
         }
       } else if (dim == in::x2) {
         if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-          if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+          if constexpr (::traits::pgen::HasMatchFields<PG>) {
             auto match_fields = pgen.MatchFields(time);
             CallMatchFields<M, decltype(match_fields), in::x2>(
               domain.fields.em,
@@ -137,7 +151,7 @@ namespace ntt {
               tags,
               range_min,
               range_max);
-          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX2<PG>) {
+          } else if constexpr (::traits::pgen::HasMatchFieldsInX2<PG>) {
             auto match_fields = pgen.MatchFieldsInX2(time);
             CallMatchFields<M, decltype(match_fields), in::x2>(
               domain.fields.em,
@@ -155,7 +169,7 @@ namespace ntt {
         }
       } else if (dim == in::x3) {
         if constexpr (M::Dim == Dim::_3D) {
-          if constexpr (arch::traits::pgen::HasMatchFields<PG>) {
+          if constexpr (::traits::pgen::HasMatchFields<PG>) {
             auto match_fields = pgen.MatchFields(time);
             CallMatchFields<M, decltype(match_fields), in::x3>(
               domain.fields.em,
@@ -167,7 +181,7 @@ namespace ntt {
               tags,
               range_min,
               range_max);
-          } else if constexpr (arch::traits::pgen::HasMatchFieldsInX3<PG>) {
+          } else if constexpr (::traits::pgen::HasMatchFieldsInX3<PG>) {
             auto match_fields = pgen.MatchFieldsInX3(time);
             CallMatchFields<M, decltype(match_fields), in::x3>(
               domain.fields.em,
@@ -186,15 +200,14 @@ namespace ntt {
       }
     }
 
-    template <class M>
-      requires metric::traits::HasD<M>
-    void AxisFieldsIn(dir::direction_t<M::Dim>     direction,
-                      Domain<SimEngine::SRPIC, M>& domain,
-                      BCTags                       tags) {
+    template <SRMetricClass M>
+    void AxisFieldsIn(const dir::direction_t<M::Dim>& direction,
+                      Domain<SimEngine::SRPIC, M>&    domain,
+                      BCTags                          tags) {
       /**
        * axis boundaries
        */
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         raise::ErrorIf(direction.get_dim() != in::x2,
                        "Invalid axis direction, should be x2",
                        HERE);
@@ -223,58 +236,56 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
-      requires metric::traits::HasD<M> and metric::traits::HasCoordType<M> and
-               metric::traits::HasTransform_i<M>
-    void FixedFieldsIn(dir::direction_t<M::Dim>     direction,
-                       Domain<SimEngine::SRPIC, M>& domain,
-                       const PG&                    pgen,
-                       const prm::Parameters&       engine_params,
-                       BCTags                       tags) {
-      const auto time = engine_params.get<simtime_t>("time");
-      /**
-       * fixed field boundaries
-       */
-      const auto sign = direction.get_sign();
-      const auto dim  = direction.get_dim();
-      raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cart,
-                     "Fixed BCs only implemented for x1 in "
-                     "non-cartesian coordinates",
-                     HERE);
-      std::vector<ncells_t> xi_min, xi_max;
-      const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
-      for (dim_t d { 0u }; d < M::Dim; ++d) {
-        const auto dd = all_dirs[d];
-        if (dim == dd) {
-          if (sign > 0) { // + direction
-            xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
-            xi_max.push_back(domain.mesh.n_all(dd));
-          } else { // - direction
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void FixedFieldsIn(const dir::direction_t<M::Dim>& direction,
+                       Domain<SimEngine::SRPIC, M>&    domain,
+                       const PG&                       pgen,
+                       const prm::Parameters&          engine_params,
+                       BCTags                          tags) {
+      if constexpr (::traits::pgen::HasFixFieldsConst<PG>) {
+        const auto time = engine_params.get<simtime_t>("time");
+        /**
+         * fixed field boundaries
+         */
+        const auto sign = direction.get_sign();
+        const auto dim  = direction.get_dim();
+        raise::ErrorIf(dim != in::x1 and M::CoordType != Coord::Cartesian,
+                       "Fixed BCs only implemented for x1 in "
+                       "non-cartesian coordinates",
+                       HERE);
+        std::vector<ncells_t> xi_min, xi_max;
+        const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
+        for (dim_t d { 0u }; d < M::Dim; ++d) {
+          const auto dd = all_dirs[d];
+          if (dim == dd) {
+            if (sign > 0) { // + direction
+              xi_min.push_back(domain.mesh.n_all(dd) - N_GHOSTS);
+              xi_max.push_back(domain.mesh.n_all(dd));
+            } else { // - direction
+              xi_min.push_back(0);
+              xi_max.push_back(N_GHOSTS);
+            }
+          } else {
             xi_min.push_back(0);
-            xi_max.push_back(N_GHOSTS);
+            xi_max.push_back(domain.mesh.n_all(dd));
           }
-        } else {
-          xi_min.push_back(0);
-          xi_max.push_back(domain.mesh.n_all(dd));
         }
-      }
-      raise::ErrorIf(xi_min.size() != xi_max.size() or
-                       xi_min.size() != static_cast<std::size_t>(M::Dim),
-                     "Invalid range size",
-                     HERE);
-      std::vector<unsigned short> comps;
-      if (tags & BC::E) {
-        comps.push_back(em::ex1);
-        comps.push_back(em::ex2);
-        comps.push_back(em::ex3);
-      }
-      if (tags & BC::B) {
-        comps.push_back(em::bx1);
-        comps.push_back(em::bx2);
-        comps.push_back(em::bx3);
-      }
-      if constexpr (arch::traits::pgen::HasFixFieldsConst<PG>) {
-        raise::ErrorIf(M::CoordType != Coord::Cart and dim != in::x1,
+        raise::ErrorIf(xi_min.size() != xi_max.size() or
+                         xi_min.size() != static_cast<std::size_t>(M::Dim),
+                       "Invalid range size",
+                       HERE);
+        std::vector<unsigned short> comps;
+        if (tags & BC::E) {
+          comps.push_back(em::ex1);
+          comps.push_back(em::ex2);
+          comps.push_back(em::ex3);
+        }
+        if (tags & BC::B) {
+          comps.push_back(em::bx1);
+          comps.push_back(em::bx2);
+          comps.push_back(em::bx3);
+        }
+        raise::ErrorIf(M::CoordType != Coord::Cartesian and dim != in::x1,
                        "FixedFields cannot be used for non-cartesian metric",
                        HERE);
         for (const auto& comp : comps) {
@@ -334,19 +345,17 @@ namespace ntt {
         (void)direction;
         (void)domain;
         (void)tags;
-        raise::Error("Fixed fields not present (both const and non-const)", HERE);
       }
     }
 
-    template <class M>
-      requires metric::traits::HasD<M>
-    void PerfectConductorFieldsIn(dir::direction_t<M::Dim>     direction,
-                                  Domain<SimEngine::SRPIC, M>& domain,
-                                  BCTags                       tags) {
+    template <SRMetricClass M>
+    void PerfectConductorFieldsIn(const dir::direction_t<M::Dim>& direction,
+                                  Domain<SimEngine::SRPIC, M>&    domain,
+                                  BCTags                          tags) {
       /**
        * perfect conductor field boundaries
        */
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         (void)direction;
         (void)domain;
         (void)tags;
@@ -357,7 +366,7 @@ namespace ntt {
         const auto sign = direction.get_sign();
         const auto dim  = direction.get_dim();
 
-        std::vector<std::size_t> xi_min, xi_max;
+        std::vector<ncells_t> xi_min, xi_max;
 
         const std::vector<in> all_dirs { in::x1, in::x2, in::x3 };
 
@@ -388,7 +397,7 @@ namespace ntt {
         } else {
           raise::Error("Invalid dimension", HERE);
         }
-        std::size_t i_edge;
+        ncells_t i_edge;
         if (sign > 0) {
           i_edge = domain.mesh.i_max(dim);
         } else {
@@ -461,20 +470,20 @@ namespace ntt {
       }
     }
 
-    template <class M, class PG>
-    void AtmosphereFieldsIn(dir::direction_t<M::Dim>     direction,
-                            Domain<SimEngine::SRPIC, M>& domain,
-                            const M&                     global_metric,
-                            const Grid<M::Dim>&          global_grid,
-                            const PG&                    pgen,
-                            const SimulationParams&      params,
-                            const prm::Parameters&       engine_params,
-                            BCTags                       tags) {
-      const auto time = engine_params.get<simtime_t>("time");
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
+    void AtmosphereFieldsIn(const dir::direction_t<M::Dim>& direction,
+                            Domain<SimEngine::SRPIC, M>&    domain,
+                            const M&                        global_metric,
+                            const Grid<M::Dim>&             global_grid,
+                            const PG&                       pgen,
+                            const SimulationParams&         params,
+                            const prm::Parameters&          engine_params,
+                            BCTags                          tags) {
       /**
        * atmosphere field boundaries
        */
-      if constexpr (arch::traits::pgen::HasAtmFields<PG>) {
+      if constexpr (::traits::pgen::HasAtmFields<PG>) {
+        const auto time = engine_params.get<simtime_t>("time");
         const auto [sign, dim, xg_min, xg_max] = GetAtmosphereExtent(direction,
                                                                      global_metric,
                                                                      global_grid,
@@ -485,30 +494,30 @@ namespace ntt {
         boundaries_t<bool>   incl_ghosts;
         for (auto d { 0u }; d < M::Dim; ++d) {
           if (d == dd) {
-            box.push_back({ xg_min, xg_max });
+            box.emplace_back(xg_min, xg_max);
             if (sign > 0) {
-              incl_ghosts.push_back({ false, true });
+              incl_ghosts.emplace_back(false, true);
             } else {
-              incl_ghosts.push_back({ true, false });
+              incl_ghosts.emplace_back(true, false);
             }
           } else {
             box.push_back(Range::All);
-            incl_ghosts.push_back({ true, true });
+            incl_ghosts.emplace_back(true, true);
           }
         }
         if (not domain.mesh.Intersects(box)) {
           return;
         }
         const auto intersect_range = domain.mesh.ExtentToRange(box, incl_ghosts);
-        tuple_t<std::size_t, M::Dim> range_min { 0 };
-        tuple_t<std::size_t, M::Dim> range_max { 0 };
+        tuple_t<ncells_t, M::Dim> range_min { 0 };
+        tuple_t<ncells_t, M::Dim> range_max { 0 };
 
         for (auto d { 0u }; d < M::Dim; ++d) {
           range_min[d] = intersect_range[d].first;
           range_max[d] = intersect_range[d].second;
         }
-        auto        atm_fields = pgen.AtmFields(time);
-        std::size_t il_edge;
+        auto     atm_fields = pgen.AtmFields(time);
+        ncells_t il_edge;
         if (sign > 0) {
           il_edge = range_min[dd] - N_GHOSTS;
         } else {
@@ -520,7 +529,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "AtmosphereBCFields",
               range,
-              kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x1>(
+              kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x1>(
                 domain.fields.em,
                 atm_fields,
                 domain.mesh.metric,
@@ -530,7 +539,7 @@ namespace ntt {
             Kokkos::parallel_for(
               "AtmosphereBCFields",
               range,
-              kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x1>(
+              kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x1>(
                 domain.fields.em,
                 atm_fields,
                 domain.mesh.metric,
@@ -543,7 +552,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x2>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x2>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -553,7 +562,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x2>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x2>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -569,7 +578,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, true, in::x3>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), true, in::x3>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -579,7 +588,7 @@ namespace ntt {
               Kokkos::parallel_for(
                 "AtmosphereBCFields",
                 range,
-                kernel::bc::EnforcedBoundaries_kernel<decltype(atm_fields), M, false, in::x3>(
+                kernel::bc::EnforcedBoundaries_kernel<M, decltype(atm_fields), false, in::x3>(
                   domain.fields.em,
                   atm_fields,
                   domain.mesh.metric,
@@ -596,32 +605,20 @@ namespace ntt {
         (void)direction;
         (void)domain;
         (void)tags;
-        raise::Error("Atm fields not implemented in PGEN for atmosphere BCs", HERE);
       }
     }
 
-    template <class M>
-      requires metric::traits::HasD<M>
-    void CustomFieldsIn(dir::direction_t<M::Dim>     direction,
-                        Domain<SimEngine::SRPIC, M>& domain,
-                        BCTags                       tags) {
+    template <SRMetricClass M>
+    void CustomFieldsIn(const dir::direction_t<M::Dim>& direction,
+                        Domain<SimEngine::SRPIC, M>&    domain,
+                        BCTags                          tags) {
       (void)direction;
       (void)domain;
       (void)tags;
       raise::Error("Custom boundaries not implemented", HERE);
-      // if constexpr (
-      //   traits::has_member<traits::pgen::custom_fields_t, pgen_t>::value) {
-      //   const auto [box, custom_fields] = m_pgen.CustomFields(time);
-      //   if (domain.mesh.Intersects(box)) {
-      //   }
-      //
-      // } else {
-      //   raise::Error("Custom boundaries not implemented", HERE);
-      // }
     }
 
-    template <class M, class PG>
-      requires metric::traits::HasD<M>
+    template <SRMetricClass M, PGenClass<SimEngine::SRPIC, M> PG>
     void FieldBoundaries(Domain<SimEngine::SRPIC, M>& domain,
                          const M&                     global_metric,
                          const Grid<M::Dim>&          global_grid,

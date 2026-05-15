@@ -131,16 +131,17 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         modules = "\n".join(
             [f"module load {module} && \\" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/kokkos"
-        install_path = (
-            f"{prefix}/kokkos/{version}/{backend}{f'_{arch}' if arch else ''}"
+        modules_in_module = "\n".join(
+            [f"module load {module}" for module in settings.module_loads]
         )
+        src_path = os.path.join(prefix, "src", "kokkos")
+        install_path = os.path.join(prefix, "kokkos", version, backend, arch.lower() if arch else "")
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
             )
 
-        extra_flags = "-D ".join(settings.extra_kokkos_flags)
+        extra_flags = " ".join(["-D " + kf for kf in settings.extra_kokkos_flags])
         cxx_standard = 20 if tuple(map(int, version.split("."))) >= (5, 0, 0) else 17
 
         if arch == "":
@@ -148,44 +149,42 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
         arch = arch.upper()
 
         script = f"""
-        # Kokkos installation
-        {modules}
-        rm -rf {src_path} && \\
-        git clone https://github.com/kokkos/kokkos.git {src_path} && \\
-        cd {src_path} && \\
-        git checkout {version} && \\
-        cmake -B build \\
-            -D CMAKE_CXX_STANDARD={cxx_standard} \\
-            -D CMAKE_CXX_EXTENSIONS=OFF \\
-            -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
-            -D Kokkos_ARCH_{arch}=ON {f'-D Kokkos_ENABLE_{backend.upper()}=ON' if backend != 'cpu' else ''} \\
-            -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
-        cmake --build build -j $(nproc) && \\
-        cmake --install build
-        """
+# Kokkos installation
+{modules}
+rm -rf {src_path} && \\
+git clone https://github.com/kokkos/kokkos.git {src_path} && \\
+cd {src_path} && \\
+git checkout {version} && \\
+cmake -B build \\
+    -D CMAKE_CXX_STANDARD={cxx_standard} \\
+    -D CMAKE_CXX_EXTENSIONS=OFF \\
+    -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+    -D Kokkos_ARCH_{arch}=ON {f'-D Kokkos_ENABLE_{backend.upper()}=ON' if backend != 'cpu' else ''} \\
+    -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
+cmake --build build -j $(nproc) && \\
+cmake --install build"""
 
         modfile = f"""
-        #%Module1.0######################################################################
-        ##
-        ## Kokkos @ {backend} @ {arch} modulefile
-        ##
-        #################################################################################
-        proc ModulesHelp {{ }} {{
-            puts stderr \"\\tKokkos @ {backend} @ {arch}\\n\"
-        }}
+#%Module1.0######################################################################
+##
+## Kokkos @ {backend} @ {arch} modulefile
+##
+#################################################################################
+proc ModulesHelp {{ }} {{
+    puts stderr \"\\tKokkos @ {backend} @ {arch}\\n\"
+}}
 
-        module-whatis      \"Sets up Kokkos @ {backend} @ {arch}\"
+module-whatis      \"Sets up Kokkos @ {backend} @ {arch}\"
 
-        conflict           kokkos
-        {modules}
+conflict           kokkos
+{modules_in_module}
 
-        set                basedir      {install_path}
-        prepend-path       PATH         $basedir/bin
-        setenv             Kokkos_DIR   $basedir
+set                basedir      {install_path}
+prepend-path       PATH         $basedir/bin
+setenv             Kokkos_DIR   $basedir
 
-        setenv Kokkos_ARCH_{arch} ON
-        {f'setenv Kokkos_ENABLE_{backend.upper()} ON' if backend != 'cpu' else ''}
-        """
+setenv Kokkos_ARCH_{arch} ON
+{f'setenv Kokkos_ENABLE_{backend.upper()} ON' if backend != 'cpu' else ''}"""
 
         return (unindent(script), unindent(modfile))
 
@@ -201,14 +200,17 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         modules = "\n".join(
             [f"module load {module} && \\" for module in settings.module_loads]
         )
-        src_path = f"{prefix}/src/adios2"
-        install_path = f"{prefix}/adios2/{version}/{mpi_mode}"
+        modules_in_module = "\n".join(
+            [f"module load {module}" for module in settings.module_loads]
+        )
+        src_path = os.path.join(prefix, "src", "adios2")
+        install_path = os.path.join(prefix, "adios2", version, mpi_mode)
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Adios2 install path {install_path} already exists and overwrite is disabled"
             )
 
-        extra_flags = "-D ".join(settings.extra_adios2_flags)
+        extra_flags = " ".join(["-D " + af for af in settings.extra_adios2_flags])
         cxx_standard = (
             20
             if tuple(map(int, settings.kokkos_version.split("."))) >= (5, 0, 0)
@@ -218,50 +220,48 @@ def InstallAdios2Script(settings: Settings) -> tuple[str, str]:
         with_mpi = "ON" if mpi_mode == "mpi" else "OFF"
 
         script = f"""
-        # Adios2 installation
-        {modules}
-        rm -rf {src_path} && \\
-        git clone https://github.com/ornladios/ADIOS2.git {src_path} && \\
-        cd {src_path} && \\
-        git checkout v{version} && \\
-        cmake -B build \\
-            -D CMAKE_CXX_STANDARD={cxx_standard} \\
-            -D CMAKE_CXX_EXTENSIONS=OFF \\
-            -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
-            -D BUILD_SHARED_LIBS=ON \\
-            -D ADIOS2_USE_Python=OFF \\
-            -D ADIOS2_USE_Fortran=OFF \\
-            -D ADIOS2_USE_ZeroMQ=OFF \\
-            -D BUILD_TESTING=OFF \\
-            -D ADIOS2_BUILD_EXAMPLES=OFF \\
-            -D ADIOS2_USE_HDF5=OFF \\
-            -D ADIOS2_USE_MPI={with_mpi} \\
-            -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
-        cmake --build build -j $(nproc) && \\
-        cmake --install build
-        """
+# Adios2 installation
+{modules}
+rm -rf {src_path} && \\
+git clone https://github.com/ornladios/ADIOS2.git {src_path} && \\
+cd {src_path} && \\
+git checkout v{version} && \\
+cmake -B build \\
+    -D CMAKE_CXX_STANDARD={cxx_standard} \\
+    -D CMAKE_CXX_EXTENSIONS=OFF \\
+    -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
+    -D BUILD_SHARED_LIBS=ON \\
+    -D ADIOS2_USE_Python=OFF \\
+    -D ADIOS2_USE_Fortran=OFF \\
+    -D ADIOS2_USE_ZeroMQ=OFF \\
+    -D BUILD_TESTING=OFF \\
+    -D ADIOS2_BUILD_EXAMPLES=OFF \\
+    -D ADIOS2_USE_HDF5=OFF \\
+    -D ADIOS2_USE_MPI={with_mpi} \\
+    -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
+cmake --build build -j $(nproc) && \\
+cmake --install build"""
 
         modfile = f"""
-        #%Module1.0######################################################################
-        ##
-        ## ADIOS2 @ {mpi_mode} modulefile
-        ##
-        #################################################################################
-        proc ModulesHelp {{ }} {{
-            puts stderr \"\\tADIOS2 @ {mpi_mode}\\n\"
-        }}
+#%Module1.0######################################################################
+##
+## ADIOS2 @ {mpi_mode} modulefile
+##
+#################################################################################
+proc ModulesHelp {{ }} {{
+    puts stderr \"\\tADIOS2 @ {mpi_mode}\\n\"
+}}
 
-        module-whatis      \"Sets up ADIOS2 @ {mpi_mode}\"    
+module-whatis      \"Sets up ADIOS2 @ {mpi_mode}\"    
 
-        conflict           adios2
-        {modules}
+conflict           adios2
+{modules_in_module}
 
-        set                basedir      {install_path}
-        prepend-path       PATH         $basedir/bin
-        setenv             ADIOS2_DIR   $basedir
+set                basedir      {install_path}
+prepend-path       PATH         $basedir/bin
+setenv             ADIOS2_DIR   $basedir
 
-        setenv ADIOS2_USE_MPI {with_mpi}
-        """
+setenv ADIOS2_USE_MPI {with_mpi}"""
 
         return (unindent(script), unindent(modfile))
 
@@ -292,9 +292,39 @@ def InstallNt2pyScript(settings: Settings) -> str:
 
 
 PRESETS = {
-    "rusty": {"module_loads": []},
+    "rusty": {
+        "module_loads": ["openmpi/cuda-4.1.8", "cuda/12.8.0.lua", "gcc/14.2.0.lua"],
+        "kokkos_backend": "cuda",
+        "kokkos_arch": "AMPERE80",
+        "adios2_mpi": "mpi",
+    },
     "stellar": {"module_loads": []},
-    "perlmutter": {"module_loads": []},
+    "perlmutter": {
+        "module_loads": ["gpu/1.0"],
+        "kokkos_backend": "cuda",
+        "kokkos_arch": "AMPERE80",
+        "extra_kokkos_flags": [
+            "Kokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=OFF",
+            "CMAKE_CXX_COMPILER=CC",
+        ],
+        "extra_adios2_flags": [
+            "LIBFABRIC_ROOT=/opt/cray/libfabric/1.15.2.0/",
+            "MPI_ROOT=/opt/cray/pe/craype/2.7.30",
+        ],
+    },
+    "lumi": {
+        "module_loads": ["PrgEnv-cray", "cray-mpich", "craype-accel-amd-gfx90a", "rocm"],
+        "kokkos_backend": "hip",
+        "kokkos_arch": "AMD_GFX90A",
+        "extra_kokkos_flags": [
+            "CMAKE_CXX_COMPILER=hipcc",
+            "AMDGPU_TARGETS=gfx90a",
+        ],
+        "extra_adios2_flags": [
+            "CMAKE_CXX_COMPILER=CC",
+            "CMAKE_C_COMPILER=cc"
+        ]
+    },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
 }
@@ -306,8 +336,13 @@ def apply_preset(s: Settings, name: str) -> None:
     cluster_preset = PRESETS.get(name, {})
     s.apps["Kokkos"] = True
     s.apps["adios2"] = True
-    s.apps["nt2py"] = True
+    s.apps["nt2py"] = False
+    s.write_modulefiles = True
+    s.overwrite = True
     s.module_loads = cluster_preset.get("module_loads", [])
+    s.kokkos_backend = cluster_preset.get("kokkos_backend", "cpu")
+    s.kokkos_arch = cluster_preset.get("kokkos_arch", "NATIVE")
+    s.adios2_mpi = cluster_preset.get("adios2_mpi", "mpi")
     s.extra_kokkos_flags = cluster_preset.get("extra_kokkos_flags", [])
     s.extra_adios2_flags = cluster_preset.get("extra_adios2_flags", [])
 
@@ -330,13 +365,9 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "kokkos",
-                settings.kokkos_backend
-                + (
-                    f"_{settings.kokkos_arch.strip()}"
-                    if settings.kokkos_arch.strip()
-                    else ""
-                ),
                 settings.kokkos_version,
+                settings.kokkos_backend, 
+                settings.kokkos_arch.strip().lower(),
             )
             os.makedirs(os.path.dirname(kokkos_modfile_file), exist_ok=True)
             if os.path.exists(kokkos_modfile_file) and not settings.overwrite:
@@ -350,8 +381,8 @@ def on_install_confirmed(settings: Settings) -> None:
                 settings.install_prefix,
                 "modules",
                 "adios2",
-                settings.adios2_mpi,
                 settings.adios2_version,
+                settings.adios2_mpi,
             )
             os.makedirs(os.path.dirname(adios2_modfile_file), exist_ok=True)
             if os.path.exists(adios2_modfile_file) and not settings.overwrite:
@@ -1058,24 +1089,14 @@ class App:
 
     def menu_cluster(self) -> Tuple[str, str, List[MenuItem]]:
         def choose(name: str):
+            print ("CALLING:", name)
             apply_preset(self.s, name)
             self.push("custom")
 
         return (
             "cluster-specific",
             "pick a preset:",
-            [
-                MenuItem("rusty", "apply preset", on_enter=lambda: choose("rusty")),
-                MenuItem("stellar", "apply preset", on_enter=lambda: choose("stellar")),
-                MenuItem(
-                    "perlmutter", "apply preset", on_enter=lambda: choose("perlmutter")
-                ),
-                MenuItem(
-                    "frontier", "apply preset", on_enter=lambda: choose("frontier")
-                ),
-                MenuItem("aurora", "apply preset", on_enter=lambda: choose("aurora")),
-                MenuItem("back", "", on_enter=self.pop),
-            ],
+            [MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c)) for cluster in list(PRESETS.keys())] + [MenuItem("back", "", on_enter=self.pop)],
         )
 
     def get_menu(self) -> Tuple[str, str, List[MenuItem]]:
@@ -1163,7 +1184,6 @@ def _wrapper_capture(stdscr) -> None:
     try:
         app.run()
     except TuiExitInstall:
-        on_install_confirmed(app.s)
         raise
 
 

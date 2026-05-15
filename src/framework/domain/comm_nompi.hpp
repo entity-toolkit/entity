@@ -26,17 +26,17 @@ namespace comm {
    * @note: `fld` and `fld_buff` may be the same
    */
   template <Dimension D, int N>
-  inline void CommunicateField(unsigned int                      idx,
-                               ndfield_t<D, N>&                  fld,
-                               ndfield_t<D, N>&                  fld_buff,
-                               unsigned int                      send_idx,
-                               unsigned int                      recv_idx,
-                               int                               send_rank,
-                               int                               recv_rank,
-                               const std::vector<range_tuple_t>& send_slice,
-                               const std::vector<range_tuple_t>& recv_slice,
-                               const range_tuple_t&              comps,
-                               bool                              additive) {
+  inline void CommunicateField(unsigned int                     idx,
+                               ndfield_t<D, N>&                 fld,
+                               ndfield_t<D, N>&                 fld_buff,
+                               unsigned int                     send_idx,
+                               unsigned int                     recv_idx,
+                               int                              send_rank,
+                               int                              recv_rank,
+                               const std::vector<cell_range_t>& send_slice,
+                               const std::vector<cell_range_t>& recv_slice,
+                               const cell_range_t&              comps,
+                               bool                             additive) {
     raise::ErrorIf(send_rank < 0 && recv_rank < 0,
                    "CommunicateField called with negative ranks",
                    HERE);
@@ -71,7 +71,7 @@ namespace comm {
             Kokkos::MDRangePolicy<Kokkos::Rank<2>, Kokkos::DefaultExecutionSpace>(
               { recv_slice[0].first, comps.first },
               { recv_slice[0].second, comps.second }),
-            Lambda(index_t i1, index_t ci) {
+            Lambda(cellidx_t i1, cellidx_t ci) {
               fld_buff(i1, ci) += fld(i1 - offset_x1, ci);
             });
         } else if constexpr (D == Dim::_2D) {
@@ -84,7 +84,7 @@ namespace comm {
             Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultExecutionSpace>(
               { recv_slice[0].first, recv_slice[1].first, comps.first },
               { recv_slice[0].second, recv_slice[1].second, comps.second }),
-            Lambda(index_t i1, index_t i2, index_t ci) {
+            Lambda(cellidx_t i1, cellidx_t i2, cellidx_t ci) {
               fld_buff(i1, i2, ci) += fld(i1 - offset_x1, i2 - offset_x2, ci);
             });
         } else if constexpr (D == Dim::_3D) {
@@ -105,7 +105,7 @@ namespace comm {
                 recv_slice[1].second,
                 recv_slice[2].second,
                 comps.second }),
-            Lambda(index_t i1, index_t i2, index_t i3, index_t ci) {
+            Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3, cellidx_t ci) {
               fld_buff(i1, i2, i3, ci) += fld(i1 - offset_x1,
                                               i2 - offset_x2,
                                               i3 - offset_x3,

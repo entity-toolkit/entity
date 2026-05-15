@@ -9,10 +9,7 @@
 
 #include <adios2.h>
 
-#if defined(MPI_ENABLED)
-  #include <mpi.h>
-#endif
-
+#include <cstddef>
 #include <vector>
 
 namespace ntt {
@@ -25,9 +22,9 @@ namespace ntt {
     const std::vector<ncells_t>& local_offset) const {
     logger::Checkpoint("Declaring fields checkpoint", HERE);
 
-    auto gs6 = std::vector<ncells_t>(global_shape.begin(), global_shape.end());
-    auto lo6 = std::vector<ncells_t>(local_offset.begin(), local_offset.end());
-    auto ls6 = std::vector<ncells_t>(local_shape.begin(), local_shape.end());
+    auto gs6 = std::vector<size_t>(global_shape.begin(), global_shape.end());
+    auto lo6 = std::vector<size_t>(local_offset.begin(), local_offset.end());
+    auto ls6 = std::vector<size_t>(local_shape.begin(), local_shape.end());
     gs6.push_back(6);
     lo6.push_back(0);
     ls6.push_back(6);
@@ -35,9 +32,9 @@ namespace ntt {
     io.DefineVariable<real_t>("em", gs6, lo6, ls6);
     if (S == ntt::SimEngine::GRPIC) {
       io.DefineVariable<real_t>("em0", gs6, lo6, ls6);
-      auto gs3 = std::vector<ncells_t>(global_shape.begin(), global_shape.end());
-      auto lo3 = std::vector<ncells_t>(local_offset.begin(), local_offset.end());
-      auto ls3 = std::vector<ncells_t>(local_shape.begin(), local_shape.end());
+      auto gs3 = std::vector<size_t>(global_shape.begin(), global_shape.end());
+      auto lo3 = std::vector<size_t>(local_offset.begin(), local_offset.end());
+      auto ls3 = std::vector<size_t>(local_shape.begin(), local_shape.end());
       gs3.push_back(3);
       lo3.push_back(0);
       ls3.push_back(3);

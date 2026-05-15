@@ -106,7 +106,7 @@ namespace ntt {
     auto i_min(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? N_GHOSTS : 0;
+          return (not m_resolution.empty()) ? N_GHOSTS : 0;
         case in::x2:
           return (m_resolution.size() > 1) ? N_GHOSTS : 0;
         case in::x3:
@@ -121,7 +121,7 @@ namespace ntt {
     auto i_max(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? (m_resolution[0] + N_GHOSTS) : 1;
+          return (not m_resolution.empty()) ? (m_resolution[0] + N_GHOSTS) : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + N_GHOSTS) : 1;
         case in::x3:
@@ -136,7 +136,7 @@ namespace ntt {
     auto n_active(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? m_resolution[0] : 1;
+          return (not m_resolution.empty()) ? m_resolution[0] : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? m_resolution[1] : 1;
         case in::x3:
@@ -165,7 +165,7 @@ namespace ntt {
     auto n_all(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
+          return (not m_resolution.empty()) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + 2 * N_GHOSTS) : 1;
         case in::x3:
@@ -178,9 +178,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto n_all() const -> std::vector<ncells_t> {
-      std::vector<ncells_t> nall;
+      std::vector<ncells_t> nall(D);
       for (auto i = 0u; i < D; ++i) {
-        nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
+        nall[i] = m_resolution[i] + 2 * N_GHOSTS;
       }
       return nall;
     }
@@ -248,8 +248,9 @@ namespace ntt {
     auto extent(in i) const -> std::pair<real_t, real_t> {
       switch (i) {
         case in::x1:
-          return (m_extent.size() > 0) ? m_extent[0]
-                                       : std::pair<real_t, real_t> { ZERO, ZERO };
+          return (not m_extent.empty())
+                   ? m_extent[0]
+                   : std::pair<real_t, real_t> { ZERO, ZERO };
         case in::x2:
           return (m_extent.size() > 1) ? m_extent[1]
                                        : std::pair<real_t, real_t> { ZERO, ZERO };
@@ -290,11 +291,11 @@ namespace ntt {
     }
 
     /* setters -------------------------------------------------------------- */
-    inline void set_flds_bc(const dir::direction_t<D>& direction, const FldsBC& bc) {
+    void set_flds_bc(const dir::direction_t<D>& direction, const FldsBC& bc) {
       m_flds_bc.insert_or_assign(direction, bc);
     }
 
-    inline void set_prtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
+    void set_prtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
       m_prtl_bc.insert_or_assign(direction, bc);
     }
 

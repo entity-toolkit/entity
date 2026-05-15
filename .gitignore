@@ -24,6 +24,8 @@ temp*/
 logs/
 *.log
 *.bak
+temp*
+tmp*
 
 # Trash files
 .trash/
@@ -40,6 +42,7 @@ venv/
 *.mov
 *.mp4
 !pgens/**/*.png
+!pgens/**/*.mp4
 
 # Accidental files
 *.xc
@@ -60,3 +63,5 @@ action-token
 *.vim
 ignore-*
 tombi/
+tidy/
+.claude

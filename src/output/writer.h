@@ -1,6 +1,15 @@
 /**
  * @file output/writer.h
  * @brief Writer class which takes care of data output
+ * @implements
+ *   - out::Writer
+ * @cpp:
+ *   - writer.cpp
+ * @namespaces:
+ *   - out::
+ * @macros:
+ *   - MPI_ENABLED
+ *   - OUTPUT_ENABLED
  */
 
 #ifndef OUTPUT_WRITER_H
@@ -52,7 +61,7 @@ namespace out {
     adios2::Dims m_flds_l_corner_dwn;
     adios2::Dims m_flds_l_shape_dwn;
 
-    bool        m_flds_ghosts;
+    bool        m_flds_ghosts { false };
     std::string m_engine;
     path_t      m_root;
 
@@ -81,9 +90,9 @@ namespace out {
 
     void writeAttrs(const prm::Parameters&);
 
-    void defineMeshLayout(const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
+    void defineMeshLayout(const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
                           const std::pair<unsigned int, unsigned int>&,
                           const std::vector<unsigned int>&,
                           bool,

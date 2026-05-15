@@ -34,15 +34,15 @@ namespace metric {
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
+    const real_t a { ZERO }, rg_ { ONE }, rh_ { TWO };
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
-    const real_t a, rg_, rh_;
 
   public:
-    static constexpr const char* Label { "kerr_schild_0" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr ntt::Metric::type MetricType { ntt::Metric::Kerr_Schild_0 };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::Sph };
+    static constexpr const char*      Label { "kerr_schild_0" };
+    static constexpr Dimension        PrtlDim { D };
+    static constexpr ntt::Metric      MetricType { ntt::Metric::Kerr_Schild_0 };
+    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
@@ -58,9 +58,6 @@ namespace metric {
                 const boundaries_t<real_t>&  ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
-      , a { ZERO }
-      , rg_ { ONE }
-      , rh_ { TWO }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
       , dphi { (x3_max - x3_min) / nx3 }
@@ -69,8 +66,6 @@ namespace metric {
       , dphi_inv { ONE / dphi } {
       set_dxMin(find_dxMin());
     }
-
-    ~KerrSchild0() = default;
 
     [[nodiscard]]
     Inline auto spin() const -> real_t {
@@ -91,15 +86,14 @@ namespace metric {
      * minimum effective cell size for a given metric (in physical units)
      */
     [[nodiscard]]
-    auto find_dxMin() const -> real_t override {
+    auto find_dxMin() const -> real_t {
       // for 2D
       real_t min_dx { -ONE };
       for (int i { 0 }; i < nx1; ++i) {
         for (int j { 0 }; j < nx2; ++j) {
-          real_t            i_ { static_cast<real_t>(i) + HALF };
-          real_t            j_ { static_cast<real_t>(j) + HALF };
-          coord_t<Dim::_2D> ij { i_, j_ };
-          real_t            dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
+          const coord_t<Dim::_2D> ij { static_cast<real_t>(i) + HALF,
+                                       static_cast<real_t>(j) + HALF };
+          const real_t dx = ONE / std::sqrt(h<1, 1>(ij) + h<2, 2>(ij));
           if ((min_dx > dx) || (min_dx < 0.0)) {
             min_dx = dx;
           }
@@ -112,7 +106,7 @@ namespace metric {
      * total volume of the region described by the metric (in physical units)
      */
     [[nodiscard]]
-    auto totVolume() const -> real_t override {
+    auto totVolume() const -> real_t {
       if constexpr (D == Dim::_1D) {
         raise::Error("1D spherical metric not applicable", HERE);
       } else if constexpr (D == Dim::_2D) {
@@ -187,10 +181,11 @@ namespace metric {
       static_assert(j >= 0 && j <= 3, "Invalid index j");
       if constexpr (i == 0 && j == 0) {
         // g_00
-        return - ONE; 
+        return -ONE;
       } else if constexpr (i == 1 && j == 1) {
         // g_11
-        return h_<1, 1>(x);;
+        return h_<1, 1>(x);
+        ;
       } else if constexpr (i == 2 && j == 2) {
         // g_22
         return h_<2, 2>(x);
@@ -212,7 +207,7 @@ namespace metric {
       static_assert(j >= 0 && j <= 3, "Invalid index j");
       if constexpr (i == 0 && j == 0) {
         // g^00
-        return - ONE; 
+        return -ONE;
       } else if constexpr (i == 1 && j == 1) {
         // g^11
         return h<1, 1>(x);
@@ -239,7 +234,7 @@ namespace metric {
      * dr derivative of lapse function
      * @param x coordinate array in code units
      */
-    Inline auto dr_alpha(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_alpha(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -247,7 +242,7 @@ namespace metric {
      * dtheta derivative of lapse function
      * @param x coordinate array in code units
      */
-    Inline auto dt_alpha(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_alpha(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -263,7 +258,7 @@ namespace metric {
      * dr derivative of radial component of shift vector
      * @param x coordinate array in code units
      */
-    Inline auto dr_beta1(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_beta1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -271,7 +266,7 @@ namespace metric {
      * dtheta derivative of radial component of shift vector
      * @param x coordinate array in code units
      */
-    Inline auto dt_beta1(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_beta1(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -279,7 +274,7 @@ namespace metric {
      * dr derivative of h^11
      * @param x coordinate array in code units
      */
-    Inline auto dr_h11(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_h11(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -289,7 +284,6 @@ namespace metric {
      */
     Inline auto dr_h22(const coord_t<D>& x) const -> real_t {
       const real_t r { x[0] * dr + x1_min };
-      const real_t theta { x[1] * dtheta + x2_min };
       return -TWO / CUBE(r) * SQR(dtheta_inv) * dr;
     }
 
@@ -307,7 +301,7 @@ namespace metric {
      * dr derivative of h^13
      * @param x coordinate array in code units
      */
-    Inline auto dr_h13(const coord_t<D>& x) const -> real_t {
+    Inline auto dr_h13(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -315,7 +309,7 @@ namespace metric {
      * dtheta derivative of h^11
      * @param x coordinate array in code units
      */
-    Inline auto dt_h11(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h11(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -323,7 +317,7 @@ namespace metric {
      * dtheta derivative of h^22
      * @param x coordinate array in code units
      */
-    Inline auto dt_h22(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h22(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -341,7 +335,7 @@ namespace metric {
      * dtheta derivative of h^13
      * @param x coordinate array in code units
      */
-    Inline auto dt_h13(const coord_t<D>& x) const -> real_t {
+    Inline auto dt_h13(const coord_t<D>&) const -> real_t {
       return ZERO;
     }
 
@@ -453,26 +447,20 @@ namespace metric {
         v_out[0] = v_in[0];
         v_out[1] = v_in[1];
         v_out[2] = v_in[2];
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::U) {
-        // tetrad/sph -> cntrv
+      } else if constexpr (
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::U) or // tetrad/sph -> cntrv
+        (in == Idx::D && (out == Idx::T || out == Idx::Sph)) // cov -> tetrad/sph
+      ) {
         v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::U && (out == Idx::T || out == Idx::Sph)) {
-        // cntrv -> tetrad/sph
+      } else if constexpr (
+        (in == Idx::U && (out == Idx::T || out == Idx::Sph)) or // cntrv -> tetrad/sph
+        ((in == Idx::T || in == Idx::Sph) && out == Idx::D) // tetrad/sph -> cov
+      ) {
         v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
         v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
         v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr ((in == Idx::T || in == Idx::Sph) && out == Idx::D) {
-        // tetrad/sph -> cov
-        v_out[0] = v_in[0] / math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] * math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] * math::sqrt(h_<3, 3>(xi));
-      } else if constexpr (in == Idx::D && (out == Idx::T || out == Idx::Sph)) {
-        // cov -> tetrad/sph
-        v_out[0] = v_in[0] * math::sqrt(h<1, 1>(xi));
-        v_out[1] = v_in[1] / math::sqrt(h_<2, 2>(xi));
-        v_out[2] = v_in[2] / math::sqrt(h_<3, 3>(xi));
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
         v_out[0] = v_in[0] * h_<1, 1>(xi);
@@ -511,11 +499,14 @@ namespace metric {
     /**
      * u_0 from covariant velocity components
      */
-    Inline auto u_0(const coord_t<D>& xi, const vec_t<Dim::_3D>& u_i, const real_t norm) const {
+    Inline auto u_0(const coord_t<D>&      xi,
+                    const vec_t<Dim::_3D>& u_i,
+                    const real_t           norm) const {
       const real_t A { g<0, 0>(xi) };
-      const real_t B { - TWO * g<0, 1>(xi) * u_i[0] };
+      const real_t B { -TWO * g<0, 1>(xi) * u_i[0] };
       const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
-                       g<3, 3>(xi) * SQR(u_i[2]) + TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
+                       g<3, 3>(xi) * SQR(u_i[2]) +
+                       TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
       return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
     }
 
@@ -532,15 +523,66 @@ namespace metric {
       if constexpr (in == Idx::D && out == Idx::U) {
         // cov -> cntrv
         v_out[0] = v_in[0] * g<0, 0>(xi) + v_in[1] * g<0, 1>(xi);
-        v_out[1] = v_in[0] * g<1, 0>(xi) + v_in[1] * g<1, 1>(xi) + v_in[3] * g<1, 3>(xi);
+        v_out[1] = v_in[0] * g<1, 0>(xi) + v_in[1] * g<1, 1>(xi) +
+                   v_in[3] * g<1, 3>(xi);
         v_out[2] = v_in[2] * g<2, 2>(xi);
         v_out[3] = v_in[1] * g<3, 1>(xi) + v_in[3] * g<3, 3>(xi);
       } else if constexpr (in == Idx::U && out == Idx::D) {
         // cntrv -> cov
-        v_out[0] = v_in[0] * g_<0, 0>(xi) + v_in[1] * g_<0, 1>(xi) + v_in[3] * g_<0, 3>(xi);
-        v_out[1] = v_in[0] * g_<1, 0>(xi) + v_in[1] * g_<1, 1>(xi) + v_in[3] * g_<1, 3>(xi);
+        v_out[0] = v_in[0] * g_<0, 0>(xi) + v_in[1] * g_<0, 1>(xi) +
+                   v_in[3] * g_<0, 3>(xi);
+        v_out[1] = v_in[0] * g_<1, 0>(xi) + v_in[1] * g_<1, 1>(xi) +
+                   v_in[3] * g_<1, 3>(xi);
         v_out[2] = v_in[2] * g_<2, 2>(xi);
-        v_out[3] = v_in[0] * g_<3, 0>(xi) + v_in[1] * g_<3, 1>(xi) + v_in[3] * g_<3, 3>(xi);
+        v_out[3] = v_in[0] * g_<3, 0>(xi) + v_in[1] * g_<3, 1>(xi) +
+                   v_in[3] * g_<3, 3>(xi);
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
+    }
+
+    /**
+     * component-wise vector transformations
+     * @note phys cntrv/cov <-> cntrv/cov
+     */
+    template <idx_t i, Idx in, Idx out>
+    Inline auto transform(const coord_t<D>& /*xi*/, real_t v_in) const -> real_t {
+      static_assert(i > 0 && i <= 3, "Invalid index i");
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(((in == Idx::U) and (out == Idx::PU)) or
+                      ((in == Idx::PU) and (out == Idx::U)) or
+                      ((in == Idx::D) and (out == Idx::PD)) or
+                      ((in == Idx::PD) and (out == Idx::D)),
+                    "Invalid vector transformation: only cntrv/cov <-> phys "
+                    "cntrv/cov allowed");
+      if constexpr ((in == Idx::PU && out == Idx::U) ||
+                    (in == Idx::D && out == Idx::PD)) {
+        // phys cntrv -> cntrv || cov -> phys cov
+        if constexpr (i == 1) {
+          return v_in * dr_inv;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta_inv;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi_inv;
+          }
+        }
+      } else if constexpr ((in == Idx::U && out == Idx::PU) ||
+                           (in == Idx::PD && out == Idx::D)) {
+        // cntrv -> phys cntrv || phys cov -> cov
+        if constexpr (i == 1) {
+          return v_in * dr;
+        } else if constexpr (i == 2) {
+          return v_in * dtheta;
+        } else {
+          if constexpr (D == Dim::_2D) {
+            return v_in;
+          } else {
+            return v_in * dphi;
+          }
+        }
       } else {
         raise::KernelError(HERE, "Invalid transformation");
       }

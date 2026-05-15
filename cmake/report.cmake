@@ -1,13 +1,25 @@
 if(${PGEN_FOUND})
-  printchoices(
-    "Problem generator"
-    "pgen"
-    "${problem_generators}"
-    ${PGEN}
-    ""
-    "${Blue}"
-    PGEN_REPORT
-    0)
+  if(${single_pgen_mode})
+    printchoices(
+      "Problem generator"
+      "pgen"
+      "${problem_generators}"
+      "${PGEN}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  else()
+    printchoices(
+      "Problem generators"
+      "pgens"
+      "${problem_generators}"
+      "${pgens_short}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  endif()
 endif()
 
 if(${TESTS})
@@ -15,7 +27,7 @@ if(${TESTS})
   foreach(test_dir IN LISTS TEST_DIRECTORIES)
     get_property(
       LOCAL_TEST_NAMES
-      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir}/tests
+      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/${test_dir}
       PROPERTY TESTS)
     list(APPEND TEST_NAMES ${LOCAL_TEST_NAMES})
   endforeach()

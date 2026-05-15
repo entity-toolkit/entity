@@ -7,7 +7,7 @@
  * @cpp:
  *   - stats.cpp
  * @namespaces:
- *   - stats::
+ *   - out::
  */
 
 #ifndef OUTPUT_STATS_H
@@ -40,8 +40,8 @@ namespace stats {
     StatsID           m_id { StatsID::INVALID };
 
   public:
-    std::vector<std::vector<unsigned short>> comp {};
-    std::vector<spidx_t>                     species {};
+    std::vector<std::vector<uint8_t>> comp;
+    std::vector<spidx_t>              species;
 
     OutputStats(const std::string&, bool);
 
@@ -64,7 +64,7 @@ namespace stats {
     }
 
     [[nodiscard]]
-    inline auto name() const -> std::string {
+    auto name() const -> std::string {
       if (id() == StatsID::Custom) {
         return m_name;
       }
@@ -76,7 +76,7 @@ namespace stats {
         tmp = "J.E";
       } else {
         // capitalize the first letter
-        tmp[0] = std::toupper(tmp[0]);
+        tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       }
       if (id() == StatsID::T) {
         tmp += m_name.substr(1, 2);
@@ -87,7 +87,7 @@ namespace stats {
           tmp += "i";
         }
       }
-      if (species.size() > 0) {
+      if (not species.empty()) {
         tmp += "_";
         for (auto& s : species) {
           tmp += std::to_string(s);
@@ -99,9 +99,9 @@ namespace stats {
     }
 
     [[nodiscard]]
-    inline auto name(std::size_t ci) const -> std::string {
+    auto name(std::size_t ci) const -> std::string {
       raise::ErrorIf(
-        comp.size() == 0,
+        comp.empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       raise::ErrorIf(
@@ -109,7 +109,7 @@ namespace stats {
         "OutputField::name(ci) called with an invalid component index",
         HERE);
       raise::ErrorIf(
-        comp[ci].size() == 0,
+        comp[ci].empty(),
         "OutputField::name(ci) called but no components were available",
         HERE);
       // generate the name
@@ -119,7 +119,7 @@ namespace stats {
         tmp = "ExB";
       } else {
         // capitalize the first letter
-        tmp[0] = std::toupper(tmp[0]);
+        tmp[0] = static_cast<char>(std::toupper(tmp[0]));
       }
       if (tmp == "E^2" or tmp == "B^2") {
         tmp = fmt::format("%c%d^2", tmp[0], comp[ci][0]);
@@ -127,7 +127,7 @@ namespace stats {
         for (auto& c : comp[ci]) {
           tmp += std::to_string(c);
         }
-        if (species.size() > 0) {
+        if (not species.empty()) {
           tmp += "_";
           for (auto& s : species) {
             tmp += std::to_string(s);
@@ -151,6 +151,8 @@ namespace stats {
     tools::Tracker           m_tracker;
 
   public:
+    const int io_precision = 18;
+
     Writer() {}
 
     ~Writer() = default;
@@ -167,7 +169,7 @@ namespace stats {
     auto shouldWrite(timestep_t, simtime_t) -> bool;
 
     template <typename T>
-    inline void write(const T& value, bool communicate = true) const {
+    void write(const T& value, bool communicate = true) const {
       auto tot_value { static_cast<T>(0) };
 #if defined(MPI_ENABLED)
       if (communicate) {
@@ -185,14 +187,27 @@ namespace stats {
       (void)communicate;
       tot_value = value;
 #endif
-      CallOnce(
-        [](auto&& fname, auto&& value) {
-          std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
-          StatsOut << std::setw(14) << value << ",";
-          StatsOut.close();
-        },
-        m_fname,
-        tot_value);
+
+      if constexpr (std::is_floating_point_v<T>) {
+        CallOnce(
+          [this](auto&& fname, auto&& value) {
+            std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
+            StatsOut << std::setw(io_precision + 8)
+                     << std::setprecision(io_precision) << value << ",";
+            StatsOut.close();
+          },
+          m_fname,
+          tot_value);
+      } else {
+        CallOnce(
+          [this](auto&& fname, auto&& value) {
+            std::fstream StatsOut(fname, std::fstream::out | std::fstream::app);
+            StatsOut << std::setw(io_precision + 8) << value << ",";
+            StatsOut.close();
+          },
+          m_fname,
+          tot_value);
+      }
     }
 
     void endWriting();

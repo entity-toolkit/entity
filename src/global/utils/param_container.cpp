@@ -4,12 +4,18 @@
   #include "enums.h"
   #include "global.h"
 
+  #include "utils/formatting.h"
+  #include "utils/log.h"
+
   #include <adios2.h>
   #include <adios2/cxx/KokkosView.h>
 
   #include <any>
+  #include <cstddef>
+  #include <exception>
   #include <functional>
   #include <map>
+  #include <stdexcept>
   #include <string>
   #include <type_traits>
   #include <typeindex>
@@ -31,24 +37,22 @@ namespace prm {
   }
 
   template <typename T>
-  auto write(adios2::IO& io, const std::string& name, T var) -> decltype(void(T()),
-                                                                         void()) {
+  auto write(adios2::IO& io, const std::string& name, const T& var)
+    -> decltype(void(T()), void()) {
     io.DefineAttribute(name, var);
   }
 
-  template <>
   void write(adios2::IO& io, const std::string& name, bool var) {
     io.DefineAttribute(name, var ? 1 : 0);
   }
 
-  template <>
   void write(adios2::IO& io, const std::string& name, Dimension var) {
     io.DefineAttribute(name, (unsigned short)var);
   }
 
   template <typename T>
-  auto write_pair(adios2::IO& io, const std::string& name, std::pair<T, T> var) ->
-    typename std::enable_if<has_to_string<T>::value, void>::type {
+  auto write_pair(adios2::IO& io, const std::string& name, std::pair<T, T> var)
+    -> typename std::enable_if<has_to_string<T>::value, void>::type {
     std::vector<std::string> var_str;
     var_str.push_back(var.first.to_string());
     var_str.push_back(var.second.to_string());
@@ -56,9 +60,8 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_pair(adios2::IO&        io,
-                  const std::string& name,
-                  std::pair<T, T>    var) -> decltype(void(T()), void()) {
+  auto write_pair(adios2::IO& io, const std::string& name, const std::pair<T, T>& var)
+    -> decltype(void(T()), void()) {
     std::vector<T> var_vec;
     var_vec.push_back(var.first);
     var_vec.push_back(var.second);
@@ -66,26 +69,25 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_vec(adios2::IO& io, const std::string& name, std::vector<T> var) ->
-    typename std::enable_if<has_to_string<T>::value, void>::type {
-    std::vector<std::string> var_str;
-    for (const auto& v : var) {
-      var_str.push_back(v.to_string());
+  auto write_vec(adios2::IO& io, const std::string& name, const std::vector<T>& var)
+    -> typename std::enable_if<has_to_string<T>::value, void>::type {
+    std::vector<std::string> var_str(var.size());
+    for (size_t i = 0; i < var.size(); ++i) {
+      var_str[i] = var[i].to_string();
     }
     io.DefineAttribute(name, var_str.data(), var_str.size());
   }
 
   template <typename T>
-  auto write_vec(adios2::IO&        io,
-                 const std::string& name,
-                 std::vector<T>     var) -> decltype(void(T()), void()) {
+  auto write_vec(adios2::IO& io, const std::string& name, std::vector<T> var)
+    -> decltype(void(T()), void()) {
     io.DefineAttribute(name, var.data(), var.size());
   }
 
   template <typename T>
-  auto write_vec_pair(adios2::IO&                  io,
-                      const std::string&           name,
-                      std::vector<std::pair<T, T>> var) ->
+  auto write_vec_pair(adios2::IO&                         io,
+                      const std::string&                  name,
+                      const std::vector<std::pair<T, T>>& var) ->
     typename std::enable_if<has_to_string<T>::value, void>::type {
     std::vector<std::string> var_str;
     for (const auto& v : var) {
@@ -96,22 +98,22 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_vec_pair(adios2::IO&                  io,
-                      const std::string&           name,
-                      std::vector<std::pair<T, T>> var) -> decltype(void(T()),
-                                                                    void()) {
-    std::vector<T> var_vec;
-    for (const auto& v : var) {
-      var_vec.push_back(v.first);
-      var_vec.push_back(v.second);
+  auto write_vec_pair(adios2::IO&                         io,
+                      const std::string&                  name,
+                      const std::vector<std::pair<T, T>>& var)
+    -> decltype(void(T()), void()) {
+    std::vector<T> var_vec(var.size() * 2);
+    for (size_t i = 0; i < var.size(); ++i) {
+      var_vec[i * 2]     = var[i].first;
+      var_vec[i * 2 + 1] = var[i].second;
     }
     io.DefineAttribute(name, var_vec.data(), var_vec.size());
   }
 
   template <typename T>
-  auto write_vec_vec(adios2::IO&                 io,
-                     const std::string&          name,
-                     std::vector<std::vector<T>> var) ->
+  auto write_vec_vec(adios2::IO&                        io,
+                     const std::string&                 name,
+                     const std::vector<std::vector<T>>& var) ->
     typename std::enable_if<has_to_string<T>::value, void>::type {
     std::vector<std::string> var_str;
     for (const auto& vec : var) {
@@ -123,10 +125,10 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_vec_vec(adios2::IO&                 io,
-                     const std::string&          name,
-                     std::vector<std::vector<T>> var) -> decltype(void(T()),
-                                                                  void()) {
+  auto write_vec_vec(adios2::IO&                        io,
+                     const std::string&                 name,
+                     const std::vector<std::vector<T>>& var)
+    -> decltype(void(T()), void()) {
     std::vector<T> var_vec;
     for (const auto& vec : var) {
       for (const auto& v : vec) {
@@ -137,9 +139,9 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_dict(adios2::IO&              io,
-                  const std::string&       name,
-                  std::map<std::string, T> var) ->
+  auto write_dict(adios2::IO&                     io,
+                  const std::string&              name,
+                  const std::map<std::string, T>& var) ->
     typename std::enable_if<has_to_string<T>::value, void>::type {
     for (const auto& [key, v] : var) {
       io.DefineAttribute(name + "_" + key, v.to_string());
@@ -147,11 +149,12 @@ namespace prm {
   }
 
   template <typename T>
-  auto write_dict(adios2::IO&              io,
-                  const std::string&       name,
-                  std::map<std::string, T> var) -> decltype(void(T()), void()) {
+  auto write_dict(adios2::IO&                     io,
+                  const std::string&              name,
+                  const std::map<std::string, T>& var)
+    -> decltype(void(T()), void()) {
     for (const auto& [key, v] : var) {
-      io.DefineAttribute(name + "_" + key, v);
+      io.DefineAttribute((name + "_").append(key), v);
     }
   }
 
@@ -206,7 +209,7 @@ namespace prm {
       };
   }
 
-  void write_any(adios2::IO& io, const std::string& name, std::any a) {
+  void write_any(adios2::IO& io, const std::string& name, const std::any& a) {
     auto it = write_functions.find(a.type());
     if (it != write_functions.end()) {
       it->second(io, name, a);

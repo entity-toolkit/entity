@@ -3,6 +3,9 @@
  * @brief Algorithm for computing different moments from particle distribution
  * @implements
  *   - kernel::ParticleMoments_kernel<>
+ *   - kernel::NormalizeVectorByRho_kernel<>
+ *   - kernel::Normalize4VelocityByNorm_kernel<>
+ *   - kernel::Transform4VelocitySpatialToPhysical_kernel<>
  * @namespaces:
  *   - kernel::
  */
@@ -14,12 +17,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "metrics/traits.h"
-
+#include <cstdint>
 #include <vector>
 
 namespace kernel {
@@ -36,10 +39,7 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, class M, FldsID::type F, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasSqrtDetH<M> &&
-             ((S == SimEngine::SRPIC && metric::traits::HasTransformXYZ<M>) ||
-              (S == SimEngine::GRPIC && metric::traits::HasTransform<M>))
+  template <SimEngine::type S, MetricClass M, FldsID::type F, uint8_t N>
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
@@ -47,7 +47,7 @@ namespace kernel {
                     (F == FldsID::Nppc) || (F == FldsID::T) || (F == FldsID::V),
                   "Invalid field ID");
 
-    const unsigned short     c1, c2;
+    const uint8_t            c1, c2;
     scatter_ndfield_t<D, N>  Buff;
     const idx_t              buff_idx;
     const array_t<int*>      i1, i2, i3;
@@ -61,40 +61,38 @@ namespace kernel {
     const bool               use_weights;
     const M                  metric;
     const int                ni2;
-    const unsigned short     window;
+    const uint8_t            window;
 
     const real_t contrib;
     const real_t smooth;
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    ParticleMoments_kernel(const std::vector<unsigned short>& components,
-                           const scatter_ndfield_t<D, N>&     scatter_buff,
-                           idx_t                              buff_idx,
-                           const array_t<int*>&               i1,
-                           const array_t<int*>&               i2,
-                           const array_t<int*>&               i3,
-                           const array_t<prtldx_t*>&          dx1,
-                           const array_t<prtldx_t*>&          dx2,
-                           const array_t<prtldx_t*>&          dx3,
-                           const array_t<real_t*>&            ux1,
-                           const array_t<real_t*>&            ux2,
-                           const array_t<real_t*>&            ux3,
-                           const array_t<real_t*>&            phi,
-                           const array_t<real_t*>&            weight,
-                           const array_t<short*>&             tag,
-                           float                              mass,
-                           float                              charge,
-                           bool                               use_weights,
-                           const M&                           metric,
-                           const boundaries_t<FldsBC>&        boundaries,
-                           ncells_t                           ni2,
-                           real_t                             inv_n0,
-                           unsigned short                     window)
-      : c1 { (components.size() > 0) ? components[0]
-                                     : static_cast<unsigned short>(0) }
-      , c2 { (components.size() == 2) ? components[1]
-                                      : static_cast<unsigned short>(0) }
+    ParticleMoments_kernel(const std::vector<uint8_t>&    components,
+                           const scatter_ndfield_t<D, N>& scatter_buff,
+                           idx_t                          buff_idx,
+                           const array_t<int*>&           i1,
+                           const array_t<int*>&           i2,
+                           const array_t<int*>&           i3,
+                           const array_t<prtldx_t*>&      dx1,
+                           const array_t<prtldx_t*>&      dx2,
+                           const array_t<prtldx_t*>&      dx3,
+                           const array_t<real_t*>&        ux1,
+                           const array_t<real_t*>&        ux2,
+                           const array_t<real_t*>&        ux3,
+                           const array_t<real_t*>&        phi,
+                           const array_t<real_t*>&        weight,
+                           const array_t<short*>&         tag,
+                           float                          mass,
+                           float                          charge,
+                           bool                           use_weights,
+                           const M&                       metric,
+                           const boundaries_t<FldsBC>&    boundaries,
+                           ncells_t                       ni2,
+                           real_t                         inv_n0,
+                           uint8_t                        window)
+      : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
+      , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , Buff { scatter_buff }
       , buff_idx { buff_idx }
       , i1 { i1 }
@@ -123,7 +121,7 @@ namespace kernel {
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
                      "Rho & Charge for massless particles not defined",
                      HERE);
-      if constexpr ((M::CoordType != Coord::Cart) &&
+      if constexpr ((M::CoordType != Coord::Cartesian) &&
                     ((D == Dim::_2D) || (D == Dim::_3D))) {
         raise::ErrorIf(boundaries.size() < 2, "boundaries defined incorrectly", HERE);
         is_axis_i2min = (boundaries[1].first == FldsBC::AXIS);
@@ -131,12 +129,12 @@ namespace kernel {
       }
     }
 
-    Inline auto computeStressEnergyComponent(index_t p) const -> real_t {
+    Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
         // stress-energy tensor for SR is computed in the tetrad (hatted) basis
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           u_Phys[0] = ux1(p);
           u_Phys[1] = ux2(p);
           u_Phys[2] = ux3(p);
@@ -198,11 +196,11 @@ namespace kernel {
       return T_component;
     }
 
-    Inline auto computeBulk3VelocityTimesMass(index_t p) const -> real_t {
+    Inline auto computeBulk3VelocityTimesMass(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       // for bulk 3vel (tetrad basis)
       vec_t<Dim::_3D> u_Phys { ZERO };
-      if constexpr (M::CoordType == Coord::Cart) {
+      if constexpr (M::CoordType == Coord::Cartesian) {
         u_Phys[0] = ux1(p);
         u_Phys[1] = ux2(p);
         u_Phys[2] = ux3(p);
@@ -227,7 +225,7 @@ namespace kernel {
       return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
     }
 
-    Inline auto computeEckartVelocityFluxComponent(index_t p) const -> real_t {
+    Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {
       // GR: Eckart frame flux N^μ = m * u^μ / u^0
       static_assert(D != Dim::_1D, "GRPIC 1D");
       coord_t<D> x_Code { ZERO };
@@ -255,7 +253,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       if (tag(p) == ParticleTag::dead) {
         return;
       }
@@ -300,7 +298,7 @@ namespace kernel {
       } else if constexpr (D == Dim::_2D) {
         for (auto di2 { -window }; di2 <= window; ++di2) {
           for (auto di1 { -window }; di1 <= window; ++di1) {
-            if constexpr (M::CoordType == Coord::Cart) {
+            if constexpr (M::CoordType == Coord::Cartesian) {
               buff_access(i1(p) + di1 + N_GHOSTS,
                           i2(p) + di2 + N_GHOSTS,
                           buff_idx) += coeff;
@@ -326,7 +324,7 @@ namespace kernel {
         for (auto di3 { -window }; di3 <= window; ++di3) {
           for (auto di2 { -window }; di2 <= window; ++di2) {
             for (auto di1 { -window }; di1 <= window; ++di1) {
-              if constexpr (M::CoordType == Coord::Cart) {
+              if constexpr (M::CoordType == Coord::Cartesian) {
                 buff_access(i1(p) + di1 + N_GHOSTS,
                             i2(p) + di2 + N_GHOSTS,
                             i3(p) + di3 + N_GHOSTS,
@@ -357,19 +355,19 @@ namespace kernel {
     }
   };
 
-  template <Dimension D, unsigned short N>
+  template <Dimension D, uint8_t N>
   class NormalizeVectorByRho_kernel {
     const ndfield_t<D, N> Rho;
     ndfield_t<D, N>       Vector;
-    const unsigned short  c_rho, c_v1, c_v2, c_v3;
+    const uint8_t         c_rho, c_v1, c_v2, c_v3;
 
   public:
     NormalizeVectorByRho_kernel(const ndfield_t<D, N>& rho,
                                 const ndfield_t<D, N>& vector,
-                                unsigned short         crho,
-                                unsigned short         cv1,
-                                unsigned short         cv2,
-                                unsigned short         cv3)
+                                uint8_t                crho,
+                                uint8_t                cv1,
+                                uint8_t                cv2,
+                                uint8_t                cv3)
       : Rho { rho }
       , Vector { vector }
       , c_rho { crho }
@@ -387,7 +385,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (not cmp::AlmostZero(Rho(i1, c_rho))) {
           Vector(i1, c_v1) /= Rho(i1, c_rho);
@@ -401,7 +399,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if (not cmp::AlmostZero(Rho(i1, i2, c_rho))) {
           Vector(i1, i2, c_v1) /= Rho(i1, i2, c_rho);
@@ -415,7 +413,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if (not cmp::AlmostZero(Rho(i1, i2, i3, c_rho))) {
           Vector(i1, i2, i3, c_v1) /= Rho(i1, i2, i3, c_rho);
@@ -430,23 +428,22 @@ namespace kernel {
     }
   };
 
-  template <Dimension D, class M, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
+  template <Dimension D, GRMetricClass M, uint8_t N>
   class Normalize4VelocityByNorm_kernel {
     // Normalizes 4-momentum flux to Eckart frame velocity
     // V^μ = N^μ / sqrt(-N_ν N^ν)
-    const ndfield_t<D, N> Flux;    // momentum flux N^μ
-    ndfield_t<D, N>       Vector;  // Eckart 4-velocity
-    const unsigned short  c_u0, c_u1, c_u2, c_u3;  // 4-velocity component indices
-    const M               metric;
+    const ndfield_t<D, N> Flux;           // momentum flux N^μ
+    ndfield_t<D, N>       Vector;         // Eckart 4-velocity
+    const uint8_t c_u0, c_u1, c_u2, c_u3; // 4-velocity component indices
+    const M       metric;
 
   public:
     Normalize4VelocityByNorm_kernel(const ndfield_t<D, N>& flux,
                                     const ndfield_t<D, N>& vector,
-                                    unsigned short         cu0,
-                                    unsigned short         cu1,
-                                    unsigned short         cu2,
-                                    unsigned short         cu3,
+                                    uint8_t                cu0,
+                                    uint8_t                cu1,
+                                    uint8_t                cu2,
+                                    uint8_t                cu3,
                                     const M&               metric)
       : Flux { flux }
       , Vector { vector }
@@ -460,44 +457,70 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    // ZAMO fallback for empty or pathological cells
+
+    Inline void zamo_fallback_2d(cellidx_t         i1,
+                                 cellidx_t         i2,
+                                 const coord_t<D>& x_Code) const {
+      if constexpr (D == Dim::_2D) {
+        const real_t al      = metric.alpha(x_Code);
+        Vector(i1, i2, c_u0) = ONE / al;
+        Vector(i1, i2, c_u1) = -metric.beta1(x_Code) / al;
+        Vector(i1, i2, c_u2) = ZERO;
+        Vector(i1, i2, c_u3) = ZERO;
+      } else {
+        raise::KernelError(
+          HERE,
+          "2D fallback of Normalize4VelocityByNorm_kernel called for non-2D");
+      }
+    }
+
+    Inline void zamo_fallback_3d(cellidx_t         i1,
+                                 cellidx_t         i2,
+                                 cellidx_t         i3,
+                                 const coord_t<D>& x_Code) const {
+      if constexpr (D == Dim::_3D) {
+        const real_t al          = metric.alpha(x_Code);
+        Vector(i1, i2, i3, c_u0) = ONE / al;
+        Vector(i1, i2, i3, c_u1) = -metric.beta1(x_Code) / al;
+        Vector(i1, i2, i3, c_u2) = ZERO;
+        Vector(i1, i2, i3, c_u3) = ZERO;
+      } else {
+        raise::KernelError(
+          HERE,
+          "3D fallback of Normalize4VelocityByNorm_kernel called for non-3D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         coord_t<D> x_Code { ZERO };
         x_Code[0] = COORD(i1) + HALF;
         x_Code[1] = COORD(i2) + HALF;
 
-        vec_t<Dim::_4D> N_cntrv { ZERO };
+        vec_t<Dim::_4D> N_cntrv { ZERO, ZERO, ZERO, ZERO };
         N_cntrv[0] = Flux(i1, i2, c_u0);
         N_cntrv[1] = Flux(i1, i2, c_u1);
         N_cntrv[2] = Flux(i1, i2, c_u2);
         N_cntrv[3] = Flux(i1, i2, c_u3);
 
-        // ZAMO fallback for empty or pathological cells
-        const auto zamo_fallback_2d = [&]() {
-          const real_t al = metric.alpha(x_Code);
-          const real_t b1 = metric.beta1(x_Code);
-          Vector(i1, i2, c_u0) = ONE / al;
-          Vector(i1, i2, c_u1) = -b1 / al;
-          Vector(i1, i2, c_u2) = ZERO;
-          Vector(i1, i2, c_u3) = ZERO;
-        };
-
         // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
         if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
-          zamo_fallback_2d();
+          zamo_fallback_2d(i1, i2, x_Code);
           return;
         }
 
-        vec_t<Dim::_4D> N_cov { ZERO };
+        vec_t<Dim::_4D> N_cov { ZERO, ZERO, ZERO, ZERO };
         // Compute N_i = g_ij N^j
         metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
 
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
-        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] +
+                           N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
         // ZAMO fallback for spacelike, null, or NaN
-        if (not (N_norm_sq < ZERO)) {
-          zamo_fallback_2d();
+        if (not(N_norm_sq < ZERO)) {
+          zamo_fallback_2d(i1, i2, x_Code);
           return;
         }
 
@@ -509,41 +532,29 @@ namespace kernel {
           Vector(i1, i2, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, c_u3) = N_cntrv[3] / norm;
         } else {
-          zamo_fallback_2d();
+          zamo_fallback_2d(i1, i2, x_Code);
         }
       } else {
-        raise::KernelError(
-          HERE,
-          "2D implementation of Normalize4VelocityByNorm_kernel called for non-2D");
+        raise::KernelError(HERE, "2D implementation of Normalize4VelocityByNorm_kernel called for non-2D");
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         coord_t<D> x_Code { ZERO };
         x_Code[0] = COORD(i1) + HALF;
         x_Code[1] = COORD(i2) + HALF;
         x_Code[2] = COORD(i3) + HALF;
 
-        vec_t<Dim::_4D> N_cntrv { ZERO };
-        N_cntrv[0] = Flux(i1, i2, i3, c_u0);  // N^0
-        N_cntrv[1] = Flux(i1, i2, i3, c_u1);  // N^1
-        N_cntrv[2] = Flux(i1, i2, i3, c_u2);  // N^2
-        N_cntrv[3] = Flux(i1, i2, i3, c_u3);  // N^3
-
-        // ZAMO fallback for empty or pathological cells
-        const auto zamo_fallback_3d = [&]() {
-          const real_t al = metric.alpha(x_Code);
-          const real_t b1 = metric.beta1(x_Code);
-          Vector(i1, i2, i3, c_u0) = ONE / al;
-          Vector(i1, i2, i3, c_u1) = -b1 / al;
-          Vector(i1, i2, i3, c_u2) = ZERO;
-          Vector(i1, i2, i3, c_u3) = ZERO;
-        };
+        vec_t<Dim::_4D> N_cntrv { ZERO, ZERO, ZERO, ZERO };
+        N_cntrv[0] = Flux(i1, i2, i3, c_u0); // N^0
+        N_cntrv[1] = Flux(i1, i2, i3, c_u1); // N^1
+        N_cntrv[2] = Flux(i1, i2, i3, c_u2); // N^2
+        N_cntrv[3] = Flux(i1, i2, i3, c_u3); // N^3
 
         // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
         if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
-          zamo_fallback_3d();
+          zamo_fallback_3d(i1, i2, i3, x_Code);
           return;
         }
 
@@ -552,11 +563,12 @@ namespace kernel {
         metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
 
         // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
-        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] + N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] +
+                           N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
 
         // ZAMO fallback for spacelike, null, or NaN
-        if (not (N_norm_sq < ZERO)) {
-          zamo_fallback_3d();
+        if (not(N_norm_sq < ZERO)) {
+          zamo_fallback_3d(i1, i2, i3, x_Code);
           return;
         }
 
@@ -568,31 +580,28 @@ namespace kernel {
           Vector(i1, i2, i3, c_u2) = N_cntrv[2] / norm;
           Vector(i1, i2, i3, c_u3) = N_cntrv[3] / norm;
         } else {
-          zamo_fallback_3d();
+          zamo_fallback_3d(i1, i2, i3, x_Code);
         }
       } else {
-        raise::KernelError(
-          HERE,
-          "3D implementation of Normalize4VelocityByNorm_kernel called for non-3D");
+        raise::KernelError(HERE, "3D implementation of Normalize4VelocityByNorm_kernel called for non-3D");
       }
     }
   };
 
-  template <Dimension D, class M, unsigned short N>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform<M>
+  template <Dimension D, GRMetricClass M, uint8_t N>
   class Transform4VelocitySpatialToPhysical_kernel {
-    // Transforms spatial components of 4-velocity from coordinate to physical basis
-    // u^0 (Gamma/alpha) remains unchanged as it's unitless
-    ndfield_t<D, N>       Vector;
-    const unsigned short  c_u1, c_u2, c_u3;
-    const M               metric;
+    // Transforms spatial components of 4-velocity from coordinate to physical
+    // basis u^0 (Gamma/alpha) remains unchanged as it's unitless
+    ndfield_t<D, N> Vector;
+    const uint8_t   c_u1, c_u2, c_u3;
+    const M         metric;
 
   public:
-    Transform4VelocitySpatialToPhysical_kernel(ndfield_t<D, N>&       vector,
-                                               unsigned short         cu1,
-                                               unsigned short         cu2,
-                                               unsigned short         cu3,
-                                               const M&               metric)
+    Transform4VelocitySpatialToPhysical_kernel(ndfield_t<D, N>& vector,
+                                               uint8_t          cu1,
+                                               uint8_t          cu2,
+                                               uint8_t          cu3,
+                                               const M&         metric)
       : Vector { vector }
       , c_u1 { cu1 }
       , c_u2 { cu2 }
@@ -603,15 +612,15 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         coord_t<D> x_Code { ZERO };
         x_Code[0] = COORD(i1) + HALF;
         x_Code[1] = COORD(i2) + HALF;
 
         vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, c_u1),
-                                   Vector(i1, i2, c_u2),
-                                   Vector(i1, i2, c_u3) };
+                                  Vector(i1, i2, c_u2),
+                                  Vector(i1, i2, c_u3) };
 
         vec_t<Dim::_3D> u_phys { ZERO };
         // Transform spatial components from coordinate contravariant to physical contravariant
@@ -621,13 +630,11 @@ namespace kernel {
         Vector(i1, i2, c_u2) = u_phys[1];
         Vector(i1, i2, c_u3) = u_phys[2];
       } else {
-        raise::KernelError(
-          HERE,
-          "2D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-2D");
+        raise::KernelError(HERE, "2D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-2D");
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         coord_t<D> x_Code { ZERO };
         x_Code[0] = COORD(i1) + HALF;
@@ -635,8 +642,8 @@ namespace kernel {
         x_Code[2] = COORD(i3) + HALF;
 
         vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, i3, c_u1),
-                                   Vector(i1, i2, i3, c_u2),
-                                   Vector(i1, i2, i3, c_u3) };
+                                  Vector(i1, i2, i3, c_u2),
+                                  Vector(i1, i2, i3, c_u3) };
 
         vec_t<Dim::_3D> u_phys { ZERO };
         // Transform spatial components from coordinate contravariant to physical contravariant
@@ -646,9 +653,7 @@ namespace kernel {
         Vector(i1, i2, i3, c_u2) = u_phys[1];
         Vector(i1, i2, i3, c_u3) = u_phys[2];
       } else {
-        raise::KernelError(
-          HERE,
-          "3D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-3D");
+        raise::KernelError(HERE, "3D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-3D");
       }
     }
   };

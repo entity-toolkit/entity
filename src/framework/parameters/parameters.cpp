@@ -4,10 +4,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/mpi_aliases.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
-#include <toml11/toml.hpp>
 
 #include "framework/containers/species.h"
 #include "framework/parameters/algorithms.h"
@@ -16,12 +16,11 @@
 #include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
 
-#if defined(MPI_ENABLED)
-  #include <mpi.h>
-#endif
+#include <toml11/toml.hpp>
 
+#include <cstddef>
 #include <fstream>
-#include <iostream>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -62,6 +61,18 @@ namespace ntt {
     raise::ErrorIf(ppc0 <= 0.0, "ppc0 must be positive", HERE);
     set("particles.use_weights",
         toml::find_or(toml_data, "particles", "use_weights", false));
+    const auto global_clearing_interval = toml::find_or<timestep_t>(
+      toml_data,
+      "particles",
+      "clear_interval",
+      defaults::clear_interval);
+    set("particles.clear_interval", global_clearing_interval);
+    const auto global_spatial_sorting_interval = toml::find_or<timestep_t>(
+      toml_data,
+      "particles",
+      "spatial_sorting_interval",
+      0u);
+    set("particles.spatial_sorting_interval", global_spatial_sorting_interval);
 
     set("scales.n0", ppc0 / get<real_t>("scales.V0"));
     set("scales.q0", get<real_t>("scales.V0") / (ppc0 * SQR(skindepth0)));
@@ -76,7 +87,13 @@ namespace ntt {
 
     spidx_t idx = 1;
     for (const auto& sp : species_tab) {
-      species.emplace_back(params::GetParticleSpecies(this, engine_enum, idx, sp));
+      species.emplace_back(
+        params::GetParticleSpecies(this,
+                                   engine_enum,
+                                   idx,
+                                   sp,
+                                   global_clearing_interval,
+                                   global_spatial_sorting_interval));
       idx += 1;
     }
     set("particles.species", species);
@@ -109,8 +126,6 @@ namespace ntt {
     set("grid.boundaries.particles", prtl_bc);
 
     /* [particles] ---------------------------------------------------------- */
-    set("particles.clear_interval",
-        toml::find_or(toml_data, "particles", "clear_interval", defaults::clear_interval));
     const auto species_tab               = toml::find_or<toml::array>(toml_data,
                                                         "particles",
                                                         "species",
@@ -125,14 +140,16 @@ namespace ntt {
 
     spidx_t idxM1 = 0;
     for (const auto& sp : species_tab) {
-      const auto maxnpart_real    = toml::find<double>(sp, "maxnpart");
-      const auto maxnpart         = static_cast<npart_t>(maxnpart_real);
-      const auto particle_species = species[idxM1];
+      const auto  maxnpart_real    = toml::find<double>(sp, "maxnpart");
+      const auto  maxnpart         = static_cast<npart_t>(maxnpart_real);
+      const auto& particle_species = species[idxM1];
       new_species.emplace_back(particle_species.index(),
                                particle_species.label(),
                                particle_species.mass(),
                                particle_species.charge(),
                                maxnpart,
+                               particle_species.clearing_interval(),
+                               particle_species.spatial_sorting_interval(),
                                particle_species.pusher(),
                                particle_species.use_tracking(),
                                particle_species.radiative_drag_flags(),
@@ -197,8 +214,8 @@ namespace ntt {
     boundaries_params.setParams(this);
 
     /* [algorithms] --------------------------------------------------------- */
-    params::Algorithms          alg_params {};
-    std::map<std::string, bool> alg_extra_flags = {
+    params::Algorithms                alg_params {};
+    const std::map<std::string, bool> alg_extra_flags = {
       {  "gr",          engine_enum == SimEngine::GRPIC },
       { "gca", isPromised("algorithms.gca.e_ovr_b_max") },
     };
@@ -206,8 +223,8 @@ namespace ntt {
     alg_params.setParams(alg_extra_flags, this);
 
     /* extra physics ------------------------------------------------------ */
-    params::Extra               extra_params {};
-    std::map<std::string, bool> extra_extra_flags = {
+    params::Extra                     extra_params {};
+    const std::map<std::string, bool> extra_extra_flags = {
       {     "synchrotron_drag",isPromised("radiation.drag.synchrotron.gamma_rad")                               },
       {         "compton_drag",          isPromised("radiation.drag.compton.gamma_rad") },
       { "synchrotron_emission",
@@ -218,7 +235,7 @@ namespace ntt {
     extra_params.setParams(extra_extra_flags, this);
 
     // @TODO: disabling stats for non-Cartesian
-    if (coord_enum != Coord::Cart) {
+    if (coord_enum != Coord::Cartesian) {
       set("output.stats.enable", false);
     }
   }
@@ -237,19 +254,19 @@ namespace ntt {
         set("setup." + key, (std::string)(val.as_string()));
       } else if (val.is_array()) {
         const auto val_arr = val.as_array();
-        if (val_arr.size() == 0) {
+        if (val_arr.empty()) {
           continue;
         } else {
           if (val_arr[0].is_integer()) {
             std::vector<int> vec;
             for (const auto& v : val_arr) {
-              vec.push_back(v.as_integer());
+              vec.push_back(static_cast<int>(v.as_integer()));
             }
             set("setup." + key, vec);
           } else if (val_arr[0].is_floating()) {
             std::vector<real_t> vec;
             for (const auto& v : val_arr) {
-              vec.push_back(v.as_floating());
+              vec.push_back(static_cast<real_t>(v.as_floating()));
             }
             set("setup." + key, vec);
           } else if (val_arr[0].is_boolean()) {
@@ -265,14 +282,14 @@ namespace ntt {
             }
             set("setup." + key, vec);
           } else if (val_arr[0].is_array()) {
-            if (val_arr[0].as_array().size() == 0) {
+            if (val_arr[0].as_array().empty()) {
               raise::Error("empty inner arrays not allowed in [setup]", HERE);
             } else if (val_arr[0][0].is_integer()) {
               std::vector<std::vector<int>> vec;
               for (const auto& v1 : val_arr) {
                 std::vector<int> inner_vec;
                 for (const auto& v2 : v1.as_array()) {
-                  inner_vec.push_back(v2.as_integer());
+                  inner_vec.push_back(static_cast<int>(v2.as_integer()));
                 }
                 vec.push_back(inner_vec);
               }
@@ -282,7 +299,7 @@ namespace ntt {
               for (const auto& v1 : val_arr) {
                 std::vector<real_t> inner_vec;
                 for (const auto& v2 : v1.as_array()) {
-                  inner_vec.push_back(v2.as_floating());
+                  inner_vec.push_back(static_cast<real_t>(v2.as_floating()));
                 }
                 vec.push_back(inner_vec);
               }
@@ -337,7 +354,7 @@ namespace ntt {
       std::ofstream metadata;
       metadata.open(path);
       metadata << fmt::format("[metadata]\n  time = %f\n\n", time) << data()
-               << std::endl;
+               << '\n';
       metadata.close();
     });
   }

@@ -1,0 +1,64 @@
+[simulation]
+  name    = "tutorial_cartesian_sr"
+  engine  = "srpic"
+  runtime = 20.0
+
+[grid]
+  resolution = [1536, 1536]
+  extent     = [[-4.0, 2.0], [-3.0, 3.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["MATCH", "MATCH"], ["MATCH", "MATCH"]]
+    particles = [["ABSORB", "ABSORB"], ["ABSORB", "ABSORB"]]
+
+[scales]
+  larmor0    = 0.003
+  skindepth0 = 0.01
+
+[algorithms.deposit]
+  enable = true
+
+[algorithms.fieldsolver]
+  enable = true
+
+[particles]
+  ppc0 = 8.0
+
+  [[particles.species]]
+    label    = "e+"
+    charge   = 1.0
+    mass     = 1.0
+    maxnpart = 5e7
+
+  [[particles.species]]
+    label    = "e-"
+    charge   = -1.0
+    mass     = 1.0
+    maxnpart = 5e7
+
+[setup]
+  temperature   = 1e-3
+  drift_vel     = 1.0
+  inject_xrange = [-3.9, -3.8]
+  r_plummet     = 0.3
+  r_purge       = 0.15
+  plummet_speed = 0.1
+
+[output]
+  interval_time = 0.1
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "E", "B", "J"]
+
+  [output.particles]
+    stride = 100
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  interval = 1.0
+  keep     = 1

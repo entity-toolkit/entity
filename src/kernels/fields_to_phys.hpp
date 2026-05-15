@@ -24,17 +24,15 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel {
   using namespace ntt;
 
-  template <class M, int N1, int N2>
-    requires metric::traits::HasD<M> && metric::traits::HasTransform<M> &&
-             (N1 >= 3) && (N2 >= 3)
+  template <MetricClass M, int N1, int N2>
+    requires(N1 >= 3) && (N2 >= 3)
   class FieldsToPhys_kernel {
     static constexpr auto D = M::Dim;
 
@@ -43,14 +41,14 @@ namespace kernel {
     const PrepareOutputFlags flags;
     const M                  metric;
 
-    const unsigned short cf1, cf2, cf3;
-    const unsigned short ct1, ct2, ct3;
+    const uint8_t cf1, cf2, cf3;
+    const uint8_t ct1, ct2, ct3;
 
   public:
     FieldsToPhys_kernel(const ndfield_t<D, N1>&   from,
                         ndfield_t<D, N2>&         to,
-                        list_t<unsigned short, 3> comps_from,
-                        list_t<unsigned short, 3> comps_to,
+                        list_t<uint8_t, 3>        comps_from,
+                        list_t<uint8_t, 3>        comps_to,
                         const PrepareOutputFlags& flags,
                         const M&                  metric)
       : Ffrom { from }
@@ -71,9 +69,9 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
-        real_t          i1_ { COORD(i1) };
+        const real_t    i1_ { COORD(i1) };
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;
         if (flags & PrepareOutput::InterpToCellCenterFromEdges) {
@@ -120,10 +118,10 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
-        real_t i1_ { COORD(i1) };
-        real_t i2_ { COORD(i2) };
+        const real_t i1_ { COORD(i1) };
+        const real_t i2_ { COORD(i2) };
 
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;
@@ -174,11 +172,11 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
-        real_t i1_ { COORD(i1) };
-        real_t i2_ { COORD(i2) };
-        real_t i3_ { COORD(i3) };
+        const real_t i1_ { COORD(i1) };
+        const real_t i2_ { COORD(i2) };
+        const real_t i3_ { COORD(i3) };
 
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
         auto            cell_center = false;

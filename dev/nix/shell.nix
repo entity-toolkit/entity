@@ -12,7 +12,7 @@
 let
   gpuUpper = pkgs.lib.toUpper gpu;
   archUpper = pkgs.lib.toUpper arch;
-  name = "entity-dev";
+  name = "nt2";
   adios2Pkg = (pkgs.callPackage ./adios2.nix { inherit pkgs mpi hdf5; });
   kokkosPkg = (
     pkgs.callPackage ./kokkos.nix {
@@ -37,7 +37,10 @@ let
   };
 in
 pkgs.mkShell {
-  name = "${name}-env";
+  name =
+    "${name}"
+    + (if gpu != "NONE" then "-${pkgs.lib.toLower gpu}" else "")
+    + (if mpi then "-mpi" else "");
   nativeBuildInputs = with pkgs; [
     zlib
     cmake

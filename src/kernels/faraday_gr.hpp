@@ -16,10 +16,9 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
-
-#include "metrics/traits.h"
 
 namespace kernel::gr {
   using namespace ntt;
@@ -29,9 +28,7 @@ namespace kernel::gr {
    * @brief `d(Bin)^i / dt = -curl E_j`, `Bout += dt * d(Bin)/dt`
    * @tparam M Metric
    */
-  template <class M>
-    requires metric::traits::HasD<M> && metric::traits::HasH_ij<M> &&
-             metric::traits::HasSqrtDetH<M>
+  template <GRMetricClass M>
   class Faraday_kernel {
     static constexpr auto D = M::Dim;
 
@@ -49,7 +46,7 @@ namespace kernel::gr {
                    const ndfield_t<D, 6>&      E,
                    const M&                    metric,
                    real_t                      coeff,
-                   std::size_t                 ni2,
+                   ncells_t                    ni2,
                    const boundaries_t<FldsBC>& boundaries)
       : Bin { Bin }
       , Bout { Bout }
@@ -63,14 +60,14 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
-        constexpr std::size_t i2min { N_GHOSTS };
-        const real_t          i1_ { COORD(i1) };
-        const real_t          i2_ { COORD(i2) };
-        const real_t          inv_sqrt_detH_0pH { ONE /
+        constexpr ncells_t i2min { N_GHOSTS };
+        const real_t       i1_ { COORD(i1) };
+        const real_t       i2_ { COORD(i2) };
+        const real_t       inv_sqrt_detH_0pH { ONE /
                                          metric.sqrt_det_h({ i1_, i2_ + HALF }) };
-        const real_t          inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
+        const real_t       inv_sqrt_detH_pHpH { ONE / metric.sqrt_det_h(
                                                   { i1_ + HALF, i2_ + HALF }) };
 
         Bout(i1, i2, em::bx1) = Bin(i1, i2, em::bx1) +
@@ -95,7 +92,7 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {
