@@ -138,8 +138,6 @@ concept CustomParticleUpdatePolicyClass =
   } or
   traits::custom_prtl_update::IsNoPolicy<CPU>;
 
-<<<<<<< HEAD
-=======
 namespace traits::twobodyinteractions {
 
   template <class I>
@@ -176,5 +174,4 @@ concept TwoBodyInteractionPolicyClass =
   traits::twobodyinteractions::HasShouldInteract<I> and
   traits::twobodyinteractions::HasInteraction<I>;
 
->>>>>>> a09db826 (qed incorporated)
 #endif // TRAITS_POLICIES_H
