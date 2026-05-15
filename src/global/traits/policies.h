@@ -138,21 +138,4 @@ concept CustomParticleUpdatePolicyClass =
   } or
   traits::custom_prtl_update::IsNoPolicy<CPU>;
 
-namespace traits::twobodyinteractions {
-
-  template <class I>
-  concept IsValid = requires(const I& interaction_policy,
-                             spidx_t  sp1,
-                             npart_t  p1,
-                             spidx_t  sp2,
-                             npart_t  p2,
-                             real_t   tile_vol) {
-    { interaction_policy(sp1, p1, sp2, p2, tile_vol) } -> std::same_as<void>;
-  };
-
-} // namespace traits::twobodyinteractions
-
-template <class I>
-concept TwoBodyInteractionPolicyClass = traits::twobodyinteractions::IsValid<I>;
-
 #endif // TRAITS_POLICIES_H
