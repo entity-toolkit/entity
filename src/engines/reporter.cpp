@@ -9,6 +9,7 @@
 #include "framework/parameters/extra.h"
 #include "framework/parameters/parameters.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 

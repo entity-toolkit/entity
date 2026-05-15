@@ -5,12 +5,14 @@
 
 #include "utils/numeric.h"
 
+#include "framework/parameters/extra.h"
 #include "framework/parameters/parameters.h"
 
 #include <toml11/toml.hpp>
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace ntt {
   namespace params {
