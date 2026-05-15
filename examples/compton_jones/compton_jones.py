@@ -9,6 +9,7 @@ photons = photons[np.sqrt(photons.ux**2 + photons.uy**2 + photons.uz**2) > 0.01]
 
 plt.rcParams["figure.dpi"] = 300
 plt.rcParams["font.family"] = "serif"
+plt.rcParams["mathtext.fontset"] = "stix"
 
 fig = plt.figure(figsize=(9, 4))
 gs = fig.add_gridspec(1, 2, wspace=0.35)

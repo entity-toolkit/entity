@@ -42,7 +42,7 @@ namespace arch::qed {
           "compton_scattering.nominal_probability_density") }
       , random_pool { random_pool } {
       if (nominal_probability_density <= ZERO) {
-        raise::Error("nominal_probability must be in the range (0, 1]", HERE);
+        raise::Error("nominal_probability must be > 0", HERE);
       }
     }
 

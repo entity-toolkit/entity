@@ -19,7 +19,7 @@
   skindepth0 = 1.0
 
 [two_body]
-  thomson_optical_depth = 0.5
+  thomson_optical_depth = 100.0
 
   [[two_body.interaction]]
     type      = "compton"
@@ -40,7 +40,7 @@
     enable = false
 
 [particles]
-  ppc0           = 1.0
+  ppc0           = 5.0
   clear_interval = 1
 
   [[particles.species]]
@@ -67,7 +67,7 @@
   photon_energy = 1e-2
 
 [output]
-  interval_time = 0.01
+  interval_time = 9.0
 
   [output.fields]
     quantities = ["N_1", "N_2", "N_3"]

@@ -282,7 +282,10 @@ namespace kernel::mink {
             const auto p1  = static_cast<npart_t>(combined_idx1(o1 + i) &
                                                  ((1ull << 56) - 1));
 
-            lsum += interaction_policy.species[sp1 - 1].weight(p1);
+            lsum += (interaction_policy.species[sp1 - 1].tag(p1) ==
+                     ParticleTag::alive)
+                      ? interaction_policy.species[sp1 - 1].weight(p1)
+                      : ZERO;
           },
           weight_on_tile1);
         weights_on_tile1(t) = weight_on_tile1;
@@ -297,7 +300,10 @@ namespace kernel::mink {
             const auto p2  = static_cast<npart_t>(combined_idx2(o2 + i) &
                                                  ((1ull << 56) - 1));
 
-            lsum += interaction_policy.species[sp2 - 1].weight(p2);
+            lsum += (interaction_policy.species[sp2 - 1].tag(p2) ==
+                     ParticleTag::alive)
+                      ? interaction_policy.species[sp2 - 1].weight(p2)
+                      : ZERO;
           },
           weight_on_tile2);
         weights_on_tile2(t) = weight_on_tile2;
@@ -350,10 +356,13 @@ namespace kernel::mink {
                                                ((1ull << 56) - 1));
           const auto p2 = static_cast<npart_t>(combined_idx2(o2 + i) &
                                                ((1ull << 56) - 1));
-          if (interaction_policy.should_interact(sp1, p1, sp2, p2, tile_weight)) {
-            const auto idx            = Kokkos::atomic_fetch_add(&counter(), 1);
-            interaction_pairs(idx, 0) = combined_idx1(o1 + i);
-            interaction_pairs(idx, 1) = combined_idx2(o2 + i);
+          if ((interaction_policy.species[sp1 - 1].tag(p1) == ParticleTag::alive) and
+              (interaction_policy.species[sp2 - 1].tag(p2) == ParticleTag::alive)) {
+            if (interaction_policy.should_interact(sp1, p1, sp2, p2, tile_weight)) {
+              const auto idx = Kokkos::atomic_fetch_add(&counter(), 1);
+              interaction_pairs(idx, 0) = combined_idx1(o1 + i);
+              interaction_pairs(idx, 1) = combined_idx2(o2 + i);
+            }
           }
         });
       });

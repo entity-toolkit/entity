@@ -19,7 +19,7 @@
   skindepth0 = 1.0
 
 [two_body]
-  thomson_optical_depth = 0.25
+  thomson_optical_depth = 60.0
 
   [[two_body.interaction]]
     type      = "compton"
@@ -66,7 +66,7 @@
   photon_energy = 1e-3
 
 [output]
-  interval_time = 0.01
+  interval_time = 0.1
 
   [output.fields]
     enable = false
@@ -81,7 +81,7 @@
     n_bins   = 500
 
   [output.stats]
-    quantities = ["T00_1", "T00_2", "T00_3"]
+    quantities = ["T00_3"]
 
 [checkpoint]
   keep = 0
