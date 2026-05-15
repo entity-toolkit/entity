@@ -27,7 +27,7 @@ namespace out {
   auto InterpretSpecies(const std::string&) -> std::vector<spidx_t>;
 
   auto InterpretComponents(const std::vector<std::string>&)
-    -> std::vector<std::vector<unsigned short>>;
+    -> std::vector<std::vector<uint8_t>>;
 
 } // namespace out
 

@@ -132,14 +132,13 @@ namespace arch {
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
   template <SimEngine::type S, MetricClass M, FldsID::type F, int N>
-  inline void ComputeMomentWithSpecies(
-    const SimulationParams&            params,
-    Domain<S, M>&                      domain,
-    const std::vector<spidx_t>&        species,
-    ndfield_t<M::Dim, N>&              buffer,
-    const std::vector<unsigned short>& components = {},
-    idx_t                              buffer_idx = 0u,
-    unsigned short                     window     = 0u) {
+  inline void ComputeMomentWithSpecies(const SimulationParams&     params,
+                                       Domain<S, M>&               domain,
+                                       const std::vector<spidx_t>& species,
+                                       ndfield_t<M::Dim, N>&       buffer,
+                                       const std::vector<uint8_t>& components = {},
+                                       idx_t          buffer_idx = 0u,
+                                       unsigned short window     = 0u) {
     const auto ni2         = domain.mesh.n_active(in::x2);
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
     const auto use_weights = params.template get<bool>("particles.use_weights");

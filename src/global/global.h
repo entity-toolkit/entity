@@ -181,7 +181,8 @@ namespace ntt {
 enum Dimension : uint8_t {
   _1D = 1,
   _2D = 2,
-  _3D = 3
+  _3D = 3,
+  _4D = 4
 };
 
 enum class CellLayer : uint8_t {

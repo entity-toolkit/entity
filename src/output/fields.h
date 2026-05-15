@@ -33,8 +33,8 @@ namespace out {
     PrepareOutputFlags prepare_flag { PrepareOutput::None };
     PrepareOutputFlags interp_flag { PrepareOutput::None };
 
-    std::vector<std::vector<unsigned short>> comp;
-    std::vector<spidx_t>                     species;
+    std::vector<std::vector<uint8_t>> comp;
+    std::vector<spidx_t>              species;
 
     OutputField(const SimEngine& S, const std::string&);
 

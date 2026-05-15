@@ -112,10 +112,10 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
     };
   }
 
-  const std::vector<unsigned short> comp1 { 0, 1 };
-  const std::vector<unsigned short> comp2 { 0, 2 };
-  const std::vector<unsigned short> comp3 { 0, 3 };
-  const unsigned short              window = 1;
+  const std::vector<uint8_t> comp1 { 0, 1 };
+  const std::vector<uint8_t> comp2 { 0, 2 };
+  const std::vector<uint8_t> comp3 { 0, 3 };
+  const uint8_t              window = 1;
 
   auto scatter_buff = Kokkos::Experimental::create_scatter_view(buff);
   // clang-format off

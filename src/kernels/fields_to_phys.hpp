@@ -41,14 +41,14 @@ namespace kernel {
     const PrepareOutputFlags flags;
     const M                  metric;
 
-    const unsigned short cf1, cf2, cf3;
-    const unsigned short ct1, ct2, ct3;
+    const uint8_t cf1, cf2, cf3;
+    const uint8_t ct1, ct2, ct3;
 
   public:
     FieldsToPhys_kernel(const ndfield_t<D, N1>&   from,
                         ndfield_t<D, N2>&         to,
-                        list_t<unsigned short, 3> comps_from,
-                        list_t<unsigned short, 3> comps_to,
+                        list_t<uint8_t, 3>        comps_from,
+                        list_t<uint8_t, 3>        comps_to,
                         const PrepareOutputFlags& flags,
                         const M&                  metric)
       : Ffrom { from }

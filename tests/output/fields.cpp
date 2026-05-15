@@ -5,7 +5,6 @@
 #include "utils/error.h"
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 auto main() -> int {
@@ -88,13 +87,13 @@ auto main() -> int {
       raise::ErrorIf(t.comp[2].size() != 2,
                      "T.comp[2] should have 2 components",
                      HERE);
-      raise::ErrorIf(t.comp[0] != std::vector<unsigned short> { 0, 1 },
+      raise::ErrorIf(t.comp[0] != std::vector<uint8_t> { 0, 1 },
                      "T.comp[0] should be {0, 1}",
                      HERE);
-      raise::ErrorIf(t.comp[1] != std::vector<unsigned short> { 0, 2 },
+      raise::ErrorIf(t.comp[1] != std::vector<uint8_t> { 0, 2 },
                      "T.comp[1] should be {0, 2}",
                      HERE);
-      raise::ErrorIf(t.comp[2] != std::vector<unsigned short> { 0, 3 },
+      raise::ErrorIf(t.comp[2] != std::vector<uint8_t> { 0, 3 },
                      "T.comp[2] should be {0, 3}",
                      HERE);
       raise::ErrorIf(t.species.size() != 2, "T should have 2 species", HERE);
