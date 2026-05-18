@@ -103,15 +103,10 @@ namespace ntt {
       Kokkos::parallel_reduce(
         "ComputeMoments",
         prtl_spec.rangeActiveParticles(),
-        // clang-format off
         kernel::ReducedParticleMoments_kernel<S, M, P>(components,
-                                                       prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                       prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                       prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                       prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                       prtl_spec.mass(), prtl_spec.charge(),
-                                                       use_weights, mesh.metric),
-        // clang-format on
+                                                       prtl_spec,
+                                                       use_weights,
+                                                       mesh.metric),
         temp_buff);
       buffer += temp_buff;
     }

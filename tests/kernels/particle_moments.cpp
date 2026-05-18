@@ -9,9 +9,8 @@
 #include "utils/numeric.h"
 
 #include "metrics/minkowski.h"
-#include "metrics/qspherical.h"
-#include "metrics/spherical.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/reduced_stats.hpp"
 
 #include <Kokkos_Core.hpp>
@@ -67,42 +66,44 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
   const auto nx2 = res[1];
 
   ndfield_t<Dim::_2D, 3> buff { "buff", nx1 + 2 * N_GHOSTS, nx2 + 2 * N_GHOSTS };
-  array_t<int*>      i1 { "i1", 10 };
-  array_t<int*>      i2 { "i2", 10 };
-  array_t<int*>      i3 { "i3", 0 };
-  array_t<prtldx_t*> dx1 { "dx1", 10 };
-  array_t<prtldx_t*> dx2 { "dx2", 10 };
-  array_t<prtldx_t*> dx3 { "dx3", 0 };
-  array_t<real_t*>   ux1 { "ux1", 10 };
-  array_t<real_t*>   ux2 { "ux2", 10 };
-  array_t<real_t*>   ux3 { "ux3", 10 };
-  array_t<real_t*>   phi { "phi", 10 };
-  array_t<real_t*>   weight { "weight", 10 };
-  array_t<short*>    tag { "tag", 10 };
-  const float        mass        = 1.0;
-  const float        charge      = 1.0;
-  const bool         use_weights = false;
-  const real_t       inv_n0      = 1.0;
+  Particles<M::Dim, M::CoordType> particles { 1u,
+                                              "test",
+                                              1.0f,
+                                              1.0f,
+                                              10,
+                                              0,
+                                              0,
+                                              ParticlePusher::NONE,
+                                              false,
+                                              RadiativeDrag::NONE,
+                                              EmissionType::NONE,
+                                              0,
+                                              0 };
 
-  put_value<int>(i1, 5, 0);
-  put_value<int>(i2, 4, 0);
-  put_value<prtldx_t>(dx1, (prtldx_t)(0.15), 0);
-  put_value<prtldx_t>(dx2, (prtldx_t)(0.85), 0);
-  put_value<real_t>(ux1, (real_t)(1.0), 0);
-  put_value<real_t>(ux2, (real_t)(-2.0), 0);
-  put_value<real_t>(ux3, (real_t)(3.0), 0);
-  put_value<short>(tag, ParticleTag::alive, 0);
-  put_value<real_t>(weight, 1.0, 0);
+  const float  mass        = 1.0;
+  const float  charge      = 1.0;
+  const bool   use_weights = false;
+  const real_t inv_n0      = 1.0;
 
-  put_value<int>(i1, 2, 4);
-  put_value<int>(i2, 2, 4);
-  put_value<prtldx_t>(dx1, (prtldx_t)(0.22), 4);
-  put_value<prtldx_t>(dx2, (prtldx_t)(0.55), 4);
-  put_value<real_t>(ux1, (real_t)(-3.0), 4);
-  put_value<real_t>(ux2, (real_t)(2.0), 4);
-  put_value<real_t>(ux3, (real_t)(-1.0), 4);
-  put_value<short>(tag, ParticleTag::alive, 4);
-  put_value<real_t>(weight, 1.0, 4);
+  put_value<int>(particles.i1, 5, 0);
+  put_value<int>(particles.i2, 4, 0);
+  put_value<prtldx_t>(particles.dx1, (prtldx_t)(0.15), 0);
+  put_value<prtldx_t>(particles.dx2, (prtldx_t)(0.85), 0);
+  put_value<real_t>(particles.ux1, (real_t)(1.0), 0);
+  put_value<real_t>(particles.ux2, (real_t)(-2.0), 0);
+  put_value<real_t>(particles.ux3, (real_t)(3.0), 0);
+  put_value<short>(particles.tag, ParticleTag::alive, 0);
+  put_value<real_t>(particles.weight, 1.0, 0);
+
+  put_value<int>(particles.i1, 2, 4);
+  put_value<int>(particles.i2, 2, 4);
+  put_value<prtldx_t>(particles.dx1, (prtldx_t)(0.22), 4);
+  put_value<prtldx_t>(particles.dx2, (prtldx_t)(0.55), 4);
+  put_value<real_t>(particles.ux1, (real_t)(-3.0), 4);
+  put_value<real_t>(particles.ux2, (real_t)(2.0), 4);
+  put_value<real_t>(particles.ux3, (real_t)(-1.0), 4);
+  put_value<short>(particles.tag, ParticleTag::alive, 4);
+  put_value<real_t>(particles.weight, 1.0, 4);
 
   auto boundaries = boundaries_t<FldsBC> {};
   if constexpr (M::CoordType != Coord::Cartesian) {
@@ -118,91 +119,87 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
   const uint8_t              window = 1;
 
   auto scatter_buff = Kokkos::Experimental::create_scatter_view(buff);
-  // clang-format off
   Kokkos::parallel_for(
-    "ParticleMoments", 10,
-    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp1, scatter_buff, 0,
-                                                       i1, i2, i3,
-                                                       dx1, dx2, dx3,
-                                                       ux1, ux2, ux3,
-                                                       phi, weight, tag,
-                                                       mass, charge,
+    "ParticleMoments",
+    10,
+    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp1,
+                                                       scatter_buff,
+                                                       0,
+                                                       particles,
                                                        use_weights,
                                                        metric,
-                                                       boundaries, nx2, inv_n0, window));
+                                                       boundaries,
+                                                       nx2,
+                                                       inv_n0,
+                                                       window));
 
   Kokkos::parallel_for(
-    "ParticleMoments", 10,
-    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp2, scatter_buff, 1,
-                                                       i1, i2, i3,
-                                                       dx1, dx2, dx3,
-                                                       ux1, ux2, ux3,
-                                                       phi, weight, tag,
-                                                       mass, charge,
+    "ParticleMoments",
+    10,
+    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp2,
+                                                       scatter_buff,
+                                                       1,
+                                                       particles,
                                                        use_weights,
                                                        metric,
-                                                       boundaries, nx2, inv_n0, window));
+                                                       boundaries,
+                                                       nx2,
+                                                       inv_n0,
+                                                       window));
   Kokkos::parallel_for(
-    "ParticleMoments", 10,
-    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp3, scatter_buff, 2,
-                                                       i1, i2, i3,
-                                                       dx1, dx2, dx3,
-                                                       ux1, ux2, ux3,
-                                                       phi, weight, tag,
-                                                       mass, charge,
+    "ParticleMoments",
+    10,
+    kernel::ParticleMoments_kernel<S, M, FldsID::T, 3>(comp3,
+                                                       scatter_buff,
+                                                       2,
+                                                       particles,
                                                        use_weights,
                                                        metric,
-                                                       boundaries, nx2, inv_n0, window));
+                                                       boundaries,
+                                                       nx2,
+                                                       inv_n0,
+                                                       window));
 
   real_t n = ZERO, npart = ZERO, rho = ZERO, t00 = ZERO;
   Kokkos::parallel_reduce(
-    "ReducedParticleMoments", 10,
-    kernel::ReducedParticleMoments_kernel<S, M, StatsID::N>({}, 
-                                                            i1, i2, i3,
-                                                            dx1, dx2, dx3,
-                                                            ux1, ux2, ux3,
-                                                            phi, weight, tag,
-                                                            mass, charge,
+    "ReducedParticleMoments",
+    10,
+    kernel::ReducedParticleMoments_kernel<S, M, StatsID::N>({},
+                                                            particles,
                                                             use_weights,
-                                                            metric), n);
+                                                            metric),
+    n);
 
   Kokkos::parallel_reduce(
-    "ReducedParticleMoments", 10,
-    kernel::ReducedParticleMoments_kernel<S, M, StatsID::Npart>({}, 
-                                                                i1, i2, i3,
-                                                                dx1, dx2, dx3,
-                                                                ux1, ux2, ux3,
-                                                                phi, weight, tag,
-                                                                mass, charge,
+    "ReducedParticleMoments",
+    10,
+    kernel::ReducedParticleMoments_kernel<S, M, StatsID::Npart>({},
+                                                                particles,
                                                                 use_weights,
-                                                                metric), npart);
+                                                                metric),
+    npart);
   Kokkos::parallel_reduce(
-    "ReducedParticleMoments", 10,
-    kernel::ReducedParticleMoments_kernel<S, M, StatsID::Rho>({}, 
-                                                              i1, i2, i3,
-                                                              dx1, dx2, dx3,
-                                                              ux1, ux2, ux3,
-                                                              phi, weight, tag,
-                                                              mass, charge,
+    "ReducedParticleMoments",
+    10,
+    kernel::ReducedParticleMoments_kernel<S, M, StatsID::Rho>({},
+                                                              particles,
                                                               use_weights,
-                                                              metric), rho);
+                                                              metric),
+    rho);
   Kokkos::parallel_reduce(
-    "ReducedParticleMoments", 10,
-    kernel::ReducedParticleMoments_kernel<S, M, StatsID::T>({0u, 0u}, 
-                                                            i1, i2, i3,
-                                                            dx1, dx2, dx3,
-                                                            ux1, ux2, ux3,
-                                                            phi, weight, tag,
-                                                            mass, charge,
+    "ReducedParticleMoments",
+    10,
+    kernel::ReducedParticleMoments_kernel<S, M, StatsID::T>({ 0u, 0u },
+                                                            particles,
                                                             use_weights,
-                                                            metric), t00);
-  // clang-format on
+                                                            metric),
+    t00);
   Kokkos::Experimental::contribute(buff, scatter_buff);
 
-  auto i1_h = Kokkos::create_mirror_view(i1);
-  auto i2_h = Kokkos::create_mirror_view(i2);
-  Kokkos::deep_copy(i1_h, i1);
-  Kokkos::deep_copy(i2_h, i2);
+  auto i1_h = Kokkos::create_mirror_view(particles.i1);
+  auto i2_h = Kokkos::create_mirror_view(particles.i2);
+  Kokkos::deep_copy(i1_h, particles.i1);
+  Kokkos::deep_copy(i2_h, particles.i2);
 
   const auto h1 = metric.sqrt_det_h({ static_cast<real_t>(i1_h(0)) + HALF,
                                       static_cast<real_t>(i2_h(0)) + HALF });
@@ -234,7 +231,7 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
     const real_t gammaSQR_2_expect = 15.0;
 
     const real_t n_expect   = 2.0;
-    const real_t t00_expect = 2.0 * math::sqrt(15.0);
+    const real_t t00_expect = static_cast<real_t>(2.0 * math::sqrt(15.0));
 
     errorIf(not cmp::AlmostEqual_host(gammaSQR_1, gammaSQR_1_expect, epsilon * acc),
             fmt::format("wrong gamma_1 %.12e %.12e for %dD %s",
