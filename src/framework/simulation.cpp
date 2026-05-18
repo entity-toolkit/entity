@@ -9,10 +9,12 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 #include "utils/plog.h"
-#include "utils/toml.h"
+
+#include <toml11/toml.hpp>
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace ntt {
 
@@ -47,9 +49,7 @@ namespace ntt {
     const auto res = toml::find<std::vector<ncells_t>>(raw_params,
                                                        "grid",
                                                        "resolution");
-    raise::ErrorIf(res.size() < 1 || res.size() > 3,
-                   "invalid `grid.resolution`",
-                   HERE);
+    raise::ErrorIf(res.empty() || res.size() > 3, "invalid `grid.resolution`", HERE);
     m_requested_dimension = static_cast<Dimension>(res.size());
 
     m_params.setRawData(raw_params);

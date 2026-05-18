@@ -26,6 +26,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace fmt {
@@ -40,8 +41,8 @@ namespace fmt {
     if (size_s <= 0) {
       throw std::runtime_error("Error during formatting.");
     }
-    auto                    size { static_cast<std::size_t>(size_s) };
-    std::unique_ptr<char[]> buf(new char[size]);
+    auto                          size { static_cast<std::size_t>(size_s) };
+    const std::unique_ptr<char[]> buf(new char[size]);
     std::snprintf(buf.get(), size, format, args...);
     return std::string(buf.get(), buf.get() + size - 1);
   }
@@ -53,10 +54,8 @@ namespace fmt {
    * @param c Character to pad with
    * @param right Pad on the right
    */
-  inline auto pad(const std::string& str,
-                  std::size_t        n,
-                  char               c,
-                  bool               right = false) -> std::string {
+  inline auto pad(const std::string& str, std::size_t n, char c, bool right = false)
+    -> std::string {
     if (n <= str.size()) {
       return str;
     }
@@ -69,14 +68,27 @@ namespace fmt {
   /**
    * @brief formats a vector of arbitrary type: [a, b, c, ...]
    */
+  template <class P>
+  concept HasToString = requires(const P& params) {
+    { params.to_string() } -> std::convertible_to<std::string>;
+  };
+
+  // generic
+
+  template <typename T>
+  struct is_pair : std::false_type {};
+
+  template <typename T, typename U>
+  struct is_pair<std::pair<T, U>> : std::true_type {};
+
   template <typename T>
   auto formatVector(const std::vector<T>& vec) -> std::string {
     std::ostringstream oss;
     oss << "[";
     if (!vec.empty()) {
       if constexpr (traits::is_pair<T>::value) {
-        if constexpr (
-          traits::has_method<traits::to_string_t, typename T::first_type>::value) {
+        if constexpr (HasToString<typename T::first_type> and
+                      HasToString<typename T::second_type>) {
           oss << "{" << vec[0].first.to_string() << ", "
               << vec[0].second.to_string() << "}";
           for (size_t i = 1; i < vec.size(); ++i) {
@@ -115,9 +127,9 @@ namespace fmt {
    * @param delim Delimiter
    * @return Vector of strings
    */
-  inline auto splitString(const std::string& str,
-                          const std::string& delim) -> std::vector<std::string> {
-    std::regex regexz(delim);
+  inline auto splitString(const std::string& str, const std::string& delim)
+    -> std::vector<std::string> {
+    const std::regex regexz(delim);
     return { std::sregex_token_iterator(str.begin(), str.end(), regexz, -1),
              std::sregex_token_iterator() };
   }
@@ -146,7 +158,7 @@ namespace fmt {
    */
   inline auto strlenUTF8(const std::string& str) -> std::size_t {
     std::size_t length = 0;
-    for (char c : str) {
+    for (const auto c : str) {
       if ((c & 0xC0) != 0x80) {
         ++length;
       }
@@ -175,7 +187,7 @@ namespace fmt {
       const auto  anch { static_cast<std::size_t>(anchors[i] < 0 ? -anchors[i]
                                                                 : anchors[i]) };
       const auto  leftalign { anchors[i] <= 0 };
-      const auto  cmn { columns[i] };
+      const auto& cmn { columns[i] };
       const auto  cmn_len { strlenUTF8(cmn) };
       std::string left { c_bblack };
       if (leftalign) {
@@ -190,8 +202,8 @@ namespace fmt {
         left += repeat(fillers[i], anch - cntr - cmn_len);
         cntr += anch - cntr - cmn_len;
       }
-      result += left + colors[i] + cmn + c_reset;
-      cntr   += cmn_len;
+      result.append(left).append(colors[i]).append(cmn).append(c_reset);
+      cntr += cmn_len;
     }
     return result + c_reset + "\n";
   }

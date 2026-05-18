@@ -10,12 +10,15 @@
  *                                    reflect, horizon, axis, sync
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
  *                                    custom, horizon, axis, conductor, sync
- *   - enum ntt::PrtlPusher        // boris, vay, photon, none
- *   - enum ntt::Cooling           // compton, synchrotron, none
  *   - enum ntt::FldsID            // e, dive, d, divd, b, h, j,
  *                                    a, t, rho, charge, n, nppc, v, custom
  *   - enum ntt::StatsID           // b^2, e^2, exb, j.e, t, rho,
  *                                    charge, n, npart
+ *
+ *   - enum ntt::ParticlePusher    // photon, boris, vay, gca, none
+ *   - enum ntt::RadiativeDrag     // compton, synchrotron, none
+ *   - enum ntt::EmissionType      // none, synchrotron, inversecompton, custom
+ *
  * @namespaces:
  *   - ntt::
  * @note Enums of the same type can be compared with each other and with strings
@@ -27,16 +30,16 @@
  * example: SimEngine(SimEngine::SRPIC).to_string() [return "srpic"]
  * @note
  * To check if a string is a valid option, use the contains() function
- * example: PrtlPusher::contains("vay") == true
+ * example: PrtlBC::contains("periodic") == true
  * @note
  * To get the proper enum instance from a string, use the pick() function
- * example: PrtlPusher::pick("vay") [returns PrtlPusher(PrtlPusher::VAY)]
+ * example: PrtlBC::pick("periodic") [returns PrtlBC::PERIODIC]
  * @note
  * To get the total number of enum instances, use the total variable
- * example: Cooling::total == 2
+ * example: SimEngine::total == 2
  * @note
  * To iterate over all enum instances, use the variants array
- * example: for (Cooling c : Cooling::variants) { ... }
+ * example: for (auto s : SimEngine::variants) { ... }
  */
 
 #ifndef GLOBAL_ENUMS_H
@@ -53,102 +56,85 @@
 namespace ntt {
 
   namespace enums_hidden {
-    template <typename T>
-    constexpr auto basePick(const enum T::type arr[],
-                            const char* const* arr_c,
-                            const std::size_t  n,
-                            const char*        elem) -> T {
-      for (auto i = 0u; i < n; ++i) {
-        if (strcmp(arr_c[i], elem) == 0) {
-          return (T)(arr[i]);
-        }
+    template <typename Derived>
+    class EnumBase {
+      constexpr auto idx() const -> std::size_t {
+        return static_cast<std::size_t>(d().val) - 1; // assumes 1-indexed
       }
-      raise::Error(fmt::format("Invalid enum value: %s for %s", elem, T::label),
-                   HERE);
-      return T::INVALID;
-    }
 
-    template <typename T>
-    constexpr auto baseContains(const char* const* arr_c,
-                                const std::size_t  n,
-                                const char*        elem) -> bool {
-      for (auto i = 0u; i < n; ++i) {
-        if (strcmp(arr_c[i], elem) == 0) {
-          return true;
-        }
+      constexpr auto d() const -> const Derived& {
+        return static_cast<const Derived&>(*this);
       }
-      return false;
-    }
 
-    template <class T>
-    class BaseEnum {
+      EnumBase() = default;
+      friend Derived;
+
     public:
-      constexpr bool operator==(BaseEnum<T> other) const {
-        return value == other.value;
+      constexpr bool operator==(Derived o) const noexcept {
+        return d().val == o.val;
       }
 
-      constexpr bool operator!=(BaseEnum<T> other) const {
-        return value != other.value;
+      constexpr bool operator!=(Derived o) const noexcept {
+        return d().val != o.val;
       }
 
-      constexpr bool operator==(uint8_t other) const {
-        return value == other;
+      constexpr bool operator==(const char* s) const noexcept {
+        return std::strcmp(Derived::lookup[idx()], s) == 0;
       }
 
-      constexpr bool operator!=(uint8_t other) const {
-        return value != other;
-      }
-
-      constexpr bool operator==(const char* other) const {
-        return strcmp(T::lookup[value - 1], other) == 0;
-      }
-
-      constexpr bool operator!=(const char* other) const {
-        return strcmp(T::lookup[value - 1], other) != 0;
-      }
-
-      static constexpr auto pick(const char* c) -> T {
-        return basePick<T>(T::variants, T::lookup, T::total, fmt::toLower(c).c_str());
-      }
-
-      static constexpr auto contains(const char* c) -> bool {
-        return baseContains<T>(T::lookup, T::total, c);
+      constexpr bool operator!=(const char* s) const noexcept {
+        return std::strcmp(Derived::lookup[idx()], s) != 0;
       }
 
       constexpr auto to_string() const -> const char* {
-        return T::lookup[value - 1];
+        return Derived::lookup[idx()];
       }
 
-      BaseEnum() = default;
+      static auto pick(const char* s) -> Derived {
+        for (auto i { 0 }; i < Derived::total; ++i) {
+          if (std::strcmp(Derived::lookup[i], s) == 0) {
+            return Derived { Derived::variants[i] };
+          }
+        }
+        raise::Error(fmt::format("Invalid %s: %s", Derived::label, s), HERE);
+        return Derived { Derived::variants[0] };
+      }
 
-      constexpr BaseEnum(uint8_t v) : value(v) {}
-
-    protected:
-      uint8_t value;
+      static auto contains(const char* s) -> bool {
+        for (auto i { 0u }; i < Derived::total; ++i) {
+          if (std::strcmp(Derived::lookup[i], s) == 0) {
+            return true;
+          }
+        }
+        return false;
+      }
     };
+
   } // namespace enums_hidden
 
-  struct Coord : public enums_hidden::BaseEnum<Coord> {
-    static constexpr const char* label = "coord";
-
-    enum type : uint8_t {
-      INVALID = 0,
-      Cart    = 1,
-      Sph     = 2,
-      Qsph    = 3,
+  struct Coord : public enums_hidden::EnumBase<Coord> {
+    enum class type : uint8_t {
+      INVALID   = 0,
+      Cartesian = 1,
+      Spherical,
+      Qspherical
     };
+    using enum type;
+    type val;
 
-    constexpr Coord(uint8_t c) : enums_hidden::BaseEnum<Coord> { c } {}
+    constexpr Coord(type v) noexcept : val { v } {}
 
-    static constexpr type        variants[] = { Cart, Sph, Qsph };
-    static constexpr const char* lookup[]   = { "cart", "sph", "qsph" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    constexpr Coord(enums_hidden::EnumBase<Coord>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label = "coord";
+    static constexpr type variants[]   = { Cartesian, Spherical, Qspherical };
+    static constexpr const char* lookup[] = { "cart", "sph", "qsph" };
+    static constexpr std::size_t total    = std::size(variants);
   };
 
-  struct Metric : public enums_hidden::BaseEnum<Metric> {
-    static constexpr const char* label = "metric";
-
-    enum type : uint8_t {
+  struct Metric : public enums_hidden::EnumBase<Metric> {
+    enum class type : uint8_t {
       INVALID       = 0,
       Minkowski     = 1,
       Spherical     = 2,
@@ -157,9 +143,15 @@ namespace ntt {
       QKerr_Schild  = 5,
       Kerr_Schild_0 = 6,
     };
+    using enum type;
+    type val;
 
-    constexpr Metric(uint8_t c) : enums_hidden::BaseEnum<Metric> { c } {}
+    constexpr Metric(type v) noexcept : val { v } {}
 
+    constexpr Metric(enums_hidden::EnumBase<Metric>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label      = "metric";
     static constexpr type        variants[] = { Minkowski,    Spherical,
                                                 QSpherical,   Kerr_Schild,
                                                 QKerr_Schild, Kerr_Schild_0 };
@@ -169,26 +161,28 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct SimEngine : public enums_hidden::BaseEnum<SimEngine> {
-    static constexpr const char* label = "sim_engine";
-
-    enum type : uint8_t {
+  struct SimEngine : public enums_hidden::EnumBase<SimEngine> {
+    enum class type : uint8_t {
       INVALID = 0,
       SRPIC   = 1,
       GRPIC   = 2,
     };
+    using enum type;
+    type val;
 
-    constexpr SimEngine(uint8_t c) : enums_hidden::BaseEnum<SimEngine> { c } {}
+    constexpr SimEngine(type v) noexcept : val { v } {}
 
+    constexpr SimEngine(enums_hidden::EnumBase<SimEngine>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label      = "sim_engine";
     static constexpr type        variants[] = { SRPIC, GRPIC };
     static constexpr const char* lookup[]   = { "srpic", "grpic" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct PrtlBC : public enums_hidden::BaseEnum<PrtlBC> {
-    static constexpr const char* label = "prtl_bc";
-
-    enum type : uint8_t {
+  struct PrtlBC : public enums_hidden::EnumBase<PrtlBC> {
+    enum class type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
       ABSORB     = 2,
@@ -199,9 +193,15 @@ namespace ntt {
       AXIS       = 7,
       SYNC       = 8,
     };
+    using enum type;
+    type val;
 
-    constexpr PrtlBC(uint8_t c) : enums_hidden::BaseEnum<PrtlBC> { c } {}
+    constexpr PrtlBC(type v) noexcept : val { v } {}
 
+    constexpr PrtlBC(enums_hidden::EnumBase<PrtlBC>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label = "prtl_bc";
     static constexpr type variants[] = { PERIODIC, ABSORB,  ATMOSPHERE, CUSTOM,
                                          REFLECT,  HORIZON, AXIS,       SYNC };
     static constexpr const char* lookup[] = { "periodic",   "absorb",
@@ -211,10 +211,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct FldsBC : public enums_hidden::BaseEnum<FldsBC> {
-    static constexpr const char* label = "flds_bc";
-
-    enum type : uint8_t {
+  struct FldsBC : public enums_hidden::EnumBase<FldsBC> {
+    enum class type : uint8_t {
       INVALID    = 0,
       PERIODIC   = 1,
       MATCH      = 2,
@@ -226,10 +224,16 @@ namespace ntt {
       CONDUCTOR  = 8,
       SYNC       = 9 // <- SYNC means synchronization with other domains
     };
+    using enum type;
+    type val;
 
-    constexpr FldsBC(uint8_t c) : enums_hidden::BaseEnum<FldsBC> { c } {}
+    constexpr FldsBC(type v) noexcept : val { v } {}
 
-    static constexpr type variants[] = {
+    constexpr FldsBC(enums_hidden::EnumBase<FldsBC>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label      = "flds_bc";
+    static constexpr type        variants[] = {
       PERIODIC, MATCH, FIXED,     ATMOSPHERE, CUSTOM,
       HORIZON,  AXIS,  CONDUCTOR, SYNC,
     };
@@ -240,46 +244,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct PrtlPusher : public enums_hidden::BaseEnum<PrtlPusher> {
-    static constexpr const char* label = "prtl_pusher";
-
-    enum type : uint8_t {
-      INVALID = 0,
-      BORIS   = 1,
-      VAY     = 2,
-      PHOTON  = 3,
-      NONE    = 4,
-    };
-
-    constexpr PrtlPusher(uint8_t c)
-      : enums_hidden::BaseEnum<PrtlPusher> { c } {}
-
-    static constexpr type variants[] = { BORIS, VAY, PHOTON, NONE };
-    static constexpr const char* lookup[] = { "boris", "vay", "photon", "none" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
-  struct Cooling : public enums_hidden::BaseEnum<Cooling> {
-    static constexpr const char* label = "cooling";
-
-    enum type : uint8_t {
-      INVALID     = 0,
-      SYNCHROTRON = 1,
-      COMPTON     = 2,
-      NONE        = 3,
-    };
-
-    constexpr Cooling(uint8_t c) : enums_hidden::BaseEnum<Cooling> { c } {}
-
-    static constexpr type variants[] = { SYNCHROTRON, COMPTON, NONE };
-    static constexpr const char* lookup[] = { "synchrotron", "compton", "none" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
-  };
-
-  struct FldsID : public enums_hidden::BaseEnum<FldsID> {
-    static constexpr const char* label = "out_flds";
-
-    enum type : uint8_t {
+  struct FldsID : public enums_hidden::EnumBase<FldsID> {
+    enum class type : uint8_t {
       INVALID = 0,
       E       = 1,
       divE    = 2,
@@ -297,9 +263,15 @@ namespace ntt {
       V       = 14,
       Custom  = 15,
     };
+    using enum type;
+    type val;
 
-    constexpr FldsID(uint8_t c) : enums_hidden::BaseEnum<FldsID> { c } {}
+    constexpr FldsID(type v) noexcept : val { v } {}
 
+    constexpr FldsID(enums_hidden::EnumBase<FldsID>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label      = "out_flds";
     static constexpr type        variants[] = { E,      divE, D,    divD, B,
                                                 H,      J,    A,    T,    Rho,
                                                 Charge, N,    Nppc, V,    Custom };
@@ -310,10 +282,8 @@ namespace ntt {
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
-  struct StatsID : public enums_hidden::BaseEnum<StatsID> {
-    static constexpr const char* label = "out_stats";
-
-    enum type : uint8_t {
+  struct StatsID : public enums_hidden::EnumBase<StatsID> {
+    enum class type : uint8_t {
       INVALID = 0,
       B2      = 1,
       E2      = 2,
@@ -326,9 +296,15 @@ namespace ntt {
       Npart   = 9,
       Custom  = 10,
     };
+    using enum type;
+    type val;
 
-    constexpr StatsID(uint8_t c) : enums_hidden::BaseEnum<StatsID> { c } {}
+    constexpr StatsID(type v) noexcept : val { v } {}
 
+    constexpr StatsID(enums_hidden::EnumBase<StatsID>, type v) noexcept
+      : val { v } {}
+
+    static constexpr const char* label      = "out_stats";
     static constexpr type        variants[] = { B2,  E2,     ExB, JdotE, T,
                                                 Rho, Charge, N,   Npart, Custom };
     static constexpr const char* lookup[] = { "b^2",   "e^2",   "exb",    "j.e",
@@ -336,6 +312,94 @@ namespace ntt {
                                               "npart", "custom" };
     static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
   };
+
+  namespace ParticlePusher {
+    enum ParticlePusherFlags_ : uint8_t {
+      NONE   = 0,
+      PHOTON = 1 << 0,
+      BORIS  = 1 << 1,
+      VAY    = 1 << 2,
+      GCA    = 1 << 3,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      if (flags == NONE) {
+        return "none";
+      } else {
+        std::string result;
+        if (flags & PHOTON) {
+          result += "photon";
+        } else if (flags & BORIS) {
+          result += "boris";
+        } else if (flags & VAY) {
+          result += "vay";
+        }
+        if (flags & GCA) {
+          if (!result.empty()) {
+            result += ",";
+          }
+          result += "gca";
+        }
+        return result;
+      }
+    }
+  } // namespace ParticlePusher
+
+  using ParticlePusherFlags = uint8_t;
+
+  namespace RadiativeDrag {
+    enum RadiativeDragFlags_ : uint8_t {
+      NONE        = 0,
+      SYNCHROTRON = 1 << 0,
+      COMPTON     = 1 << 1,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      if (flags == NONE) {
+        return "none";
+      } else {
+        std::string result;
+        if (flags & SYNCHROTRON) {
+          result += "synchrotron";
+        }
+        if (flags & COMPTON) {
+          if (!result.empty()) {
+            result += ",";
+          }
+          result += "compton";
+        }
+        return result;
+      }
+    }
+  } // namespace RadiativeDrag
+
+  using RadiativeDragFlags = uint8_t;
+
+  namespace EmissionType {
+    enum EmissionTypeFlag_ : uint8_t {
+      NONE        = 0,
+      SYNCHROTRON = 1,
+      COMPTON     = 2,
+      CUSTOM      = 3,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      switch (flags) {
+        case NONE:
+          return "none";
+        case SYNCHROTRON:
+          return "synchrotron";
+        case COMPTON:
+          return "compton";
+        case CUSTOM:
+          return "custom";
+        default:
+          return "unknown";
+      }
+    }
+  } // namespace EmissionType
+
+  using EmissionTypeFlag = uint8_t;
 
 } // namespace ntt
 

@@ -5,15 +5,14 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
+#include "traits/metric.h"
+#include "traits/pgen.h"
 #include "utils/numeric.h"
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
-#include "archetypes/spatial_dist.h"
 #include "framework/domain/metadomain.h"
-
+#include "framework/parameters/parameters.h"
 #include "kernels/particle_moments.hpp"
 
 namespace user {
@@ -43,7 +42,8 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -61,7 +61,8 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -78,19 +79,19 @@ namespace user {
       }
     }
 
-    Inline auto bx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto bx3(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx1(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx2(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
-    Inline auto dx3(const coord_t<D>& x_Ph) const -> real_t {
+    Inline auto dx3(const coord_t<D>& /*x_Ph*/) const -> real_t {
       return ZERO;
     }
 
@@ -99,21 +100,20 @@ namespace user {
     const real_t m_eps;
   };
 
-  template <SimEngine::type S, class M>
-  struct PointDistribution : public arch::SpatialDistribution<S, M> {
-    PointDistribution(const std::vector<real_t>& xi_min,
-                      const std::vector<real_t>& xi_max,
-                      const real_t               sigma_thr,
-                      const real_t               dens_thr,
-                      const SimulationParams&    params,
-                      Domain<S, M>*              domain_ptr)
-      : arch::SpatialDistribution<S, M> { domain_ptr->mesh.metric }
-      , metric { domain_ptr->mesh.metric }
+  template <GRMetricClass M>
+  struct PointDistribution {
+    PointDistribution(const std::vector<real_t>&   xi_min,
+                      const std::vector<real_t>&   xi_max,
+                      const real_t                 sigma_thr,
+                      const real_t                 dens_thr,
+                      const SimulationParams&      params,
+                      Domain<SimEngine::GRPIC, M>* domain_ptr)
+      : metric { domain_ptr->mesh.metric }
       , EM { domain_ptr->fields.em }
       , density { domain_ptr->fields.buff }
       , sigma_thr { sigma_thr }
-      , inv_n0 { ONE / params.template get<real_t>("scales.n0") }
-      , dens_thr { dens_thr } {
+      , dens_thr { dens_thr }
+      , inv_n0 { ONE / params.template get<real_t>("scales.n0") } {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
 
@@ -138,7 +138,7 @@ namespace user {
         Kokkos::parallel_for(
           "ComputeMoments",
           prtl_spec.rangeActiveParticles(),
-          kernel::ParticleMoments_kernel<S, M, FldsID::Rho, 3>({}, scatter_buff, 0u,
+          kernel::ParticleMoments_kernel<SimEngine::GRPIC, M, FldsID::Rho, 3>({}, scatter_buff, 0u,
                                                                prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
                                                                prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
                                                                prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
@@ -183,30 +183,29 @@ namespace user {
     }
 
   private:
-    tuple_t<real_t, M::Dim> x_min;
-    tuple_t<real_t, M::Dim> x_max;
+    const M                 metric;
+    ndfield_t<M::Dim, 6>    EM;
+    ndfield_t<M::Dim, 3>    density;
+    tuple_t<real_t, M::Dim> x_min { ZERO };
+    tuple_t<real_t, M::Dim> x_max { ZERO };
     const real_t            sigma_thr;
     const real_t            dens_thr;
     const real_t            inv_n0;
-    Domain<S, M>*           domain_ptr;
-    ndfield_t<M::Dim, 3>    density;
-    ndfield_t<M::Dim, 6>    EM;
-    const M                 metric;
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
-    static constexpr auto engines { traits::compatible_with<SimEngine::GRPIC>::value };
-    static constexpr auto metrics {
-      traits::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0>::value
+    static constexpr auto engines {
+      ::traits::pgen::compatible_with<SimEngine::GRPIC> {}
     };
-    static constexpr auto dimensions { traits::compatible_with<Dim::_2D>::value };
+    static constexpr auto metrics {
+      ::traits::pgen::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0> {}
+    };
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
     const std::vector<real_t> xi_min;
     const std::vector<real_t> xi_max;
@@ -215,30 +214,30 @@ namespace user {
     InitFields<M, D>        init_flds;
     const Metadomain<S, M>* metadomain;
 
-    inline PGen(SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M>(p)
-      , xi_min { p.template get<std::vector<real_t>>("setup.xi_min") }
-      , xi_max { p.template get<std::vector<real_t>>("setup.xi_max") }
-      , sigma_max { p.template get<real_t>("setup.sigma_max") }
-      , sigma0 { p.template get<real_t>("scales.sigma0") }
-      , multiplicity { p.template get<real_t>("setup.multiplicity") }
-      , nGJ { p.template get<real_t>("scales.B0") *
-              SQR(p.template get<real_t>("scales.skindepth0")) }
-      , temperature { p.template get<real_t>("setup.temperature") }
-      , m_eps { p.template get<real_t>("setup.m_eps") }
+    PGen(SimulationParams& p, const Metadomain<S, M>& m)
+      : params { p }
+      , xi_min { params.template get<std::vector<real_t>>("setup.xi_min") }
+      , xi_max { params.template get<std::vector<real_t>>("setup.xi_max") }
+      , sigma_max { params.template get<real_t>("setup.sigma_max") }
+      , sigma0 { params.template get<real_t>("scales.sigma0") }
+      , multiplicity { params.template get<real_t>("setup.multiplicity") }
+      , nGJ { params.template get<real_t>("scales.B0") *
+              SQR(params.template get<real_t>("scales.skindepth0")) }
+      , temperature { params.template get<real_t>("setup.temperature") }
+      , m_eps { params.template get<real_t>("setup.m_eps") }
       , init_flds { m.mesh().metric, m_eps }
       , metadomain { &m } {}
 
-    inline void InitPrtls(Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool(),
-                                                      temperature);
-      const auto spatial_dist = PointDistribution<S, M>(xi_min,
-                                                        xi_max,
-                                                        sigma_max / sigma0,
-                                                        multiplicity * nGJ,
-                                                        params,
-                                                        &local_domain);
+    void InitPrtls(Domain<S, M>& local_domain) {
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        local_domain.random_pool(),
+        temperature);
+      const auto spatial_dist = PointDistribution<M>(xi_min,
+                                                     xi_max,
+                                                     sigma_max / sigma0,
+                                                     multiplicity * nGJ,
+                                                     params,
+                                                     &local_domain);
 
       arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(spatial_dist)>(
         params,
@@ -250,16 +249,18 @@ namespace user {
         true);
     }
 
-    void CustomPostStep(std::size_t, long double time, Domain<S, M>& local_domain) {
-      const auto energy_dist  = arch::Maxwellian<S, M>(local_domain.mesh.metric,
-                                                      local_domain.random_pool(),
-                                                      temperature);
-      const auto spatial_dist = PointDistribution<S, M>(xi_min,
-                                                        xi_max,
-                                                        sigma_max / sigma0,
-                                                        multiplicity * nGJ,
-                                                        params,
-                                                        &local_domain);
+    void CustomPostStep(timestep_t /*step*/,
+                        simtime_t /*time*/,
+                        Domain<S, M>& local_domain) {
+      const auto energy_dist = arch::energy_dist::Maxwellian<M::Dim, M::CoordType>(
+        local_domain.random_pool(),
+        temperature);
+      const auto spatial_dist = PointDistribution<M>(xi_min,
+                                                     xi_max,
+                                                     sigma_max / sigma0,
+                                                     multiplicity * nGJ,
+                                                     params,
+                                                     &local_domain);
       arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(energy_dist), decltype(spatial_dist)>(
         params,
         local_domain,

@@ -1,31 +1,69 @@
 if(${PGEN_FOUND})
-  printchoices(
-    "Problem generator"
-    "pgen"
-    "${problem_generators}"
-    ${PGEN}
-    ""
-    "${Blue}"
-    PGEN_REPORT
-    0)
-elseif(${TESTS})
+  if(${single_pgen_mode})
+    printchoices(
+      "Problem generator"
+      "pgen"
+      "${problem_generators}"
+      "${PGEN}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  else()
+    printchoices(
+      "Problem generators"
+      "pgens"
+      "${problem_generators}"
+      "${pgens_short}"
+      ""
+      "${Blue}"
+      PGEN_REPORT
+      0)
+  endif()
+endif()
+
+if(${TESTS})
   set(TEST_NAMES "")
   foreach(test_dir IN LISTS TEST_DIRECTORIES)
     get_property(
       LOCAL_TEST_NAMES
-      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${test_dir}/tests
+      DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/${test_dir}
       PROPERTY TESTS)
     list(APPEND TEST_NAMES ${LOCAL_TEST_NAMES})
   endforeach()
   printchoices(
-    "Test cases"
+    "Tests"
+    "TESTS"
+    "${ON_OFF_VALUES}"
+    "ON"
+    "OFF"
+    "${Green}"
+    TESTS_REPORT_1
+    46)
+  printchoices(
+    ""
     ""
     "${TEST_NAMES}"
     ""
     "${ColorReset}"
     ""
-    TESTS_REPORT
+    TESTS_REPORT_2
     0)
+  # remove only first line of TESTS_REPORT_2
+  string(REPLACE "\n" ";" TESTS_REPORT_2_LIST "${TESTS_REPORT_2}")
+  list(REMOVE_AT TESTS_REPORT_2_LIST 0)
+  string(REPLACE ";" "\n" TESTS_REPORT_2 "${TESTS_REPORT_2_LIST}")
+  set(TESTS_REPORT "${TESTS_REPORT_1}\n${TESTS_REPORT_2}")
+else()
+  printchoices(
+    "Tests"
+    "TESTS"
+    "${ON_OFF_VALUES}"
+    "OFF"
+    "OFF"
+    "${Green}"
+    TESTS_REPORT
+    46)
 endif()
 
 printchoices(
@@ -120,9 +158,8 @@ string(APPEND REPORT_TEXT ${DASHED_LINE_SYMBOL} "\n" "Configurations" "\n")
 
 if(${PGEN_FOUND})
   string(APPEND REPORT_TEXT "  " ${PGEN_REPORT} "\n")
-elseif(${TESTS})
-  string(APPEND REPORT_TEXT "  " ${TESTS_REPORT} "\n")
 endif()
+string(APPEND REPORT_TEXT "  " ${TESTS_REPORT} "\n")
 
 string(
   APPEND

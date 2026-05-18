@@ -16,9 +16,7 @@
 #ifndef GLOBAL_UTILS_PROGRESSBAR_H
 #define GLOBAL_UTILS_PROGRESSBAR_H
 
-#include "utils/colors.h"
-#include "utils/error.h"
-#include "utils/formatting.h"
+#include "global.h"
 
 #include <chrono>
 #include <numeric>
@@ -55,13 +53,13 @@ namespace pbar {
       if (durations.size() >= capacity) {
         durations.erase(durations.begin());
       }
-      durations.push_back(
-        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_start).count());
+      durations.push_back(static_cast<duration_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(now - prev_start).count()));
       prev_start = now;
     }
 
     auto average() const -> duration_t {
-      if (durations.size() > 0) {
+      if (not durations.empty()) {
         return std::accumulate(durations.begin(), durations.end(), 0.0) /
                static_cast<duration_t>(durations.size());
       } else {
@@ -70,15 +68,15 @@ namespace pbar {
     }
 
     auto elapsed() const -> duration_t {
-      return std::chrono::duration_cast<std::chrono::microseconds>(
-               std::chrono::system_clock::now() - start)
-        .count();
+      return static_cast<duration_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::system_clock::now() - start)
+          .count());
     }
   };
 
-  auto normalize_duration_fmt(
-    duration_t         t,
-    const std::string& u) -> std::pair<duration_t, std::string>;
+  auto normalize_duration_fmt(duration_t t, const std::string& u)
+    -> std::pair<duration_t, std::string>;
 
   auto to_human_readable(duration_t t, const std::string& u) -> std::string;
 

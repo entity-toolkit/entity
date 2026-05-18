@@ -56,6 +56,7 @@ namespace raise {
       (msg + " " + file + ":" + std::to_string(line) + " @ " + func).c_str());
   }
 
+  [[noreturn]]
   inline void Fatal(const std::string& msg,
                     const std::string& file,
                     const std::string& func,

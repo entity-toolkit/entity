@@ -12,7 +12,7 @@
 let
   gpuUpper = pkgs.lib.toUpper gpu;
   archUpper = pkgs.lib.toUpper arch;
-  name = "entity-dev";
+  name = "nt2";
   adios2Pkg = (pkgs.callPackage ./adios2.nix { inherit pkgs mpi hdf5; });
   kokkosPkg = (
     pkgs.callPackage ./kokkos.nix {
@@ -29,15 +29,18 @@ let
         CC = "gcc";
       };
       HIP = {
-        CXX = "hipcc";
-        CC = "hipcc";
+        CXX = "clang++";
+        CC = "clang";
       };
       CUDA = { };
     };
   };
 in
 pkgs.mkShell {
-  name = "${name}-env";
+  name =
+    "${name}"
+    + (if gpu != "NONE" then "-${pkgs.lib.toLower gpu}" else "")
+    + (if mpi then "-mpi" else "");
   nativeBuildInputs = with pkgs; [
     zlib
     cmake
@@ -45,8 +48,7 @@ pkgs.mkShell {
     adios2Pkg
     kokkosPkg
 
-    python312
-    python312Packages.jupyter
+    python314
 
     cmake-format
     cmake-lint

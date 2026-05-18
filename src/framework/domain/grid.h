@@ -62,10 +62,13 @@
 #ifndef FRAMEWORK_DOMAIN_GRID_H
 #define FRAMEWORK_DOMAIN_GRID_H
 
+#include "enums.h"
 #include "global.h"
 
+#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 
 #include <vector>
 
@@ -73,8 +76,27 @@ namespace ntt {
 
   template <Dimension D>
   struct Grid {
-    Grid(const std::vector<ncells_t>& res) : m_resolution { res } {
+    Grid(const std::vector<ncells_t>& res, const boundaries_t<real_t>& ext)
+      : m_resolution { res }
+      , m_extent { ext } {
       raise::ErrorIf(m_resolution.size() != D, "invalid dimension", HERE);
+    }
+
+    Grid(const std::vector<ncells_t>& res,
+         const boundaries_t<real_t>&  ext,
+         const boundaries_t<FldsBC>&  flds_bc,
+         const boundaries_t<PrtlBC>&  prtl_bc)
+      : Grid { res, ext } {
+      for (auto d { 0 }; d < D; ++d) {
+        dir::direction_t<D> dir_plus;
+        dir_plus[d] = +1;
+        dir::direction_t<D> dir_minus;
+        dir_minus[d] = -1;
+        set_flds_bc(dir_plus, flds_bc[d].second);
+        set_flds_bc(dir_minus, flds_bc[d].first);
+        set_prtl_bc(dir_plus, prtl_bc[d].second);
+        set_prtl_bc(dir_minus, prtl_bc[d].first);
+      }
     }
 
     ~Grid() = default;
@@ -84,7 +106,7 @@ namespace ntt {
     auto i_min(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? N_GHOSTS : 0;
+          return (not m_resolution.empty()) ? N_GHOSTS : 0;
         case in::x2:
           return (m_resolution.size() > 1) ? N_GHOSTS : 0;
         case in::x3:
@@ -99,7 +121,7 @@ namespace ntt {
     auto i_max(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? (m_resolution[0] + N_GHOSTS) : 1;
+          return (not m_resolution.empty()) ? (m_resolution[0] + N_GHOSTS) : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + N_GHOSTS) : 1;
         case in::x3:
@@ -114,7 +136,7 @@ namespace ntt {
     auto n_active(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? m_resolution[0] : 1;
+          return (not m_resolution.empty()) ? m_resolution[0] : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? m_resolution[1] : 1;
         case in::x3:
@@ -143,7 +165,7 @@ namespace ntt {
     auto n_all(in i) const -> ncells_t {
       switch (i) {
         case in::x1:
-          return (m_resolution.size() > 0) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
+          return (not m_resolution.empty()) ? (m_resolution[0] + 2 * N_GHOSTS) : 1;
         case in::x2:
           return (m_resolution.size() > 1) ? (m_resolution[1] + 2 * N_GHOSTS) : 1;
         case in::x3:
@@ -156,9 +178,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto n_all() const -> std::vector<ncells_t> {
-      std::vector<ncells_t> nall;
+      std::vector<ncells_t> nall(D);
       for (auto i = 0u; i < D; ++i) {
-        nall.push_back(m_resolution[i] + 2 * N_GHOSTS);
+        nall[i] = m_resolution[i] + 2 * N_GHOSTS;
       }
       return nall;
     }
@@ -221,8 +243,67 @@ namespace ntt {
      */
     auto rangeCellsOnHost(const box_region_t<D>&) const -> range_h_t<D>;
 
+    /* getters -------------------------------------------------------------- */
+    [[nodiscard]]
+    auto extent(in i) const -> std::pair<real_t, real_t> {
+      switch (i) {
+        case in::x1:
+          return (not m_extent.empty())
+                   ? m_extent[0]
+                   : std::pair<real_t, real_t> { ZERO, ZERO };
+        case in::x2:
+          return (m_extent.size() > 1) ? m_extent[1]
+                                       : std::pair<real_t, real_t> { ZERO, ZERO };
+        case in::x3:
+          return (m_extent.size() > 2) ? m_extent[2]
+                                       : std::pair<real_t, real_t> { ZERO, ZERO };
+        default:
+          raise::Error("invalid dimension", HERE);
+          throw;
+      }
+    }
+
+    [[nodiscard]]
+    auto extent() const -> boundaries_t<real_t> {
+      return m_extent;
+    }
+
+    [[nodiscard]]
+    auto flds_bc() const -> boundaries_t<FldsBC>;
+
+    [[nodiscard]]
+    auto prtl_bc() const -> boundaries_t<PrtlBC>;
+
+    [[nodiscard]]
+    auto flds_bc_in(const dir::direction_t<D>& direction) const -> FldsBC {
+      raise::ErrorIf(m_flds_bc.find(direction) == m_flds_bc.end(),
+                     "direction not found",
+                     HERE);
+      return m_flds_bc.at(direction);
+    }
+
+    [[nodiscard]]
+    auto prtl_bc_in(const dir::direction_t<D>& direction) const -> PrtlBC {
+      raise::ErrorIf(m_prtl_bc.find(direction) == m_prtl_bc.end(),
+                     "direction not found",
+                     HERE);
+      return m_prtl_bc.at(direction);
+    }
+
+    /* setters -------------------------------------------------------------- */
+    void set_flds_bc(const dir::direction_t<D>& direction, const FldsBC& bc) {
+      m_flds_bc.insert_or_assign(direction, bc);
+    }
+
+    void set_prtl_bc(const dir::direction_t<D>& direction, const PrtlBC& bc) {
+      m_prtl_bc.insert_or_assign(direction, bc);
+    }
+
   protected:
     std::vector<ncells_t> m_resolution;
+    boundaries_t<real_t>  m_extent;
+    dir::map_t<D, FldsBC> m_flds_bc;
+    dir::map_t<D, PrtlBC> m_prtl_bc;
   };
 
 } // namespace ntt

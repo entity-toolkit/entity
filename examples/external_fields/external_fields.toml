@@ -1,0 +1,90 @@
+[simulation]
+  name    = "external_fields"
+  engine  = "srpic"
+  runtime = 5.0
+
+[grid]
+  resolution = [64, 64]
+  extent     = [[-1.0, 1.0], [-1.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.25
+  skindepth0 = 1.0
+
+[algorithms]
+
+  [algorithms.deposit]
+    enable = false
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 1.0
+
+  [[particles.species]]
+    label    = "p1"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+
+  [[particles.species]]
+    label    = "p2"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+
+  [[particles.species]]
+    label    = "p3"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+
+[setup]
+  prtls = [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+    ],
+    [
+      -0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+    ],
+    [
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+    ],
+  ]
+  prtl_species = [1, 2, 3]
+
+[output]
+  interval = 1
+
+  [output.fields]
+    enable = false
+
+  [output.particles]
+    enable = true
+    stride = 1
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0

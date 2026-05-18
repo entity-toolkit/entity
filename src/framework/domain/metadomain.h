@@ -1,10 +1,16 @@
 /**
  * @file framework/domain/metadomain.h
- * @brief ...
+ * @brief Global metadomain class managing domain decomposition, inter-domain
+ * communication, I/O, and checkpointing
  * @implements
  *   - ntt::Metadomain<>
  * @cpp:
  *   - metadomain.cpp
+ *   - metadomain_comm.cpp
+ *   - metadomain_chckpt.cpp
+ *   - metadomain_io.cpp
+ *   - metadomain_stats.cpp
+ *   - metadomain_reshape.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -19,11 +25,12 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
-#include "framework/parameters.h"
+#include "framework/parameters/parameters.h"
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)
@@ -35,21 +42,20 @@
   #include "output/writer.h"
 
   #include <adios2.h>
-  #include <adios2/cxx11/KokkosView.h>
+  #include <adios2/cxx/KokkosView.h>
 #endif // OUTPUT_ENABLED
 
 #include <functional>
 #include <map>
+#include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace ntt {
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   struct Metadomain {
-    static_assert(M::is_metric,
-                  "template arg for Metadomain class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
     void initialValidityCheck() const;
@@ -86,10 +92,18 @@ namespace ntt {
       }
     }
 
-    void CommunicateFields(Domain<S, M>&, CommTags);
-    void SynchronizeFields(Domain<S, M>&, CommTags, const range_tuple_t& = { 0, 0 });
-    void CommunicateParticles(Domain<S, M>&);
-    void RemoveDeadParticles(Domain<S, M>&);
+    void CommunicateFields(Domain<S, M>&, CommTags) const;
+    void SynchronizeFields(Domain<S, M>&,
+                           CommTags,
+                           const cell_range_t& = { 0, 0 }) const;
+#if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
+    void CommunicateVectorPotential(unsigned short);
+#endif
+    void CommunicateParticles(Domain<S, M>&) const;
+    void SortParticles(simtime_t,
+                       timestep_t,
+                       const SimulationParams&,
+                       Domain<S, M>&) const;
 
     /**
      * @param global_ndomains total number of domains
@@ -115,6 +129,11 @@ namespace ntt {
 
     ~Metadomain() = default;
 
+    /* domain update-related ------------------------------------------------ */
+    void ShiftByCells(int, in = in::x1)
+      requires(CartesianMetricClass<M>);
+
+    /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
     void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
@@ -122,12 +141,12 @@ namespace ntt {
                timestep_t,
                simtime_t,
                simtime_t,
-               std::function<void(const std::string&,
-                                  ndfield_t<M::Dim, 6>&,
-                                  index_t,
-                                  timestep_t,
-                                  simtime_t,
-                                  const Domain<S, M>&)> = nullptr) -> bool;
+               const std::function<void(const std::string&,
+                                        ndfield_t<M::Dim, 6>&,
+                                        uint32_t,
+                                        timestep_t,
+                                        simtime_t,
+                                        const Domain<S, M>&)>& = nullptr) -> bool;
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -136,6 +155,8 @@ namespace ntt {
                          simtime_t) -> bool;
 
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
+    void redecomposeFromCheckpoint(const std::vector<std::vector<ncells_t>>&,
+                                   const std::vector<boundaries_t<real_t>>&);
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);
@@ -145,8 +166,9 @@ namespace ntt {
       timestep_t,
       simtime_t,
       simtime_t,
-      std::function<real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)> =
-        nullptr) -> bool;
+      const std::function<
+        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
+      -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);
@@ -171,6 +193,12 @@ namespace ntt {
 
     [[nodiscard]]
     auto subdomain_ptr(unsigned int idx) -> Domain<S, M>* {
+      raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
+      return &g_subdomains[idx];
+    }
+
+    [[nodiscard]]
+    auto subdomain_ptr(unsigned int idx) const -> const Domain<S, M>* {
       raise::ErrorIf(idx >= g_subdomains.size(), "subdomain_ptr() failed", HERE);
       return &g_subdomains[idx];
     }
@@ -213,16 +241,16 @@ namespace ntt {
     }
 
     [[nodiscard]]
-    auto l_npart() const -> std::size_t {
+    auto l_npart() const -> npart_t {
       const auto npart = l_npart_perspec();
-      return std::accumulate(npart.begin(), npart.end(), 0);
+      return std::accumulate(npart.begin(), npart.end(), static_cast<npart_t>(0));
     }
 
     [[nodiscard]]
-    auto l_ncells() const -> std::size_t {
-      std::size_t ncells_local = 0;
+    auto l_ncells() const -> ncells_t {
+      ncells_t ncells_local = 0;
       for (const auto& ldidx : l_subdomain_indices()) {
-        std::size_t ncells = 1;
+        ncells_t ncells = 1;
         for (const auto& n : g_subdomains[ldidx].mesh.n_all()) {
           ncells *= n;
         }
@@ -233,9 +261,9 @@ namespace ntt {
 
     [[nodiscard]]
     auto species_labels() const -> std::vector<std::string> {
-      std::vector<std::string> labels;
-      for (const auto& sp : g_species_params) {
-        labels.push_back(sp.label());
+      std::vector<std::string> labels(g_species_params.size());
+      for (std::size_t i = 0; i < g_species_params.size(); ++i) {
+        labels[i] = g_species_params[i].label();
       }
       return labels;
     }
@@ -261,13 +289,10 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
-  #if defined(MPI_ENABLED)
-    void CommunicateVectorPotential(unsigned short);
-  #endif
 #endif
 
 #if defined(MPI_ENABLED)
-    int g_mpi_rank, g_mpi_size;
+    int g_mpi_rank { -1 }, g_mpi_size { -1 };
 #endif
   };
 

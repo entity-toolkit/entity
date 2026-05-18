@@ -16,6 +16,8 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/archetypes.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -59,7 +61,7 @@ namespace kernel {
       i3_arr(p)  = xi_Cd[2];
       dx3_arr(p) = dxi_Cd[2];
     }
-    if constexpr (D == Dim::_2D and C != Coord::Cart) {
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
       phi_arr(p) = phi;
     }
     ux1_arr(p)    = v_Cd[0];
@@ -69,17 +71,16 @@ namespace kernel {
     weight_arr(p) = weight;
     if constexpr (T) {
       pld_i_arr(p, pldi::spcCtr) = species_cntr;
-#if defined(MPI_ENABLED)
+#if !defined(MPI_ENABLED)
+      (void)domain_idx;
+#else
       pld_i_arr(p, pldi::domIdx) = domain_idx;
 #endif
     }
   }
 
-  template <SimEngine::type S, class M, class ED1, class ED2>
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
   struct UniformInjector_kernel {
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(M::is_metric, "M must be a metric class");
 
     array_t<int*>      i1s_1, i2s_1, i3s_1;
     array_t<prtldx_t*> dx1s_1, dx2s_1, dx3s_1;
@@ -109,7 +110,6 @@ namespace kernel {
 
     UniformInjector_kernel(Particles<M::Dim, M::CoordType>& species1,
                            Particles<M::Dim, M::CoordType>& species2,
-                           npart_t                          inject_npart,
                            npart_t                          domain_idx,
                            const M&                         metric,
                            const array_t<real_t*>&          xi_min,
@@ -159,7 +159,6 @@ namespace kernel {
       , inv_V0 { inv_V0 }
       , random_pool { random_pool } {
       if (use_tracking_1) {
-        species1.set_counter(cntr1 + inject_npart);
 #if !defined(MPI_ENABLED)
         raise::ErrorIf(species1.pld_i.extent(1) < 1,
                        "Particle tracking is enabled but the "
@@ -175,7 +174,6 @@ namespace kernel {
 #endif
       }
       if (use_tracking_2) {
-        species2.set_counter(cntr2 + inject_npart);
 #if !defined(MPI_ENABLED)
         raise::ErrorIf(species2.pld_i.extent(1) < 1,
                        "Particle tracking is enabled but the "
@@ -192,7 +190,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       coord_t<M::Dim>           x_Cd { ZERO };
       tuple_t<int, M::Dim>      xi_Cd { 0 };
       tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
@@ -221,7 +219,7 @@ namespace kernel {
       { // generate the velocity
         coord_t<M::Dim> x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           energy_dist_1(x_Ph, v1);
           energy_dist_2(x_Ph, v2);
         } else if constexpr (S == SimEngine::SRPIC) {
@@ -245,7 +243,7 @@ namespace kernel {
         }
       }
       real_t weight = ONE;
-      if constexpr (M::CoordType != Coord::Cart) {
+      if constexpr (M::CoordType != Coord::Cartesian) {
         const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
         weight                = sqrt_det_h * inv_V0;
       }
@@ -290,9 +288,8 @@ namespace kernel {
     }
   }; // struct UniformInjector_kernel
 
-  template <SimEngine::type S, class M>
+  template <SimEngine::type S, MetricClass M>
   struct GlobalInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     const bool use_weights;
@@ -313,8 +310,10 @@ namespace kernel {
     array_t<real_t*>   phis;
     array_t<real_t*>   weights;
     array_t<short*>    tags;
+    array_t<npart_t**> pldis;
 
-    const npart_t offset;
+    const bool    use_tracking;
+    const npart_t offset, cntr, domain_idx;
 
     M global_metric;
 
@@ -339,15 +338,20 @@ namespace kernel {
       , phis { species.phi }
       , weights { species.weight }
       , tags { species.tag }
+      , pldis { species.pld_i }
+      , use_tracking { species.use_tracking() }
       , offset { species.npart() }
+      , cntr { species.counter() }
+      , domain_idx { local_domain.index() }
       , global_metric { global_metric } {
       const auto n_inject = data.at("x1").size();
 
-      x1_min    = local_domain.mesh.extent(in::x1).first;
-      x1_max    = local_domain.mesh.extent(in::x1).second;
-      i1_offset = local_domain.offset_ncells()[0];
-
-      copy_from_vector("x1", in_x1, data, n_inject);
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        x1_min    = local_domain.mesh.extent(in::x1).first;
+        x1_max    = local_domain.mesh.extent(in::x1).second;
+        i1_offset = local_domain.offset_ncells()[0];
+        copy_from_vector("x1", in_x1, data, n_inject);
+      }
       copy_from_vector("ux1", in_ux1, data, n_inject);
       copy_from_vector("ux2", in_ux2, data, n_inject);
       copy_from_vector("ux3", in_ux3, data, n_inject);
@@ -360,7 +364,7 @@ namespace kernel {
         i2_offset = local_domain.offset_ncells()[1];
         copy_from_vector("x2", in_x2, data, n_inject);
       }
-      if constexpr (D == Dim::_2D and M::CoordType != Coord::Cart) {
+      if constexpr (D == Dim::_2D and M::CoordType != Coord::Cartesian) {
         copy_from_vector("phi", in_phi, data, n_inject);
       }
       if constexpr (D == Dim::_3D) {
@@ -391,51 +395,58 @@ namespace kernel {
       return idx_h();
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
+      bool                 should_inject { false };
+      tuple_t<int, D>      xi_Cd { 0 };
+      tuple_t<prtldx_t, D> dxi_Cd { static_cast<prtldx_t>(0) };
+      real_t               phi { ZERO };
+      real_t               weight { ONE };
+      vec_t<Dim::_3D>      u_Cd { ZERO };
+
       if constexpr (D == Dim::_1D) {
         if (in_x1(p) >= x1_min and in_x1(p) < x1_max) {
-          coord_t<Dim::_1D>     x_Cd { ZERO };
-          vec_t<Dim::_3D>       u_XYZ { ZERO };
-          const vec_t<Dim::_3D> u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+          should_inject = true;
 
-          auto index { offset + Kokkos::atomic_fetch_add(&idx(), 1) };
+          coord_t<Dim::_1D> x_Cd { ZERO };
           global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p) }, x_Cd);
-          global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_XYZ);
+          xi_Cd[0] = static_cast<int>(static_cast<ncells_t>(x_Cd[0]) - i1_offset);
+          dxi_Cd[0] = static_cast<prtldx_t>(
+            x_Cd[0] - static_cast<real_t>(xi_Cd[0] + i1_offset));
 
-          const auto i1 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
-          const auto dx1 = static_cast<prtldx_t>(
-            x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
+          const vec_t<Dim::_3D> u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+          global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_Cd);
 
-          i1s(index)  = i1;
-          dx1s(index) = dx1;
-          ux1s(index) = u_XYZ[0];
-          ux2s(index) = u_XYZ[1];
-          ux3s(index) = u_XYZ[2];
-          tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weight = weights(p);
           }
         }
       } else if constexpr (D == Dim::_2D) {
         if ((in_x1(p) >= x1_min and in_x1(p) < x1_max) and
             (in_x2(p) >= x2_min and in_x2(p) < x2_max)) {
-          coord_t<Dim::_2D>   x_Cd { ZERO };
-          vec_t<Dim::_3D>     u_Cd { ZERO };
+          should_inject = true;
+          coord_t<Dim::_2D> x_Cd { ZERO };
+          global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p), in_x2(p) },
+                                                           x_Cd);
+          xi_Cd[0] = static_cast<int>(static_cast<ncells_t>(x_Cd[0]) - i1_offset);
+          dxi_Cd[0] = static_cast<prtldx_t>(
+            x_Cd[0] - static_cast<real_t>(xi_Cd[0] + i1_offset));
+          xi_Cd[1] = static_cast<int>(static_cast<ncells_t>(x_Cd[1]) - i2_offset);
+          dxi_Cd[1] = static_cast<prtldx_t>(
+            x_Cd[1] - static_cast<real_t>(xi_Cd[1] + i2_offset));
+
           vec_t<Dim::_3D>     u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
           coord_t<M::PrtlDim> x_Cd_ { ZERO };
 
-          auto index { offset +
-                       Kokkos::atomic_fetch_add(&idx(), static_cast<npart_t>(1)) };
-          global_metric.template convert<Crd::Ph, Crd::Cd>({ in_x1(p), in_x2(p) },
-                                                           x_Cd);
           x_Cd_[0] = x_Cd[0];
           x_Cd_[1] = x_Cd[1];
-          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
-            x_Cd_[2] = in_phi(p);
+
+          if constexpr (M::CoordType != Coord::Cartesian) {
+            phi = in_phi(p);
           }
+          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
+            x_Cd_[2] = phi;
+          }
+
           if constexpr (S == SimEngine::SRPIC) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, u_Ph, u_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -443,44 +454,32 @@ namespace kernel {
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
-          const auto i1 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
-          const auto dx1 = static_cast<prtldx_t>(
-            x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
-          const auto i2 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[1]) - i2_offset);
-          const auto dx2 = static_cast<prtldx_t>(
-            x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
 
-          i1s(index)  = i1;
-          dx1s(index) = dx1;
-          i2s(index)  = i2;
-          dx2s(index) = dx2;
-          ux1s(index) = u_Cd[0];
-          ux2s(index) = u_Cd[1];
-          ux3s(index) = u_Cd[2];
-          if (M::CoordType != Coord::Cart) {
-            phis(index) = in_phi(p);
-          }
-          tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weight = weights(p);
           }
         }
       } else {
         if ((in_x1(p) >= x1_min and in_x1(p) < x1_max) and
             (in_x2(p) >= x2_min and in_x2(p) < x2_max) and
             (in_x3(p) >= x3_min and in_x3(p) < x3_max)) {
+          should_inject = true;
           coord_t<Dim::_3D> x_Cd { ZERO };
-          vec_t<Dim::_3D>   u_Cd { ZERO };
-          vec_t<Dim::_3D>   u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
-
-          auto index { offset + Kokkos::atomic_fetch_add(&idx(), 1) };
           global_metric.template convert<Crd::Ph, Crd::Cd>(
             { in_x1(p), in_x2(p), in_x3(p) },
             x_Cd);
+          xi_Cd[0] = static_cast<int>(static_cast<ncells_t>(x_Cd[0]) - i1_offset);
+          dxi_Cd[0] = static_cast<prtldx_t>(
+            x_Cd[0] - static_cast<real_t>(xi_Cd[0] + i1_offset));
+          xi_Cd[1] = static_cast<int>(static_cast<ncells_t>(x_Cd[1]) - i2_offset);
+          dxi_Cd[1] = static_cast<prtldx_t>(
+            x_Cd[1] - static_cast<real_t>(xi_Cd[1] + i2_offset));
+          xi_Cd[2] = static_cast<int>(static_cast<ncells_t>(x_Cd[2]) - i3_offset);
+          dxi_Cd[2] = static_cast<prtldx_t>(
+            x_Cd[2] - static_cast<real_t>(xi_Cd[2] + i3_offset));
+
+          vec_t<Dim::_3D> u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
+
           if constexpr (S == SimEngine::SRPIC) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_Cd);
           } else if constexpr (S == SimEngine::GRPIC) {
@@ -488,45 +487,44 @@ namespace kernel {
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
           }
-          const auto i1 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[0]) - i1_offset);
-          const auto dx1 = static_cast<prtldx_t>(
-            x_Cd[0] - static_cast<real_t>(i1 + i1_offset));
-          const auto i2 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[1]) - i2_offset);
-          const auto dx2 = static_cast<prtldx_t>(
-            x_Cd[1] - static_cast<real_t>(i2 + i2_offset));
-          const auto i3 = static_cast<int>(
-            static_cast<ncells_t>(x_Cd[2]) - i3_offset);
-          const auto dx3 = static_cast<prtldx_t>(
-            x_Cd[2] - static_cast<real_t>(i3 + i3_offset));
 
-          i1s(index)  = i1;
-          dx1s(index) = dx1;
-          i2s(index)  = i2;
-          dx2s(index) = dx2;
-          i3s(index)  = i3;
-          dx3s(index) = dx3;
-          ux1s(index) = u_Cd[0];
-          ux2s(index) = u_Cd[1];
-          ux3s(index) = u_Cd[2];
-          tags(index) = ParticleTag::alive;
           if (use_weights) {
-            weights(index) = weights(p);
-          } else {
-            weights(index) = ONE;
+            weight = weights(p);
           }
         }
+      }
+      if (should_inject) {
+        auto index { Kokkos::atomic_fetch_add(&idx(), 1) };
+        // clang-format off
+        if (not use_tracking) {
+          InjectParticle<M::Dim, M::CoordType, false>(
+            index + offset, 
+            i1s, i2s, i3s,
+            dx1s, dx2s, dx3s,
+            ux1s, ux2s, ux3s,
+            phis, weights, tags, pldis,
+            xi_Cd, dxi_Cd, u_Cd, weight, phi);
+        } else {
+          InjectParticle<M::Dim, M::CoordType, true>(
+            index + offset, 
+            i1s, i2s, i3s,
+            dx1s, dx2s, dx3s,
+            ux1s, ux2s, ux3s,
+            phis, weights, tags, pldis,
+            xi_Cd, dxi_Cd, u_Cd, weight, phi,
+            domain_idx, cntr + index);
+        }
+        // clang-format on
       }
     }
   }; // struct GlobalInjector_kernel
 
-  template <SimEngine::type S, class M, class ED1, class ED2, class SD>
+  template <SimEngine::type          S,
+            MetricClass              M,
+            EnrgDistClass<M::Dim>    ED1,
+            EnrgDistClass<M::Dim>    ED2,
+            SpatialDistClass<M::Dim> SD>
   struct NonUniformInjector_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
-    static_assert(ED1::is_energy_dist, "ED1 must be an energy distribution class");
-    static_assert(ED2::is_energy_dist, "ED2 must be an energy distribution class");
-    static_assert(SD::is_spatial_dist, "SD must be a spatial distribution class");
 
     const real_t ppc0;
 
@@ -615,18 +613,26 @@ namespace kernel {
       return idx_h();
     }
 
-    Inline auto injected_ppc(const coord_t<M::Dim>& x_Ph) const -> npart_t {
-      const auto ppc_real = ppc0 * spatial_dist(x_Ph);
-      auto       ppc      = static_cast<npart_t>(ppc_real);
-      auto       rand_gen = random_pool.get_state();
+    Inline auto injected_ppc(const coord_t<M::Dim>& x_Ph) const
+      -> Kokkos::pair<npart_t, real_t> {
+      real_t ppc_real = ppc0, weight = ONE;
+      if constexpr (SimpleSpatialDistClass<SD, M::Dim>) {
+        ppc_real *= spatial_dist(x_Ph);
+      } else {
+        const auto sp_dist  = spatial_dist(x_Ph);
+        ppc_real           *= sp_dist.first;
+        weight              = sp_dist.second;
+      }
+      auto ppc      = static_cast<npart_t>(ppc_real);
+      auto rand_gen = random_pool.get_state();
       if (Random<real_t>(rand_gen) < (ppc_real - static_cast<real_t>(ppc))) {
         ppc += 1;
       }
       random_pool.free_state(rand_gen);
-      return ppc;
+      return { ppc, weight };
     }
 
-    Inline void inject1(const index_t                    index,
+    Inline void inject1(const prtlidx_t                  index,
                         const tuple_t<int, M::Dim>&      xi_Cd,
                         const tuple_t<prtldx_t, M::Dim>& dxi_Cd,
                         const vec_t<Dim::_3D>&           v_Cd,
@@ -651,7 +657,7 @@ namespace kernel {
       // clang-format on
     }
 
-    Inline void inject2(const index_t                    index,
+    Inline void inject2(const prtlidx_t                  index,
                         const tuple_t<int, M::Dim>&      xi_Cd,
                         const tuple_t<prtldx_t, M::Dim>& dxi_Cd,
                         const vec_t<Dim::_3D>&           v_Cd,
@@ -676,21 +682,20 @@ namespace kernel {
       // clang-format on
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
-        const auto        i1_ = COORD(i1);
-        coord_t<Dim::_1D> x_Cd { i1_ + HALF };
-        coord_t<Dim::_1D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const coord_t<Dim::_1D> x_Cd { i1_ + HALF };
+        coord_t<Dim::_1D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
-        const auto ppc = injected_ppc(x_Ph);
+        auto [ppc, weight] = injected_ppc(x_Ph);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
-          weight = metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
@@ -719,28 +724,27 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
-        const auto          i1_ = COORD(i1);
-        const auto          i2_ = COORD(i2);
-        coord_t<Dim::_2D>   x_Cd { i1_ + HALF, i2_ + HALF };
-        coord_t<Dim::_2D>   x_Ph { ZERO };
-        coord_t<M::PrtlDim> x_Cd_ { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const coord_t<Dim::_2D> x_Cd { i1_ + HALF, i2_ + HALF };
+        coord_t<Dim::_2D>       x_Ph { ZERO };
+        coord_t<M::PrtlDim>     x_Cd_ { ZERO };
         x_Cd_[0] = x_Cd[0];
         x_Cd_[1] = x_Cd[1];
-        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cart) {
+        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
           x_Cd_[2] = ZERO;
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
-        const auto ppc = injected_ppc(x_Ph);
+        auto [ppc, weight] = injected_ppc(x_Ph);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
-          weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
@@ -788,24 +792,23 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
-        const auto        i1_ = COORD(i1);
-        const auto        i2_ = COORD(i2);
-        const auto        i3_ = COORD(i3);
-        coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
-        coord_t<Dim::_3D> x_Ph { ZERO };
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const auto              i3_ = COORD(i3);
+        const coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
+        coord_t<Dim::_3D>       x_Ph { ZERO };
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
 
-        const auto ppc = injected_ppc(x_Ph);
+        auto [ppc, weight] = injected_ppc(x_Ph);
         if (ppc == 0) {
           return;
         }
 
-        auto weight = ONE;
-        if constexpr (M::CoordType != Coord::Cart) {
-          weight = metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
-                   inv_V0;
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
+                    inv_V0;
         }
         for (auto p { 0u }; p < ppc; ++p) {
           const auto index = Kokkos::atomic_fetch_add(&idx(), 1);

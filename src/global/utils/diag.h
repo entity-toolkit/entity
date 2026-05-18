@@ -5,7 +5,7 @@
  *   - diag::printDiagnostics -> void
  * @cpp:
  *   - diag.cpp
- * @namespces:
+ * @namespaces:
  *   - diag::
  * @macros:
  *   - MPI_ENABLED
@@ -34,7 +34,7 @@ namespace diag {
    * @param species_labels (vector of particle labels)
    * @param npart (per each species)
    * @param maxnpart (per each species)
-   * @param prtlclear (if true, dead particles were removed)
+   * @param particlesort (if true, dead particles were removed)
    * @param output (if true, output was written)
    * @param checkpoint (if true, checkpoint was written)
    * @param colorful_print (if true, print with colors)

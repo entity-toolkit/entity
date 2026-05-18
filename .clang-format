@@ -100,6 +100,8 @@ IncludeCategories:
     Priority: 2
   - Regex: '^"utils\/.*.h"'
     Priority: 2
+  - Regex: '^"traits\/.*.h"'
+    Priority: 2
   - Regex: '^"metrics\/.*\.h"'
     Priority: 3
   - Regex: '^"framework\/.*\.h"'
@@ -107,6 +109,10 @@ IncludeCategories:
   - Regex: '^"engines\/.*\.h"'
     Priority: 4
   - Regex: '^"checkpoint\/.*\.h"'
+    Priority: 4
+  - Regex: '^"kernels\/.*\.hpp"'
+    Priority: 4
+  - Regex: '^"kernels\/.*\.h"'
     Priority: 4
   - Regex: '^"output\/.*\.h"'
     Priority: 4

@@ -5,23 +5,17 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
+#include "traits/pgen.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/log.h"
 #include "utils/numeric.h"
 
-#include "archetypes/energy_dist.h"
-#include "archetypes/particle_injector.h"
-#include "archetypes/problem_generator.h"
-#include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
 #include <string>
-#include <vector>
 
-enum InitFieldGeometry {
+enum class InitFieldGeometry : uint8_t {
   Wald,
   Vertical,
 };
@@ -64,7 +58,8 @@ namespace user {
                      TWO * metric.spin() * g_00);
     }
 
-    Inline auto bx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+    Inline auto bx1(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i , j + HALF )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -82,7 +77,8 @@ namespace user {
       }
     }
 
-    Inline auto bx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+    Inline auto bx2(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j )
       coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
       metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
 
@@ -99,8 +95,8 @@ namespace user {
       }
     }
 
-    Inline auto bx3(
-      const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j + HALF )
+    Inline auto bx3(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j + HALF )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -120,7 +116,8 @@ namespace user {
       }
     }
 
-    Inline auto dx1(const coord_t<D>& x_Ph) const -> real_t { // at ( i + HALF , j )
+    Inline auto dx1(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i + HALF , j )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -158,7 +155,8 @@ namespace user {
       }
     }
 
-    Inline auto dx2(const coord_t<D>& x_Ph) const -> real_t { // at ( i , j + HALF )
+    Inline auto dx2(const coord_t<D>& x_Ph) const
+      -> real_t { // at ( i , j + HALF )
       if (field_geometry == InitFieldGeometry::Wald) {
         coord_t<D> xi { ZERO }, x0m { ZERO }, x0p { ZERO };
         metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, xi);
@@ -230,26 +228,21 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
-    static constexpr auto engines { traits::compatible_with<SimEngine::GRPIC>::value };
-    static constexpr auto metrics {
-      traits::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0>::value
+    static constexpr auto engines {
+      ::traits::pgen::compatible_with<SimEngine::GRPIC> {}
     };
-    static constexpr auto dimensions { traits::compatible_with<Dim::_2D>::value };
+    static constexpr auto metrics {
+      ::traits::pgen::compatible_with<Metric::Kerr_Schild, Metric::QKerr_Schild, Metric::Kerr_Schild_0> {}
+    };
+    static constexpr auto dimensions { ::traits::pgen::compatible_with<Dim::_2D> {} };
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    InitFields<M, D> init_flds;
 
-    InitFields<M, D>        init_flds;
-    const Metadomain<S, M>& global_domain;
-
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& m)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { m }
-      , init_flds { m.mesh().metric,
+    PGen(const SimulationParams& p, const Metadomain<S, M>& m)
+      : init_flds { m.mesh().metric,
                     p.template get<std::string>("setup.init_field", "wald") } {}
   };
 

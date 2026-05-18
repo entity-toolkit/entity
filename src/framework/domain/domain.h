@@ -6,6 +6,10 @@
  * as well as pointers to neighboring domains.
  * @implements
  *   - ntt::Domain<>
+ * @cpp:
+ *   - domain.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  * @note
@@ -43,8 +47,10 @@
 #include "global.h"
 
 #include "arch/directions.h"
+#include "traits/metric.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
+#include "utils/reporter.h"
 
 #include "framework/containers/fields.h"
 #include "framework/containers/particles.h"
@@ -58,9 +64,9 @@
 #include <vector>
 
 namespace ntt {
-  template <SimEngine::type S, class M>
+
+  template <SimEngine::type S, MetricClass M>
   struct Domain {
-    static_assert(M::is_metric, "template arg for Mesh class has to be a metric");
     static constexpr Dimension D { M::Dim };
 
     Mesh<M>                                 mesh;
@@ -147,15 +153,77 @@ namespace ntt {
 
     [[nodiscard]]
     auto random_pool() -> random_number_pool_t& {
-      raise::ErrorIf(not m_random_number_pool.has_value(),
-                     "random_pool() called on a placeholder domain",
-                     HERE);
+      if (not m_random_number_pool.has_value()) {
+        raise::Error("random_pool() called on a placeholder domain", HERE);
+      }
       return m_random_number_pool.value();
     }
 
     /* setters -------------------------------------------------------------- */
-    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx) -> void {
+    auto set_neighbor_idx(const dir::direction_t<D>& dir, unsigned int idx)
+      -> void {
       m_neighbor_idx[dir] = idx;
+    }
+
+    /* printer overload ----------------------------------------------------- */
+    auto Report() const -> std::string {
+      std::string report;
+      reporter::AddSubcategory(report,
+                               4,
+                               fmt::format("Domain #%d", index()).c_str());
+#if defined(MPI_ENABLED)
+      reporter::AddParam(report, 6, "Rank", "%d", mpi_rank());
+#endif
+      reporter::AddParam(report,
+                         6,
+                         "Resolution",
+                         "%s",
+                         fmt::formatVector(mesh.n_active()).c_str());
+      reporter::AddParam(report,
+                         6,
+                         "Extent",
+                         "%s",
+                         fmt::formatVector(mesh.extent()).c_str());
+      reporter::AddSubcategory(report, 6, "Boundary conditions");
+
+      reporter::AddLabel(
+        report,
+        8 + 2 + 2 * M::Dim,
+        fmt::format("%-10s  %-10s  %-10s", "[flds]", "[prtl]", "[neighbor]").c_str());
+      for (auto& direction : dir::Directions<M::Dim>::all) {
+        const auto flds_bc      = mesh.flds_bc_in(direction);
+        const auto prtl_bc      = mesh.prtl_bc_in(direction);
+        bool       has_sync     = false;
+        auto       neighbor_idx = neighbor_idx_in(direction);
+        if (flds_bc == FldsBC::SYNC || prtl_bc == PrtlBC::SYNC) {
+          has_sync = true;
+        }
+        reporter::AddUnlabeledParam(
+          report,
+          8,
+          direction.to_string().c_str(),
+          "%-10s  %-10s  %-10s",
+          flds_bc.to_string(),
+          prtl_bc.to_string(),
+          has_sync ? std::to_string(neighbor_idx).c_str() : ".");
+      }
+      reporter::AddSubcategory(report, 6, "Memory footprint");
+      auto flds_footprint = fields.memory_footprint();
+      auto [flds_size, flds_unit] = reporter::Bytes2HumanReadable(flds_footprint);
+      reporter::AddParam(report, 8, "Fields", "%.2f %s", flds_size, flds_unit.c_str());
+      if (species.size() > 0) {
+        reporter::AddSubcategory(report, 8, "Particles");
+      }
+      for (auto& species : species) {
+        const auto str = fmt::format("Species #%d (%s)",
+                                     species.index(),
+                                     species.label().c_str());
+        auto [size,
+              unit] = reporter::Bytes2HumanReadable(species.memory_footprint());
+        reporter::AddParam(report, 10, str.c_str(), "%.2f %s", size, unit.c_str());
+      }
+      report.pop_back();
+      return report;
     }
 
   private:
@@ -168,15 +236,15 @@ namespace ntt {
     // neighboring domain indices
     dir::map_t<D, unsigned int> m_neighbor_idx;
     // MPI rank of the domain (used only when MPI enabled)
-    int                         m_mpi_rank;
+    int                         m_mpi_rank { -1 };
 
     // random number pool for the domain
     std::optional<random_number_pool_t> m_random_number_pool;
   };
 
-  template <SimEngine::type S, class M>
-  inline auto operator<<(std::ostream&       os,
-                         const Domain<S, M>& domain) -> std::ostream& {
+  template <SimEngine::type S, MetricClass M>
+  inline auto operator<<(std::ostream& os, const Domain<S, M>& domain)
+    -> std::ostream& {
     os << "Domain #" << domain.index();
 #if defined(MPI_ENABLED)
     os << " [MPI rank: " << domain.mpi_rank() << "]";

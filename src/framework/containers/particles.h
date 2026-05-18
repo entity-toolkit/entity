@@ -2,9 +2,15 @@
  * @file framework/containers/particles.h
  * @brief Definition of the particle container class
  * @implements
- *   - ntt::Particles<> : ntt::ParticleSpecies
+ *   - ntt::ParticleArrays
+ *   - ntt::Particles<> : ntt::ParticleSpecies, ntt::ParticleArrays
  * @cpp:
  *   - particles.cpp
+ *   - particles_io.cpp
+ *   - particles_comm.cpp
+ *   - particles_sort.cpp
+ * @namespaces:
+ *   - ntt::
  * @macros:
  *   - MPI_ENABLED
  */
@@ -15,12 +21,17 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 
 #include "framework/containers/species.h"
+#include "framework/domain/grid.h"
+
+#if defined(MPI_ENABLED)
+  #include "arch/directions.h"
+#endif
 
 #include <Kokkos_Core.hpp>
 
@@ -33,26 +44,11 @@
 
 namespace ntt {
 
-  /**
-   * @brief Container class to carry particle information for a specific species
-   * @tparam D The dimension of the simulation
-   * @tparam S The simulation engine being used
-   */
-  template <Dimension D, Coord::type C>
-  struct Particles : public ParticleSpecies {
-  private:
-    // Number of currently active (used) particles
-    npart_t m_npart { 0 };
-    npart_t m_counter { 0 };
-    bool    m_is_sorted { false };
+  struct ParticleArrays {
+    spidx_t sp;
 
-#if !defined(MPI_ENABLED)
-    const std::size_t m_ntags { 2 };
-#else // MPI_ENABLED
-    const std::size_t m_ntags { (std::size_t)(2 + math::pow(3, (int)D) - 1) };
-#endif
+    ParticleArrays(spidx_t sp = 0u) : sp { sp } {}
 
-  public:
     // Cell indices of the current particle
     array_t<int*>      i1, i2, i3;
     // Displacement of a particle within the cell
@@ -72,7 +68,29 @@ namespace ntt {
     array_t<npart_t**> pld_i;
     // phi coordinate (for axisymmetry)
     array_t<real_t*>   phi;
+  };
 
+  /**
+   * @brief Container class to carry particle information for a specific species
+   * @tparam D The dimension of the simulation
+   * @tparam S The simulation engine being used
+   */
+  template <Dimension D, Coord::type C>
+  struct Particles : public ParticleSpecies,
+                     public ParticleArrays {
+  private:
+    // Number of currently active (used) particles
+    npart_t m_npart { 0 };
+    npart_t m_counter { 0 };
+    bool    m_is_sorted { false };
+
+#if !defined(MPI_ENABLED)
+    const uint8_t m_ntags { 2u };
+#else // MPI_ENABLED
+    const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
+#endif
+
+  public:
     // for empty allocation
     Particles() {}
 
@@ -83,24 +101,28 @@ namespace ntt {
      * @param m The mass of the species
      * @param ch The charge of the species
      * @param maxnpart The maximum number of allocated particles for the species
-     * @param pusher The pusher assigned for the species
+     * @param clearing_interval The interval for clearing the particles
+     * @param spatial_sorting_interval The interval for spatial sorting of the particles
+     * @param particle_pusher_flags The pusher(s) assigned for the species
      * @param use_tracking Use particle tracking for the species
-     * @param use_gca Use hybrid GCA pusher for the species
-     * @param cooling The cooling mechanism assigned for the species
+     * @param radiative_drag_flags The radiative drag mechanism(s) assigned for the species
+     * @param emission_policy_flag The emission policy assigned for the species
      * @param npld_r The number of real-valued payloads for the species
      * @param npld_i The number of integer-valued payloads for the species
      */
-    Particles(spidx_t            index,
-              const std::string& label,
-              float              m,
-              float              ch,
-              npart_t            maxnpart,
-              const PrtlPusher&  pusher,
-              bool               use_gca,
-              bool               use_tracking,
-              const Cooling&     cooling,
-              unsigned short     npld_r = 0,
-              unsigned short     npld_i = 0);
+    Particles(spidx_t             index,
+              const std::string&  label,
+              float               m,
+              float               ch,
+              npart_t             maxnpart,
+              timestep_t          clearing_interval,
+              timestep_t          spatial_sorting_interval,
+              ParticlePusherFlags particle_pusher_flags,
+              bool                use_tracking,
+              RadiativeDragFlags  radiative_drag_flags,
+              EmissionTypeFlag    emission_policy_flag,
+              unsigned short      npld_r,
+              unsigned short      npld_i);
 
     /**
      * @brief Constructor for the particle container
@@ -113,10 +135,12 @@ namespace ntt {
                   spec.mass(),
                   spec.charge(),
                   spec.maxnpart(),
+                  spec.clearing_interval(),
+                  spec.spatial_sorting_interval(),
                   spec.pusher(),
                   spec.use_tracking(),
-                  spec.use_gca(),
-                  spec.cooling(),
+                  spec.radiative_drag_flags(),
+                  spec.emission_policy_flag(),
                   spec.npld_r(),
                   spec.npld_i()) {}
 
@@ -129,16 +153,16 @@ namespace ntt {
      * @brief Loop over all active particles
      * @returns A 1D Kokkos range policy of size of `npart`
      */
-    inline auto rangeActiveParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, npart());
+    auto rangeActiveParticles() const -> range_t<Dim::_1D> {
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { npart() });
     }
 
     /**
      * @brief Loop over all particles
      * @returns A 1D Kokkos range policy of size of `npart`
      */
-    inline auto rangeAllParticles() const -> range_t<Dim::_1D> {
-      return CreateParticleRangePolicy(0u, maxnpart());
+    auto rangeAllParticles() const -> range_t<Dim::_1D> {
+      return CreateParticleRangePolicy<Dim::_1D>({ 0u }, { maxnpart() });
     }
 
     /* getters -------------------------------------------------------------- */
@@ -170,7 +194,7 @@ namespace ntt {
      * @brief Get the number of distinct tags possible
      */
     [[nodiscard]]
-    auto ntags() const -> std::size_t {
+    auto ntags() const -> uint8_t {
       return m_ntags;
     }
 
@@ -250,6 +274,12 @@ namespace ntt {
     void RemoveDead();
 
     /**
+     * @brief Sort particles spatially by their cell indices
+     * @param grid The grid object to get the cell information for sorting
+     */
+    void SortSpatially(const Grid<D>&);
+
+    /**
      * @brief Copy particle data from device to host.
      */
     void SyncHostDevice();
@@ -275,7 +305,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     void OutputDeclare(adios2::IO&) const;
 
-    template <SimEngine::type S, class M>
+    template <SimEngine::type S, MetricClass M>
     void OutputWrite(adios2::IO&,
                      adios2::Engine&,
                      npart_t,

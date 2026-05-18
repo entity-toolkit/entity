@@ -1,11 +1,19 @@
-// SPDX-License-Identifier: BSD-3-Clause
+/**
+ * @file framework/specialization_registry.h
+ * @brief Registry of all supported engine/metric/dimension specializations
+ * @implements
+ *   - ntt::SpecializationEntry<>
+ *   - ntt::for_each_specialization<> -> void
+ *   - macro NTT_FOREACH_SPECIALIZATION
+ *   - macro NTT_BUILD_SPECIALIZATION_ENTRY
+ * @namespaces:
+ *   - ntt::
+ */
 
 #ifndef FRAMEWORK_SPECIALIZATION_REGISTRY_H
 #define FRAMEWORK_SPECIALIZATION_REGISTRY_H
 
 #include "enums.h"
-
-#include "arch/traits.h"
 
 #include "metrics/kerr_schild.h"
 #include "metrics/kerr_schild_0.h"
@@ -38,6 +46,11 @@ namespace ntt {
   MACRO(SimEngine::GRPIC, metric::KerrSchild, Dim::_2D)                        \
   MACRO(SimEngine::GRPIC, metric::QKerrSchild, Dim::_2D)                       \
   MACRO(SimEngine::GRPIC, metric::KerrSchild0, Dim::_2D)
+
+#define NTT_FOREACH_CARTESIAN_SPECIALIZATION(MACRO)                            \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D)                         \
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_3D)
 
 #define NTT_BUILD_SPECIALIZATION_ENTRY(S, M, D) SpecializationEntry<S, M, D> {},
 

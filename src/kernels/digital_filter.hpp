@@ -19,35 +19,38 @@
 
 #define FILTER2D_IN_I1(ARR, COMP, I, J)                                        \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I)-1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
+    INV_4*((ARR)((I) - 1, (J), (COMP)) + (ARR)((I) + 1, (J), (COMP)))
 
 #define FILTER2D_IN_I2(ARR, COMP, I, J)                                        \
   INV_2*(ARR)((I), (J), (COMP)) +                                              \
-    INV_4*((ARR)((I), (J)-1, (COMP)) + (ARR)((I), (J) + 1, (COMP)))
+    INV_4*((ARR)((I), (J) - 1, (COMP)) + (ARR)((I), (J) + 1, (COMP)))
 
-#define FILTER3D_IN_I1_I2(ARR, COMP, I, J, K)                                   \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
-    INV_8*((ARR)((I)-1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
-           (ARR)((I), (J)-1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP))) + \
-    INV_16*(                                                                    \
-      (ARR)((I)-1, (J)-1, (K), (COMP)) + (ARR)((I) + 1, (J) + 1, (K), (COMP)) + \
-      (ARR)((I)-1, (J) + 1, (K), (COMP)) + (ARR)((I) + 1, (J)-1, (K), (COMP)))
+#define FILTER3D_IN_I1_I2(ARR, COMP, I, J, K)                                     \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
+    INV_8*((ARR)((I) - 1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
+           (ARR)((I), (J) - 1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP))) + \
+    INV_16*((ARR)((I) - 1, (J) - 1, (K), (COMP)) +                                \
+            (ARR)((I) + 1, (J) + 1, (K), (COMP)) +                                \
+            (ARR)((I) - 1, (J) + 1, (K), (COMP)) +                                \
+            (ARR)((I) + 1, (J) - 1, (K), (COMP)))
 
-#define FILTER3D_IN_I2_I3(ARR, COMP, I, J, K)                                   \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
-    INV_8*((ARR)((I), (J)-1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP)) +  \
-           (ARR)((I), (J), (K)-1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
-    INV_16*(                                                                    \
-      (ARR)((I), (J)-1, (K)-1, (COMP)) + (ARR)((I), (J) + 1, (K) + 1, (COMP)) + \
-      (ARR)((I), (J)-1, (K) + 1, (COMP)) + (ARR)((I), (J) + 1, (K)-1, (COMP)))
+#define FILTER3D_IN_I2_I3(ARR, COMP, I, J, K)                                     \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
+    INV_8*((ARR)((I), (J) - 1, (K), (COMP)) + (ARR)((I), (J) + 1, (K), (COMP)) +  \
+           (ARR)((I), (J), (K) - 1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
+    INV_16*((ARR)((I), (J) - 1, (K) - 1, (COMP)) +                                \
+            (ARR)((I), (J) + 1, (K) + 1, (COMP)) +                                \
+            (ARR)((I), (J) - 1, (K) + 1, (COMP)) +                                \
+            (ARR)((I), (J) + 1, (K) - 1, (COMP)))
 
-#define FILTER3D_IN_I1_I3(ARR, COMP, I, J, K)                                   \
-  INV_4*(ARR)(I, J, K, (COMP)) +                                                \
-    INV_8*((ARR)((I)-1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
-           (ARR)((I), (J), (K)-1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
-    INV_16*(                                                                    \
-      (ARR)((I)-1, (J), (K)-1, (COMP)) + (ARR)((I) + 1, (J), (K) + 1, (COMP)) + \
-      (ARR)((I)-1, (J), (K) + 1, (COMP)) + (ARR)((I) + 1, (J), (K)-1, (COMP)))
+#define FILTER3D_IN_I1_I3(ARR, COMP, I, J, K)                                     \
+  INV_4*(ARR)(I, J, K, (COMP)) +                                                  \
+    INV_8*((ARR)((I) - 1, (J), (K), (COMP)) + (ARR)((I) + 1, (J), (K), (COMP)) +  \
+           (ARR)((I), (J), (K) - 1, (COMP)) + (ARR)((I), (J), (K) + 1, (COMP))) + \
+    INV_16*((ARR)((I) - 1, (J), (K) - 1, (COMP)) +                                \
+            (ARR)((I) + 1, (J), (K) + 1, (COMP)) +                                \
+            (ARR)((I) - 1, (J), (K) + 1, (COMP)) +                                \
+            (ARR)((I) + 1, (J), (K) - 1, (COMP)))
 
 namespace kernel {
   using namespace ntt;
@@ -93,8 +96,8 @@ namespace kernel {
       , i2_max { (short)D > 1 ? (size_[1] + N_GHOSTS) : 0 }
       , i3_max { (short)D > 2 ? (size_[2] + N_GHOSTS) : 0 } {}
 
-    Inline void operator()(index_t i1) const {
-      if constexpr ((D == Dim::_1D) && (C == Coord::Cart)) {
+    Inline void operator()(cellidx_t i1) const {
+      if constexpr ((D == Dim::_1D) && (C == Coord::Cartesian)) {
         if ((is_conductor_i1min and i1 == i1_min) or
             (is_conductor_i1max and i1 == i1_max - 1)) {
           const auto i1side   = is_conductor_i1min ? (i1 + 1) : (i1 - 1);
@@ -123,9 +126,9 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
-        if constexpr (C == Coord::Cart) {
+        if constexpr (C == Coord::Cartesian) {
           if ((is_conductor_i1min and i1 == i1_min) or
               (is_conductor_i1max and i1 == i1_max - 1)) {
             const auto i1side = is_conductor_i1min ? (i1 + 1) : (i1 - 1);
@@ -283,9 +286,9 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
-        if constexpr (C == Coord::Cart) {
+        if constexpr (C == Coord::Cartesian) {
           if ((is_conductor_i1min and i1 == i1_min) or
               (is_conductor_i1max and i1 == i1_max - 1)) {
             const auto i1side = is_conductor_i1min ? (i1 + 1) : (i1 - 1);

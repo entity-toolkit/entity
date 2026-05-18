@@ -4,12 +4,11 @@
 #include "enums.h"
 #include "global.h"
 
-#include "arch/traits.h"
+#include "traits/pgen.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
 #include "archetypes/field_setter.h"
-#include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 
@@ -67,20 +66,20 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
-    static constexpr auto engines { traits::compatible_with<SimEngine::SRPIC>::value };
-    static constexpr auto metrics { traits::compatible_with<Metric::Minkowski>::value };
-    static constexpr auto dimensions {
-      traits::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value
+    static constexpr auto engines {
+      ::traits::pgen::compatible_with<SimEngine::SRPIC> {}
     };
-
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
-
-    Metadomain<S, M>& global_domain;
+    static constexpr auto metrics {
+      ::traits::pgen::compatible_with<Metric::Minkowski> {}
+    };
+    static constexpr auto dimensions {
+      ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {}
+    };
+    const SimulationParams& params;
+    Metadomain<S, M>&       metadomain;
 
     // domain properties
     const real_t  global_xmin, global_xmax;
@@ -93,37 +92,39 @@ namespace user {
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , global_domain { global_domain }
-      , global_xmin { global_domain.mesh().extent(in::x1).first }
-      , global_xmax { global_domain.mesh().extent(in::x1).second }
-      , drift_ux { p.template get<real_t>("setup.drift_ux") }
-      , temperature { p.template get<real_t>("setup.temperature") }
-      , temperature_ratio { p.template get<real_t>("setup.temperature_ratio") }
-      , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
-      , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
-      , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
+    PGen(const SimulationParams& p, Metadomain<S, M>& m)
+      : params { p }
+      , metadomain { m }
+      , global_xmin { metadomain.mesh().extent(in::x1).first }
+      , global_xmax { metadomain.mesh().extent(in::x1).second }
+      , drift_ux { params.template get<real_t>("setup.drift_ux") }
+      , temperature { params.template get<real_t>("setup.temperature") }
+      , temperature_ratio { params.template get<real_t>(
+          "setup.temperature_ratio") }
+      , Bmag { params.template get<real_t>("setup.Bmag", ZERO) }
+      , Btheta { params.template get<real_t>("setup.Btheta", ZERO) }
+      , Bphi { params.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi, drift_ux }
-      , filling_fraction { p.template get<real_t>("setup.filling_fraction", 1.0) }
-      , injector_velocity { p.template get<real_t>("setup.injector_velocity", 1.0) }
-      , injection_start { p.template get<real_t>("setup.injection_start", 0.0) }
-      , injection_frequency { p.template get<int>("setup.injection_frequency", 100) }
-      , dt { p.template get<real_t>("algorithms.timestep.dt") } {}
+      , filling_fraction { params.template get<real_t>("setup.filling_fraction",
+                                                       1.0) }
+      , injector_velocity { params.template get<real_t>(
+          "setup.injector_velocity",
+          1.0) }
+      , injection_start { params.template get<real_t>("setup.injection_start", 0.0) }
+      , injection_frequency { params.template get<int>(
+          "setup.injection_frequency",
+          100) }
+      , dt { params.template get<real_t>("algorithms.timestep.dt") } {}
 
-    inline PGen() {}
-
-    auto MatchFields(real_t time) const -> InitFields<D> {
+    auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&,
-                        const em& comp) const -> std::pair<real_t, bool> {
+    auto FixFieldsConst(const bc_in&, const em& comp) const
+      -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };
-      } else if (comp == em::ex2) {
-        return { ZERO, true };
-      } else if (comp == em::ex3) {
+      } else if ((comp == em::ex2) or (comp == em::ex3)) {
         return { ZERO, true };
       } else if (comp == em::bx1) {
         return { init_flds.bx1({ ZERO }), true };
@@ -137,7 +138,7 @@ namespace user {
       }
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
 
       /*
        *  Plasma setup as partially filled box
@@ -163,7 +164,7 @@ namespace user {
       for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
         // compute the range for the x-direction
         if (d == static_cast<decltype(d)>(in::x1)) {
-          box.push_back({ xg_min, xg_max });
+          box.emplace_back(xg_min, xg_max);
         } else {
           // inject into full range in other directions
           box.push_back(Range::All);
@@ -231,7 +232,7 @@ namespace user {
       // define indice range to reset fields
       boundaries_t<bool> incl_ghosts;
       for (auto d = 0; d < M::Dim; ++d) {
-        incl_ghosts.push_back({ false, false });
+        incl_ghosts.emplace_back(false, false);
       }
 
       // define box to reset fields
@@ -239,14 +240,14 @@ namespace user {
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
-          purge_box.push_back({ xmin, global_xmax });
+          purge_box.emplace_back(xmin, global_xmax);
         } else {
           purge_box.push_back(Range::All);
         }
       }
 
       const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-      tuple_t<std::size_t, M::Dim> x_min { 0 }, x_max { 0 };
+      tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
       for (auto d = 0; d < M::Dim; ++d) {
         x_min[d] = extent[d].first;
         x_max[d] = extent[d].second;
@@ -254,11 +255,11 @@ namespace user {
 
       Kokkos::parallel_for("ResetFields",
                            CreateRangePolicy<M::Dim>(x_min, x_max),
-                           arch::SetEMFields_kernel<decltype(init_flds), S, M> {
+                           arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
-      global_domain.CommunicateFields(domain, Comm::E | Comm::B);
+      metadomain.CommunicateFields(domain, Comm::E | Comm::B);
 
       /*
         tag particles inside the injection zone as dead
@@ -276,7 +277,7 @@ namespace user {
         Kokkos::parallel_for(
           "RemoveParticles",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             // check if the particle is already dead
             if (tag(p) == ParticleTag::dead) {
               return;
@@ -301,7 +302,7 @@ namespace user {
       // loop over all dimension
       for (auto d = 0u; d < M::Dim; ++d) {
         if (d == 0) {
-          inj_box.push_back({ xmin, xmax });
+          inj_box.emplace_back(xmin, xmax);
         } else {
           inj_box.push_back(Range::All);
         }

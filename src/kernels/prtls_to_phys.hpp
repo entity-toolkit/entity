@@ -19,15 +19,15 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, class M, bool T>
+  template <SimEngine::type S, MetricClass M, bool T>
   class PrtlToPhys_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr Dimension D = M::Dim;
 
   protected:
@@ -53,7 +53,7 @@ namespace kernel {
 
   public:
     PrtlToPhys_kernel(npart_t                   stride,
-                      array_t<npart_t*>         out_indices,
+                      array_t<npart_t*>&        out_indices,
                       array_t<real_t*>&         buff_x1,
                       array_t<real_t*>&         buff_x2,
                       array_t<real_t*>&         buff_x3,
@@ -108,7 +108,7 @@ namespace kernel {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x2.extent(0) == 0, "Invalid buffer size", HERE);
       }
-      if constexpr (((D == Dim::_2D) && (M::CoordType != Coord::Cart)) ||
+      if constexpr (((D == Dim::_2D) && (M::CoordType != Coord::Cartesian)) ||
                     (D == Dim::_3D)) {
         raise::ErrorIf(buff_x3.extent(0) == 0, "Invalid buffer size", HERE);
       }
@@ -117,7 +117,7 @@ namespace kernel {
       raise::ErrorIf(buff_ux3.extent(0) == 0, "Invalid buffer size", HERE);
     }
 
-    Inline void operator()(index_t p) const {
+    Inline void operator()(prtlidx_t p) const {
       if constexpr (not T) { // no tracking enabled
         bufferX(p * stride, p);
         bufferU(p * stride, p);
@@ -131,7 +131,7 @@ namespace kernel {
       }
     }
 
-    Inline void bufferX(index_t p_from, index_t p_to) const {
+    Inline void bufferX(prtlidx_t p_from, prtlidx_t p_to) const {
       if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
         buff_x1(p_to) = metric.template convert<1, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)));
@@ -140,7 +140,7 @@ namespace kernel {
         buff_x2(p_to) = metric.template convert<2, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)));
       }
-      if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cart)) {
+      if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cartesian)) {
         buff_x3(p_to) = phi(p_from);
       } else if constexpr (D == Dim::_3D) {
         buff_x3(p_to) = metric.template convert<3, Crd::Cd, Crd::Ph>(
@@ -148,10 +148,10 @@ namespace kernel {
       }
     }
 
-    Inline void bufferU(index_t p_from, index_t p_to) const {
+    Inline void bufferU(prtlidx_t p_from, prtlidx_t p_to) const {
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (D == Dim::_1D) {
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
             { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)) },
             { ux1(p_from), ux2(p_from), ux3(p_from) },
@@ -160,7 +160,7 @@ namespace kernel {
           raise::KernelError(HERE, "Unsupported coordinate system in 1D");
         }
       } else if constexpr (D == Dim::_2D) {
-        if constexpr (M::CoordType == Coord::Cart) {
+        if constexpr (M::CoordType == Coord::Cartesian) {
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
             { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
               static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)) },
@@ -206,7 +206,7 @@ namespace kernel {
       buff_ux3(p_to) = u_Phys[2];
     }
 
-    Inline void bufferPlds(index_t p_from, index_t p_to) const {
+    Inline void bufferPlds(prtlidx_t p_from, prtlidx_t p_to) const {
       for (auto pr { 0u }; pr < buff_pldr.extent(1); ++pr) {
         buff_pldr(p_to, pr) = pld_r(p_from, pr);
       }

@@ -5,14 +5,14 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "arch/traits.h"
+#include "traits/pgen.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "archetypes/problem_generator.h"
 #include "archetypes/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
+#include "framework/parameters/parameters.h"
 
 namespace user {
   using namespace ntt;
@@ -51,37 +51,39 @@ namespace user {
   };
 
   template <SimEngine::type S, class M>
-  struct PGen : public arch::ProblemGenerator<S, M> {
-
+  struct PGen {
+    static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
-    static constexpr auto engines = traits::compatible_with<SimEngine::SRPIC>::value;
-    static constexpr auto metrics = traits::compatible_with<Metric::Minkowski>::value;
+    static constexpr auto engines = ::traits::pgen::compatible_with<SimEngine::SRPIC> {};
+    static constexpr auto metrics =
+      ::traits::pgen::compatible_with<Metric::Minkowski> {};
     static constexpr auto dimensions =
-      traits::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D>::value;
+      ::traits::pgen::compatible_with<Dim::_1D, Dim::_2D, Dim::_3D> {};
 
-    // for easy access to variables in the child class
-    using arch::ProblemGenerator<S, M>::D;
-    using arch::ProblemGenerator<S, M>::C;
-    using arch::ProblemGenerator<S, M>::params;
+    const SimulationParams& params;
 
-    prmvec_t drifts_in_x, drifts_in_y, drifts_in_z;
-    prmvec_t densities, temperatures;
+    prmvec_t      drifts_in_x, drifts_in_y, drifts_in_z;
+    prmvec_t      densities, temperatures;
     // initial magnetic field
     real_t        Btheta, Bphi, Bmag;
     InitFields<D> init_flds;
 
-    inline PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
-      : arch::ProblemGenerator<S, M> { p }
-      , drifts_in_x { p.template get<prmvec_t>("setup.drifts_in_x", prmvec_t {}) }
-      , drifts_in_y { p.template get<prmvec_t>("setup.drifts_in_y", prmvec_t {}) }
-      , drifts_in_z { p.template get<prmvec_t>("setup.drifts_in_z", prmvec_t {}) }
-      , Bmag { p.template get<real_t>("setup.Bmag", ZERO) }
-      , Btheta { p.template get<real_t>("setup.Btheta", ZERO) }
-      , Bphi { p.template get<real_t>("setup.Bphi", ZERO) }
+    PGen(const SimulationParams& p, const Metadomain<S, M>& global_domain)
+      : params { p }
+      , drifts_in_x { params.template get<prmvec_t>("setup.drifts_in_x",
+                                                    prmvec_t {}) }
+      , drifts_in_y { params.template get<prmvec_t>("setup.drifts_in_y",
+                                                    prmvec_t {}) }
+      , drifts_in_z { params.template get<prmvec_t>("setup.drifts_in_z",
+                                                    prmvec_t {}) }
+      , Bmag { params.template get<real_t>("setup.Bmag", ZERO) }
+      , Btheta { params.template get<real_t>("setup.Btheta", ZERO) }
+      , Bphi { params.template get<real_t>("setup.Bphi", ZERO) }
       , init_flds { Bmag, Btheta, Bphi }
-      , densities { p.template get<prmvec_t>("setup.densities", prmvec_t {}) }
-      , temperatures { p.template get<prmvec_t>("setup.temperatures", prmvec_t {}) } {
-      const auto nspec = p.template get<std::size_t>("particles.nspec");
+      , densities { params.template get<prmvec_t>("setup.densities", prmvec_t {}) }
+      , temperatures { params.template get<prmvec_t>("setup.temperatures",
+                                                     prmvec_t {}) } {
+      const auto nspec = params.template get<std::size_t>("particles.nspec");
       raise::ErrorIf(nspec % 2 != 0,
                      "Number of species must be even for this setup",
                      HERE);
@@ -115,7 +117,7 @@ namespace user {
                      HERE);
     }
 
-    inline void InitPrtls(Domain<S, M>& domain) {
+    void InitPrtls(Domain<S, M>& domain) {
       const auto nspec = domain.species.size();
       for (auto n = 0u; n < nspec; n += 2) {
         const auto drift_1 = prmvec_t { drifts_in_x[n],

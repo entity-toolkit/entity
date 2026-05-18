@@ -1,10 +1,14 @@
 #include "output/utils/writers.h"
 
+#include "global.h"
+
 #include "arch/kokkos_aliases.h"
 
 #include <adios2.h>
 
+#include <cstddef>
 #include <string>
+#include <utility>
 
 namespace out {
 
@@ -29,7 +33,7 @@ namespace out {
                     std::size_t        local_size,
                     std::size_t        global_size,
                     std::size_t        local_offset) {
-    const auto slice = range_tuple_t(0, local_size);
+    const auto slice = std::pair<size_t, size_t>(0, local_size);
     auto       var   = io.InquireVariable<T>(name);
     var.SetShape({ global_size });
     var.SetSelection(adios2::Box<adios2::Dims>({ local_offset }, { local_size }));
@@ -49,7 +53,7 @@ namespace out {
                     std::size_t         local_size,
                     std::size_t         global_size,
                     std::size_t         local_offset) {
-    const auto slice = range_tuple_t(0, local_size);
+    const auto slice = std::pair<size_t, size_t>(0, local_size);
     auto       var   = io.InquireVariable<T>(name);
 
     var.SetShape({ global_size * dim2_size });
@@ -58,13 +62,12 @@ namespace out {
 
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
-    auto data_sub = Kokkos::subview(data_h, slice, range_tuple_t(0, dim2_size));
+    auto data_sub = Kokkos::subview(data_h,
+                                    slice,
+                                    std::pair<size_t, size_t>(0, dim2_size));
     if (!data_sub.span_is_contiguous()) {
-      Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace> data_contig_h {
-        "data_contig_h",
-        local_size,
-        dim2_size
-      };
+      const Kokkos::View<T**, Kokkos::LayoutLeft, Kokkos::HostSpace>
+        data_contig_h { "data_contig_h", local_size, dim2_size };
       Kokkos::deep_copy(data_contig_h, data_sub);
       writer.Put(var, data_contig_h.data(), adios2::Mode::Sync);
     } else {
@@ -82,6 +85,7 @@ namespace out {
     writer.Put(io.InquireVariable<real_t>(name), data_h.data(), adios2::Mode::Sync);
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define ARRAY_WRITERS(T)                                                       \
   template void WriteVariable(adios2::IO&,                                     \
                               adios2::Engine&,                                 \
@@ -126,5 +130,6 @@ namespace out {
   NDFIELD_WRITERS(Dim::_3D, 3)
   NDFIELD_WRITERS(Dim::_3D, 6)
 #undef NDFIELD_WRITERS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace out

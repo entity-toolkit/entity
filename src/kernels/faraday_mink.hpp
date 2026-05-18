@@ -68,7 +68,7 @@ namespace kernel::mink {
       , betayz { betayz }
       , betazy { betazy } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const auto alphax = ONE - THREE * deltax;
         // clang-format off
@@ -84,7 +84,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const auto alphax = ONE - TWO * betaxy - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - THREE * deltay;
@@ -114,7 +114,7 @@ namespace kernel::mink {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const auto alphax = ONE - TWO * betaxy - TWO * betaxz - THREE * deltax;
         const auto alphay = ONE - TWO * betayx - TWO * betayz - THREE * deltay;

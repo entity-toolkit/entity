@@ -1,5 +1,5 @@
 /**
- * @file kernels/ampere_gr.hpp
+ * @file kernels/ampere_sr.hpp
  * @brief Algorithms for Ampere's law in curvilinear SR
  * @implements
  *   - kernel::sr::Ampere_kernel<>
@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -27,9 +28,8 @@ namespace kernel::sr {
    * @brief Algorithm for the Ampere's law: `dE/dt = curl B` in curvilinear space
    * @tparam M Metric
    */
-  template <class M>
+  template <SRMetricClass M>
   class Ampere_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     ndfield_t<D, 6> EB;
@@ -55,7 +55,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr ncells_t i2min { N_GHOSTS };
         const real_t       i1_ { COORD(i1) };
@@ -108,7 +108,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {
@@ -120,7 +120,7 @@ namespace kernel::sr {
   /**
    * @brief Add the currents to the E field with the appropriate conversion
    */
-  template <class M>
+  template <SRMetricClass M>
   class CurrentsAmpere_kernel {
     static constexpr auto     D     = M::Dim;
     static constexpr ncells_t i2min = N_GHOSTS;
@@ -160,7 +160,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -208,7 +208,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {

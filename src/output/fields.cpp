@@ -10,7 +10,6 @@
 
 #include <Kokkos_Core.hpp>
 
-#include <cctype>
 #include <string>
 #include <vector>
 
@@ -21,7 +20,7 @@ namespace out {
   OutputField::OutputField(const SimEngine& S, const std::string& name)
     : m_name { name } {
     // determine the field ID
-    const auto pos = name.find("_");
+    const auto pos = name.find('_');
     auto name_raw  = (pos == std::string::npos) ? name : name.substr(0, pos);
     if ((fmt::toLower(name_raw) != "dive") and
         (fmt::toLower(name_raw) != "divd")) {
@@ -36,27 +35,30 @@ namespace out {
     raise::ErrorIf(id() == FldsID::A and S != SimEngine::GRPIC,
                    "Output of A_phi not supported for non-GRPIC",
                    HERE);
-    raise::ErrorIf(id() == FldsID::V and S == SimEngine::GRPIC,
-                   "Output of bulk 3-vel not supported for GRPIC",
-                   HERE);
     // determine the species and components to output
     if (is_moment()) {
       species = InterpretSpecies(name);
     } else {
       species = {};
     }
-    if (is_field() || is_current() || id() == FldsID::V) {
-      // always write all the field/current/bulk vel components
+    if (is_field() || is_current()) {
+      // always write all the field/current components (3D)
       comp = { { 1 }, { 2 }, { 3 } };
+    } else if (id() == FldsID::V) {
+      // bulk velocity: 3D for SR, 4D for GR
+      if (S == SimEngine::SRPIC) {
+        // SR: always 3-velocity components
+        comp = { { 1 }, { 2 }, { 3 } };
+      } else {
+        // GR: always output all 4 Eckart velocity components (u^0, u^1, u^2, u^3)
+        comp = { { 0 }, { 1 }, { 2 }, { 3 } };
+      }
     } else if (id() == FldsID::A) {
       // only write A3
       comp = { { 3 } };
     } else if (id() == FldsID::T) {
       // energy-momentum tensor
       comp = InterpretComponents({ name.substr(1, 1), name.substr(2, 1) });
-    } else if (id() == FldsID::V) {
-      // energy-momentum tensor
-      comp = InterpretComponents({ name.substr(1, 1) });
     } else {
       // scalar (Rho, divE, Custom, etc.)
       comp = {};

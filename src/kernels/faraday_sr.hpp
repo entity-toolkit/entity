@@ -16,6 +16,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
 
@@ -26,9 +27,8 @@ namespace kernel::sr {
    * @brief Algorithm for the Faraday's law: `dB/dt = -curl E` in Curvilinear
    * space (diagonal metric)
    */
-  template <class M>
+  template <SRMetricClass M>
   class Faraday_kernel {
-    static_assert(M::is_metric, "M must be a metric class");
     static constexpr auto D = M::Dim;
 
     ndfield_t<D, 6> EB;
@@ -50,7 +50,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         constexpr ncells_t i2min { N_GHOSTS };
         const real_t       i1_ { COORD(i1) };
@@ -88,7 +88,7 @@ namespace kernel::sr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {

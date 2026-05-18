@@ -1,0 +1,68 @@
+[simulation]
+  name    = "custom_emission"
+  engine  = "srpic"
+  runtime = 5.0
+
+[grid]
+  resolution = [64, 64]
+  extent     = [[-1.0, 1.0], [-1.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.25
+  skindepth0 = 1.0
+
+[algorithms]
+
+  [algorithms.deposit]
+    enable = false
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 1.0
+
+  [[particles.species]]
+    label    = "p"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e2
+    emission = "custom"
+
+  [[particles.species]]
+    label    = "ph"
+    mass     = 0.0
+    charge   = 0.0
+    maxnpart = 1e4
+
+[setup]
+  x1_arr               = [0.0, 0.0]
+  x2_arr               = [0.0, 0.0]
+  x3_arr               = [0.0, 0.0]
+  ux1_arr              = [0.0, 0.0]
+  ux2_arr              = [1.0, -1.0]
+  ux3_arr              = [0.0, 0.0]
+  emission_probability = 0.05
+
+[output]
+  interval = 10
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "B"]
+
+  [output.particles]
+    enable = true
+    stride = 1
+
+  [output.spectra]
+    enable = false
+
+[checkpoint]
+  keep = 0
