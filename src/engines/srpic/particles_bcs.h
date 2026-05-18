@@ -88,21 +88,20 @@ namespace ntt {
           if (prtl_spec.npart() == 0) {
             continue;
           }
-          // clang-format off
           Kokkos::parallel_for(
             "ComputeMoments",
             prtl_spec.rangeActiveParticles(),
             kernel::ParticleMoments_kernel<SimEngine::SRPIC, M, FldsID::Rho, 6>(
-              {}, scatter_bckp, 0,
-              prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-              prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-              prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-              prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-              prtl_spec.mass(), prtl_spec.charge(),
+              {},
+              scatter_bckp,
+              0,
+              prtl_spec,
               use_weights,
-              domain.mesh.metric, domain.mesh.flds_bc(),
-              ni2, inv_n0, 0));
-          // clang-format on
+              domain.mesh.metric,
+              domain.mesh.flds_bc(),
+              ni2,
+              inv_n0,
+              0u));
           prtl_spec.set_unsorted();
         }
         Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
