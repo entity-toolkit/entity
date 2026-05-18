@@ -18,6 +18,34 @@
 namespace prtl_shape {
 
   // clang-format off
+  // S(x) = 1 - |x|                                                                                   |x| < 1
+  //        0.0                                                                                       |x| ≥ 1
+  //
+  // clang-format on
+  Inline real_t S1(const real_t x) {
+    if (x < ONE) {
+      return ONE - x;
+    } else {
+      return ZERO;
+    }
+  }
+
+  // clang-format off
+  //        3/4 - |x|^2                                                                              |x| < 1/2
+  // S(x) = 1/2 * (3/2 - |x|)^2                                                                1/2 ≤ |x| < 3/2
+  //        0.0                                                                                      |x| ≥ 3/2
+  // clang-format on
+  Inline real_t S2(const real_t x) {
+    if (x < HALF) {
+      return static_cast<real_t>(0.75) - SQR(x);
+    } else if (x < THREE_HALFS) {
+      return HALF * SQR(THREE_HALFS - x);
+    } else {
+      return ZERO;
+    }
+  }
+
+  // clang-format off
   //        115/192 - (5/8) * |x|^2 + (1/4) * |x|^4                                                  |x| < 1/2
   // S(x) = 55/96 + (5/24) * |x| - (5/4) * |x|^2 + (5/6) * |x|^3 - (1/6) * |x|^4               1/2 ≤ |x| < 3/2
   //        625/384 - (125/48) * |x| + (25/16) * |x|^2 - (5/12) * |x|^3 + (1/24) * |x|^4       3/2 ≤ |x| < 5/2
