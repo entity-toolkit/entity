@@ -101,13 +101,13 @@ struct EmissionPolicy {
     , sp2_tag { sp2_tag }
     , sp2_pld_i { sp2_pld_i } {}
 
-  Inline auto shouldEmit(const coord_t<M::PrtlDim>& x_Cd,
-                         const coord_t<M::PrtlDim>& x_Ph,
-                         const vec_t<Dim::_3D>&     u_Ph,
+  Inline auto shouldEmit(const coord_t<M::PrtlDim>& /*x_Cd*/,
+                         const coord_t<M::PrtlDim>& /*x_Ph*/,
+                         const vec_t<Dim::_3D>& /*u_Ph*/,
                          const vec_t<Dim::_3D>&,
                          const vec_t<Dim::_3D>&,
                          vec_t<Dim::_3D>& delta_u_Ph,
-                         Payload& payload) const -> Kokkos::pair<bool, bool> {
+                         Payload& /*payload*/) const -> Kokkos::pair<bool, bool> {
     delta_u_Ph[0] = -TWO;
     delta_u_Ph[1] = ZERO;
     delta_u_Ph[2] = ZERO;
@@ -232,8 +232,6 @@ auto main(int argc, char* argv[]) -> int {
       0u,
       0u);
 
-    auto pusher_arrays = emitting_species.PusherKernelArrays();
-
     const auto boundaries = kernel::sr::PusherBoundaries<Dim::_1D> {
       { { PrtlBC::PERIODIC, PrtlBC::PERIODIC } }
     };
@@ -292,7 +290,7 @@ auto main(int argc, char* argv[]) -> int {
             1u,
             1u },
           boundaries,
-          pusher_arrays,
+          emitting_species,
           EB,
           metric,
           pusher_policy));
@@ -337,7 +335,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     ntt::GlobalFinalize();
     return 1;
   }

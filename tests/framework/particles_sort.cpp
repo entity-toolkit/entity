@@ -40,7 +40,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           if (p < 66u) {
             tag_p(p) = (p % 10u == 0u) ? ntt::ParticleTag::dead
                                        : ntt::ParticleTag::alive;
@@ -61,8 +61,8 @@ auto main(int argc, char* argv[]) -> int {
               i2_p(p)     = 23u;
               weight_p(p) = 3.0;
             }
-            pld_r(p, 0) = weight_p(p) + 0.5;
-            pld_r(p, 1) = weight_p(p) + 10.5;
+            pld_r(p, 0) = weight_p(p) + static_cast<real_t>(0.5);
+            pld_r(p, 1) = weight_p(p) + static_cast<real_t>(10.5);
             pld_i(p, 0) = static_cast<npart_t>(weight_p(p) + 10.0);
           } else {
             tag_p(p) = ntt::ParticleTag::dead;
@@ -95,15 +95,17 @@ auto main(int argc, char* argv[]) -> int {
           raise::ErrorIf(weight_h(p) != -1.0, "error in sorting particles", HERE);
         }
         if (p < 59u) {
-          raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + 0.5,
+          raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + static_cast<real_t>(0.5),
                          "error in sorting particle real payload 0",
                          HERE);
-          raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + 10.5,
+          raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
                          "error in sorting particle real payload 1",
                          HERE);
-          raise::ErrorIf(pld_i_h(p, 0) != static_cast<npart_t>(weight_h(p) + 10.0),
-                         "error in sorting particle integer payload 0",
-                         HERE);
+          raise::ErrorIf(
+            pld_i_h(p, 0) !=
+              static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
+            "error in sorting particle integer payload 0",
+            HERE);
         }
       }
     }
@@ -135,7 +137,7 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
-        Lambda(index_t p) {
+        Lambda(prtlidx_t p) {
           if (p < 66u) {
             tag_p(p) = (p % 10u == 0u) ? ntt::ParticleTag::dead
                                        : ntt::ParticleTag::alive;
@@ -196,7 +198,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
   } catch (const std::exception& e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    std::cerr << "Error: " << e.what() << '\n';
     ntt::GlobalFinalize();
     return 1;
   }

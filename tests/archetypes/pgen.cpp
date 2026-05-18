@@ -88,7 +88,7 @@ struct CustomPgen {
 
   void CustomFieldOutput(const std::string&,
                          ndfield_t<M::Dim, 6>&,
-                         index_t,
+                         uint32_t,
                          timestep_t,
                          simtime_t,
                          const Domain<S, M>&) {}

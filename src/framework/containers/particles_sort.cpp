@@ -25,27 +25,33 @@ namespace ntt {
     const auto        num_tags = ntags();
     array_t<npart_t*> npptag { "nparts_per_tag", ntags() };
 
-    // count # of particles per each tag
-    auto npptag_scat = Kokkos::Experimental::create_scatter_view(npptag);
+    // count # of particles per each tag, skipping the alive bin in-kernel.
+    constexpr short tag_alive_s = static_cast<short>(ParticleTag::alive);
     Kokkos::parallel_for(
       "NpartPerTag",
       rangeActiveParticles(),
-      Lambda(index_t p) {
-        auto npptag_acc = npptag_scat.access();
-        if (this_tag(p) < 0 || this_tag(p) >= static_cast<short>(num_tags)) {
+      Lambda(prtlidx_t p) {
+        const short t = this_tag(p);
+        if (t < 0 || t >= static_cast<short>(num_tags)) {
           raise::KernelError(HERE, "Invalid tag value");
         }
-        npptag_acc(this_tag(p)) += 1;
+        if (t != tag_alive_s) {
+          Kokkos::atomic_add(&npptag(t), static_cast<npart_t>(1));
+        }
       });
-    Kokkos::Experimental::contribute(npptag, npptag_scat);
 
-    // copy the count to a vector on the host
+    // copy the count to a vector on the host and reconstruct the alive bin
     auto npptag_h = Kokkos::create_mirror_view(npptag);
     Kokkos::deep_copy(npptag_h, npptag);
     std::vector<npart_t> npptag_vec(num_tags);
+    npart_t              non_alive_total = 0;
     for (auto t { 0u }; t < num_tags; ++t) {
       npptag_vec[t] = npptag_h(t);
+      if (static_cast<short>(t) != tag_alive_s) {
+        non_alive_total += npptag_h(t);
+      }
     }
+    npptag_vec[tag_alive_s] = npart() - non_alive_total;
 
     // count the offsets on the host and copy to device
     const array_t<npart_t*> tag_offsets("tag_offsets", num_tags - 3);
@@ -67,7 +73,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "PopulateBufferAlive",
       n_alive,
-      Lambda(index_t p) { buffer(p) = arr(indices_alive(p)); });
+      Lambda(prtlidx_t p) { buffer(p) = arr(indices_alive(p)); });
 
     Kokkos::deep_copy(
       Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n_alive)),
@@ -80,8 +86,12 @@ namespace ntt {
     auto          buffer  = array_t<T**> { "buffer", n_alive, arr.extent(1) };
     Kokkos::parallel_for(
       "PopulateBufferAlive",
-      CreateRangePolicy<Dim::_2D>({ 0, 0 }, { n_alive, arr.extent(1) }),
-      Lambda(index_t p, index_t l) { buffer(p, l) = arr(indices_alive(p), l); });
+      CreateParticleRangePolicy<Dim::_2D>(
+        { 0, 0 },
+        { n_alive, static_cast<npart_t>(arr.extent(1)) }),
+      Lambda(prtlidx_t p, prtlidx_t l) {
+        buffer(p, l) = arr(indices_alive(p), l);
+      });
 
     Kokkos::deep_copy(
       Kokkos::subview(arr,
@@ -98,7 +108,7 @@ namespace ntt {
     Kokkos::parallel_reduce(
       "CountDeadAlive",
       rangeActiveParticles(),
-      Lambda(index_t p, npart_t & nalive, npart_t & ndead) {
+      Lambda(prtlidx_t p, npart_t & nalive, npart_t & ndead) {
         nalive += (this_tag(p) == ParticleTag::alive);
         ndead  += (this_tag(p) == ParticleTag::dead);
         if (this_tag(p) != ParticleTag::alive and this_tag(p) != ParticleTag::dead) {
@@ -114,7 +124,7 @@ namespace ntt {
     Kokkos::parallel_for(
       "AliveIndices",
       rangeActiveParticles(),
-      Lambda(index_t p) {
+      Lambda(prtlidx_t p) {
         if (this_tag(p) == ParticleTag::alive) {
           const auto idx     = Kokkos::atomic_fetch_add(&alive_counter(0), 1);
           indices_alive(idx) = p;
@@ -191,11 +201,15 @@ namespace ntt {
 
     array_t<ncells_t*> cell_indices { "cell_indices", npart() };
 
-    Kokkos::parallel_for(
-      "FillCellIndices",
-      rangeActiveParticles(),
-      sort::PositionToCellIndex<D> { i1, i2, i3, tag, cell_indices, nx2, nx3, total_cells });
-    const auto slice = range_tuple_t(0, npart());
+    Kokkos::parallel_for("FillCellIndices",
+                         rangeActiveParticles(),
+                         sort::PositionToTileIndex<D, false> { i1,
+                                                               i2,
+                                                               i3,
+                                                               tag,
+                                                               cell_indices,
+                                                               grid.n_active() });
+    const auto slice = prtl_slice_t(0, npart());
 
     using sorter_op_t = Kokkos::BinOp1D<decltype(cell_indices)>;
     using sorter_t    = Kokkos::BinSort<decltype(cell_indices), sorter_op_t>;
@@ -254,83 +268,3 @@ namespace ntt {
 #undef PARTICLES_SORT
 
 } // namespace ntt
-
-// template <Dimension D, typename T>
-// void AllocateArrayOnGrid(nddata_t<D, T>&    arr,
-//                          const Grid<D>&     grid,
-//                          const std::string& name) {
-//   if constexpr (D == Dim::_1D) {
-//     arr = nddata_t<D, T> { name, grid.n_active(in::x1) };
-//   } else if constexpr (D == Dim::_2D) {
-//     arr = nddata_t<D, T> { name, grid.n_active(in::x1), grid.n_active(in::x2) };
-//   } else if constexpr (D == Dim::_3D) {
-//     arr = nddata_t<D, T> { name,
-//                            grid.n_active(in::x1),
-//                            grid.n_active(in::x2),
-//                            grid.n_active(in::x3) };
-//   } else {
-//     raise::Error("Unsupported dimension for array allocation", HERE);
-//   }
-// }
-//
-//
-// array_t<ncells_t*> cell_idx { "cell_indices", npart() };
-// const auto         num_cells = grid.num_active();
-//
-// nddata_t<D, npart_t> num_ppc;
-// nddata_t<D, npart_t> disp_map;
-// AllocateArrayOnGrid<D, npart_t>(num_ppc, grid, "num_ppc");
-// AllocateArrayOnGrid<D, npart_t>(disp_map, grid, "disp_map");
-// auto num_ppc_scatter =
-// Kokkos::Experimental::create_scatter_view(num_ppc); Kokkos::parallel_for(
-//   "ComputeNumPPC",
-//   rangeActiveParticles(),
-//   Lambda(index_t p) {
-//     if (tag_p(p) != ParticleTag::alive) {
-//       return;
-//     }
-//     auto num_ppc_acc = num_ppc_scatter.access();
-//     if constexpr (D == Dim::_1D) {
-//       num_ppc_acc(i1_p(p)) += 1u;
-//     } else if constexpr (D == Dim::_2D) {
-//       num_ppc_acc(i1_p(p), i2_p(p)) += 1u;
-//     } else {
-//       num_ppc_acc(i1_p(p), i2_p(p), i3_p(p)) += 1u;
-//     }
-//   });
-// Kokkos::Experimental::contribute(num_ppc, num_ppc_scatter);
-//
-// npart_t  total_sum   = 0u;
-// Kokkos::parallel_scan(
-//   "ComputeDisplacementMap",
-//   total_cells,
-//   Lambda(index_t cell, npart_t & cumulative_sum, bool is_final) {
-//     ncells_t i1, i2, i3;
-//     if constexpr (D == Dim::_1D) {
-//       i1 = cell;
-//     } else if constexpr (D == Dim::_2D) {
-//       i1 = cell / nx2;
-//       i2 = cell % nx2;
-//     } else {
-//       i1 = cell / (nx2 * nx3);
-//       i2 = (cell % (nx2 * nx3)) / nx3;
-//       i3 = cell % nx3;
-//     }
-//     if (is_final) {
-//       if constexpr (D == Dim::_1D) {
-//         disp_map(i1) = cumulative_sum;
-//       } else if constexpr (D == Dim::_2D) {
-//         disp_map(i1, i2) = cumulative_sum;
-//       } else {
-//         disp_map(i1, i2, i3) = cumulative_sum;
-//       }
-//     }
-//     if constexpr (D == Dim::_1D) {
-//       cumulative_sum += num_ppc(i1);
-//     } else if constexpr (D == Dim::_2D) {
-//       cumulative_sum += num_ppc(i1, i2);
-//     } else {
-//       cumulative_sum += num_ppc(i1, i2, i3);
-//     }
-//   },
-//   total_sum);

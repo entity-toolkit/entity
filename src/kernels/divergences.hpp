@@ -42,7 +42,7 @@ namespace kernel {
       raise::ErrorIf(buff_idx >= N, "Invalid component index", HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (M::Dim == Dim::_1D) {
         if constexpr (M::CoordType == Coord::Cartesian) {
           buff(i1, buff_idx) = fields(i1, em::ex1) - fields(i1 - 1, em::ex1);
@@ -61,7 +61,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (M::Dim == Dim::_2D) {
         if constexpr (M::CoordType == Coord::Cartesian) {
           buff(i1, i2, buff_idx) = fields(i1, i2, em::ex1) -
@@ -85,7 +85,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (M::Dim == Dim::_3D) {
         if constexpr (M::CoordType == Coord::Cartesian) {
           buff(i1, i2, i3, buff_idx) = fields(i1, i2, i3, em::ex1) -

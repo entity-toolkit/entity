@@ -6,7 +6,6 @@
 #include "arch/kokkos_aliases.h"
 
 #include "framework/containers/species.h"
-#include "kernels/pushers/context.h"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -30,7 +29,8 @@ namespace ntt {
                              EmissionTypeFlag    emission_policy_flag,
                              unsigned short      npld_r,
                              unsigned short      npld_i)
-    : ParticleSpecies { index,
+    : ParticleArrays { index }
+    , ParticleSpecies { index,
                         label,
                         m,
                         ch,
@@ -83,30 +83,6 @@ namespace ntt {
     if ((D == Dim::_2D) && (C != Coord::Cartesian)) {
       phi = array_t<real_t*> { label + "_phi", maxnpart };
     }
-  }
-
-  template <Dimension D, Coord::type C>
-  auto Particles<D, C>::PusherKernelArrays() -> kernel::PusherArrays {
-    kernel::PusherArrays pusher_arrays { index() };
-    pusher_arrays.i1       = i1;
-    pusher_arrays.i2       = i2;
-    pusher_arrays.i3       = i3;
-    pusher_arrays.i1_prev  = i1_prev;
-    pusher_arrays.i2_prev  = i2_prev;
-    pusher_arrays.i3_prev  = i3_prev;
-    pusher_arrays.dx1      = dx1;
-    pusher_arrays.dx2      = dx2;
-    pusher_arrays.dx3      = dx3;
-    pusher_arrays.dx1_prev = dx1_prev;
-    pusher_arrays.dx2_prev = dx2_prev;
-    pusher_arrays.dx3_prev = dx3_prev;
-    pusher_arrays.ux1      = ux1;
-    pusher_arrays.ux2      = ux2;
-    pusher_arrays.ux3      = ux3;
-    pusher_arrays.phi      = phi;
-    pusher_arrays.weight   = weight;
-    pusher_arrays.tag      = tag;
-    return pusher_arrays;
   }
 
   template struct Particles<Dim::_1D, Coord::Cartesian>;

@@ -95,7 +95,7 @@ namespace ntt {
     void CommunicateFields(Domain<S, M>&, CommTags) const;
     void SynchronizeFields(Domain<S, M>&,
                            CommTags,
-                           const range_tuple_t& = { 0, 0 }) const;
+                           const cell_range_t& = { 0, 0 }) const;
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
     void CommunicateVectorPotential(unsigned short);
 #endif
@@ -145,7 +145,7 @@ namespace ntt {
                simtime_t,
                const std::function<void(const std::string&,
                                         ndfield_t<M::Dim, 6>&,
-                                        index_t,
+                                        uint32_t,
                                         timestep_t,
                                         simtime_t,
                                         const Domain<S, M>&)>& = nullptr) -> bool;

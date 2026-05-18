@@ -9,7 +9,7 @@
 #include <vector>
 
 template <Dimension D, ntt::SimEngine::type S>
-void testFields(const std::vector<std::size_t>& res) {
+void testFields(const std::vector<ncells_t>& res) {
   using namespace ntt;
   raise::ErrorIf(res.size() != D, "Resolution vector has wrong size", HERE);
   auto       f   = Fields<D, S> { res };

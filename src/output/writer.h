@@ -90,9 +90,9 @@ namespace out {
 
     void writeAttrs(const prm::Parameters&);
 
-    void defineMeshLayout(const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
-                          const std::vector<std::size_t>&,
+    void defineMeshLayout(const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
+                          const std::vector<ncells_t>&,
                           const std::pair<unsigned int, unsigned int>&,
                           const std::vector<unsigned int>&,
                           bool,

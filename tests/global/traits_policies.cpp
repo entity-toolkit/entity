@@ -3,6 +3,7 @@
 #include "traits/policies.h"
 #include "utils/numeric.h"
 
+#include "framework/containers/particles.h"
 #include "kernels/pushers/context.h"
 
 #include <Kokkos_Pair.hpp>
@@ -117,10 +118,10 @@ static_assert(not ExtFieldsPolicyClass<Empty, Dimension::_2D>);
 // --- CustomParticleUpdatePolicyClass with a real updater ---
 
 struct ValidCustomPrtlUpdate {
-  void operator()(index_t,
+  void operator()(prtlidx_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
-                  const kernel::PusherArrays&,
+                  const ntt::ParticleArrays&,
                   const MockMetric&) const {}
 };
 
@@ -128,10 +129,10 @@ static_assert(CustomParticleUpdatePolicyClass<ValidCustomPrtlUpdate, MockMetric>
 
 // Wrong signature: missing the metric argument
 struct BadCustomPrtlUpdate {
-  void operator()(index_t,
+  void operator()(prtlidx_t,
                   const kernel::sr::PusherContext&,
                   const kernel::sr::PusherBoundaries<Dimension::_2D>&,
-                  const kernel::PusherArrays&) const {}
+                  const ntt::ParticleArrays&) const {}
 };
 
 static_assert(not CustomParticleUpdatePolicyClass<BadCustomPrtlUpdate, MockMetric>);

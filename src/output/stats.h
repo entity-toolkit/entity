@@ -40,8 +40,8 @@ namespace stats {
     StatsID           m_id { StatsID::INVALID };
 
   public:
-    std::vector<std::vector<unsigned short>> comp;
-    std::vector<spidx_t>                     species;
+    std::vector<std::vector<uint8_t>> comp;
+    std::vector<spidx_t>              species;
 
     OutputStats(const std::string&, bool);
 

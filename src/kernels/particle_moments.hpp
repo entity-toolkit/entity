@@ -3,6 +3,9 @@
  * @brief Algorithm for computing different moments from particle distribution
  * @implements
  *   - kernel::ParticleMoments_kernel<>
+ *   - kernel::NormalizeVectorByRho_kernel<>
+ *   - kernel::Normalize4VelocityByNorm_kernel<>
+ *   - kernel::Transform4VelocitySpatialToPhysical_kernel<>
  * @namespaces:
  *   - kernel::
  */
@@ -19,6 +22,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace kernel {
@@ -35,17 +39,15 @@ namespace kernel {
     }
   }
 
-  template <SimEngine::type S, MetricClass M, FldsID::type F, unsigned short N>
+  template <SimEngine::type S, MetricClass M, FldsID::type F, uint8_t N>
   class ParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
-    static_assert((S != SimEngine::GRPIC) || (F != FldsID::V),
-                  "Bulk velocity not supported for GRPIC");
     static_assert((F == FldsID::Rho) || (F == FldsID::Charge) || (F == FldsID::N) ||
                     (F == FldsID::Nppc) || (F == FldsID::T) || (F == FldsID::V),
                   "Invalid field ID");
 
-    const unsigned short     c1, c2;
+    const uint8_t            c1, c2;
     scatter_ndfield_t<D, N>  Buff;
     const idx_t              buff_idx;
     const array_t<int*>      i1, i2, i3;
@@ -59,40 +61,38 @@ namespace kernel {
     const bool               use_weights;
     const M                  metric;
     const int                ni2;
-    const unsigned short     window;
+    const uint8_t            window;
 
     const real_t contrib;
     const real_t smooth;
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    ParticleMoments_kernel(const std::vector<unsigned short>& components,
-                           const scatter_ndfield_t<D, N>&     scatter_buff,
-                           idx_t                              buff_idx,
-                           const array_t<int*>&               i1,
-                           const array_t<int*>&               i2,
-                           const array_t<int*>&               i3,
-                           const array_t<prtldx_t*>&          dx1,
-                           const array_t<prtldx_t*>&          dx2,
-                           const array_t<prtldx_t*>&          dx3,
-                           const array_t<real_t*>&            ux1,
-                           const array_t<real_t*>&            ux2,
-                           const array_t<real_t*>&            ux3,
-                           const array_t<real_t*>&            phi,
-                           const array_t<real_t*>&            weight,
-                           const array_t<short*>&             tag,
-                           float                              mass,
-                           float                              charge,
-                           bool                               use_weights,
-                           const M&                           metric,
-                           const boundaries_t<FldsBC>&        boundaries,
-                           ncells_t                           ni2,
-                           real_t                             inv_n0,
-                           unsigned short                     window)
-      : c1 { not components.empty() ? components[0]
-                                    : static_cast<unsigned short>(0) }
-      , c2 { (components.size() == 2) ? components[1]
-                                      : static_cast<unsigned short>(0) }
+    ParticleMoments_kernel(const std::vector<uint8_t>&    components,
+                           const scatter_ndfield_t<D, N>& scatter_buff,
+                           idx_t                          buff_idx,
+                           const array_t<int*>&           i1,
+                           const array_t<int*>&           i2,
+                           const array_t<int*>&           i3,
+                           const array_t<prtldx_t*>&      dx1,
+                           const array_t<prtldx_t*>&      dx2,
+                           const array_t<prtldx_t*>&      dx3,
+                           const array_t<real_t*>&        ux1,
+                           const array_t<real_t*>&        ux2,
+                           const array_t<real_t*>&        ux3,
+                           const array_t<real_t*>&        phi,
+                           const array_t<real_t*>&        weight,
+                           const array_t<short*>&         tag,
+                           float                          mass,
+                           float                          charge,
+                           bool                           use_weights,
+                           const M&                       metric,
+                           const boundaries_t<FldsBC>&    boundaries,
+                           ncells_t                       ni2,
+                           real_t                         inv_n0,
+                           uint8_t                        window)
+      : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
+      , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , Buff { scatter_buff }
       , buff_idx { buff_idx }
       , i1 { i1 }
@@ -129,7 +129,7 @@ namespace kernel {
       }
     }
 
-    Inline auto computeStressEnergyComponent(index_t p) const -> real_t {
+    Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
@@ -157,7 +157,6 @@ namespace kernel {
                : (math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2])));
       } else if constexpr (S == SimEngine::GRPIC) {
         // stress-energy tensor for GR is computed in contravariant basis
-        // @TODO: proper 4D transformation needed here
         static_assert(D != Dim::_1D, "GRPIC 1D");
         coord_t<D> x_Code { ZERO };
         x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
@@ -165,14 +164,22 @@ namespace kernel {
         if constexpr (D == Dim::_3D) {
           x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
         }
-        vec_t<Dim::_3D> u_Cntrv { ZERO };
-        // compute u_i u^i for energy
-        metric.template transform<Idx::D, Idx::U>(x_Code,
-                                                  { ux1(p), ux2(p), ux3(p) },
-                                                  u_Cntrv);
-        u0 = DOT(u_Cntrv[0], u_Cntrv[1], u_Cntrv[2], ux1(p), ux2(p), ux3(p));
-        u0 = (mass == ZERO) ? math::sqrt(u0) : math::sqrt(ONE + u0);
-        metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
+        // raise full covariant 4-vector to get correct contravariant u^i
+        // u^i != h^{ij} u_j
+        const real_t    u_0_cov { metric.u_0(x_Code,
+                                             { ux1(p), ux2(p), ux3(p) },
+                                          (mass == ZERO) ? ZERO : ONE) };
+        vec_t<Dim::_4D> u_cntrv_4d { ZERO };
+        metric.template transform_4d<Idx::D, Idx::U>(
+          x_Code,
+          { u_0_cov, ux1(p), ux2(p), ux3(p) },
+          u_cntrv_4d);
+        // in GR: u^0 = Gamma/alpha
+        u0 = u_cntrv_4d[0];
+        metric.template transform<Idx::U, Idx::PU>(
+          x_Code,
+          { u_cntrv_4d[1], u_cntrv_4d[2], u_cntrv_4d[3] },
+          u_Phys);
       } else {
         raise::KernelError(
           HERE,
@@ -189,7 +196,7 @@ namespace kernel {
       return T_component;
     }
 
-    Inline auto computeBulk3VelocityTimesMass(index_t p) const -> real_t {
+    Inline auto computeBulk3VelocityTimesMass(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       // for bulk 3vel (tetrad basis)
       vec_t<Dim::_3D> u_Phys { ZERO };
@@ -215,11 +222,38 @@ namespace kernel {
       } else {
         u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
       }
-      // compute the corresponding moment
       return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
     }
 
-    Inline void operator()(index_t p) const {
+    Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {
+      // GR: Eckart frame flux N^μ = m * u^μ / u^0
+      static_assert(D != Dim::_1D, "GRPIC 1D");
+      coord_t<D> x_Code { ZERO };
+      x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+      x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+      if constexpr (D == Dim::_3D) {
+        x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+      }
+      // raise full covariant 4-vector to get correct contravariant u^μ
+      // u^i != h^{ij} u_j
+      const real_t    u_0_cov { metric.u_0(x_Code,
+                                           { ux1(p), ux2(p), ux3(p) },
+                                        (mass == ZERO) ? ZERO : ONE) };
+      vec_t<Dim::_4D> u_cntrv_4d { ZERO };
+      metric.template transform_4d<Idx::D, Idx::U>(
+        x_Code,
+        { u_0_cov, ux1(p), ux2(p), ux3(p) },
+        u_cntrv_4d);
+      const real_t u0 { u_cntrv_4d[0] };
+      // Deposit flux N^μ = mass * u^μ / u^0
+      if (c1 == 0) {
+        return (mass == ZERO ? ONE : mass);
+      } else {
+        return (mass == ZERO ? ONE : mass) * u_cntrv_4d[c1] / u0;
+      }
+    }
+
+    Inline void operator()(prtlidx_t p) const {
       if (tag(p) == ParticleTag::dead) {
         return;
       }
@@ -227,7 +261,11 @@ namespace kernel {
       if constexpr (F == FldsID::T) {
         coeff = computeStressEnergyComponent(p);
       } else if constexpr (F == FldsID::V) {
-        coeff = computeBulk3VelocityTimesMass(p);
+        if constexpr (S == SimEngine::GRPIC) {
+          coeff = computeEckartVelocityFluxComponent(p);
+        } else {
+          coeff = computeBulk3VelocityTimesMass(p);
+        }
       } else {
         // for other cases, use the `contrib` defined above
         coeff = contrib;
@@ -317,19 +355,19 @@ namespace kernel {
     }
   };
 
-  template <Dimension D, unsigned short N>
+  template <Dimension D, uint8_t N>
   class NormalizeVectorByRho_kernel {
     const ndfield_t<D, N> Rho;
     ndfield_t<D, N>       Vector;
-    const unsigned short  c_rho, c_v1, c_v2, c_v3;
+    const uint8_t         c_rho, c_v1, c_v2, c_v3;
 
   public:
     NormalizeVectorByRho_kernel(const ndfield_t<D, N>& rho,
                                 const ndfield_t<D, N>& vector,
-                                unsigned short         crho,
-                                unsigned short         cv1,
-                                unsigned short         cv2,
-                                unsigned short         cv3)
+                                uint8_t                crho,
+                                uint8_t                cv1,
+                                uint8_t                cv2,
+                                uint8_t                cv3)
       : Rho { rho }
       , Vector { vector }
       , c_rho { crho }
@@ -347,7 +385,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         if (not cmp::AlmostZero(Rho(i1, c_rho))) {
           Vector(i1, c_v1) /= Rho(i1, c_rho);
@@ -361,7 +399,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if (not cmp::AlmostZero(Rho(i1, i2, c_rho))) {
           Vector(i1, i2, c_v1) /= Rho(i1, i2, c_rho);
@@ -375,7 +413,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if (not cmp::AlmostZero(Rho(i1, i2, i3, c_rho))) {
           Vector(i1, i2, i3, c_v1) /= Rho(i1, i2, i3, c_rho);
@@ -386,6 +424,236 @@ namespace kernel {
         raise::KernelError(
           HERE,
           "3D implementation of NormalizeVectorByRho_kernel called for non-3D");
+      }
+    }
+  };
+
+  template <Dimension D, GRMetricClass M, uint8_t N>
+  class Normalize4VelocityByNorm_kernel {
+    // Normalizes 4-momentum flux to Eckart frame velocity
+    // V^μ = N^μ / sqrt(-N_ν N^ν)
+    const ndfield_t<D, N> Flux;           // momentum flux N^μ
+    ndfield_t<D, N>       Vector;         // Eckart 4-velocity
+    const uint8_t c_u0, c_u1, c_u2, c_u3; // 4-velocity component indices
+    const M       metric;
+
+  public:
+    Normalize4VelocityByNorm_kernel(const ndfield_t<D, N>& flux,
+                                    const ndfield_t<D, N>& vector,
+                                    uint8_t                cu0,
+                                    uint8_t                cu1,
+                                    uint8_t                cu2,
+                                    uint8_t                cu3,
+                                    const M&               metric)
+      : Flux { flux }
+      , Vector { vector }
+      , c_u0 { cu0 }
+      , c_u1 { cu1 }
+      , c_u2 { cu2 }
+      , c_u3 { cu3 }
+      , metric { metric } {
+      raise::ErrorIf(c_u0 >= N or c_u1 >= N or c_u2 >= N or c_u3 >= N,
+                     "Invalid component index",
+                     HERE);
+    }
+
+    // ZAMO fallback for empty or pathological cells
+
+    Inline void zamo_fallback_2d(cellidx_t         i1,
+                                 cellidx_t         i2,
+                                 const coord_t<D>& x_Code) const {
+      if constexpr (D == Dim::_2D) {
+        const real_t al      = metric.alpha(x_Code);
+        Vector(i1, i2, c_u0) = ONE / al;
+        Vector(i1, i2, c_u1) = -metric.beta1(x_Code) / al;
+        Vector(i1, i2, c_u2) = ZERO;
+        Vector(i1, i2, c_u3) = ZERO;
+      } else {
+        raise::KernelError(
+          HERE,
+          "2D fallback of Normalize4VelocityByNorm_kernel called for non-2D");
+      }
+    }
+
+    Inline void zamo_fallback_3d(cellidx_t         i1,
+                                 cellidx_t         i2,
+                                 cellidx_t         i3,
+                                 const coord_t<D>& x_Code) const {
+      if constexpr (D == Dim::_3D) {
+        const real_t al          = metric.alpha(x_Code);
+        Vector(i1, i2, i3, c_u0) = ONE / al;
+        Vector(i1, i2, i3, c_u1) = -metric.beta1(x_Code) / al;
+        Vector(i1, i2, i3, c_u2) = ZERO;
+        Vector(i1, i2, i3, c_u3) = ZERO;
+      } else {
+        raise::KernelError(
+          HERE,
+          "3D fallback of Normalize4VelocityByNorm_kernel called for non-3D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+
+        vec_t<Dim::_4D> N_cntrv { ZERO, ZERO, ZERO, ZERO };
+        N_cntrv[0] = Flux(i1, i2, c_u0);
+        N_cntrv[1] = Flux(i1, i2, c_u1);
+        N_cntrv[2] = Flux(i1, i2, c_u2);
+        N_cntrv[3] = Flux(i1, i2, c_u3);
+
+        // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
+        if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
+          zamo_fallback_2d(i1, i2, x_Code);
+          return;
+        }
+
+        vec_t<Dim::_4D> N_cov { ZERO, ZERO, ZERO, ZERO };
+        // Compute N_i = g_ij N^j
+        metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
+
+        // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] +
+                           N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+
+        // ZAMO fallback for spacelike, null, or NaN
+        if (not(N_norm_sq < ZERO)) {
+          zamo_fallback_2d(i1, i2, x_Code);
+          return;
+        }
+
+        real_t norm = math::sqrt(-N_norm_sq);
+
+        if (not cmp::AlmostZero(norm)) {
+          Vector(i1, i2, c_u0) = N_cntrv[0] / norm;
+          Vector(i1, i2, c_u1) = N_cntrv[1] / norm;
+          Vector(i1, i2, c_u2) = N_cntrv[2] / norm;
+          Vector(i1, i2, c_u3) = N_cntrv[3] / norm;
+        } else {
+          zamo_fallback_2d(i1, i2, x_Code);
+        }
+      } else {
+        raise::KernelError(HERE, "2D implementation of Normalize4VelocityByNorm_kernel called for non-2D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+        x_Code[2] = COORD(i3) + HALF;
+
+        vec_t<Dim::_4D> N_cntrv { ZERO, ZERO, ZERO, ZERO };
+        N_cntrv[0] = Flux(i1, i2, i3, c_u0); // N^0
+        N_cntrv[1] = Flux(i1, i2, i3, c_u1); // N^1
+        N_cntrv[2] = Flux(i1, i2, i3, c_u2); // N^2
+        N_cntrv[3] = Flux(i1, i2, i3, c_u3); // N^3
+
+        // ZAMO fallback for empty cells or overflow (sqrt_det_h -> 0 near axis)
+        if (cmp::AlmostZero(N_cntrv[0]) || not math::isfinite(N_cntrv[0])) {
+          zamo_fallback_3d(i1, i2, i3, x_Code);
+          return;
+        }
+
+        vec_t<Dim::_4D> N_cov { ZERO };
+        // Compute N_i = g_ij N^j
+        metric.template transform_4d<Idx::U, Idx::D>(x_Code, N_cntrv, N_cov);
+
+        // Compute N_ν N^ν = g_μν N^μ N^ν (should be negative for timelike)
+        real_t N_norm_sq { N_cov[0] * N_cntrv[0] + N_cov[1] * N_cntrv[1] +
+                           N_cov[2] * N_cntrv[2] + N_cov[3] * N_cntrv[3] };
+
+        // ZAMO fallback for spacelike, null, or NaN
+        if (not(N_norm_sq < ZERO)) {
+          zamo_fallback_3d(i1, i2, i3, x_Code);
+          return;
+        }
+
+        real_t norm = math::sqrt(-N_norm_sq);
+
+        if (not cmp::AlmostZero(norm)) {
+          Vector(i1, i2, i3, c_u0) = N_cntrv[0] / norm;
+          Vector(i1, i2, i3, c_u1) = N_cntrv[1] / norm;
+          Vector(i1, i2, i3, c_u2) = N_cntrv[2] / norm;
+          Vector(i1, i2, i3, c_u3) = N_cntrv[3] / norm;
+        } else {
+          zamo_fallback_3d(i1, i2, i3, x_Code);
+        }
+      } else {
+        raise::KernelError(HERE, "3D implementation of Normalize4VelocityByNorm_kernel called for non-3D");
+      }
+    }
+  };
+
+  template <Dimension D, GRMetricClass M, uint8_t N>
+  class Transform4VelocitySpatialToPhysical_kernel {
+    // Transforms spatial components of 4-velocity from coordinate to physical
+    // basis u^0 (Gamma/alpha) remains unchanged as it's unitless
+    ndfield_t<D, N> Vector;
+    const uint8_t   c_u1, c_u2, c_u3;
+    const M         metric;
+
+  public:
+    Transform4VelocitySpatialToPhysical_kernel(ndfield_t<D, N>& vector,
+                                               uint8_t          cu1,
+                                               uint8_t          cu2,
+                                               uint8_t          cu3,
+                                               const M&         metric)
+      : Vector { vector }
+      , c_u1 { cu1 }
+      , c_u2 { cu2 }
+      , c_u3 { cu3 }
+      , metric { metric } {
+      raise::ErrorIf(c_u1 >= N or c_u2 >= N or c_u3 >= N,
+                     "Invalid component index",
+                     HERE);
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
+      if constexpr (D == Dim::_2D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+
+        vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, c_u1),
+                                  Vector(i1, i2, c_u2),
+                                  Vector(i1, i2, c_u3) };
+
+        vec_t<Dim::_3D> u_phys { ZERO };
+        // Transform spatial components from coordinate contravariant to physical contravariant
+        metric.template transform<Idx::U, Idx::PU>(x_Code, u_cntrv, u_phys);
+
+        Vector(i1, i2, c_u1) = u_phys[0];
+        Vector(i1, i2, c_u2) = u_phys[1];
+        Vector(i1, i2, c_u3) = u_phys[2];
+      } else {
+        raise::KernelError(HERE, "2D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-2D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
+      if constexpr (D == Dim::_3D) {
+        coord_t<D> x_Code { ZERO };
+        x_Code[0] = COORD(i1) + HALF;
+        x_Code[1] = COORD(i2) + HALF;
+        x_Code[2] = COORD(i3) + HALF;
+
+        vec_t<Dim::_3D> u_cntrv { Vector(i1, i2, i3, c_u1),
+                                  Vector(i1, i2, i3, c_u2),
+                                  Vector(i1, i2, i3, c_u3) };
+
+        vec_t<Dim::_3D> u_phys { ZERO };
+        // Transform spatial components from coordinate contravariant to physical contravariant
+        metric.template transform<Idx::U, Idx::PU>(x_Code, u_cntrv, u_phys);
+
+        Vector(i1, i2, i3, c_u1) = u_phys[0];
+        Vector(i1, i2, i3, c_u2) = u_phys[1];
+        Vector(i1, i2, i3, c_u3) = u_phys[2];
+      } else {
+        raise::KernelError(HERE, "3D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-3D");
       }
     }
   };

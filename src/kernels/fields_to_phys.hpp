@@ -41,14 +41,14 @@ namespace kernel {
     const PrepareOutputFlags flags;
     const M                  metric;
 
-    const unsigned short cf1, cf2, cf3;
-    const unsigned short ct1, ct2, ct3;
+    const uint8_t cf1, cf2, cf3;
+    const uint8_t ct1, ct2, ct3;
 
   public:
     FieldsToPhys_kernel(const ndfield_t<D, N1>&   from,
                         ndfield_t<D, N2>&         to,
-                        list_t<unsigned short, 3> comps_from,
-                        list_t<unsigned short, 3> comps_to,
+                        list_t<uint8_t, 3>        comps_from,
+                        list_t<uint8_t, 3>        comps_to,
                         const PrepareOutputFlags& flags,
                         const M&                  metric)
       : Ffrom { from }
@@ -69,7 +69,7 @@ namespace kernel {
                      HERE);
     }
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
         const real_t    i1_ { COORD(i1) };
         vec_t<Dim::_3D> f_int { ZERO }, f_fin { ZERO };
@@ -118,7 +118,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -172,7 +172,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };

@@ -54,7 +54,7 @@ namespace user {
 
   template <class M>
   Inline auto GetParticlePosition(const M&                  metric,
-                                  index_t                   p,
+                                  prtlidx_t                 p,
                                   const array_t<int*>&      i1,
                                   const array_t<prtldx_t*>& dx1,
                                   const array_t<int*>&      i2,
@@ -77,7 +77,7 @@ namespace user {
   }
 
   template <Dimension D>
-  Inline void SetParticleSpeed(index_t                 p,
+  Inline void SetParticleSpeed(prtlidx_t               p,
                                const array_t<real_t*>& ux1,
                                const array_t<real_t*>& ux2,
                                const array_t<real_t*>& ux3,
@@ -188,7 +188,7 @@ namespace user {
         Kokkos::parallel_for(
           "PurgeParticles",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             if (tag(p) != ParticleTag::alive) {
               return;
             }

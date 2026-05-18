@@ -67,9 +67,9 @@ namespace out {
   }
 
   void Writer::defineMeshLayout(
-    const std::vector<std::size_t>&              glob_shape,
-    const std::vector<std::size_t>&              loc_corner,
-    const std::vector<std::size_t>&              loc_shape,
+    const std::vector<ncells_t>&                 glob_shape,
+    const std::vector<ncells_t>&                 loc_corner,
+    const std::vector<ncells_t>&                 loc_shape,
     const std::pair<unsigned int, unsigned int>& domain_idx,
     const std::vector<unsigned int>&             dwn,
     bool                                         incl_ghosts,
@@ -97,7 +97,8 @@ namespace out {
       m_flds_l_shape_dwn.push_back(static_cast<ncells_t>(math::ceil((n - f) / d)));
     }
 
-    m_io.DefineAttribute("NGhosts", incl_ghosts ? N_GHOSTS : 0);
+    m_io.DefineAttribute("NGhosts",
+                         incl_ghosts ? N_GHOSTS : static_cast<ncells_t>(0));
     m_io.DefineAttribute("Dimension", m_flds_g_shape.size());
     m_io.DefineAttribute("Coordinates", std::string(coords.to_string()));
 
@@ -197,7 +198,7 @@ namespace out {
 
     if constexpr (D == Dim::_1D) {
       if (ghosts || dwn[0] == 1) {
-        auto slice_i1 = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
+        auto slice_i1 = cell_range_t(gh_zones, field.extent(0) - gh_zones);
         auto slice    = Kokkos::subview(field, slice_i1, comp);
         output_field  = array_t<real_t*> { "output_field", slice.extent(0) };
         Kokkos::deep_copy(output_field, slice);
@@ -215,14 +216,14 @@ namespace out {
         Kokkos::parallel_for(
           "outputField",
           nx1_dwn,
-          Lambda(index_t i1) {
+          Lambda(cellidx_t i1) {
             output_field(i1) = field(first_cell1 + i1 * dwn1 + N_GHOSTS, comp);
           });
       }
     } else if constexpr (D == Dim::_2D) {
       if (ghosts || (dwn[0] == 1 && dwn[1] == 1)) {
-        auto slice_i1 = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
-        auto slice_i2 = range_tuple_t(gh_zones, field.extent(1) - gh_zones);
+        auto slice_i1 = cell_range_t(gh_zones, field.extent(0) - gh_zones);
+        auto slice_i2 = cell_range_t(gh_zones, field.extent(1) - gh_zones);
         auto slice    = Kokkos::subview(field, slice_i1, slice_i2, comp);
         output_field  = array_t<real_t**> { "output_field",
                                             slice.extent(0),
@@ -246,7 +247,7 @@ namespace out {
         Kokkos::parallel_for(
           "outputField",
           CreateRangePolicy<Dim::_2D>({ 0, 0 }, { nx1_dwn, nx2_dwn }),
-          Lambda(index_t i1, index_t i2) {
+          Lambda(cellidx_t i1, cellidx_t i2) {
             output_field(i1, i2) = field(first_cell1 + i1 * dwn1 + N_GHOSTS,
                                          first_cell2 + i2 * dwn2 + N_GHOSTS,
                                          comp);
@@ -254,9 +255,9 @@ namespace out {
       }
     } else if constexpr (D == Dim::_3D) {
       if (ghosts || (dwn[0] == 1 && dwn[1] == 1 && dwn[2] == 1)) {
-        auto slice_i1 = range_tuple_t(gh_zones, field.extent(0) - gh_zones);
-        auto slice_i2 = range_tuple_t(gh_zones, field.extent(1) - gh_zones);
-        auto slice_i3 = range_tuple_t(gh_zones, field.extent(2) - gh_zones);
+        auto slice_i1 = cell_range_t(gh_zones, field.extent(0) - gh_zones);
+        auto slice_i2 = cell_range_t(gh_zones, field.extent(1) - gh_zones);
+        auto slice_i3 = cell_range_t(gh_zones, field.extent(2) - gh_zones);
         auto slice = Kokkos::subview(field, slice_i1, slice_i2, slice_i3, comp);
         output_field = array_t<real_t***> { "output_field",
                                             slice.extent(0),
@@ -288,7 +289,7 @@ namespace out {
         Kokkos::parallel_for(
           "outputField",
           CreateRangePolicy<Dim::_3D>({ 0, 0, 0 }, { nx1_dwn, nx2_dwn, nx3_dwn }),
-          Lambda(index_t i1, index_t i2, index_t i3) {
+          Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
             output_field(i1, i2, i3) = field(first_cell1 + i1 * dwn1 + N_GHOSTS,
                                              first_cell2 + i2 * dwn2 + N_GHOSTS,
                                              first_cell3 + i3 * dwn3 + N_GHOSTS,
@@ -304,7 +305,7 @@ namespace out {
   template <Dimension D, int N>
   void Writer::writeField(const std::vector<std::string>& names,
                           const ndfield_t<D, N>&          fld,
-                          const std::vector<std::size_t>& addresses) {
+                          const std::vector<size_t>&      addresses) {
     raise::ErrorIf(addresses.size() > N,
                    "addresses vector size must be less than N",
                    HERE);

@@ -71,8 +71,8 @@ namespace ntt {
                       const Mesh<M>&          mesh,
                       const M&                global_metric,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
-                      const std::vector<spidx_t>&        species,
-                      const std::vector<unsigned short>& components) -> real_t {
+                      const std::vector<spidx_t>& species,
+                      const std::vector<uint8_t>& components) -> real_t {
     std::vector<spidx_t> specs = species;
     if (specs.empty()) {
       // if no species specified, take all massive species
@@ -124,9 +124,9 @@ namespace ntt {
   }
 
   template <SimEngine::type S, MetricClass M, StatsID::type F>
-  auto ReduceFields(Domain<S, M>*                      domain,
-                    const M&                           global_metric,
-                    const std::vector<unsigned short>& components) -> real_t {
+  auto ReduceFields(Domain<S, M>*               domain,
+                    const M&                    global_metric,
+                    const std::vector<uint8_t>& components) -> real_t {
     auto buffer { ZERO };
     if constexpr (F == StatsID::JdotE) {
       if (components.empty()) {

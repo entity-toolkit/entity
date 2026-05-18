@@ -105,7 +105,7 @@ auto main(int argc, char* argv[]) -> int {
         }
       });
   } catch (const std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     ntt::GlobalFinalize();
     return 1;
   }

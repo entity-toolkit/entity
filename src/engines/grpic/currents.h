@@ -82,7 +82,7 @@ namespace ntt {
         { domain.mesh.i_max(in::x1), domain.mesh.i_max(in::x2) + 1 });
       const auto nfilter = params.template get<unsigned short>(
         "algorithms.current_filters");
-      tuple_t<std::size_t, M::Dim> size;
+      tuple_t<ncells_t, M::Dim> size;
       size[0] = domain.mesh.n_active(in::x1);
       size[1] = domain.mesh.n_active(in::x2);
 

@@ -21,7 +21,8 @@
 #include "utils/comparators.h"
 #include "utils/param_container.h"
 
-#include "archetypes/emission.h"
+#include "archetypes/emission/compton.h"
+#include "archetypes/emission/synchrotron.h"
 #include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
 
@@ -66,14 +67,14 @@ namespace kernel::sr {
       raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
                      "Emitted photon species must have zero charge",
                      HERE);
-      return ::arch::EmissionSynchrotron<M>(emitted_species,
-                                            photon_species,
-                                            pusher_ctx.mass,
-                                            pusher_ctx.charge,
-                                            pusher_ctx.radiative_drag_flags,
-                                            domain.index(),
-                                            params,
-                                            domain.random_pool());
+      return ::arch::emission::Synchrotron<M>(emitted_species,
+                                              photon_species,
+                                              pusher_ctx.mass,
+                                              pusher_ctx.charge,
+                                              pusher_ctx.radiative_drag_flags,
+                                              domain.index(),
+                                              params,
+                                              domain.random_pool());
     } else if constexpr (E == ntt::EmissionType::COMPTON) {
       const auto photon_species = params.get<spidx_t>(
         "radiation.emission.compton.photon_species");
@@ -87,14 +88,14 @@ namespace kernel::sr {
       raise::ErrorIf(not cmp::AlmostZero_host(emitted_species.charge()),
                      "Emitted photon species must have zero charge",
                      HERE);
-      return ::arch::EmissionCompton<M>(emitted_species,
-                                        photon_species,
-                                        pusher_ctx.mass,
-                                        pusher_ctx.charge,
-                                        pusher_ctx.radiative_drag_flags,
-                                        domain.index(),
-                                        params,
-                                        domain.random_pool());
+      return ::arch::emission::Compton<M>(emitted_species,
+                                          photon_species,
+                                          pusher_ctx.mass,
+                                          pusher_ctx.charge,
+                                          pusher_ctx.radiative_drag_flags,
+                                          domain.index(),
+                                          params,
+                                          domain.random_pool());
     } else {
       raise::Error("Invalid emission type for MakeEmissionPolicy", HERE);
       return ::traits::emission::NoPolicy_t {};

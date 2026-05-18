@@ -78,7 +78,7 @@ auto main(int argc, char* argv[]) -> int {
   }
 
   catch (std::exception& err) {
-    std::cerr << err.what() << std::endl;
+    std::cerr << err.what() << '\n';
     GlobalFinalize();
     return 1;
   }

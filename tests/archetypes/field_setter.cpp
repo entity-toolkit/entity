@@ -33,7 +33,7 @@ private:
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
-    constexpr std::size_t    nx1 = 20;
+    constexpr ncells_t       nx1 = 20;
     ndfield_t<Dim::_1D, 6>   EM { "EM", nx1 + 2 * N_GHOSTS };
     Minkowski<Dim::_1D>      metric { { nx1 }, { { -2.0, 2.0 } } };
     ConstantFiller<Dim::_1D> finit { 123.0 };
@@ -45,7 +45,7 @@ auto main(int argc, char* argv[]) -> int {
       finitializer);
     auto EM_h = Kokkos::create_mirror_view(EM);
     Kokkos::deep_copy(EM_h, EM);
-    for (std::size_t i1 = 0; i1 < nx1 + 2 * N_GHOSTS; ++i1) {
+    for (ncells_t i1 = 0; i1 < nx1 + 2 * N_GHOSTS; ++i1) {
       if ((i1 < N_GHOSTS) || (i1 >= nx1 + N_GHOSTS)) {
         for (const auto& comp :
              { em::ex1, em::ex2, em::ex3, em::bx1, em::bx2, em::bx3 }) {

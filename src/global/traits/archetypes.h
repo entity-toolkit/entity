@@ -34,9 +34,19 @@ concept EnrgDistClass = requires(const ED&         edist,
 };
 
 template <class SD, Dimension D>
-concept SpatialDistClass = requires(const SD& sdist, const coord_t<D>& x_Ph) {
+concept SimpleSpatialDistClass = requires(const SD& sdist, const coord_t<D>& x_Ph) {
   { sdist(x_Ph) } -> std::convertible_to<real_t>;
 };
+
+template <class SD, Dimension D>
+concept WeightedSpatialDistClass = requires(const SD&         sdist,
+                                            const coord_t<D>& x_Ph) {
+  { sdist(x_Ph) } -> std::convertible_to<Kokkos::pair<real_t, real_t>>;
+};
+
+template <class SD, Dimension D>
+concept SpatialDistClass = SimpleSpatialDistClass<SD, D> or
+                           WeightedSpatialDistClass<SD, D>;
 
 namespace traits::fieldsetter {
   template <class T, Dimension D>

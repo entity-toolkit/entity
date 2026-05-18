@@ -27,7 +27,7 @@ struct Caller {
     : dist { dist }
     , metric { metric } {}
 
-  Inline void operator()(index_t i1, index_t i2) const {
+  Inline void operator()(cellidx_t i1, cellidx_t i2) const {
     if constexpr (M::Dim == Dim::_2D) {
       coord_t<M::Dim> x_Code { static_cast<real_t>(i1), static_cast<real_t>(i2) };
       coord_t<M::Dim> x_Sph { ZERO };
@@ -42,7 +42,7 @@ struct Caller {
     }
   }
 
-  Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+  Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
     if constexpr (M::Dim == Dim::_3D) {
       coord_t<M::Dim> x_Code { static_cast<real_t>(i1),
                                static_cast<real_t>(i2),

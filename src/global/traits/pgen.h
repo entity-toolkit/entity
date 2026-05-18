@@ -114,7 +114,7 @@ namespace traits::pgen {
   concept HasCustomFieldOutput = requires(PG&                pgen,
                                           const std::string& name,
                                           ndfield_t<D, 6>&   buff,
-                                          index_t            idx,
+                                          cellidx_t          idx,
                                           timestep_t         step,
                                           simtime_t          time,
                                           const DOM&         dom) {

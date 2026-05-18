@@ -28,7 +28,7 @@ struct Caller {
     : metric { metric }
     , dist { dist } {}
 
-  Inline void operator()(index_t) const {
+  Inline void operator()(prtlidx_t) const {
     vec_t<Dim::_3D> vp { ZERO };
     coord_t<D>      xp { ZERO };
     for (dim_t d { 0u }; d < D; ++d) {
@@ -63,7 +63,7 @@ private:
 };
 
 template <SimEngine::type S, typename M>
-void testEnergyDist(const std::vector<std::size_t>&      res,
+void testEnergyDist(const std::vector<ncells_t>&         res,
                     const boundaries_t<real_t>&          ext,
                     const std::map<std::string, real_t>& params = {}) {
   raise::ErrorIf(res.size() != M::Dim, "res.size() != M::Dim", HERE);

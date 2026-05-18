@@ -27,7 +27,7 @@ using namespace ntt;
 template <class M>
 struct Checker {
   Checker(const M&                  metric,
-          std::size_t               stride,
+          npart_t                   stride,
           const array_t<int*>&      i1,
           const array_t<prtldx_t*>& dx1,
           const array_t<int*>&      i2,
@@ -67,8 +67,8 @@ struct Checker {
     , buff_wei { buff_wei }
     , buff_pld_i { buff_pld_i } {}
 
-  Inline void operator()(index_t p) const {
-    std::size_t pold = p * stride;
+  Inline void operator()(prtlidx_t p) const {
+    prtlidx_t pold = p * stride;
     real_t x1 = static_cast<real_t>(i1(pold)) + static_cast<real_t>(dx1(pold));
     real_t x2 = static_cast<real_t>(i2(pold)) + static_cast<real_t>(dx2(pold));
     real_t x1_phys = metric.template convert<1, Crd::Cd, Crd::Ph>(x1);
@@ -106,7 +106,7 @@ struct Checker {
 
 private:
   const M                  metric;
-  std::size_t              stride;
+  npart_t                  stride;
   const array_t<int*>      i1;
   const array_t<prtldx_t*> dx1;
   const array_t<int*>      i2;
@@ -128,7 +128,7 @@ private:
 };
 
 template <typename M>
-void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
+void testPrtl2PhysSR(const std::vector<ncells_t>&         res,
                      const boundaries_t<real_t>&          ext,
                      const std::map<std::string, real_t>& params = {}) {
   static constexpr Dimension D = M::Dim;
@@ -144,7 +144,7 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
 
   const M metric { res, extent, params };
 
-  const std::size_t nprtl = 100;
+  const npart_t nprtl = 100;
 
   array_t<int*>      i1 { "i1", nprtl };
   array_t<prtldx_t*> dx1 { "dx1", nprtl };
@@ -161,12 +161,12 @@ void testPrtl2PhysSR(const std::vector<std::size_t>&      res,
   array_t<int*>      i3;
   array_t<prtldx_t*> dx3;
 
-  const std::size_t stride = 2;
+  const npart_t     stride = 2;
   array_t<npart_t*> out_indices { "out_indices", nprtl / stride };
   Kokkos::parallel_for(
     "Init",
     nprtl,
-    Lambda(index_t p) {
+    Lambda(prtlidx_t p) {
       // init "random" values
       i1(p)     = p % 10;
       i2(p)     = (p + nprtl) % 10;
@@ -268,7 +268,7 @@ auto main(int argc, char* argv[]) -> int {
       { { "r0", 0.0 }, { "h", 0.25 } });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

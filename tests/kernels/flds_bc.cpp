@@ -55,7 +55,7 @@ Inline auto equal(real_t a, real_t b, const char* msg, real_t acc) -> bool {
 }
 
 template <Dimension D>
-void testFldsBCs(const std::vector<std::size_t>& res) {
+void testFldsBCs(const std::vector<ncells_t>& res) {
   errorIf(res.size() != (dim_t)D, "res.size() != D");
   boundaries_t<real_t> sx;
   for (const auto& r : res) {
@@ -112,7 +112,7 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
     Kokkos::parallel_for(
       "MatchBoundaries_kernel",
       CreateRangePolicy<Dim::_1D>({ N_GHOSTS }, { res[0] + N_GHOSTS }),
-      Lambda(index_t i1) {
+      Lambda(cellidx_t i1) {
         const auto x       = static_cast<real_t>(i1 - N_GHOSTS);
         const auto factor1 = math::tanh(
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
@@ -139,7 +139,7 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
       "MatchBoundaries_kernel",
       CreateRangePolicy<Dim::_2D>({ N_GHOSTS, N_GHOSTS },
                                   { res[0] + N_GHOSTS, res[1] + N_GHOSTS }),
-      Lambda(index_t i1, index_t i2) {
+      Lambda(cellidx_t i1, cellidx_t i2) {
         const auto x       = static_cast<real_t>(i1 - N_GHOSTS);
         const auto factor1 = math::tanh(
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
@@ -169,7 +169,7 @@ void testFldsBCs(const std::vector<std::size_t>& res) {
       CreateRangePolicy<Dim::_3D>(
         { N_GHOSTS, N_GHOSTS, N_GHOSTS },
         { res[0] + N_GHOSTS, res[1] + N_GHOSTS, res[2] + N_GHOSTS }),
-      Lambda(index_t i1, index_t i2, index_t i3) {
+      Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
         const auto x       = static_cast<real_t>(i1 - N_GHOSTS);
         const auto factor1 = math::tanh(
           FOUR * math::abs(x + HALF - xg_edge) / dx_abs);
@@ -216,7 +216,7 @@ auto main(int argc, char* argv[]) -> int {
     testFldsBCs<Dim::_3D>({ 14, 22, 15 });
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

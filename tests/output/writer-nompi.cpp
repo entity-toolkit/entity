@@ -56,7 +56,7 @@ auto main(int argc, char* argv[]) -> int {
         "fill",
         CreateRangePolicy<Dim::_3D>({ i1min, i2min, i3min },
                                     { i1max, i2max, i3max }),
-        Lambda(index_t i1, index_t i2, index_t i3) {
+        Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
           const auto i1_       = static_cast<real_t>(i1);
           const auto i2_       = static_cast<real_t>(i2);
           const auto i3_       = static_cast<real_t>(i3);
@@ -112,7 +112,7 @@ auto main(int argc, char* argv[]) -> int {
           const auto layoutRight = io.InquireAttribute<int>("LayoutRight").Data()[0] ==
                                    1;
 
-          raise::ErrorIf(io.InquireAttribute<std::size_t>("NGhosts").Data()[0] != 0,
+          raise::ErrorIf(io.InquireAttribute<ncells_t>("NGhosts").Data()[0] != 0,
                          "NGhosts is not correct",
                          HERE);
           raise::ErrorIf(
@@ -181,7 +181,7 @@ auto main(int argc, char* argv[]) -> int {
               Kokkos::parallel_for(
                 "check",
                 CreateRangePolicy<Dim::_3D>({ 0, 0, 0 }, { nx1_r, nx2_r, nx3_r }),
-                Lambda(index_t i1, index_t i2, index_t i3) {
+                Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
                   if (not cmp::AlmostEqual(field_read(i1, i2, i3),
                                            field(i1 * dwn1 + i1min,
                                                  i2 * dwn2 + i2min,
@@ -216,7 +216,7 @@ auto main(int argc, char* argv[]) -> int {
       }
     }
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     cleanup();
     Kokkos::finalize();
     return 1;

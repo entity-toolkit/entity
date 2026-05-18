@@ -46,7 +46,7 @@ namespace kernel::gr {
       , Ef { Ef }
       , metric { metric } {}
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -118,7 +118,7 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {
@@ -152,7 +152,7 @@ namespace kernel::gr {
       , Hf { Hf }
       , metric { metric } {}
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         const real_t i1_ { COORD(i1) };
         const real_t i2_ { COORD(i2) };
@@ -225,7 +225,7 @@ namespace kernel::gr {
       }
     }
 
-    Inline void operator()(index_t, index_t, index_t) const {
+    Inline void operator()(cellidx_t, cellidx_t, cellidx_t) const {
       if constexpr (D == Dim::_3D) {
         raise::KernelNotImplementedError(HERE);
       } else {
@@ -250,7 +250,7 @@ namespace kernel::gr {
       : BDf { BDf }
       , BDf0 { BDf0 } {}
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         BDf0(i1, i2, em::bx1) = HALF *
                                 (BDf0(i1, i2, em::bx1) + BDf(i1, i2, em::bx1));
@@ -286,7 +286,7 @@ namespace kernel::gr {
       : Jf { Jf }
       , Jf0 { Jf0 } {}
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         Jf(i1, i2, cur::jx1) = HALF *
                                (Jf0(i1, i2, cur::jx1) + Jf(i1, i2, cur::jx1));

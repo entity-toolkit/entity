@@ -68,7 +68,7 @@ namespace ntt {
         "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
         "algorithms.deposit.enable");
-      const auto clear_interval = m_params.template get<std::size_t>(
+      const auto clear_interval = m_params.template get<timestep_t>(
         "particles.clear_interval");
 
       if (step == 0) {

@@ -41,9 +41,9 @@ Inline auto equal(const vec_t<D>& a,
 }
 
 template <Dimension D>
-Inline void unravel(std::size_t                    idx,
-                    tuple_t<std::size_t, D>&       ijk,
-                    const tuple_t<std::size_t, D>& res) {
+Inline void unravel(ncells_t                    idx,
+                    tuple_t<ncells_t, D>&       ijk,
+                    const tuple_t<ncells_t, D>& res) {
   for (auto d { 0u }; d < D; ++d) {
     ijk[d]  = idx % res[d];
     idx    /= res[d];
@@ -51,7 +51,7 @@ Inline void unravel(std::size_t                    idx,
 }
 
 template <class M>
-void testMetric(const std::vector<std::size_t>&      res,
+void testMetric(const std::vector<ncells_t>&         res,
                 const boundaries_t<real_t>&          ext,
                 const real_t                         acc    = ONE,
                 const std::map<std::string, real_t>& params = {}) {
@@ -63,8 +63,8 @@ void testMetric(const std::vector<std::size_t>&      res,
 
   M metric(res, ext, params);
 
-  tuple_t<std::size_t, M::Dim> res_tup;
-  std::size_t                  npts = 1;
+  tuple_t<ncells_t, M::Dim> res_tup;
+  ncells_t                  npts = 1;
   for (auto d = 0; d < M::Dim; ++d) {
     res_tup[d]  = res[d];
     npts       *= res[d];
@@ -75,8 +75,8 @@ void testMetric(const std::vector<std::size_t>&      res,
   Kokkos::parallel_reduce(
     "hat-cntrv-cov",
     npts,
-    Lambda(index_t n, unsigned long& wrongs) {
-      tuple_t<std::size_t, M::Dim> idx;
+    Lambda(cellidx_t n, unsigned long& wrongs) {
+      tuple_t<ncells_t, M::Dim> idx;
       unravel<M::Dim>(n, idx, res_tup);
       coord_t<M::Dim> x_Code { ZERO };
       for (auto d { 0u }; d < M::Dim; ++d) {
@@ -176,8 +176,8 @@ auto main(int argc, char* argv[]) -> int {
     using namespace ntt;
     using namespace metric;
 
-    const auto res2d     = std::vector<std::size_t> { 64, 32 };
-    const auto res3d     = std::vector<std::size_t> { 64, 32, 16 };
+    const auto res2d     = std::vector<ncells_t> { 64, 32 };
+    const auto res3d     = std::vector<ncells_t> { 64, 32, 16 };
     const auto ext1dcart = boundaries_t<real_t> {
       { 10.0, 20.0 }
     };
@@ -205,7 +205,7 @@ auto main(int argc, char* argv[]) -> int {
     // testMetric<Spherical<Dim::_2D>>(res2d, extsph, 10);
     // testMetric<QSpherical<Dim::_2D>>(res2d, extsph, 10, params);
 
-    // const auto resks  = std::vector<std::size_t> { 64, 54 };
+    // const auto resks  = std::vector<ncells_t> { 64, 54 };
     // const auto extsgr = boundaries_t<real_t> {
     //   {0.8,         50.0},
     //   {0.0, constant::PI}
@@ -217,7 +217,7 @@ auto main(int argc, char* argv[]) -> int {
     // };
     // testMetric<KerrSchild<Dim::_2D>>(resks, extsgr, 150, paramsks);
     //
-    const auto resqks = std::vector<std::size_t> { 64, 42 };
+    const auto resqks = std::vector<ncells_t> { 64, 42 };
     const auto extqks = boundaries_t<real_t> {
       { 0.8,         10.0 },
       { 0.0, constant::PI }
@@ -229,7 +229,7 @@ auto main(int argc, char* argv[]) -> int {
     };
     testMetric<QKerrSchild<Dim::_2D>>(resqks, extqks, 500, paramsqks);
     //
-    // const auto resks0 = std::vector<std::size_t> { 64, 54 };
+    // const auto resks0 = std::vector<ncells_t> { 64, 54 };
     // const auto extks0 = boundaries_t<real_t> {
     //   {0.5,         20.0},
     //   {0.0, constant::PI}
@@ -237,7 +237,7 @@ auto main(int argc, char* argv[]) -> int {
     // testMetric<KerrSchild0<Dim::_2D>>(resks0, extks0, 10);
 
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << '\n';
     Kokkos::finalize();
     return 1;
   }

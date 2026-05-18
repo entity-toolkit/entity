@@ -96,7 +96,7 @@ namespace kernel {
       , i2_max { (short)D > 1 ? (size_[1] + N_GHOSTS) : 0 }
       , i3_max { (short)D > 2 ? (size_[2] + N_GHOSTS) : 0 } {}
 
-    Inline void operator()(index_t i1) const {
+    Inline void operator()(cellidx_t i1) const {
       if constexpr ((D == Dim::_1D) && (C == Coord::Cartesian)) {
         if ((is_conductor_i1min and i1 == i1_min) or
             (is_conductor_i1max and i1 == i1_max - 1)) {
@@ -126,7 +126,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
         if constexpr (C == Coord::Cartesian) {
           if ((is_conductor_i1min and i1 == i1_min) or
@@ -286,7 +286,7 @@ namespace kernel {
       }
     }
 
-    Inline void operator()(index_t i1, index_t i2, index_t i3) const {
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
         if constexpr (C == Coord::Cartesian) {
           if ((is_conductor_i1min and i1 == i1_min) or

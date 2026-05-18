@@ -34,7 +34,7 @@ namespace metric {
     static_assert(D != Dim::_3D, "3D kerr_schild_0 not fully implemented");
 
   private:
-    const real_t a, rg_, rh_;
+    const real_t a { ZERO }, rg_ { ONE }, rh_ { TWO };
     const real_t dr, dtheta, dphi;
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
@@ -58,9 +58,6 @@ namespace metric {
                 const boundaries_t<real_t>&  ext,
                 const std::map<std::string, real_t>& = {})
       : MetricBase<D> { res, ext }
-      , a { ZERO }
-      , rg_ { ONE }
-      , rh_ { TWO }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
       , dphi { (x3_max - x3_min) / nx3 }
@@ -169,6 +166,57 @@ namespace metric {
           return SQR(dphi_inv) /
                  SQR((x[0] * dr + x1_min) * math::sin(x[1] * dtheta + x2_min));
         }
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
+     * metric component with lower indices: g_mu nu
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto g_(const coord_t<D>& x) const -> real_t {
+      static_assert(i >= 0 && i <= 3, "Invalid index i");
+      static_assert(j >= 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 0 && j == 0) {
+        // g_00
+        return -ONE;
+      } else if constexpr (i == 1 && j == 1) {
+        // g_11
+        return h_<1, 1>(x);
+        ;
+      } else if constexpr (i == 2 && j == 2) {
+        // g_22
+        return h_<2, 2>(x);
+      } else if constexpr (i == 3 && j == 3) {
+        // g_33
+        return h_<3, 3>(x);
+      } else {
+        return ZERO;
+      }
+    }
+
+    /**
+     * metric component with upper indices: g^mu nu
+     * @param x coordinate array in code units
+     */
+    template <idx_t i, idx_t j>
+    Inline auto g(const coord_t<D>& x) const -> real_t {
+      static_assert(i >= 0 && i <= 3, "Invalid index i");
+      static_assert(j >= 0 && j <= 3, "Invalid index j");
+      if constexpr (i == 0 && j == 0) {
+        // g^00
+        return -ONE;
+      } else if constexpr (i == 1 && j == 1) {
+        // g^11
+        return h<1, 1>(x);
+      } else if constexpr (i == 2 && j == 2) {
+        // g^22
+        return h<2, 2>(x);
+      } else if constexpr (i == 3 && j == 3) {
+        // g^33
+        return h<3, 3>(x);
       } else {
         return ZERO;
       }
@@ -443,6 +491,51 @@ namespace metric {
         } else {
           v_out[2] = v_in[2] * dphi_inv;
         }
+      } else {
+        raise::KernelError(HERE, "Invalid transformation");
+      }
+    }
+
+    /**
+     * u_0 from covariant velocity components
+     */
+    Inline auto u_0(const coord_t<D>&      xi,
+                    const vec_t<Dim::_3D>& u_i,
+                    const real_t           norm) const {
+      const real_t A { g<0, 0>(xi) };
+      const real_t B { -TWO * g<0, 1>(xi) * u_i[0] };
+      const real_t C { g<1, 1>(xi) * SQR(u_i[0]) + g<2, 2>(xi) * SQR(u_i[1]) +
+                       g<3, 3>(xi) * SQR(u_i[2]) +
+                       TWO * g<1, 3>(xi) * u_i[0] * u_i[2] + norm };
+      return (B + math::sqrt(SQR(B) - FOUR * A * C)) / (TWO * A);
+    }
+
+    /**
+     * full 4D-vector transformations
+     */
+    template <Idx in, Idx out>
+    Inline void transform_4d(const coord_t<D>&      xi,
+                             const vec_t<Dim::_4D>& v_in,
+                             vec_t<Dim::_4D>&       v_out) const {
+      static_assert(in != out, "Invalid vector transformation");
+      static_assert(in != Idx::XYZ && out != Idx::XYZ,
+                    "Invalid vector transformation: XYZ not allowed in GR");
+      if constexpr (in == Idx::D && out == Idx::U) {
+        // cov -> cntrv
+        v_out[0] = v_in[0] * g<0, 0>(xi) + v_in[1] * g<0, 1>(xi);
+        v_out[1] = v_in[0] * g<1, 0>(xi) + v_in[1] * g<1, 1>(xi) +
+                   v_in[3] * g<1, 3>(xi);
+        v_out[2] = v_in[2] * g<2, 2>(xi);
+        v_out[3] = v_in[1] * g<3, 1>(xi) + v_in[3] * g<3, 3>(xi);
+      } else if constexpr (in == Idx::U && out == Idx::D) {
+        // cntrv -> cov
+        v_out[0] = v_in[0] * g_<0, 0>(xi) + v_in[1] * g_<0, 1>(xi) +
+                   v_in[3] * g_<0, 3>(xi);
+        v_out[1] = v_in[0] * g_<1, 0>(xi) + v_in[1] * g_<1, 1>(xi) +
+                   v_in[3] * g_<1, 3>(xi);
+        v_out[2] = v_in[2] * g_<2, 2>(xi);
+        v_out[3] = v_in[0] * g_<3, 0>(xi) + v_in[1] * g_<3, 1>(xi) +
+                   v_in[3] * g_<3, 3>(xi);
       } else {
         raise::KernelError(HERE, "Invalid transformation");
       }
