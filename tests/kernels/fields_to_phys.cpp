@@ -61,9 +61,9 @@ void testFlds2Phys(const std::vector<ncells_t>&         res,
   from_h(5, 5, 2) = 3.0;
   Kokkos::deep_copy(from, from_h);
 
-  list_t<unsigned short, 3> comp_from = { 0, 1, 2 };
-  list_t<unsigned short, 3> comp_to1  = { 3, 4, 5 };
-  list_t<unsigned short, 3> comp_to2  = { 0, 1, 2 };
+  list_t<uint8_t, 3> comp_from = { 0, 1, 2 };
+  list_t<uint8_t, 3> comp_to1  = { 3, 4, 5 };
+  list_t<uint8_t, 3> comp_to2  = { 0, 1, 2 };
 
   Kokkos::parallel_for(
     "InterpFields",

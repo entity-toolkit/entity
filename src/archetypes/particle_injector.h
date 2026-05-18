@@ -319,14 +319,11 @@ namespace arch {
                                const std::pair<spidx_t, spidx_t>& species,
                                const std::pair<ED1, ED2>&         energy_dists,
                                const SD&                          spatial_dist,
-                               real_t                      number_density,
-                               bool                        use_weights = false,
-                               const boundaries_t<real_t>& box         = {}) {
+                               real_t number_density,
+                               bool use_weights = (M::CoordType != Coord::Cartesian),
+                               const boundaries_t<real_t>& box = {}) {
     raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
                    "Weights must be used for non-Cartesian coordinates",
-                   HERE);
-    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
-                   "Weights should not be used for Cartesian coordinates",
                    HERE);
     raise::ErrorIf(
       params.template get<bool>("particles.use_weights") and not use_weights,
