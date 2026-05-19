@@ -32,10 +32,30 @@
   #include <mpi.h>
 #endif
 
+#include <any>
+#include <cstddef>
 #include <string>
 #include <vector>
 
 namespace out {
+
+  // BP5 tuning knobs sourced from the [adios2] toml section. Defaults mirror
+  // ADIOS2's own built-ins; aggregators_per_node == 0 leaves the default of
+  // one aggregator per node in place.
+  struct Bp5Tuning {
+    int         aggregators_per_node { 0 };
+    std::size_t max_shm_size { 4294967296ull };
+    std::size_t buffer_chunk_size { 16777216ull };
+  };
+
+  // Total BP5 aggregator count for the current job = aggregators_per_node *
+  // num_nodes (node count taken from MPI_COMM_TYPE_SHARED). Returns 0 when
+  // aggregators_per_node <= 0, which leaves ADIOS2 on its built-in default.
+  int total_aggregators(int aggregators_per_node);
+
+  // Apply the [adios2] BP5 tuning to a freshly declared IO whose engine is
+  // BPFile/BP5. A no-op for other engines.
+  void applyBp5Tuning(adios2::IO&, const std::string& engine, const Bp5Tuning&);
 
   class Writer {
     adios2::ADIOS* p_adios { nullptr };
@@ -74,6 +94,11 @@ namespace out {
 
     WriteModeTags m_active_mode { WriteMode::None };
 
+    // Buffers handed to ADIOS2 via Mode::Deferred Put. These must remain
+    // valid until EndStep() flushes them, so they are stored here and
+    // released in endWriting() after EndStep returns.
+    std::vector<std::any> m_keepalive;
+
   public:
     Writer() {}
 
@@ -81,7 +106,10 @@ namespace out {
 
     Writer(Writer&&) = default;
 
-    void init(adios2::ADIOS*, const std::string&, const std::string&);
+    void init(adios2::ADIOS*,
+              const std::string&,
+              const std::string&,
+              const Bp5Tuning& = {});
 
     void setMode(adios2::Mode);
 

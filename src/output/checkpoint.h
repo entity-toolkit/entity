@@ -16,6 +16,8 @@
 
 #include "utils/tools.h"
 
+#include "output/writer.h"
+
 #include <adios2.h>
 
 #include <string>
@@ -50,7 +52,8 @@ namespace checkpoint {
               timestep_t,
               simtime_t,
               int,
-              const std::string& = "");
+              const std::string&    = "",
+              const out::Bp5Tuning& = {});
 
     auto shouldSave(timestep_t, simtime_t) -> bool;
 

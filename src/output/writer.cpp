@@ -20,9 +20,11 @@
 #endif
 
 #include <algorithm>
+#include <any>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -30,9 +32,49 @@
 
 namespace out {
 
+  int total_aggregators(int aggregators_per_node) {
+    if (aggregators_per_node <= 0) {
+      return 0;
+    }
+    int num_nodes = 1;
+#if defined(MPI_ENABLED)
+    int      world_size = 1, local_size = 1;
+    MPI_Comm shm;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm);
+    MPI_Comm_size(shm, &local_size);
+    MPI_Comm_free(&shm);
+    num_nodes = (local_size > 0) ? (world_size / local_size) : 1;
+#endif
+    return std::max(1, num_nodes * aggregators_per_node);
+  }
+
+  void applyBp5Tuning(adios2::IO&        io,
+                      const std::string& engine,
+                      const Bp5Tuning&   bp5) {
+    // BP5 tuning for large-scale parallel filesystems.
+    // Per-node aggregator count scales with the NIC layout;
+    // aggregators_per_node == 0 leaves the ADIOS2 default (one per node).
+    const auto eng = fmt::toLower(engine);
+    if (eng != "bpfile" && eng != "bp5") {
+      return;
+    }
+    const auto num_agg = std::to_string(
+      total_aggregators(bp5.aggregators_per_node));
+    io.SetParameter("AggregationType", "TwoLevelShm");
+    io.SetParameter("NumAggregators", num_agg);
+    io.SetParameter("NumSubFiles", num_agg);
+    io.SetParameter("BufferChunkSize", std::to_string(bp5.buffer_chunk_size));
+    io.SetParameter("MaxShmSize", std::to_string(bp5.max_shm_size));
+    io.SetParameter("AsyncOpen", "true");
+    io.SetParameter("AsyncWrite", "true");
+    io.SetParameter("OpenTimeoutSecs", "600");
+  }
+
   void Writer::init(adios2::ADIOS*     ptr_adios,
                     const std::string& engine,
-                    const std::string& title) {
+                    const std::string& title,
+                    const Bp5Tuning&   bp5) {
     m_engine = fmt::toLower(engine);
     p_adios  = ptr_adios;
 
@@ -40,6 +82,8 @@ namespace out {
 
     m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
+
+    applyBp5Tuning(m_io, m_engine, bp5);
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
@@ -185,6 +229,7 @@ namespace out {
   template <Dimension D, int N>
   void WriteField(adios2::IO&               io,
                   adios2::Engine&           writer,
+                  std::vector<std::any>&    keepalive,
                   const std::string&        varname,
                   const ndfield_t<D, N>&    field,
                   std::size_t               comp,
@@ -299,7 +344,10 @@ namespace out {
     }
     auto output_field_h = Kokkos::create_mirror_view(output_field);
     Kokkos::deep_copy(output_field_h, output_field);
-    writer.Put(var, output_field_h, adios2::Mode::Sync);
+    writer.Put(var, output_field_h, adios2::Mode::Deferred);
+    // Keep the host mirror (and via Kokkos refcount, its allocation) alive
+    // until EndStep runs the deferred PerformPuts.
+    keepalive.emplace_back(output_field_h);
   }
 
   template <Dimension D, int N>
@@ -315,6 +363,7 @@ namespace out {
     for (auto i { 0u }; i < addresses.size(); ++i) {
       WriteField<D, N>(m_io,
                        m_writer,
+                       m_keepalive,
                        names[i],
                        fld,
                        addresses[i],
@@ -334,7 +383,8 @@ namespace out {
       adios2::Box<adios2::Dims>({ loc_offset }, { array.extent(0) }));
     auto array_h = Kokkos::create_mirror_view(array);
     Kokkos::deep_copy(array_h, array);
-    m_writer.Put<real_t>(var, array_h, adios2::Mode::Sync);
+    m_writer.Put<real_t>(var, array_h, adios2::Mode::Deferred);
+    m_keepalive.emplace_back(array_h);
   }
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
@@ -357,14 +407,16 @@ namespace out {
     if (rank == MPI_ROOT_RANK) {
       var.SetSelection(
         adios2::Box<adios2::Dims>({ 0u }, { counts_h_all.extent(0) }));
-      m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Sync);
+      m_writer.Put<real_t>(var, counts_h_all, adios2::Mode::Deferred);
+      m_keepalive.emplace_back(counts_h_all);
     } else {
       var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
       m_writer.Put<real_t>(var, nullptr);
     }
 #else
     var.SetSelection(adios2::Box<adios2::Dims>({}, { counts.extent(0) }));
-    m_writer.Put<real_t>(var, counts_h, adios2::Mode::Sync);
+    m_writer.Put<real_t>(var, counts_h, adios2::Mode::Deferred);
+    m_keepalive.emplace_back(counts_h);
 #endif
   }
 
@@ -378,14 +430,16 @@ namespace out {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == MPI_ROOT_RANK) {
       var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { e_bins_h.extent(0) }));
-      m_writer.Put<real_t>(var, e_bins_h.data(), adios2::Mode::Sync);
+      m_writer.Put<real_t>(var, e_bins_h.data(), adios2::Mode::Deferred);
+      m_keepalive.emplace_back(e_bins_h);
     } else {
       var.SetSelection(adios2::Box<adios2::Dims>({ 0u }, { 0u }));
       m_writer.Put<real_t>(var, nullptr, adios2::Mode::Sync);
     }
 #else
     var.SetSelection(adios2::Box<adios2::Dims>({}, { e_bins_h.extent(0) }));
-    m_writer.Put<real_t>(var, e_bins_h, adios2::Mode::Sync);
+    m_writer.Put<real_t>(var, e_bins_h, adios2::Mode::Deferred);
+    m_keepalive.emplace_back(e_bins_h);
 #endif
   }
 
@@ -399,11 +453,17 @@ namespace out {
     auto xe_h = Kokkos::create_mirror_view(xe);
     Kokkos::deep_copy(xc_h, xc);
     Kokkos::deep_copy(xe_h, xe);
-    m_writer.Put(varc, xc_h, adios2::Mode::Sync);
-    m_writer.Put(vare, xe_h, adios2::Mode::Sync);
+    m_writer.Put(varc, xc_h, adios2::Mode::Deferred);
+    m_writer.Put(vare, xe_h, adios2::Mode::Deferred);
+    m_keepalive.emplace_back(xc_h);
+    m_keepalive.emplace_back(xe_h);
     auto vard = m_io.InquireVariable<std::size_t>(
       "N" + std::to_string(dim + 1) + "l");
-    m_writer.Put(vard, loc_off_sz.data(), adios2::Mode::Sync);
+    // loc_off_sz is a caller-side local; copy into keepalive so the pointer
+    // we hand to ADIOS2 stays valid until EndStep.
+    auto loc_off_sz_copy = std::make_shared<std::vector<std::size_t>>(loc_off_sz);
+    m_writer.Put(vard, loc_off_sz_copy->data(), adios2::Mode::Deferred);
+    m_keepalive.emplace_back(std::move(loc_off_sz_copy));
   }
 
   void Writer::beginWriting(WriteModeTags write_mode,
@@ -466,6 +526,8 @@ namespace out {
     }
     m_active_mode = WriteMode::None;
     m_writer.EndStep();
+    // EndStep flushes all Deferred Put buffers; safe to release keepalive.
+    m_keepalive.clear();
     m_writer.Close();
   }
 
@@ -475,6 +537,7 @@ namespace out {
                                          const std::vector<std::size_t>&);     \
   template void WriteField<D, N>(adios2::IO&,                                  \
                                  adios2::Engine&,                              \
+                                 std::vector<std::any>&,                       \
                                  const std::string&,                           \
                                  const ndfield_t<D, N>&,                       \
                                  std::size_t,                                  \
