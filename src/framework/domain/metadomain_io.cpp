@@ -66,9 +66,12 @@ namespace ntt {
       ptr_adios,
       params.template get<std::string>("output.format"),
       params.template get<std::string>("simulation.name"),
-      { params.template get<int>("adios2.aggregators_per_node"),
-        params.template get<std::size_t>("adios2.max_shm_size"),
-        params.template get<std::size_t>("adios2.buffer_chunk_size") });
+      { params.template get<int>("adios2.aggregators_per_node",
+                                 defaults::adios2::aggregators_per_node),
+        params.template get<size_t>("adios2.max_shm_size",
+                                    defaults::adios2::max_shm_size),
+        params.template get<size_t>("adios2.buffer_chunk_size",
+                                    defaults::adios2::buffer_chunk_size) });
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
@@ -361,21 +364,21 @@ namespace ntt {
       l_subdomain_indices().size() != 1,
       "Output for now is only supported for one subdomain per rank",
       HERE);
-    const auto write_fields    = params.template get<bool>(
-                                   "output.fields.enable") and
-                                 g_writer.shouldWrite("fields",
-                                                      finished_step,
-                                                      finished_time);
+    const auto write_fields = params.template get<bool>(
+                                "output.fields.enable") and
+                              g_writer.shouldWrite("fields",
+                                                   finished_step,
+                                                   finished_time);
     const auto write_particles = params.template get<bool>(
                                    "output.particles.enable") and
                                  g_writer.shouldWrite("particles",
                                                       finished_step,
                                                       finished_time);
-    const auto write_spectra   = params.template get<bool>(
-                                   "output.spectra.enable") and
-                                 g_writer.shouldWrite("spectra",
-                                                      finished_step,
-                                                      finished_time);
+    const auto write_spectra = params.template get<bool>(
+                                 "output.spectra.enable") and
+                               g_writer.shouldWrite("spectra",
+                                                    finished_step,
+                                                    finished_time);
     const auto extension = params.template get<std::string>("output.format");
     if (not(write_fields or write_particles or write_spectra) and
         extension != "disabled") {

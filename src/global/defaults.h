@@ -92,14 +92,14 @@ namespace ntt::defaults {
     const std::string log_level = "VERBOSE";
   } // namespace diag
 
-  namespace adios {
+  namespace adios2 {
     // BP5 tuning for large-scale parallel filesystems. Values mirror ADIOS2's
     // own built-in defaults; aggregators_per_node == 0 leaves the default of
     // one aggregator per node in place.
-    const int         aggregators_per_node = 0;
-    const std::size_t max_shm_size         = 4294967296ull; // 4 GiB
-    const std::size_t buffer_chunk_size    = 16777216ull;   // 16 MiB
-  } // namespace adios
+    const int    aggregators_per_node = 0;
+    const size_t max_shm_size         = 4294967296ull; // 4 GiB
+    const size_t buffer_chunk_size    = 16777216ull;   // 16 MiB
+  } // namespace adios2
 
   namespace gca {
     const real_t EovrB_max = 0.9;

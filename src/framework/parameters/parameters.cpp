@@ -126,7 +126,7 @@ namespace ntt {
     set("grid.boundaries.particles", prtl_bc);
 
     /* [particles] ---------------------------------------------------------- */
-    const auto species_tab = toml::find_or<toml::array>(toml_data,
+    const auto species_tab               = toml::find_or<toml::array>(toml_data,
                                                         "particles",
                                                         "species",
                                                         toml::array {});
@@ -199,17 +199,17 @@ namespace ntt {
         toml::find_or<int>(toml_data,
                            "adios2",
                            "aggregators_per_node",
-                           defaults::adios::aggregators_per_node));
+                           defaults::adios2::aggregators_per_node));
     set("adios2.max_shm_size",
-        toml::find_or<std::size_t>(toml_data,
-                                   "adios2",
-                                   "max_shm_size",
-                                   defaults::adios::max_shm_size));
+        toml::find_or<size_t>(toml_data,
+                              "adios2",
+                              "max_shm_size",
+                              defaults::adios2::max_shm_size));
     set("adios2.buffer_chunk_size",
-        toml::find_or<std::size_t>(toml_data,
-                                   "adios2",
-                                   "buffer_chunk_size",
-                                   defaults::adios::buffer_chunk_size));
+        toml::find_or<size_t>(toml_data,
+                              "adios2",
+                              "buffer_chunk_size",
+                              defaults::adios2::buffer_chunk_size));
 
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",

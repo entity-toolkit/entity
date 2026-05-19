@@ -1,3 +1,4 @@
+#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -64,10 +65,12 @@ namespace ntt {
       params.template get<simtime_t>("checkpoint.interval_time"),
       params.template get<int>("checkpoint.keep"),
       params.template get<std::string>("checkpoint.walltime"),
-      out::Bp5Tuning {
-        params.template get<int>("adios2.aggregators_per_node"),
-        params.template get<std::size_t>("adios2.max_shm_size"),
-        params.template get<std::size_t>("adios2.buffer_chunk_size") });
+      { params.template get<int>("adios2.aggregators_per_node",
+                                 defaults::adios2::aggregators_per_node),
+        params.template get<size_t>("adios2.max_shm_size",
+                                    defaults::adios2::max_shm_size),
+        params.template get<size_t>("adios2.buffer_chunk_size",
+                                    defaults::adios2::buffer_chunk_size) });
     if (g_checkpoint_writer.enabled()) {
       local_domain->fields.CheckpointDeclare(g_checkpoint_writer.io(),
                                              loc_shape_with_ghosts,
@@ -273,8 +276,8 @@ namespace ntt {
     // Phase 1: read all subdomain metadata to detect size changes
     std::vector<std::vector<ncells_t>> saved_ncells(g_ndomains,
                                                     std::vector<ncells_t>(M::Dim));
-    std::vector<boundaries_t<real_t>> saved_extents(g_ndomains);
-    boundaries_t<real_t>              global_extent;
+    std::vector<boundaries_t<real_t>>  saved_extents(g_ndomains);
+    boundaries_t<real_t>               global_extent;
     for (auto d { 0u }; d < M::Dim; ++d) {
       global_extent.emplace_back(std::numeric_limits<real_t>::max(),
                                  std::numeric_limits<real_t>::lowest());
