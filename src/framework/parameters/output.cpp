@@ -20,9 +20,9 @@ namespace ntt {
     void Output::read(Dimension dim, std::size_t nspec, const toml::value& toml_data) {
       format = toml::find_or(toml_data, "output", "format", defaults::output::format);
       global_interval      = toml::find_or(toml_data,
-                                      "output",
-                                      "interval",
-                                      defaults::output::interval);
+                                           "output",
+                                           "interval",
+                                           defaults::output::interval);
       global_interval_time = toml::find_or<simtime_t>(toml_data,
                                                       "output",
                                                       "interval_time",
@@ -34,12 +34,12 @@ namespace ntt {
 
       categories.emplace();
       for (const auto& category : { "fields", "particles", "spectra", "stats" }) {
-        const auto q_int               = toml::find_or<timestep_t>(toml_data,
-                                                     "output",
-                                                     category,
-                                                     "interval",
-                                                     0);
-        const auto q_int_time          = toml::find_or<simtime_t>(toml_data,
+        const auto q_int      = toml::find_or<timestep_t>(toml_data,
+                                                          "output",
+                                                          category,
+                                                          "interval",
+                                                          0);
+        const auto q_int_time = toml::find_or<simtime_t>(toml_data,
                                                          "output",
                                                          category,
                                                          "interval_time",
@@ -60,10 +60,10 @@ namespace ntt {
 
       /* Fields --------------------------------------------------------------- */
       const auto flds_out        = toml::find_or(toml_data,
-                                          "output",
-                                          "fields",
-                                          "quantities",
-                                          std::vector<std::string> {});
+                                                 "output",
+                                                 "fields",
+                                                 "quantities",
+                                                 std::vector<std::string> {});
       const auto custom_flds_out = toml::find_or(toml_data,
                                                  "output",
                                                  "fields",
@@ -75,10 +75,10 @@ namespace ntt {
       fields_quantities        = flds_out;
       fields_custom_quantities = custom_flds_out;
       fields_mom_smooth        = toml::find_or(toml_data,
-                                        "output",
-                                        "fields",
-                                        "mom_smooth",
-                                        defaults::output::mom_smooth);
+                                               "output",
+                                               "fields",
+                                               "mom_smooth",
+                                               defaults::output::mom_smooth);
       fields_downsampling.emplace();
       try {
         auto field_dwn_ = toml::find<std::vector<unsigned int>>(toml_data,
@@ -125,35 +125,35 @@ namespace ntt {
                                         "species",
                                         all_specs);
       particles_stride  = toml::find_or(toml_data,
-                                       "output",
-                                       "particles",
-                                       "stride",
-                                       defaults::output::prtl_stride);
+                                        "output",
+                                        "particles",
+                                        "stride",
+                                        defaults::output::prtl_stride);
 
       /* Spectra -------------------------------------------------------------- */
       spectra_e_min    = toml::find_or(toml_data,
-                                    "output",
-                                    "spectra",
-                                    "e_min",
-                                    defaults::output::spec_emin);
+                                       "output",
+                                       "spectra",
+                                       "e_min",
+                                       defaults::output::spec_emin);
       spectra_e_max    = toml::find_or(toml_data,
-                                    "output",
-                                    "spectra",
-                                    "e_max",
-                                    defaults::output::spec_emax);
+                                       "output",
+                                       "spectra",
+                                       "e_max",
+                                       defaults::output::spec_emax);
       spectra_log_bins = toml::find_or(toml_data,
                                        "output",
                                        "spectra",
                                        "log_bins",
                                        defaults::output::spec_log);
       spectra_n_bins   = toml::find_or(toml_data,
-                                     "output",
-                                     "spectra",
-                                     "n_bins",
-                                     defaults::output::spec_nbins);
+                                       "output",
+                                       "spectra",
+                                       "n_bins",
+                                       defaults::output::spec_nbins);
 
       /* Stats ---------------------------------------------------------------- */
-      stats_quantities        = toml::find_or(toml_data,
+      stats_quantities = toml::find_or(toml_data,
                                        "output",
                                        "stats",
                                        "quantities",
