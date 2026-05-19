@@ -19,13 +19,13 @@
 
 namespace checkpoint {
 
-  void Writer::init(adios2::ADIOS*     ptr_adios,
-                    const path_t&      checkpoint_root,
-                    timestep_t         interval,
-                    simtime_t          interval_time,
-                    int                keep,
-                    const std::string& walltime,
-                    int                aggregators_per_node) {
+  void Writer::init(adios2::ADIOS*        ptr_adios,
+                    const path_t&         checkpoint_root,
+                    timestep_t            interval,
+                    simtime_t             interval_time,
+                    int                   keep,
+                    const std::string&    walltime,
+                    const out::Bp5Tuning& bp5) {
     m_keep            = keep;
     m_checkpoint_root = checkpoint_root;
     m_enabled         = keep != 0;
@@ -39,21 +39,8 @@ namespace checkpoint {
     m_io = p_adios->DeclareIO("Entity::Checkpoint");
     m_io.SetEngine("BPFile");
 
-    // BP5 tuning for DAOS/Lustre at scale; matches writer.cpp::Writer::init.
-    // Per-node aggregator count scales with the NIC layout (Aurora: 8/node);
-    // 0 keeps ADIOS2's default of one per node.
-    {
-      const auto num_agg = std::to_string(
-        out::total_aggregators(aggregators_per_node));
-      m_io.SetParameter("AggregationType", "TwoLevelShm");
-      m_io.SetParameter("NumAggregators", num_agg);
-      m_io.SetParameter("NumSubFiles", num_agg);
-      m_io.SetParameter("BufferChunkSize", "16777216");
-      m_io.SetParameter("MaxShmSize", "4294967296");
-      m_io.SetParameter("AsyncOpen", "true");
-      m_io.SetParameter("AsyncWrite", "true");
-      m_io.SetParameter("OpenTimeoutSecs", "600");
-    }
+    // Shared BP5 tuning, identical to out::Writer::init.
+    out::applyBp5Tuning(m_io, "BPFile", bp5);
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
@@ -83,7 +70,7 @@ namespace checkpoint {
       const auto filename = m_checkpoint_root / fmt::format("step-%08lu.bp", step);
       const auto metafilename = m_checkpoint_root /
                                 fmt::format("meta-%08lu.toml", step);
-      m_writer = m_io.Open(filename, adios2::Mode::Write);
+      m_writer                = m_io.Open(filename, adios2::Mode::Write);
       m_written.emplace_back(filename, metafilename);
       logger::Checkpoint(fmt::format("Writing checkpoint to %s and %s",
                                      filename.c_str(),

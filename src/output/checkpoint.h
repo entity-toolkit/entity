@@ -16,6 +16,8 @@
 
 #include "utils/tools.h"
 
+#include "output/writer.h"
+
 #include <adios2.h>
 
 #include <string>
@@ -45,15 +47,13 @@ namespace checkpoint {
 
     ~Writer() = default;
 
-    // aggregators_per_node: BP5 aggregator count per node (one per NIC is a good target)
-    // 0 leaves the ADIOS2 default.
     void init(adios2::ADIOS*,
               const path_t&,
               timestep_t,
               simtime_t,
               int,
-              const std::string& = "",
-              int                aggregators_per_node = 0);
+              const std::string&    = "",
+              const out::Bp5Tuning& = {});
 
     auto shouldSave(timestep_t, simtime_t) -> bool;
 

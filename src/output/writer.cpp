@@ -41,11 +41,7 @@ namespace out {
     int      world_size = 1, local_size = 1;
     MPI_Comm shm;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_split_type(MPI_COMM_WORLD,
-                        MPI_COMM_TYPE_SHARED,
-                        0,
-                        MPI_INFO_NULL,
-                        &shm);
+    MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm);
     MPI_Comm_size(shm, &local_size);
     MPI_Comm_free(&shm);
     num_nodes = (local_size > 0) ? (world_size / local_size) : 1;
@@ -53,10 +49,32 @@ namespace out {
     return std::max(1, num_nodes * aggregators_per_node);
   }
 
+  void applyBp5Tuning(adios2::IO&        io,
+                      const std::string& engine,
+                      const Bp5Tuning&   bp5) {
+    // BP5 tuning for large-scale parallel filesystems.
+    // Per-node aggregator count scales with the NIC layout;
+    // aggregators_per_node == 0 leaves the ADIOS2 default (one per node).
+    const auto eng = fmt::toLower(engine);
+    if (eng != "bpfile" && eng != "bp5") {
+      return;
+    }
+    const auto num_agg = std::to_string(
+      total_aggregators(bp5.aggregators_per_node));
+    io.SetParameter("AggregationType", "TwoLevelShm");
+    io.SetParameter("NumAggregators", num_agg);
+    io.SetParameter("NumSubFiles", num_agg);
+    io.SetParameter("BufferChunkSize", std::to_string(bp5.buffer_chunk_size));
+    io.SetParameter("MaxShmSize", std::to_string(bp5.max_shm_size));
+    io.SetParameter("AsyncOpen", "true");
+    io.SetParameter("AsyncWrite", "true");
+    io.SetParameter("OpenTimeoutSecs", "600");
+  }
+
   void Writer::init(adios2::ADIOS*     ptr_adios,
                     const std::string& engine,
                     const std::string& title,
-                    int                aggregators_per_node) {
+                    const Bp5Tuning&   bp5) {
     m_engine = fmt::toLower(engine);
     p_adios  = ptr_adios;
 
@@ -65,20 +83,7 @@ namespace out {
     m_io = p_adios->DeclareIO("Entity::Output");
     m_io.SetEngine(engine);
 
-    // BP5 tuning for large-scale parallel filesystems.
-    // Per-node aggregator count scales with the NIC layout;
-    // pass 0 to leave the ADIOS2 default (one per node) in place.
-    if (m_engine == "bpfile" || m_engine == "bp5") {
-      const auto num_agg = std::to_string(total_aggregators(aggregators_per_node));
-      m_io.SetParameter("AggregationType", "TwoLevelShm");
-      m_io.SetParameter("NumAggregators", num_agg);
-      m_io.SetParameter("NumSubFiles", num_agg);
-      m_io.SetParameter("BufferChunkSize", "16777216");
-      m_io.SetParameter("MaxShmSize", "4294967296"); // ToDo: make tunable?
-      m_io.SetParameter("AsyncOpen", "true");
-      m_io.SetParameter("AsyncWrite", "true");
-      m_io.SetParameter("OpenTimeoutSecs", "600");
-    }
+    applyBp5Tuning(m_io, m_engine, bp5);
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
