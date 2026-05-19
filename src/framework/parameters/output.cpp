@@ -19,6 +19,10 @@ namespace ntt {
 
     void Output::read(Dimension dim, std::size_t nspec, const toml::value& toml_data) {
       format = toml::find_or(toml_data, "output", "format", defaults::output::format);
+      aggregators_per_node = toml::find_or<int>(toml_data,
+                                                "output",
+                                                "aggregators_per_node",
+                                                0);
       global_interval      = toml::find_or(toml_data,
                                       "output",
                                       "interval",
@@ -179,6 +183,7 @@ namespace ntt {
 
     void Output::setParams(SimulationParams* params) const {
       params->set("output.format", format.value());
+      params->set("output.aggregators_per_node", aggregators_per_node.value());
       params->set("output.interval", global_interval.value());
       params->set("output.interval_time", global_interval_time.value());
       for (const auto& [category, cat_params] : categories.value()) {

@@ -32,10 +32,16 @@
   #include <mpi.h>
 #endif
 
+#include <any>
 #include <string>
 #include <vector>
 
 namespace out {
+
+  // Total BP5 aggregator count for the current job = aggregators_per_node *
+  // num_nodes (node count taken from MPI_COMM_TYPE_SHARED). Returns 0 when
+  // aggregators_per_node <= 0, which leaves ADIOS2 on its built-in default.
+  int total_aggregators(int aggregators_per_node);
 
   class Writer {
     adios2::ADIOS* p_adios { nullptr };
@@ -74,6 +80,11 @@ namespace out {
 
     WriteModeTags m_active_mode { WriteMode::None };
 
+    // Buffers handed to ADIOS2 via Mode::Deferred Put. These must remain
+    // valid until EndStep() flushes them, so they are stored here and
+    // released in endWriting() after EndStep returns.
+    std::vector<std::any> m_keepalive;
+
   public:
     Writer() {}
 
@@ -81,7 +92,12 @@ namespace out {
 
     Writer(Writer&&) = default;
 
-    void init(adios2::ADIOS*, const std::string&, const std::string&);
+    // aggregators_per_node: BP5 aggregator count per node (one per NIC is a good target)
+    // 0 leaves the ADIOS2 default.
+    void init(adios2::ADIOS*,
+              const std::string&,
+              const std::string&,
+              int aggregators_per_node = 0);
 
     void setMode(adios2::Mode);
 

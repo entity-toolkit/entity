@@ -496,6 +496,12 @@
   #   @default: true
   #   @deprecated: starting v1.3.0
   separate_files = ""
+  # Number of ADIOS2 aggregators per node
+  #   @type: uint 
+  #   @default: 0
+  #   @note: Set to either MPI ranks/node or NICs/node for best performance
+  #          If set to 0, will use ADIOS2 default
+  aggregators_per_node = 0
 
   [output.fields]
     # Toggle for the field output
@@ -667,6 +673,12 @@
   #   @type: string
   #   @default: inherit `write_path`
   read_path = ""
+  # Number of ADIOS2 aggregators per node
+  #   @type: uint 
+  #   @default: 0
+  #   @note: Set to either MPI ranks/node or NICs/node for best performance
+  #          If set to 0, will use ADIOS2 default
+  aggregators_per_node = 0
 
   # @inferred:
   # - is_resuming

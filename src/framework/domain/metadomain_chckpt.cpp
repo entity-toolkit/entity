@@ -63,7 +63,8 @@ namespace ntt {
       params.template get<timestep_t>("checkpoint.interval"),
       params.template get<simtime_t>("checkpoint.interval_time"),
       params.template get<int>("checkpoint.keep"),
-      params.template get<std::string>("checkpoint.walltime"));
+      params.template get<std::string>("checkpoint.walltime"),
+      params.template get<int>("checkpoint.aggregators_per_node"));
     if (g_checkpoint_writer.enabled()) {
       local_domain->fields.CheckpointDeclare(g_checkpoint_writer.io(),
                                              loc_shape_with_ghosts,

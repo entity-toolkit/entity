@@ -193,6 +193,8 @@ namespace ntt {
     set("checkpoint.write_path", checkpoint_write_path);
     set("checkpoint.read_path",
         toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));
+    set("checkpoint.aggregators_per_node",
+        toml::find_or<int>(toml_data, "checkpoint", "aggregators_per_node", 0));
 
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",

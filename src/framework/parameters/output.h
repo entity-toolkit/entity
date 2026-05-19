@@ -35,6 +35,7 @@ namespace ntt {
 
     struct Output {
       std::optional<std::string> format;
+      std::optional<int>         aggregators_per_node;
 
       std::optional<timestep_t> global_interval;
       std::optional<simtime_t>  global_interval_time;

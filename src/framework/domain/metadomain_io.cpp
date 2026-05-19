@@ -64,7 +64,8 @@ namespace ntt {
 
     g_writer.init(ptr_adios,
                   params.template get<std::string>("output.format"),
-                  params.template get<std::string>("simulation.name"));
+                  params.template get<std::string>("simulation.name"),
+                  params.template get<int>("output.aggregators_per_node"));
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
