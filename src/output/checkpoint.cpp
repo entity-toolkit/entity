@@ -7,7 +7,7 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "output/writer.h"
+#include "output/utils/tuning.h"
 
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
@@ -39,8 +39,7 @@ namespace checkpoint {
     m_io = p_adios->DeclareIO("Entity::Checkpoint");
     m_io.SetEngine("BPFile");
 
-    // Shared BP5 tuning, identical to out::Writer::init.
-    out::applyBp5Tuning(m_io, "BPFile", bp5);
+    out::ApplyBp5Tuning(m_io, "BPFile", bp5);
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");
@@ -70,7 +69,7 @@ namespace checkpoint {
       const auto filename = m_checkpoint_root / fmt::format("step-%08lu.bp", step);
       const auto metafilename = m_checkpoint_root /
                                 fmt::format("meta-%08lu.toml", step);
-      m_writer                = m_io.Open(filename, adios2::Mode::Write);
+      m_writer = m_io.Open(filename, adios2::Mode::Write);
       m_written.emplace_back(filename, metafilename);
       logger::Checkpoint(fmt::format("Writing checkpoint to %s and %s",
                                      filename.c_str(),
