@@ -58,6 +58,16 @@ set(gpu_aware_mpi
   ${default_gpu_aware_mpi}
   CACHE BOOL "Enable GPU-aware MPI")
 
+set(team_policy
+  ${default_team_policy}
+  CACHE BOOL "Enable team_policy tile-blocked deposit/pusher kernels")
+set(team_policy_tile_size
+  ${default_team_policy_tile_size}
+  CACHE STRING "team_policy tile edge length in cells")
+set(team_policy_tile_sizes
+  "4;6;8;10;12"
+  CACHE STRING "team_policy tile-size choices")
+
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -134,6 +144,62 @@ if(("${Kokkos_DEVICES}" MATCHES "CUDA")
   set(DEVICE_ENABLED ON)
 else()
   set(DEVICE_ENABLED OFF)
+endif()
+
+# ------------------------------ team_policy wiring ------------------------ #
+if(${team_policy})
+  list(FIND team_policy_tile_sizes "${team_policy_tile_size}" _tps_idx)
+  if(_tps_idx EQUAL -1)
+    message(FATAL_ERROR
+      "${Red}team_policy_tile_size must be one of ${team_policy_tile_sizes}, "
+      "got '${team_policy_tile_size}'${ColorReset}")
+  endif()
+  add_compile_options("-D TEAM_POLICY")
+  add_compile_options("-D TEAM_POLICY_TILE_SIZE=${team_policy_tile_size}")
+
+  # Vendor sort: oneDPL on SYCL, Thrust on CUDA. Used automatically
+  # when found; falls back to Kokkos::BinSort otherwise.
+  if("${Kokkos_DEVICES}" MATCHES "SYCL")
+    find_package(oneDPL QUIET)
+    if(oneDPL_FOUND)
+      message(STATUS "team_policy: oneDPL found, enabling SYCL sort_by_key")
+      add_compile_options("-D ONEDPL_ENABLED")
+      set(DEPENDENCIES ${DEPENDENCIES} oneDPL)
+    else()
+      message(STATUS "team_policy: oneDPL not found; using BinSort fallback "
+                     "for SYCL sort_by_key")
+    endif()
+  endif()
+
+  if("${Kokkos_DEVICES}" MATCHES "CUDA")
+    find_package(Thrust QUIET)
+    if(Thrust_FOUND)
+      message(STATUS "team_policy: Thrust enabled for CUDA sort_by_key")
+      add_compile_options("-D THRUST_ENABLED")
+    else()
+      message(STATUS "team_policy: Thrust not found; using BinSort fallback "
+                     "for CUDA sort_by_key")
+    endif()
+  endif()
+
+  if("${Kokkos_DEVICES}" MATCHES "HIP")
+    # rocThrust ships with ROCm and exposes the same thrust:: API. Using
+    # it lets the HIP backend build a single permutation via
+    # sort_by_key and gather all SoA members through one reused buffer,
+    # instead of the legacy per-member Kokkos::BinSort path which
+    # allocates a fresh `sorted_values` buffer for every member every
+    # step (the dominant source of allocator churn / fragmentation on
+    # ROCm).
+    find_package(rocthrust QUIET)
+    if(rocthrust_FOUND)
+      message(STATUS "team_policy: rocThrust enabled for HIP sort_by_key")
+      add_compile_options("-D ROCTHRUST_ENABLED")
+      set(DEPENDENCIES ${DEPENDENCIES} roc::rocthrust)
+    else()
+      message(STATUS "team_policy: rocThrust not found; using BinSort "
+                     "fallback for HIP sort_by_key")
+    endif()
+  endif()
 endif()
 
 # MPI

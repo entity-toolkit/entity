@@ -10,6 +10,7 @@
  *   - CreateRangePolicy, CreateRangePolicyOnHost
  *   - random_number_pool_t, random_generator_t
  *   - Random function
+ *   - prtl_perm_t, TileLayout<>
  * @cpp:
  *   - arch/kokkos_aliases.cpp
  * @namespaces:
@@ -257,6 +258,32 @@ auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
 template <Dimension D>
 auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
+
+// --------------------------- team_policy types ---------------------------- //
+// Particle permutation index: maps a sorted-position p in [0, npart) to a
+// pre-sort particle index. Produced by SortSpatially, consumed by tiled
+// pusher and deposit kernels to walk particles tile-by-tile without
+// physically re-permuting the SoA arrays in lock step every step.
+using prtl_perm_t = array_t<npart_t*>;
+
+// Tile layout metadata: the contract between Stream 1 (sort) and Streams
+// 2/3 (tiled deposit / pusher). All members are device-resident.
+//   ntiles_per_axis : number of tiles along each axis (1 for unused axes).
+//   ntiles_total    : product of ntiles_per_axis = league size for TeamPolicy.
+//   tile_size       : tile edge length in cells (compile-time CMake knob,
+//                     replicated here for runtime checks).
+//   tile_offsets    : prefix-sum of per-tile particle counts; size
+//                     ntiles_total + 1; tile t owns particles
+//                     [tile_offsets(t), tile_offsets(t+1)).
+//   tile_perm       : size npart, particle index sorted by tile.
+template <Dimension D>
+struct TileLayout {
+  ncells_t          ntiles_per_axis[3] { 1u, 1u, 1u };
+  ncells_t          ntiles_total { 0u };
+  unsigned short    tile_size { 0u };
+  array_t<npart_t*> tile_offsets;
+  prtl_perm_t       tile_perm;
+};
 
 // Random number pool/generator type alias
 // (using math:: instead of Kokkos:: to suppress compiler warning on unused namespace alias)
