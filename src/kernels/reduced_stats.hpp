@@ -21,7 +21,7 @@
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, MetricClass M, StatsID::type F, uint8_t I = 0>
+  template <SimEngine::type S, MetricClass M, StatsID::type F, unsigned I = 0>
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 
