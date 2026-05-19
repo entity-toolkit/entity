@@ -33,6 +33,7 @@ if(${output})
   list(APPEND SOURCES ${SRC_DIR}/checkpoint.cpp)
   list(APPEND SOURCES ${SRC_DIR}/utils/writers.cpp)
   list(APPEND SOURCES ${SRC_DIR}/utils/readers.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/utils/tuning.cpp)
 endif()
 add_library(ntt_output ${SOURCES})
 

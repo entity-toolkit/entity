@@ -682,6 +682,25 @@
   #     @type: float
   #     @from: automatically determined during restart
 
+[adios2]
+  # ADIOS2 BP5 tuning, applied to both [output] and [checkpoint] writers
+  # Number of ADIOS2 aggregators per node
+  #   @type: uint
+  #   @default: 0
+  #   @note: Set to either MPI ranks/node or NICs/node for best performance
+  #          If set to 0, will use ADIOS2 default (one aggregator per node)
+  aggregators_per_node = ""
+  # Maximum shared-memory segment size per node, in bytes (BP5 MaxShmSize)
+  #   @type: uint
+  #   @default: 4294967296
+  #   @note: Lower this on memory-constrained nodes; matches ADIOS2's default
+  max_shm_size = ""
+  # Internal serialization buffer chunk size, in bytes (BP5 BufferChunkSize)
+  #   @type: uint
+  #   @default: 16777216
+  #   @note: Scales with per-rank output volume; matches ADIOS2's default
+  buffer_chunk_size = ""
+
 [diagnostics]
   # Number of timesteps between diagnostic logs
   #   @type: int [> 0]
