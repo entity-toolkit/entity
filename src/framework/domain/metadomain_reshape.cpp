@@ -11,9 +11,9 @@
 namespace ntt {
 
   template <SimEngine::type S, MetricClass M>
-  void Metadomain<S, M>::ShiftByCells(int n_cells, in dir)
-    requires(CartesianMetricClass<M>)
-  {
+  void Metadomain<S, M>::ShiftByCells(int n_cells, in dir) {
+    static_assert(CartesianMetricClass<M>,
+                  "ShiftByCells is only implemented for Cartesian metrics");
     raise::ErrorIf(
       n_cells == 0,
       "ShiftByCells called with n_cells = 0, no shift will be performed",

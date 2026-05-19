@@ -130,8 +130,7 @@ namespace ntt {
     ~Metadomain() = default;
 
     /* domain update-related ------------------------------------------------ */
-    void ShiftByCells(int, in = in::x1)
-      requires(CartesianMetricClass<M>);
+    void ShiftByCells(int, in = in::x1);
 
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
