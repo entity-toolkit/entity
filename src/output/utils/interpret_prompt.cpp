@@ -5,6 +5,7 @@
 #include "utils/error.h"
 #include "utils/formatting.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 

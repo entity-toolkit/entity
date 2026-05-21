@@ -18,10 +18,12 @@
 #include "traits/metric.h"
 #include "utils/numeric.h"
 
+#include "framework/containers/particles.h"
+
 namespace kernel {
   using namespace ntt;
 
-  template <SimEngine::type S, MetricClass M, StatsID::type F, uint8_t I = 0>
+  template <SimEngine::type S, MetricClass M, StatsID::type F, unsigned I = 0>
   class ReducedFields_kernel {
     static constexpr auto D = M::Dim;
 
@@ -401,54 +403,25 @@ namespace kernel {
   class ReducedParticleMoments_kernel {
     static constexpr auto D = M::Dim;
 
-    const uint8_t            c1, c2;
-    const array_t<int*>      i1, i2, i3;
-    const array_t<prtldx_t*> dx1, dx2, dx3;
-    const array_t<real_t*>   ux1, ux2, ux3;
-    const array_t<real_t*>   phi;
-    const array_t<real_t*>   weight;
-    const array_t<short*>    tag;
-    const float              mass;
-    const float              charge;
-    const bool               use_weights;
-    const M                  metric;
+    const uint8_t        c1, c2;
+    const ParticleArrays particles;
+    const float          mass;
+    const float          charge;
+    const bool           use_weights;
+    const M              metric;
 
     const real_t contrib;
 
   public:
     ReducedParticleMoments_kernel(const std::vector<uint8_t>& components,
-                                  const array_t<int*>&        i1,
-                                  const array_t<int*>&        i2,
-                                  const array_t<int*>&        i3,
-                                  const array_t<prtldx_t*>&   dx1,
-                                  const array_t<prtldx_t*>&   dx2,
-                                  const array_t<prtldx_t*>&   dx3,
-                                  const array_t<real_t*>&     ux1,
-                                  const array_t<real_t*>&     ux2,
-                                  const array_t<real_t*>&     ux3,
-                                  const array_t<real_t*>&     phi,
-                                  const array_t<real_t*>&     weight,
-                                  const array_t<short*>&      tag,
-                                  float                       mass,
-                                  float                       charge,
-                                  bool                        use_weights,
-                                  const M&                    metric)
+                                  const Particles<M::Dim, M::CoordType>& particles,
+                                  bool     use_weights,
+                                  const M& metric)
       : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
       , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
-      , i1 { i1 }
-      , i2 { i2 }
-      , i3 { i3 }
-      , dx1 { dx1 }
-      , dx2 { dx2 }
-      , dx3 { dx3 }
-      , ux1 { ux1 }
-      , ux2 { ux2 }
-      , ux3 { ux3 }
-      , phi { phi }
-      , weight { weight }
-      , tag { tag }
-      , mass { mass }
-      , charge { charge }
+      , particles { static_cast<const ParticleArrays&>(particles) }
+      , mass { particles.mass() }
+      , charge { particles.charge() }
       , use_weights { use_weights }
       , metric { metric }
       , contrib { get_contrib<P>(mass, charge) } {
@@ -459,7 +432,7 @@ namespace kernel {
     }
 
     Inline void operator()(prtlidx_t p, real_t& buff) const {
-      if (tag(p) != ParticleTag::alive) {
+      if (particles.tag(p) != ParticleTag::alive) {
         return;
       }
       auto dV = ONE;
@@ -470,17 +443,20 @@ namespace kernel {
       } else {
         coord_t<D> x_Code { ZERO };
         if constexpr ((D == Dim::_1D) or (D == Dim::_2D) or (D == Dim::_3D)) {
-          x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
+          x_Code[0] = static_cast<real_t>(particles.i1(p)) +
+                      static_cast<real_t>(particles.dx1(p));
         }
         if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
-          x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+          x_Code[1] = static_cast<real_t>(particles.i2(p)) +
+                      static_cast<real_t>(particles.dx2(p));
         }
         if constexpr (D == Dim::_3D) {
-          x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+          x_Code[2] = static_cast<real_t>(particles.i3(p)) +
+                      static_cast<real_t>(particles.dx3(p));
         }
         dV = metric.sqrt_det_h(x_Code);
         if constexpr (P == StatsID::N or P == StatsID::Rho or P == StatsID::Charge) {
-          buff += dV * (use_weights ? weight(p) : contrib);
+          buff += dV * (use_weights ? particles.weight(p) : contrib);
         } else {
           // for stress-energy tensor
           real_t          energy { ZERO };
@@ -489,23 +465,25 @@ namespace kernel {
             // SR
             // stress-energy tensor for SR is computed in the tetrad (hatted) basis
             if constexpr (M::CoordType == Coord::Cartesian) {
-              u_Phys[0] = ux1(p);
-              u_Phys[1] = ux2(p);
-              u_Phys[2] = ux3(p);
+              u_Phys[0] = particles.ux1(p);
+              u_Phys[1] = particles.ux2(p);
+              u_Phys[2] = particles.ux3(p);
             } else {
               static_assert(D != Dim::_1D, "non-Cartesian SRPIC 1D");
               coord_t<M::PrtlDim> x_Code { ZERO };
-              x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
-              x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+              x_Code[0] = static_cast<real_t>(particles.i1(p)) +
+                          static_cast<real_t>(particles.dx1(p));
+              x_Code[1] = static_cast<real_t>(particles.i2(p)) +
+                          static_cast<real_t>(particles.dx2(p));
               if constexpr (D == Dim::_3D) {
-                x_Code[2] = static_cast<real_t>(i3(p)) +
-                            static_cast<real_t>(dx3(p));
+                x_Code[2] = static_cast<real_t>(particles.i3(p)) +
+                            static_cast<real_t>(particles.dx3(p));
               } else {
-                x_Code[2] = phi(p);
+                x_Code[2] = particles.phi(p);
               }
               metric.template transform_xyz<Idx::XYZ, Idx::T>(
                 x_Code,
-                { ux1(p), ux2(p), ux3(p) },
+                { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
                 u_Phys);
             }
             if (mass == ZERO) {
@@ -519,18 +497,22 @@ namespace kernel {
             // stress-energy tensor for GR is computed in contravariant basis
             static_assert(D != Dim::_1D, "GRPIC 1D");
             coord_t<D> x_Code { ZERO };
-            x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
-            x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
+            x_Code[0] = static_cast<real_t>(particles.i1(p)) +
+                        static_cast<real_t>(particles.dx1(p));
+            x_Code[1] = static_cast<real_t>(particles.i2(p)) +
+                        static_cast<real_t>(particles.dx2(p));
             if constexpr (D == Dim::_3D) {
-              x_Code[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
+              x_Code[2] = static_cast<real_t>(particles.i3(p)) +
+                          static_cast<real_t>(particles.dx3(p));
             }
             vec_t<Dim::_3D> u_Cntrv { ZERO };
             // compute u_i u^i for energy
-            metric.template transform<Idx::D, Idx::U>(x_Code,
-                                                      { ux1(p), ux2(p), ux3(p) },
-                                                      u_Cntrv);
-            energy = u_Cntrv[0] * ux1(p) + u_Cntrv[1] * ux2(p) +
-                     u_Cntrv[2] * ux3(p);
+            metric.template transform<Idx::D, Idx::U>(
+              x_Code,
+              { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+              u_Cntrv);
+            energy = u_Cntrv[0] * particles.ux1(p) +
+                     u_Cntrv[1] * particles.ux2(p) + u_Cntrv[2] * particles.ux3(p);
             if (mass == ZERO) {
               energy = math::sqrt(energy);
             } else {

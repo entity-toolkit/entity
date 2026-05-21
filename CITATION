@@ -41,3 +41,23 @@ archivePrefix = {arXiv},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 ```
+
+For the higher-order shape functions and generalized field stencils, please cite the following paper:
+
+```latex
+@ARTICLE{EntityHighOrder_2026,
+       author = {{B{\"o}ss}, Ludwig M. and {Vanthieghem}, Arno and {Hakobyan}, Hayk and {Gorbunov}, Evgeny A. and {Caprioli}, Damiano},
+        title = "{Entity -- Hardware-agnostic Particle-in-Cell Code for Plasma Astrophysics. III: Higher-order shape functions \& generalized field stencils}",
+      journal = {arXiv e-prints},
+     keywords = {High Energy Astrophysical Phenomena},
+         year = 2026,
+        month = may,
+          eid = {arXiv:2605.15260},
+        pages = {arXiv:2605.15260},
+archivePrefix = {arXiv},
+       eprint = {2605.15260},
+ primaryClass = {astro-ph.HE},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2026arXiv260515260B},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+```

@@ -12,12 +12,16 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 ## News
 
+- [May 2026]: our **method paper** for higher-order shape functions and generalized field stencils is [online](https://ui.adsabs.harvard.edu/abs/2026arXiv260515260B/abstract)
+- [Apr 2026]: user-defined **custom particle update** functionality [PR #198](https://github.com/entity-toolkit/entity/pull/198)
+- [Apr 2026]: **moving window** [PR #196](https://github.com/entity-toolkit/entity/pull/196)
+- [Apr 2026]: **built-in piston** [PR #192](https://github.com/entity-toolkit/entity/pull/192)
 - [Mar 2026]: **single-particle emission** [PR #174](https://github.com/entity-toolkit/entity/pull/174) and [PR #188](https://github.com/entity-toolkit/entity/pull/188)
 - [Mar 2026]: **spatial sorting of particles** [PR #181](https://github.com/entity-toolkit/entity/pull/181)
 - [Mar 2026]: **external EM & force fields** [PR #183](https://github.com/entity-toolkit/entity/pull/183)
 - [Mar 2026]: **examples** of most commonly used custom patterns (see `pgens/examples`)
-- [Dec 2025]: **high-order** shape functions [PR #109](https://github.com/entity-toolkit/entity/pull/109) and advanced field stencils [PR #103](https://github.com/entity-toolkit/entity/pull/103) are now supported.
-- [Dec 2025]: **particle tracking** is now fully supported via [PR #144](https://github.com/entity-toolkit/entity/pull/144).
+- [Dec 2025]: **high-order** shape functions [PR #109](https://github.com/entity-toolkit/entity/pull/109) and advanced field stencils [PR #103](https://github.com/entity-toolkit/entity/pull/103) are now supported
+- [Dec 2025]: **particle tracking** is now fully supported via [PR #144](https://github.com/entity-toolkit/entity/pull/144)
 - [Nov 2025]: our **method papers** are online: [Special relativistic module](https://ui.adsabs.harvard.edu/abs/2025arXiv251117710H/abstract), [GR module](https://ui.adsabs.harvard.edu/abs/2025arXiv251117701G/abstract)!
 
 ## Citation

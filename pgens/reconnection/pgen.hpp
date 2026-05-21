@@ -13,7 +13,6 @@
 #include "archetypes/spatial_dist.h"
 #include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
-#include "kernels/particle_moments.hpp"
 
 namespace user {
   using namespace ntt;
@@ -247,35 +246,11 @@ namespace user {
         inj_box_down.push_back(Range::All);
       }
 
-      {
-        // compute density of species #1 and #2
-        const auto use_weights = params.template get<bool>(
-          "particles.use_weights");
-        const auto ni2    = domain.mesh.n_active(in::x2);
-        const auto inv_n0 = ONE / params.template get<real_t>("scales.n0");
-
-        auto scatter_buff = Kokkos::Experimental::create_scatter_view(
-          domain.fields.buff);
-        Kokkos::deep_copy(domain.fields.buff, ZERO);
-        for (const auto sp : std::vector<spidx_t> { 1, 2 }) {
-          const auto& prtl_spec = domain.species[sp - 1];
-          // clang-format off
-          Kokkos::parallel_for(
-            "ComputeMoments",
-            prtl_spec.rangeActiveParticles(),
-            kernel::ParticleMoments_kernel<S, M, FldsID::N, 3>({}, scatter_buff, 0u,
-                                                              prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                              prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                              prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                              prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                              prtl_spec.mass(), prtl_spec.charge(),
-                                                              use_weights,
-                                                              domain.mesh.metric, domain.mesh.flds_bc(),
-                                                              ni2, inv_n0, 0u));
-          // clang-format on
-        }
-        Kokkos::Experimental::contribute(domain.fields.buff, scatter_buff);
-      }
+      // compute density of species #1 and #2
+      arch::ComputeMomentWithSpecies<S, M, FldsID::Rho, 3>(params,
+                                                           domain,
+                                                           { 1, 2 },
+                                                           domain.fields.buff);
 
       const auto replenish_sdist = arch::spatial_dist::ReplenishUniform<M, 3>(
         domain.mesh.metric,
