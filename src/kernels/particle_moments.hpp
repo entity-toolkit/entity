@@ -140,7 +140,7 @@ namespace kernel {
           return ZERO;
         }
       } else if (smoothing == OutputSmoothingType::CONST) {
-        return TWO * static_cast<real_t>(window) + ONE;
+        return ONE / (TWO * static_cast<real_t>(window) + ONE);
       } else {
         raise::KernelError(HERE, "Unsupported smoothing method");
         return ZERO;
