@@ -827,7 +827,7 @@ namespace kernel::bc {
     const ncells_t  i_edge;
     const bool      setE { false }, setB { false };
 
-    AxisBoundaries_kernel(ndfield_t<D, 6> Fld, ncells_t i_edge, BCTags tags)
+    AxisBoundaries_kernel(ndfield_t<D, 6>& Fld, ncells_t i_edge, BCTags tags)
       : Fld { Fld }
       , i_edge { i_edge }
       , setE { tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3 }
@@ -1191,10 +1191,10 @@ namespace kernel::bc {
       const bool      setE { false }, setB { false };
       const ncells_t  nfilter;
 
-      HorizonBoundaries_kernel(ndfield_t<D, 6> Fld,
-                               ncells_t        i1_min,
-                               BCTags          tags,
-                               ncells_t        nfilter)
+      HorizonBoundaries_kernel(ndfield_t<D, 6>& Fld,
+                               ncells_t         i1_min,
+                               BCTags           tags,
+                               ncells_t         nfilter)
         : Fld { Fld }
         , i1_min { i1_min }
         , setE { (tags & BC::Ex1 or tags & BC::Ex2 or tags & BC::Ex3) or
@@ -1249,10 +1249,10 @@ namespace kernel::bc {
       const real_t         xg_edge;
       const real_t         dx_abs;
 
-      AbsorbCurrents_kernel(ndfield_t<M::Dim, 3> J,
-                            const M&             metric,
-                            real_t               xg_edge,
-                            real_t               dx_abs)
+      AbsorbCurrents_kernel(ndfield_t<M::Dim, 3>& J,
+                            const M&              metric,
+                            real_t                xg_edge,
+                            real_t                dx_abs)
         : J { J }
         , metric { metric }
         , xg_edge { xg_edge }

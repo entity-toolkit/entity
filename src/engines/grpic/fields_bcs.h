@@ -39,13 +39,13 @@ namespace ntt {
     };
 
     template <GRMetricClass M, PGenClass<SimEngine::GRPIC, M> PG>
-    void MatchFieldsIn(dir::direction_t<M::Dim>     direction,
-                       Domain<SimEngine::GRPIC, M>& domain,
-                       const Grid<M::Dim>&          global_grid,
-                       const PG&                    pgen,
-                       const SimulationParams&      params,
-                       BCTags                       tags,
-                       const gr_bc&                 g) {
+    void MatchFieldsIn(const dir::direction_t<M::Dim>& direction,
+                       Domain<SimEngine::GRPIC, M>&    domain,
+                       const Grid<M::Dim>&             global_grid,
+                       const PG&                       pgen,
+                       const SimulationParams&         params,
+                       BCTags                          tags,
+                       const gr_bc&                    g) {
       /**
        * match boundaries
        */
@@ -138,11 +138,11 @@ namespace ntt {
     }
 
     template <GRMetricClass M>
-    void HorizonFieldsIn(dir::direction_t<M::Dim>     direction,
-                         Domain<SimEngine::GRPIC, M>& domain,
-                         const SimulationParams&      params,
-                         BCTags                       tags,
-                         const gr_bc&                 g) {
+    void HorizonFieldsIn(const dir::direction_t<M::Dim>& direction,
+                         Domain<SimEngine::GRPIC, M>&    domain,
+                         const SimulationParams&         params,
+                         BCTags                          tags,
+                         const gr_bc&                    g) {
       /**
        * open boundaries
        */
@@ -176,9 +176,9 @@ namespace ntt {
     }
 
     template <GRMetricClass M>
-    void AxisFieldsIn(dir::direction_t<M::Dim>     direction,
-                      Domain<SimEngine::GRPIC, M>& domain,
-                      BCTags                       tags) {
+    void AxisFieldsIn(const dir::direction_t<M::Dim>& direction,
+                      Domain<SimEngine::GRPIC, M>&    domain,
+                      BCTags                          tags) {
       /**
        * axis boundaries
        */
@@ -220,10 +220,10 @@ namespace ntt {
     }
 
     template <GRMetricClass M>
-    void CustomFieldsIn(dir::direction_t<M::Dim>     direction,
-                        Domain<SimEngine::GRPIC, M>& domain,
-                        BCTags                       tags,
-                        const gr_bc&                 g) {
+    void CustomFieldsIn(const dir::direction_t<M::Dim>& direction,
+                        Domain<SimEngine::GRPIC, M>&    domain,
+                        BCTags                          tags,
+                        const gr_bc&                    g) {
       (void)direction;
       (void)domain;
       (void)tags;
