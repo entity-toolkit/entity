@@ -67,7 +67,8 @@ namespace ntt::defaults {
   namespace output {
     const std::string              format           = "BPFile";
     const timestep_t               interval         = 100;
-    const unsigned short           mom_smooth       = 0;
+    const unsigned short           smooth_order     = 0;
+    const std::string              smooth_method    = "spline";
     const npart_t                  prtl_stride      = 100;
     const real_t                   spec_emin        = 1e-3;
     const real_t                   spec_emax        = 1e3;
@@ -91,6 +92,15 @@ namespace ntt::defaults {
     const timestep_t  interval  = 1;
     const std::string log_level = "VERBOSE";
   } // namespace diag
+
+  namespace adios2 {
+    // BP5 tuning for large-scale parallel filesystems. Values mirror ADIOS2's
+    // own built-in defaults; aggregators_per_node == 0 leaves the default of
+    // one aggregator per node in place.
+    const int    aggregators_per_node = 0;
+    const size_t max_shm_size         = 4294967296ull; // 4 GiB
+    const size_t buffer_chunk_size    = 16777216ull;   // 16 MiB
+  } // namespace adios2
 
   namespace gca {
     const real_t EovrB_max = 0.9;

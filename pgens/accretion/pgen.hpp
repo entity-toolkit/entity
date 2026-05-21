@@ -117,7 +117,7 @@ namespace user {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
 
-      std::vector<unsigned short> specs {};
+      std::vector<spidx_t> specs {};
       for (auto& sp : domain_ptr->species) {
         if (sp.mass() > 0) {
           specs.push_back(sp.index());

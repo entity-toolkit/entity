@@ -62,9 +62,16 @@ namespace ntt {
       }
     }
 
-    g_writer.init(ptr_adios,
-                  params.template get<std::string>("output.format"),
-                  params.template get<std::string>("simulation.name"));
+    g_writer.init(
+      ptr_adios,
+      params.template get<std::string>("output.format"),
+      params.template get<std::string>("simulation.name"),
+      { params.template get<int>("adios2.aggregators_per_node",
+                                 defaults::adios2::aggregators_per_node),
+        params.template get<size_t>("adios2.max_shm_size",
+                                    defaults::adios2::max_shm_size),
+        params.template get<size_t>("adios2.buffer_chunk_size",
+                                    defaults::adios2::buffer_chunk_size) });
     g_writer.defineMeshLayout(glob_shape_with_ghosts,
                               off_ncells_with_ghosts,
                               loc_shape_with_ghosts,
@@ -139,8 +146,10 @@ namespace ntt {
     const auto use_weights = params.template get<bool>("particles.use_weights");
     const auto ni2         = mesh.n_active(in::x2);
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
-    const auto window      = params.template get<unsigned short>(
-      "output.fields.mom_smooth");
+    const auto smooth_order = params.template get<unsigned short>(
+      "output.fields.smoothing.order");
+    const auto smooth_method = OutputSmoothingType::from_string(
+      params.template get<std::string>("output.fields.smoothing.method"));
 
     for (const auto& sp : specs) {
       auto& prtl_spec = prtl_species[sp - 1];
@@ -156,7 +165,8 @@ namespace ntt {
                                                    mesh.flds_bc(),
                                                    ni2,
                                                    inv_n0,
-                                                   window));
+                                                   smooth_order,
+                                                   smooth_method));
     }
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
@@ -789,10 +799,9 @@ namespace ntt {
       g_writer.beginWriting(WriteMode::Spectra, current_step, current_time);
       const auto log_bins = params.template get<bool>(
         "output.spectra.log_bins");
-      const auto n_bins = params.template get<std::size_t>(
-        "output.spectra.n_bins");
-      auto e_min = params.template get<real_t>("output.spectra.e_min");
-      auto e_max = params.template get<real_t>("output.spectra.e_max");
+      const auto n_bins = params.template get<size_t>("output.spectra.n_bins");
+      auto       e_min  = params.template get<real_t>("output.spectra.e_min");
+      auto       e_max  = params.template get<real_t>("output.spectra.e_max");
       if (log_bins) {
         e_min = math::log10(e_min);
         e_max = math::log10(e_max);
@@ -814,67 +823,17 @@ namespace ntt {
       for (const auto& spec : g_writer.spectraWriters()) {
         auto&            species = local_domain->species[spec.species() - 1];
         array_t<real_t*> dn { "dn", n_bins };
-        auto       dn_scatter = Kokkos::Experimental::create_scatter_view(dn);
-        auto       i1         = species.i1;
-        auto       i2         = species.i2;
-        auto       dx1        = species.dx1;
-        auto       dx2        = species.dx2;
-        auto       ux1        = species.ux1;
-        auto       ux2        = species.ux2;
-        auto       ux3        = species.ux3;
-        auto       weight     = species.weight;
-        auto       tag        = species.tag;
-        const auto is_massive = species.mass() > 0.0f;
-        const auto metric     = local_domain->mesh.metric;
-        Kokkos::parallel_for(
-          "ComputeSpectra",
-          species.rangeActiveParticles(),
-          Lambda(prtlidx_t p) {
-            if (tag(p) != ParticleTag::alive) {
-              return;
-            }
-            real_t en;
-            if constexpr (S == SimEngine::SRPIC) {
-              if (is_massive) {
-                en = U2GAMMA(ux1(p), ux2(p), ux3(p)) - ONE;
-              } else {
-                en = NORM(ux1(p), ux2(p), ux3(p));
-              }
-            } else if constexpr (S == SimEngine::GRPIC) {
-              static_assert(M::Dim != Dim::_1D, "GRPIC 1D");
-              coord_t<M::Dim> x_Code { ZERO };
-              x_Code[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
-              x_Code[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
-
-              // raise full covariant 4-vector to get correct contravariant u^0
-              // u^i != h^{ij} u_j
-              const real_t    u_0_cov { metric.u_0(x_Code,
-                                                   { ux1(p), ux2(p), ux3(p) },
-                                                (is_massive) ? ONE : ZERO) };
-              vec_t<Dim::_4D> u_cntrv_4d { ZERO };
-              metric.template transform_4d<Idx::D, Idx::U>(
-                x_Code,
-                { u_0_cov, ux1(p), ux2(p), ux3(p) },
-                u_cntrv_4d);
-              // in GR: u^0 = Gamma/alpha
-              const real_t Gamma { metric.alpha(x_Code) * u_cntrv_4d[0] };
-              en = is_massive ? (Gamma - ONE) : Gamma;
-            }
-            if (log_bins) {
-              en = math::log10(en);
-            }
-            std::size_t e_ind = 0;
-            if (en <= e_min) {
-              e_ind = 0;
-            } else if (en >= e_max) {
-              e_ind = n_bins;
-            } else {
-              e_ind = static_cast<std::size_t>(
-                static_cast<real_t>(n_bins) * (en - e_min) / (e_max - e_min));
-            }
-            auto dn_acc    = dn_scatter.access();
-            dn_acc(e_ind) += weight(p);
-          });
+        auto dn_scatter = Kokkos::Experimental::create_scatter_view(dn);
+        Kokkos::parallel_for("ComputeSpectra",
+                             species.rangeActiveParticles(),
+                             kernel::ParticleDistribution_kernel<S, M> {
+                               species,
+                               dn_scatter,
+                               e_min,
+                               e_max,
+                               log_bins,
+                               n_bins,
+                               local_domain->mesh.metric });
         Kokkos::Experimental::contribute(dn, dn_scatter);
         g_writer.writeSpectrum(dn, spec.name());
       }

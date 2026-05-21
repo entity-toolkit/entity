@@ -1,3 +1,4 @@
+#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -63,7 +64,13 @@ namespace ntt {
       params.template get<timestep_t>("checkpoint.interval"),
       params.template get<simtime_t>("checkpoint.interval_time"),
       params.template get<int>("checkpoint.keep"),
-      params.template get<std::string>("checkpoint.walltime"));
+      params.template get<std::string>("checkpoint.walltime"),
+      { params.template get<int>("adios2.aggregators_per_node",
+                                 defaults::adios2::aggregators_per_node),
+        params.template get<size_t>("adios2.max_shm_size",
+                                    defaults::adios2::max_shm_size),
+        params.template get<size_t>("adios2.buffer_chunk_size",
+                                    defaults::adios2::buffer_chunk_size) });
     if (g_checkpoint_writer.enabled()) {
       local_domain->fields.CheckpointDeclare(g_checkpoint_writer.io(),
                                              loc_shape_with_ghosts,

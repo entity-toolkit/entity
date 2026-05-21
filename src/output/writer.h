@@ -24,6 +24,7 @@
 
 #include "output/fields.h"
 #include "output/spectra.h"
+#include "output/utils/tuning.h"
 
 #include <adios2.h>
 #include <adios2/cxx/KokkosView.h>
@@ -32,6 +33,8 @@
   #include <mpi.h>
 #endif
 
+#include <any>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -74,6 +77,11 @@ namespace out {
 
     WriteModeTags m_active_mode { WriteMode::None };
 
+    // Buffers handed to ADIOS2 via Mode::Deferred Put. These must remain
+    // valid until EndStep() flushes them, so they are stored here and
+    // released in endWriting() after EndStep returns.
+    std::vector<std::any> m_keepalive;
+
   public:
     Writer() {}
 
@@ -81,7 +89,10 @@ namespace out {
 
     Writer(Writer&&) = default;
 
-    void init(adios2::ADIOS*, const std::string&, const std::string&);
+    void init(adios2::ADIOS*,
+              const std::string&,
+              const std::string&,
+              const out::Bp5Tuning& = {});
 
     void setMode(adios2::Mode);
 

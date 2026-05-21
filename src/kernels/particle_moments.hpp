@@ -59,24 +59,28 @@ namespace kernel {
     const bool              use_weights;
     const M                 metric;
     const int               ni2;
-    const uint8_t           order;
-    const uint8_t           window;
+    const real_t            inv_n0;
+
+    const uint8_t                 order;
+    const uint8_t                 window;
+    const OutputSmoothingTypeFlag smoothing;
 
     const real_t contrib;
-    const real_t inv_n0;
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    ParticleMoments_kernel(const std::vector<uint8_t>&            components,
-                           const scatter_ndfield_t<D, N>&         scatter_buff,
-                           idx_t                                  buff_idx,
-                           const Particles<M::Dim, M::CoordType>& particles,
-                           bool                                   use_weights,
-                           const M&                               metric,
-                           const boundaries_t<FldsBC>&            boundaries,
-                           ncells_t                               ni2,
-                           real_t                                 inv_n0,
-                           uint8_t                                order)
+    ParticleMoments_kernel(
+      const std::vector<uint8_t>&            components,
+      const scatter_ndfield_t<D, N>&         scatter_buff,
+      idx_t                                  buff_idx,
+      const Particles<M::Dim, M::CoordType>& particles,
+      bool                                   use_weights,
+      const M&                               metric,
+      const boundaries_t<FldsBC>&            boundaries,
+      ncells_t                               ni2,
+      real_t                                 inv_n0,
+      uint8_t                                order = 0u,
+      OutputSmoothingTypeFlag smoothing = OutputSmoothingType::SPLINE)
       : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
       , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , Buff { scatter_buff }
@@ -87,10 +91,11 @@ namespace kernel {
       , use_weights { use_weights }
       , metric { metric }
       , ni2 { static_cast<int>(ni2) }
+      , inv_n0 { inv_n0 }
       , order { order }
+      , smoothing { smoothing }
       , window { static_cast<uint8_t>(math::ceil(static_cast<float>(order) / 2.0f)) }
-      , contrib { get_contrib<F>(mass, charge) }
-      , inv_n0 { inv_n0 } {
+      , contrib { get_contrib<F>(mass, charge) } {
       raise::ErrorIf(buff_idx >= N, "Invalid buffer index", HERE);
       raise::ErrorIf(window > N_GHOSTS, "Window size too large", HERE);
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
@@ -105,32 +110,39 @@ namespace kernel {
     }
 
     Inline auto shapeFunction(real_t delta_x) const -> real_t {
-      if (order == 0) {
-        return ONE;
-      } else if (order == 1) {
-        return prtl_shape::S1(delta_x);
-      } else if (order == 2) {
-        return prtl_shape::S2(delta_x);
-      } else if (order == 3) {
-        return prtl_shape::S3(delta_x);
-      } else if (order == 4) {
-        return prtl_shape::S4(delta_x);
-      } else if (order == 5) {
-        return prtl_shape::S5(delta_x);
-      } else if (order == 6) {
-        return prtl_shape::S6(delta_x);
-      } else if (order == 7) {
-        return prtl_shape::S7(delta_x);
-      } else if (order == 8) {
-        return prtl_shape::S8(delta_x);
-      } else if (order == 9) {
-        return prtl_shape::S9(delta_x);
-      } else if (order == 10) {
-        return prtl_shape::S10(delta_x);
-      } else if (order == 11) {
-        return prtl_shape::S11(delta_x);
+      if (smoothing == OutputSmoothingType::SPLINE) {
+        if (order == 0) {
+          return ONE;
+        } else if (order == 1) {
+          return prtl_shape::S1(delta_x);
+        } else if (order == 2) {
+          return prtl_shape::S2(delta_x);
+        } else if (order == 3) {
+          return prtl_shape::S3(delta_x);
+        } else if (order == 4) {
+          return prtl_shape::S4(delta_x);
+        } else if (order == 5) {
+          return prtl_shape::S5(delta_x);
+        } else if (order == 6) {
+          return prtl_shape::S6(delta_x);
+        } else if (order == 7) {
+          return prtl_shape::S7(delta_x);
+        } else if (order == 8) {
+          return prtl_shape::S8(delta_x);
+        } else if (order == 9) {
+          return prtl_shape::S9(delta_x);
+        } else if (order == 10) {
+          return prtl_shape::S10(delta_x);
+        } else if (order == 11) {
+          return prtl_shape::S11(delta_x);
+        } else {
+          raise::KernelError(HERE, "Unsupported shape function order");
+          return ZERO;
+        }
+      } else if (smoothing == OutputSmoothingType::CONST) {
+        return TWO * static_cast<real_t>(window) + ONE;
       } else {
-        raise::KernelError(HERE, "Unsupported shape function order");
+        raise::KernelError(HERE, "Unsupported smoothing method");
         return ZERO;
       }
     }
@@ -699,6 +711,85 @@ namespace kernel {
       } else {
         raise::KernelError(HERE, "3D implementation of Transform4VelocitySpatialToPhysical_kernel called for non-3D");
       }
+    }
+  };
+
+  template <SimEngine::type S, MetricClass M>
+  class ParticleDistribution_kernel {
+    const ParticleArrays particles;
+    const bool           is_massive;
+    const M              metric;
+
+    const real_t e_min, e_max;
+    const bool   log_bins;
+    const size_t n_bins;
+
+    scatter_array_t<real_t*> dn_scatter;
+
+  public:
+    ParticleDistribution_kernel(const Particles<M::Dim, M::CoordType>& particles,
+                                const scatter_array_t<real_t*>& dn_scatter,
+                                real_t                          e_min,
+                                real_t                          e_max,
+                                bool                            log_bins,
+                                size_t                          n_bins,
+                                const M&                        metric)
+      : particles { static_cast<ParticleArrays>(particles) }
+      , is_massive { (particles.mass() != 0.0f) }
+      , dn_scatter { dn_scatter }
+      , e_min { e_min }
+      , e_max { e_max }
+      , log_bins { log_bins }
+      , n_bins { n_bins }
+      , metric { metric } {}
+
+    Inline void operator()(prtlidx_t p) const {
+      if (particles.tag(p) != ParticleTag::alive) {
+        return;
+      }
+      real_t en;
+      if constexpr (S == SimEngine::SRPIC) {
+        if (is_massive) {
+          en = U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)) - ONE;
+        } else {
+          en = NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p));
+        }
+      } else if constexpr (S == SimEngine::GRPIC) {
+        coord_t<M::Dim> x_Code { ZERO };
+        x_Code[0] = static_cast<real_t>(particles.i1(p)) +
+                    static_cast<real_t>(particles.dx1(p));
+        x_Code[1] = static_cast<real_t>(particles.i2(p)) +
+                    static_cast<real_t>(particles.dx2(p));
+
+        // raise full covariant 4-vector to get correct contravariant u^0
+        // u^i != h^{ij} u_j
+        const real_t    u_0_cov { metric.u_0(
+          x_Code,
+          { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+          (is_massive) ? ONE : ZERO) };
+        vec_t<Dim::_4D> u_cntrv_4d { ZERO };
+        metric.template transform_4d<Idx::D, Idx::U>(
+          x_Code,
+          { u_0_cov, particles.ux1(p), particles.ux2(p), particles.ux3(p) },
+          u_cntrv_4d);
+        // in GR: u^0 = Gamma/alpha
+        const real_t Gamma { metric.alpha(x_Code) * u_cntrv_4d[0] };
+        en = is_massive ? (Gamma - ONE) : Gamma;
+      }
+      if (log_bins) {
+        en = math::log10(en);
+      }
+      size_t e_ind = 0;
+      if (en <= e_min) {
+        e_ind = 0;
+      } else if (en >= e_max) {
+        e_ind = n_bins;
+      } else {
+        e_ind = static_cast<size_t>(
+          static_cast<real_t>(n_bins) * (en - e_min) / (e_max - e_min));
+      }
+      auto dn_acc    = dn_scatter.access();
+      dn_acc(e_ind) += particles.weight(p);
     }
   };
 

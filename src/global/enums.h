@@ -18,6 +18,7 @@
  *   - enum ntt::ParticlePusher    // photon, boris, vay, gca, none
  *   - enum ntt::RadiativeDrag     // compton, synchrotron, none
  *   - enum ntt::EmissionType      // none, synchrotron, inversecompton, custom
+ *   - enum ntt::OutputSmoothingTypeFlag // none, const, spline
  *
  * @namespaces:
  *   - ntt::
@@ -437,6 +438,40 @@ namespace ntt {
   } // namespace TwoBodyInteraction
 
   using TwoBodyInteractionFlag = uint8_t;
+
+  namespace OutputSmoothingType {
+    enum OutputSmoothingTypeFlag_ : uint8_t {
+      NONE   = 0,
+      CONST  = 1,
+      SPLINE = 2,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      switch (flags) {
+        case NONE:
+          return "none";
+        case CONST:
+          return "const";
+        case SPLINE:
+          return "spline";
+        default:
+          return "unknown";
+      }
+    }
+
+    inline auto from_string(const std::string& str) -> uint8_t {
+      const auto str_lo = fmt::toLower(str);
+      if (str_lo == "const") {
+        return CONST;
+      } else if (str_lo == "spline") {
+        return SPLINE;
+      } else {
+        return NONE;
+      }
+    }
+  } // namespace OutputSmoothingType
+
+  using OutputSmoothingTypeFlag = uint8_t;
 
 } // namespace ntt
 
