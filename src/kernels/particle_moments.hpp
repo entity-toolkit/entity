@@ -85,7 +85,7 @@ namespace kernel {
       , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , Buff { scatter_buff }
       , buff_idx { buff_idx }
-      , particles { static_cast<ParticleArrays>(particles) }
+      , particles { static_cast<const ParticleArrays&>(particles) }
       , mass { particles.mass() }
       , charge { particles.charge() }
       , use_weights { use_weights }
@@ -730,7 +730,7 @@ namespace kernel {
                                 bool                            log_bins,
                                 size_t                          n_bins,
                                 const M&                        metric)
-      : particles { static_cast<ParticleArrays>(particles) }
+      : particles { static_cast<const ParticleArrays&>(particles) }
       , is_massive { (particles.mass() != 0.0f) }
       , dn_scatter { dn_scatter }
       , e_min { e_min }

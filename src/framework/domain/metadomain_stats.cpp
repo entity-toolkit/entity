@@ -19,6 +19,7 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <string>

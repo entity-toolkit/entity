@@ -419,7 +419,7 @@ namespace kernel {
                                   const M& metric)
       : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
       , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
-      , particles { static_cast<ParticleArrays>(particles) }
+      , particles { static_cast<const ParticleArrays&>(particles) }
       , mass { particles.mass() }
       , charge { particles.charge() }
       , use_weights { use_weights }
