@@ -28,6 +28,29 @@
     #   @example: [2, 2, 2] (total of 8 domains)
     decomposition = ""
 
+  [simulation.domain.load_balancing]
+    # Enable load balancing
+    #   @type: bool
+    #   @default: false
+    enable = ""
+    # Interval between load balancing steps
+    #   @type: int
+    #   @default: 10
+    interval = ""
+    # Dimensions to balance
+    #   @type: array<int>
+    #   @default: []
+    #   @note: Empty array means balance all dimensions
+    dimensions = ""
+    # Maximum number of iterations
+    #   @type: int
+    #   @default: 1
+    max_iterations = ""
+    # Tolerance for load balancing
+    #   @type: float
+    #   @default: 0.1
+    tolerance = ""
+
 [grid]
   # Spatial resolution of the grid
   #   @required

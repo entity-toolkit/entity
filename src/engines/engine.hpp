@@ -249,7 +249,7 @@ namespace ntt {
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
        "ParticleSort", "Output",
-       "Checkpoint" },
+       "Checkpoint", "LoadBalancing" },
       []() {
         Kokkos::fence();
        },
@@ -283,6 +283,14 @@ namespace ntt {
       // advance time & step
       time += dt;
       ++step;
+
+      const auto lb_enable = m_params.template get<bool>("simulation.domain.load_balancing.enable");
+      const auto lb_interval = m_params.template get<unsigned int>("simulation.domain.load_balancing.interval");
+      if (lb_enable && lb_interval > 0 && step % lb_interval == 0) {
+        timers.start("LoadBalancing");
+        m_metadomain.BalanceLoad(m_params);
+        timers.stop("LoadBalancing");
+      }
 
       auto print_output     = false;
       auto print_checkpoint = false;

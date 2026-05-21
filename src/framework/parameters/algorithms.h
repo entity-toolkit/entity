@@ -47,6 +47,7 @@ namespace ntt {
       std::optional<real_t> synchrotron_gamma_rad;
       std::optional<real_t> compton_gamma_rad;
 
+
       void read(real_t, const std::map<std::string, bool>&, const toml::value&);
       void setParams(const std::map<std::string, bool>&, SimulationParams*) const;
     };

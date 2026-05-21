@@ -57,6 +57,7 @@ set(SOURCES
     ${SRC_DIR}/domain/metadomain.cpp
     ${SRC_DIR}/domain/metadomain_comm.cpp
     ${SRC_DIR}/domain/metadomain_sort.cpp
+    ${SRC_DIR}/domain/metadomain_lb.cpp
     ${SRC_DIR}/domain/metadomain_stats.cpp
     ${SRC_DIR}/domain/metadomain_reshape.cpp
     ${SRC_DIR}/containers/particles.cpp
