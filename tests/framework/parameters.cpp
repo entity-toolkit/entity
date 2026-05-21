@@ -92,9 +92,11 @@ const auto mink_1d = u8R"(
 
   [output.fields]
     quantities = ["Rho", "J", "B"]
-    mom_smooth = 2
     downsampling = [4, 5]
     interval = 100
+
+    [output.fields.smoothing]
+      order = 2
 
   [output.particles]
     species = [1, 2]

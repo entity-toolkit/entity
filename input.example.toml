@@ -514,10 +514,6 @@
     #   @type: array<string>
     #   @default: []
     custom = ""
-    # Smoothing window for the output of moments ("Rho", "Charge", "T", ...)
-    #   @type: ushort
-    #   @default: 0
-    mom_smooth = ""
     # Number of timesteps between field outputs
     #   @type: uint
     #   @default: 0
@@ -536,6 +532,19 @@
     #   @note: The output is downsampled by the given factors in each direction
     #   @note: If a scalar is given, it is applied to all directions
     downsampling = ""
+
+    [output.fields.smoothing]
+      # Smoothing order for the output of moments ("Rho", "Charge", "T", ...)
+      #   @type: ushort
+      #   @default: 0
+      order = ""
+      # Smoothing algorithm 
+      #   @type: string
+      #   @enum: "const", "spline"
+      #   @default: "spline"
+      #   @note: When using "spline", `order` corresponds to the order of the polynomial used
+      #   @note: When using "const", the smoothing window is `ceil(order / 2)` in both directions
+      method = ""
 
   [output.particles]
     # Toggle for the particles output

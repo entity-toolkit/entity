@@ -43,16 +43,17 @@ namespace ntt {
 
       std::optional<std::vector<std::string>>  fields_quantities;
       std::optional<std::vector<std::string>>  fields_custom_quantities;
-      std::optional<unsigned short>            fields_mom_smooth;
       std::optional<std::vector<unsigned int>> fields_downsampling;
+      std::optional<unsigned short>            fields_smooth_order;
+      std::optional<std::string>               fields_smooth_method;
 
       std::optional<std::vector<spidx_t>> particles_species;
       std::optional<npart_t>              particles_stride;
 
-      std::optional<real_t>      spectra_e_min;
-      std::optional<real_t>      spectra_e_max;
-      std::optional<bool>        spectra_log_bins;
-      std::optional<std::size_t> spectra_n_bins;
+      std::optional<real_t> spectra_e_min;
+      std::optional<real_t> spectra_e_max;
+      std::optional<bool>   spectra_log_bins;
+      std::optional<size_t> spectra_n_bins;
 
       std::optional<std::vector<std::string>> stats_quantities;
       std::optional<std::vector<std::string>> stats_custom_quantities;

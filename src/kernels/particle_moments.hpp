@@ -59,24 +59,28 @@ namespace kernel {
     const bool              use_weights;
     const M                 metric;
     const int               ni2;
-    const uint8_t           order;
-    const uint8_t           window;
+    const real_t            inv_n0;
+
+    const uint8_t                 order;
+    const uint8_t                 window;
+    const OutputSmoothingTypeFlag smoothing;
 
     const real_t contrib;
-    const real_t inv_n0;
     bool         is_axis_i2min { false }, is_axis_i2max { false };
 
   public:
-    ParticleMoments_kernel(const std::vector<uint8_t>&            components,
-                           const scatter_ndfield_t<D, N>&         scatter_buff,
-                           idx_t                                  buff_idx,
-                           const Particles<M::Dim, M::CoordType>& particles,
-                           bool                                   use_weights,
-                           const M&                               metric,
-                           const boundaries_t<FldsBC>&            boundaries,
-                           ncells_t                               ni2,
-                           real_t                                 inv_n0,
-                           uint8_t                                order)
+    ParticleMoments_kernel(
+      const std::vector<uint8_t>&            components,
+      const scatter_ndfield_t<D, N>&         scatter_buff,
+      idx_t                                  buff_idx,
+      const Particles<M::Dim, M::CoordType>& particles,
+      bool                                   use_weights,
+      const M&                               metric,
+      const boundaries_t<FldsBC>&            boundaries,
+      ncells_t                               ni2,
+      real_t                                 inv_n0,
+      uint8_t                                order = 0u,
+      OutputSmoothingTypeFlag smoothing = OutputSmoothingType::SPLINE)
       : c1 { not components.empty() ? components[0] : static_cast<uint8_t>(0) }
       , c2 { (components.size() == 2) ? components[1] : static_cast<uint8_t>(0) }
       , Buff { scatter_buff }
@@ -87,10 +91,11 @@ namespace kernel {
       , use_weights { use_weights }
       , metric { metric }
       , ni2 { static_cast<int>(ni2) }
+      , inv_n0 { inv_n0 }
       , order { order }
+      , smoothing { smoothing }
       , window { static_cast<uint8_t>(math::ceil(static_cast<float>(order) / 2.0f)) }
-      , contrib { get_contrib<F>(mass, charge) }
-      , inv_n0 { inv_n0 } {
+      , contrib { get_contrib<F>(mass, charge) } {
       raise::ErrorIf(buff_idx >= N, "Invalid buffer index", HERE);
       raise::ErrorIf(window > N_GHOSTS, "Window size too large", HERE);
       raise::ErrorIf(((F == FldsID::Rho) || (F == FldsID::Charge)) && (mass == ZERO),
@@ -105,32 +110,39 @@ namespace kernel {
     }
 
     Inline auto shapeFunction(real_t delta_x) const -> real_t {
-      if (order == 0) {
-        return ONE;
-      } else if (order == 1) {
-        return prtl_shape::S1(delta_x);
-      } else if (order == 2) {
-        return prtl_shape::S2(delta_x);
-      } else if (order == 3) {
-        return prtl_shape::S3(delta_x);
-      } else if (order == 4) {
-        return prtl_shape::S4(delta_x);
-      } else if (order == 5) {
-        return prtl_shape::S5(delta_x);
-      } else if (order == 6) {
-        return prtl_shape::S6(delta_x);
-      } else if (order == 7) {
-        return prtl_shape::S7(delta_x);
-      } else if (order == 8) {
-        return prtl_shape::S8(delta_x);
-      } else if (order == 9) {
-        return prtl_shape::S9(delta_x);
-      } else if (order == 10) {
-        return prtl_shape::S10(delta_x);
-      } else if (order == 11) {
-        return prtl_shape::S11(delta_x);
+      if (smoothing == OutputSmoothingType::SPLINE) {
+        if (order == 0) {
+          return ONE;
+        } else if (order == 1) {
+          return prtl_shape::S1(delta_x);
+        } else if (order == 2) {
+          return prtl_shape::S2(delta_x);
+        } else if (order == 3) {
+          return prtl_shape::S3(delta_x);
+        } else if (order == 4) {
+          return prtl_shape::S4(delta_x);
+        } else if (order == 5) {
+          return prtl_shape::S5(delta_x);
+        } else if (order == 6) {
+          return prtl_shape::S6(delta_x);
+        } else if (order == 7) {
+          return prtl_shape::S7(delta_x);
+        } else if (order == 8) {
+          return prtl_shape::S8(delta_x);
+        } else if (order == 9) {
+          return prtl_shape::S9(delta_x);
+        } else if (order == 10) {
+          return prtl_shape::S10(delta_x);
+        } else if (order == 11) {
+          return prtl_shape::S11(delta_x);
+        } else {
+          raise::KernelError(HERE, "Unsupported shape function order");
+          return ZERO;
+        }
+      } else if (smoothing == OutputSmoothingType::CONST) {
+        return TWO * static_cast<real_t>(window) + ONE;
       } else {
-        raise::KernelError(HERE, "Unsupported shape function order");
+        raise::KernelError(HERE, "Unsupported smoothing method");
         return ZERO;
       }
     }

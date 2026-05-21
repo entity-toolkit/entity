@@ -124,7 +124,8 @@ namespace arch {
    * @param components Vector of field components to compute (e.g. {} for N, {0}
    * {1} {2} for V, {0, 1} for T, etc., default: empty, i.e. scalar)
    * @param buffer_idx Index of the field component in the buffer to save the result to
-   * @param window Window size for smoothing (in number of cells, default: 0, i.e. no smoothing)
+   * @param smoothing_order Smoothing order
+   * @param smoothing_method Smoothing algorithm (e.g. SPLINE, CONST, etc.)
    *
    * @tparam S Simulation engine type
    * @tparam M Metric type
@@ -132,13 +133,15 @@ namespace arch {
    * @tparam N Last dimension of the buffer (e.g. 3 or 6)
    */
   template <SimEngine::type S, MetricClass M, FldsID::type F, int N>
-  inline void ComputeMomentWithSpecies(const SimulationParams&     params,
-                                       Domain<S, M>&               domain,
-                                       const std::vector<spidx_t>& species,
-                                       ndfield_t<M::Dim, N>&       buffer,
-                                       const std::vector<uint8_t>& components = {},
-                                       idx_t          buffer_idx = 0u,
-                                       unsigned short window     = 0u) {
+  inline void ComputeMomentWithSpecies(
+    const SimulationParams&     params,
+    Domain<S, M>&               domain,
+    const std::vector<spidx_t>& species,
+    ndfield_t<M::Dim, N>&       buffer,
+    const std::vector<uint8_t>& components      = {},
+    idx_t                       buffer_idx      = 0u,
+    uint8_t                     smoothing_order = 0u,
+    OutputSmoothingTypeFlag smoothing_method    = OutputSmoothingType::SPLINE) {
     const auto ni2         = domain.mesh.n_active(in::x2);
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
     const auto use_weights = params.template get<bool>("particles.use_weights");
@@ -159,7 +162,8 @@ namespace arch {
                                                    domain.mesh.flds_bc(),
                                                    ni2,
                                                    inv_n0,
-                                                   window));
+                                                   smoothing_order,
+                                                   smoothing_method));
     }
     Kokkos::Experimental::contribute(buffer, scatter_buff);
   }
