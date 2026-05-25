@@ -10,6 +10,7 @@
 #include "framework/specialization_registry.h"
 
 #include "engines/grpic/grpic.hpp"
+#include "engines/hybrid/hybrid.hpp"
 #include "engines/srpic/srpic.hpp"
 #include "pgen.hpp"
 
@@ -32,6 +33,12 @@ namespace ntt {
     template <GRMetricClass M>
     using type = GRPICEngine<M>;
   };
+
+  template <>
+  struct EngineSelector<SimEngine::HYBRID> {
+    template <CartesianMetricClass M>
+    using type = HYBRIDEngine<M>;
+  };
 } // namespace ntt
 
 template <auto N, auto... Is>
@@ -48,9 +55,7 @@ static constexpr bool should_compile {
 
 template <ntt::SimEngine::type S, template <Dimension> class M, Dimension D>
 void dispatch_engine(ntt::Simulation& sim) {
-  if constexpr (S == SimEngine::SRPIC) {
-    sim.run<ntt::EngineSelector<S>::template type, M, D>();
-  } else if constexpr (S == SimEngine::GRPIC) {
+  if constexpr (S != ntt::SimEngine::INVALID) {
     sim.run<ntt::EngineSelector<S>::template type, M, D>();
   } else {
     static_assert(::traits::always_false<std::integral_constant<SimEngine, S>>::value,

@@ -5,7 +5,7 @@
  *   - enum ntt::Coord             // Cart, Sph, Qsph
  *   - enum ntt::Metric            // Minkowski, Spherical, QSpherical,
  *                                    Kerr_Schild, QKerr_Schild, Kerr_Schild_0
- *   - enum ntt::SimEngine         // SRPIC, GRPIC
+ *   - enum ntt::SimEngine         // SRPIC, GRPIC, HYBRID
  *   - enum ntt::PrtlBC            // periodic, absorb, atmosphere, custom,
  *                                    reflect, horizon, axis, sync
  *   - enum ntt::FldsBC            // periodic, match, fixed, atmosphere,
@@ -59,8 +59,8 @@ namespace ntt {
   namespace enums_hidden {
     template <typename Derived>
     class EnumBase {
-      constexpr auto idx() const -> std::size_t {
-        return static_cast<std::size_t>(d().val) - 1; // assumes 1-indexed
+      constexpr auto idx() const -> size_t {
+        return static_cast<size_t>(d().val) - 1; // assumes 1-indexed
       }
 
       constexpr auto d() const -> const Derived& {
@@ -131,7 +131,7 @@ namespace ntt {
     static constexpr const char* label = "coord";
     static constexpr type variants[]   = { Cartesian, Spherical, Qspherical };
     static constexpr const char* lookup[] = { "cart", "sph", "qsph" };
-    static constexpr std::size_t total    = std::size(variants);
+    static constexpr size_t      total    = std::size(variants);
   };
 
   struct Metric : public enums_hidden::EnumBase<Metric> {
@@ -159,7 +159,7 @@ namespace ntt {
     static constexpr const char* lookup[]   = { "minkowski",    "spherical",
                                                 "qspherical",   "kerr_schild",
                                                 "qkerr_schild", "kerr_schild_0" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr size_t      total = sizeof(variants) / sizeof(variants[0]);
   };
 
   struct SimEngine : public enums_hidden::EnumBase<SimEngine> {
@@ -167,6 +167,7 @@ namespace ntt {
       INVALID = 0,
       SRPIC   = 1,
       GRPIC   = 2,
+      HYBRID  = 3,
     };
     using enum type;
     type val;
@@ -177,9 +178,9 @@ namespace ntt {
       : val { v } {}
 
     static constexpr const char* label      = "sim_engine";
-    static constexpr type        variants[] = { SRPIC, GRPIC };
-    static constexpr const char* lookup[]   = { "srpic", "grpic" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr type        variants[] = { SRPIC, GRPIC, HYBRID };
+    static constexpr const char* lookup[]   = { "srpic", "grpic", "hybrid" };
+    static constexpr size_t      total = sizeof(variants) / sizeof(variants[0]);
   };
 
   struct PrtlBC : public enums_hidden::EnumBase<PrtlBC> {
@@ -209,7 +210,7 @@ namespace ntt {
                                               "atmosphere", "custom",
                                               "reflect",    "horizon",
                                               "axis",       "sync" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr size_t      total = sizeof(variants) / sizeof(variants[0]);
   };
 
   struct FldsBC : public enums_hidden::EnumBase<FldsBC> {
@@ -242,7 +243,7 @@ namespace ntt {
       "periodic", "match", "fixed",     "atmosphere", "custom",
       "horizon",  "axis",  "conductor", "sync"
     };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr size_t total = sizeof(variants) / sizeof(variants[0]);
   };
 
   struct FldsID : public enums_hidden::EnumBase<FldsID> {
@@ -280,7 +281,7 @@ namespace ntt {
                                               "b",    "h",    "j",      "a",
                                               "t",    "rho",  "charge", "n",
                                               "nppc", "v",    "custom" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr size_t      total = sizeof(variants) / sizeof(variants[0]);
   };
 
   struct StatsID : public enums_hidden::EnumBase<StatsID> {
@@ -311,7 +312,7 @@ namespace ntt {
     static constexpr const char* lookup[] = { "b^2",   "e^2",   "exb",    "j.e",
                                               "t",     "rho",   "charge", "n",
                                               "npart", "custom" };
-    static constexpr std::size_t total = sizeof(variants) / sizeof(variants[0]);
+    static constexpr size_t      total = sizeof(variants) / sizeof(variants[0]);
   };
 
   namespace ParticlePusher {

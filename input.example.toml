@@ -7,7 +7,7 @@
   # Simulation engine to use
   #   @required
   #   @type: string
-  #   @enum: "SRPIC", "GRPIC"
+  #   @enum: "SRPIC", "GRPIC", "HYBRID"
   engine = ""
   # Max runtime in physical (code) units
   #   @required
