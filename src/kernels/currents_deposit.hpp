@@ -14,6 +14,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -116,7 +117,7 @@ namespace kernel {
         if constexpr (D == Dim::_1D) {
           xp[0] = i_di_to_Xi(i1(p), dx1(p));
         } else if constexpr (D == Dim::_2D) {
-          if constexpr (M::PrtlDim == Dim::_3D) {
+          if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
             xp[0] = i_di_to_Xi(i1(p), dx1(p));
             xp[1] = i_di_to_Xi(i2(p), dx2(p));
             xp[2] = phi(p);
@@ -130,7 +131,7 @@ namespace kernel {
           xp[2] = i_di_to_Xi(i3(p), dx3(p));
         }
         auto inv_energy { ZERO };
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
           metric.template transform_xyz<Idx::XYZ, Idx::U>(xp,
                                                           { ux1(p), ux2(p), ux3(p) },
                                                           vp);

@@ -1,9 +1,11 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
 #include "utils/log.h"
 
 #include "framework/containers/fields.h"
+#include "framework/specialization_registry.h"
 #include "output/utils/readers.h"
 #include "output/utils/writers.h"
 
@@ -30,8 +32,10 @@ namespace ntt {
     ls6.push_back(6);
 
     io.DefineVariable<real_t>("em", gs6, lo6, ls6);
-    if (S == ntt::SimEngine::GRPIC) {
+    if (::traits::engine::WriteEM0FieldToCheckpoint<S>) {
       io.DefineVariable<real_t>("em0", gs6, lo6, ls6);
+    }
+    if (::traits::engine::WriteCurFieldToCheckpoint<S>) {
       auto gs3 = std::vector<size_t>(global_shape.begin(), global_shape.end());
       auto lo3 = std::vector<size_t>(local_offset.begin(), local_offset.end());
       auto ls3 = std::vector<size_t>(local_shape.begin(), local_shape.end());
@@ -52,8 +56,10 @@ namespace ntt {
     range6.first.push_back(0);
     range6.second.push_back(6);
     out::ReadNDField<D, 6>(io, reader, "em", em, range6);
-    if (S == ntt::SimEngine::GRPIC) {
+    if (::traits::engine::WriteEM0FieldToCheckpoint<S>) {
       out::ReadNDField<D, 6>(io, reader, "em0", em0, range6);
+    }
+    if (::traits::engine::WriteCurFieldToCheckpoint<S>) {
       auto range3 = adios2::Box<adios2::Dims>(range.first, range.second);
       range3.first.push_back(0);
       range3.second.push_back(3);
@@ -66,12 +72,15 @@ namespace ntt {
     logger::Checkpoint("Writing fields checkpoint", HERE);
 
     out::WriteNDField<D, 6>(io, writer, "em", em);
-    if (S == ntt::SimEngine::GRPIC) {
+    if (::traits::engine::WriteEM0FieldToCheckpoint<S>) {
       out::WriteNDField<D, 6>(io, writer, "em0", em0);
+    }
+    if (::traits::engine::WriteCurFieldToCheckpoint<S>) {
       out::WriteNDField<D, 3>(io, writer, "cur", cur);
     }
   }
 
+  // NOLINTBEGIN(bugprone-macro-parentheses)
 #define FIELDS_CHECKPOINTS(D, S)                                                \
   template void Fields<D, S>::CheckpointDeclare(adios2::IO&,                    \
                                                 const std::vector<ncells_t>&,   \
@@ -83,11 +92,8 @@ namespace ntt {
                                              const adios2::Box<adios2::Dims>&); \
   template void Fields<D, S>::CheckpointWrite(adios2::IO&, adios2::Engine&) const;
 
-  FIELDS_CHECKPOINTS(Dim::_1D, SimEngine::SRPIC)
-  FIELDS_CHECKPOINTS(Dim::_2D, SimEngine::SRPIC)
-  FIELDS_CHECKPOINTS(Dim::_3D, SimEngine::SRPIC)
-  FIELDS_CHECKPOINTS(Dim::_2D, SimEngine::GRPIC)
-  FIELDS_CHECKPOINTS(Dim::_3D, SimEngine::GRPIC)
+  NTT_FOREACH_SPECIALIZATION_FIELDS(FIELDS_CHECKPOINTS)
 #undef FIELDS_CHECKPOINTS
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt

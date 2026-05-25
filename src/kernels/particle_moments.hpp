@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
@@ -150,7 +151,7 @@ namespace kernel {
     Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
-      if constexpr (S == SimEngine::SRPIC) {
+      if constexpr (::traits::engine::StressEnergyInTetradBasis<S>) {
         // stress-energy tensor for SR is computed in the tetrad (hatted) basis
         if constexpr (M::CoordType == Coord::Cartesian) {
           u_Phys[0] = particles.ux1(p);
@@ -166,7 +167,7 @@ namespace kernel {
           if constexpr (D == Dim::_3D) {
             x_Code[2] = static_cast<real_t>(particles.i3(p)) +
                         static_cast<real_t>(particles.dx3(p));
-          } else {
+          } else if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
             x_Code[2] = particles.phi(p);
           }
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
@@ -177,7 +178,7 @@ namespace kernel {
         u0 = (mass == ZERO)
                ? (NORM(u_Phys[0], u_Phys[1], u_Phys[2]))
                : (math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2])));
-      } else if constexpr (S == SimEngine::GRPIC) {
+      } else if constexpr (::traits::engine::StressEnergyInContravariantBasis<S>) {
         // stress-energy tensor for GR is computed in contravariant basis
         static_assert(D != Dim::_1D, "GRPIC 1D");
         coord_t<D> x_Code { ZERO };
@@ -744,13 +745,13 @@ namespace kernel {
         return;
       }
       real_t en;
-      if constexpr (S == SimEngine::SRPIC) {
+      if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
         if (is_massive) {
           en = U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)) - ONE;
         } else {
           en = NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p));
         }
-      } else if constexpr (S == SimEngine::GRPIC) {
+      } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
         coord_t<M::Dim> x_Code { ZERO };
         x_Code[0] = static_cast<real_t>(particles.i1(p)) +
                     static_cast<real_t>(particles.dx1(p));

@@ -17,6 +17,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "traits/archetypes.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -222,17 +223,21 @@ namespace kernel {
         if constexpr (M::CoordType == Coord::Cartesian) {
           energy_dist_1(x_Ph, v1);
           energy_dist_2(x_Ph, v2);
-        } else if constexpr (S == SimEngine::SRPIC) {
+        } else if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
           coord_t<M::PrtlDim> x_Cd_ { ZERO };
           x_Cd_[0] = x_Cd[0];
           x_Cd_[1] = x_Cd[1];
-          x_Cd_[2] = ZERO; // phi = 0
+          if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
+            x_Cd_[2] = ZERO; // phi = 0
+          } else {
+            x_Cd_[2] = x_Cd[2];
+          }
           vec_t<Dim::_3D> v_Ph { ZERO };
           energy_dist_1(x_Ph, v_Ph);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v1);
           energy_dist_2(x_Ph, v_Ph);
           metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v2);
-        } else if constexpr (S == SimEngine::GRPIC) {
+        } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
           vec_t<Dim::_3D> v_Ph { ZERO };
           energy_dist_1(x_Ph, v_Ph);
           metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v1);
@@ -443,13 +448,13 @@ namespace kernel {
           if constexpr (M::CoordType != Coord::Cartesian) {
             phi = in_phi(p);
           }
-          if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
+          if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
             x_Cd_[2] = phi;
           }
 
-          if constexpr (S == SimEngine::SRPIC) {
+          if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, u_Ph, u_Cd);
-          } else if constexpr (S == SimEngine::GRPIC) {
+          } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
             global_metric.template transform<Idx::PD, Idx::D>(x_Cd, u_Ph, u_Cd);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
@@ -480,9 +485,9 @@ namespace kernel {
 
           vec_t<Dim::_3D> u_Ph { in_ux1(p), in_ux2(p), in_ux3(p) };
 
-          if constexpr (S == SimEngine::SRPIC) {
+          if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
             global_metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, u_Ph, u_Cd);
-          } else if constexpr (S == SimEngine::GRPIC) {
+          } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
             global_metric.template transform<Idx::PD, Idx::D>(x_Cd, u_Ph, u_Cd);
           } else {
             raise::KernelError(HERE, "Unknown simulation engine");
@@ -733,7 +738,7 @@ namespace kernel {
         coord_t<M::PrtlDim>     x_Cd_ { ZERO };
         x_Cd_[0] = x_Cd[0];
         x_Cd_[1] = x_Cd[1];
-        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
+        if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
           x_Cd_[2] = ZERO;
         }
         metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
@@ -758,10 +763,12 @@ namespace kernel {
           {
             vec_t<Dim::_3D> v_T { ZERO };
             energy_dist_1(x_Ph, v_T);
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
               metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
+            } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
               metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
+            } else {
+              raise::KernelError(HERE, "Unknown simulation engine");
             }
           }
           inject1(index,
@@ -773,10 +780,12 @@ namespace kernel {
           {
             vec_t<Dim::_3D> v_T { ZERO };
             energy_dist_2(x_Ph, v_T);
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
               metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
+            } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
               metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
+            } else {
+              raise::KernelError(HERE, "Unknown simulation engine");
             }
           }
           inject2(index,
@@ -823,10 +832,12 @@ namespace kernel {
           {
             vec_t<Dim::_3D> v_T { ZERO };
             energy_dist_1(x_Ph, v_T);
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
               metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
+            } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
               metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+            } else {
+              raise::KernelError(HERE, "Unknown simulation engine");
             }
           }
           inject1(
@@ -839,10 +850,12 @@ namespace kernel {
           {
             vec_t<Dim::_3D> v_T { ZERO };
             energy_dist_2(x_Ph, v_T);
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
               metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
-            } else if constexpr (S == SimEngine::GRPIC) {
+            } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
               metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+            } else {
+              raise::KernelError(HERE, "Unknown simulation engine");
             }
           }
           inject2(

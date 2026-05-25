@@ -37,6 +37,12 @@ namespace ntt {
     static constexpr auto dimension = D;
   };
 
+#define NTT_FOREACH_SPECIALIZATION_FIELDS(MACRO)                               \
+  MACRO(Dim::_1D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_2D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_3D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_2D, SimEngine::GRPIC)
+
 #define NTT_FOREACH_SPECIALIZATION(MACRO)                                      \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D)                         \

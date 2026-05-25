@@ -15,6 +15,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/numeric.h"
 
@@ -461,7 +462,7 @@ namespace kernel {
           // for stress-energy tensor
           real_t          energy { ZERO };
           vec_t<Dim::_3D> u_Phys { ZERO };
-          if constexpr (S == SimEngine::SRPIC) {
+          if constexpr (::traits::engine::StressEnergyInTetradBasis<S>) {
             // SR
             // stress-energy tensor for SR is computed in the tetrad (hatted) basis
             if constexpr (M::CoordType == Coord::Cartesian) {
@@ -478,7 +479,8 @@ namespace kernel {
               if constexpr (D == Dim::_3D) {
                 x_Code[2] = static_cast<real_t>(particles.i3(p)) +
                             static_cast<real_t>(particles.dx3(p));
-              } else {
+              } else if constexpr (
+                ::traits::engine::HasImplicitPhiCoordinate<S, M>) {
                 x_Code[2] = particles.phi(p);
               }
               metric.template transform_xyz<Idx::XYZ, Idx::T>(
@@ -492,7 +494,8 @@ namespace kernel {
               energy = mass * math::sqrt(
                                 ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
             }
-          } else {
+          } else if constexpr (
+            ::traits::engine::StressEnergyInContravariantBasis<S>) {
             // GR
             // stress-energy tensor for GR is computed in contravariant basis
             static_assert(D != Dim::_1D, "GRPIC 1D");
@@ -519,6 +522,8 @@ namespace kernel {
               energy = mass * math::sqrt(ONE + energy);
             }
             metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
+          } else {
+            raise::KernelError(HERE, "Unsupported engine for stress-energy tensor");
           }
           // compute the corresponding moment
           real_t coeff = ONE;

@@ -3,6 +3,10 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
+
+#include "framework/specialization_registry.h"
+
 #include <vector>
 
 namespace ntt {
@@ -28,9 +32,13 @@ namespace ntt {
       bckp = ndfield_t<Dim::_2D, 6> { "BCKP", nx1, nx2 };
       cur  = ndfield_t<Dim::_2D, 3> { "J", nx1, nx2 };
       buff = ndfield_t<Dim::_2D, 3> { "BUFF", nx1, nx2 };
-      if constexpr (S == SimEngine::GRPIC) {
-        aux  = ndfield_t<Dim::_2D, 6> { "AUX", nx1, nx2 };
-        em0  = ndfield_t<Dim::_2D, 6> { "EM0", nx1, nx2 };
+      if constexpr (::traits::engine::DefinesAuxFields<S>) {
+        aux = ndfield_t<Dim::_2D, 6> { "AUX", nx1, nx2 };
+      }
+      if constexpr (::traits::engine::DefinesEM0Fields<S>) {
+        em0 = ndfield_t<Dim::_2D, 6> { "EM0", nx1, nx2 };
+      }
+      if constexpr (::traits::engine::DefinesCur0Fields<S>) {
         cur0 = ndfield_t<Dim::_2D, 3> { "CUR0", nx1, nx2 };
       }
     } else if constexpr (D == Dim::_3D) {
@@ -38,18 +46,23 @@ namespace ntt {
       bckp = ndfield_t<Dim::_3D, 6> { "BCKP", nx1, nx2, nx3 };
       cur  = ndfield_t<Dim::_3D, 3> { "J", nx1, nx2, nx3 };
       buff = ndfield_t<Dim::_3D, 3> { "BUFF", nx1, nx2, nx3 };
-      if constexpr (S == SimEngine::GRPIC) {
-        aux  = ndfield_t<Dim::_3D, 6> { "AUX", nx1, nx2, nx3 };
-        em0  = ndfield_t<Dim::_3D, 6> { "EM0", nx1, nx2, nx3 };
+      if constexpr (::traits::engine::DefinesAuxFields<S>) {
+        aux = ndfield_t<Dim::_3D, 6> { "AUX", nx1, nx2, nx3 };
+      }
+      if constexpr (::traits::engine::DefinesEM0Fields<S>) {
+        em0 = ndfield_t<Dim::_3D, 6> { "EM0", nx1, nx2, nx3 };
+      }
+      if constexpr (::traits::engine::DefinesCur0Fields<S>) {
         cur0 = ndfield_t<Dim::_3D, 3> { "CUR0", nx1, nx2, nx3 };
       }
     }
   }
 
-  template struct Fields<Dim::_1D, SimEngine::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::SRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::SRPIC>;
-  template struct Fields<Dim::_2D, SimEngine::GRPIC>;
-  template struct Fields<Dim::_3D, SimEngine::GRPIC>;
+  // NOLINTBEGIN(bugprone-macro-parentheses)
+#define FIELDS_CONSTRUCTOR(D, S) template struct Fields<D, S>;
+
+  NTT_FOREACH_SPECIALIZATION_FIELDS(FIELDS_CONSTRUCTOR)
+#undef FIELDS_CONSTRUCTOR
+  // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt
