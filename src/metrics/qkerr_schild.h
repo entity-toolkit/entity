@@ -23,6 +23,7 @@
 #include "metrics/metric_base.h"
 
 namespace metric {
+  using namespace ntt;
 
   template <Dimension D>
   class QKerrSchild : public MetricBase<D> {
@@ -58,10 +59,10 @@ namespace metric {
     }
 
   public:
-    static constexpr const char* Label { "qkerr_schild" };
-    static constexpr Dimension   PrtlDim { D };
-    static constexpr ntt::Metric MetricType { ntt::Metric::QKerr_Schild };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Qspherical };
+    static constexpr const char*  Label { "qkerr_schild" };
+    static constexpr Dimension    PrtlDim { D };
+    static constexpr Metric::type MetricType { Metric::QKerr_Schild };
+    static constexpr Coord::type  CoordType { Coord::Qspherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;
