@@ -296,7 +296,7 @@ namespace kernel {
       if constexpr (F == FldsID::T) {
         coeff = computeStressEnergyComponent(p);
       } else if constexpr (F == FldsID::V) {
-        if constexpr (S == SimEngine::GRPIC) {
+        if constexpr (::traits::engine::IsGR<S>) {
           coeff = computeEckartVelocityFluxComponent(p);
         } else {
           coeff = computeBulk3VelocityTimesMass(p);

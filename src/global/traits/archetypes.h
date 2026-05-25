@@ -24,6 +24,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
+
 #include <Kokkos_Pair.hpp>
 
 template <class ED, Dimension D>
@@ -202,11 +204,11 @@ namespace traits::fieldsetter {
 
 template <class FS, ntt::SimEngine::type S, Dimension D>
 concept FieldSetterClass =
-  ((S == ntt::SimEngine::SRPIC) and
+  ((::traits::engine::IsSR<S>) and
    (::traits::fieldsetter::HasEx1<FS, D> or ::traits::fieldsetter::HasEx2<FS, D> or
     ::traits::fieldsetter::HasEx3<FS, D> or ::traits::fieldsetter::HasBx1<FS, D> or
     ::traits::fieldsetter::HasBx2<FS, D> or ::traits::fieldsetter::HasBx3<FS, D>)) or
-  ((S == ntt::SimEngine::GRPIC) and
+  ((::traits::engine::IsGR<S>) and
    ((::traits::fieldsetter::HasDx1<FS, D> and ::traits::fieldsetter::HasDx2<FS, D> and
      ::traits::fieldsetter::HasDx3<FS, D>) or
     (::traits::fieldsetter::HasBx1<FS, D> and ::traits::fieldsetter::HasBx2<FS, D> and

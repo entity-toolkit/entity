@@ -21,6 +21,22 @@
 namespace traits::engine {
 
   template <ntt::SimEngine::type S>
+  concept IsSR = (S == ntt::SimEngine::SRPIC);
+
+  [[nodiscard]]
+  constexpr auto isSR(ntt::SimEngine s) noexcept -> bool {
+    return s == ntt::SimEngine::SRPIC;
+  }
+
+  template <ntt::SimEngine::type S>
+  concept IsGR = (S == ntt::SimEngine::GRPIC);
+
+  [[nodiscard]]
+  constexpr auto isGR(ntt::SimEngine s) noexcept -> bool {
+    return s == ntt::SimEngine::GRPIC;
+  }
+
+  template <ntt::SimEngine::type S>
   concept VelocitiesInCartesianBasis = (S == ntt::SimEngine::SRPIC);
 
   template <ntt::SimEngine::type S>
@@ -49,6 +65,14 @@ namespace traits::engine {
 
   template <ntt::SimEngine::type S>
   concept UserFieldsInTetradBasis = (S == ntt::SimEngine::SRPIC);
+
+  template <ntt::SimEngine::type S>
+  concept UserFieldsInContravariantBasis = (S == ntt::SimEngine::GRPIC);
+
+  [[nodiscard]]
+  constexpr auto userFieldsInTetradBasis(ntt::SimEngine s) noexcept -> bool {
+    return s == ntt::SimEngine::SRPIC;
+  }
 
   template <ntt::SimEngine::type S, class M>
   concept HasImplicitPhiCoordinate = (S == ntt::SimEngine::SRPIC) and

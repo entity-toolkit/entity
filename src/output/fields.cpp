@@ -3,6 +3,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 
@@ -46,7 +47,7 @@ namespace out {
       comp = { { 1 }, { 2 }, { 3 } };
     } else if (id() == FldsID::V) {
       // bulk velocity: 3D for SR, 4D for GR
-      if (S == SimEngine::SRPIC) {
+      if (::traits::engine::isSR(S)) {
         // SR: always 3-velocity components
         comp = { { 1 }, { 2 }, { 3 } };
       } else {
@@ -65,7 +66,7 @@ namespace out {
     }
     // data preparation flags
     if (not(is_moment() or is_custom() or is_divergence())) {
-      if (S == SimEngine::SRPIC) {
+      if (::traits::engine::userFieldsInTetradBasis(S)) {
         prepare_flag = PrepareOutput::ConvertToHat;
       } else {
         prepare_flag = is_gr_aux_field() ? PrepareOutput::ConvertToPhysCov

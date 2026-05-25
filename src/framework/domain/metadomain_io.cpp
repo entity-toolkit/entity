@@ -545,7 +545,7 @@ namespace ntt {
                            HERE);
             }
           } else if (fld.is_vpotential()) {
-            if constexpr (S == SimEngine::GRPIC && M::Dim == Dim::_2D) {
+            if constexpr (::traits::engine::IsGR<S> && M::Dim == Dim::_2D) {
               const auto c = static_cast<uint8_t>(addresses.back());
               ComputeVectorPotential<S, M>(local_domain->fields.bckp,
                                            local_domain->fields.em,
@@ -608,7 +608,7 @@ namespace ntt {
             SynchronizeFields(*local_domain,
                               Comm::Bckp,
                               { addresses[0], addresses[2] + 1 });
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::IsSR<S>) {
               if (fld.id() == FldsID::V) {
                 // normalize 3vel * rho (combuted above) by rho
                 ComputeMoments<S, M, FldsID::Rho>(params,
@@ -643,7 +643,7 @@ namespace ntt {
                                            { cur::jx1, cur::jx3 + 1 },
                                            copy_to);
             } else if (fld.is_field()) {
-              if (S == SimEngine::GRPIC && fld.is_gr_aux_field()) {
+              if (::traits::engine::IsGR<S> && fld.is_gr_aux_field()) {
                 if (fld.is_efield()) {
                   // GR: E
                   DeepCopyFields<M::Dim, 6, 6>(local_domain->fields.aux,
@@ -696,7 +696,7 @@ namespace ntt {
             }
           }
         } else if (fld.comp.size() == 4) { // 4-vector
-          if constexpr (S == SimEngine::GRPIC) {
+          if constexpr (::traits::engine::IsGR<S>) {
             if (fld.is_moment() && fld.id() == FldsID::V) {
               // Compute 4-velocity: V^μ (u^0, u^1, u^2, u^3)
               for (auto i = 0; i < 4; ++i) {
