@@ -3,6 +3,7 @@
 
 #include "arch/directions.h"
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
@@ -204,74 +205,61 @@ namespace ntt {
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::CommunicateFields(Domain<S, M>& domain,
                                            CommTags      tags) const {
-    const auto comm_em = ((S == SimEngine::SRPIC) and
-                          ((tags & Comm::E) or (tags & Comm::B))) or
-                         ((S == SimEngine::GRPIC) and
-                          ((tags & Comm::D) or (tags & Comm::B)));
-    const bool comm_em0 = (S == SimEngine::GRPIC) and
-                          ((tags & Comm::B0) or (tags & Comm::D0));
-    const bool comm_j   = (tags & Comm::J);
-    const bool comm_aux = (S == SimEngine::GRPIC) and
-                          ((tags & Comm::E) or (tags & Comm::H));
-    raise::ErrorIf(not(comm_em or comm_em0 or comm_j or comm_aux),
+    const auto comm_em   = (tags & Comm::EM_012) or (tags & Comm::EM_345);
+    const auto comm_em0  = (tags & Comm::EM0_012) or (tags & Comm::EM0_345);
+    const auto comm_cur  = (tags & Comm::CUR);
+    const auto comm_cur0 = (tags & Comm::CUR0);
+    const auto comm_aux  = (tags & Comm::AUX_012) or (tags & Comm::AUX_345);
+
+    raise::ErrorIf(not(comm_em or comm_em0 or comm_cur or comm_aux or comm_cur0),
                    "CommunicateFields called with no task",
                    HERE);
+    if constexpr (not ::traits::engine::DefinesEM0Fields<S>) {
+      raise::ErrorIf(comm_em0,
+                     "CommunicateFields called with EM0 communication "
+                     "for an engine that does not define EM0 fields",
+                     HERE);
+    }
+    if constexpr (not ::traits::engine::DefinesAuxFields<S>) {
+      raise::ErrorIf(comm_aux,
+                     "CommunicateFields called with AUX communication "
+                     "for an engine that does not define AUX fields",
+                     HERE);
+    }
+    if constexpr (not ::traits::engine::DefinesCur0Fields<S>) {
+      raise::ErrorIf(comm_cur0,
+                     "CommunicateFields called with CUR0 communication "
+                     "for an engine that does not define CUR0 fields",
+                     HERE);
+    }
 
     std::string comms;
-    if (tags & Comm::E) {
-      comms += "E ";
+    if (tags & Comm::EM_012) {
+      comms += "EM[0-2] ";
     }
-    if (tags & Comm::B) {
-      comms += "B ";
+    if (tags & Comm::EM_345) {
+      comms += "EM[3-5] ";
     }
-    if (tags & Comm::J) {
-      comms += "J ";
+    if (comm_cur) {
+      comms += "CUR ";
     }
-    if (tags & Comm::D) {
-      comms += "D ";
+    if (tags & Comm::AUX_012) {
+      comms += "AUX[0-2] ";
     }
-    if (tags & Comm::H) {
-      comms += "H ";
+    if (tags & Comm::AUX_345) {
+      comms += "AUX[3-5] ";
     }
-    if (tags & Comm::D0) {
-      comms += "D0 ";
+    if (tags & Comm::EM0_012) {
+      comms += "EM0[0-2] ";
     }
-    if (tags & Comm::B0) {
-      comms += "B0 ";
+    if (tags & Comm::EM0_345) {
+      comms += "EM0[3-5] ";
+    }
+    if (comm_cur0) {
+      comms += "CUR0 ";
     }
     logger::Checkpoint(fmt::format("Communicating %s\n", comms.c_str()), HERE);
 
-    /**
-     * @note this block is designed to support in the future multiple domains
-     * on a single rank, however that is not yet implemented
-     */
-    // establish the last index ranges for fields (i.e., components)
-    auto comp_range_fld = cell_range_t {};
-    auto comp_range_cur = cell_range_t {};
-    if constexpr (S == SimEngine::GRPIC) {
-      if (((tags & Comm::D) and (tags & Comm::B)) or
-          ((tags & Comm::D0) and (tags & Comm::B0)) or
-          ((tags & Comm::E) and (tags & Comm::H))) {
-        comp_range_fld = cell_range_t(em::dx1, em::bx3 + 1);
-      } else if ((tags & Comm::D) or (tags & Comm::D0) or (tags & Comm::E)) {
-        comp_range_fld = cell_range_t(em::dx1, em::dx3 + 1);
-      } else if ((tags & Comm::B) or (tags & Comm::B0) or (tags & Comm::H)) {
-        comp_range_fld = cell_range_t(em::bx1, em::bx3 + 1);
-      }
-    } else if constexpr (S == SimEngine::SRPIC) {
-      if ((tags & Comm::E) and (tags & Comm::B)) {
-        comp_range_fld = cell_range_t(em::ex1, em::bx3 + 1);
-      } else if (tags & Comm::E) {
-        comp_range_fld = cell_range_t(em::ex1, em::ex3 + 1);
-      } else if (tags & Comm::B) {
-        comp_range_fld = cell_range_t(em::bx1, em::bx3 + 1);
-      }
-    } else {
-      raise::Error("Unknown simulation engine", HERE);
-    }
-    if (comm_j) {
-      comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
-    }
     // traverse in all directions and send/recv the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
@@ -284,6 +272,16 @@ namespace ntt {
         continue;
       }
       if (comm_em) {
+        auto comp_range = cell_range_t {};
+        if ((tags & Comm::EM_012) and (tags & Comm::EM_345)) {
+          comp_range = cell_range_t(0, 6);
+        } else if (tags & Comm::EM_012) {
+          comp_range = cell_range_t(0, 3);
+        } else if (tags & Comm::EM_345) {
+          comp_range = cell_range_t(3, 6);
+        } else {
+          raise::Error("Incorrect logic", HERE);
+        }
         comm::CommunicateField<M::Dim, 6>(domain.index(),
                                           domain.fields.em,
                                           domain.fields.em,
@@ -293,75 +291,81 @@ namespace ntt {
                                           recv_rank,
                                           send_slice,
                                           recv_slice,
-                                          comp_range_fld,
+                                          comp_range,
                                           false);
       }
-      if constexpr (S == SimEngine::GRPIC) {
-        if (comm_aux) {
-          comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                            domain.fields.aux,
-                                            domain.fields.aux,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_fld,
-                                            false);
+      if (comm_aux) {
+        auto comp_range = cell_range_t {};
+        if ((tags & Comm::AUX_012) and (tags & Comm::AUX_345)) {
+          comp_range = cell_range_t(0, 6);
+        } else if (tags & Comm::AUX_012) {
+          comp_range = cell_range_t(0, 3);
+        } else if (tags & Comm::AUX_345) {
+          comp_range = cell_range_t(3, 6);
+        } else {
+          raise::Error("Incorrect logic", HERE);
         }
-        if (comm_em0) {
-          comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                            domain.fields.em0,
-                                            domain.fields.em0,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_fld,
-                                            false);
-          // @HACK_GR_1.2.0 -- this has to be done carefully
-          // comm::CommunicateField<M::Dim, 6>(domain.index(),
-          //                                   domain.fields.aux,
-          //                                   domain.fields.aux,
-          //                                   send_ind,
-          //                                   recv_ind,
-          //                                   send_rank,
-          //                                   recv_rank,
-          //                                   send_slice,
-          //                                   recv_slice,
-          //                                   comp_range_fld,
-          //                                   false);
+        comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                          domain.fields.aux,
+                                          domain.fields.aux,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          comp_range,
+                                          false);
+      }
+      if (comm_em0) {
+        auto comp_range = cell_range_t {};
+        if ((tags & Comm::EM0_012) and (tags & Comm::EM0_345)) {
+          comp_range = cell_range_t(0, 6);
+        } else if (tags & Comm::EM0_012) {
+          comp_range = cell_range_t(0, 3);
+        } else if (tags & Comm::EM0_345) {
+          comp_range = cell_range_t(3, 6);
+        } else {
+          raise::Error("Incorrect logic", HERE);
         }
-        if (comm_j) {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur0,
-                                            domain.fields.cur0,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            false);
-        }
-      } else {
-        if (comm_j) {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur,
-                                            domain.fields.cur,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            false);
-        }
+        comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                          domain.fields.em0,
+                                          domain.fields.em0,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          comp_range,
+                                          false);
+      }
+      if (comm_cur0) {
+        comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                          domain.fields.cur0,
+                                          domain.fields.cur0,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 3 },
+                                          false);
+      }
+      if (comm_cur) {
+        auto comp_range = cell_range_t(0, 3);
+        comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                          domain.fields.cur,
+                                          domain.fields.cur,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 3 },
+                                          false);
       }
     }
   }
@@ -409,20 +413,37 @@ namespace ntt {
   void Metadomain<S, M>::SynchronizeFields(Domain<S, M>& domain,
                                            CommTags      tags,
                                            const cell_range_t& components) const {
-    const bool comm_j    = (tags & Comm::J);
+    const bool comm_cur  = (tags & Comm::CUR);
+    const bool comm_cur0 = (tags & Comm::CUR0);
     const bool comm_bckp = (tags & Comm::Bckp);
     const bool comm_buff = (tags & Comm::Buff);
-    raise::ErrorIf(not(comm_j || comm_bckp || comm_buff),
+    raise::ErrorIf(not(comm_cur0 || comm_cur || comm_bckp || comm_buff),
                    "SynchronizeFields called with no task or incorrect task",
                    HERE);
-    raise::ErrorIf(comm_j and comm_buff,
-                   "SynchronizeFields cannot sync J and Buff at the same time",
+    raise::ErrorIf(
+      (comm_cur0 and comm_buff) or (comm_cur and comm_buff),
+      "SynchronizeFields cannot sync CUR/CUR0 and Buff at the same time",
+      HERE);
+    raise::ErrorIf((comm_cur0 and comm_cur),
+                   "SynchronizeFields cannot sync CUR and CUR0 at the same "
+                   "time (both use Buff as buffer)",
                    HERE);
-    const auto synchronize = true;
+
+    if constexpr (not ::traits::engine::DefinesCur0Fields<S>) {
+      raise::ErrorIf(comm_cur0,
+                     "CommunicateFields called with CUR0 communication "
+                     "for an engine that does not define CUR0 fields",
+                     HERE);
+    }
+
+    const auto SYNCHRONIZE = true;
 
     std::string comms;
-    if (comm_j) {
-      comms += "J ";
+    if (comm_cur) {
+      comms += "CUR ";
+    }
+    if (comm_cur0) {
+      comms += "CUR0 ";
     }
     if (comm_bckp) {
       comms += "Bckp ";
@@ -432,11 +453,6 @@ namespace ntt {
     }
     logger::Checkpoint(fmt::format("Synchronizing %s\n", comms.c_str()), HERE);
 
-    auto comp_range_cur = cell_range_t {};
-    if (comm_j) {
-      comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
-      Kokkos::deep_copy(domain.fields.buff, ZERO);
-    }
     ndfield_t<M::Dim, 6> bckp_recv;
     ndfield_t<M::Dim, 3> buff_recv;
     if (comm_bckp) {
@@ -480,32 +496,32 @@ namespace ntt {
       if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
-      if (comm_j) {
-        if constexpr (S == SimEngine::GRPIC) {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur0,
-                                            domain.fields.buff,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            synchronize);
-        } else {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur,
-                                            domain.fields.buff,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            synchronize);
-        }
+      if (comm_cur) {
+        Kokkos::deep_copy(domain.fields.buff, ZERO);
+        comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                          domain.fields.cur,
+                                          domain.fields.buff,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 3 },
+                                          SYNCHRONIZE);
+      } else if (comm_cur0) {
+        Kokkos::deep_copy(domain.fields.buff, ZERO);
+        comm::CommunicateField<M::Dim, 3>(domain.index(),
+                                          domain.fields.cur0,
+                                          domain.fields.buff,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 3 },
+                                          SYNCHRONIZE);
       }
       if (comm_bckp) {
         comm::CommunicateField<M::Dim, 6>(domain.index(),
@@ -518,7 +534,7 @@ namespace ntt {
                                           send_slice,
                                           recv_slice,
                                           components,
-                                          synchronize);
+                                          SYNCHRONIZE);
       }
       if (comm_buff) {
         comm::CommunicateField<M::Dim, 3>(domain.index(),
@@ -531,21 +547,19 @@ namespace ntt {
                                           send_slice,
                                           recv_slice,
                                           components,
-                                          synchronize);
+                                          SYNCHRONIZE);
       }
     }
-    if (comm_j) {
-      if constexpr (S == SimEngine::GRPIC) {
-        AddBufferedFields<M::Dim, 3>(domain.fields.cur0,
-                                     domain.fields.buff,
-                                     domain.mesh.rangeActiveCells(),
-                                     comp_range_cur);
-      } else {
-        AddBufferedFields<M::Dim, 3>(domain.fields.cur,
-                                     domain.fields.buff,
-                                     domain.mesh.rangeActiveCells(),
-                                     comp_range_cur);
-      }
+    if (comm_cur) {
+      AddBufferedFields<M::Dim, 3>(domain.fields.cur,
+                                   domain.fields.buff,
+                                   domain.mesh.rangeActiveCells(),
+                                   { 0, 3 });
+    } else if (comm_cur0) {
+      AddBufferedFields<M::Dim, 3>(domain.fields.cur0,
+                                   domain.fields.buff,
+                                   domain.mesh.rangeActiveCells(),
+                                   { 0, 3 });
     }
     if (comm_bckp) {
       AddBufferedFields<M::Dim, 6>(domain.fields.bckp,

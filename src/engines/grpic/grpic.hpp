@@ -38,6 +38,16 @@
 
 namespace ntt {
 
+  namespace grpic::Comm {
+    static constexpr auto E  = ::Comm::AUX_012;
+    static constexpr auto H  = ::Comm::AUX_345;
+    static constexpr auto D  = ::Comm::EM_012;
+    static constexpr auto D0 = ::Comm::EM0_012;
+    static constexpr auto B  = ::Comm::EM_345;
+    static constexpr auto B0 = ::Comm::EM0_345;
+    static constexpr auto J  = ::Comm::CUR0;
+  } // namespace grpic::Comm
+
   template <GRMetricClass M>
   class GRPICEngine : public Engine<SimEngine::GRPIC, M> {
     using base_t   = Engine<SimEngine::GRPIC, M>;
@@ -64,6 +74,7 @@ namespace ntt {
     ~GRPICEngine() override = default;
 
     void step_forward(timer::Timers& timers, domain_t& dom) override {
+
       const auto fieldsolver_enabled = m_params.template get<bool>(
         "algorithms.fieldsolver.enable");
       const auto deposit_enabled = m_params.template get<bool>(
@@ -94,7 +105,8 @@ namespace ntt {
            * em0::D, em::D, em0::B, em::B <- boundary conditions
            */
           m_metadomain.CommunicateFields(dom,
-                                         Comm::B | Comm::B0 | Comm::D | Comm::D0);
+                                         grpic::Comm::B | grpic::Comm::B0 |
+                                           grpic::Comm::D | grpic::Comm::D0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -122,7 +134,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::H | Comm::E);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::H | grpic::Comm::E);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -144,7 +156,7 @@ namespace ntt {
           /**
            * em0::B, em::B <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::B | grpic::Comm::B0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -166,7 +178,7 @@ namespace ntt {
           /**
            * em0::D, em::D <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::D | grpic::Comm::D0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -186,7 +198,7 @@ namespace ntt {
           /**
            * aux::E, aux::H <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::H | Comm::E);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::H | grpic::Comm::E);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -209,7 +221,7 @@ namespace ntt {
           /**
            * em0::B, em::B <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::B | grpic::Comm::B0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -226,7 +238,7 @@ namespace ntt {
           /**
            * em0::D, em::D <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::D | grpic::Comm::D0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -243,7 +255,7 @@ namespace ntt {
           /**
            * aux::H <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::H);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::H);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -261,7 +273,7 @@ namespace ntt {
           /**
            * em0::D, em::D <- boundary conditions
            */
-          m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::D | grpic::Comm::D0);
           grpic::FieldBoundaries(dom,
                                  m_metadomain.mesh(),
                                  m_pgen,
@@ -336,7 +348,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::E);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
@@ -360,7 +372,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::B | grpic::Comm::B0);
         timers.stop("Communications");
         /**
          * em0::B, em::B <- boundary conditions
@@ -384,7 +396,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::H);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::H);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
@@ -421,8 +433,8 @@ namespace ntt {
           timers.stop("CurrentDeposit");
 
           timers.start("Communications");
-          m_metadomain.SynchronizeFields(dom, Comm::J);
-          m_metadomain.CommunicateFields(dom, Comm::J);
+          m_metadomain.SynchronizeFields(dom, grpic::Comm::J);
+          m_metadomain.CommunicateFields(dom, grpic::Comm::J);
           timers.stop("Communications");
 
           timers.start("FieldBoundaries");
@@ -463,7 +475,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::E);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
@@ -491,7 +503,7 @@ namespace ntt {
          * em0::B, em::B <- boundary conditions
          */
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::B0);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::B | grpic::Comm::B0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         grpic::FieldBoundaries(dom,
@@ -529,7 +541,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::D | grpic::Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         grpic::FieldBoundaries(dom,
@@ -550,7 +562,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::H);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::H);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         /**
@@ -600,7 +612,7 @@ namespace ntt {
          * em0::D, em::D <- boundary conditions
          */
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::D | Comm::D0);
+        m_metadomain.CommunicateFields(dom, grpic::Comm::D | grpic::Comm::D0);
         timers.stop("Communications");
         timers.start("FieldBoundaries");
         grpic::FieldBoundaries(dom,

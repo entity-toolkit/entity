@@ -96,7 +96,7 @@ namespace ntt {
                                domain.fields.buff,
                                size,
                                domain.mesh.flds_bc()));
-        metadomain.CommunicateFields(domain, Comm::J); // J0
+        metadomain.CommunicateFields(domain, ::Comm::CUR0); // J0
       }
     }
 

@@ -41,7 +41,8 @@ namespace ntt {
   MACRO(Dim::_1D, SimEngine::SRPIC)                                            \
   MACRO(Dim::_2D, SimEngine::SRPIC)                                            \
   MACRO(Dim::_3D, SimEngine::SRPIC)                                            \
-  MACRO(Dim::_2D, SimEngine::GRPIC)
+  MACRO(Dim::_2D, SimEngine::GRPIC)                                            \
+  MACRO(Dim::_3D, SimEngine::GRPIC)
 
 #define NTT_FOREACH_SPECIALIZATION(MACRO)                                      \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
