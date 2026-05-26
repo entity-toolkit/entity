@@ -7,6 +7,8 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
+#include "output/utils/tuning.h"
+
 #include <Kokkos_Core.hpp>
 #include <adios2.h>
 
@@ -17,12 +19,13 @@
 
 namespace checkpoint {
 
-  void Writer::init(adios2::ADIOS*     ptr_adios,
-                    const path_t&      checkpoint_root,
-                    timestep_t         interval,
-                    simtime_t          interval_time,
-                    int                keep,
-                    const std::string& walltime) {
+  void Writer::init(adios2::ADIOS*        ptr_adios,
+                    const path_t&         checkpoint_root,
+                    timestep_t            interval,
+                    simtime_t             interval_time,
+                    int                   keep,
+                    const std::string&    walltime,
+                    const out::Bp5Tuning& bp5) {
     m_keep            = keep;
     m_checkpoint_root = checkpoint_root;
     m_enabled         = keep != 0;
@@ -35,6 +38,8 @@ namespace checkpoint {
 
     m_io = p_adios->DeclareIO("Entity::Checkpoint");
     m_io.SetEngine("BPFile");
+
+    out::ApplyBp5Tuning(m_io, "BPFile", bp5);
 
     m_io.DefineVariable<timestep_t>("Step");
     m_io.DefineVariable<simtime_t>("Time");

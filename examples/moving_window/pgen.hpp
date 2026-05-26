@@ -68,7 +68,7 @@ namespace user {
         pos_di -= static_cast<real_t>(pos_di >= ONE);
         if ((pos_i - init_pos_i) >= shift) {
           // move the window and all fields and particles in it
-          arch::MoveWindow<S, M, in::x1>(domain, metadomain, shift);
+          arch::MoveWindow<M, in::x1>(domain, metadomain, shift);
           // update window index for next update
           pos_i -= shift;
         }

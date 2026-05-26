@@ -11,9 +11,9 @@
 
 #include "archetypes/energy_dist.h"
 #include "archetypes/particle_injector.h"
+#include "archetypes/utils.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/particle_moments.hpp"
 
 namespace user {
   using namespace ntt;
@@ -117,39 +117,18 @@ namespace user {
       std::copy(xi_min.begin(), xi_min.end(), x_min);
       std::copy(xi_max.begin(), xi_max.end(), x_max);
 
-      std::vector<unsigned short> specs {};
+      std::vector<spidx_t> specs {};
       for (auto& sp : domain_ptr->species) {
         if (sp.mass() > 0) {
           specs.push_back(sp.index());
         }
       }
 
-      Kokkos::deep_copy(density, ZERO);
-      auto  scatter_buff = Kokkos::Experimental::create_scatter_view(density);
-      // some parameters
-      auto& mesh         = domain_ptr->mesh;
-      const auto use_weights = params.template get<bool>(
-        "particles.use_weights");
-      const auto ni2 = mesh.n_active(in::x2);
-
-      for (const auto& sp : specs) {
-        auto& prtl_spec = domain_ptr->species[sp - 1];
-        // clang-format off
-        Kokkos::parallel_for(
-          "ComputeMoments",
-          prtl_spec.rangeActiveParticles(),
-          kernel::ParticleMoments_kernel<SimEngine::GRPIC, M, FldsID::Rho, 3>({}, scatter_buff, 0u,
-                                                               prtl_spec.i1, prtl_spec.i2, prtl_spec.i3,
-                                                               prtl_spec.dx1, prtl_spec.dx2, prtl_spec.dx3,
-                                                               prtl_spec.ux1, prtl_spec.ux2, prtl_spec.ux3,
-                                                               prtl_spec.phi, prtl_spec.weight, prtl_spec.tag,
-                                                               prtl_spec.mass(), prtl_spec.charge(),
-                                                               use_weights,
-                                                               metric, mesh.flds_bc(),
-                                                               ni2, inv_n0, ZERO));
-        // clang-format on
-      }
-      Kokkos::Experimental::contribute(density, scatter_buff);
+      arch::ComputeMomentWithSpecies<SimEngine::GRPIC, M, FldsID::Rho, 3>(
+        params,
+        *domain_ptr,
+        specs,
+        density);
     }
 
     Inline auto sigma_crit(const coord_t<M::Dim>& x_Ph) const -> bool {

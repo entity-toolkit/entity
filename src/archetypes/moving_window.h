@@ -28,10 +28,10 @@ namespace arch {
     const BCTags    tags;
     const int       window_shift;
 
-    FieldShift_kernel(ndfield_t<D, 6> Fld,
-                      ndfield_t<D, 6> backup_Fld,
-                      const int       window_shift,
-                      BCTags          tags)
+    FieldShift_kernel(ndfield_t<D, 6>&       Fld,
+                      const ndfield_t<D, 6>& backup_Fld,
+                      int                    window_shift,
+                      BCTags                 tags)
       : Fld { Fld }
       , backup_Fld { backup_Fld }
       , window_shift { window_shift }
@@ -136,10 +136,10 @@ namespace arch {
    * @brief Updates particle position and fields in the moving window.
 
    */
-  template <SimEngine::type S, CartesianMetricClass M, in o>
-  Inline void MoveWindow(Domain<S, M>&     domain,
-                         Metadomain<S, M>& metadomain,
-                         int               window_shift) {
+  template <CartesianMetricClass M, in o>
+  inline void MoveWindow(Domain<SimEngine::SRPIC, M>&     domain,
+                         Metadomain<SimEngine::SRPIC, M>& metadomain,
+                         int                              window_shift) {
 
     /*
       move particles in the window back by the window size

@@ -194,6 +194,23 @@ namespace ntt {
     set("checkpoint.read_path",
         toml::find_or(toml_data, "checkpoint", "read_path", checkpoint_write_path));
 
+    /* [adios2] ------------------------------------------------------------- */
+    set("adios2.aggregators_per_node",
+        toml::find_or<int>(toml_data,
+                           "adios2",
+                           "aggregators_per_node",
+                           defaults::adios2::aggregators_per_node));
+    set("adios2.max_shm_size",
+        toml::find_or<size_t>(toml_data,
+                              "adios2",
+                              "max_shm_size",
+                              defaults::adios2::max_shm_size));
+    set("adios2.buffer_chunk_size",
+        toml::find_or<size_t>(toml_data,
+                              "adios2",
+                              "buffer_chunk_size",
+                              defaults::adios2::buffer_chunk_size));
+
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",
         toml::find_or(toml_data, "diagnostics", "interval", defaults::diag::interval));

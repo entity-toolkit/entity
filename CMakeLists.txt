@@ -7,7 +7,7 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.4.0
+  VERSION 1.4.2
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
@@ -28,35 +28,35 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults.cmake)
 
 # defaults
 set(DEBUG
-  ${default_debug}
-  CACHE BOOL "Debug mode")
+    ${default_debug}
+    CACHE BOOL "Debug mode")
 
 set(precision
-  ${default_precision}
-  CACHE STRING "Precision")
+    ${default_precision}
+    CACHE STRING "Precision")
 
 set(deposit
-  ${default_deposit}
-  CACHE STRING "Deposit")
+    ${default_deposit}
+    CACHE STRING "Deposit")
 
 set(shape_order
-  ${default_shape_order}
-  CACHE STRING "Shape function")
+    ${default_shape_order}
+    CACHE STRING "Shape function")
 
 set(pgen
-  ${default_pgen}
-  CACHE STRING "Problem generator")
+    ${default_pgen}
+    CACHE STRING "Problem generator")
 
 set(output
-  ${default_output}
-  CACHE BOOL "Enable output")
+    ${default_output}
+    CACHE BOOL "Enable output")
 set(mpi
-  ${default_mpi}
-  CACHE BOOL "Use MPI")
+    ${default_mpi}
+    CACHE BOOL "Use MPI")
 
 set(gpu_aware_mpi
-  ${default_gpu_aware_mpi}
-  CACHE BOOL "Enable GPU-aware MPI")
+    ${default_gpu_aware_mpi}
+    CACHE BOOL "Enable GPU-aware MPI")
 
 set(team_policy
   ${default_team_policy}
@@ -75,42 +75,42 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(${DEBUG} STREQUAL "OFF")
   set(CMAKE_BUILD_TYPE
-    Release
-    CACHE STRING "CMake build type")
+      Release
+      CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG -O3")
 else()
   set(CMAKE_BUILD_TYPE
-    Debug
-    CACHE STRING "CMake build type")
+      Debug
+      CACHE STRING "CMake build type")
   set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
+      "${CMAKE_CXX_FLAGS} -DDEBUG -Wall -Wextra -Wno-unknown-pragmas")
 endif()
 
 # options
 set(precisions
-  "single" "double"
-  CACHE STRING "Precisions")
+    "single" "double"
+    CACHE STRING "Precisions")
 
 set(deposits
-  "zigzag" "esirkepov"
-  CACHE STRING "Deposits")
+    "zigzag" "esirkepov"
+    CACHE STRING "Deposits")
 
 if(${deposit} STREQUAL "zigzag")
   set(shape_order
-    ${default_shape_order}
-    CACHE STRING "Shape functions")
+      ${default_shape_order}
+      CACHE STRING "Shape functions")
 endif()
 
 set(shape_orders
-  "1;2;3;4;5;6;7;8;9;10;11"
-  CACHE STRING "Shape orders")
+    "1;2;3;4;5;6;7;8;9;10;11"
+    CACHE STRING "Shape orders")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config.cmake)
 
 # ------------------------- Third-Party Tests ------------------------------ #
 set(BUILD_TESTING
-  OFF
-  CACHE BOOL "Build tests")
+    OFF
+    CACHE BOOL "Build tests")
 
 # ------------------------ Third-party dependencies ------------------------ #
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/dependencies.cmake)
@@ -139,8 +139,8 @@ else()
 endif()
 
 if(("${Kokkos_DEVICES}" MATCHES "CUDA")
-  OR ("${Kokkos_DEVICES}" MATCHES "HIP")
-  OR ("${Kokkos_DEVICES}" MATCHES "SYCL"))
+   OR ("${Kokkos_DEVICES}" MATCHES "HIP")
+   OR ("${Kokkos_DEVICES}" MATCHES "SYCL"))
   set(DEVICE_ENABLED ON)
 else()
   set(DEVICE_ENABLED OFF)
@@ -214,8 +214,8 @@ if(${mpi})
     endif()
   else()
     set(gpu_aware_mpi
-      OFF
-      CACHE BOOL "Use explicit copy when using MPI + GPU")
+        OFF
+        CACHE BOOL "Use explicit copy when using MPI + GPU")
   endif()
 endif()
 
@@ -261,7 +261,8 @@ else()
     string(REPLACE "/" "_" pg_nodir ${pg_nodir})
     set(pgen_suffix "_${pg_nodir}")
     set_problem_generator(${pg})
-    add_subdirectory(${SRC_DIR}/engines ${CMAKE_CURRENT_BINARY_DIR}/${pg_nodir}/engines)
+    add_subdirectory(${SRC_DIR}/engines
+                     ${CMAKE_CURRENT_BINARY_DIR}/${pg_nodir}/engines)
     add_subdirectory(${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${pg_nodir}/src)
     list(APPEND pgens_short ${PGEN})
   endforeach()
