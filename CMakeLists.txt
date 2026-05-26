@@ -65,7 +65,7 @@ set(team_policy_tile_size
   ${default_team_policy_tile_size}
   CACHE STRING "team_policy tile edge length in cells")
 set(team_policy_tile_sizes
-  "4;6;8;10;12"
+  "4;6;8;10;12;14;16"
   CACHE STRING "team_policy tile-size choices")
 
 # -------------------------- Compilation settings -------------------------- #

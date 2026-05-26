@@ -250,8 +250,12 @@ auto main(int argc, char* argv[]) -> int {
   try {
     // Run with each tile-size choice from the validated CMake list.
     run_all_orders<4u>();
+    run_all_orders<6u>();
     run_all_orders<8u>();
+    run_all_orders<10u>();
     run_all_orders<12u>();
+    run_all_orders<14u>();
+    run_all_orders<16u>();
   } catch (std::exception& e) {
     std::cerr << e.what() << '\n';
     Kokkos::finalize();
