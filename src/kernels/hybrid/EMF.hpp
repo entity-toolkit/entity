@@ -97,14 +97,14 @@ namespace kernel::hybrid {
         real_t Eestar0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
                          Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
         real_t Eestar1 =
-          -((INV_2)*Bfs(i1, comp_Bfs + 2) + (INV_2)*Bfs(i1 - 1, comp_Bfs + 2)) *
-            ((INV_2)*PP(i1, comp_PP + 0) + (INV_2)*PP(i1 - 1, comp_PP + 0)) +
-          ((INV_2)*PP(i1, comp_PP + 2) + (INV_2)*PP(i1 - 1, comp_PP + 2)) *
+          -(INV_2 * Bfs(i1, comp_Bfs + 2) + INV_2 * Bfs(i1 - 1, comp_Bfs + 2)) *
+            (INV_2 * PP(i1, comp_PP + 0) + INV_2 * PP(i1 - 1, comp_PP + 0)) +
+          (INV_2 * PP(i1, comp_PP + 2) + INV_2 * PP(i1 - 1, comp_PP + 2)) *
             Bfs(i1, comp_Bfs + 0);
         real_t Eestar2 =
-          ((INV_2)*Bfs(i1, comp_Bfs + 1) + (INV_2)*Bfs(i1 - 1, comp_Bfs + 1)) *
-            ((INV_2)*PP(i1, comp_PP + 0) + (INV_2)*PP(i1 - 1, comp_PP + 0)) -
-          ((INV_2)*PP(i1, comp_PP + 1) + (INV_2)*PP(i1 - 1, comp_PP + 1)) *
+          (INV_2 * Bfs(i1, comp_Bfs + 1) + INV_2 * Bfs(i1 - 1, comp_Bfs + 1)) *
+            (INV_2 * PP(i1, comp_PP + 0) + INV_2 * PP(i1 - 1, comp_PP + 0)) -
+          (INV_2 * PP(i1, comp_PP + 1) + INV_2 * PP(i1 - 1, comp_PP + 1)) *
             Bfs(i1, comp_Bfs + 0);
 
         const real_t coeff_1 { rho0 * gamma_ad * theta };
@@ -131,12 +131,12 @@ namespace kernel::hybrid {
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
         real_t Ecstar0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
                          Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
-        real_t Ecstar1 = ((INV_2)*Bfs(i1 + 1, comp_Bfs + 0) +
-                          (INV_2)*Bfs(i1, comp_Bfs + 0)) *
+        real_t Ecstar1 = (INV_2 * Bfs(i1 + 1, comp_Bfs + 0) +
+                          INV_2 * Bfs(i1, comp_Bfs + 0)) *
                            PP(i1, comp_PP + 2) -
                          Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 0);
-        real_t Ecstar2 = -((INV_2)*Bfs(i1 + 1, comp_Bfs + 0) +
-                           (INV_2)*Bfs(i1, comp_Bfs + 0)) *
+        real_t Ecstar2 = -(INV_2 * Bfs(i1 + 1, comp_Bfs + 0) +
+                           INV_2 * Bfs(i1, comp_Bfs + 0)) *
                            PP(i1, comp_PP + 1) +
                          Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 0);
 
@@ -150,10 +150,10 @@ namespace kernel::hybrid {
                     INV_2 *
                       (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
                       Bfs(i1, comp_Bfs + 2));
-        Ecstar1 += coeff_2 * (INV_4) *
+        Ecstar1 += coeff_2 * INV_4 *
                    (Bfs(i1 + 1, comp_Bfs + 0) + Bfs(i1, comp_Bfs + 0)) *
                    (Bfs(i1 + 1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1));
-        Ecstar2 += coeff_2 * (INV_4) *
+        Ecstar2 += coeff_2 * INV_4 *
                    (Bfs(i1 + 1, comp_Bfs + 0) + Bfs(i1, comp_Bfs + 0)) *
                    (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2));
 
@@ -175,10 +175,10 @@ namespace kernel::hybrid {
         Ec_out(i1, comp_Ee_out + 2) = INV_2 * (Ecstar2 + Ec(i1, comp_Ec + 2));
 
         // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
-        Bc_out(i1, comp_Bc_out + 0) = INV_2 * (((INV_2)*Bf(i1 + 1, comp_Bf + 0) +
-                                                (INV_2)*Bf(i1, comp_Bf + 0)) +
-                                               ((INV_2)*Bfs(i1 + 1, comp_Bf + 0) +
-                                                (INV_2)*Bfs(i1, comp_Bf + 0)));
+        Bc_out(i1, comp_Bc_out + 0) = INV_2 * ((INV_2 * Bf(i1 + 1, comp_Bf + 0) +
+                                                INV_2 * Bf(i1, comp_Bf + 0)) +
+                                               (INV_2 * Bfs(i1 + 1, comp_Bf + 0) +
+                                                INV_2 * Bfs(i1, comp_Bf + 0)));
 
         Bc_out(i1, comp_Bc_out + 1) = INV_2 * (Bf(i1, comp_Bf + 1) +
                                                Bfs(i1, comp_Bf + 1));
