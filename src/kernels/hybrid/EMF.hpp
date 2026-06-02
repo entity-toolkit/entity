@@ -47,7 +47,7 @@ namespace kernel::hybrid {
                const ndfield_t<D, 3>& Bfs,
                ndfield_t<D, 6>&       Ee_out,
                ndfield_t<D, 6>&       Ec_out,
-               ndfield_t<D, 3>&       Bc_out,
+               ndfield_t<D, 6>&       Bc_out,
                uint8_t                comp_PPP,
                uint8_t                comp_NN,
                uint8_t                comp_Ee_in,

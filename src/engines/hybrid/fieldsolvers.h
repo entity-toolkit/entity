@@ -74,31 +74,31 @@ namespace ntt {
       const auto d0       = engine_params.get<real_t>("skindepth0");
       const auto rho0     = engine_params.get<real_t>("larmor0");
       Kokkos::parallel_for(
-        "EMFPush1",
+        "EMFPush",
         domain.mesh.rangeActiveCells(),
-        kernel::hybrid::Faraday_kernel<D, 3>(domain.fields.aux,  // P
-                                             domain.fields.aux,  // N
-                                             domain.fields.em,   // Ee_in
-                                             domain.fields.em,   // Bf
-                                             domain.fields.em0,  // Ec
-                                             domain.fields.cur,  // Bfs
-                                             domain.fields.em0,  // Ee_out
-                                             domain.fields.bckp, // Ec_out
-                                             domain.fields.bckp, // Bc_out
-                                             0,                  // P
-                                             3,                  // N
-                                             0,                  // Ee_in
-                                             3,                  // Bf
-                                             0,                  // Ec
-                                             0,                  // Bfs
-                                             3,                  // Ee_out
-                                             0,                  // Ec_out
-                                             3,                  // Bc_out
-                                             dt,
-                                             gamma_ad,
-                                             theta,
-                                             d0,
-                                             rho0));
+        kernel::hybrid::EMF_kernel<D, 3>(domain.fields.aux,  // P
+                                         domain.fields.aux,  // N
+                                         domain.fields.em,   // Ee_in
+                                         domain.fields.em,   // Bf
+                                         domain.fields.em0,  // Ec
+                                         domain.fields.cur,  // Bfs
+                                         domain.fields.em0,  // Ee_out
+                                         domain.fields.bckp, // Ec_out
+                                         domain.fields.bckp, // Bc_out
+                                         0,                  // P
+                                         3,                  // N
+                                         0,                  // Ee_in
+                                         3,                  // Bf
+                                         0,                  // Ec
+                                         0,                  // Bfs
+                                         3,                  // Ee_out
+                                         0,                  // Ec_out
+                                         3,                  // Bc_out
+                                         dt,
+                                         gamma_ad,
+                                         theta,
+                                         d0,
+                                         rho0));
     }
 
   } // namespace hybrid

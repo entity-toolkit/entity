@@ -80,7 +80,7 @@ namespace ntt {
 
       // EMF calculation #1
       // Using:
-      //   aux::012 [V^(n)]
+      //   aux::012 [P^(n)]
       //   aux::3 [N^(n)]
       //   em::012 [Ee^(n)]
       //   em::345 [Bf^(n)]
@@ -89,8 +89,8 @@ namespace ntt {
       //
       // Bc* = interpolate Bf*
       // Bc^(n) = interpolate Bf^(n)
-      // Ee* = EMF(N^(n), V^(n), Bf*)
-      // Ec* = EMF(N^(n), V^(n), Bc*)
+      // Ee* = EMF(N^(n), P^(n), Bf*)
+      // Ec* = EMF(N^(n), P^(n), Bc*)
       //
       // Ee' = 0.5 * (Ee* + Ee^(n))
       // Ec' = 0.5 * (Ec* + Ec^(n))
@@ -100,6 +100,7 @@ namespace ntt {
       //   em0::345 <-- Ee'
       //   bckp::012 <-- Ec'
       //   bckp::345 <-- Bc'
+      hybrid::EMF(dom, this->engineParams());
 
       // Particle push #1
       // Using: bckp::012 [Ec'], bckp::345 [Bc']
@@ -117,7 +118,7 @@ namespace ntt {
 
       // EMF calculation #2
       // Using:
-      //   aux::012 [V']
+      //   aux::012 [P']
       //   aux::3 [N']
       //   em::012 [Ee^(n)]
       //   em::345 [Bf^(n)]
@@ -126,8 +127,8 @@ namespace ntt {
       //
       // Bc** = interpolate Bf**
       // Bc^(n) = interpolate Bf^(n)
-      // Ee** = EMF(N', V', Bf**)
-      // Ec** = EMF(N', V', Bc**)
+      // Ee** = EMF(N', P', Bf**)
+      // Ec** = EMF(N', P', Bc**)
       //
       // Ee'' = 0.5 * (Ee** + Ee^(n))
       // Ec'' = 0.5 * (Ec** + Ec^(n))
@@ -137,6 +138,7 @@ namespace ntt {
       //   em0::345 <-- Ee''
       //   bckp:012 <-- Ec''
       //   bckp:345 <-- Bc''
+      hybrid::EMF(dom, this->engineParams());
 
       // Faraday push #3
       // Using: em0::345 [Ee''], em::345 [Bf^(n)]
