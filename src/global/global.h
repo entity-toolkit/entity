@@ -154,6 +154,15 @@ namespace ntt {
     hx3 = 5
   };
 
+  enum comp : uint8_t {
+    c0 = 0,
+    c1 = 1,
+    c2 = 2,
+    c3 = 3,
+    c4 = 4,
+    c5 = 5,
+  };
+
   enum cur : uint8_t {
     jx1 = 0,
     jx2 = 1,

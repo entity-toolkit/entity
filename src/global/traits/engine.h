@@ -57,10 +57,12 @@ namespace traits::engine {
   concept StressEnergyInContravariantBasis = (S == ntt::SimEngine::GRPIC);
 
   template <ntt::SimEngine::type S>
-  concept DefinesEM0Fields = (S == ntt::SimEngine::GRPIC);
+  concept DefinesEM0Fields = (S == ntt::SimEngine::GRPIC) or
+                             (S == ntt::SimEngine::HYBRID);
 
   template <ntt::SimEngine::type S>
-  concept DefinesAuxFields = (S == ntt::SimEngine::GRPIC);
+  concept DefinesAuxFields = (S == ntt::SimEngine::GRPIC) or
+                             (S == ntt::SimEngine::HYBRID);
 
   template <ntt::SimEngine::type S>
   concept DefinesCur0Fields = (S == ntt::SimEngine::GRPIC);

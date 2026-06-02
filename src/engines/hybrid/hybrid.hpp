@@ -6,6 +6,8 @@
 #include "traits/metric.h"
 #include "utils/timer.h"
 
+#include "engines/hybrid/fieldsolvers.h"
+
 #include "engines/engine.hpp"
 
 namespace ntt {
@@ -74,6 +76,7 @@ namespace ntt {
       // Bf* = Bf^(n) + dt * curl Ee^(n)
       //
       // Now: cur::012 <-- Bf*
+      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push1);
 
       // EMF calculation #1
       // Using:
@@ -110,6 +113,7 @@ namespace ntt {
       // Bf** = Bf^(n) + dt * curl Ee'
       //
       // Now: cur::012 <-- Bf**
+      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push2);
 
       // EMF calculation #2
       // Using:
@@ -141,6 +145,7 @@ namespace ntt {
       //
       // Now:
       //   em::345 <-- Bf^(n+1)
+      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push3);
 
       // Particle push #2
       // Using: bckp::012 [Ec''], bckp::345 [Bc'']
