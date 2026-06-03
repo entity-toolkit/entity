@@ -39,30 +39,12 @@ namespace ntt {
                            species.rangeActiveParticles(),
                            kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
                              scatter_cur,
-                             species.i1,
-                             species.i2,
-                             species.i3,
-                             species.i1_prev,
-                             species.i2_prev,
-                             species.i3_prev,
-                             species.dx1,
-                             species.dx2,
-                             species.dx3,
-                             species.dx1_prev,
-                             species.dx2_prev,
-                             species.dx3_prev,
-                             species.ux1,
-                             species.ux2,
-                             species.ux3,
-                             species.phi,
-                             species.weight,
-                             species.tag,
+                             species,
                              local_metric,
                              (real_t)(species.charge()),
                              dt));
     }
 
-#if defined(TEAM_POLICY)
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
@@ -78,11 +60,10 @@ namespace ntt {
      * passed-in `scatter_cur` so the caller still composes correctly.
      */
     template <SRMetricClass M, unsigned short O>
-    void CallDepositKernelTiled(
-      const Particles<M::Dim, M::CoordType>& species,
-      const M&                               local_metric,
-      const ndfield_t<M::Dim, 3>&            cur,
-      real_t                                 dt) {
+    void CallDepositKernelTiled(const Particles<M::Dim, M::CoordType>& species,
+                                const M&                    local_metric,
+                                const ndfield_t<M::Dim, 3>& cur,
+                                real_t                      dt) {
       static_assert(O <= 11u, "Shape order must be <= 11");
       constexpr unsigned short T = static_cast<unsigned short>(
         TEAM_POLICY_TILE_SIZE);
@@ -96,40 +77,18 @@ namespace ntt {
                      "with ntiles_total",
                      HERE);
 
-      using kernel_t = kernel::DepositCurrents_kernel_tiled<SimEngine::SRPIC,
-                                                            M,
-                                                            O,
-                                                            T>;
-      kernel_t kern { cur,
-                      species.i1,
-                      species.i2,
-                      species.i3,
-                      species.i1_prev,
-                      species.i2_prev,
-                      species.i3_prev,
-                      species.dx1,
-                      species.dx2,
-                      species.dx3,
-                      species.dx1_prev,
-                      species.dx2_prev,
-                      species.dx3_prev,
-                      species.ux1,
-                      species.ux2,
-                      species.ux3,
-                      species.phi,
-                      species.weight,
-                      species.tag,
-                      local_metric,
-                      (real_t)(species.charge()),
-                      dt,
-                      layout };
+      auto deposit_kernel =
+        kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, M, O, T> {
+          cur, species, local_metric, (real_t)(species.charge()), dt, layout
+        };
 
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
                                   Kokkos::AUTO);
-      policy.set_scratch_size(0, Kokkos::PerTeam(kernel_t::scratch_bytes()));
-      Kokkos::parallel_for("CurrentsDepositTiled", policy, kern);
+      policy.set_scratch_size(
+        0,
+        Kokkos::PerTeam(decltype(deposit_kernel)::scratch_bytes()));
+      Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
     }
-#endif // TEAM_POLICY
 
     template <SRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::SRPIC, M>& domain,
@@ -164,17 +123,18 @@ namespace ntt {
             continue;
           }
           logger::Checkpoint(
-            fmt::format("Launching currents deposit (flat fallback, no sort yet) "
-                        "for %d [%s] : %lu %f",
-                        species.index(),
-                        species.label().c_str(),
-                        species.npart(),
-                        (double)species.charge()),
+            fmt::format(
+              "Launching currents deposit (flat fallback, no sort yet) "
+              "for %d [%s] : %lu %f",
+              species.index(),
+              species.label().c_str(),
+              species.npart(),
+              (double)species.charge()),
             HERE);
           CallDepositKernel<M, SHAPE_ORDER>(species,
-                                             domain.mesh.metric,
-                                             scatter_cur,
-                                             dt);
+                                            domain.mesh.metric,
+                                            scatter_cur,
+                                            dt);
         }
         Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
       } else {
@@ -192,9 +152,9 @@ namespace ntt {
             HERE);
 
           CallDepositKernelTiled<M, SHAPE_ORDER>(species,
-                                                  domain.mesh.metric,
-                                                  domain.fields.cur,
-                                                  dt);
+                                                 domain.mesh.metric,
+                                                 domain.fields.cur,
+                                                 dt);
         }
       }
 #else

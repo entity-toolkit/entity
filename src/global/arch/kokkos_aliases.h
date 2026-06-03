@@ -226,6 +226,79 @@ namespace kokkos_aliases_hidden {
 template <Dimension D>
 using range_h_t = typename kokkos_aliases_hidden::range_h_impl<D>::type;
 
+// Array aliases of arbitrary type and dimensions (up to 4)
+namespace kokkos_aliases_hidden {
+  // c++ magic
+  template <unsigned short D, typename T>
+  struct scratch_nddata_impl {
+    using type = void;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<1, T> {
+    using type = Kokkos::View<T*,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<2, T> {
+    using type = Kokkos::View<T**,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<3, T> {
+    using type = Kokkos::View<T***,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<4, T> {
+    using type = Kokkos::View<T****,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <unsigned short D, typename T>
+using scratch_nddata_t = typename kokkos_aliases_hidden::scratch_nddata_impl<D, T>::type;
+
+// Defining aliases for Scratch memory ndfield
+namespace kokkos_aliases_hidden {
+  template <Dimension D, unsigned short N, typename T>
+  struct scratch_ndfield_impl {
+    using type = void;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_1D, N, T> {
+    using type = Kokkos::View<T* [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_2D, N, T> {
+    using type = Kokkos::View<T** [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_3D, N, T> {
+    using type = Kokkos::View<T*** [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <Dimension D, unsigned short N, typename T>
+using scratch_ndfield_t =
+  typename kokkos_aliases_hidden::scratch_ndfield_impl<D, N, T>::type;
+
 /**
  * @brief Function template for generating 1D Kokkos range policy for particles.
  * @tparam D Dimension
