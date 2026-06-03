@@ -96,16 +96,17 @@ namespace kernel::hybrid {
 
         real_t Eestar0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
                          Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
-        real_t Eestar1 =
-          -(INV_2 * Bfs(i1, comp_Bfs + 2) + INV_2 * Bfs(i1 - 1, comp_Bfs + 2)) *
-            (INV_2 * PP(i1, comp_PP + 0) + INV_2 * PP(i1 - 1, comp_PP + 0)) +
-          (INV_2 * PP(i1, comp_PP + 2) + INV_2 * PP(i1 - 1, comp_PP + 2)) *
-            Bfs(i1, comp_Bfs + 0);
-        real_t Eestar2 =
-          (INV_2 * Bfs(i1, comp_Bfs + 1) + INV_2 * Bfs(i1 - 1, comp_Bfs + 1)) *
-            (INV_2 * PP(i1, comp_PP + 0) + INV_2 * PP(i1 - 1, comp_PP + 0)) -
-          (INV_2 * PP(i1, comp_PP + 1) + INV_2 * PP(i1 - 1, comp_PP + 1)) *
-            Bfs(i1, comp_Bfs + 0);
+        real_t Eestar1 = -INV_4 *
+                           (Bfs(i1, comp_Bfs + 2) + Bfs(i1 - 1, comp_Bfs + 2)) *
+                           (PP(i1, comp_PP + 0) + PP(i1 - 1, comp_PP + 0)) +
+                         (INV_2) *
+                           (PP(i1, comp_PP + 2) + PP(i1 - 1, comp_PP + 2)) *
+                           Bfs(i1, comp_Bfs + 0);
+        real_t Eestar2 = (INV_4) *
+                           (Bfs(i1, comp_Bfs + 1) + Bfs(i1 - 1, comp_Bfs + 1)) *
+                           (PP(i1, comp_PP + 0) + PP(i1 - 1, comp_PP + 0)) -
+                         INV_2 * (PP(i1, comp_PP + 1) + PP(i1 - 1, comp_PP + 1)) *
+                           Bfs(i1, comp_Bfs + 0);
 
         const real_t coeff_1 { rho0 * gamma_ad * theta };
         Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_2 *
@@ -157,9 +158,9 @@ namespace kernel::hybrid {
                    (Bfs(i1 + 1, comp_Bfs + 0) + Bfs(i1, comp_Bfs + 0)) *
                    (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2));
 
-        Ecstar0 *= -ONE / N0;
-        Ecstar1 *= -ONE / N1;
-        Ecstar2 *= -ONE / N2;
+        Ecstar0 *= -ONE / NN(i1, comp_NN);
+        Ecstar1 *= -ONE / NN(i1, comp_NN);
+        Ecstar2 *= -ONE / NN(i1, comp_NN);
 
         // Ee' = 0.5 * (Ee* + Ee^(n))
         Ee_out(i1, comp_Ee_out + 0) = INV_2 *
@@ -192,7 +193,151 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
+        // Ee* = EMF(N^(n), P^(n), Bf*)
+        const real_t N0 { INV_2 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN)) };
+        const real_t N1 { INV_2 * (NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN)) };
+        const real_t N2 { INV_4 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN) +
+                                   NN(i1 - 1, i2, comp_NN) +
+                                   NN(i1 - 1, i2 - 1, comp_NN)) };
+        real_t Eestar0 =
+          INV_4 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+            (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1)) -
+          INV_2 * (PP(i1, i2, comp_PP + 2) + PP(i1, i2 - 1, comp_PP + 2)) *
+            Bfs(i1, i2, comp_Bfs + 1);
+        real_t Eestar1 =
+          -INV_4 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
+            (PP(i1, i2, comp_PP + 0) + PP(i1 - 1, i2, comp_PP + 0)) +
+          (INV_2) * (PP(i1, i2, comp_PP + 2) + PP(i1 - 1, i2, comp_PP + 2)) *
+            Bfs(i1, i2, comp_Bfs + 0);
+        real_t Eestar2 =
+          -INV_8 * (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
+            (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1) +
+             PP(i1 - 1, i2, comp_PP + 1) + PP(i1 - 1, i2 - 1, comp_PP + 1)) +
+          (INV_8) * (Bfs(i1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
+            (PP(i1, i2, comp_PP + 0) + PP(i1, i2 - 1, comp_PP + 0) +
+             PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0));
 
+        const real_t coeff_1 { rho0 * gamma_ad * theta };
+        Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_4 *
+                   (NN(i1 + 1, i2, comp_NN) + NN(i1 + 1, i2 - 1, comp_NN) -
+                    NN(i1 - 1, i2, comp_NN) - NN(i1 - 1, i2 - 1, comp_NN));
+        Eestar1 += coeff_1 * math::pow(N1, gamma_ad - ONE) * INV_4 *
+                   (NN(i1, i2 + 1, comp_NN) - NN(i1, i2 - 1, comp_NN) +
+                    NN(i1 - 1, i2 + 1, comp_NN) - NN(i1 - 1, i2 - 1, comp_NN));
+
+        const real_t coeff_2 { SQR(d0) / rho0 };
+        Eestar0 +=
+          coeff_2 *
+          (-INV_8 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+             (Bfs(i1 + 1, i2, comp_Bfs + 2) + Bfs(i1 + 1, i2 - 1, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
+           (INV_2) *
+             (Bfs(i1 + 1, i2, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
+             Bfs(i1, i2, comp_Bfs + 1));
+        Eestar1 +=
+          coeff_2 *
+          (-INV_8 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
+             (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 + 1, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) -
+           INV_2 *
+             (Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
+              Bfs(i1, i2 + 1, comp_Bfs + 1) - Bfs(i1, i2, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
+             Bfs(i1, i2, comp_Bfs + 0));
+        Eestar2 +=
+          coeff_2 *
+          ((INV_4) * (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
+             (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
+           (INV_4) * (Bfs(i1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
+             (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
+
+        Eestar0 *= -ONE / N0;
+        Eestar1 *= -ONE / N1;
+        Eestar2 *= -ONE / N2;
+
+        // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
+        real_t Ecstar0 = -INV_2 *
+                           (Bfs(i1, i2 + 1, comp_Bfs + 1) +
+                            Bfs(i1, i2, comp_Bfs + 1)) *
+                           PP(i1, i2, comp_PP + 2) +
+                         Bfs(i1, i2, comp_Bfs + 2) * PP(i1, i2, comp_PP + 1);
+        real_t Ecstar1 = INV_2 *
+                           (Bfs(i1 + 1, i2, comp_Bfs + 0) +
+                            Bfs(i1, i2, comp_Bfs + 0)) *
+                           PP(i1, i2, comp_PP + 2) -
+                         Bfs(i1, i2, comp_Bfs + 2) * PP(i1, i2, comp_PP + 0);
+        real_t Ecstar2 =
+          -INV_2 * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+            PP(i1, i2, comp_PP + 1) +
+          INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+            PP(i1, i2, comp_PP + 0);
+
+        Ecstar0 += coeff_1 * math::pow(NN(i1, i2, comp_NN), gamma_ad - ONE) *
+                   INV_2 * (NN(i1 + 1, i2, comp_NN) - NN(i1 - 1, i2, comp_NN));
+        Ecstar1 += coeff_1 * math::pow(NN(i1, i2, comp_NN), gamma_ad - ONE) *
+                   INV_2 * (NN(i1, i2 + 1, comp_NN) - NN(i1, i2 - 1, comp_NN));
+        Ecstar0 +=
+          coeff_2 *
+          ((INV_8) * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+             (Bfs(i1 + 1, i2 + 1, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2 + 1, comp_Bfs + 1) - Bfs(i1 + 1, i2, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) -
+           INV_2 * (Bfs(i1 + 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) *
+             Bfs(i1, i2, comp_Bfs + 2));
+        Ecstar1 +=
+          coeff_2 *
+          (-INV_8 * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+             (Bfs(i1 + 1, i2 + 1, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2 + 1, comp_Bfs + 1) - Bfs(i1 + 1, i2, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) -
+           INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+             Bfs(i1, i2, comp_Bfs + 2));
+        Ecstar2 +=
+          coeff_2 *
+          ((INV_4) * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+             (Bfs(i1 + 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) +
+           (INV_4) * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+             (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)));
+
+        Ecstar0 *= -ONE / NN(i1, i2, comp_NN);
+        Ecstar1 *= -ONE / NN(i1, i2, comp_NN);
+        Ecstar2 *= -ONE / NN(i1, i2, comp_NN);
+
+        // Ee' = 0.5 * (Ee* + Ee^(n))
+        Ee_out(i1, i2, comp_Ee_out + 0) = INV_2 * (Eestar0 +
+                                                   Ee_in(i1, i2, comp_Ee_in + 0));
+        Ee_out(i1, i2, comp_Ee_out + 1) = INV_2 * (Eestar1 +
+                                                   Ee_in(i1, i2, comp_Ee_in + 1));
+        Ee_out(i1, i2, comp_Ee_out + 2) = INV_2 * (Eestar2 +
+                                                   Ee_in(i1, i2, comp_Ee_in + 2));
+
+        // Ec' = 0.5 * (Ec* + Ec^(n))
+        Ec_out(i1, i2, comp_Ee_out + 0) = INV_2 *
+                                          (Ecstar0 + Ec(i1, i2, comp_Ec + 0));
+        Ec_out(i1, i2, comp_Ee_out + 1) = INV_2 *
+                                          (Ecstar1 + Ec(i1, i2, comp_Ec + 1));
+        Ec_out(i1, i2, comp_Ee_out + 2) = INV_2 *
+                                          (Ecstar2 + Ec(i1, i2, comp_Ec + 2));
+
+        // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
+        Bc_out(i1, i2, comp_Bc_out + 0) = INV_4 * (Bf(i1 + 1, i2, comp_Bf + 0) +
+                                                   Bf(i1, i2, comp_Bf + 0) +
+                                                   Bfs(i1 + 1, i2, comp_Bfs + 0) +
+                                                   Bfs(i1, i2, comp_Bfs + 0));
+
+        Bc_out(i1, i2, comp_Bc_out + 1) = INV_4 * (Bf(i1, i2 + 1, comp_Bf + 1) +
+                                                   Bf(i1, i2, comp_Bf + 1) +
+                                                   Bfs(i1, i2 + 1, comp_Bfs + 1) +
+                                                   Bfs(i1, i2, comp_Bfs + 1));
+        Bc_out(i1, i2, comp_Bc_out + 2) = INV_2 * (Bf(i1, i2, comp_Bf + 2) +
+                                                   Bfs(i1, i2, comp_Bfs + 2));
       } else {
         raise::KernelError(HERE, "EMF_kernel: 2D implementation called for D != 2");
       }
@@ -200,12 +345,311 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
+        // Ee* = EMF(N^(n), P^(n), Bf*)
+        const real_t N0 {
+          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
+                   NN(i1, i2 - 1, i3, comp_NN) + NN(i1, i2 - 1, i3 - 1, comp_NN))
+        };
+        const real_t N1 {
+          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
+                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2, i3 - 1, comp_NN))
+        };
+        const real_t N2 {
+          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2 - 1, i3, comp_NN) +
+                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2 - 1, i3, comp_NN))
+        };
+        real_t Eestar0 =
+          -INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
+            (PP(i1, i2, i3, comp_PP + 2) + PP(i1, i2, i3 - 1, comp_PP + 2) +
+             PP(i1, i2 - 1, i3, comp_PP + 2) +
+             PP(i1, i2 - 1, i3 - 1, comp_PP + 2)) +
+          INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1, i2 - 1, i3, comp_Bfs + 2)) *
+            (PP(i1, i2, i3, comp_PP + 1) + PP(i1, i2, i3 - 1, comp_PP + 1) +
+             PP(i1, i2 - 1, i3, comp_PP + 1) + PP(i1, i2 - 1, i3 - 1, comp_PP + 1));
+        real_t Eestar1 =
+          INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0)) *
+            (PP(i1, i2, i3, comp_PP + 2) + PP(i1, i2, i3 - 1, comp_PP + 2) +
+             PP(i1 - 1, i2, i3, comp_PP + 2) +
+             PP(i1 - 1, i2, i3 - 1, comp_PP + 2)) -
+          INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1 - 1, i2, i3, comp_Bfs + 2)) *
+            (PP(i1, i2, i3, comp_PP + 0) + PP(i1, i2, i3 - 1, comp_PP + 0) +
+             PP(i1 - 1, i2, i3, comp_PP + 0) + PP(i1 - 1, i2, i3 - 1, comp_PP + 0));
+        real_t Eestar2 =
+          -INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2 - 1, i3, comp_Bfs + 0)) *
+            (PP(i1, i2, i3, comp_PP + 1) + PP(i1, i2 - 1, i3, comp_PP + 1) +
+             PP(i1 - 1, i2, i3, comp_PP + 1) +
+             PP(i1 - 1, i2 - 1, i3, comp_PP + 1)) +
+          INV_8 *
+            (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) *
+            (PP(i1, i2, i3, comp_PP + 0) + PP(i1, i2 - 1, i3, comp_PP + 0) +
+             PP(i1 - 1, i2, i3, comp_PP + 0) + PP(i1 - 1, i2 - 1, i3, comp_PP + 0));
 
+        const real_t coeff_1 { rho0 * gamma_ad * theta };
+        Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_8 *
+                   (NN(i1 + 1, i2, i3, comp_NN) + NN(i1 + 1, i2, i3 - 1, comp_NN) +
+                    NN(i1 + 1, i2 - 1, i3, comp_NN) +
+                    NN(i1 + 1, i2 - 1, i3 - 1, comp_NN) -
+                    NN(i1 - 1, i2, i3, comp_NN) - NN(i1 - 1, i2, i3 - 1, comp_NN) -
+                    NN(i1 - 1, i2 - 1, i3, comp_NN) -
+                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
+        Eestar1 += coeff_1 * math::pow(N1, gamma_ad - ONE) * INV_8 *
+                   (NN(i1, i2 + 1, i3, comp_NN) + NN(i1, i2 + 1, i3 - 1, comp_NN) -
+                    NN(i1, i2 - 1, i3, comp_NN) - NN(i1, i2 - 1, i3 - 1, comp_NN) +
+                    NN(i1 - 1, i2 + 1, i3, comp_NN) +
+                    NN(i1 - 1, i2 + 1, i3 - 1, comp_NN) -
+                    NN(i1 - 1, i2 - 1, i3, comp_NN) -
+                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
+        Eestar2 += coeff_1 * math::pow(N2, gamma_ad - ONE) * INV_8 *
+                   (NN(i1, i2, i3 + 1, comp_NN) -
+                    NN(i1, i2, i3 - 1, comp_NN) +
+                    NN(i1, i2 - 1, i3 + 1, comp_NN) -
+                    NN(i1, i2 - 1, i3 - 1, comp_NN) +
+                    NN(i1 - 1, i2, i3 + 1, comp_NN) -
+                    NN(i1 - 1, i2, i3 - 1, comp_NN) +
+                    NN(i1 - 1, i2 - 1, i3 + 1, comp_NN) -
+                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
+
+        const real_t coeff_2 { SQR(d0) / rho0 };
+        Eestar0 +=
+          coeff_2 *
+          (INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
+             (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2 - 1, i3 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2, i3, comp_Bfs + 1) -
+              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1)) +
+           INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1, i2 - 1, i3, comp_Bfs + 2)) *
+             (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) +
+              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2 - 1, i3 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2, i3, comp_Bfs + 0) - Bfs(i1, i2, i3 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1 + 1, i2, i3, comp_Bfs + 2) -
+              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
+        Eestar1 +=
+          coeff_2 *
+          (-INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0)) *
+             (Bfs(i1, i2 + 1, i3, comp_Bfs + 0) +
+              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1, i2 + 1, i3, comp_Bfs + 1) -
+              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) -
+              Bfs(i1, i2, i3, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1)) +
+           INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1 - 1, i2, i3, comp_Bfs + 2)) *
+             (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) -
+              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1, i2, i3, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) -
+              Bfs(i1 - 1, i2 + 1, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) -
+              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1) -
+              Bfs(i1, i2 + 1, i3, comp_Bfs + 2) + Bfs(i1, i2 - 1, i3, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
+        Eestar2 +=
+          coeff_2 *
+          (-INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2 - 1, i3, comp_Bfs + 0)) *
+             (Bfs(i1, i2, i3 + 1, comp_Bfs + 0) - Bfs(i1, i2, i3 - 1, comp_Bfs + 0) +
+              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 0) -
+              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
+              Bfs(i1, i2, i3 + 1, comp_Bfs + 2) - Bfs(i1, i2, i3, comp_Bfs + 2) -
+              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) -
+              Bfs(i1, i2 - 1, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)) -
+           INV_8 *
+             (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) *
+             (Bfs(i1, i2, i3 + 1, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
+              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 1) -
+              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1) -
+              Bfs(i1, i2, i3 + 1, comp_Bfs + 2) - Bfs(i1, i2, i3, comp_Bfs + 2) +
+              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
+              Bfs(i1, i2 - 1, i3, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) -
+              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
+              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
+
+        Eestar0 *= -ONE / N0;
+        Eestar1 *= -ONE / N1;
+        Eestar2 *= -ONE / N2;
+
+        // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
+        real_t Ecstar0 = -INV_2 *
+                           (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                            Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                           PP(i1, i2, i3, comp_PP + 2) +
+                         INV_2 *
+                           (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                            Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                           PP(i1, i2, i3, comp_PP + 1);
+        real_t Ecstar1 = INV_2 *
+                           (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                            Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                           PP(i1, i2, i3, comp_PP + 2) -
+                         INV_2 *
+                           (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                            Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                           PP(i1, i2, i3, comp_PP + 0);
+        real_t Ecstar2 = -INV_2 *
+                           (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                            Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                           PP(i1, i2, i3, comp_PP + 1) +
+                         INV_2 *
+                           (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                            Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                           PP(i1, i2, i3, comp_PP + 0);
+
+        Ecstar0 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) * INV_2 *
+                   (NN(i1 + 1, i2, i3, comp_NN) - NN(i1 - 1, i2, i3, comp_NN));
+        Ecstar1 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) * INV_2 *
+                   (NN(i1, i2 + 1, i3, comp_NN) - NN(i1, i2 - 1, i3, comp_NN));
+        Ecstar2 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) * INV_2 *
+                   (NN(i1, i2, i3 + 1, comp_NN) - NN(i1, i2, i3 - 1, comp_NN));
+
+        Ecstar0 += coeff_2 * (INV_8 *
+                                (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                                (Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) +
+                                 Bfs(i1, i2 + 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 1) -
+                                 Bfs(i1 + 1, i2, i3, comp_Bfs + 1) +
+                                 Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) +
+                                 Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) +
+                              INV_8 *
+                                (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                                (Bfs(i1 + 1, i2, i3 + 1, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) +
+                                 Bfs(i1, i2, i3 + 1, comp_Bfs + 0) -
+                                 Bfs(i1, i2, i3 - 1, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2, i3 + 1, comp_Bfs + 2) -
+                                 Bfs(i1 + 1, i2, i3, comp_Bfs + 2) +
+                                 Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1 - 1, i2, i3, comp_Bfs + 2)));
+        Ecstar1 += coeff_2 * (-INV_8 *
+                                (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                                (Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) +
+                                 Bfs(i1, i2 + 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 1) -
+                                 Bfs(i1 + 1, i2, i3, comp_Bfs + 1) +
+                                 Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) +
+                                 Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) +
+                              INV_8 *
+                                (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                                (Bfs(i1, i2 + 1, i3 + 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) +
+                                 Bfs(i1, i2, i3 + 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2, i3 - 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2 + 1, i3 + 1, comp_Bfs + 2) -
+                                 Bfs(i1, i2 + 1, i3, comp_Bfs + 2) +
+                                 Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1, i2 - 1, i3, comp_Bfs + 2)));
+        Ecstar2 += coeff_2 * (-INV_8 *
+                                (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                                (Bfs(i1 + 1, i2, i3 + 1, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) +
+                                 Bfs(i1, i2, i3 + 1, comp_Bfs + 0) -
+                                 Bfs(i1, i2, i3 - 1, comp_Bfs + 0) -
+                                 Bfs(i1 + 1, i2, i3 + 1, comp_Bfs + 2) -
+                                 Bfs(i1 + 1, i2, i3, comp_Bfs + 2) +
+                                 Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1 - 1, i2, i3, comp_Bfs + 2)) -
+                              INV_8 *
+                                (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                                 Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                                (Bfs(i1, i2 + 1, i3 + 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) +
+                                 Bfs(i1, i2, i3 + 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2, i3 - 1, comp_Bfs + 1) -
+                                 Bfs(i1, i2 + 1, i3 + 1, comp_Bfs + 2) -
+                                 Bfs(i1, i2 + 1, i3, comp_Bfs + 2) +
+                                 Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
+                                 Bfs(i1, i2 - 1, i3, comp_Bfs + 2)));
+
+        Ecstar0 *= -ONE / NN(i1, i2, i3, comp_NN);
+        Ecstar1 *= -ONE / NN(i1, i2, i3, comp_NN);
+        Ecstar2 *= -ONE / NN(i1, i2, i3, comp_NN);
+
+        // Ee' = 0.5 * (Ee* + Ee^(n))
+        Ee_out(i1, i2, i3, comp_Ee_out + 0) = INV_2 *
+                                              (Eestar0 +
+                                               Ee_in(i1, i2, i3, comp_Ee_in + 0));
+        Ee_out(i1, i2, i3, comp_Ee_out + 1) = INV_2 *
+                                              (Eestar1 +
+                                               Ee_in(i1, i2, i3, comp_Ee_in + 1));
+        Ee_out(i1, i2, i3, comp_Ee_out + 2) = INV_2 *
+                                              (Eestar2 +
+                                               Ee_in(i1, i2, i3, comp_Ee_in + 2));
+
+        // Ec' = 0.5 * (Ec* + Ec^(n))
+        Ec_out(i1, i2, i3, comp_Ee_out + 0) = INV_2 *
+                                              (Ecstar0 +
+                                               Ec(i1, i2, i3, comp_Ec + 0));
+        Ec_out(i1, i2, i3, comp_Ee_out + 1) = INV_2 *
+                                              (Ecstar1 +
+                                               Ec(i1, i2, i3, comp_Ec + 1));
+        Ec_out(i1, i2, i3, comp_Ee_out + 2) = INV_2 *
+                                              (Ecstar2 +
+                                               Ec(i1, i2, i3, comp_Ec + 2));
+
+        // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
+        Bc_out(i1, i2, i3, comp_Bc_out + 0) = INV_4 *
+                                              (Bf(i1 + 1, i2, i3, comp_Bf + 0) +
+                                               Bf(i1, i2, i3, comp_Bf + 0) +
+                                               Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                                               Bfs(i1, i2, i3, comp_Bfs + 0));
+
+        Bc_out(i1, i2, i3, comp_Bc_out + 1) = INV_4 *
+                                              (Bf(i1, i2 + 1, i3, comp_Bf + 1) +
+                                               Bf(i1, i2, i3, comp_Bf + 1) +
+                                               Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                                               Bfs(i1, i2, i3, comp_Bfs + 1));
+        Bc_out(i1, i2, i3, comp_Bc_out + 2) = INV_4 *
+                                              (Bf(i1, i2, i3 + 1, comp_Bf + 2) +
+                                               Bf(i1, i2, i3, comp_Bf + 2) +
+                                               Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                                               Bfs(i1, i2, i3, comp_Bfs + 2));
       } else {
         raise::KernelError(HERE, "EMF_kernel: 3D implementation called for D != 3");
       }
     }
   };
+
 
 } // namespace kernel::hybrid
 
