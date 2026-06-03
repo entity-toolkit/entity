@@ -109,9 +109,6 @@ namespace kernel::hybrid {
                            Bfs(i1, comp_Bfs + 0);
 
         const real_t coeff_1 { rho0 * gamma_ad * theta };
-        Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_2 *
-                   (NN(i1 + 1, comp_NN) - NN(i1 - 1, comp_NN));
-
         const real_t coeff_2 { SQR(d0) / rho0 };
         Eestar0 += coeff_2 *
                    (-INV_2 *
@@ -218,13 +215,6 @@ namespace kernel::hybrid {
              PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0));
 
         const real_t coeff_1 { rho0 * gamma_ad * theta };
-        Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_4 *
-                   (NN(i1 + 1, i2, comp_NN) + NN(i1 + 1, i2 - 1, comp_NN) -
-                    NN(i1 - 1, i2, comp_NN) - NN(i1 - 1, i2 - 1, comp_NN));
-        Eestar1 += coeff_1 * math::pow(N1, gamma_ad - ONE) * INV_4 *
-                   (NN(i1, i2 + 1, comp_NN) - NN(i1, i2 - 1, comp_NN) +
-                    NN(i1 - 1, i2 + 1, comp_NN) - NN(i1 - 1, i2 - 1, comp_NN));
-
         const real_t coeff_2 { SQR(d0) / rho0 };
         Eestar0 +=
           coeff_2 *
@@ -390,30 +380,6 @@ namespace kernel::hybrid {
              PP(i1 - 1, i2, i3, comp_PP + 0) + PP(i1 - 1, i2 - 1, i3, comp_PP + 0));
 
         const real_t coeff_1 { rho0 * gamma_ad * theta };
-        Eestar0 += coeff_1 * math::pow(N0, gamma_ad - ONE) * INV_8 *
-                   (NN(i1 + 1, i2, i3, comp_NN) + NN(i1 + 1, i2, i3 - 1, comp_NN) +
-                    NN(i1 + 1, i2 - 1, i3, comp_NN) +
-                    NN(i1 + 1, i2 - 1, i3 - 1, comp_NN) -
-                    NN(i1 - 1, i2, i3, comp_NN) - NN(i1 - 1, i2, i3 - 1, comp_NN) -
-                    NN(i1 - 1, i2 - 1, i3, comp_NN) -
-                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
-        Eestar1 += coeff_1 * math::pow(N1, gamma_ad - ONE) * INV_8 *
-                   (NN(i1, i2 + 1, i3, comp_NN) + NN(i1, i2 + 1, i3 - 1, comp_NN) -
-                    NN(i1, i2 - 1, i3, comp_NN) - NN(i1, i2 - 1, i3 - 1, comp_NN) +
-                    NN(i1 - 1, i2 + 1, i3, comp_NN) +
-                    NN(i1 - 1, i2 + 1, i3 - 1, comp_NN) -
-                    NN(i1 - 1, i2 - 1, i3, comp_NN) -
-                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
-        Eestar2 += coeff_1 * math::pow(N2, gamma_ad - ONE) * INV_8 *
-                   (NN(i1, i2, i3 + 1, comp_NN) -
-                    NN(i1, i2, i3 - 1, comp_NN) +
-                    NN(i1, i2 - 1, i3 + 1, comp_NN) -
-                    NN(i1, i2 - 1, i3 - 1, comp_NN) +
-                    NN(i1 - 1, i2, i3 + 1, comp_NN) -
-                    NN(i1 - 1, i2, i3 - 1, comp_NN) +
-                    NN(i1 - 1, i2 - 1, i3 + 1, comp_NN) -
-                    NN(i1 - 1, i2 - 1, i3 - 1, comp_NN));
-
         const real_t coeff_2 { SQR(d0) / rho0 };
         Eestar0 +=
           coeff_2 *
