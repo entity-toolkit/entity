@@ -250,6 +250,12 @@ namespace reporter {
 #else
     AddParam(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
 #endif
+
+#if defined(TEAM_POLICY)
+    AddParam(report, 4, "TEAM_POLICY", "%s", "ON");
+#else
+    AddParam(report, 4, "TEAM_POLICY", "%s", "OFF");
+#endif
     report += "\n";
     return report;
   }

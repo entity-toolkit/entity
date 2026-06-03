@@ -32,6 +32,9 @@ namespace ntt {
                        "%s",
                        params.template get<std::string>("simulation.name").c_str());
     reporter::AddParam(report, 4, "Engine", "%s", SimEngine(S).to_string());
+#if defined(TEAM_POLICY)
+    reporter::AddParam(report, 4, "Tile size", "%d", TEAM_POLICY_TILE_SIZE);
+#endif
     reporter::AddParam(report, 4, "Metric", "%s", M.to_string());
 #if SHAPE_ORDER == 0
     reporter::AddParam(report, 4, "Deposit", "%s", "zigzag");
