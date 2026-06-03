@@ -248,12 +248,16 @@ namespace kernel {
           { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
           u_Phys);
       }
-      if (mass == ZERO) {
-        u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+      if constexpr (S == SimEngine::HYBRID) {
+        return mass * u_Phys[c1 - 1];
       } else {
-        u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+        if (mass == ZERO) {
+          u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+        } else {
+          u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+        }
+        return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
       }
-      return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
     }
 
     Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {
