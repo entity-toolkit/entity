@@ -210,8 +210,10 @@ namespace ntt {
     const auto comm_cur  = (tags & Comm::CUR);
     const auto comm_cur0 = (tags & Comm::CUR0);
     const auto comm_aux  = (tags & Comm::AUX_012) or (tags & Comm::AUX_345);
+    const auto comm_bckp = (tags & Comm::Bckp);
 
-    raise::ErrorIf(not(comm_em or comm_em0 or comm_cur or comm_aux or comm_cur0),
+    raise::ErrorIf(not(comm_em or comm_em0 or comm_cur or comm_aux or comm_cur0 or
+                       comm_bckp),
                    "CommunicateFields called with no task",
                    HERE);
     if constexpr (not ::traits::engine::DefinesEM0Fields<S>) {
@@ -257,6 +259,9 @@ namespace ntt {
     }
     if (comm_cur0) {
       comms += "CUR0 ";
+    }
+    if (comm_bckp) {
+      comms += "Bckp ";
     }
     logger::Checkpoint(fmt::format("Communicating %s\n", comms.c_str()), HERE);
 
@@ -367,6 +372,20 @@ namespace ntt {
                                           { 0, 3 },
                                           false);
       }
+      if (comm_bckp) {
+        // copy active -> ghost of bckp (Ec/Bc); read by the hybrid pusher gather
+        comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                          domain.fields.bckp,
+                                          domain.fields.bckp,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 6 },
+                                          false);
+      }
     }
   }
 
@@ -417,9 +436,11 @@ namespace ntt {
     const bool comm_cur0 = (tags & Comm::CUR0);
     const bool comm_bckp = (tags & Comm::Bckp);
     const bool comm_buff = (tags & Comm::Buff);
-    raise::ErrorIf(not(comm_cur0 || comm_cur || comm_bckp || comm_buff),
-                   "SynchronizeFields called with no task or incorrect task",
-                   HERE);
+    const bool comm_aux  = (tags & Comm::AUX_012) || (tags & Comm::AUX_345);
+    raise::ErrorIf(
+      not(comm_cur0 || comm_cur || comm_bckp || comm_buff || comm_aux),
+      "SynchronizeFields called with no task or incorrect task",
+      HERE);
     raise::ErrorIf(
       (comm_cur0 and comm_buff) or (comm_cur and comm_buff),
       "SynchronizeFields cannot sync CUR/CUR0 and Buff at the same time",
@@ -433,6 +454,12 @@ namespace ntt {
       raise::ErrorIf(comm_cur0,
                      "CommunicateFields called with CUR0 communication "
                      "for an engine that does not define CUR0 fields",
+                     HERE);
+    }
+    if constexpr (not ::traits::engine::DefinesAuxFields<S>) {
+      raise::ErrorIf(comm_aux,
+                     "SynchronizeFields called with AUX synchronization "
+                     "for an engine that does not define AUX fields",
                      HERE);
     }
 
@@ -451,9 +478,13 @@ namespace ntt {
     if (comm_buff) {
       comms += "Buff ";
     }
+    if (comm_aux) {
+      comms += "AUX ";
+    }
     logger::Checkpoint(fmt::format("Synchronizing %s\n", comms.c_str()), HERE);
 
     ndfield_t<M::Dim, 6> bckp_recv;
+    ndfield_t<M::Dim, 6> aux_recv;
     ndfield_t<M::Dim, 3> buff_recv;
     if (comm_bckp) {
       if constexpr (M::Dim == Dim::_1D) {
@@ -468,6 +499,21 @@ namespace ntt {
                                            domain.fields.bckp.extent(0),
                                            domain.fields.bckp.extent(1),
                                            domain.fields.bckp.extent(2) };
+      }
+    }
+    if (comm_aux) {
+      if constexpr (M::Dim == Dim::_1D) {
+        aux_recv = ndfield_t<M::Dim, 6> { "aux_recv",
+                                          domain.fields.aux.extent(0) };
+      } else if constexpr (M::Dim == Dim::_2D) {
+        aux_recv = ndfield_t<M::Dim, 6> { "aux_recv",
+                                          domain.fields.aux.extent(0),
+                                          domain.fields.aux.extent(1) };
+      } else if constexpr (M::Dim == Dim::_3D) {
+        aux_recv = ndfield_t<M::Dim, 6> { "aux_recv",
+                                          domain.fields.aux.extent(0),
+                                          domain.fields.aux.extent(1),
+                                          domain.fields.aux.extent(2) };
       }
     }
     if (comm_buff) {
@@ -536,6 +582,21 @@ namespace ntt {
                                           components,
                                           SYNCHRONIZE);
       }
+      if (comm_aux) {
+        // additive remap of moment deposit tails (Pegasus §3.6): accumulate the
+        // ghost-cell contributions of aux (V in 0..2, N in 3) into aux_recv
+        comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                          domain.fields.aux,
+                                          aux_recv,
+                                          send_ind,
+                                          recv_ind,
+                                          send_rank,
+                                          recv_rank,
+                                          send_slice,
+                                          recv_slice,
+                                          { 0, 6 },
+                                          SYNCHRONIZE);
+      }
       if (comm_buff) {
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.buff,
@@ -566,6 +627,12 @@ namespace ntt {
                                    bckp_recv,
                                    domain.mesh.rangeActiveCells(),
                                    components);
+    }
+    if (comm_aux) {
+      AddBufferedFields<M::Dim, 6>(domain.fields.aux,
+                                   aux_recv,
+                                   domain.mesh.rangeActiveCells(),
+                                   { 0, 6 });
     }
     if (comm_buff) {
       AddBufferedFields<M::Dim, 3>(domain.fields.buff,

@@ -541,6 +541,43 @@ namespace prtl_shape {
     }
   }
 
+  /**
+   * @brief Spline shape S_O(x) with the order O selected at compile time.
+   *        Compile-time analogue of ParticleMoments_kernel::shapeFunction.
+   * @tparam O shape order: 0 = NGP (constant), 1 = CIC, 2 = TSC, ... up to 11.
+   */
+  template <unsigned short O>
+  Inline auto particle_shape(const real_t x) -> real_t {
+    if constexpr (O == 0u) {
+      return S1(x);
+    } else if constexpr (O == 1u) {
+      return S1(x);
+    } else if constexpr (O == 2u) {
+      return S2(x);
+    } else if constexpr (O == 3u) {
+      return S3(x);
+    } else if constexpr (O == 4u) {
+      return S4(x);
+    } else if constexpr (O == 5u) {
+      return S5(x);
+    } else if constexpr (O == 6u) {
+      return S6(x);
+    } else if constexpr (O == 7u) {
+      return S7(x);
+    } else if constexpr (O == 8u) {
+      return S8(x);
+    } else if constexpr (O == 9u) {
+      return S9(x);
+    } else if constexpr (O == 10u) {
+      return S10(x);
+    } else if constexpr (O == 11u) {
+      return S11(x);
+    } else {
+      static_assert(O <= 11u, "particle_shape: unsupported shape order (max 11)");
+      return ZERO;
+    }
+  }
+
   template <bool STAGGERED, unsigned short O>
   Inline void order(const int& i, const real_t& di, int& i_min, real_t S[O + 1]) {
     if constexpr (O == 1u) {
