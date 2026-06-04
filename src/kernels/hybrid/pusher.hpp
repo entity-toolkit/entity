@@ -60,6 +60,10 @@
 #include "kernels/particle_shapes.hpp"
 #include "kernels/pushers/context.h" // kernel::sr::PusherBoundaries<D> (BC flags)
 
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_tags.h"
+#endif
+
 namespace kernel::hybrid {
   using namespace ntt;
 
@@ -309,6 +313,23 @@ namespace kernel::hybrid {
       }
     }
 
+    // valid cell-index guards. The field arrays span ni + 2*N_GHOSTS in each
+    // direction; a particle that overshoots a boundary by more than one ghost
+    // layer in a single step (e.g. bulk-flow Courant > 1, or near a reflecting
+    // wall before the BC is applied) would otherwise gather/scatter past the
+    // array end — an out-of-bounds atomic that page-faults on GPU. Skipping the
+    // out-of-range cell keeps the kernel safe; the lost edge contribution is
+    // negligible and the particle is wrapped/reflected by the boundary handler.
+    Inline auto inX1(int c) const -> bool {
+      return (c >= 0) && (c < ctx.ni1 + 2 * static_cast<int>(N_GHOSTS));
+    }
+    Inline auto inX2(int c) const -> bool {
+      return (c >= 0) && (c < ctx.ni2 + 2 * static_cast<int>(N_GHOSTS));
+    }
+    Inline auto inX3(int c) const -> bool {
+      return (c >= 0) && (c < ctx.ni3 + 2 * static_cast<int>(N_GHOSTS));
+    }
+
     // ........................................................................
     // cell-centered field gather at (i, dx) — transpose of the moment deposit.
     // ........................................................................
@@ -322,9 +343,12 @@ namespace kernel::hybrid {
                        vec_t<Dim::_3D>& b0) const {
       if constexpr (D == Dim::_1D) {
         for (int di1 { -window }; di1 <= window; ++di1) {
+          const int c { i1 + di1 + static_cast<int>(N_GHOSTS) };
+          if (not inX1(c)) {
+            continue;
+          }
           const real_t S { prtl_shape::particle_shape<O>(
             math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-          const int c { i1 + di1 + static_cast<int>(N_GHOSTS) };
           e0[0] += S * EB(c, 0);
           e0[1] += S * EB(c, 1);
           e0[2] += S * EB(c, 2);
@@ -334,13 +358,19 @@ namespace kernel::hybrid {
         }
       } else if constexpr (D == Dim::_2D) {
         for (int di2 { -window }; di2 <= window; ++di2) {
+          const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
+          if (not inX2(c2)) {
+            continue;
+          }
           const real_t sx2 { prtl_shape::particle_shape<O>(
             math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
-          const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
           for (int di1 { -window }; di1 <= window; ++di1) {
+            const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
+            if (not inX1(c1)) {
+              continue;
+            }
             const real_t S { sx2 * prtl_shape::particle_shape<O>(
                                      math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-            const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
             e0[0] += S * EB(c1, c2, 0);
             e0[1] += S * EB(c1, c2, 1);
             e0[2] += S * EB(c1, c2, 2);
@@ -351,17 +381,26 @@ namespace kernel::hybrid {
         }
       } else if constexpr (D == Dim::_3D) {
         for (int di3 { -window }; di3 <= window; ++di3) {
+          const int c3 { i3 + di3 + static_cast<int>(N_GHOSTS) };
+          if (not inX3(c3)) {
+            continue;
+          }
           const real_t sx3 { prtl_shape::particle_shape<O>(
             math::abs(dx3 - (static_cast<real_t>(di3) + HALF))) };
-          const int c3 { i3 + di3 + static_cast<int>(N_GHOSTS) };
           for (int di2 { -window }; di2 <= window; ++di2) {
+            const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
+            if (not inX2(c2)) {
+              continue;
+            }
             const real_t sx23 { sx3 * prtl_shape::particle_shape<O>(
                                         math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
-            const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
             for (int di1 { -window }; di1 <= window; ++di1) {
+              const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
+              if (not inX1(c1)) {
+                continue;
+              }
               const real_t S { sx23 * prtl_shape::particle_shape<O>(
                                         math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-              const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
               e0[0] += S * EB(c1, c2, c3, 0);
               e0[1] += S * EB(c1, c2, c3, 1);
               e0[2] += S * EB(c1, c2, c3, 2);
@@ -408,9 +447,12 @@ namespace kernel::hybrid {
       auto buff = moments.access();
       if constexpr (D == Dim::_1D) {
         for (int di1 { -window }; di1 <= window; ++di1) {
+          const int c { i1 + di1 + static_cast<int>(N_GHOSTS) };
+          if (not inX1(c)) {
+            continue;
+          }
           const real_t S { prtl_shape::particle_shape<O>(
             math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-          const int c { i1 + di1 + static_cast<int>(N_GHOSTS) };
           buff(c, 0) += cV0 * S;
           buff(c, 1) += cV1 * S;
           buff(c, 2) += cV2 * S;
@@ -418,13 +460,19 @@ namespace kernel::hybrid {
         }
       } else if constexpr (D == Dim::_2D) {
         for (int di2 { -window }; di2 <= window; ++di2) {
+          const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
+          if (not inX2(c2)) {
+            continue;
+          }
           const real_t sx2 { prtl_shape::particle_shape<O>(
             math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
-          const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
           for (int di1 { -window }; di1 <= window; ++di1) {
+            const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
+            if (not inX1(c1)) {
+              continue;
+            }
             const real_t S { sx2 * prtl_shape::particle_shape<O>(
                                      math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-            const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
             buff(c1, c2, 0) += cV0 * S;
             buff(c1, c2, 1) += cV1 * S;
             buff(c1, c2, 2) += cV2 * S;
@@ -433,17 +481,26 @@ namespace kernel::hybrid {
         }
       } else if constexpr (D == Dim::_3D) {
         for (int di3 { -window }; di3 <= window; ++di3) {
+          const int c3 { i3 + di3 + static_cast<int>(N_GHOSTS) };
+          if (not inX3(c3)) {
+            continue;
+          }
           const real_t sx3 { prtl_shape::particle_shape<O>(
             math::abs(dx3 - (static_cast<real_t>(di3) + HALF))) };
-          const int c3 { i3 + di3 + static_cast<int>(N_GHOSTS) };
           for (int di2 { -window }; di2 <= window; ++di2) {
+            const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
+            if (not inX2(c2)) {
+              continue;
+            }
             const real_t sx23 { sx3 * prtl_shape::particle_shape<O>(
                                         math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
-            const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
             for (int di1 { -window }; di1 <= window; ++di1) {
+              const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
+              if (not inX1(c1)) {
+                continue;
+              }
               const real_t S { sx23 * prtl_shape::particle_shape<O>(
                                         math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-              const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
               buff(c1, c2, c3, 0) += cV0 * S;
               buff(c1, c2, c3, 1) += cV1 * S;
               buff(c1, c2, c3, 2) += cV2 * S;
@@ -455,51 +512,109 @@ namespace kernel::hybrid {
     }
 
     // ........................................................................
-    // particle boundaries (skeleton: periodic + absorb only).
-    // TODO: port reflect/axis handling and the MPI leaving-direction tagging
-    //       from kernels/pushers/sr.hpp:659-818.
+    // particle boundaries — periodic / absorb / reflect (Cartesian Minkowski,
+    // so a reflection just negates the corresponding 3-velocity component), plus
+    // the MPI leaving-direction tagging. Modeled on kernels/pushers/sr.hpp:659-814.
     // ........................................................................
     Inline void boundaryConditions(prtlidx_t p) const {
       if constexpr (D == Dim::_1D || D == Dim::_2D || D == Dim::_3D) {
-        applyBC1D(particles.i1(p), particles.i1_prev(p), ctx.ni1,
-                  bc.is_periodic_i1min, bc.is_periodic_i1max,
-                  bc.is_absorb_i1min, bc.is_absorb_i1max, p);
+        if (particles.i1(p) < 0) {
+          if (bc.is_periodic_i1min) {
+            particles.i1(p)      += ctx.ni1;
+            particles.i1_prev(p) += ctx.ni1;
+          } else if (bc.is_absorb_i1min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i1min) {
+            particles.i1(p)  = 0;
+            particles.dx1(p) = ONE - particles.dx1(p);
+            particles.ux1(p) = -particles.ux1(p);
+          }
+        } else if (particles.i1(p) >= ctx.ni1) {
+          if (bc.is_periodic_i1max) {
+            particles.i1(p)      -= ctx.ni1;
+            particles.i1_prev(p) -= ctx.ni1;
+          } else if (bc.is_absorb_i1max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i1max) {
+            particles.i1(p)  = ctx.ni1 - 1;
+            particles.dx1(p) = ONE - particles.dx1(p);
+            particles.ux1(p) = -particles.ux1(p);
+          }
+        }
       }
       if constexpr (D == Dim::_2D || D == Dim::_3D) {
-        applyBC1D(particles.i2(p), particles.i2_prev(p), ctx.ni2,
-                  bc.is_periodic_i2min, bc.is_periodic_i2max,
-                  bc.is_absorb_i2min, bc.is_absorb_i2max, p);
+        if (particles.i2(p) < 0) {
+          if (bc.is_periodic_i2min) {
+            particles.i2(p)      += ctx.ni2;
+            particles.i2_prev(p) += ctx.ni2;
+          } else if (bc.is_absorb_i2min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i2min) {
+            particles.i2(p)  = 0;
+            particles.dx2(p) = ONE - particles.dx2(p);
+            particles.ux2(p) = -particles.ux2(p);
+          }
+        } else if (particles.i2(p) >= ctx.ni2) {
+          if (bc.is_periodic_i2max) {
+            particles.i2(p)      -= ctx.ni2;
+            particles.i2_prev(p) -= ctx.ni2;
+          } else if (bc.is_absorb_i2max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i2max) {
+            particles.i2(p)  = ctx.ni2 - 1;
+            particles.dx2(p) = ONE - particles.dx2(p);
+            particles.ux2(p) = -particles.ux2(p);
+          }
+        }
       }
       if constexpr (D == Dim::_3D) {
-        applyBC1D(particles.i3(p), particles.i3_prev(p), ctx.ni3,
-                  bc.is_periodic_i3min, bc.is_periodic_i3max,
-                  bc.is_absorb_i3min, bc.is_absorb_i3max, p);
-      }
-    }
-
-    Inline void applyBC1D(int&      i,
-                          int&      i_prev,
-                          int       ni,
-                          bool      per_min,
-                          bool      per_max,
-                          bool      abs_min,
-                          bool      abs_max,
-                          prtlidx_t p) const {
-      if (i < 0) {
-        if (per_min) {
-          i      += ni;
-          i_prev += ni;
-        } else if (abs_min) {
-          particles.tag(p) = ParticleTag::dead;
-        }
-      } else if (i >= ni) {
-        if (per_max) {
-          i      -= ni;
-          i_prev -= ni;
-        } else if (abs_max) {
-          particles.tag(p) = ParticleTag::dead;
+        if (particles.i3(p) < 0) {
+          if (bc.is_periodic_i3min) {
+            particles.i3(p)      += ctx.ni3;
+            particles.i3_prev(p) += ctx.ni3;
+          } else if (bc.is_absorb_i3min) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i3min) {
+            particles.i3(p)  = 0;
+            particles.dx3(p) = ONE - particles.dx3(p);
+            particles.ux3(p) = -particles.ux3(p);
+          }
+        } else if (particles.i3(p) >= ctx.ni3) {
+          if (bc.is_periodic_i3max) {
+            particles.i3(p)      -= ctx.ni3;
+            particles.i3_prev(p) -= ctx.ni3;
+          } else if (bc.is_absorb_i3max) {
+            particles.tag(p) = ParticleTag::dead;
+          } else if (bc.is_reflect_i3max) {
+            particles.i3(p)  = ctx.ni3 - 1;
+            particles.dx3(p) = ONE - particles.dx3(p);
+            particles.ux3(p) = -particles.ux3(p);
+          }
         }
       }
+#if defined(MPI_ENABLED)
+      // tag the particle with the direction it leaves the local subdomain so the
+      // metadomain particle exchange ships it to the right neighbor
+      if constexpr (D == Dim::_1D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1);
+      } else if constexpr (D == Dim::_2D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1,
+                                        particles.i2(p) < 0,
+                                        particles.i2(p) >= ctx.ni2);
+      } else if constexpr (D == Dim::_3D) {
+        particles.tag(p) = mpi::SendTag(particles.tag(p),
+                                        particles.i1(p) < 0,
+                                        particles.i1(p) >= ctx.ni1,
+                                        particles.i2(p) < 0,
+                                        particles.i2(p) >= ctx.ni2,
+                                        particles.i3(p) < 0,
+                                        particles.i3(p) >= ctx.ni3);
+      }
+#endif
     }
   };
 

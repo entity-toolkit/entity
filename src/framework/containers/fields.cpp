@@ -27,6 +27,15 @@ namespace ntt {
       bckp = ndfield_t<Dim::_1D, 6> { "BCKP", nx1 };
       cur  = ndfield_t<Dim::_1D, 3> { "J", nx1 };
       buff = ndfield_t<Dim::_1D, 3> { "BUFF", nx1 };
+      if constexpr (::traits::engine::DefinesAuxFields<S>) {
+        aux = ndfield_t<Dim::_1D, 6> { "AUX", nx1 };
+      }
+      if constexpr (::traits::engine::DefinesEM0Fields<S>) {
+        em0 = ndfield_t<Dim::_1D, 6> { "EM0", nx1 };
+      }
+      if constexpr (::traits::engine::DefinesCur0Fields<S>) {
+        cur0 = ndfield_t<Dim::_1D, 3> { "CUR0", nx1 };
+      }
     } else if constexpr (D == Dim::_2D) {
       em   = ndfield_t<Dim::_2D, 6> { "EM", nx1, nx2 };
       bckp = ndfield_t<Dim::_2D, 6> { "BCKP", nx1, nx2 };

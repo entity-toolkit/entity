@@ -54,6 +54,19 @@ namespace ntt {
     set("scales.sigma0", SQR(skindepth0 / larmor0));
     set("scales.B0", ONE / larmor0);
     set("scales.omegaB0", ONE / larmor0);
+    // electron-fluid closure for the hybrid Ohm's law (ignored by SR/GR engines):
+    //   gamma_ad - adiabatic index of the massless electron fluid (1 = isothermal)
+    //   theta    - electron temperature T_e (code units); 0 = cold electrons
+    set("scales.gamma_ad",
+        toml::find_or<real_t>(toml_data, "scales", "gamma_ad", ONE));
+    set("scales.theta", toml::find_or<real_t>(toml_data, "scales", "theta", ZERO));
+    // density floor for the hybrid Ohm's-law 1/N divisions. With a finite ppc a
+    // fraction e^-ppc of cells are statistically empty and the non-periodic-wall
+    // ghost cells are never filled; an unfloored 1/N there yields Inf -> NaN that
+    // the field comms then spread over the whole grid. Default 5% of the ambient
+    // density (n0 = 1 in the standard hybrid Alfven normalization).
+    set("scales.dens_min",
+        toml::find_or<real_t>(toml_data, "scales", "dens_min", static_cast<real_t>(0.05)));
 
     /* [particles] ---------------------------------------------------------- */
     const auto ppc0 = toml::find<real_t>(toml_data, "particles", "ppc0");
@@ -238,6 +251,43 @@ namespace ntt {
     };
     alg_params.read(get<real_t>("scales.dx0"), alg_extra_flags, toml_data);
     alg_params.setParams(alg_extra_flags, this);
+
+    /* hybrid timestep — correct CFL --------------------------------------- */
+    // The default light-crossing dt = CFL * dx0 assumes the fastest signal
+    // travels at ~1 code-velocity unit (as for SR/GR, where speeds are bounded
+    // by c = 1). A hybrid plasma has no displacement current; its fastest
+    // signals are the DISPERSIVE whistler/Hall mode and the bulk ion flow, both
+    // larger than 1 in code units. Using dt = CFL * dx0 then advects particles
+    // by > 1 cell/step (Courant > 1), which breaks the single-cell rebucket and
+    // the moment deposit. Replace it with the Pegasus CFL (Kunz, Stone & Bai
+    // 2014, §3.5): dt <= CFL * min( dx0 / v_max, 2*pi/Omega ), with the
+    // ground-frame max signal speed
+    //   v_max = v_flow + v_A + v_whistler,
+    //   v_A        = d0 / rho0                      (Alfven speed, code units),
+    //   v_whistler = (d0^2 / rho0) * pi / dx0       (grid-scale Hall/whistler;
+    //                d0^2/rho0 is the EMF Hall coefficient coeff_2, k_max~pi/dx0),
+    // and v_flow an optional user-set characteristic flow speed in code units
+    // (algorithms.timestep.v_max, default 0 — set it for super-whistler flows).
+    if (engine_enum == SimEngine::HYBRID) {
+      const auto cfl    = get<real_t>("algorithms.timestep.CFL");
+      const auto dx0    = get<real_t>("scales.dx0");
+      const auto d0     = get<real_t>("scales.skindepth0");
+      const auto rho0   = get<real_t>("scales.larmor0");
+      const auto v_flow = toml::find_or<real_t>(toml_data,
+                                                "algorithms",
+                                                "timestep",
+                                                "v_max",
+                                                ZERO);
+      const auto v_alfven   = d0 / rho0;
+      const auto v_whistler = (SQR(d0) / rho0) *
+                              static_cast<real_t>(constant::PI) / dx0;
+      const auto v_max  = v_flow + v_alfven + v_whistler;
+      const auto dt_adv = dx0 / v_max;
+      // gyration limit 2*pi/Omega (Omega = 1/rho0); rarely binding
+      const auto dt_gyr = static_cast<real_t>(constant::TWO_PI) * rho0;
+      const auto dt_hyb = cfl * ((dt_adv < dt_gyr) ? dt_adv : dt_gyr);
+      set("algorithms.timestep.dt", dt_hyb);
+    }
 
     /* extra physics ------------------------------------------------------ */
     params::Extra                     extra_params {};
