@@ -54,7 +54,8 @@ namespace user {
   struct PGen {
     static constexpr auto D { M::Dim };
     // compatibility traits for the problem generator
-    static constexpr auto engines = ::traits::pgen::compatible_with<SimEngine::SRPIC> {};
+    static constexpr auto engines =
+      ::traits::pgen::compatible_with<SimEngine::SRPIC, SimEngine::HYBRID> {};
     static constexpr auto metrics =
       ::traits::pgen::compatible_with<Metric::Minkowski> {};
     static constexpr auto dimensions =
@@ -87,13 +88,13 @@ namespace user {
       raise::ErrorIf(nspec % 2 != 0,
                      "Number of species must be even for this setup",
                      HERE);
-      for (auto n = 0u; n < nspec; n += 2) {
-        raise::ErrorIf(
-          global_domain.species_params()[n].charge() !=
-            -global_domain.species_params()[n + 1].charge(),
-          "Charges of i-th and i+1-th species must be opposite for this setup",
-          HERE);
-      }
+      // for (auto n = 0u; n < nspec; n += 2) {
+      //   raise::ErrorIf(
+      //     global_domain.species_params()[n].charge() !=
+      //       -global_domain.species_params()[n + 1].charge(),
+      //     "Charges of i-th and i+1-th species must be opposite for this
+      //     setup", HERE);
+      // }
       for (auto* specs :
            { &drifts_in_x, &drifts_in_y, &drifts_in_z, &temperatures }) {
         if (specs->empty()) {
@@ -126,13 +127,29 @@ namespace user {
         const auto drift_2 = prmvec_t { drifts_in_x[n + 1],
                                         drifts_in_y[n + 1],
                                         drifts_in_z[n + 1] };
-        arch::InjectUniformMaxwellians<S, M>(
+        const auto edist1  = arch::energy_dist::MaxwellianNonRel<M::Dim> {
+          domain.random_pool(),
+          temperatures[n],
+          drift_1
+        };
+        const auto edist2 = arch::energy_dist::MaxwellianNonRel<M::Dim> {
+          domain.random_pool(),
+          temperatures[n + 1],
+          drift_2
+        };
+        arch::InjectUniform<S, M, decltype(edist1), decltype(edist2)>(
           params,
           domain,
-          densities[n / 2],
-          { temperatures[n], temperatures[n + 1] },
-          { n + 1, n + 2 },
-          { drift_1, drift_2 });
+          { 1u, 2u },
+          { edist1, edist2 },
+          ONE);
+        // arch::InjectUniformMaxwellians<S, M>(
+        //   params,
+        //   domain,
+        //   densities[n / 2],
+        //   { temperatures[n], temperatures[n + 1] },
+        //   { n + 1, n + 2 },
+        //   { drift_1, drift_2 });
       }
     }
   };

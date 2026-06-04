@@ -38,6 +38,8 @@ namespace kernel::hybrid {
     const uint8_t comp_Ec_out;
     const uint8_t comp_Bc_out;
 
+    const real_t dens_min { static_cast<real_t>(1e-3) };
+
     const real_t dt;
     const real_t gamma_ad;
     const real_t theta;
@@ -100,9 +102,13 @@ namespace kernel::hybrid {
       if constexpr (D == Dim::_1D) {
         const auto   i1 = i[0];
         // Ee* = EMF(N^(n), P^(n), Bf*)
-        const real_t N0 { NN(i1, comp_NN) };
-        const real_t N1 { INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)) };
-        const real_t N2 { INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)) };
+        const real_t N0 { math::max(NN(i1, comp_NN), dens_min) };
+        const real_t N1 {
+          math::max(INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)), dens_min)
+        };
+        const real_t N2 {
+          math::max(INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)), dens_min)
+        };
 
         E0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
              Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
@@ -132,11 +138,17 @@ namespace kernel::hybrid {
         const auto i1 = i[0];
         const auto i2 = i[1];
 
-        const real_t N0 { INV_2 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN)) };
-        const real_t N1 { INV_2 * (NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN)) };
-        const real_t N2 { INV_4 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN) +
-                                   NN(i1 - 1, i2, comp_NN) +
-                                   NN(i1 - 1, i2 - 1, comp_NN)) };
+        const real_t N0 { math::max(
+          INV_2 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN)),
+          dens_min) };
+        const real_t N1 { math::max(
+          INV_2 * (NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN)),
+          dens_min) };
+        const real_t N2 { math::max(
+          INV_4 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN) +
+                   NN(i1 - 1, i2, comp_NN) + NN(i1 - 1, i2 - 1, comp_NN)),
+          dens_min) };
+
         E0 = INV_4 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
                (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1)) -
              INV_2 * (PP(i1, i2, comp_PP + 2) + PP(i1, i2 - 1, comp_PP + 2)) *
@@ -192,18 +204,18 @@ namespace kernel::hybrid {
         const auto   i1 = i[0];
         const auto   i2 = i[1];
         const auto   i3 = i[2];
-        const real_t N0 {
+        const real_t N0 { math::max(
           INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
-                   NN(i1, i2 - 1, i3, comp_NN) + NN(i1, i2 - 1, i3 - 1, comp_NN))
-        };
-        const real_t N1 {
+                   NN(i1, i2 - 1, i3, comp_NN) + NN(i1, i2 - 1, i3 - 1, comp_NN)),
+          dens_min) };
+        const real_t N1 { math::max(
           INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
-                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2, i3 - 1, comp_NN))
-        };
-        const real_t N2 {
+                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2, i3 - 1, comp_NN)),
+          dens_min) };
+        const real_t N2 { math::max(
           INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2 - 1, i3, comp_NN) +
-                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2 - 1, i3, comp_NN))
-        };
+                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2 - 1, i3, comp_NN)),
+          dens_min) };
         E0 = -INV_8 *
                (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
                (PP(i1, i2, i3, comp_PP + 2) + PP(i1, i2, i3 - 1, comp_PP + 2) +

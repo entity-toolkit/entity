@@ -76,6 +76,38 @@ namespace arch::energy_dist {
     random_number_pool_t pool;
   };
 
+  Inline void NonRelMaxwellian(vec_t<Dim::_3D>&            v,
+                               real_t                      temp,
+                               const random_number_pool_t& pool) {
+    auto   rand_gen = pool.get_state();
+    // Juttner-Synge distribution using the Box-Muller method - non-relativistic
+    real_t randX1   = Random<real_t>(rand_gen);
+    while (cmp::AlmostZero(randX1)) {
+      randX1 = Random<real_t>(rand_gen);
+    }
+    randX1        = math::sqrt(-TWO * math::log(randX1));
+    real_t randX2 = static_cast<real_t>(constant::TWO_PI) *
+                    Random<real_t>(rand_gen);
+    v[0] = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+    randX1 = Random<real_t>(rand_gen);
+    while (cmp::AlmostZero(randX1)) {
+      randX1 = Random<real_t>(rand_gen);
+    }
+    randX1 = math::sqrt(-TWO * math::log(randX1));
+    randX2 = static_cast<real_t>(constant::TWO_PI) * Random<real_t>(rand_gen);
+    v[1]   = randX1 * math::cos(randX2) * math::sqrt(temp);
+
+    randX1 = Random<real_t>(rand_gen);
+    while (cmp::AlmostZero(randX1)) {
+      randX1 = Random<real_t>(rand_gen);
+    }
+    randX1 = math::sqrt(-TWO * math::log(randX1));
+    randX2 = static_cast<real_t>(constant::TWO_PI) * Random<real_t>(rand_gen);
+    v[2]   = randX1 * math::cos(randX2) * math::sqrt(temp);
+    pool.free_state(rand_gen);
+  }
+
   Inline void JuttnerSinge(vec_t<Dim::_3D>&            v,
                            real_t                      temp,
                            const random_number_pool_t& pool) {
@@ -289,6 +321,48 @@ namespace arch::energy_dist {
     // +/- 2 -> +/- x2
     // +/- 3 -> +/- x3
     short drift_dir { 0 };
+  };
+
+  template <Dimension D>
+  struct MaxwellianNonRel {
+    MaxwellianNonRel(random_number_pool_t& pool,
+                     real_t                temperature,
+                     const std::vector<real_t>& drift_vel = { ZERO, ZERO, ZERO })
+      : pool { pool }
+      , temperature { temperature } {
+      raise::ErrorIf(drift_vel.size() != 3,
+                     "Maxwellian: Drift velocity must be a 3D vector",
+                     HERE);
+      raise::ErrorIf(temperature < ZERO,
+                     "Maxwellian: Temperature must be non-negative",
+                     HERE);
+      if (not cmp::AlmostZero_host(NORM(drift_vel[0], drift_vel[1], drift_vel[2]))) {
+        drift_vel_x1 = drift_vel[0];
+        drift_vel_x2 = drift_vel[1];
+        drift_vel_x3 = drift_vel[2];
+      }
+    }
+
+    Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& v) const {
+
+      if (cmp::AlmostZero(temperature)) {
+        v[0] = ZERO;
+        v[1] = ZERO;
+        v[2] = ZERO;
+      } else {
+        NonRelMaxwellian(v, temperature, pool);
+      }
+      v[0] += drift_vel_x1;
+      v[1] += drift_vel_x2;
+      v[2] += drift_vel_x3;
+    }
+
+  private:
+    random_number_pool_t pool;
+
+    const real_t temperature;
+
+    real_t drift_vel_x1 { ZERO }, drift_vel_x2 { ZERO }, drift_vel_x3 { ZERO };
   };
 
 } // namespace arch::energy_dist
