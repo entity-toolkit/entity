@@ -195,6 +195,34 @@
   #     @from: `scales.larmor0`
   #     @value: `1 / larmor0`
 
+# Electron-fluid closure for the hybrid Ohm's law
+#   @note: Only read by the `HYBRID` engine (ignored by `SRPIC`/`GRPIC`)
+[hybrid]
+  # Adiabatic index of the massless electron fluid
+  #   @type: float [> 0.0]
+  #   @default: 1.66667 (= 5/3)
+  #   @note: `1.0` corresponds to an isothermal closure
+  gamma_ad = ""
+  # Electron temperature `T_e` in physical (code) units
+  #   @type: float [>= 0.0]
+  #   @default: 0.0
+  #   @note: `0.0` corresponds to cold electrons
+  theta0 = ""
+  # Density floor for the Ohm's-law `1/N` divisions, in units of `n0`
+  #   @type: float [> 0.0]
+  #   @default: 1e-3
+  #   @note: Guards against `Inf`/`NaN` in statistically-empty or unfilled ghost cells
+  #          (a finite `ppc` leaves a fraction `e^-ppc` of cells empty), which the field
+  #          comms would otherwise spread over the whole grid
+  dens_min = ""
+  # Characteristic flow speed for the hybrid CFL, in physical (code) units
+  #   @type: float [>= 0.0]
+  #   @default: 0.0
+  #   @note: Added to the Alfven + whistler signal speeds in the Pegasus CFL
+  #          `dt <= CFL * min(dx0 / v_max, 2*pi/Omega)` [Kunz, Stone & Bai (2014), §3.5]
+  #   @note: `0.0` lets the Alfven + whistler speeds set `dt`; raise it for super-whistler flows
+  v_max = ""
+
 [radiation]
   [radiation.drag]
     [radiation.drag.synchrotron]

@@ -38,13 +38,12 @@ namespace kernel::hybrid {
     const uint8_t comp_Ec_out;
     const uint8_t comp_Bc_out;
 
-    const real_t dens_min { static_cast<real_t>(1e-3) };
-
     const real_t dt;
     const real_t gamma_ad;
     const real_t theta;
     const real_t d0;
     const real_t rho0;
+    const real_t dens_min;
 
   public:
     EMF_kernel(const ndfield_t<D, 6>&  PP,
@@ -69,7 +68,8 @@ namespace kernel::hybrid {
                real_t                  gamma_ad,
                real_t                  theta,
                real_t                  d0,
-               real_t                  rho0)
+               real_t                  rho0,
+               real_t                  dens_min)
       : PP { PP }
       , NN { NN }
       , Ee_in { Ee_in }
@@ -92,7 +92,8 @@ namespace kernel::hybrid {
       , gamma_ad { gamma_ad }
       , theta { theta }
       , d0 { d0 }
-      , rho0 { rho0 } {}
+      , rho0 { rho0 }
+      , dens_min { dens_min } {}
 
     Inline void compute_Ee(const tuple_t<ncells_t, D>& i,
                            real_t&                     E0,

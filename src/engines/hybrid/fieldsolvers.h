@@ -77,10 +77,11 @@ namespace ntt {
              const SimulationParams&                          params,
              const emf&                                       flag) {
       const auto dt       = engine_params.get<real_t>("dt");
-      const auto gamma_ad = params.get<real_t>("scales.gamma_ad");
-      const auto theta    = params.get<real_t>("scales.theta0");
+      const auto gamma_ad = params.get<real_t>("hybrid.gamma_ad");
+      const auto theta    = params.get<real_t>("hybrid.theta0");
       const auto d0       = params.get<real_t>("scales.skindepth0");
       const auto rho0     = params.get<real_t>("scales.larmor0");
+      const auto dens_min = params.get<real_t>("hybrid.dens_min");
       if (flag == emf::push0) {
         // clang-format off
         Kokkos::parallel_for(
@@ -98,7 +99,7 @@ namespace ntt {
                                               0, 3, 3,            // P, N, Ee_in
                                               0, 0, 3,            // Bf, Ec, Bfs
                                               0, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                              dt, gamma_ad, theta, d0, rho0));
+                                              dt, gamma_ad, theta, d0, rho0, dens_min));
         // clang-format on
       } else {
         // clang-format off
@@ -117,7 +118,7 @@ namespace ntt {
                                                0, 3, 0,            // P, N, Ee_in
                                                3, 0, 0,            // Bf, Ec, Bfs
                                                3, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                               dt, gamma_ad, theta, d0, rho0));
+                                               dt, gamma_ad, theta, d0, rho0, dens_min));
         // clang-format on
       }
     }
