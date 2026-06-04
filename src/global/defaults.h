@@ -40,6 +40,10 @@ namespace ntt::defaults {
     const real_t beta_zy = 0.0;
   } // namespace fieldsolver
 
+  namespace hybrid {
+    const real_t gamma_ad = static_cast<real_t>(5.0 / 3.0);
+  } // namespace hybrid
+
   namespace qsph {
     const real_t r0 = 0.0;
     const real_t h  = 0.0;
