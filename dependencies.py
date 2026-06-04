@@ -367,8 +367,10 @@ def on_install_confirmed(settings: Settings) -> None:
                 "kokkos",
                 settings.kokkos_version,
                 settings.kokkos_backend, 
-                settings.kokkos_arch.strip().lower(),
             )
+            if settings.kokkos_arch.strip().lower():
+                kokkos_modfile_file = os.path.join(kokkos_modfile_file, settings.kokkos_arch.strip().lower())
+
             os.makedirs(os.path.dirname(kokkos_modfile_file), exist_ok=True)
             if os.path.exists(kokkos_modfile_file) and not settings.overwrite:
                 raise FileExistsError(
