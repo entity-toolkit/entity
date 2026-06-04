@@ -127,17 +127,6 @@ namespace ntt {
       auto parameters = prm::Parameters {};
       parameters.set("dt", static_cast<real_t>(dt));
       parameters.set("time", static_cast<simtime_t>(time));
-      if constexpr (S == SimEngine::HYBRID) {
-        // the hybrid EMF/Ohm's-law kernels consume these scale parameters
-        parameters.set("larmor0", m_params.template get<real_t>("scales.larmor0"));
-        parameters.set("skindepth0",
-                       m_params.template get<real_t>("scales.skindepth0"));
-        parameters.set("gamma_ad",
-                       m_params.template get<real_t>("scales.gamma_ad"));
-        parameters.set("theta", m_params.template get<real_t>("scales.theta"));
-        parameters.set("dens_min",
-                       m_params.template get<real_t>("scales.dens_min"));
-      }
       return parameters;
     }
   };
