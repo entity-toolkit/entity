@@ -96,8 +96,7 @@ namespace kernel::hybrid {
                            real_t&                     E0,
                            real_t&                     E1,
                            real_t&                     E2) const {
-      const real_t coeff_1 { rho0 * gamma_ad * theta };
-      const real_t coeff_2 { SQR(d0) / rho0 };
+      const real_t coeff { SQR(d0) / rho0 };
       if constexpr (D == Dim::_1D) {
         const auto   i1 = i[0];
         // Ee* = EMF(N^(n), P^(n), Bf*)
@@ -116,15 +115,15 @@ namespace kernel::hybrid {
              INV_2 * (PP(i1, comp_PP + 1) + PP(i1 - 1, comp_PP + 1)) *
                Bfs(i1, comp_Bfs + 0);
 
-        E0 += coeff_2 *
+        E0 += coeff *
               (-INV_2 * (Bfs(i1 + 1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1)) *
                  Bfs(i1, comp_Bfs + 1) -
                INV_2 * (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
                  Bfs(i1, comp_Bfs + 2));
-        E1 += coeff_2 * ((Bfs(i1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1)) *
-                         Bfs(i1, comp_Bfs + 0));
-        E2 += coeff_2 * ((Bfs(i1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
-                         Bfs(i1, comp_Bfs + 0));
+        E1 += coeff * ((Bfs(i1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1)) *
+                       Bfs(i1, comp_Bfs + 0));
+        E2 += coeff * ((Bfs(i1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
+                       Bfs(i1, comp_Bfs + 0));
 
         E0 *= -ONE / N0;
         E1 *= -ONE / N1;
@@ -155,7 +154,7 @@ namespace kernel::hybrid {
                 PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0));
 
         E0 +=
-          coeff_2 *
+          coeff *
           (-INV_8 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
              (Bfs(i1 + 1, i2, comp_Bfs + 2) + Bfs(i1 + 1, i2 - 1, comp_Bfs + 2) -
               Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
@@ -164,7 +163,7 @@ namespace kernel::hybrid {
               Bfs(i1, i2, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
               Bfs(i1 + 1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
              Bfs(i1, i2, comp_Bfs + 1));
-        E1 += coeff_2 *
+        E1 += coeff *
               (-INV_8 *
                  (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
                  (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
@@ -177,7 +176,7 @@ namespace kernel::hybrid {
                   Bfs(i1 - 1, i2, comp_Bfs + 1)) *
                  Bfs(i1, i2, comp_Bfs + 0));
         E2 +=
-          coeff_2 *
+          coeff *
           ((INV_4) * (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
              (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2) -
               Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
@@ -237,7 +236,7 @@ namespace kernel::hybrid {
                 PP(i1 - 1, i2 - 1, i3, comp_PP + 0));
 
         E0 +=
-          coeff_2 *
+          coeff *
           (INV_8 *
              (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
              (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
@@ -265,7 +264,7 @@ namespace kernel::hybrid {
               Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
               Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
         E1 +=
-          coeff_2 *
+          coeff *
           (-INV_8 *
              (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0)) *
              (Bfs(i1, i2 + 1, i3, comp_Bfs + 0) +
@@ -292,7 +291,7 @@ namespace kernel::hybrid {
               Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 2) +
               Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
         E2 +=
-          coeff_2 *
+          coeff *
           (-INV_8 *
              (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2 - 1, i3, comp_Bfs + 0)) *
              (Bfs(i1, i2, i3 + 1, comp_Bfs + 0) - Bfs(i1, i2, i3 - 1, comp_Bfs + 0) +
