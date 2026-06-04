@@ -71,7 +71,7 @@ namespace ntt {
         timers.start("Moments");
         hybrid::DepositMoments(dom, m_params);
         m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
-        m_metadomain.CommunicateFields(dom, ::Comm::AUX);  // fill ghosts for EMF reads
+        m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
         timers.stop("Moments");
       }
 
@@ -82,7 +82,7 @@ namespace ntt {
       // Ec^(n) = EMF(N^(n), V^(n), Bc^(n)=interp Bf) -> em0::012
       // (these seed the trapezoidal average E' = 1/2(E* + E^(n)) in EMF #1/#2)
       timers.start("FieldSolver");
-      hybrid::EMF0(dom, this->engineParams());
+      hybrid::EMF(dom, this->engineParams(), m_params, hybrid::emf::push0);
       timers.stop("FieldSolver");
       timers.start("Communications");
       m_metadomain.CommunicateFields(dom, ::Comm::EM_012 | ::Comm::EM0_012);
@@ -124,7 +124,7 @@ namespace ntt {
       //   bckp::012 <-- Ec'
       //   bckp::345 <-- Bc'
       timers.start("FieldSolver");
-      hybrid::EMF(dom, this->engineParams());
+      hybrid::EMF(dom, this->engineParams(), m_params, hybrid::emf::push12);
       timers.stop("FieldSolver");
 
       // Particle push #1 (predictor) — Pegasus Fig. 2 steps 7+8.
@@ -138,8 +138,9 @@ namespace ntt {
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ false);
       timers.stop("ParticlePusher");
       timers.start("Moments");
-      m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
-      m_metadomain.CommunicateFields(dom, ::Comm::AUX);  // fill ghosts for EMF #2
+      m_metadomain.SynchronizeFields(dom,
+                                     ::Comm::AUX); // additive remap of deposit tails
+      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
       timers.stop("Moments");
 
       // Faraday push #2
@@ -178,7 +179,7 @@ namespace ntt {
       //   bckp:012 <-- Ec''
       //   bckp:345 <-- Bc''
       timers.start("FieldSolver");
-      hybrid::EMF(dom, this->engineParams());
+      hybrid::EMF(dom, this->engineParams(), m_params, hybrid::emf::push12);
       timers.stop("FieldSolver");
       timers.start("Communications");
       // Ee'' (em0::345) ghosts for Faraday push #3; Ec''/Bc'' (bckp) ghosts for the gather
@@ -204,16 +205,19 @@ namespace ntt {
       timers.stop("FieldBoundaries");
 
       // Particle push #2 (corrector) — Pegasus Fig. 2 step 12.
-      // Using: bckp::012 [Ec''], bckp::345 [Bc'']; accepted (store-back + particle BCs).
-      // Pushes and deposits final moments: x_prtl at n+1, aux::012 <-- V^(n+1), aux::3 <-- N^(n+1)
-      // (bckp ghosts already filled after EMF #2; Faraday push #3 does not touch bckp)
+      // Using: bckp::012 [Ec''], bckp::345 [Bc'']; accepted (store-back +
+      // particle BCs). Pushes and deposits final moments: x_prtl at n+1,
+      // aux::012 <-- V^(n+1), aux::3 <-- N^(n+1) (bckp ghosts already filled
+      // after EMF #2; Faraday push #3 does not touch bckp)
       timers.start("ParticlePusher");
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ true);
       timers.stop("ParticlePusher");
 
       timers.start("Moments");
-      m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails (pre-migration)
-      m_metadomain.CommunicateFields(dom, ::Comm::AUX);  // fill ghosts for next step's EMF
+      m_metadomain.SynchronizeFields(
+        dom,
+        ::Comm::AUX); // additive remap of deposit tails (pre-migration)
+      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
       timers.stop("Moments");
 
       timers.start("Communications");
