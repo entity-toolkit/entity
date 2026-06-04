@@ -8,6 +8,7 @@
 
 #include "engines/hybrid/fields_bcs.h"
 #include "engines/hybrid/fieldsolvers.h"
+#include "engines/hybrid/moments_filter.h"
 #include "engines/hybrid/particle_pusher.h"
 
 #include "engines/engine.hpp"
@@ -72,6 +73,8 @@ namespace ntt {
         hybrid::DepositMoments(dom, m_params);
         m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
         m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
+        // smooth N^(0),V^(0) (kills grid-scale shot noise before the field solve)
+        hybrid::MomentsFilter(m_metadomain, dom, m_params);
         timers.stop("Moments");
       }
 
@@ -141,6 +144,8 @@ namespace ntt {
       m_metadomain.SynchronizeFields(dom,
                                      ::Comm::AUX); // additive remap of deposit tails
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
+      // smooth predicted N',V' before EMF #2
+      hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("Moments");
 
       // Faraday push #2
@@ -218,6 +223,8 @@ namespace ntt {
         dom,
         ::Comm::AUX); // additive remap of deposit tails (pre-migration)
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
+      // smooth final N^(n+1),V^(n+1) for next step's EMF #0/#1
+      hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("Moments");
 
       timers.start("Communications");
