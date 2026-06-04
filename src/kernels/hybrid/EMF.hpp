@@ -98,7 +98,13 @@ namespace kernel::hybrid {
                            real_t&                     E0,
                            real_t&                     E1,
                            real_t&                     E2) const {
-      const real_t coeff { SQR(d0) / rho0 };
+      // Hall/whistler coefficient d_i^2 * Omega_i = d0^2/rho0. Leading minus is
+      // INTENTIONAL: the (curl B) x B block below is summed into the E bracket,
+      // which is then multiplied by -1/N. A positive coeff would give
+      // E_Hall = -(d0^2/rho0)(curl B)xB/N -- the WRONG sign vs the generalized
+      // Ohm's law (Pegasus eq. 10 / standard Hall-MHD: +(d0^2/rho0)(curl B)xB/N).
+      // The minus restores the correct sign. (motional & e-pressure unaffected.)
+      const real_t coeff { -SQR(d0) / rho0 };
       if constexpr (D == Dim::_1D) {
         const auto   i1 = i[0];
         // Ee* = EMF(N^(n), P^(n), Bf*)
@@ -340,9 +346,15 @@ namespace kernel::hybrid {
                            real_t&                     E1,
                            real_t&                     E2) const {
       const real_t coeff_1 { rho0 * gamma_ad * theta };
-      const real_t coeff_2 { SQR(d0) / rho0 };
+      // Hall coefficient, same sign convention as `coeff` in compute_Ee above
+      // (leading minus corrects the (curl B) x B sign; see note there).
+      const real_t coeff_2 { -SQR(d0) / rho0 };
       if constexpr (D == Dim::_1D) {
         const auto i1 = i[0];
+
+        // floored cell-centered density: the pusher reads Ec, so an empty cell
+        // here would inject Inf into the particle push (NaN cascade)
+        const real_t Nc { math::max(NN(i1, comp_NN), dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
         E0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
@@ -354,7 +366,7 @@ namespace kernel::hybrid {
                PP(i1, comp_PP + 1) +
              Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 0);
 
-        E0 += coeff_1 * math::pow(NN(i1, comp_NN), gamma_ad - ONE) * INV_2 *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
               (NN(i1 + 1, comp_NN) - NN(i1 - 1, comp_NN));
 
         E0 += coeff_2 *
@@ -369,13 +381,16 @@ namespace kernel::hybrid {
               (Bfs(i1 + 1, comp_Bfs + 0) + Bfs(i1, comp_Bfs + 0)) *
               (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2));
 
-        E0 *= -ONE / NN(i1, comp_NN);
-        E1 *= -ONE / NN(i1, comp_NN);
-        E2 *= -ONE / NN(i1, comp_NN);
+        E0 *= -ONE / Nc;
+        E1 *= -ONE / Nc;
+        E2 *= -ONE / Nc;
 
       } else if constexpr (D == Dim::_2D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
+
+        // floored cell-centered density (see 1D note above)
+        const real_t Nc { math::max(NN(i1, i2, comp_NN), dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
         E0 = -INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
@@ -389,9 +404,9 @@ namespace kernel::hybrid {
              INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
                PP(i1, i2, comp_PP + 0);
 
-        E0 += coeff_1 * math::pow(NN(i1, i2, comp_NN), gamma_ad - ONE) * INV_2 *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
               (NN(i1 + 1, i2, comp_NN) - NN(i1 - 1, i2, comp_NN));
-        E1 += coeff_1 * math::pow(NN(i1, i2, comp_NN), gamma_ad - ONE) * INV_2 *
+        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
               (NN(i1, i2 + 1, comp_NN) - NN(i1, i2 - 1, comp_NN));
         E0 +=
           coeff_2 *
@@ -419,13 +434,16 @@ namespace kernel::hybrid {
                  (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
                  (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)));
 
-        E0 *= -ONE / NN(i1, i2, comp_NN);
-        E1 *= -ONE / NN(i1, i2, comp_NN);
-        E2 *= -ONE / NN(i1, i2, comp_NN);
+        E0 *= -ONE / Nc;
+        E1 *= -ONE / Nc;
+        E2 *= -ONE / Nc;
       } else if constexpr (D == Dim::_3D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
         const auto i3 = i[2];
+
+        // floored cell-centered density (see 1D note above)
+        const real_t Nc { math::max(NN(i1, i2, i3, comp_NN), dens_min) };
         // Ee* = EMF(N^(n), P^(n), Bf*)
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
@@ -448,11 +466,11 @@ namespace kernel::hybrid {
                (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) + Bfs(i1, i2, i3, comp_Bfs + 1)) *
                PP(i1, i2, i3, comp_PP + 0);
 
-        E0 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
               INV_2 * (NN(i1 + 1, i2, i3, comp_NN) - NN(i1 - 1, i2, i3, comp_NN));
-        E1 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) *
+        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
               INV_2 * (NN(i1, i2 + 1, i3, comp_NN) - NN(i1, i2 - 1, i3, comp_NN));
-        E2 += coeff_1 * math::pow(NN(i1, i2, i3, comp_NN), gamma_ad - ONE) *
+        E2 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
               INV_2 * (NN(i1, i2, i3 + 1, comp_NN) - NN(i1, i2, i3 - 1, comp_NN));
 
         E0 += coeff_2 * (INV_8 *
@@ -522,9 +540,9 @@ namespace kernel::hybrid {
                             Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
                             Bfs(i1, i2 - 1, i3, comp_Bfs + 2)));
 
-        E0 *= -ONE / NN(i1, i2, i3, comp_NN);
-        E1 *= -ONE / NN(i1, i2, i3, comp_NN);
-        E2 *= -ONE / NN(i1, i2, i3, comp_NN);
+        E0 *= -ONE / Nc;
+        E1 *= -ONE / Nc;
+        E2 *= -ONE / Nc;
       }
     }
 

@@ -38,6 +38,12 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
+        // B_x is constant in 1D (dB_x/dt = -(curl E)_x = 0). Bout here is a
+        // SEPARATE scratch buffer (cur = Bf*/Bf** for the predictor pushes),
+        // NOT in-place on `em`, and is zero-initialized -- so B_x must be
+        // copied through, else the subsequent EMF (Ohm's-law Hall/motional
+        // terms) would read Bf*_x = 0 instead of B_x^n.
+        Bout(i1, comp_Bout + 0) = Bin(i1, comp_Bin + 0);
         Bout(i1, comp_Bout + 1) = Bin(i1, comp_Bin + 1) -
                                   dt * (-Ein(i1 + 1, comp_Ein + 2) +
                                         Ein(i1, comp_Ein + 2));
