@@ -25,6 +25,7 @@
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
+#include "utils/sorting.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
@@ -89,6 +90,14 @@ namespace ntt {
 #else // MPI_ENABLED
     const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
 #endif
+
+    // team_policy: tile metadata produced by SortSpatially
+    // and consumed by the tiled deposit / pusher kernels. Lazily
+    // allocated on first sort. The sort backend itself (oneDPL on SYCL,
+    // Thrust on CUDA, std::sort on Host, Kokkos::BinSort otherwise) is
+    // selected at compile time based on the Kokkos device and the
+    // vendor libraries detected by CMake.
+    TileLayout<D> m_tile_layout {};
 
   public:
     // for empty allocation
@@ -276,8 +285,41 @@ namespace ntt {
     /**
      * @brief Sort particles spatially by their cell indices
      * @param grid The grid object to get the cell information for sorting
+     * @note In team_policy mode (compile-time `team_policy=ON`), also
+     *       populates `m_tile_layout` with tile-offset and per-tile
+     *       permutation metadata that the tiled deposit/pusher kernels
+     *       consume.
      */
     void SortSpatially(const Grid<D>&);
+
+#if defined(TEAM_POLICY) &&                                                    \
+  ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
+   (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
+   (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+  private:
+    /**
+     * @brief Apply a particle-index permutation (built by oneDPL/Thrust
+     *        sort_by_key) to every SoA member array. Sequential — one
+     *        transient buffer at a time, fenced before scope exit.
+     *        Only compiled when a vendor sort backend is enabled; the
+     *        BinSort path applies the permutation in place via
+     *        `sorter.sort(view)` instead.
+     */
+    void apply_permutation_to_soa(const prtl_perm_t& perm);
+
+  public:
+#endif
+
+    /**
+     * @brief Read-only access to the tile layout produced by the most
+     *        recent SortSpatially call. Returns a default-constructed
+     *        layout (`ntiles_total == 0`) when the species has not yet
+     *        been sorted.
+     */
+    [[nodiscard]]
+    auto tile_layout() const -> const TileLayout<D>& {
+      return m_tile_layout;
+    }
 
     /**
      * @brief Copy particle data from device to host.

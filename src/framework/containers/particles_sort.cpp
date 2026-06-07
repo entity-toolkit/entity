@@ -8,10 +8,22 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/grid.h"
 
+#if defined(TEAM_POLICY)
+  #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                    \
+      (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                    \
+      (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
+    #define TEAM_POLICY_USE_VENDOR_SORT
+    #include "utils/sort_dispatch.h"
+  #endif
+#endif
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+#include <Kokkos_Sort.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -195,6 +207,192 @@ namespace ntt {
 
   template <Dimension D, Coord::type C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
+#if defined(TEAM_POLICY)
+    // ---------------------- team_policy: tile-based sort ------------------ //
+    const auto npart_local = npart();
+    if (npart_local == 0u) {
+      m_tile_layout = TileLayout<D> {};
+      m_is_sorted   = true;
+      return;
+    }
+
+    constexpr unsigned short T = static_cast<unsigned short>(
+      TEAM_POLICY_TILE_SIZE);
+    static_assert(T > 0u, "TEAM_POLICY_TILE_SIZE must be > 0");
+
+    // 1. Compute per-axis tile counts and total_tiles.
+    const auto ncells_active = grid.n_active();
+    ncells_t   ntx[3] { 1u, 1u, 1u };
+    ncells_t   total_tiles { 1u };
+    if constexpr ((D == Dim::_1D) or (D == Dim::_2D) or (D == Dim::_3D)) {
+      ntx[0]       = static_cast<ncells_t>(math::ceil(
+        static_cast<double>(ncells_active[0]) / static_cast<double>(T)));
+      total_tiles *= ntx[0];
+    }
+    if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
+      ntx[1]       = static_cast<ncells_t>(math::ceil(
+        static_cast<double>(ncells_active[1]) / static_cast<double>(T)));
+      total_tiles *= ntx[1];
+    }
+    if constexpr (D == Dim::_3D) {
+      ntx[2]       = static_cast<ncells_t>(math::ceil(
+        static_cast<double>(ncells_active[2]) / static_cast<double>(T)));
+      total_tiles *= ntx[2];
+    }
+
+    // 2. Compute per-particle tile key (with min(i, i_prev)).
+    array_t<ncells_t*> tile_indices { "tile_indices", npart_local };
+    Kokkos::parallel_for(
+      "FillTileIndices",
+      rangeActiveParticles(),
+      sort::PositionToTileIndex<D, false, true> { i1,
+                                                   i2,
+                                                   i3,
+                                                   tag,
+                                                   tile_indices,
+                                                   ncells_active,
+                                                   static_cast<ncells_t>(T),
+                                                   array_t<npart_t*> {},
+                                                   i1_prev,
+                                                   i2_prev,
+                                                   i3_prev });
+
+    // 3. Sort. Vendor library (oneDPL/Thrust) when compiled in;
+    //    Kokkos::BinSort otherwise. n_bins = total_tiles + 2 covers
+    //    the dead-particle sentinel bin (total_tiles + 1u).
+    const ncells_t n_bins = total_tiles + 2u;
+    const auto     slice  = prtl_slice_t(0, npart_local);
+  #if defined(TEAM_POLICY_USE_VENDOR_SORT)
+    // Vendor path: produce an explicit permutation via sort_by_key,
+    // then apply it to each SoA member with a sequential one-buffer
+    // gather (peak transient = one `npart × sizeof(member)` buffer.
+    prtl_perm_t perm { "tile_perm", npart_local };
+    #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+    sort_helpers::sort_by_key_dispatch(tile_indices,
+                                       perm,
+                                       n_bins,
+                                       sort::backend::OneDPL {});
+    #elif defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
+    sort_helpers::sort_by_key_dispatch(tile_indices,
+                                       perm,
+                                       n_bins,
+                                       sort::backend::Rocthrust {});
+    #else
+    sort_helpers::sort_by_key_dispatch(tile_indices,
+                                       perm,
+                                       n_bins,
+                                       sort::backend::Thrust {});
+    #endif
+    Kokkos::fence("SortSpatially: pre-gather drain");
+    apply_permutation_to_soa(perm);
+  #else
+    // BinSort path: same mechanism as legacy SortSpatially (BinSort
+    // allocates one temp View per `sorter.sort(view)` call and frees
+    // it before the next), so peak transient memory is bounded.
+    using sorter_op_t = Kokkos::BinOp1D<array_t<ncells_t*>>;
+    using sorter_t    = Kokkos::BinSort<array_t<ncells_t*>, sorter_op_t>;
+    auto bin_op       = sorter_op_t { static_cast<int>(n_bins), 0u, n_bins };
+    auto sorter       = sorter_t { tile_indices, bin_op, false };
+    sorter.create_permute_vector();
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i1, slice));
+      sorter.sort(Kokkos::subview(i1_prev, slice));
+      sorter.sort(Kokkos::subview(dx1, slice));
+      sorter.sort(Kokkos::subview(dx1_prev, slice));
+    }
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i2, slice));
+      sorter.sort(Kokkos::subview(i2_prev, slice));
+      sorter.sort(Kokkos::subview(dx2, slice));
+      sorter.sort(Kokkos::subview(dx2_prev, slice));
+    }
+    if constexpr (D == Dim::_3D) {
+      sorter.sort(Kokkos::subview(i3, slice));
+      sorter.sort(Kokkos::subview(i3_prev, slice));
+      sorter.sort(Kokkos::subview(dx3, slice));
+      sorter.sort(Kokkos::subview(dx3_prev, slice));
+    }
+    sorter.sort(Kokkos::subview(ux1, slice));
+    sorter.sort(Kokkos::subview(ux2, slice));
+    sorter.sort(Kokkos::subview(ux3, slice));
+    sorter.sort(Kokkos::subview(weight, slice));
+    sorter.sort(Kokkos::subview(tag, slice));
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
+      sorter.sort(Kokkos::subview(phi, slice));
+    }
+    for (auto pldr { 0u }; pldr < npld_r(); ++pldr) {
+      sorter.sort(Kokkos::subview(pld_r, slice, pldr));
+    }
+    for (auto pldi { 0u }; pldi < npld_i(); ++pldi) {
+      sorter.sort(Kokkos::subview(pld_i, slice, pldi));
+    }
+    // Apply the same permutation to `tile_indices` itself so it ends
+    // monotonically non-decreasing for the offsets pass below.
+    sorter.sort(tile_indices);
+  #endif // TEAM_POLICY_USE_VENDOR_SORT
+
+    // 5. Compute per-tile prefix-sum `tile_offsets` for the tiled
+    //    pusher. `tile_indices` is now sorted (monotonically
+    //    non-decreasing for alive particles, dead sentinel
+    //    `total_tiles + 1` clustered at the end) — vendor sort_by_key
+    //    sorts keys in place; the BinSort path explicitly applies the
+    //    same permutation to `tile_indices` above. Transition-detect
+    //    directly on it: the start of each non-empty tile is the only
+    //    place a write happens — atomic-free in the dense branch.
+    //    Empty tiles (no particles) are filled by a reverse pass on a
+    //    small host mirror (`total_tiles ≈ 176K` at production scale →
+    //    ~700 KB).
+    {
+      array_t<npart_t*> tile_offsets { "tile_offsets", total_tiles + 1u };
+      Kokkos::deep_copy(tile_offsets, static_cast<npart_t>(npart_local));
+
+      const auto total_tiles_v = total_tiles;
+      auto       ti_v          = tile_indices;
+      Kokkos::parallel_for(
+        "DetectTileBoundaries",
+        rangeActiveParticles(),
+        Lambda(prtlidx_t p) {
+          const auto t_curr   = ti_v(p);
+          const bool boundary = (p == 0u) || (ti_v(p - 1u) != t_curr);
+          if (!boundary) {
+            return;
+          }
+          if (t_curr < total_tiles_v) {
+            tile_offsets(t_curr) = p;
+          } else {
+            // First dead particle — also marks the alive_count boundary
+            // stored at index total_tiles.
+            Kokkos::atomic_min(&tile_offsets(total_tiles_v), p);
+          }
+        });
+
+      auto h_offsets = Kokkos::create_mirror_view(tile_offsets);
+      Kokkos::deep_copy(h_offsets, tile_offsets);
+      for (auto t = static_cast<std::size_t>(total_tiles); t-- > 0u;) {
+        if (h_offsets(t) > h_offsets(t + 1u)) {
+          h_offsets(t) = h_offsets(t + 1u);
+        }
+      }
+      Kokkos::deep_copy(tile_offsets, h_offsets);
+
+      m_tile_layout.tile_offsets = tile_offsets;
+    }
+
+    // 6. Populate `m_tile_layout` size/shape. `tile_perm` is not used
+    //    in the current design — the SoA arrays are physically permuted
+    //    into tile order, so consumers iterate
+    //    `[tile_offsets(t), tile_offsets(t+1))` directly without a
+    //    separate permutation indirection.
+    m_tile_layout.ntiles_per_axis[0] = ntx[0];
+    m_tile_layout.ntiles_per_axis[1] = ntx[1];
+    m_tile_layout.ntiles_per_axis[2] = ntx[2];
+    m_tile_layout.ntiles_total       = total_tiles;
+    m_tile_layout.tile_size          = T;
+    m_tile_layout.tile_perm          = prtl_perm_t {};
+    m_is_sorted                      = true;
+
+    Kokkos::fence("SortSpatially: end of team_policy path");
+#else  // !TEAM_POLICY — legacy in-place BinSort by global cell index
     const auto nx2         = grid.n_active(in::x2);
     const auto nx3         = grid.n_active(in::x3);
     const auto total_cells = grid.num_active();
@@ -250,13 +448,118 @@ namespace ntt {
     for (auto pldi { 0u }; pldi < npld_i(); ++pldi) {
       sorter.sort(Kokkos::subview(pld_i, slice, pldi));
     }
+#endif // TEAM_POLICY
   }
+
+#if defined(TEAM_POLICY_USE_VENDOR_SORT)
+  namespace permute_helpers {
+
+    // Permute a 1D SoA member array `arr` in place by `perm`, using a
+    // single transient buffer of size `n`. Buffer is freed at scope
+    // exit; the explicit fence right before that drains queued GPU
+    // work referencing it.
+    template <typename V>
+    inline void permute_1d_inplace(V&                 arr,
+                                   const prtl_perm_t& perm,
+                                   npart_t            n) {
+      if (n == 0u) {
+        return;
+      }
+      V    buf(std::string(arr.label()) + "_perm_buf", n);
+      auto perm_v = perm;
+      auto arr_v  = arr;
+      Kokkos::parallel_for(
+        "Permute1D",
+        n,
+        KOKKOS_LAMBDA(const npart_t p) { buf(p) = arr_v(perm_v(p)); });
+      Kokkos::deep_copy(Kokkos::subview(arr, prtl_slice_t(0u, n)), buf);
+      Kokkos::fence("permute_1d_inplace: end");
+    }
+
+    // 2D analogue for `pld_r` / `pld_i`.
+    template <typename V>
+    inline void permute_2d_inplace(V&                 arr,
+                                   const prtl_perm_t& perm,
+                                   npart_t            n,
+                                   npart_t            ncols) {
+      if (n == 0u or ncols == 0u) {
+        return;
+      }
+      V    buf(std::string(arr.label()) + "_perm_buf", n, ncols);
+      auto perm_v = perm;
+      auto arr_v  = arr;
+      Kokkos::parallel_for(
+        "Permute2D",
+        CreateParticleRangePolicy<Dim::_2D>({ 0u, 0u }, { n, ncols }),
+        KOKKOS_LAMBDA(const npart_t p, const npart_t l) {
+          buf(p, l) = arr_v(perm_v(p), l);
+        });
+      Kokkos::deep_copy(Kokkos::subview(arr, prtl_slice_t(0u, n), Kokkos::ALL),
+                        buf);
+      Kokkos::fence("permute_2d_inplace: end");
+    }
+
+  } // namespace permute_helpers
+
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t& perm) {
+    const auto n = npart();
+    if (n == 0u) {
+      return;
+    }
+
+    using permute_helpers::permute_1d_inplace;
+    using permute_helpers::permute_2d_inplace;
+
+    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+      permute_1d_inplace(i1, perm, n);
+      permute_1d_inplace(dx1, perm, n);
+      permute_1d_inplace(i1_prev, perm, n);
+      permute_1d_inplace(dx1_prev, perm, n);
+    }
+    if constexpr (D == Dim::_2D or D == Dim::_3D) {
+      permute_1d_inplace(i2, perm, n);
+      permute_1d_inplace(dx2, perm, n);
+      permute_1d_inplace(i2_prev, perm, n);
+      permute_1d_inplace(dx2_prev, perm, n);
+    }
+    if constexpr (D == Dim::_3D) {
+      permute_1d_inplace(i3, perm, n);
+      permute_1d_inplace(dx3, perm, n);
+      permute_1d_inplace(i3_prev, perm, n);
+      permute_1d_inplace(dx3_prev, perm, n);
+    }
+    permute_1d_inplace(ux1, perm, n);
+    permute_1d_inplace(ux2, perm, n);
+    permute_1d_inplace(ux3, perm, n);
+    permute_1d_inplace(weight, perm, n);
+    permute_1d_inplace(tag, perm, n);
+    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
+      permute_1d_inplace(phi, perm, n);
+    }
+    if (npld_r() > 0) {
+      permute_2d_inplace(pld_r, perm, n, static_cast<npart_t>(npld_r()));
+    }
+    if (npld_i() > 0) {
+      permute_2d_inplace(pld_i, perm, n, static_cast<npart_t>(npld_i()));
+    }
+  }
+#endif // TEAM_POLICY_USE_VENDOR_SORT
+
+#if defined(TEAM_POLICY_USE_VENDOR_SORT)
+  #define APPLY_PERM_INSTANTIATE(D, C)                                         \
+    template void Particles<D, C>::apply_permutation_to_soa(                   \
+      const prtl_perm_t&);
+#else
+  #define APPLY_PERM_INSTANTIATE(D, C)
+#endif
 
 #define PARTICLES_SORT(D, C)                                                   \
   template auto Particles<D, C>::NpartsPerTagAndOffsets() const                \
     -> std::pair<std::vector<npart_t>, array_t<npart_t*>>;                     \
   template void Particles<D, C>::RemoveDead();                                 \
-  template void Particles<D, C>::SortSpatially(const Grid<D>&);
+  template void Particles<D, C>::SortSpatially(const Grid<D>&);                \
+  APPLY_PERM_INSTANTIATE(D, C)
 
   PARTICLES_SORT(Dim::_1D, Coord::Cartesian)
   PARTICLES_SORT(Dim::_2D, Coord::Cartesian)
@@ -266,5 +569,6 @@ namespace ntt {
   PARTICLES_SORT(Dim::_3D, Coord::Spherical)
   PARTICLES_SORT(Dim::_3D, Coord::Qspherical)
 #undef PARTICLES_SORT
+#undef APPLY_PERM_INSTANTIATE
 
 } // namespace ntt
