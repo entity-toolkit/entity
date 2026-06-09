@@ -117,6 +117,10 @@ namespace ntt::defaults {
     const real_t gamma_rad  = 1.0;
     const real_t gamma_qed  = 10.0;
   } // namespace compton
+
+  namespace twobody {
+    const real_t thomson_optical_depth = 1.0;
+  } // namespace twobody
 } // namespace ntt::defaults
 
 #endif // GLOBAL_DEFAULTS_H

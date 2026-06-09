@@ -272,6 +272,45 @@
       #     @from: `.gamma_qed`
       #     @value: `(1 / gamma_qed)^2`
 
+[two_body]
+  # Nominal Thomson optical depth: `tau = n0 * sigma_T * 1` over a distance of 1 in physical units (n0 = nominal density)
+  #   @type: float
+  #   @default: 1.0
+  thomson_optical_depth = ""
+
+  [[two_body.interaction]]
+    # Type of the two-body interaction
+    #   @required
+    #   @type: string
+    #   @enum: "Compton"
+    type = ""
+    # First group of species indices participating in the interaction
+    #   @required
+    #   @type: array<ushort>
+    #   @note: array indexing starting at 1
+    group1 = ""
+    # Second group of species indices participating in the interaction
+    #   @type: array<ushort>
+    #   @note: array indexing starting at 1
+    #   @note: For interactions between particles of the same group, leave `group2` empty
+    group2 = ""
+    # Interval in timesteps between checking for the interaction
+    #   @type: uint
+    #   @default: 1
+    interval = ""
+    # Size of interaction tile in number of cells
+    #   @type: uint
+    #   @default: 4
+    tile_size = ""
+    # Whether to apply recoil on species of group1
+    #  @type: bool
+    #  @default: true
+    recoil1 = ""
+    # Whether to apply recoil on species of group2
+    #  @type: bool
+    #  @default: true
+    recoil2 = ""
+
 [algorithms]
   # Number of current smoothing passes
   #   @type: ushort [>= 0]

@@ -6,8 +6,10 @@
 #include "utils/formatting.h"
 #include "utils/reporter.h"
 
+#include "framework/parameters/extra.h"
 #include "framework/parameters/parameters.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -148,6 +150,48 @@ namespace ntt {
         "%.3e",
         params.template get<real_t>(
           "radiation.emission.synchrotron.nominal_photon_energy"));
+    }
+
+    report += "\n";
+    const auto two_body_interactions =
+      params.template get<std::vector<::ntt::params::TwoBodyInteractionParams>>(
+        "two_body.interaction");
+    if (not two_body_interactions.empty()) {
+      reporter::AddCategory(report, 4, "Two-body interactions");
+      reporter::AddParam(
+        report,
+        6,
+        "Thomson optical depth",
+        "%.3e",
+        params.template get<real_t>("two_body.thomson_optical_depth"));
+      for (const auto& interaction : two_body_interactions) {
+        reporter::AddSubcategory(
+          report,
+          6,
+          TwoBodyInteraction::to_string(interaction.type).c_str());
+        std::vector<int> group1(interaction.group1.size());
+        std::vector<int> group2(interaction.group2.size());
+        for (size_t g1 = 0; g1 < interaction.group1.size(); ++g1) {
+          group1[g1] = interaction.group1[g1];
+        }
+        for (size_t g2 = 0; g2 < interaction.group2.size(); ++g2) {
+          group2[g2] = interaction.group2[g2];
+        }
+        reporter::AddParam(report,
+                           8,
+                           "group #1 species",
+                           "%s (recoil: %s)",
+                           fmt::formatVector(group1).c_str(),
+                           interaction.recoil1 ? "ON" : "OFF");
+        reporter::AddParam(report,
+                           8,
+                           "group #2 species",
+                           "%s (recoil: %s)",
+                           fmt::formatVector(group2).c_str(),
+                           interaction.recoil2 ? "ON" : "OFF");
+        reporter::AddParam(report, 8, "tile size [cells]", "%u", interaction.tile_size);
+        reporter::AddParam(report, 8, "interval [steps]", "%u", interaction.interval);
+      }
     }
     return report;
   }

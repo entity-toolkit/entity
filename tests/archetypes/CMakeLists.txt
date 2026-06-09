@@ -16,7 +16,7 @@ function(gen_test title)
   set(src ${title}.cpp)
   add_executable(${exec} ${src})
 
-  set(libs ntt_archetypes ntt_global ntt_metrics)
+  set(libs ntt_archetypes ntt_framework ntt_global ntt_metrics)
   add_dependencies(${exec} ${libs})
   target_link_libraries(${exec} PRIVATE ${libs})
 
@@ -28,3 +28,4 @@ gen_test(spatial_dist)
 gen_test(field_setter)
 gen_test(powerlaw)
 gen_test(pgen)
+gen_test(qed_compton)

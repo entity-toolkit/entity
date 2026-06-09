@@ -252,7 +252,11 @@ namespace kernel {
       } else {
         u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
       }
-      return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
+      if (c1 > 0u) {
+        return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
+      } else {
+        return (mass == ZERO ? ONE : (mass * math::sqrt(ONE - SQR(ONE / u0))));
+      }
     }
 
     Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {

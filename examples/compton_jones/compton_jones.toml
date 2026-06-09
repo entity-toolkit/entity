@@ -1,0 +1,89 @@
+[simulation]
+  name    = "compton_jones"
+  engine  = "srpic"
+  runtime = 10.0
+
+[grid]
+  resolution = [32, 32]
+  extent     = [[0.0, 1.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[two_body]
+  thomson_optical_depth = 100.0
+
+  [[two_body.interaction]]
+    type      = "compton"
+    group1    = [1]
+    group2    = [2]
+    interval  = 1
+    tile_size = 5
+    recoil1   = false
+    recoil2   = true
+
+[algorithms]
+  current_filters = 0
+
+  [algorithms.deposit]
+    enable = false
+
+  [algorithms.fieldsolver]
+    enable = false
+
+[particles]
+  ppc0           = 5.0
+  clear_interval = 1
+
+  [[particles.species]]
+    label    = "e-"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 1e6
+
+  [[particles.species]]
+    label    = "ph"
+    mass     = 0.0
+    charge   = 0.0
+    maxnpart = 1e6
+
+  [[particles.species]]
+    label    = "ph_out"
+    mass     = 0.0
+    charge   = 0.0
+    maxnpart = 1e7
+    pusher   = "none"
+
+[setup]
+  electron_4vel = 999.9995
+  photon_energy = 1e-2
+
+[output]
+  interval_time = 9.0
+
+  [output.fields]
+    quantities = ["N_1", "N_2", "N_3"]
+
+  [output.particles]
+    species = [1, 2, 3]
+    stride  = 1
+
+  [output.spectra]
+    log_bins = false
+    e_min    = 0
+    e_max    = 1100
+    n_bins   = 100
+
+  [output.stats]
+    quantities = ["T00_1", "T00_2", "T00_3"]
+
+[checkpoint]
+  keep = 0
