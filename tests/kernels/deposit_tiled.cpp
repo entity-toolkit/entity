@@ -3,7 +3,7 @@
  * @brief X-1 numerical-equivalence test for the tiled deposit kernel.
  *
  * Runs the flat (`DepositCurrents_kernel`) and tiled
- * (`DepositCurrents_kernel_tiled`) kernels on identical particle SoA inputs
+ * (`DepositCurrentsTiled_kernel`) kernels on identical particle SoA inputs
  * for shape orders O = 1..11 and asserts that the resulting J array is
  * identical cell-by-cell within a small floating-point tolerance.
  *
@@ -48,6 +48,37 @@ namespace {
     Kokkos::deep_copy(arr, h);
   }
 
+  // Pack the per-test SoA arrays into a ParticleArrays — the struct both
+  // deposit kernels take. Payload (pld_*) members stay default; these are
+  // 2D Cartesian Minkowski cases, so phi/i3/dx3 are present but unread.
+  ParticleArrays pack_arrays(const array_t<int*>&      i1,
+                             const array_t<int*>&      i2,
+                             const array_t<int*>&      i3,
+                             const array_t<int*>&      i1_prev,
+                             const array_t<int*>&      i2_prev,
+                             const array_t<int*>&      i3_prev,
+                             const array_t<prtldx_t*>& dx1,
+                             const array_t<prtldx_t*>& dx2,
+                             const array_t<prtldx_t*>& dx3,
+                             const array_t<prtldx_t*>& dx1_prev,
+                             const array_t<prtldx_t*>& dx2_prev,
+                             const array_t<prtldx_t*>& dx3_prev,
+                             const array_t<real_t*>&   ux1,
+                             const array_t<real_t*>&   ux2,
+                             const array_t<real_t*>&   ux3,
+                             const array_t<real_t*>&   phi,
+                             const array_t<real_t*>&   weight,
+                             const array_t<short*>&    tag) {
+    ParticleArrays pa;
+    pa.i1 = i1, pa.i2 = i2, pa.i3 = i3;
+    pa.i1_prev = i1_prev, pa.i2_prev = i2_prev, pa.i3_prev = i3_prev;
+    pa.dx1 = dx1, pa.dx2 = dx2, pa.dx3 = dx3;
+    pa.dx1_prev = dx1_prev, pa.dx2_prev = dx2_prev, pa.dx3_prev = dx3_prev;
+    pa.ux1 = ux1, pa.ux2 = ux2, pa.ux3 = ux3;
+    pa.phi = phi, pa.weight = weight, pa.tag = tag;
+    return pa;
+  }
+
   // Builds tile_offsets for a single-particle test. Particle 0 is alive
   // and lives in tile (tx1, tx2); slots 1..n_slots-1 carry the dead
   // sentinel and are never referenced by tile_offsets — so the tiled
@@ -66,6 +97,69 @@ namespace {
     }
     Kokkos::deep_copy(offsets, h);
     return offsets;
+  }
+
+  // Buckets ALL `n_alive` particles (slots 0..n_alive-1) into tile 0,
+  // modelling a maximally-stale tile layout: every particle was "sorted"
+  // into tile 0 but now sits anywhere in the domain (as happens when the
+  // SoA drifts / is reordered between sorts). Every particle except the
+  // few that genuinely live near the origin must therefore take the
+  // per-particle escape valve to global J.
+  array_t<npart_t*> build_tile_offsets_all_in_tile0(ncells_t total_tiles,
+                                                    npart_t  n_alive) {
+    array_t<npart_t*> offsets("tile_offsets", total_tiles + 1u);
+    auto              h = Kokkos::create_mirror_view(offsets);
+    h(0)                = static_cast<npart_t>(0);
+    for (ncells_t t = 1; t <= total_tiles; ++t) {
+      h(t) = n_alive;
+    }
+    Kokkos::deep_copy(offsets, h);
+    return offsets;
+  }
+
+  // Cell-by-cell comparison of two J fields; throws on mismatch.
+  void compare_J_fields(const ndfield_t<Dim::_2D, 3>& J_flat,
+                        const ndfield_t<Dim::_2D, 3>& J_tiled,
+                        unsigned short                O,
+                        unsigned short                T_TILE,
+                        const char*                   label) {
+    auto h_flat  = Kokkos::create_mirror_view(J_flat);
+    auto h_tiled = Kokkos::create_mirror_view(J_tiled);
+    Kokkos::deep_copy(h_flat, J_flat);
+    Kokkos::deep_copy(h_tiled, J_tiled);
+
+    const real_t eps        = static_cast<real_t>(1.0e-5);
+    real_t       max_diff   = ZERO;
+    int          fail_count = 0;
+    for (ncells_t i = 0; i < h_flat.extent(0); ++i) {
+      for (ncells_t j = 0; j < h_flat.extent(1); ++j) {
+        for (int c = 0; c < 3; ++c) {
+          const real_t a    = h_flat(i, j, c);
+          const real_t b    = h_tiled(i, j, c);
+          const real_t diff = math::fabs(a - b);
+          const real_t mag  = math::max(math::fabs(a), math::fabs(b));
+          if (diff > max_diff) {
+            max_diff = diff;
+          }
+          if (diff > eps * math::max(mag, static_cast<real_t>(1.0))) {
+            if (fail_count < 5) {
+              std::cerr << "  [" << label << "] J(" << i << "," << j
+                        << ",c=" << c << ") flat=" << a << " tiled=" << b
+                        << " diff=" << diff << '\n';
+            }
+            ++fail_count;
+          }
+        }
+      }
+    }
+    if (fail_count > 0) {
+      std::cerr << "deposit_tiled[" << label << "] FAILED for O=" << O
+                << " T_TILE=" << T_TILE << " : " << fail_count
+                << " mismatches; max_diff=" << max_diff << '\n';
+      throw std::logic_error("DepositCurrentsTiled_kernel mismatch");
+    }
+    std::cerr << "deposit_tiled[" << label << "] OK  O=" << O
+              << " T_TILE=" << T_TILE << "  max_diff=" << max_diff << '\n';
   }
 
   template <unsigned short O, unsigned short T_TILE>
@@ -129,12 +223,12 @@ namespace {
         10,
         kernel::DepositCurrents_kernel<SimEngine::SRPIC, metric_t, O>(
           J_scat,
-          i1, i2, i3,
-          i1_prev, i2_prev, i3_prev,
-          dx1, dx2, dx3,
-          dx1_prev, dx2_prev, dx3_prev,
-          ux1, ux2, ux3,
-          phi, weight, tag,
+          pack_arrays(i1, i2, i3,
+                      i1_prev, i2_prev, i3_prev,
+                      dx1, dx2, dx3,
+                      dx1_prev, dx2_prev, dx3_prev,
+                      ux1, ux2, ux3,
+                      phi, weight, tag),
           metric, charge, dt));
       Kokkos::Experimental::contribute(J_flat, J_scat);
       Kokkos::fence("flat deposit done");
@@ -168,15 +262,18 @@ namespace {
                                                                       tx2);
 
       using kernel_t =
-        kernel::DepositCurrents_kernel_tiled<SimEngine::SRPIC, metric_t, O, T_TILE>;
+        kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, metric_t, O, T_TILE>;
+      // npart = full slot count (10): the lone alive particle sits in slot 0
+      // and the per-tile slice clamp keeps the (dead) tail out.
       kernel_t kern { J_tiled,
-                      i1, i2, i3,
-                      i1_prev, i2_prev, i3_prev,
-                      dx1, dx2, dx3,
-                      dx1_prev, dx2_prev, dx3_prev,
-                      ux1, ux2, ux3,
-                      phi, weight, tag,
-                      metric, charge, dt, layout };
+                      pack_arrays(i1, i2, i3,
+                                  i1_prev, i2_prev, i3_prev,
+                                  dx1, dx2, dx3,
+                                  dx1_prev, dx2_prev, dx3_prev,
+                                  ux1, ux2, ux3,
+                                  phi, weight, tag),
+                      metric, charge, dt, layout,
+                      static_cast<npart_t>(10) };
 
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
                                   Kokkos::AUTO);
@@ -221,10 +318,156 @@ namespace {
                 << " T_TILE=" << T_TILE
                 << " : " << fail_count << " mismatches; max_diff=" << max_diff
                 << '\n';
-      throw std::logic_error("DepositCurrents_kernel_tiled mismatch");
+      throw std::logic_error("DepositCurrentsTiled_kernel mismatch");
     }
     std::cerr << "X-1 deposit_tiled OK  O=" << O << " T_TILE=" << T_TILE
               << "  max_diff=" << max_diff << '\n';
+  }
+
+  // Drift / stale-layout regression test for the per-particle escape valve.
+  //
+  // A population of alive particles is spread across the whole domain
+  // (including the near-boundary cells that deposit into the ghost stripe)
+  // but the tile layout buckets them ALL into tile 0 — i.e. the layout is
+  // maximally stale w.r.t. their real positions, exactly the situation that
+  // arises when the SoA is reordered/appended between sorts. The tiled
+  // kernel must route every out-of-tile particle to the global J view and
+  // reproduce the flat deposit cell-for-cell: no charge dropped or
+  // double-counted at any drift distance. This is the property that broke
+  // when `spatial_sorting_interval > 1` left drifted particles depositing
+  // partial stencils, producing a density/E line at the decomposition
+  // boundary.
+  template <unsigned short O, unsigned short T_TILE>
+  void run_drift_case() {
+    using metric_t = metric::Minkowski<Dim::_2D>;
+    constexpr unsigned short nx1 = 50u, nx2 = 50u;
+    metric_t metric { { nx1, nx2 }, { { 0.0, 55.0 }, { 0.0, 55.0 } }, {} };
+
+    constexpr int n_slots = 64;
+    constexpr int n_base  = 5;
+    const int     bases[n_base] = { 1, 13, 25, 37, 48 };
+    const int     n_alive       = n_base * n_base; // 25
+
+    array_t<int*>      i1 { "i1", n_slots }, i2 { "i2", n_slots },
+      i3 { "i3", n_slots };
+    array_t<int*>      i1_prev { "i1_prev", n_slots },
+      i2_prev { "i2_prev", n_slots }, i3_prev { "i3_prev", n_slots };
+    array_t<prtldx_t*> dx1 { "dx1", n_slots }, dx2 { "dx2", n_slots },
+      dx3 { "dx3", n_slots };
+    array_t<prtldx_t*> dx1_prev { "dx1_prev", n_slots },
+      dx2_prev { "dx2_prev", n_slots }, dx3_prev { "dx3_prev", n_slots };
+    array_t<real_t*>   ux1 { "ux1", n_slots }, ux2 { "ux2", n_slots },
+      ux3 { "ux3", n_slots };
+    array_t<real_t*>   phi { "phi", n_slots }, weight { "weight", n_slots };
+    array_t<short*>    tag { "tag", n_slots };
+    const real_t       charge = 1.0, dt = 1.0;
+
+    // Fill alive particles on host (slots >= n_alive stay zero == dead).
+    auto h_i1  = Kokkos::create_mirror_view(i1);
+    auto h_i2  = Kokkos::create_mirror_view(i2);
+    auto h_i1p = Kokkos::create_mirror_view(i1_prev);
+    auto h_i2p = Kokkos::create_mirror_view(i2_prev);
+    auto h_dx1  = Kokkos::create_mirror_view(dx1);
+    auto h_dx2  = Kokkos::create_mirror_view(dx2);
+    auto h_dx1p = Kokkos::create_mirror_view(dx1_prev);
+    auto h_dx2p = Kokkos::create_mirror_view(dx2_prev);
+    auto h_ux3  = Kokkos::create_mirror_view(ux3);
+    auto h_w    = Kokkos::create_mirror_view(weight);
+    auto h_tag  = Kokkos::create_mirror_view(tag);
+    int  p = 0;
+    for (int a = 0; a < n_base; ++a) {
+      for (int b = 0; b < n_base; ++b, ++p) {
+        h_i1p(p) = bases[a];
+        h_i1(p)  = bases[a] - 1;
+        h_i2p(p) = bases[b];
+        h_i2(p)  = bases[b] - 1;
+        h_dx1p(p) = static_cast<prtldx_t>(0.65);
+        h_dx1(p)  = static_cast<prtldx_t>(0.99);
+        h_dx2p(p) = static_cast<prtldx_t>(0.65);
+        h_dx2(p)  = static_cast<prtldx_t>(0.80);
+        h_ux3(p)  = static_cast<real_t>(2.5);
+        h_w(p)    = static_cast<real_t>(1.0);
+        h_tag(p)  = ParticleTag::alive;
+      }
+    }
+    Kokkos::deep_copy(i1, h_i1);
+    Kokkos::deep_copy(i2, h_i2);
+    Kokkos::deep_copy(i1_prev, h_i1p);
+    Kokkos::deep_copy(i2_prev, h_i2p);
+    Kokkos::deep_copy(dx1, h_dx1);
+    Kokkos::deep_copy(dx2, h_dx2);
+    Kokkos::deep_copy(dx1_prev, h_dx1p);
+    Kokkos::deep_copy(dx2_prev, h_dx2p);
+    Kokkos::deep_copy(ux3, h_ux3);
+    Kokkos::deep_copy(weight, h_w);
+    Kokkos::deep_copy(tag, h_tag);
+
+    // Flat reference over all slots (dead slots are skipped internally).
+    ndfield_t<Dim::_2D, 3> J_flat { "J_flat",
+                                    nx1 + 2u * N_GHOSTS,
+                                    nx2 + 2u * N_GHOSTS };
+    {
+      auto J_scat = Kokkos::Experimental::create_scatter_view(J_flat);
+      Kokkos::parallel_for(
+        "FlatDepositDrift",
+        n_slots,
+        kernel::DepositCurrents_kernel<SimEngine::SRPIC, metric_t, O>(
+          J_scat,
+          pack_arrays(i1, i2, i3,
+                      i1_prev, i2_prev, i3_prev,
+                      dx1, dx2, dx3,
+                      dx1_prev, dx2_prev, dx3_prev,
+                      ux1, ux2, ux3,
+                      phi, weight, tag),
+          metric, charge, dt));
+      Kokkos::Experimental::contribute(J_flat, J_scat);
+      Kokkos::fence("flat drift deposit done");
+    }
+
+    // Tiled with a maximally-stale layout: all alive particles in tile 0.
+    ndfield_t<Dim::_2D, 3> J_tiled { "J_tiled",
+                                     nx1 + 2u * N_GHOSTS,
+                                     nx2 + 2u * N_GHOSTS };
+    {
+      const auto ntx1 = static_cast<ncells_t>(
+        std::ceil(static_cast<double>(nx1) / static_cast<double>(T_TILE)));
+      const auto ntx2 = static_cast<ncells_t>(
+        std::ceil(static_cast<double>(nx2) / static_cast<double>(T_TILE)));
+
+      TileLayout<Dim::_2D> layout;
+      layout.ntiles_per_axis[0] = ntx1;
+      layout.ntiles_per_axis[1] = ntx2;
+      layout.ntiles_per_axis[2] = 1u;
+      layout.ntiles_total       = ntx1 * ntx2;
+      layout.tile_size          = T_TILE;
+      layout.tile_offsets       = build_tile_offsets_all_in_tile0(
+        ntx1 * ntx2,
+        static_cast<npart_t>(n_alive));
+
+      using kernel_t =
+        kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, metric_t, O, T_TILE>;
+      // npart = n_alive: the stale layout buckets all alive particles into
+      // tile 0, so the team must walk [0, n_alive) and route the drifted
+      // ones to the global-J escape valve.
+      kernel_t kern { J_tiled,
+                      pack_arrays(i1, i2, i3,
+                                  i1_prev, i2_prev, i3_prev,
+                                  dx1, dx2, dx3,
+                                  dx1_prev, dx2_prev, dx3_prev,
+                                  ux1, ux2, ux3,
+                                  phi, weight, tag),
+                      metric, charge, dt, layout,
+                      static_cast<npart_t>(n_alive) };
+
+      Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
+                                  Kokkos::AUTO);
+      policy.set_scratch_size(0,
+                              Kokkos::PerTeam(kernel_t::scratch_bytes()));
+      Kokkos::parallel_for("TiledDepositDrift", policy, kern);
+      Kokkos::fence("tiled drift deposit done");
+    }
+
+    compare_J_fields(J_flat, J_tiled, O, T_TILE, "drift");
   }
 
   template <unsigned short T_TILE>
@@ -241,6 +484,20 @@ namespace {
     run_one_case<9u, T_TILE>();
     run_one_case<10u, T_TILE>();
     run_one_case<11u, T_TILE>();
+
+    // Stale-layout / drift regression (per-particle escape valve).
+    run_drift_case<0u, T_TILE>();
+    run_drift_case<1u, T_TILE>();
+    run_drift_case<2u, T_TILE>();
+    run_drift_case<3u, T_TILE>();
+    run_drift_case<4u, T_TILE>();
+    run_drift_case<5u, T_TILE>();
+    run_drift_case<6u, T_TILE>();
+    run_drift_case<7u, T_TILE>();
+    run_drift_case<8u, T_TILE>();
+    run_drift_case<9u, T_TILE>();
+    run_drift_case<10u, T_TILE>();
+    run_drift_case<11u, T_TILE>();
   }
 
 } // namespace
