@@ -141,6 +141,17 @@ if(${team_policy})
     "${Blue}"
     TEAM_POLICY_TILE_SIZE_REPORT
     46)
+  if(team_policy_sort GREATER 0)
+    printchoices(
+      "Team Sort Interval"
+      "team_policy_sort"
+      "${team_policy_sort}"
+      ${team_policy_sort}
+      0
+      "${Blue}"
+      TEAM_POLICY_SORT_INTERVAL_REPORT
+      46)
+  endif()
 endif()
 printchoices(
   "Debug mode"
@@ -220,6 +231,9 @@ endif()
 string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_REPORT} "\n")
 if(${team_policy})
   string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_TILE_SIZE_REPORT} "\n")
+  if(team_policy_sort GREATER 0)
+    string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_SORT_INTERVAL_REPORT} "\n")
+  endif()
 endif()
 
 string(

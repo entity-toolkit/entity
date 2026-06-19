@@ -299,11 +299,14 @@ namespace ntt {
   private:
     /**
      * @brief Apply a particle-index permutation (built by oneDPL/Thrust
-     *        sort_by_key) to every SoA member array. Sequential — one
-     *        transient buffer at a time, fenced before scope exit.
-     *        Only compiled when a vendor sort backend is enabled; the
-     *        BinSort path applies the permutation in place via
-     *        `sorter.sort(view)` instead.
+     *        sort_by_key) to the SoA member arrays. Each member is
+     *        gathered into a fresh full-capacity buffer whose handle is
+     *        then swapped in (no copy-back), one buffer at a time, fenced
+     *        before the old storage is released. The *_prev arrays are
+     *        intentionally not permuted (overwritten by the next push
+     *        before any read). Only compiled when a vendor sort backend
+     *        is enabled; the BinSort path applies the permutation in
+     *        place via `sorter.sort(view)` instead.
      */
     void apply_permutation_to_soa(const prtl_perm_t& perm);
 

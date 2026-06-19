@@ -780,28 +780,37 @@ namespace kernel {
    * `SortSpatially` (`particles_sort.cpp`) is responsible for keeping
    * the SoA arrays consistent with that.
    *
-   * **Halo sizing and escape valve.** Sort runs at the end of the
-   * previous step (see `srpic.hpp`), so at deposit time the particle
-   * has already been pushed once — its `min(i, i_prev)` may differ
-   * from the bin key by one cell of drift per step elapsed since the
-   * last sort. The scratch HALO is `STENCIL_REACH(O) + DRIFT`, where
-   * `STENCIL_REACH = 2` for zigzag (writes `{i_prev, i_prev+1, i,
-   * i+1}` ⇒ +2 above `min(i, i_prev)` with `|Δi|=1`) and `O` for
-   * Esirkepov, and `DRIFT` is a fixed constant (1) covering the one
-   * guaranteed post-sort pusher step.
+   * **Halo sizing and escape valve.** Sort runs at the end of a step
+   * (see `srpic.hpp`); a particle is pushed once per step thereafter, so
+   * its `min(i, i_prev)` may differ from the bin key by one cell of drift
+   * per step elapsed since the last sort. The scratch HALO is
+   * `STENCIL_REACH(O) + DRIFT`, where `STENCIL_REACH = 2` for zigzag
+   * (writes `{i_prev, i_prev+1, i, i+1}` ⇒ +2 above `min(i, i_prev)` with
+   * `|Δi|=1`) and `O` for Esirkepov. `DRIFT` is the
+   * `team_policy_sort_interval` CMake knob (macro TEAM_POLICY_SORT_INTERVAL)
+   * when set — the hardwired sort interval, hence the maximum drift any
+   * particle accrues between sorts — and `1` otherwise (the
+   * every-step-sorted common case).
    *
-   * HALO is sized for the *common* (every-step-sorted) case, not for
-   * a worst-case sort cadence: correctness does **not** depend on it.
-   * Any particle whose stencil escapes the scratch tile — because it
-   * drifted further than `DRIFT` (e.g. a large runtime
-   * `spatial_sorting_interval`), or because the halo is otherwise
-   * undersized — silently falls back to a direct, bounds-clipped
-   * `Kokkos::atomic_add` on the global J view. That path is
-   * charge-conserving (each particle's stencil is deposited exactly
-   * once, partly to private SLM scratch and partly to global J, and
-   * scratch is flushed once via `atomic_add`); it is merely slower
-   * per write. Sorting less often than every step therefore costs
+   * Correctness does **not** depend on the halo size. Any particle whose
+   * full stencil escapes the scratch tile — because it drifted further
+   * than `DRIFT`, was reordered far from its tile by a no-sort-step
+   * `CommunicateParticles`, or because the halo is otherwise undersized —
+   * is deposited *as a whole* via a direct, bounds-clipped
+   * `Kokkos::atomic_add` on the global J view (the per-particle escape
+   * valve). Each particle's stencil is therefore deposited exactly once
+   * (entirely to SLM scratch when it fits, entirely to global J when it
+   * does not), so the path is charge-conserving; it is merely slower per
+   * write. Sizing `DRIFT` to the sort interval keeps the common,
+   * within-interval drift in fast SLM; sorting less often only costs
    * escape-valve traffic, never accuracy.
+   *
+   * **Partition coverage.** The team iteration covers only the particles
+   * partitioned at the last sort, `[0, layout.npart_partitioned)`, clamped
+   * to the live `npart`. Particles appended past the partition since the
+   * sort are not seen here; the launcher (`engines/srpic/currents.h`)
+   * deposits that tail with the flat kernel so every active particle is
+   * covered exactly once regardless of sort cadence.
    */
   template <SimEngine::type S, MetricClass M, unsigned short O, unsigned short T_TILE>
   class DepositCurrentsTiled_kernel {
@@ -825,21 +834,33 @@ namespace kernel {
      *     old `O+1` carried one extra cell of conservative padding
      *     on top of the already-conservative drift term below.
      *
-     * drift — sort runs at end-of-step (see srpic.hpp), so a particle
-     * sees exactly one pusher step before the *next* step's deposit
-     * when sorted every step (the common case). DRIFT is therefore a
-     * fixed constant of 1, NOT a compile-time function of the runtime
-     * sort cadence. Sizing the halo for the common case (rather than a
-     * worst-case sort interval) is what keeps the scratch small enough
-     * for good occupancy; a species sorted less often than
-     * every step just drifts past the halo and takes the global-J
-     * escape valve more often — correct, only slower (see the class
-     * doc-comment for why this is charge-conserving).
+     * drift — sort runs at end-of-step (see srpic.hpp), so a particle is
+     * pushed once per step between its last sort and a given deposit. With
+     * a sort interval of `K`, a particle therefore drifts at most `K` cells
+     * (CFL |v dt/dx| <= 1/2 ⇒ |Δi| <= 1 per step) before the next sort. The
+     * `team_policy_sort_interval` CMake knob (macro TEAM_POLICY_SORT_INTERVAL)
+     * pins that interval at compile time and feeds it here as DRIFT, sizing
+     * the halo so a fully-interval-drifted particle still deposits inside
+     * its tile scratch. When the knob is unset, DRIFT defaults to 1 (the
+     * sorted-every-step common case); any particle that drifts past the halo
+     * (e.g. a larger runtime interval, or a CFL excursion) takes the
+     * per-particle global-J escape valve below — correct, only slower (see
+     * the class doc-comment for why this is charge-conserving).
      */
-    static constexpr int STENCIL_REACH = (O == 0u) ? 2 : static_cast<int>(O);
-    static constexpr int DRIFT         = 1;
-    static constexpr int HALO          = STENCIL_REACH + DRIFT;
-    static constexpr int TE            = static_cast<int>(T_TILE) + 2 * HALO;
+    static constexpr int STENCIL_REACH   = (O == 0u) ? 2 : static_cast<int>(O);
+    // One-sided footprint reach for the per-particle escape valve: the
+    // deposit writes at most this many cells above max(i,i_prev) (and fewer
+    // below min), so [min - FOOTPRINT_REACH, max + FOOTPRINT_REACH] in cell
+    // coords conservatively bounds every deposited cell for any order
+    // (Esirkepov reaches max+O; O=0 zigzag reaches max+1).
+    static constexpr int FOOTPRINT_REACH = (O == 0u) ? 1 : static_cast<int>(O);
+#if defined(TEAM_POLICY_SORT_INTERVAL)
+    static constexpr int DRIFT = static_cast<int>(TEAM_POLICY_SORT_INTERVAL);
+#else
+    static constexpr int DRIFT = 1;
+#endif
+    static constexpr int HALO = STENCIL_REACH + DRIFT;
+    static constexpr int TE   = static_cast<int>(T_TILE) + 2 * HALO;
 
     using exec_space  = Kokkos::DefaultExecutionSpace;
     using team_policy = Kokkos::TeamPolicy<exec_space>;
@@ -856,6 +877,17 @@ namespace kernel {
     ncells_t          total_tiles { 0u };
 
     /**
+     * Current active-particle count. `tile_offsets` partitions only the
+     * particles that existed at the last sort ([0, layout.npart_partitioned));
+     * `npart` may differ if the pusher dead-tagged particles in place since.
+     * Each team clamps its `[tile_offsets(t), tile_offsets(t+1))` slice to
+     * `npart` so stale slots past the live array are never read. Particles
+     * appended *beyond* the partition (npart > npart_partitioned) are not seen
+     * by any team here — the launcher deposits that tail separately.
+     */
+    npart_t npart { 0u };
+
+    /**
      * J's full storage extent including all ghost cells. Used to clip
      * the cooperative flush so that a partial tile at the high end of
      * the domain does not over-write past the J view.
@@ -868,7 +900,8 @@ namespace kernel {
                                 const M&               metric,
                                 real_t                 charge,
                                 real_t                 dt,
-                                const TileLayout<D>&   layout)
+                                const TileLayout<D>&   layout,
+                                npart_t                npart)
       : J { cur }
       , prtls { prtls }
       , metric { metric }
@@ -878,7 +911,8 @@ namespace kernel {
       , ntx1 { layout.ntiles_per_axis[0] }
       , ntx2 { layout.ntiles_per_axis[1] }
       , ntx3 { layout.ntiles_per_axis[2] }
-      , total_tiles { layout.ntiles_total } {
+      , total_tiles { layout.ntiles_total }
+      , npart { npart } {
       raise::ErrorIf(
         layout.tile_size != T_TILE,
         "Tiled deposit launched with mismatched T_TILE and runtime tile_size",
@@ -907,12 +941,17 @@ namespace kernel {
      *        `team_policy.set_scratch_size(0, Kokkos::PerTeam(bytes))`.
      */
     static constexpr size_t scratch_bytes() {
+      // The component count (3) is a *static* extent of scratch_ndfield_t
+      // (View<real_t*[3]> / **[3] / ***[3]), so shmem_size() takes only the
+      // dynamic spatial extents — passing 3 as well trips Kokkos'
+      // `rank_dynamic != number of arguments` abort. This matches the
+      // scratch View construction below, which also omits the 3.
       if constexpr (D == Dim::_1D) {
-        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE, 3);
+        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE);
       } else if constexpr (D == Dim::_2D) {
-        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE, TE, 3);
+        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE, TE);
       } else {
-        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE, TE, TE, 3);
+        return scratch_ndfield_t<D, 3, real_t>::shmem_size(TE, TE, TE);
       }
     }
 
@@ -961,31 +1000,49 @@ namespace kernel {
                              });
         team.team_barrier();
 
-        const auto p_begin = tile_offsets(tile_id);
-        const auto p_end   = tile_offsets(tile_id + 1u);
+        // Clamp the tile's particle slice to the live array: slots past
+        // `npart` may hold stale (possibly alive-tagged) data from a prior
+        // step's compaction and must not be re-deposited.
+        const auto t_lo    = tile_offsets(tile_id);
+        const auto t_hi    = tile_offsets(tile_id + 1u);
+        const auto p_begin = (t_lo < npart) ? t_lo : npart;
+        const auto p_end   = (t_hi < npart) ? t_hi : npart;
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team, p_begin, p_end),
           [&](prtlidx_t p) {
+            /**
+             * Per-particle escape valve: route the WHOLE particle to the
+             * global J view when its Esirkepov footprint does not fit
+             * inside this tile's scratch window [0,TE); only particles
+             * fully inside the tile touch SLM scratch. A particle drifts
+             * out of its tile when sorted less often than every step.
+             *
+             * The conservative footprint bound in cell coords,
+             * [min(i,i_prev) - O, max(i,i_prev) + O], covers
+             * prtl_shape::for_deposit<O> for any order (i_min >=
+             * min-floor(O/2), i_max <= max+O), so when `to_scratch` is true
+             * every deposited cell is provably in [0,TE) and the scratch write
+             * needs no per-cell bounds test. The global path bounds-clips
+             * against J's storage extent (writes past the ghost stripe are
+             * re-supplied by SynchronizeFields(J)).
+             */
+            const int i1c = prtls.i1(p), i1p = prtls.i1_prev(p);
+            const int lo1 = (i1c < i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J1_low;
+            const int hi1 = (i1c > i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J1_low;
+            const bool to_scratch = (lo1 >= 0 and hi1 < TE);
             DepositOneParticle<S, M, O>(
               p,
               prtls,
               metric,
               charge,
               inv_dt,
-              /**
-               * Escape valve: a particle whose stencil reaches past the
-               * tile's scratch (e.g. exceeded the compile-time
-               * STENCIL_REACH + DRIFT budget) falls back to a direct
-               * atomic_add on the global J view. Bounds-clipped against
-               * J's storage extent so writes past the domain ghost stripe
-               * are dropped (matches the cooperative flush below; those
-               * contributions are re-supplied by SynchronizeFields(J)).
-               */
               [&](int g_i1, int comp, real_t v) {
-                const int li = g_i1 - origin_J1_low;
-                if (li >= 0 and li < TE) {
-                  Kokkos::atomic_add(&scr(li, comp), v);
-                } else if (g_i1 >= 0 and g_i1 < j_ext1) {
+                if (to_scratch) {
+                  Kokkos::atomic_add(&scr(g_i1 - origin_J1_low, comp), v);
+                  //} else if (g_i1 >= 0 and g_i1 < j_ext1) {
+                } else {
                   Kokkos::atomic_add(&J(g_i1, comp), v);
                 }
               });
@@ -1022,25 +1079,42 @@ namespace kernel {
                              });
         team.team_barrier();
 
-        const auto p_begin = tile_offsets(tile_id);
-        const auto p_end   = tile_offsets(tile_id + 1u);
+        // Clamp the tile's particle slice to the live array: slots past
+        // `npart` may hold stale (possibly alive-tagged) data from a prior
+        // step's compaction and must not be re-deposited.
+        const auto t_lo    = tile_offsets(tile_id);
+        const auto t_hi    = tile_offsets(tile_id + 1u);
+        const auto p_begin = (t_lo < npart) ? t_lo : npart;
+        const auto p_end   = (t_hi < npart) ? t_hi : npart;
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team, p_begin, p_end),
           [&](prtlidx_t p) {
+            // See 1D branch for rationale: route the whole particle to the
+            // global escape valve unless its full footprint fits in scratch.
+            const int i1c = prtls.i1(p), i1p = prtls.i1_prev(p);
+            const int i2c = prtls.i2(p), i2p = prtls.i2_prev(p);
+            const int lo1 = (i1c < i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J1_low;
+            const int hi1 = (i1c > i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J1_low;
+            const int lo2 = (i2c < i2p ? i2c : i2p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J2_low;
+            const int hi2 = (i2c > i2p ? i2c : i2p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J2_low;
+            const bool to_scratch = (lo1 >= 0 and hi1 < TE and lo2 >= 0 and
+                                     hi2 < TE);
             DepositOneParticle<S, M, O>(
               p,
               prtls,
               metric,
               charge,
               inv_dt,
-              // See 1D branch for rationale.
               [&](const int g_i1, const int g_i2, int comp, real_t v) {
-                const auto li = g_i1 - origin_J1_low;
-                const auto lj = g_i2 - origin_J2_low;
-                if ((li >= 0 and li < TE) and (lj >= 0 and lj < TE)) {
-                  Kokkos::atomic_add(&scr(li, lj, comp), v);
-                } else if ((g_i1 >= 0 and g_i1 < j_ext1) and
-                           (g_i2 >= 0 and g_i2 < j_ext2)) {
+                if (to_scratch) {
+                  Kokkos::atomic_add(
+                    &scr(g_i1 - origin_J1_low, g_i2 - origin_J2_low, comp),
+                    v);
+                } else {
                   Kokkos::atomic_add(&J(g_i1, g_i2, comp), v);
                 }
               });
@@ -1078,28 +1152,49 @@ namespace kernel {
                              });
         team.team_barrier();
 
-        const auto p_begin = tile_offsets(tile_id);
-        const auto p_end   = tile_offsets(tile_id + 1u);
+        // Clamp the tile's particle slice to the live array: slots past
+        // `npart` may hold stale (possibly alive-tagged) data from a prior
+        // step's compaction and must not be re-deposited.
+        const auto t_lo    = tile_offsets(tile_id);
+        const auto t_hi    = tile_offsets(tile_id + 1u);
+        const auto p_begin = (t_lo < npart) ? t_lo : npart;
+        const auto p_end   = (t_hi < npart) ? t_hi : npart;
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team, p_begin, p_end),
           [&](prtlidx_t p) {
+            // See 1D branch for rationale: route the whole particle to the
+            // global escape valve unless its full footprint fits in scratch.
+            const int i1c = prtls.i1(p), i1p = prtls.i1_prev(p);
+            const int i2c = prtls.i2(p), i2p = prtls.i2_prev(p);
+            const int i3c = prtls.i3(p), i3p = prtls.i3_prev(p);
+            const int lo1 = (i1c < i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J1_low;
+            const int hi1 = (i1c > i1p ? i1c : i1p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J1_low;
+            const int lo2 = (i2c < i2p ? i2c : i2p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J2_low;
+            const int hi2 = (i2c > i2p ? i2c : i2p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J2_low;
+            const int lo3 = (i3c < i3p ? i3c : i3p) + static_cast<int>(N_GHOSTS) -
+                            FOOTPRINT_REACH - origin_J3_low;
+            const int hi3 = (i3c > i3p ? i3c : i3p) + static_cast<int>(N_GHOSTS) +
+                            FOOTPRINT_REACH - origin_J3_low;
+            const bool to_scratch = (lo1 >= 0 and hi1 < TE and lo2 >= 0 and
+                                     hi2 < TE and lo3 >= 0 and hi3 < TE);
             DepositOneParticle<S, M, O>(
               p,
               prtls,
               metric,
               charge,
               inv_dt,
-              // See 1D branch for rationale.
               [&](const int g_i1, const int g_i2, const int g_i3, int comp, real_t v) {
-                const auto li = g_i1 - origin_J1_low;
-                const auto lj = g_i2 - origin_J2_low;
-                const auto lk = g_i3 - origin_J3_low;
-                if ((li >= 0 and li < TE) and (lj >= 0 and lj < TE) and
-                    (lk >= 0 and lk < TE)) {
-                  Kokkos::atomic_add(&scr(li, lj, lk, comp), v);
-                } else if ((g_i1 >= 0 and g_i1 < j_ext1) and
-                           (g_i2 >= 0 and g_i2 < j_ext2) and
-                           (g_i3 >= 0 and g_i3 < j_ext3)) {
+                if (to_scratch) {
+                  Kokkos::atomic_add(&scr(g_i1 - origin_J1_low,
+                                          g_i2 - origin_J2_low,
+                                          g_i3 - origin_J3_low,
+                                          comp),
+                                     v);
+                } else {
                   Kokkos::atomic_add(&J(g_i1, g_i2, g_i3, comp), v);
                 }
               });

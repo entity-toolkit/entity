@@ -264,8 +264,11 @@ namespace ntt {
     const auto     slice  = prtl_slice_t(0, npart_local);
   #if defined(TEAM_POLICY_USE_VENDOR_SORT)
     // Vendor path: produce an explicit permutation via sort_by_key,
-    // then apply it to each SoA member with a sequential one-buffer
-    // gather (peak transient = one `npart × sizeof(member)` buffer.
+    // then apply it to each SoA member by gathering into a fresh
+    // full-capacity buffer and swapping the View handle in (no
+    // copy-back). The *_prev arrays are skipped — see
+    // apply_permutation_to_soa. Peak transient = one
+    // `maxnpart × sizeof(member)` buffer at a time.
     prtl_perm_t perm { "tile_perm", npart_local };
     #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
     sort_helpers::sort_by_key_dispatch(tile_indices,
@@ -376,6 +379,11 @@ namespace ntt {
       Kokkos::deep_copy(tile_offsets, h_offsets);
 
       m_tile_layout.tile_offsets = tile_offsets;
+      // tile_offsets(total_tiles) is the alive-particle count at sort time:
+      // the tiles partition exactly [0, npart_partitioned). The deposit
+      // launcher compares this against the live npart() to detect (and
+      // separately deposit) particles appended since this sort.
+      m_tile_layout.npart_partitioned = h_offsets(total_tiles);
     }
 
     // 6. Populate `m_tile_layout` size/shape. `tile_perm` is not used
@@ -454,38 +462,43 @@ namespace ntt {
 #if defined(TEAM_POLICY_USE_VENDOR_SORT)
   namespace permute_helpers {
 
-    // Permute a 1D SoA member array `arr` in place by `perm`, using a
-    // single transient buffer of size `n`. Buffer is freed at scope
-    // exit; the explicit fence right before that drains queued GPU
-    // work referencing it.
+    // Permute a 1D SoA member array `arr` by `perm`. Gathers into a
+    // fresh buffer allocated at the member's full capacity (maxnpart),
+    // then swaps the View handle in. This avoids the redundant copy-back
+    // pass of the old gather-then-deep_copy approach (~2x less HBM
+    // traffic). Allocating at full capacity preserves the member's spare
+    // room for injection; the untouched tail [n, capacity) is
+    // zero-initialized by Kokkos (cleaner than the stale values the old
+    // deep_copy left there). The fence drains the gather (which reads the
+    // old storage) before the swap drops the last reference to it.
     template <typename V>
-    inline void permute_1d_inplace(V&                 arr,
-                                   const prtl_perm_t& perm,
-                                   npart_t            n) {
+    inline void permute_1d_swap(V&                 arr,
+                                const prtl_perm_t& perm,
+                                npart_t            n) {
       if (n == 0u) {
         return;
       }
-      V    buf(std::string(arr.label()) + "_perm_buf", n);
+      V    buf(arr.label(), arr.extent(0));
       auto perm_v = perm;
       auto arr_v  = arr;
       Kokkos::parallel_for(
         "Permute1D",
         n,
         KOKKOS_LAMBDA(const npart_t p) { buf(p) = arr_v(perm_v(p)); });
-      Kokkos::deep_copy(Kokkos::subview(arr, prtl_slice_t(0u, n)), buf);
-      Kokkos::fence("permute_1d_inplace: end");
+      Kokkos::fence("permute_1d_swap: end");
+      arr = buf;
     }
 
     // 2D analogue for `pld_r` / `pld_i`.
     template <typename V>
-    inline void permute_2d_inplace(V&                 arr,
-                                   const prtl_perm_t& perm,
-                                   npart_t            n,
-                                   npart_t            ncols) {
+    inline void permute_2d_swap(V&                 arr,
+                                const prtl_perm_t& perm,
+                                npart_t            n,
+                                npart_t            ncols) {
       if (n == 0u or ncols == 0u) {
         return;
       }
-      V    buf(std::string(arr.label()) + "_perm_buf", n, ncols);
+      V    buf(arr.label(), arr.extent(0), arr.extent(1));
       auto perm_v = perm;
       auto arr_v  = arr;
       Kokkos::parallel_for(
@@ -494,9 +507,8 @@ namespace ntt {
         KOKKOS_LAMBDA(const npart_t p, const npart_t l) {
           buf(p, l) = arr_v(perm_v(p), l);
         });
-      Kokkos::deep_copy(Kokkos::subview(arr, prtl_slice_t(0u, n), Kokkos::ALL),
-                        buf);
-      Kokkos::fence("permute_2d_inplace: end");
+      Kokkos::fence("permute_2d_swap: end");
+      arr = buf;
     }
 
   } // namespace permute_helpers
@@ -508,40 +520,50 @@ namespace ntt {
       return;
     }
 
-    using permute_helpers::permute_1d_inplace;
-    using permute_helpers::permute_2d_inplace;
+    using permute_helpers::permute_1d_swap;
+    using permute_helpers::permute_2d_swap;
 
+    // The *_prev arrays (i{1,2,3}_prev, dx{1,2,3}_prev) are intentionally
+    // NOT permuted. SortSpatially runs at the very end of the step loop
+    // (engine step_forward), and the first thing the next step's pusher
+    // does is overwrite prev := current (positionPush, sr.hpp / gr.hpp)
+    // for every active particle, before any consumer reads prev:
+    //   - current deposit: runs after the push, which has already
+    //     overwritten prev; species with pusher==NONE (whose prev would
+    //     stay un-permuted) are skipped by CurrentsDeposit entirely.
+    //   - pusher getParticlePrevPosition / piston: read prev only after
+    //     positionPush has rewritten it within the same call.
+    //   - checkpoint (prev is checkpoint-only, never in diagnostic
+    //     output): on restart the first push overwrites prev before it
+    //     is read, so restart results are unaffected; only the redundant
+    //     prev field saved to the checkpoint differs from the old code.
+    // Permuting prev would therefore reorder data that is overwritten
+    // before it is ever observed.
     if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-      permute_1d_inplace(i1, perm, n);
-      permute_1d_inplace(dx1, perm, n);
-      permute_1d_inplace(i1_prev, perm, n);
-      permute_1d_inplace(dx1_prev, perm, n);
+      permute_1d_swap(i1, perm, n);
+      permute_1d_swap(dx1, perm, n);
     }
     if constexpr (D == Dim::_2D or D == Dim::_3D) {
-      permute_1d_inplace(i2, perm, n);
-      permute_1d_inplace(dx2, perm, n);
-      permute_1d_inplace(i2_prev, perm, n);
-      permute_1d_inplace(dx2_prev, perm, n);
+      permute_1d_swap(i2, perm, n);
+      permute_1d_swap(dx2, perm, n);
     }
     if constexpr (D == Dim::_3D) {
-      permute_1d_inplace(i3, perm, n);
-      permute_1d_inplace(dx3, perm, n);
-      permute_1d_inplace(i3_prev, perm, n);
-      permute_1d_inplace(dx3_prev, perm, n);
+      permute_1d_swap(i3, perm, n);
+      permute_1d_swap(dx3, perm, n);
     }
-    permute_1d_inplace(ux1, perm, n);
-    permute_1d_inplace(ux2, perm, n);
-    permute_1d_inplace(ux3, perm, n);
-    permute_1d_inplace(weight, perm, n);
-    permute_1d_inplace(tag, perm, n);
+    permute_1d_swap(ux1, perm, n);
+    permute_1d_swap(ux2, perm, n);
+    permute_1d_swap(ux3, perm, n);
+    permute_1d_swap(weight, perm, n);
+    permute_1d_swap(tag, perm, n);
     if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
-      permute_1d_inplace(phi, perm, n);
+      permute_1d_swap(phi, perm, n);
     }
     if (npld_r() > 0) {
-      permute_2d_inplace(pld_r, perm, n, static_cast<npart_t>(npld_r()));
+      permute_2d_swap(pld_r, perm, n, static_cast<npart_t>(npld_r()));
     }
     if (npld_i() > 0) {
-      permute_2d_inplace(pld_i, perm, n, static_cast<npart_t>(npld_i()));
+      permute_2d_swap(pld_i, perm, n, static_cast<npart_t>(npld_i()));
     }
   }
 #endif // TEAM_POLICY_USE_VENDOR_SORT

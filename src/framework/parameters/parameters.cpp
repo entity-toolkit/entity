@@ -67,11 +67,18 @@ namespace ntt {
       "clear_interval",
       defaults::clear_interval);
     set("particles.clear_interval", global_clearing_interval);
+#if defined(TEAM_POLICY_SORT_INTERVAL)
+    // See particles.cpp: the compile-time team_policy_sort_interval overrides
+    // the runtime value (kept consistent here for the stored global param).
+    const auto global_spatial_sorting_interval = static_cast<timestep_t>(
+      TEAM_POLICY_SORT_INTERVAL);
+#else
     const auto global_spatial_sorting_interval = toml::find_or<timestep_t>(
       toml_data,
       "particles",
       "spatial_sorting_interval",
       0u);
+#endif
     set("particles.spatial_sorting_interval", global_spatial_sorting_interval);
 
     set("scales.n0", ppc0 / get<real_t>("scales.V0"));

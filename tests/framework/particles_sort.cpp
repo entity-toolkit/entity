@@ -82,7 +82,11 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::deep_copy(pld_r_h, prtls.pld_r);
       Kokkos::deep_copy(pld_i_h, prtls.pld_i);
 
-      for (auto p { 0u }; p < 75u; ++p) {
+      // Only [0, npart) is defined after a sort. The swap-based gather in
+      // apply_permutation_to_soa replaces each SoA View, zero-filling the
+      // spare capacity [npart, maxnpart) (a don't-care region overwritten
+      // by injection), so the old "tail preserved" check no longer holds.
+      for (auto p { 0u }; p < 66u; ++p) {
         if (p < 16u) {
           raise::ErrorIf(weight_h(p) != 3.0, "error in sorting particles", HERE);
         } else if (p < 33u) {
@@ -180,7 +184,11 @@ auto main(int argc, char* argv[]) -> int {
 
       auto weight_h = Kokkos::create_mirror_view(prtls.weight);
       Kokkos::deep_copy(weight_h, prtls.weight);
-      for (auto p { 0u }; p < 75u; ++p) {
+      // Only [0, npart) is defined after a sort. The swap-based gather in
+      // apply_permutation_to_soa replaces each SoA View, zero-filling the
+      // spare capacity [npart, maxnpart) (a don't-care region overwritten
+      // by injection), so the old "tail preserved" check no longer holds.
+      for (auto p { 0u }; p < 66u; ++p) {
         if (p < 13u) {
           raise::ErrorIf(weight_h(p) != 4.0, "error in sorting particles", HERE);
         } else if (p < 26u) {

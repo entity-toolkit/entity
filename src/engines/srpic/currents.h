@@ -79,7 +79,8 @@ namespace ntt {
 
       auto deposit_kernel =
         kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, M, O, T> {
-          cur, species, local_metric, (real_t)(species.charge()), dt, layout
+          cur,    species, local_metric, (real_t)(species.charge()),
+          dt,     layout,  species.npart()
         };
 
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
@@ -88,6 +89,30 @@ namespace ntt {
         0,
         Kokkos::PerTeam(decltype(deposit_kernel)::scratch_bytes()));
       Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
+
+      // Particles appended since the last sort (injection / MPI receive on a
+      // no-sort step) live past the partition and are not visited by any team
+      // above. Deposit that tail [npart_partitioned, npart) with the flat
+      // scatter-view kernel so every active particle is deposited exactly
+      // once. The range is empty when the species was just sorted (the
+      // every-step-sorted common case), so this is a no-op there.
+      if (species.npart() > layout.npart_partitioned) {
+        // `cur` is a const ref; take a non-const View handle (shallow copy,
+        // shares storage) so the scatter view can contribute back into it.
+        auto cur_nc      = cur;
+        auto scatter_cur = Kokkos::Experimental::create_scatter_view(cur_nc);
+        Kokkos::parallel_for(
+          "CurrentsDepositTiledTail",
+          CreateParticleRangePolicy<Dim::_1D>({ layout.npart_partitioned },
+                                              { species.npart() }),
+          kernel::DepositCurrents_kernel<SimEngine::SRPIC, M, O>(
+            scatter_cur,
+            species,
+            local_metric,
+            (real_t)(species.charge()),
+            dt));
+        Kokkos::Experimental::contribute(cur_nc, scatter_cur);
+      }
     }
 
     template <SRMetricClass M>
@@ -98,51 +123,45 @@ namespace ntt {
 
 #if defined(TEAM_POLICY)
 
-      // First-step fallback: if any contributing species has not been
-      // sorted yet (tile_layout still empty), fall back to the flat
-      // scatter-view path for that step. Subsequent steps see populated
-      // layouts and use the tiled kernel.
-      bool any_unsorted = false;
+      // Tiled deposit. Correctness no longer depends on the SoA being in a
+      // "sorted" state at deposit time — the tiled kernel handles a stale
+      // partition per-particle:
+      //   - a particle whose full stencil has drifted out of its tile is
+      //     deposited straight to the global J view (the per-particle escape
+      //     valve); `team_policy_sort_interval` sizes the scratch halo so the
+      //     common in-tile case stays in fast SLM (see currents_deposit.hpp);
+      //   - particles dead-tagged in place since the sort are clamped out by
+      //     the kernel and skipped by the dead-tag test;
+      //   - particles appended past the partition since the sort (injection /
+      //     MPI receive on a no-sort step) are deposited by the launcher's
+      //     flat tail pass over [npart_partitioned, npart).
+      // Together these cover every active particle exactly once for any sort
+      // interval. The only case the tiled kernel cannot serve is the very
+      // first step, before any SortSpatially has populated a layout; that
+      // species takes the flat scatter-view path for that step alone.
       for (auto& species : domain.species) {
         if ((species.pusher() == ParticlePusher::NONE) or
             (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {
           continue;
         }
-        if (species.tile_layout().ntiles_total == 0u or
-            species.tile_layout().tile_offsets.extent(0) == 0u) {
-          any_unsorted = true;
-          break;
-        }
-      }
-      if (any_unsorted) {
-        auto scatter_cur = Kokkos::Experimental::create_scatter_view(
-          domain.fields.cur);
-        for (auto& species : domain.species) {
-          if ((species.pusher() == ParticlePusher::NONE) or
-              (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {
-            continue;
-          }
+        const auto& layout = species.tile_layout();
+        if (layout.ntiles_total == 0u or layout.tile_offsets.extent(0) == 0u) {
           logger::Checkpoint(
-            fmt::format(
-              "Launching currents deposit (flat fallback, no sort yet) "
-              "for %d [%s] : %lu %f",
-              species.index(),
-              species.label().c_str(),
-              species.npart(),
-              (double)species.charge()),
+            fmt::format("Launching currents deposit (flat, no sort yet) for "
+                        "%d [%s] : %lu %f",
+                        species.index(),
+                        species.label().c_str(),
+                        species.npart(),
+                        (double)species.charge()),
             HERE);
+          auto scatter_cur = Kokkos::Experimental::create_scatter_view(
+            domain.fields.cur);
           CallDepositKernel<M, SHAPE_ORDER>(species,
                                             domain.mesh.metric,
                                             scatter_cur,
                                             dt);
-        }
-        Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
-      } else {
-        for (auto& species : domain.species) {
-          if ((species.pusher() == ParticlePusher::NONE) or
-              (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {
-            continue;
-          }
+          Kokkos::Experimental::contribute(domain.fields.cur, scatter_cur);
+        } else {
           logger::Checkpoint(
             fmt::format("Launching tiled currents deposit for %d [%s] : %lu %f",
                         species.index(),
@@ -150,7 +169,6 @@ namespace ntt {
                         species.npart(),
                         (double)species.charge()),
             HERE);
-
           CallDepositKernelTiled<M, SHAPE_ORDER>(species,
                                                  domain.mesh.metric,
                                                  domain.fields.cur,

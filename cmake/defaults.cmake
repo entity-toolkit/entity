@@ -107,3 +107,8 @@ set_property(CACHE default_team_policy PROPERTY TYPE BOOL)
 set(default_team_policy_tile_size
     8
     CACHE INTERNAL "Default tile edge length in cells for team_policy")
+
+set(default_team_policy_sort
+    0
+    CACHE INTERNAL
+      "Default hardwired spatial sorting interval for team_policy (0 = runtime)")

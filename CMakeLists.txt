@@ -67,6 +67,10 @@ set(team_policy_tile_size
 set(team_policy_tile_sizes
   "4;6;8;10;12;14;16"
   CACHE STRING "team_policy tile-size choices")
+set(team_policy_sort
+  ${default_team_policy_sort}
+  CACHE STRING
+  "team_policy hardwired spatial sorting interval; >0 overrides the runtime spatial_sorting_interval and sizes the tiled deposit scratch halo (0 = use runtime)")
 
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
@@ -156,6 +160,15 @@ if(${team_policy})
   endif()
   add_compile_options("-D TEAM_POLICY")
   add_compile_options("-D TEAM_POLICY_TILE_SIZE=${team_policy_tile_size}")
+
+  # Optional compile-time hardwired sort interval. When > 0, it (a) overrides
+  # the runtime spatial_sorting_interval (see framework/parameters) and (b)
+  # sizes the tiled deposit scratch halo to DRIFT = interval, so a particle
+  # drifting over a full sort interval still deposits inside its tile scratch.
+  if(team_policy_sort GREATER 0)
+    add_compile_options(
+      "-D TEAM_POLICY_SORT_INTERVAL=${team_policy_sort}")
+  endif()
 
   # Vendor sort: oneDPL on SYCL, Thrust on CUDA. Used automatically
   # when found; falls back to Kokkos::BinSort otherwise.

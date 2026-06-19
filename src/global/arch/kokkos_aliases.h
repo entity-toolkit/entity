@@ -340,20 +340,27 @@ auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
 using prtl_perm_t = array_t<npart_t*>;
 
 // Tile layout metadata: the contract between Stream 1 (sort) and Streams
-// 2/3 (tiled deposit / pusher). All members are device-resident.
-//   ntiles_per_axis : number of tiles along each axis (1 for unused axes).
-//   ntiles_total    : product of ntiles_per_axis = league size for TeamPolicy.
-//   tile_size       : tile edge length in cells (compile-time CMake knob,
-//                     replicated here for runtime checks).
-//   tile_offsets    : prefix-sum of per-tile particle counts; size
-//                     ntiles_total + 1; tile t owns particles
-//                     [tile_offsets(t), tile_offsets(t+1)).
-//   tile_perm       : size npart, particle index sorted by tile.
+// 2/3 (tiled deposit / pusher). Scalars are host-resident; the views are
+// device-resident.
+//   ntiles_per_axis  : number of tiles along each axis (1 for unused axes).
+//   ntiles_total     : product of ntiles_per_axis = league size for TeamPolicy.
+//   tile_size        : tile edge length in cells (compile-time CMake knob,
+//                      replicated here for runtime checks).
+//   npart_partitioned: number of (alive) particles partitioned at the last
+//                      sort, i.e. tile_offsets(ntiles_total). The tiles cover
+//                      exactly [0, npart_partitioned); particles appended past
+//                      it (injection / MPI receive on a no-sort step) are not
+//                      partitioned and must be deposited separately.
+//   tile_offsets     : prefix-sum of per-tile particle counts; size
+//                      ntiles_total + 1; tile t owns particles
+//                      [tile_offsets(t), tile_offsets(t+1)).
+//   tile_perm        : size npart, particle index sorted by tile.
 template <Dimension D>
 struct TileLayout {
   ncells_t          ntiles_per_axis[3] { 1u, 1u, 1u };
   ncells_t          ntiles_total { 0u };
   unsigned short    tile_size { 0u };
+  npart_t           npart_partitioned { 0u };
   array_t<npart_t*> tile_offsets;
   prtl_perm_t       tile_perm;
 };
