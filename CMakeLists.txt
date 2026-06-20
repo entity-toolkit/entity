@@ -67,10 +67,10 @@ set(team_policy_tile_size
 set(team_policy_tile_sizes
   "4;6;8;10;12;14;16"
   CACHE STRING "team_policy tile-size choices")
-set(team_policy_sort
-  ${default_team_policy_sort}
+set(team_policy_drift
+  ${default_team_policy_drift}
   CACHE STRING
-  "team_policy hardwired spatial sorting interval; >0 overrides the runtime spatial_sorting_interval and sizes the tiled deposit scratch halo (0 = use runtime)")
+  "team_policy tiled-deposit scratch halo drift in cells (max cells a particle may move between two sorts). Sizes the deposit scratch halo only; the sort cadence is set at runtime via spatial_sorting_interval. Default 1.")
 
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
@@ -161,14 +161,13 @@ if(${team_policy})
   add_compile_options("-D TEAM_POLICY")
   add_compile_options("-D TEAM_POLICY_TILE_SIZE=${team_policy_tile_size}")
 
-  # Optional compile-time hardwired sort interval. When > 0, it (a) overrides
-  # the runtime spatial_sorting_interval (see framework/parameters) and (b)
-  # sizes the tiled deposit scratch halo to DRIFT = interval, so a particle
-  # drifting over a full sort interval still deposits inside its tile scratch.
-  if(team_policy_sort GREATER 0)
-    add_compile_options(
-      "-D TEAM_POLICY_SORT_INTERVAL=${team_policy_sort}")
-  endif()
+  # Compile-time tiled-deposit scratch halo drift. Sizes the halo so a
+  # particle that drifts up to DRIFT cells between two sorts still deposits
+  # inside its tile scratch; particles drifting further take the
+  # per-particle global-J escape valve (correct, only slower). This is
+  # independent of the sort cadence, which is set at runtime via
+  # `spatial_sorting_interval`. Defaults to 1 (the sorted-every-step case).
+  add_compile_options("-D TEAM_POLICY_DRIFT=${team_policy_drift}")
 
   # Vendor sort: oneDPL on SYCL, Thrust on CUDA. Used automatically
   # when found; falls back to Kokkos::BinSort otherwise.
@@ -196,18 +195,23 @@ if(${team_policy})
   endif()
 
   if("${Kokkos_DEVICES}" MATCHES "HIP")
-    # rocThrust ships with ROCm and exposes the same thrust:: API. Using
-    # it lets the HIP backend build a single permutation via
-    # sort_by_key and gather all SoA members through one reused buffer,
-    # instead of the legacy per-member Kokkos::BinSort path which
-    # allocates a fresh `sorted_values` buffer for every member every
-    # step (the dominant source of allocator churn / fragmentation on
-    # ROCm).
+    # rocThrust ships with ROCm. The HIP sort_by_key path uses rocprim's
+    # bounded-bit radix sort directly (rocprim is rocThrust's own
+    # dependency, so its headers come in transitively; we find it
+    # explicitly to keep the include path robust). This builds a single
+    # permutation that gathers all SoA members, instead of the legacy
+    # per-member Kokkos::BinSort path which allocates a fresh
+    # `sorted_values` buffer for every member every step (the dominant
+    # source of allocator churn / fragmentation on ROCm).
     find_package(rocthrust QUIET)
     if(rocthrust_FOUND)
       message(STATUS "team_policy: rocThrust enabled for HIP sort_by_key")
       add_compile_options("-D ROCTHRUST_ENABLED")
       set(DEPENDENCIES ${DEPENDENCIES} roc::rocthrust)
+      find_package(rocprim QUIET)
+      if(rocprim_FOUND)
+        set(DEPENDENCIES ${DEPENDENCIES} roc::rocprim)
+      endif()
     else()
       message(STATUS "team_policy: rocThrust not found; using BinSort "
                      "fallback for HIP sort_by_key")

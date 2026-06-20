@@ -128,7 +128,7 @@ namespace ntt {
       // partition per-particle:
       //   - a particle whose full stencil has drifted out of its tile is
       //     deposited straight to the global J view (the per-particle escape
-      //     valve); `team_policy_sort_interval` sizes the scratch halo so the
+      //     valve); `team_policy_drift` sizes the scratch halo so the
       //     common in-tile case stays in fast SLM (see currents_deposit.hpp);
       //   - particles dead-tagged in place since the sort are clamped out by
       //     the kernel and skipped by the dead-tag test;

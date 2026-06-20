@@ -786,11 +786,12 @@ namespace kernel {
    * per step elapsed since the last sort. The scratch HALO is
    * `STENCIL_REACH(O) + DRIFT`, where `STENCIL_REACH = 2` for zigzag
    * (writes `{i_prev, i_prev+1, i, i+1}` ⇒ +2 above `min(i, i_prev)` with
-   * `|Δi|=1`) and `O` for Esirkepov. `DRIFT` is the
-   * `team_policy_sort_interval` CMake knob (macro TEAM_POLICY_SORT_INTERVAL)
-   * when set — the hardwired sort interval, hence the maximum drift any
-   * particle accrues between sorts — and `1` otherwise (the
-   * every-step-sorted common case).
+   * `|Δi|=1`) and `O` for Esirkepov. `DRIFT` is the `team_policy_drift`
+   * CMake knob (macro TEAM_POLICY_DRIFT) — the number of cells a particle
+   * may drift between two sorts that the halo is sized to absorb — and `1`
+   * by default (the every-step-sorted common case). It is independent of
+   * the sort cadence, which is set at runtime via `spatial_sorting_interval`;
+   * particles that drift past the halo take the escape valve below.
    *
    * Correctness does **not** depend on the halo size. Any particle whose
    * full stencil escapes the scratch tile — because it drifted further
@@ -801,9 +802,9 @@ namespace kernel {
    * valve). Each particle's stencil is therefore deposited exactly once
    * (entirely to SLM scratch when it fits, entirely to global J when it
    * does not), so the path is charge-conserving; it is merely slower per
-   * write. Sizing `DRIFT` to the sort interval keeps the common,
-   * within-interval drift in fast SLM; sorting less often only costs
-   * escape-valve traffic, never accuracy.
+   * write. Sizing `DRIFT` to the typical between-sort drift keeps the
+   * common case in fast SLM; sorting less often (or drifting past the
+   * halo) only costs escape-valve traffic, never accuracy.
    *
    * **Partition coverage.** The team iteration covers only the particles
    * partitioned at the last sort, `[0, layout.npart_partitioned)`, clamped
@@ -836,15 +837,15 @@ namespace kernel {
      *
      * drift — sort runs at end-of-step (see srpic.hpp), so a particle is
      * pushed once per step between its last sort and a given deposit. With
-     * a sort interval of `K`, a particle therefore drifts at most `K` cells
-     * (CFL |v dt/dx| <= 1/2 ⇒ |Δi| <= 1 per step) before the next sort. The
-     * `team_policy_sort_interval` CMake knob (macro TEAM_POLICY_SORT_INTERVAL)
-     * pins that interval at compile time and feeds it here as DRIFT, sizing
-     * the halo so a fully-interval-drifted particle still deposits inside
-     * its tile scratch. When the knob is unset, DRIFT defaults to 1 (the
-     * sorted-every-step common case); any particle that drifts past the halo
-     * (e.g. a larger runtime interval, or a CFL excursion) takes the
-     * per-particle global-J escape valve below — correct, only slower (see
+     * a runtime sort interval of `K` (spatial_sorting_interval), a particle
+     * drifts at most `K` cells (CFL |v dt/dx| <= 1/2 ⇒ |Δi| <= 1 per step)
+     * before the next sort. The `team_policy_drift` CMake knob (macro
+     * TEAM_POLICY_DRIFT) sets DRIFT independently of `K`, sizing the halo so
+     * a particle that drifts up to DRIFT cells still deposits inside its
+     * tile scratch. DRIFT defaults to 1 (the sorted-every-step common case);
+     * any particle that drifts past the halo (e.g. a larger sort interval,
+     * or a CFL excursion) takes the per-particle global-J escape valve
+     * below — correct, only slower (see
      * the class doc-comment for why this is charge-conserving).
      */
     static constexpr int STENCIL_REACH   = (O == 0u) ? 2 : static_cast<int>(O);
@@ -854,8 +855,8 @@ namespace kernel {
     // coords conservatively bounds every deposited cell for any order
     // (Esirkepov reaches max+O; O=0 zigzag reaches max+1).
     static constexpr int FOOTPRINT_REACH = (O == 0u) ? 1 : static_cast<int>(O);
-#if defined(TEAM_POLICY_SORT_INTERVAL)
-    static constexpr int DRIFT = static_cast<int>(TEAM_POLICY_SORT_INTERVAL);
+#if defined(TEAM_POLICY_DRIFT)
+    static constexpr int DRIFT = static_cast<int>(TEAM_POLICY_DRIFT);
 #else
     static constexpr int DRIFT = 1;
 #endif

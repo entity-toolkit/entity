@@ -121,19 +121,10 @@ namespace ntt {
         sp,
         "clear_interval",
         global_clearing_interval);
-#if defined(TEAM_POLICY_SORT_INTERVAL)
-      // Compile-time hardwired sort interval (the `team_policy_sort_interval`
-      // CMake knob). It overrides whatever the input file requested so the
-      // tiled deposit's scratch halo — sized for exactly this cadence — is
-      // guaranteed to contain every particle's drift between sorts.
-      const auto spatial_sorting_interval = static_cast<timestep_t>(
-        TEAM_POLICY_SORT_INTERVAL);
-#else
       const auto spatial_sorting_interval = toml::find_or<timestep_t>(
         sp,
         "spatial_sorting_interval",
         global_spatial_sorting_interval);
-#endif
       auto pusher_str = toml::find_or(sp, "pusher", std::string(def_pusher));
       const auto npayloads_real = toml::find_or(sp,
                                                 "n_payloads_real",
