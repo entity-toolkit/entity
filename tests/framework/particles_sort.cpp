@@ -31,12 +31,14 @@ auto main(int argc, char* argv[]) -> int {
         ntt::EmissionType::NONE,
         2u,
         1u);
-      auto& i1_p     = prtls.i1;
-      auto& i2_p     = prtls.i2;
-      auto& tag_p    = prtls.tag;
-      auto& weight_p = prtls.weight;
-      auto& pld_r    = prtls.pld_r;
-      auto& pld_i    = prtls.pld_i;
+      auto& i1_p      = prtls.i1;
+      auto& i2_p      = prtls.i2;
+      auto& i1_prev_p = prtls.i1_prev;
+      auto& i2_prev_p = prtls.i2_prev;
+      auto& tag_p     = prtls.tag;
+      auto& weight_p  = prtls.weight;
+      auto& pld_r     = prtls.pld_r;
+      auto& pld_i     = prtls.pld_i;
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
@@ -61,9 +63,14 @@ auto main(int argc, char* argv[]) -> int {
               i2_p(p)     = 23u;
               weight_p(p) = 3.0;
             }
-            pld_r(p, 0) = weight_p(p) + static_cast<real_t>(0.5);
-            pld_r(p, 1) = weight_p(p) + static_cast<real_t>(10.5);
-            pld_i(p, 0) = static_cast<npart_t>(weight_p(p) + 10.0);
+            // team_policy keys on min(i, i_prev); without a meaningful
+            // i_prev every key would collapse to 0. Set i_prev = i so the
+            // tile key reduces to the particle's current cell.
+            i1_prev_p(p) = i1_p(p);
+            i2_prev_p(p) = i2_p(p);
+            pld_r(p, 0)  = weight_p(p) + static_cast<real_t>(0.5);
+            pld_r(p, 1)  = weight_p(p) + static_cast<real_t>(10.5);
+            pld_i(p, 0)  = static_cast<npart_t>(weight_p(p) + 10.0);
           } else {
             tag_p(p) = ntt::ParticleTag::dead;
           }
@@ -75,43 +82,78 @@ auto main(int argc, char* argv[]) -> int {
 
       prtls.SortSpatially(grid);
 
+      auto i1_h     = Kokkos::create_mirror_view(prtls.i1);
+      auto i2_h     = Kokkos::create_mirror_view(prtls.i2);
+      auto tag_h    = Kokkos::create_mirror_view(prtls.tag);
       auto weight_h = Kokkos::create_mirror_view(prtls.weight);
       auto pld_r_h  = Kokkos::create_mirror_view(prtls.pld_r);
       auto pld_i_h  = Kokkos::create_mirror_view(prtls.pld_i);
+      Kokkos::deep_copy(i1_h, prtls.i1);
+      Kokkos::deep_copy(i2_h, prtls.i2);
+      Kokkos::deep_copy(tag_h, prtls.tag);
       Kokkos::deep_copy(weight_h, prtls.weight);
       Kokkos::deep_copy(pld_r_h, prtls.pld_r);
       Kokkos::deep_copy(pld_i_h, prtls.pld_i);
 
-      // Only [0, npart) is defined after a sort. The swap-based gather in
-      // apply_permutation_to_soa replaces each SoA View, zero-filling the
-      // spare capacity [npart, maxnpart) (a don't-care region overwritten
-      // by injection), so the old "tail preserved" check no longer holds.
+      // Tile geometry, mirroring sort::PositionToTileIndex. T = 1 (no
+      // team_policy) reproduces the legacy per-cell ordering.
+#if defined(TEAM_POLICY)
+      const ncells_t T = static_cast<ncells_t>(TEAM_POLICY_TILE_SIZE);
+#else
+      const ncells_t T = 1u;
+#endif
+      const auto     na   = grid.n_active();
+      const ncells_t ntx2 = (na[1] + T - 1u) / T;
+      const auto     tile_of = [&](int a, int b) -> ncells_t {
+        return (static_cast<ncells_t>(a) / T) * ntx2 +
+               (static_cast<ncells_t>(b) / T);
+      };
+
+      // SortSpatially is order-by-tile, not order-by-cell: assert the
+      // invariants that hold for any tile size rather than a hardwired
+      // permutation. (1) alive particles form a prefix sorted by
+      // non-decreasing tile index; (2) dead particles (weight == -1) form
+      // the suffix; (3) every SoA member is permuted by the *same*
+      // permutation, so each alive slot still satisfies pld == f(weight);
+      // (4) no alive particle is lost. Only [0, npart) is defined after a
+      // sort — the swap-gather zero-fills [npart, maxnpart).
+      bool     seen_dead   = false;
+      bool     have_prev   = false;
+      ncells_t prev_tile   = 0u;
+      npart_t  n_alive_obs = 0u;
       for (auto p { 0u }; p < 66u; ++p) {
-        if (p < 16u) {
-          raise::ErrorIf(weight_h(p) != 3.0, "error in sorting particles", HERE);
-        } else if (p < 33u) {
-          raise::ErrorIf(weight_h(p) != 1.0, "error in sorting particles", HERE);
-        } else if (p < 46u) {
-          raise::ErrorIf(weight_h(p) != 2.0, "error in sorting particles", HERE);
-        } else if (p < 59u) {
-          raise::ErrorIf(weight_h(p) != 0.0, "error in sorting particles", HERE);
-        } else {
-          raise::ErrorIf(weight_h(p) != -1.0, "error in sorting particles", HERE);
-        }
-        if (p < 59u) {
-          raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + static_cast<real_t>(0.5),
-                         "error in sorting particle real payload 0",
+        if (tag_h(p) != ntt::ParticleTag::alive) {
+          seen_dead = true;
+          raise::ErrorIf(weight_h(p) != -1.0,
+                         "dead particle has unexpected weight",
                          HERE);
-          raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
-                         "error in sorting particle real payload 1",
-                         HERE);
-          raise::ErrorIf(
-            pld_i_h(p, 0) !=
-              static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
-            "error in sorting particle integer payload 0",
-            HERE);
+          continue;
         }
+        raise::ErrorIf(seen_dead,
+                       "alive particle after a dead one (not sorted to prefix)",
+                       HERE);
+        const auto tile = tile_of(i1_h(p), i2_h(p));
+        raise::ErrorIf(have_prev && (tile < prev_tile),
+                       "alive particles not sorted by tile index",
+                       HERE);
+        prev_tile = tile;
+        have_prev = true;
+        ++n_alive_obs;
+        raise::ErrorIf(pld_r_h(p, 0) != weight_h(p) + static_cast<real_t>(0.5),
+                       "error in sorting particle real payload 0",
+                       HERE);
+        raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
+                       "error in sorting particle real payload 1",
+                       HERE);
+        raise::ErrorIf(
+          pld_i_h(p, 0) !=
+            static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
+          "error in sorting particle integer payload 0",
+          HERE);
       }
+      raise::ErrorIf(n_alive_obs != 59u,
+                     "wrong number of alive particles after sort",
+                     HERE);
     }
     {
       // 3D
@@ -133,11 +175,14 @@ auto main(int argc, char* argv[]) -> int {
         ntt::EmissionType::NONE,
         0u,
         0u);
-      auto& i1_p     = prtls.i1;
-      auto& i2_p     = prtls.i2;
-      auto& i3_p     = prtls.i3;
-      auto& tag_p    = prtls.tag;
-      auto& weight_p = prtls.weight;
+      auto& i1_p      = prtls.i1;
+      auto& i2_p      = prtls.i2;
+      auto& i3_p      = prtls.i3;
+      auto& i1_prev_p = prtls.i1_prev;
+      auto& i2_prev_p = prtls.i2_prev;
+      auto& i3_prev_p = prtls.i3_prev;
+      auto& tag_p     = prtls.tag;
+      auto& weight_p  = prtls.weight;
       Kokkos::parallel_for(
         "InitParticles",
         prtls.maxnpart(),
@@ -171,6 +216,11 @@ auto main(int argc, char* argv[]) -> int {
               i3_p(p)     = 7u;
               weight_p(p) = 4.0;
             }
+            // see 2D block: i_prev = i so the team_policy tile key reduces
+            // to the particle's current cell.
+            i1_prev_p(p) = i1_p(p);
+            i2_prev_p(p) = i2_p(p);
+            i3_prev_p(p) = i3_p(p);
           } else {
             tag_p(p) = ntt::ParticleTag::dead;
           }
@@ -182,27 +232,61 @@ auto main(int argc, char* argv[]) -> int {
 
       prtls.SortSpatially(grid);
 
+      auto i1_h     = Kokkos::create_mirror_view(prtls.i1);
+      auto i2_h     = Kokkos::create_mirror_view(prtls.i2);
+      auto i3_h     = Kokkos::create_mirror_view(prtls.i3);
+      auto tag_h    = Kokkos::create_mirror_view(prtls.tag);
       auto weight_h = Kokkos::create_mirror_view(prtls.weight);
+      Kokkos::deep_copy(i1_h, prtls.i1);
+      Kokkos::deep_copy(i2_h, prtls.i2);
+      Kokkos::deep_copy(i3_h, prtls.i3);
+      Kokkos::deep_copy(tag_h, prtls.tag);
       Kokkos::deep_copy(weight_h, prtls.weight);
-      // Only [0, npart) is defined after a sort. The swap-based gather in
-      // apply_permutation_to_soa replaces each SoA View, zero-filling the
-      // spare capacity [npart, maxnpart) (a don't-care region overwritten
-      // by injection), so the old "tail preserved" check no longer holds.
+
+      // Same invariants as the 2D block (no payloads here): alive prefix
+      // sorted by non-decreasing tile index, dead (weight == -1) suffix,
+      // alive count preserved. T = 1 reproduces the legacy per-cell order.
+#if defined(TEAM_POLICY)
+      const ncells_t T = static_cast<ncells_t>(TEAM_POLICY_TILE_SIZE);
+#else
+      const ncells_t T = 1u;
+#endif
+      const auto     na   = grid.n_active();
+      const ncells_t ntx2 = (na[1] + T - 1u) / T;
+      const ncells_t ntx3 = (na[2] + T - 1u) / T;
+      const auto     tile_of = [&](int a, int b, int c) -> ncells_t {
+        return ((static_cast<ncells_t>(a) / T) * ntx2 +
+                (static_cast<ncells_t>(b) / T)) *
+                 ntx3 +
+               (static_cast<ncells_t>(c) / T);
+      };
+
+      bool     seen_dead   = false;
+      bool     have_prev   = false;
+      ncells_t prev_tile   = 0u;
+      npart_t  n_alive_obs = 0u;
       for (auto p { 0u }; p < 66u; ++p) {
-        if (p < 13u) {
-          raise::ErrorIf(weight_h(p) != 4.0, "error in sorting particles", HERE);
-        } else if (p < 26u) {
-          raise::ErrorIf(weight_h(p) != 1.0, "error in sorting particles", HERE);
-        } else if (p < 39u) {
-          raise::ErrorIf(weight_h(p) != 2.0, "error in sorting particles", HERE);
-        } else if (p < 46u) {
-          raise::ErrorIf(weight_h(p) != 0.0, "error in sorting particles", HERE);
-        } else if (p < 59u) {
-          raise::ErrorIf(weight_h(p) != 3.0, "error in sorting particles", HERE);
-        } else {
-          raise::ErrorIf(weight_h(p) != -1.0, "error in sorting particles", HERE);
+        if (tag_h(p) != ntt::ParticleTag::alive) {
+          seen_dead = true;
+          raise::ErrorIf(weight_h(p) != -1.0,
+                         "dead particle has unexpected weight",
+                         HERE);
+          continue;
         }
+        raise::ErrorIf(seen_dead,
+                       "alive particle after a dead one (not sorted to prefix)",
+                       HERE);
+        const auto tile = tile_of(i1_h(p), i2_h(p), i3_h(p));
+        raise::ErrorIf(have_prev && (tile < prev_tile),
+                       "alive particles not sorted by tile index",
+                       HERE);
+        prev_tile = tile;
+        have_prev = true;
+        ++n_alive_obs;
       }
+      raise::ErrorIf(n_alive_obs != 59u,
+                     "wrong number of alive particles after sort",
+                     HERE);
     }
 
   } catch (const std::exception& e) {

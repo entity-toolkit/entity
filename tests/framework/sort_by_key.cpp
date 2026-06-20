@@ -100,6 +100,9 @@ auto main(int argc, char* argv[]) -> int {
 #if defined(CUDA_ENABLED) && defined(THRUST_ENABLED)
     test_one_backend("Thrust", ::sort::backend::Thrust {});
 #endif
+#if defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
+    test_one_backend("Rocthrust", ::sort::backend::Rocthrust {});
+#endif
   } catch (std::exception& e) {
     std::cerr << e.what() << std::endl;
     ntt::GlobalFinalize();

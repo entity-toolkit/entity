@@ -14,8 +14,13 @@
  *       keys[perm[0]] <= keys[perm[1]] <= ... in stable order.
  *       Always-available overloads: BinSort (uses Kokkos::BinSort) and
  *       StdSort (host-side std::stable_sort fallback). The vendor-library
- *       overloads (OneDPL on SYCL, Thrust on CUDA) are conditional on the
- *       respective build flags.
+ *       overloads (OneDPL on SYCL, cub radix sort on CUDA, rocprim radix
+ *       sort on HIP) are conditional on the respective build flags.
+ * @note The CUDA/HIP overloads bound the radix sort to the significant
+ *       key bits (`significant_bits(n_bins)`) instead of the full 32, so
+ *       only ceil(log2(n_bins)) bits are sorted — fewer radix passes than
+ *       a full-width `thrust::sort_by_key`. Scratch is transient (freed at
+ *       scope exit); no persistent buffer is retained (cf. 787aa045).
  */
 
 #ifndef GLOBAL_UTILS_SORT_DISPATCH_H
@@ -38,21 +43,31 @@
   #include <oneapi/dpl/execution>
 #endif
 #if defined(CUDA_ENABLED) && defined(THRUST_ENABLED)
-  #include <thrust/device_ptr.h>
-  #include <thrust/sequence.h>
-  #include <thrust/sort.h>
+  #include <cub/device/device_radix_sort.cuh>
 #endif
 #if defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
-  #include <thrust/device_ptr.h>
-  #include <thrust/execution_policy.h>
-  #include <thrust/sequence.h>
-  #include <thrust/sort.h>
+  #include <rocprim/rocprim.hpp>
 #endif
 
 #include <algorithm>
+#include <cstdint>
 #include <numeric>
 
 namespace ntt::sort_helpers {
+
+  // Number of low-order bits needed to represent keys in [0, n_bins).
+  // The radix sort only needs to scan these bits — bounding `end_bit` to
+  // ceil(log2(n_bins)) instead of 32 cuts the number of passes (e.g. 18
+  // bits when total_tiles ~ 176K). Returns at least 1.
+  inline unsigned int significant_bits(ncells_t n_bins) {
+    unsigned int bits = 0u;
+    while (bits < 32u &&
+           (static_cast<std::uint64_t>(1u) << bits) <
+             static_cast<std::uint64_t>(n_bins)) {
+      ++bits;
+    }
+    return (bits == 0u) ? 1u : bits;
+  }
 
   // Always-available legacy fallback: Kokkos::BinSort. n_bins must be an
   // upper bound on distinct key values.
@@ -109,39 +124,126 @@ namespace ntt::sort_helpers {
 #if defined(CUDA_ENABLED) && defined(THRUST_ENABLED)
   inline void sort_by_key_dispatch(const array_t<ncells_t*>& keys,
                                    prtl_perm_t&              perm,
-                                   ncells_t /*n_bins*/,
+                                   ncells_t                  n_bins,
                                    ::sort::backend::Thrust) {
     const auto n = static_cast<npart_t>(keys.extent(0));
     if (n == 0u) {
       return;
     }
-    Kokkos::fence("sort_by_key_dispatch Thrust: pre-sort");
-    thrust::device_ptr<ncells_t> kp(keys.data());
-    thrust::device_ptr<npart_t>  pp(perm.data());
-    thrust::sequence(pp, pp + n);
-    thrust::sort_by_key(kp, kp + n, pp);
-    Kokkos::fence("sort_by_key_dispatch Thrust: post-sort");
+    auto exec   = Kokkos::DefaultExecutionSpace();
+    auto perm_v = perm;
+    Kokkos::parallel_for(
+      "PermInitIota",
+      n,
+      KOKKOS_LAMBDA(const npart_t i) { perm_v(i) = i; });
+
+    // Out-of-place radix sort bounded to the significant key bits. The
+    // _out buffers and temp storage are transient (freed at scope exit).
+    array_t<ncells_t*> keys_out("tile_keys_sorted", n);
+    prtl_perm_t        perm_out("tile_perm_sorted", n);
+    const int          end_bit = static_cast<int>(significant_bits(n_bins));
+
+    exec.fence("sort_by_key_dispatch Thrust: pre-sort");
+    auto stream = exec.cuda_stream();
+
+    std::size_t temp_bytes = 0;
+    auto        err = cub::DeviceRadixSort::SortPairs(nullptr,
+                                              temp_bytes,
+                                              keys.data(),
+                                              keys_out.data(),
+                                              perm.data(),
+                                              perm_out.data(),
+                                              n,
+                                              0,
+                                              end_bit,
+                                              stream);
+    raise::ErrorIf(err != cudaSuccess,
+                   "cub::DeviceRadixSort::SortPairs (size query) failed",
+                   HERE);
+    array_t<char*> temp("cub_radix_temp",
+                        (temp_bytes == 0u) ? std::size_t { 1 } : temp_bytes);
+    err = cub::DeviceRadixSort::SortPairs(temp.data(),
+                                          temp_bytes,
+                                          keys.data(),
+                                          keys_out.data(),
+                                          perm.data(),
+                                          perm_out.data(),
+                                          n,
+                                          0,
+                                          end_bit,
+                                          stream);
+    raise::ErrorIf(err != cudaSuccess,
+                   "cub::DeviceRadixSort::SortPairs failed",
+                   HERE);
+    exec.fence("sort_by_key_dispatch Thrust: post-sort");
+
+    // Publish sorted keys back in place; swap the sorted permutation in.
+    auto keys_nc = keys; // non-const handle aliasing the same storage
+    Kokkos::deep_copy(keys_nc, keys_out);
+    perm = perm_out;
   }
 #endif
 
 #if defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
-  // rocThrust exposes the same thrust:: API as CUDA Thrust; with hipcc
-  // device_ptr-based algorithms dispatch to the HIP backend. Mirrors
-  // the CUDA Thrust overload.
+  // HIP analogue of the CUDA cub overload, using rocprim's radix sort
+  // (which ships with rocThrust). Same bounded-bit, out-of-place,
+  // transient-scratch scheme.
   inline void sort_by_key_dispatch(const array_t<ncells_t*>& keys,
                                    prtl_perm_t&              perm,
-                                   ncells_t /*n_bins*/,
+                                   ncells_t                  n_bins,
                                    ::sort::backend::Rocthrust) {
     const auto n = static_cast<npart_t>(keys.extent(0));
     if (n == 0u) {
       return;
     }
-    Kokkos::fence("sort_by_key_dispatch Rocthrust: pre-sort");
-    thrust::device_ptr<ncells_t> kp(keys.data());
-    thrust::device_ptr<npart_t>  pp(perm.data());
-    thrust::sequence(pp, pp + n);
-    thrust::sort_by_key(kp, kp + n, pp);
-    Kokkos::fence("sort_by_key_dispatch Rocthrust: post-sort");
+    auto exec   = Kokkos::DefaultExecutionSpace();
+    auto perm_v = perm;
+    Kokkos::parallel_for(
+      "PermInitIota",
+      n,
+      KOKKOS_LAMBDA(const npart_t i) { perm_v(i) = i; });
+
+    array_t<ncells_t*>  keys_out("tile_keys_sorted", n);
+    prtl_perm_t         perm_out("tile_perm_sorted", n);
+    const unsigned int  end_bit = significant_bits(n_bins);
+
+    exec.fence("sort_by_key_dispatch Rocthrust: pre-sort");
+    auto stream = exec.hip_stream();
+
+    std::size_t temp_bytes = 0;
+    auto        err = rocprim::radix_sort_pairs(nullptr,
+                                         temp_bytes,
+                                         keys.data(),
+                                         keys_out.data(),
+                                         perm.data(),
+                                         perm_out.data(),
+                                         static_cast<std::size_t>(n),
+                                         0u,
+                                         end_bit,
+                                         stream);
+    raise::ErrorIf(err != hipSuccess,
+                   "rocprim::radix_sort_pairs (size query) failed",
+                   HERE);
+    array_t<char*> temp("rocprim_radix_temp",
+                        (temp_bytes == 0u) ? std::size_t { 1 } : temp_bytes);
+    err = rocprim::radix_sort_pairs(temp.data(),
+                                    temp_bytes,
+                                    keys.data(),
+                                    keys_out.data(),
+                                    perm.data(),
+                                    perm_out.data(),
+                                    static_cast<std::size_t>(n),
+                                    0u,
+                                    end_bit,
+                                    stream);
+    raise::ErrorIf(err != hipSuccess,
+                   "rocprim::radix_sort_pairs failed",
+                   HERE);
+    exec.fence("sort_by_key_dispatch Rocthrust: post-sort");
+
+    auto keys_nc = keys; // non-const handle aliasing the same storage
+    Kokkos::deep_copy(keys_nc, keys_out);
+    perm = perm_out;
   }
 #endif
 

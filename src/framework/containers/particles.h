@@ -99,6 +99,18 @@ namespace ntt {
     // vendor libraries detected by CMake.
     TileLayout<D> m_tile_layout {};
 
+#if defined(TEAM_POLICY)
+    // Build m_tile_layout.tile_offsets / npart_partitioned from the
+    // already-sorted tile-index keys. A separate member function (not a
+    // lambda local to SortSpatially) so the inner device kernel is not an
+    // extended __device__ lambda nested inside another lambda — which
+    // nvcc forbids. Lets the vendor path run the offsets pass and then
+    // release the keys before the SoA gather allocates its buffers.
+    void compute_tile_offsets(const array_t<ncells_t*>& tile_indices,
+                              ncells_t                  total_tiles,
+                              npart_t                   npart_local);
+#endif
+
   public:
     // for empty allocation
     Particles() {}

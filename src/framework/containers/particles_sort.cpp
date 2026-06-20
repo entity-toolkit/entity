@@ -205,6 +205,61 @@ namespace ntt {
     m_is_sorted = true;
   }
 
+#if defined(TEAM_POLICY)
+  template <Dimension D, Coord::type C>
+  void Particles<D, C>::compute_tile_offsets(
+    const array_t<ncells_t*>& tile_indices,
+    ncells_t                  total_tiles,
+    npart_t                   npart_local) {
+    // Compute the per-tile prefix-sum `tile_offsets` for the tiled
+    // pusher from the (already sorted) `tile_indices` — monotonically
+    // non-decreasing for alive particles, with the dead sentinel
+    // `total_tiles + 1` clustered at the end. Transition-detect directly
+    // on it: the start of each non-empty tile is the only place a write
+    // happens — atomic-free in the dense branch. Empty tiles (no
+    // particles) are filled by a reverse pass on a small host mirror
+    // (`total_tiles ≈ 176K` at production scale → ~700 KB).
+    array_t<npart_t*> tile_offsets { "tile_offsets", total_tiles + 1u };
+    Kokkos::deep_copy(tile_offsets, static_cast<npart_t>(npart_local));
+
+    const auto total_tiles_v = total_tiles;
+    auto       ti_v          = tile_indices;
+    Kokkos::parallel_for(
+      "DetectTileBoundaries",
+      CreateParticleRangePolicy<Dim::_1D>({ 0u }, { npart_local }),
+      Lambda(prtlidx_t p) {
+        const auto t_curr   = ti_v(p);
+        const bool boundary = (p == 0u) || (ti_v(p - 1u) != t_curr);
+        if (!boundary) {
+          return;
+        }
+        if (t_curr < total_tiles_v) {
+          tile_offsets(t_curr) = p;
+        } else {
+          // First dead particle — also marks the alive_count boundary
+          // stored at index total_tiles.
+          Kokkos::atomic_min(&tile_offsets(total_tiles_v), p);
+        }
+      });
+
+    auto h_offsets = Kokkos::create_mirror_view(tile_offsets);
+    Kokkos::deep_copy(h_offsets, tile_offsets);
+    for (auto t = static_cast<std::size_t>(total_tiles); t-- > 0u;) {
+      if (h_offsets(t) > h_offsets(t + 1u)) {
+        h_offsets(t) = h_offsets(t + 1u);
+      }
+    }
+    Kokkos::deep_copy(tile_offsets, h_offsets);
+
+    m_tile_layout.tile_offsets = tile_offsets;
+    // tile_offsets(total_tiles) is the alive-particle count at sort time:
+    // the tiles partition exactly [0, npart_partitioned). The deposit
+    // launcher compares this against the live npart() to detect (and
+    // separately deposit) particles appended since this sort.
+    m_tile_layout.npart_partitioned = h_offsets(total_tiles);
+  }
+#endif // TEAM_POLICY
+
   template <Dimension D, Coord::type C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
 #if defined(TEAM_POLICY)
@@ -262,6 +317,7 @@ namespace ntt {
     //    the dead-particle sentinel bin (total_tiles + 1u).
     const ncells_t n_bins = total_tiles + 2u;
     const auto     slice  = prtl_slice_t(0, npart_local);
+
   #if defined(TEAM_POLICY_USE_VENDOR_SORT)
     // Vendor path: produce an explicit permutation via sort_by_key,
     // then apply it to each SoA member by gathering into a fresh
@@ -286,6 +342,12 @@ namespace ntt {
                                        n_bins,
                                        sort::backend::Thrust {});
     #endif
+    // `tile_indices` is sorted in place by sort_by_key. Build the tile
+    // offsets from it now, then drop it before the gather allocates its
+    // `maxnpart`-sized buffers — so the keys are not co-resident with
+    // them at the gather's peak (#2).
+    compute_tile_offsets(tile_indices, total_tiles, npart_local);
+    tile_indices = array_t<ncells_t*> {};
     Kokkos::fence("SortSpatially: pre-gather drain");
     apply_permutation_to_soa(perm);
   #else
@@ -330,67 +392,17 @@ namespace ntt {
       sorter.sort(Kokkos::subview(pld_i, slice, pldi));
     }
     // Apply the same permutation to `tile_indices` itself so it ends
-    // monotonically non-decreasing for the offsets pass below.
+    // monotonically non-decreasing for the offsets pass, then build the
+    // tile offsets from it (the in-place BinSort path has no separate
+    // gather to hoist this ahead of).
     sorter.sort(tile_indices);
+    compute_tile_offsets(tile_indices, total_tiles, npart_local);
   #endif // TEAM_POLICY_USE_VENDOR_SORT
 
-    // 5. Compute per-tile prefix-sum `tile_offsets` for the tiled
-    //    pusher. `tile_indices` is now sorted (monotonically
-    //    non-decreasing for alive particles, dead sentinel
-    //    `total_tiles + 1` clustered at the end) — vendor sort_by_key
-    //    sorts keys in place; the BinSort path explicitly applies the
-    //    same permutation to `tile_indices` above. Transition-detect
-    //    directly on it: the start of each non-empty tile is the only
-    //    place a write happens — atomic-free in the dense branch.
-    //    Empty tiles (no particles) are filled by a reverse pass on a
-    //    small host mirror (`total_tiles ≈ 176K` at production scale →
-    //    ~700 KB).
-    {
-      array_t<npart_t*> tile_offsets { "tile_offsets", total_tiles + 1u };
-      Kokkos::deep_copy(tile_offsets, static_cast<npart_t>(npart_local));
-
-      const auto total_tiles_v = total_tiles;
-      auto       ti_v          = tile_indices;
-      Kokkos::parallel_for(
-        "DetectTileBoundaries",
-        rangeActiveParticles(),
-        Lambda(prtlidx_t p) {
-          const auto t_curr   = ti_v(p);
-          const bool boundary = (p == 0u) || (ti_v(p - 1u) != t_curr);
-          if (!boundary) {
-            return;
-          }
-          if (t_curr < total_tiles_v) {
-            tile_offsets(t_curr) = p;
-          } else {
-            // First dead particle — also marks the alive_count boundary
-            // stored at index total_tiles.
-            Kokkos::atomic_min(&tile_offsets(total_tiles_v), p);
-          }
-        });
-
-      auto h_offsets = Kokkos::create_mirror_view(tile_offsets);
-      Kokkos::deep_copy(h_offsets, tile_offsets);
-      for (auto t = static_cast<std::size_t>(total_tiles); t-- > 0u;) {
-        if (h_offsets(t) > h_offsets(t + 1u)) {
-          h_offsets(t) = h_offsets(t + 1u);
-        }
-      }
-      Kokkos::deep_copy(tile_offsets, h_offsets);
-
-      m_tile_layout.tile_offsets = tile_offsets;
-      // tile_offsets(total_tiles) is the alive-particle count at sort time:
-      // the tiles partition exactly [0, npart_partitioned). The deposit
-      // launcher compares this against the live npart() to detect (and
-      // separately deposit) particles appended since this sort.
-      m_tile_layout.npart_partitioned = h_offsets(total_tiles);
-    }
-
-    // 6. Populate `m_tile_layout` size/shape. `tile_perm` is not used
-    //    in the current design — the SoA arrays are physically permuted
-    //    into tile order, so consumers iterate
-    //    `[tile_offsets(t), tile_offsets(t+1))` directly without a
-    //    separate permutation indirection.
+    // Populate `m_tile_layout` size/shape. `tile_perm` is not used in the
+    // current design — the SoA arrays are physically permuted into tile
+    // order, so consumers iterate `[tile_offsets(t), tile_offsets(t+1))`
+    // directly without a separate permutation indirection.
     m_tile_layout.ntiles_per_axis[0] = ntx[0];
     m_tile_layout.ntiles_per_axis[1] = ntx[1];
     m_tile_layout.ntiles_per_axis[2] = ntx[2];
