@@ -266,6 +266,11 @@ namespace ntt {
     auto iteration        = 0;
     auto current_received = 0;
 
+    // `tag_offsets` is the same for every direction; mirror it to the host
+    // once here instead of re-copying it inside the direction loop.
+    auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
+    Kokkos::deep_copy(tag_offsets_h, tag_offsets);
+
     for (const auto& direction : dirs_to_comm) {
       const auto send_rank     = send_ranks.at(direction);
       const auto recv_rank     = recv_ranks.at(direction);
@@ -290,9 +295,6 @@ namespace ntt {
         send_buff_pld_i = array_t<npart_t*> { "send_buff_pld_i",
                                               npart_send_in * NPLDS_I };
       }
-
-      auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
-      Kokkos::deep_copy(tag_offsets_h, tag_offsets);
 
       npart_t idx_offset = npart_dead;
       if (tag_send > 2) {
