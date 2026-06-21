@@ -137,8 +137,8 @@ namespace ntt::sort_helpers {
       n,
       KOKKOS_LAMBDA(const npart_t i) { perm_v(i) = i; });
 
-    // Out-of-place radix sort bounded to the significant key bits. The
-    // _out buffers and temp storage are transient (freed at scope exit).
+    // Radix sort bounded to the significant key bits. The _out buffers and
+    // temp storage are transient (freed at scope exit).
     array_t<ncells_t*> keys_out("tile_keys_sorted", n);
     prtl_perm_t        perm_out("tile_perm_sorted", n);
     const int          end_bit = static_cast<int>(significant_bits(n_bins));
@@ -146,13 +146,20 @@ namespace ntt::sort_helpers {
     exec.fence("sort_by_key_dispatch Thrust: pre-sort");
     auto stream = exec.cuda_stream();
 
+    // DoubleBuffer radix sort: cub ping-pongs between the supplied
+    // (current, alternate) buffer pairs, so `temp_bytes` holds only the
+    // histograms (~MB) instead of an internal N-sized alternate (~8*N bytes).
+    // Nearly halves the sort's transient memory vs the plain out-of-place
+    // form, which matters at high npart where the N-sized temp can fail to
+    // allocate (device OOM at scale).
+    cub::DoubleBuffer<ncells_t> d_keys(keys.data(), keys_out.data());
+    cub::DoubleBuffer<npart_t>  d_perm(perm.data(), perm_out.data());
+
     std::size_t temp_bytes = 0;
     auto        err = cub::DeviceRadixSort::SortPairs(nullptr,
                                               temp_bytes,
-                                              keys.data(),
-                                              keys_out.data(),
-                                              perm.data(),
-                                              perm_out.data(),
+                                              d_keys,
+                                              d_perm,
                                               n,
                                               0,
                                               end_bit,
@@ -164,10 +171,8 @@ namespace ntt::sort_helpers {
                         (temp_bytes == 0u) ? std::size_t { 1 } : temp_bytes);
     err = cub::DeviceRadixSort::SortPairs(temp.data(),
                                           temp_bytes,
-                                          keys.data(),
-                                          keys_out.data(),
-                                          perm.data(),
-                                          perm_out.data(),
+                                          d_keys,
+                                          d_perm,
                                           n,
                                           0,
                                           end_bit,
@@ -177,10 +182,16 @@ namespace ntt::sort_helpers {
                    HERE);
     exec.fence("sort_by_key_dispatch Thrust: post-sort");
 
-    // Publish sorted keys back in place; swap the sorted permutation in.
-    auto keys_nc = keys; // non-const handle aliasing the same storage
-    Kokkos::deep_copy(keys_nc, keys_out);
-    perm = perm_out;
+    // Publish results from whichever buffer cub left as Current() (depends on
+    // the pass count): copy sorted keys back into `keys`' storage if they
+    // ended up in the alternate, and point `perm` at its current buffer.
+    if (d_keys.Current() != keys.data()) {
+      auto keys_nc = keys; // non-const handle aliasing the same storage
+      Kokkos::deep_copy(keys_nc, keys_out);
+    }
+    if (d_perm.Current() == perm_out.data()) {
+      perm = perm_out;
+    }
   }
 #endif
 
@@ -210,13 +221,20 @@ namespace ntt::sort_helpers {
     exec.fence("sort_by_key_dispatch Rocthrust: pre-sort");
     auto stream = exec.hip_stream();
 
+    // double_buffer radix sort: rocprim ping-pongs between the supplied
+    // (current, alternate) buffer pairs, so `temp_storage` holds only the
+    // histograms (~MB) instead of an internal N-sized alternate (~8*N bytes,
+    // the dominant `rocprim_radix_temp`). This nearly halves the sort's
+    // transient memory vs the plain out-of-place form, which matters at high
+    // npart where that N-sized temp can fail to allocate (device OOM at scale).
+    rocprim::double_buffer<ncells_t> d_keys(keys.data(), keys_out.data());
+    rocprim::double_buffer<npart_t>  d_perm(perm.data(), perm_out.data());
+
     std::size_t temp_bytes = 0;
     auto        err = rocprim::radix_sort_pairs(nullptr,
                                          temp_bytes,
-                                         keys.data(),
-                                         keys_out.data(),
-                                         perm.data(),
-                                         perm_out.data(),
+                                         d_keys,
+                                         d_perm,
                                          static_cast<std::size_t>(n),
                                          0u,
                                          end_bit,
@@ -228,10 +246,8 @@ namespace ntt::sort_helpers {
                         (temp_bytes == 0u) ? std::size_t { 1 } : temp_bytes);
     err = rocprim::radix_sort_pairs(temp.data(),
                                     temp_bytes,
-                                    keys.data(),
-                                    keys_out.data(),
-                                    perm.data(),
-                                    perm_out.data(),
+                                    d_keys,
+                                    d_perm,
                                     static_cast<std::size_t>(n),
                                     0u,
                                     end_bit,
@@ -241,9 +257,17 @@ namespace ntt::sort_helpers {
                    HERE);
     exec.fence("sort_by_key_dispatch Rocthrust: post-sort");
 
-    auto keys_nc = keys; // non-const handle aliasing the same storage
-    Kokkos::deep_copy(keys_nc, keys_out);
-    perm = perm_out;
+    // Publish results from whichever buffer rocprim left as `current()`
+    // (depends on the pass count). If the sorted keys ended up in the
+    // alternate, copy them back into `keys`' storage so downstream
+    // (compute_tile_offsets) sees them; point `perm` at its current buffer.
+    if (d_keys.current() != keys.data()) {
+      auto keys_nc = keys; // non-const handle aliasing the same storage
+      Kokkos::deep_copy(keys_nc, keys_out);
+    }
+    if (d_perm.current() == perm_out.data()) {
+      perm = perm_out;
+    }
   }
 #endif
 
