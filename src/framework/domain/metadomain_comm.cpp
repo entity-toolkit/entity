@@ -273,71 +273,6 @@ namespace ntt {
       comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
     }
     // traverse in all directions and send/recv the fields
-#if defined(MPI_ENABLED)
-    // Batched non-blocking exchange: collect the per-direction params once,
-    // then overlap all directions for each field (post all Irecv/Isend with
-    // per-direction tags + one Waitall) instead of a blocking Sendrecv per
-    // direction. The #else branch is the single-rank non-MPI path.
-    {
-      std::vector<comm::FieldCommDir<M::Dim>> dirs;
-      dirs.reserve(dir::Directions<M::Dim>::all.size());
-      for (auto& direction : dir::Directions<M::Dim>::all) {
-        const auto [send_params, recv_params] = GetSendRecvParams(this,
-                                                                  domain,
-                                                                  direction,
-                                                                  false);
-        const auto [send_indrank, send_slice] = send_params;
-        const auto [recv_indrank, recv_slice] = recv_params;
-        const auto [send_ind, send_rank]      = send_indrank;
-        const auto [recv_ind, recv_rank]      = recv_indrank;
-        if (send_rank < 0 and recv_rank < 0) {
-          continue;
-        }
-        comm::FieldCommDir<M::Dim> fcd;
-        fcd.send_rank  = send_rank;
-        fcd.recv_rank  = recv_rank;
-        fcd.send_ind   = send_ind;
-        fcd.recv_ind   = recv_ind;
-        fcd.send_slice = send_slice;
-        fcd.recv_slice = recv_slice;
-        fcd.tag = static_cast<int>(mpi::PrtlSendTag<M::Dim>::dir2tag(direction));
-        dirs.push_back(std::move(fcd));
-      }
-      if (comm_em) {
-        comm::CommunicateFieldBatched<M::Dim, 6>(domain.index(),
-                                                 domain.fields.em,
-                                                 dirs,
-                                                 comp_range_fld);
-      }
-      if constexpr (S == SimEngine::GRPIC) {
-        if (comm_aux) {
-          comm::CommunicateFieldBatched<M::Dim, 6>(domain.index(),
-                                                   domain.fields.aux,
-                                                   dirs,
-                                                   comp_range_fld);
-        }
-        if (comm_em0) {
-          comm::CommunicateFieldBatched<M::Dim, 6>(domain.index(),
-                                                   domain.fields.em0,
-                                                   dirs,
-                                                   comp_range_fld);
-        }
-        if (comm_j) {
-          comm::CommunicateFieldBatched<M::Dim, 3>(domain.index(),
-                                                   domain.fields.cur0,
-                                                   dirs,
-                                                   comp_range_cur);
-        }
-      } else {
-        if (comm_j) {
-          comm::CommunicateFieldBatched<M::Dim, 3>(domain.index(),
-                                                   domain.fields.cur,
-                                                   dirs,
-                                                   comp_range_cur);
-        }
-      }
-    }
-#else
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
                   recv_params] = GetSendRecvParams(this, domain, direction, false);
@@ -429,7 +364,6 @@ namespace ntt {
         }
       }
     }
-#endif // MPI_ENABLED
   }
 
   template <Dimension D, int N>
