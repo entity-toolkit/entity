@@ -150,6 +150,15 @@ if(${team_policy})
     "${Blue}"
     TEAM_POLICY_DRIFT_REPORT
     46)
+  printchoices(
+    "Vendor sort"
+    "vendor_sort"
+    "${ON_OFF_VALUES}"
+    ${vendor_sort}
+    ON
+    "${Green}"
+    VENDOR_SORT_REPORT
+    46)
 endif()
 printchoices(
   "Debug mode"
@@ -230,6 +239,7 @@ string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_REPORT} "\n")
 if(${team_policy})
   string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_TILE_SIZE_REPORT} "\n")
   string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_DRIFT_REPORT} "\n")
+  string(APPEND REPORT_TEXT "  " ${VENDOR_SORT_REPORT} "\n")
 endif()
 
 string(

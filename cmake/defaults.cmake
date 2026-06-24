@@ -104,6 +104,19 @@ else()
 endif()
 set_property(CACHE default_team_policy PROPERTY TYPE BOOL)
 
+if(DEFINED ENV{Entity_ENABLE_VENDOR_SORT})
+  set(default_vendor_sort
+      $ENV{Entity_ENABLE_VENDOR_SORT}
+      CACHE INTERNAL
+        "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
+else()
+  set(default_vendor_sort
+      ON
+      CACHE INTERNAL
+        "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
+endif()
+set_property(CACHE default_vendor_sort PROPERTY TYPE BOOL)
+
 set(default_team_policy_tile_size
     8
     CACHE INTERNAL "Default tile edge length in cells for team_policy")
