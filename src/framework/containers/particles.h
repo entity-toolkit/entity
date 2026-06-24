@@ -322,8 +322,14 @@ namespace ntt {
      *        Only compiled when a vendor sort backend is enabled; the
      *        BinSort path applies the permutation in place via
      *        `sorter.sort(view)` instead.
+     * @param perm Permutation: sorted position -> pre-sort slot index.
+     * @param n Number of leading (alive) particles to gather. Pass
+     *        `npart_partitioned` so only the alive set is moved into
+     *        `[0, n)` (the dead were binned to the sentinel tile and sort
+     *        to the tail); the caller then drops the dead tail via
+     *        `set_npart(n)`.
      */
-    void apply_permutation_to_soa(const prtl_perm_t& perm);
+    void apply_permutation_to_soa(const prtl_perm_t& perm, npart_t n);
 
   public:
 #endif

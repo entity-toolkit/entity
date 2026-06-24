@@ -319,12 +319,12 @@ namespace ntt {
     const auto     slice  = prtl_slice_t(0, npart_local);
 
   #if defined(TEAM_POLICY_USE_VENDOR_SORT)
-    // Vendor path: produce an explicit permutation via sort_by_key,
-    // then apply it to each SoA member by gathering into a fresh
-    // full-capacity buffer and swapping the View handle in (no
-    // copy-back). The *_prev arrays are skipped — see
+    // Vendor path: produce an explicit permutation via sort_by_key, then
+    // apply it to each SoA member by gathering the alive prefix through a
+    // reusable scratch buffer (one per member type, sized to the alive
+    // count, copied back in place). The *_prev arrays are skipped — see
     // apply_permutation_to_soa. Peak transient = one
-    // `maxnpart × sizeof(member)` buffer at a time.
+    // `npart_partitioned × sizeof(member)` scratch at a time.
     prtl_perm_t perm { "tile_perm", npart_local };
     #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
     sort_helpers::sort_by_key_dispatch(tile_indices,
@@ -349,7 +349,14 @@ namespace ntt {
     compute_tile_offsets(tile_indices, total_tiles, npart_local);
     tile_indices = array_t<ncells_t*> {};
     Kokkos::fence("SortSpatially: pre-gather drain");
-    apply_permutation_to_soa(perm);
+    // Gather only the alive particles. The sort binned dead particles to
+    // the sentinel tile, so they occupy [npart_partitioned, npart_local)
+    // and `perm[0, npart_partitioned)` lists the alive slots in tile
+    // order. Restricting the gather to the alive count drops the dead in
+    // the same pass (no separate compaction), skips work on dead slots,
+    // and sizes the gather scratch to the alive count. The dead tail is
+    // released below via `set_npart`.
+    apply_permutation_to_soa(perm, m_tile_layout.npart_partitioned);
   #else
     // BinSort path: same mechanism as legacy SortSpatially (BinSort
     // allocates one temp View per `sorter.sort(view)` call and frees
@@ -410,6 +417,16 @@ namespace ntt {
     m_tile_layout.tile_size          = T;
     m_tile_layout.tile_perm          = prtl_perm_t {};
     m_is_sorted                      = true;
+
+    // Compact-on-sort: drop the dead tail now instead of waiting for the
+    // periodic RemoveDead. The sort parked dead particles in the sentinel
+    // bin at [npart_partitioned, npart()), and the alive set is exactly
+    // [0, npart_partitioned) — gathered into tile order above (vendor) or
+    // sorted in place (BinSort). Shrinking npart() here keeps it, and
+    // every subsequent sort's transient buffers, tracking the alive count
+    // instead of ratcheting up with dead slots between clearing intervals.
+    // (RemoveDead remains the compactor when spatial sorting is disabled.)
+    set_npart(m_tile_layout.npart_partitioned);
 
     Kokkos::fence("SortSpatially: end of team_policy path");
 #else  // !TEAM_POLICY — legacy in-place BinSort by global cell index
@@ -546,8 +563,8 @@ namespace ntt {
   } // namespace permute_helpers
 
   template <Dimension D, Coord::type C>
-  void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t& perm) {
-    const auto n = npart();
+  void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t& perm,
+                                                 npart_t            n) {
     if (n == 0u) {
       return;
     }
@@ -632,7 +649,7 @@ namespace ntt {
 #if defined(TEAM_POLICY_USE_VENDOR_SORT)
   #define APPLY_PERM_INSTANTIATE(D, C)                                         \
     template void Particles<D, C>::apply_permutation_to_soa(                   \
-      const prtl_perm_t&);
+      const prtl_perm_t&, npart_t);
 #else
   #define APPLY_PERM_INSTANTIATE(D, C)
 #endif
