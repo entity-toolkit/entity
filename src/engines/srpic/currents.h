@@ -47,6 +47,7 @@ namespace ntt {
                              dt));
     }
 
+#if defined(TEAM_POLICY)
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
@@ -116,6 +117,7 @@ namespace ntt {
         Kokkos::Experimental::contribute(cur_nc, scatter_cur);
       }
     }
+#endif // TEAM_POLICY
 
     template <SRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::SRPIC, M>& domain,
