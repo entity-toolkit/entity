@@ -233,90 +233,99 @@ namespace ntt {
 
       const auto flds_bc = domain.mesh.flds_bc();
 
-      if constexpr (M::CoordType == Coord::Cartesian) {
-        // Reduced-exchange ghost-margin scheme. One halo exchange refreshes
-        // N_GHOSTS ghost layers — enough for N_GHOSTS passes of the 3-point
-        // binomial if each pass also recomputes the inner ghost layers it
-        // will need next. We therefore extend the launch range by a shrinking
-        // margin `m` into the ghost zone, but only on comm-refreshed sides
-        // (PERIODIC self-wrap or SYNC inter-domain), where the ghost cell is
-        // interior physics. Physical-boundary ghosts are never written or
-        // refreshed, exactly as in the per-pass loop, so the result is
-        // identical for every BC — while doing one exchange per N_GHOSTS
-        // passes instead of one per pass. (Entering the loop the ghosts are
-        // valid to distance N_GHOSTS: srpic.hpp runs CommunicateFields(J)
-        // immediately before CurrentsFilter.)
-        const int  G = static_cast<int>(N_GHOSTS);
-        const auto comm_side = [](FldsBC b) {
-          return (b == FldsBC::PERIODIC) or (b == FldsBC::SYNC);
+      // Reduced-exchange ghost-margin scheme (all coordinate types). One halo
+      // exchange refreshes N_GHOSTS ghost layers — enough for N_GHOSTS passes
+      // of the 3-point binomial if each pass also recomputes the inner ghost
+      // layers it will need next. We therefore extend the launch range by a
+      // shrinking margin `m` into the ghost zone, but only on comm-refreshed
+      // sides (PERIODIC self-wrap or SYNC inter-domain), where the ghost cell
+      // is interior physics. Physical-boundary ghosts are never written or
+      // refreshed, exactly as in the per-pass loop, so the result is identical
+      // for every BC — while doing one exchange per N_GHOSTS passes instead of
+      // one per pass. (Entering the loop the ghosts are valid to distance
+      // N_GHOSTS: srpic.hpp runs CommunicateFields(J) immediately before
+      // CurrentsFilter.)
+      //
+      // Non-Cartesian axis: the theta (x2) direction is self-contained in the
+      // filter kernel — the axis branches only ever read/write within
+      // [i2_min, i2_max] and never cross the axis — so the axis needs no halo
+      // exchange at all (the axis current fold is done once by
+      // SynchronizeFields(J) before this function). The single coordinate
+      // dependency is that the axis cell sits at i_max(x2), one past the active
+      // range, and must be filtered on every pass. We therefore add a fixed +1
+      // to the x2 upper bound when that side is AXIS — a physical boundary, so
+      // never the shrinking comm margin. This folds the old RangeWithAxisBCs
+      // fixup into make_range, letting the same loop serve every CoordType.
+      const int  G = static_cast<int>(N_GHOSTS);
+      const auto comm_side = [](FldsBC b) {
+        return (b == FldsBC::PERIODIC) or (b == FldsBC::SYNC);
+      };
+      bool ext_lo[3] = { false, false, false };
+      bool ext_hi[3] = { false, false, false };
+      for (auto d { 0 }; d < static_cast<int>(M::Dim); ++d) {
+        ext_lo[d] = comm_side(flds_bc[d].first);
+        ext_hi[d] = comm_side(flds_bc[d].second);
+      }
+      // AXIS at the upper x2 boundary needs the axis cell (i_max(x2)) included
+      // every pass; matches srpic::RangeWithAxisBCs. (The lower-x2 axis cell is
+      // already i_min(x2), so no fixup is needed there.)
+      bool axis_hi_x2 = false;
+      if constexpr (M::CoordType != Coord::Cartesian and
+                    (M::Dim == Dim::_2D or M::Dim == Dim::_3D)) {
+        axis_hi_x2 = (flds_bc[1].second == FldsBC::AXIS);
+      }
+      const auto make_range = [&](int m) -> range_t<M::Dim> {
+        const auto ml = [&](int d) -> ncells_t {
+          return ext_lo[d] ? static_cast<ncells_t>(m) : 0u;
         };
-        bool ext_lo[3] = { false, false, false };
-        bool ext_hi[3] = { false, false, false };
-        for (auto d { 0 }; d < static_cast<int>(M::Dim); ++d) {
-          ext_lo[d] = comm_side(flds_bc[d].first);
-          ext_hi[d] = comm_side(flds_bc[d].second);
-        }
-        const auto make_range = [&](int m) -> range_t<M::Dim> {
-          const auto ml = [&](int d) -> ncells_t {
-            return ext_lo[d] ? static_cast<ncells_t>(m) : 0u;
-          };
-          const auto mh = [&](int d) -> ncells_t {
-            return ext_hi[d] ? static_cast<ncells_t>(m) : 0u;
-          };
-          if constexpr (M::Dim == Dim::_1D) {
-            return CreateRangePolicy<Dim::_1D>(
-              { domain.mesh.i_min(in::x1) - ml(0) },
-              { domain.mesh.i_max(in::x1) + mh(0) });
-          } else if constexpr (M::Dim == Dim::_2D) {
-            return CreateRangePolicy<Dim::_2D>(
-              { domain.mesh.i_min(in::x1) - ml(0),
-                domain.mesh.i_min(in::x2) - ml(1) },
-              { domain.mesh.i_max(in::x1) + mh(0),
-                domain.mesh.i_max(in::x2) + mh(1) });
-          } else {
-            return CreateRangePolicy<Dim::_3D>(
-              { domain.mesh.i_min(in::x1) - ml(0),
-                domain.mesh.i_min(in::x2) - ml(1),
-                domain.mesh.i_min(in::x3) - ml(2) },
-              { domain.mesh.i_max(in::x1) + mh(0),
-                domain.mesh.i_max(in::x2) + mh(1),
-                domain.mesh.i_max(in::x3) + mh(2) });
+        const auto mh = [&](int d) -> ncells_t {
+          if (ext_hi[d]) {
+            return static_cast<ncells_t>(m);
           }
+          // axis cell fixup (x2 == dimension index 1); mutually exclusive with
+          // the comm margin since AXIS is not a comm side
+          if (d == 1 and axis_hi_x2) {
+            return 1u;
+          }
+          return 0u;
         };
-        int m = G - 1;
-        for (auto i { 0u }; i < nfilter; ++i) {
-          Kokkos::parallel_for(
-            "CurrentsFilter",
-            make_range(m),
-            kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
-              domain.fields.buff,
-              domain.fields.cur,
-              size,
-              flds_bc));
-          std::swap(domain.fields.cur, domain.fields.buff);
-          --m;
-          if (m < 0 or i == nfilter - 1u) {
-            // refresh ghosts to distance G (and leave them valid for the
-            // downstream field solver after the final pass)
-            metadomain.CommunicateFields(domain, Comm::J);
-            m = G - 1;
-          }
+        if constexpr (M::Dim == Dim::_1D) {
+          return CreateRangePolicy<Dim::_1D>(
+            { domain.mesh.i_min(in::x1) - ml(0) },
+            { domain.mesh.i_max(in::x1) + mh(0) });
+        } else if constexpr (M::Dim == Dim::_2D) {
+          return CreateRangePolicy<Dim::_2D>(
+            { domain.mesh.i_min(in::x1) - ml(0),
+              domain.mesh.i_min(in::x2) - ml(1) },
+            { domain.mesh.i_max(in::x1) + mh(0),
+              domain.mesh.i_max(in::x2) + mh(1) });
+        } else {
+          return CreateRangePolicy<Dim::_3D>(
+            { domain.mesh.i_min(in::x1) - ml(0),
+              domain.mesh.i_min(in::x2) - ml(1),
+              domain.mesh.i_min(in::x3) - ml(2) },
+            { domain.mesh.i_max(in::x1) + mh(0),
+              domain.mesh.i_max(in::x2) + mh(1),
+              domain.mesh.i_max(in::x3) + mh(2) });
         }
-      } else {
-        // Non-Cartesian (axis BCs need the +1 range fixup): keep the
-        // per-pass exchange cadence, still ping-ponging the buffers.
-        const auto range = srpic::RangeWithAxisBCs(domain);
-        for (auto i { 0u }; i < nfilter; ++i) {
-          Kokkos::parallel_for(
-            "CurrentsFilter",
-            range,
-            kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
-              domain.fields.buff,
-              domain.fields.cur,
-              size,
-              flds_bc));
-          std::swap(domain.fields.cur, domain.fields.buff);
+      };
+      int m = G - 1;
+      for (auto i { 0u }; i < nfilter; ++i) {
+        Kokkos::parallel_for(
+          "CurrentsFilter",
+          make_range(m),
+          kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
+            domain.fields.buff,
+            domain.fields.cur,
+            size,
+            flds_bc));
+        std::swap(domain.fields.cur, domain.fields.buff);
+        --m;
+        if (m < 0 or i == nfilter - 1u) {
+          // refresh ghosts to distance G (and leave them valid for the
+          // downstream field solver after the final pass)
           metadomain.CommunicateFields(domain, Comm::J);
+          m = G - 1;
         }
       }
     }
