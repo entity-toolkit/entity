@@ -1042,8 +1042,12 @@ namespace kernel {
               [&](int g_i1, int comp, real_t v) {
                 if (to_scratch) {
                   Kokkos::atomic_add(&scr(g_i1 - origin_J1_low, comp), v);
-                  //} else if (g_i1 >= 0 and g_i1 < j_ext1) {
-                } else {
+                } else if (g_i1 >= 0 and g_i1 < j_ext1) {
+                  // Bounds-clip the escape-valve write against J's storage,
+                  // exactly as the cooperative flush does. Cells past the
+                  // ghost stripe are re-supplied by SynchronizeFields(J); an
+                  // unclipped write here faults the GPU (an escaped boundary
+                  // particle's stencil can reach past j_ext1).
                   Kokkos::atomic_add(&J(g_i1, comp), v);
                 }
               });
@@ -1115,7 +1119,11 @@ namespace kernel {
                   Kokkos::atomic_add(
                     &scr(g_i1 - origin_J1_low, g_i2 - origin_J2_low, comp),
                     v);
-                } else {
+                } else if (g_i1 >= 0 and g_i1 < j_ext1 and g_i2 >= 0 and
+                           g_i2 < j_ext2) {
+                  // Bounds-clip as the cooperative flush does; an unclipped
+                  // escape-valve write faults the GPU when an escaped boundary
+                  // particle's stencil reaches past j_ext.
                   Kokkos::atomic_add(&J(g_i1, g_i2, comp), v);
                 }
               });
@@ -1195,7 +1203,11 @@ namespace kernel {
                                           g_i3 - origin_J3_low,
                                           comp),
                                      v);
-                } else {
+                } else if (g_i1 >= 0 and g_i1 < j_ext1 and g_i2 >= 0 and
+                           g_i2 < j_ext2 and g_i3 >= 0 and g_i3 < j_ext3) {
+                  // Bounds-clip as the cooperative flush does; an unclipped
+                  // escape-valve write faults the GPU when an escaped boundary
+                  // particle's stencil reaches past j_ext.
                   Kokkos::atomic_add(&J(g_i1, g_i2, g_i3, comp), v);
                 }
               });

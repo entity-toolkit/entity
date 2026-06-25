@@ -112,16 +112,30 @@ auto main(int argc, char* argv[]) -> int {
       // SortSpatially is order-by-tile, not order-by-cell: assert the
       // invariants that hold for any tile size rather than a hardwired
       // permutation. (1) alive particles form a prefix sorted by
-      // non-decreasing tile index; (2) dead particles (weight == -1) form
-      // the suffix; (3) every SoA member is permuted by the *same*
-      // permutation, so each alive slot still satisfies pld == f(weight);
-      // (4) no alive particle is lost. Only [0, npart) is defined after a
-      // sort — the swap-gather zero-fills [npart, maxnpart).
+      // non-decreasing tile index; (2) every SoA member is permuted by the
+      // *same* permutation, so each alive slot still satisfies
+      // pld == f(weight); (3) no alive particle is lost. Only [0, npart())
+      // is defined after a sort. The team_policy path compacts — it drops
+      // the dead, so npart() equals the alive count and [0, npart()) is
+      // entirely alive; the legacy (non-team) path keeps the dead as a
+      // weight == -1 suffix, leaving npart() unchanged. Iterating
+      // [0, npart()) exercises both: the prefix-sorted / no-alive-after-dead
+      // checks below hold either way.
+#if defined(TEAM_POLICY)
+      raise::ErrorIf(prtls.npart() != 59u,
+                     "team_policy sort must compact: npart() should equal "
+                     "the alive count",
+                     HERE);
+#else
+      raise::ErrorIf(prtls.npart() != 66u,
+                     "legacy sort should leave npart() unchanged",
+                     HERE);
+#endif
       bool     seen_dead   = false;
       bool     have_prev   = false;
       ncells_t prev_tile   = 0u;
       npart_t  n_alive_obs = 0u;
-      for (auto p { 0u }; p < 66u; ++p) {
+      for (auto p { 0u }; p < prtls.npart(); ++p) {
         if (tag_h(p) != ntt::ParticleTag::alive) {
           seen_dead = true;
           raise::ErrorIf(weight_h(p) != -1.0,
@@ -244,8 +258,10 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::deep_copy(weight_h, prtls.weight);
 
       // Same invariants as the 2D block (no payloads here): alive prefix
-      // sorted by non-decreasing tile index, dead (weight == -1) suffix,
-      // alive count preserved. T = 1 reproduces the legacy per-cell order.
+      // sorted by non-decreasing tile index, alive count preserved. The
+      // team_policy path compacts the dead away (npart() == alive count);
+      // the legacy path keeps them as a weight == -1 suffix. T = 1
+      // reproduces the legacy per-cell order.
 #if defined(TEAM_POLICY)
       const ncells_t T = static_cast<ncells_t>(TEAM_POLICY_TILE_SIZE);
 #else
@@ -261,11 +277,21 @@ auto main(int argc, char* argv[]) -> int {
                (static_cast<ncells_t>(c) / T);
       };
 
+#if defined(TEAM_POLICY)
+      raise::ErrorIf(prtls.npart() != 59u,
+                     "team_policy sort must compact: npart() should equal "
+                     "the alive count",
+                     HERE);
+#else
+      raise::ErrorIf(prtls.npart() != 66u,
+                     "legacy sort should leave npart() unchanged",
+                     HERE);
+#endif
       bool     seen_dead   = false;
       bool     have_prev   = false;
       ncells_t prev_tile   = 0u;
       npart_t  n_alive_obs = 0u;
-      for (auto p { 0u }; p < 66u; ++p) {
+      for (auto p { 0u }; p < prtls.npart(); ++p) {
         if (tag_h(p) != ntt::ParticleTag::alive) {
           seen_dead = true;
           raise::ErrorIf(weight_h(p) != -1.0,

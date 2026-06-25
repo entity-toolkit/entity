@@ -319,12 +319,12 @@ namespace ntt {
     const auto     slice  = prtl_slice_t(0, npart_local);
 
   #if defined(TEAM_POLICY_USE_VENDOR_SORT)
-    // Vendor path: produce an explicit permutation via sort_by_key,
-    // then apply it to each SoA member by gathering into a fresh
-    // full-capacity buffer and swapping the View handle in (no
-    // copy-back). The *_prev arrays are skipped — see
+    // Vendor path: produce an explicit permutation via sort_by_key, then
+    // apply it to each SoA member by gathering the alive prefix through a
+    // reusable scratch buffer (one per member type, sized to the alive
+    // count, copied back in place). The *_prev arrays are skipped — see
     // apply_permutation_to_soa. Peak transient = one
-    // `maxnpart × sizeof(member)` buffer at a time.
+    // `npart_partitioned × sizeof(member)` scratch at a time.
     prtl_perm_t perm { "tile_perm", npart_local };
     #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
     sort_helpers::sort_by_key_dispatch(tile_indices,
@@ -349,7 +349,14 @@ namespace ntt {
     compute_tile_offsets(tile_indices, total_tiles, npart_local);
     tile_indices = array_t<ncells_t*> {};
     Kokkos::fence("SortSpatially: pre-gather drain");
-    apply_permutation_to_soa(perm);
+    // Gather only the alive particles. The sort binned dead particles to
+    // the sentinel tile, so they occupy [npart_partitioned, npart_local)
+    // and `perm[0, npart_partitioned)` lists the alive slots in tile
+    // order. Restricting the gather to the alive count drops the dead in
+    // the same pass (no separate compaction), skips work on dead slots,
+    // and sizes the gather scratch to the alive count. The dead tail is
+    // released below via `set_npart`.
+    apply_permutation_to_soa(perm, m_tile_layout.npart_partitioned);
   #else
     // BinSort path: same mechanism as legacy SortSpatially (BinSort
     // allocates one temp View per `sorter.sort(view)` call and frees
@@ -410,6 +417,16 @@ namespace ntt {
     m_tile_layout.tile_size          = T;
     m_tile_layout.tile_perm          = prtl_perm_t {};
     m_is_sorted                      = true;
+
+    // Compact-on-sort: drop the dead tail now instead of waiting for the
+    // periodic RemoveDead. The sort parked dead particles in the sentinel
+    // bin at [npart_partitioned, npart()), and the alive set is exactly
+    // [0, npart_partitioned) — gathered into tile order above (vendor) or
+    // sorted in place (BinSort). Shrinking npart() here keeps it, and
+    // every subsequent sort's transient buffers, tracking the alive count
+    // instead of ratcheting up with dead slots between clearing intervals.
+    // (RemoveDead remains the compactor when spatial sorting is disabled.)
+    set_npart(m_tile_layout.npart_partitioned);
 
     Kokkos::fence("SortSpatially: end of team_policy path");
 #else  // !TEAM_POLICY — legacy in-place BinSort by global cell index
@@ -474,66 +491,86 @@ namespace ntt {
 #if defined(TEAM_POLICY_USE_VENDOR_SORT)
   namespace permute_helpers {
 
-    // Permute a 1D SoA member array `arr` by `perm`. Gathers into a
-    // fresh buffer allocated at the member's full capacity (maxnpart),
-    // then swaps the View handle in. This avoids the redundant copy-back
-    // pass of the old gather-then-deep_copy approach (~2x less HBM
-    // traffic). Allocating at full capacity preserves the member's spare
-    // room for injection; the untouched tail [n, capacity) is
-    // zero-initialized by Kokkos (cleaner than the stale values the old
-    // deep_copy left there). The fence drains the gather (which reads the
-    // old storage) before the swap drops the last reference to it.
+    // Permute a 1D SoA member `arr` by `perm` in place, using a
+    // caller-owned reusable `scratch` buffer. Gathers the live prefix
+    // `arr[perm[0..n)]` into `scratch[0..n)`, then copies it back into
+    // `arr[0..n)`. Unlike the old swap-the-handle approach, `arr` keeps
+    // its original storage and full maxnpart capacity, so the large
+    // persistent member arrays never change address between sorts (the
+    // dominant source of allocator churn / fragmentation on ROCm), and
+    // `scratch` is shared across every member of the same type within one
+    // sort -- one transient allocation per type group instead of a fresh
+    // maxnpart buffer per member. `scratch` is sized to the live count
+    // `n` (not maxnpart), which also lowers the gather's peak transient.
+    // The tail `arr[n, capacity)` is left untouched (stale, never read:
+    // consumers iterate `[0, npart())`). Cost vs the swap: one extra
+    // copy-back pass (~2x HBM traffic), negligible when sorting is a
+    // small fraction of the step. The fences keep the shared scratch from
+    // being overwritten by the next member's gather before this member's
+    // copy-back has drained it.
     template <typename V>
-    inline void permute_1d_swap(V&                 arr,
+    inline void permute_1d_into(V&                 arr,
+                                const V&           scratch,
                                 const prtl_perm_t& perm,
                                 npart_t            n) {
       if (n == 0u) {
         return;
       }
-      V    buf(arr.label(), arr.extent(0));
       auto perm_v = perm;
       auto arr_v  = arr;
+      auto buf_v  = scratch;
       Kokkos::parallel_for(
         "Permute1D",
         n,
-        KOKKOS_LAMBDA(const npart_t p) { buf(p) = arr_v(perm_v(p)); });
-      Kokkos::fence("permute_1d_swap: end");
-      arr = buf;
+        KOKKOS_LAMBDA(const npart_t p) { buf_v(p) = arr_v(perm_v(p)); });
+      Kokkos::fence("permute_1d_into: gather");
+      Kokkos::deep_copy(
+        Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n)),
+        Kokkos::subview(scratch, std::make_pair(static_cast<npart_t>(0), n)));
+      Kokkos::fence("permute_1d_into: copy-back");
     }
 
-    // 2D analogue for `pld_r` / `pld_i`.
+    // 2D analogue for `pld_r` / `pld_i` (`scratch` is `(>= n, ncols)`).
     template <typename V>
-    inline void permute_2d_swap(V&                 arr,
+    inline void permute_2d_into(V&                 arr,
+                                const V&           scratch,
                                 const prtl_perm_t& perm,
                                 npart_t            n,
                                 npart_t            ncols) {
       if (n == 0u or ncols == 0u) {
         return;
       }
-      V    buf(arr.label(), arr.extent(0), arr.extent(1));
       auto perm_v = perm;
       auto arr_v  = arr;
+      auto buf_v  = scratch;
       Kokkos::parallel_for(
         "Permute2D",
         CreateParticleRangePolicy<Dim::_2D>({ 0u, 0u }, { n, ncols }),
         KOKKOS_LAMBDA(const npart_t p, const npart_t l) {
-          buf(p, l) = arr_v(perm_v(p), l);
+          buf_v(p, l) = arr_v(perm_v(p), l);
         });
-      Kokkos::fence("permute_2d_swap: end");
-      arr = buf;
+      Kokkos::fence("permute_2d_into: gather");
+      Kokkos::deep_copy(
+        Kokkos::subview(arr,
+                        std::make_pair(static_cast<npart_t>(0), n),
+                        Kokkos::ALL),
+        Kokkos::subview(scratch,
+                        std::make_pair(static_cast<npart_t>(0), n),
+                        Kokkos::ALL));
+      Kokkos::fence("permute_2d_into: copy-back");
     }
 
   } // namespace permute_helpers
 
   template <Dimension D, Coord::type C>
-  void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t& perm) {
-    const auto n = npart();
+  void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t& perm,
+                                                 npart_t            n) {
     if (n == 0u) {
       return;
     }
 
-    using permute_helpers::permute_1d_swap;
-    using permute_helpers::permute_2d_swap;
+    using permute_helpers::permute_1d_into;
+    using permute_helpers::permute_2d_into;
 
     // The *_prev arrays (i{1,2,3}_prev, dx{1,2,3}_prev) are intentionally
     // NOT permuted. SortSpatially runs at the very end of the step loop
@@ -551,31 +588,60 @@ namespace ntt {
     //     prev field saved to the checkpoint differs from the old code.
     // Permuting prev would therefore reorder data that is overwritten
     // before it is ever observed.
-    if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
-      permute_1d_swap(i1, perm, n);
-      permute_1d_swap(dx1, perm, n);
+    //
+    // Each block below allocates a single `n`-sized scratch buffer that
+    // is reused for every member of that type, then freed before the next
+    // block allocates its own. The whole gather thus makes one transient
+    // allocation per type group (int / prtldx_t / real_t / short / each
+    // payload) instead of one fresh maxnpart buffer per member, and peak
+    // transient is a single n-sized scratch at a time.
+    {
+      array_t<int*> scratch { "perm_scratch_int", n };
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        permute_1d_into(i1, scratch, perm, n);
+      }
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
+        permute_1d_into(i2, scratch, perm, n);
+      }
+      if constexpr (D == Dim::_3D) {
+        permute_1d_into(i3, scratch, perm, n);
+      }
     }
-    if constexpr (D == Dim::_2D or D == Dim::_3D) {
-      permute_1d_swap(i2, perm, n);
-      permute_1d_swap(dx2, perm, n);
+    {
+      array_t<prtldx_t*> scratch { "perm_scratch_prtldx", n };
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        permute_1d_into(dx1, scratch, perm, n);
+      }
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
+        permute_1d_into(dx2, scratch, perm, n);
+      }
+      if constexpr (D == Dim::_3D) {
+        permute_1d_into(dx3, scratch, perm, n);
+      }
     }
-    if constexpr (D == Dim::_3D) {
-      permute_1d_swap(i3, perm, n);
-      permute_1d_swap(dx3, perm, n);
+    {
+      array_t<real_t*> scratch { "perm_scratch_real", n };
+      permute_1d_into(ux1, scratch, perm, n);
+      permute_1d_into(ux2, scratch, perm, n);
+      permute_1d_into(ux3, scratch, perm, n);
+      permute_1d_into(weight, scratch, perm, n);
+      if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
+        permute_1d_into(phi, scratch, perm, n);
+      }
     }
-    permute_1d_swap(ux1, perm, n);
-    permute_1d_swap(ux2, perm, n);
-    permute_1d_swap(ux3, perm, n);
-    permute_1d_swap(weight, perm, n);
-    permute_1d_swap(tag, perm, n);
-    if constexpr (D == Dim::_2D and C != Coord::Cartesian) {
-      permute_1d_swap(phi, perm, n);
+    {
+      array_t<short*> scratch { "perm_scratch_tag", n };
+      permute_1d_into(tag, scratch, perm, n);
     }
     if (npld_r() > 0) {
-      permute_2d_swap(pld_r, perm, n, static_cast<npart_t>(npld_r()));
+      const auto         ncols = static_cast<npart_t>(npld_r());
+      array_t<real_t**>  scratch { "perm_scratch_pld_r", n, ncols };
+      permute_2d_into(pld_r, scratch, perm, n, ncols);
     }
     if (npld_i() > 0) {
-      permute_2d_swap(pld_i, perm, n, static_cast<npart_t>(npld_i()));
+      const auto         ncols = static_cast<npart_t>(npld_i());
+      array_t<npart_t**> scratch { "perm_scratch_pld_i", n, ncols };
+      permute_2d_into(pld_i, scratch, perm, n, ncols);
     }
   }
 #endif // TEAM_POLICY_USE_VENDOR_SORT
@@ -583,7 +649,7 @@ namespace ntt {
 #if defined(TEAM_POLICY_USE_VENDOR_SORT)
   #define APPLY_PERM_INSTANTIATE(D, C)                                         \
     template void Particles<D, C>::apply_permutation_to_soa(                   \
-      const prtl_perm_t&);
+      const prtl_perm_t&, npart_t);
 #else
   #define APPLY_PERM_INSTANTIATE(D, C)
 #endif
