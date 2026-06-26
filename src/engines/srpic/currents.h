@@ -66,7 +66,8 @@ namespace ntt {
     void CallDepositKernelTiled(const Particles<M::Dim, M::CoordType>& species,
                                 const M&                    local_metric,
                                 const ndfield_t<M::Dim, 3>& cur,
-                                real_t                      dt) {
+                                real_t                      dt,
+                                int                         team_size_req) {
       static_assert(O <= 11u, "Shape order must be <= 11");
       constexpr unsigned short T = static_cast<unsigned short>(
         TEAM_POLICY_TILE_SIZE);
@@ -86,11 +87,41 @@ namespace ntt {
           dt,     layout,  species.npart()
         };
 
+      const auto scratch = Kokkos::PerTeam(
+        decltype(deposit_kernel)::scratch_bytes());
+
+      // Team (work-group) size. The default (team_size_req == 0) leaves
+      // Kokkos::AUTO, which sizes the team from the backend occupancy
+      // heuristic. A positive `algorithms.deposit.team_policy_team_size`
+      // overrides it, clamped to the scratch/backend-feasible maximum so an
+      // over-large request cannot abort the launch (Kokkos errors when
+      // team_size > team_size_max). No portable subgroup rounding is applied;
+      // pick a multiple of the device subgroup width (printed per arch by
+      // ideal_tile_size.py) for the best occupancy.
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
                                   Kokkos::AUTO);
-      policy.set_scratch_size(
-        0,
-        Kokkos::PerTeam(decltype(deposit_kernel)::scratch_bytes()));
+      policy.set_scratch_size(0, scratch);
+      if (team_size_req > 0) {
+        const int ts_max = policy.team_size_max(deposit_kernel,
+                                                Kokkos::ParallelForTag {});
+        int       ts     = team_size_req;
+        if (ts > ts_max) {
+          raise::Warning(
+            fmt::format("algorithms.deposit.team_policy_team_size = %d exceeds "
+                        "the tiled-deposit maximum %d on this backend; clamping "
+                        "to %d",
+                        team_size_req,
+                        ts_max,
+                        ts_max),
+            HERE);
+          ts = ts_max;
+        }
+        policy = Kokkos::TeamPolicy<>(static_cast<int>(layout.ntiles_total), ts);
+        policy.set_scratch_size(0, scratch);
+        logger::Checkpoint(
+          fmt::format("Tiled deposit: explicit team size %d", ts),
+          HERE);
+      }
       Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
 
       // Particles appended since the last sort (injection / MPI receive on a
@@ -126,6 +157,12 @@ namespace ntt {
       Kokkos::deep_copy(domain.fields.cur, ZERO);
 
 #if defined(TEAM_POLICY)
+      // Optional runtime override for the tiled-deposit team (work-group) size;
+      // 0 (default) keeps Kokkos::AUTO. Clamped to the backend max in the
+      // launcher (see CallDepositKernelTiled).
+      const auto team_size_req = static_cast<int>(
+        engine_params.get<std::size_t>("team_policy_team_size",
+                                       std::optional<std::size_t> { 0u }));
 
       // Tiled deposit. Correctness no longer depends on the SoA being in a
       // "sorted" state at deposit time — the tiled kernel handles a stale
@@ -176,7 +213,8 @@ namespace ntt {
           CallDepositKernelTiled<M, SHAPE_ORDER>(species,
                                                  domain.mesh.metric,
                                                  domain.fields.cur,
-                                                 dt);
+                                                 dt,
+                                                 team_size_req);
         }
       }
 #else

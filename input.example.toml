@@ -301,6 +301,14 @@
     #   @type: bool
     #   @default: true
     enable = ""
+    # team_policy tiled-deposit work-group (team) size
+    #   @type: uint [>= 0]
+    #   @default: 0
+    #   @note: 0 keeps Kokkos::AUTO (backend occupancy heuristic); a positive
+    #          value overrides it, clamped to the backend/scratch maximum at
+    #          launch. Only used in `team_policy=ON` builds. Pick a multiple of
+    #          the device subgroup width for best occupancy (see ideal_tile_size.py)
+    team_policy_team_size = ""
 
     # @inferred:
     # - order
