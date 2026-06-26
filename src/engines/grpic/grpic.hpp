@@ -416,7 +416,8 @@ namespace ntt {
          */
         if (deposit_enabled) {
           timers.start("CurrentDeposit");
-          Kokkos::deep_copy(dom.fields.cur0, ZERO);
+          // `cur0` is zeroed inside grpic::CurrentsDeposit (matching SRPIC),
+          // so no pre-zero is needed here.
           grpic::CurrentsDeposit(dom, this->engineParams());
           timers.stop("CurrentDeposit");
 
