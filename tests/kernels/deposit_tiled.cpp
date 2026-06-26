@@ -162,6 +162,55 @@ namespace {
               << " T_TILE=" << T_TILE << "  max_diff=" << max_diff << '\n';
   }
 
+  // Intrinsic charge-conservation check on a single deposited J field.
+  // Esirkepov/zigzag deposits satisfy the discrete continuity equation, so
+  // the spatial sum of the discrete divergence div.J = dJx/dx + dJy/dy
+  // vanishes whenever the summation region encloses every particle's full
+  // stencil (J == 0 on the region's outer boundary). This is evaluated on
+  // J_tiled ALONE -- it does not compare against the flat reference -- so it
+  // certifies the per-particle escape valve deposits each drifted particle's
+  // stencil as one coherent unit: no cell dropped, duplicated, or split
+  // between SLM scratch and global J. (The run_drift_case order guard keeps
+  // every stencil inside [0, j_ext), so the extreme ghost cells stay zero and
+  // the telescoping boundary flux is genuinely zero rather than clipped.)
+  // Accumulated in double regardless of build precision to keep the
+  // tolerance tight.
+  void check_charge_conservation(const ndfield_t<Dim::_2D, 3>& J,
+                                 unsigned short                O,
+                                 unsigned short                T_TILE,
+                                 const char*                   label) {
+    auto h = Kokkos::create_mirror_view(J);
+    Kokkos::deep_copy(h, J);
+
+    double sum_div = 0.0; // Sum over the field of div.J (jx1 -> dx, jx2 -> dy).
+    double abs_tot = 0.0; // Total |J|, sets the relative tolerance scale.
+    for (ncells_t i = 1; i < h.extent(0); ++i) {
+      for (ncells_t j = 1; j < h.extent(1); ++j) {
+        sum_div += (static_cast<double>(h(i, j, 0)) -
+                    static_cast<double>(h(i - 1, j, 0))) +
+                   (static_cast<double>(h(i, j, 1)) -
+                    static_cast<double>(h(i, j - 1, 1)));
+      }
+    }
+    for (ncells_t i = 0; i < h.extent(0); ++i) {
+      for (ncells_t j = 0; j < h.extent(1); ++j) {
+        abs_tot += std::fabs(static_cast<double>(h(i, j, 0))) +
+                   std::fabs(static_cast<double>(h(i, j, 1)));
+      }
+    }
+    const double tol = 1.0e-5 * (abs_tot > 1.0 ? abs_tot : 1.0);
+    if (std::fabs(sum_div) > tol) {
+      std::cerr << "deposit_tiled[" << label
+                << "] CHARGE NON-CONSERVED for O=" << O << " T_TILE=" << T_TILE
+                << " : sum(div.J)=" << sum_div << " tol=" << tol
+                << " (abs_tot=" << abs_tot << ")\n";
+      throw std::logic_error(
+        "DepositCurrentsTiled_kernel charge non-conservation");
+    }
+    std::cerr << "deposit_tiled[" << label << "] charge-conserved O=" << O
+              << " T_TILE=" << T_TILE << "  sum(div.J)=" << sum_div << '\n';
+  }
+
   template <unsigned short O, unsigned short T_TILE>
   void run_one_case() {
     using metric_t = metric::Minkowski<Dim::_2D>;
@@ -484,6 +533,10 @@ namespace {
     }
 
     compare_J_fields(J_flat, J_tiled, O, T_TILE, "drift");
+    // Self-contained conservation check on the escape-valve output: the
+    // drifted particles all take the per-particle global-J path, so this
+    // certifies that path is charge-conserving without leaning on J_flat.
+    check_charge_conservation(J_tiled, O, T_TILE, "drift");
   }
 
   template <unsigned short T_TILE>
