@@ -136,10 +136,10 @@ namespace arch {
    * @brief Updates particle position and fields in the moving window.
 
    */
-  template <SimEngine::type S, CartesianMetricClass M, in o>
-  Inline void MoveWindow(Domain<S, M>&     domain,
-                         Metadomain<S, M>& metadomain,
-                         int               window_shift) {
+  template <CartesianMetricClass M, in o>
+  inline void MoveWindow(Domain<SimEngine::SRPIC, M>&     domain,
+                         Metadomain<SimEngine::SRPIC, M>& metadomain,
+                         int                              window_shift) {
 
     /*
       move particles in the window back by the window size

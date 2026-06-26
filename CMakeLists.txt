@@ -58,6 +58,24 @@ set(gpu_aware_mpi
     ${default_gpu_aware_mpi}
     CACHE BOOL "Enable GPU-aware MPI")
 
+set(team_policy
+  ${default_team_policy}
+  CACHE BOOL "Enable team_policy tile-blocked deposit/pusher kernels")
+set(team_policy_tile_size
+  ${default_team_policy_tile_size}
+  CACHE STRING "team_policy tile edge length in cells")
+set(team_policy_tile_sizes
+  "4;6;8;10;12;14;16"
+  CACHE STRING "team_policy tile-size choices")
+set(team_policy_drift
+  ${default_team_policy_drift}
+  CACHE STRING
+  "team_policy tiled-deposit scratch halo drift in cells (max cells a particle may move between two sorts). Sizes the deposit scratch halo only; the sort cadence is set at runtime via spatial_sorting_interval. Default 1.")
+set(vendor_sort
+  ${default_vendor_sort}
+  CACHE BOOL
+  "Use the vendor sort_by_key (oneDPL/Thrust/rocThrust) for the team_policy spatial sort when available. OFF forces the Kokkos::BinSort fallback, which sorts each SoA member in place (lower peak memory, no maxnpart gather buffer) at the cost of sort speed.")
+
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -136,6 +154,87 @@ else()
   set(DEVICE_ENABLED OFF)
 endif()
 
+# ------------------------------ team_policy wiring ------------------------ #
+if(${team_policy})
+  list(FIND team_policy_tile_sizes "${team_policy_tile_size}" _tps_idx)
+  if(_tps_idx EQUAL -1)
+    message(FATAL_ERROR
+      "${Red}team_policy_tile_size must be one of ${team_policy_tile_sizes}, "
+      "got '${team_policy_tile_size}'${ColorReset}")
+  endif()
+  add_compile_options("-D TEAM_POLICY")
+  add_compile_options("-D TEAM_POLICY_TILE_SIZE=${team_policy_tile_size}")
+
+  # Compile-time tiled-deposit scratch halo drift. Sizes the halo so a
+  # particle that drifts up to DRIFT cells between two sorts still deposits
+  # inside its tile scratch; particles drifting further take the
+  # per-particle global-J escape valve (correct, only slower). This is
+  # independent of the sort cadence, which is set at runtime via
+  # `spatial_sorting_interval`. Defaults to 1 (the sorted-every-step case).
+  add_compile_options("-D TEAM_POLICY_DRIFT=${team_policy_drift}")
+
+  # Vendor sort: oneDPL on SYCL, Thrust on CUDA, rocThrust/rocprim on HIP.
+  # When `vendor_sort` is ON (default) the available library is detected
+  # and used; the spatial sort then builds a single permutation that
+  # gathers all SoA members. When `vendor_sort` is OFF, or no library is
+  # found, the code falls back to Kokkos::BinSort, which sorts each member
+  # in place -- lower peak memory and no maxnpart gather buffer, at the
+  # cost of sort speed (negligible when sorting is a small fraction of the
+  # step). The `vendor_sort` knob lets you force the BinSort fallback even
+  # when a vendor library is present.
+  if(${vendor_sort})
+    if("${Kokkos_DEVICES}" MATCHES "SYCL")
+      find_package(oneDPL QUIET)
+      if(oneDPL_FOUND)
+        message(STATUS "team_policy: oneDPL found, enabling SYCL sort_by_key")
+        add_compile_options("-D ONEDPL_ENABLED")
+        set(DEPENDENCIES ${DEPENDENCIES} oneDPL)
+      else()
+        message(STATUS "team_policy: oneDPL not found; using BinSort fallback "
+                       "for SYCL sort_by_key")
+      endif()
+    endif()
+
+    if("${Kokkos_DEVICES}" MATCHES "CUDA")
+      find_package(Thrust QUIET)
+      if(Thrust_FOUND)
+        message(STATUS "team_policy: Thrust enabled for CUDA sort_by_key")
+        add_compile_options("-D THRUST_ENABLED")
+      else()
+        message(STATUS "team_policy: Thrust not found; using BinSort fallback "
+                       "for CUDA sort_by_key")
+      endif()
+    endif()
+
+    if("${Kokkos_DEVICES}" MATCHES "HIP")
+      # rocThrust ships with ROCm. The HIP sort_by_key path uses rocprim's
+      # bounded-bit radix sort directly (rocprim is rocThrust's own
+      # dependency, so its headers come in transitively; we find it
+      # explicitly to keep the include path robust). This builds a single
+      # permutation that gathers all SoA members, instead of the legacy
+      # per-member Kokkos::BinSort path which allocates a fresh
+      # `sorted_values` buffer for every member every step (the dominant
+      # source of allocator churn / fragmentation on ROCm).
+      find_package(rocthrust QUIET)
+      if(rocthrust_FOUND)
+        message(STATUS "team_policy: rocThrust enabled for HIP sort_by_key")
+        add_compile_options("-D ROCTHRUST_ENABLED")
+        set(DEPENDENCIES ${DEPENDENCIES} roc::rocthrust)
+        find_package(rocprim QUIET)
+        if(rocprim_FOUND)
+          set(DEPENDENCIES ${DEPENDENCIES} roc::rocprim)
+        endif()
+      else()
+        message(STATUS "team_policy: rocThrust not found; using BinSort "
+                       "fallback for HIP sort_by_key")
+      endif()
+    endif()
+  else()
+    message(STATUS "team_policy: vendor_sort=OFF; forcing Kokkos::BinSort "
+                   "fallback for spatial sort_by_key")
+  endif()
+endif()
+
 # MPI
 if(${mpi})
   find_or_fetch_dependency(MPI FALSE REQUIRED)
@@ -145,6 +244,62 @@ if(${mpi})
   if(${DEVICE_ENABLED})
     if(${gpu_aware_mpi})
       add_compile_options("-D GPU_AWARE_MPI")
+
+      # On Cray systems (e.g. Frontier) GPU-aware Cray MPICH can only
+      # handle device pointers if the GPU Transport Layer (GTL) library
+      # is linked. The Cray compiler wrappers (cc/CC) inject this
+      # automatically, but we build with hipcc/nvcc directly, so
+      # find_package(MPI) only finds base libmpi and the GTL is left
+      # out -> MPI_Sendrecv on a device pointer fails with
+      # "OFI ... Bad address". Add it explicitly here.
+      #
+      # Cray PE exports PE_MPICH_GTL_DIR_<accel> / PE_MPICH_GTL_LIBS_<accel>
+      # (e.g. amd_gfx90a -> -lmpi_gtl_hsa). Their absence means this is
+      # not a Cray MPICH build, in which case nothing extra is needed.
+      if("${Kokkos_DEVICES}" MATCHES "HIP")
+        set(_gtl_accels amd_gfx942 amd_gfx940 amd_gfx90a amd_gfx908 amd_gfx906)
+      elseif("${Kokkos_DEVICES}" MATCHES "CUDA")
+        set(_gtl_accels nvidia90 nvidia80 nvidia70)
+      elseif("${Kokkos_DEVICES}" MATCHES "SYCL")
+        set(_gtl_accels ponteVecchio)
+      else()
+        set(_gtl_accels "")
+      endif()
+
+      set(_gtl_dir "")
+      set(_gtl_libflag "")
+      foreach(_accel ${_gtl_accels})
+        if((NOT _gtl_dir) AND (DEFINED ENV{PE_MPICH_GTL_DIR_${_accel}}))
+          # strip the leading "-L" from the Cray-provided value
+          string(REGEX REPLACE "^-L" ""
+                 _gtl_dir "$ENV{PE_MPICH_GTL_DIR_${_accel}}")
+          string(REGEX REPLACE "^-l" ""
+                 _gtl_libflag "$ENV{PE_MPICH_GTL_LIBS_${_accel}}")
+        endif()
+      endforeach()
+
+      if(_gtl_dir AND _gtl_libflag)
+        find_library(MPI_GTL_LIBRARY
+          NAMES ${_gtl_libflag}
+          HINTS "${_gtl_dir}"
+          NO_DEFAULT_PATH)
+        if(MPI_GTL_LIBRARY)
+          message(STATUS
+            "GPU-aware MPI: linking Cray GTL library ${MPI_GTL_LIBRARY}")
+          set(DEPENDENCIES ${DEPENDENCIES} ${MPI_GTL_LIBRARY})
+        else()
+          message(FATAL_ERROR
+            "${Red}gpu_aware_mpi=ON: Cray MPICH detected but the GTL "
+            "library 'lib${_gtl_libflag}' was not found in '${_gtl_dir}'. "
+            "GPU-aware MPI will crash at runtime without it. Make sure the "
+            "craype-accel module is loaded, or build with gpu_aware_mpi=OFF."
+            "${ColorReset}")
+        endif()
+      else()
+        message(STATUS
+          "GPU-aware MPI: no Cray GTL environment found; assuming the MPI "
+          "implementation is GPU-aware without an extra transport library.")
+      endif()
     endif()
   else()
     set(gpu_aware_mpi

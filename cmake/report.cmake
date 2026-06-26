@@ -123,6 +123,44 @@ if(${mpi} AND ${DEVICE_ENABLED})
     46)
 endif()
 printchoices(
+  "Team Policy"
+  "team_policy"
+  "${ON_OFF_VALUES}"
+  ${team_policy}
+  OFF
+  "${Green}"
+  TEAM_POLICY_REPORT
+  46)
+if(${team_policy})
+  printchoices(
+    "Team Tile Size"
+    "team_policy_tile_size"
+    "${team_policy_tile_sizes}"
+    ${team_policy_tile_size}
+    ${default_team_policy_tile_size}
+    "${Blue}"
+    TEAM_POLICY_TILE_SIZE_REPORT
+    46)
+  printchoices(
+    "Team Deposit Drift"
+    "team_policy_drift"
+    "${team_policy_drift}"
+    ${team_policy_drift}
+    1
+    "${Blue}"
+    TEAM_POLICY_DRIFT_REPORT
+    46)
+  printchoices(
+    "Vendor sort"
+    "vendor_sort"
+    "${ON_OFF_VALUES}"
+    ${vendor_sort}
+    ON
+    "${Green}"
+    VENDOR_SORT_REPORT
+    46)
+endif()
+printchoices(
   "Debug mode"
   "DEBUG"
   "${ON_OFF_VALUES}"
@@ -195,6 +233,13 @@ string(
 
 if(${mpi} AND ${DEVICE_ENABLED})
   string(APPEND REPORT_TEXT "  " ${GPU_AWARE_MPI_REPORT} "\n")
+endif()
+
+string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_REPORT} "\n")
+if(${team_policy})
+  string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_TILE_SIZE_REPORT} "\n")
+  string(APPEND REPORT_TEXT "  " ${TEAM_POLICY_DRIFT_REPORT} "\n")
+  string(APPEND REPORT_TEXT "  " ${VENDOR_SORT_REPORT} "\n")
 endif()
 
 string(
