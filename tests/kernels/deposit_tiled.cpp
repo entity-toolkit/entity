@@ -339,6 +339,22 @@ namespace {
   // boundary.
   template <unsigned short O, unsigned short T_TILE>
   void run_drift_case() {
+    // This case deposits boundary-adjacent particles (cells touching the
+    // ghost stripe), so an order-O stencil must fit inside the field's
+    // N_GHOSTS ghost layers. N_GHOSTS is a compile-time constant fixed by
+    // the build's SHAPE_ORDER ((SHAPE_ORDER+1)/2 + 1); a build whose ghost
+    // width is smaller than order O requires would deposit outside the
+    // field -- silent on GPU (no Kokkos View bounds guard; the overshoot
+    // cells carry zero shape-weight so results still match) but heap
+    // corruption on a host/SERIAL build. Skip those orders here; build at
+    // the matching SHAPE_ORDER to drift-test higher orders. The equivalence
+    // ("X-1") cases above stay interior, so they exercise all orders.
+    if constexpr ((O + 1u) / 2u + 1u > N_GHOSTS) {
+      std::cerr << "deposit_tiled[drift] SKIP O=" << O << " T_TILE=" << T_TILE
+                << " (needs N_GHOSTS>=" << ((O + 1u) / 2u + 1u)
+                << ", build has " << N_GHOSTS << ")\n";
+      return;
+    }
     using metric_t = metric::Minkowski<Dim::_2D>;
     constexpr unsigned short nx1 = 50u, nx2 = 50u;
     metric_t metric { { nx1, nx2 }, { { 0.0, 55.0 }, { 0.0, 55.0 } }, {} };
