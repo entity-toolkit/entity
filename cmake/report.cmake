@@ -103,6 +103,15 @@ printchoices(
   OUTPUT_REPORT
   46)
 printchoices(
+  "Ascent"
+  "ascent"
+  "${ON_OFF_VALUES}"
+  ${ascent}
+  ${default_ascent}
+  "${Green}"
+  ASCENT_REPORT
+  46)
+printchoices(
   "MPI"
   "mpi"
   "${ON_OFF_VALUES}"
@@ -213,6 +222,9 @@ string(
   "\n"
   "  "
   ${OUTPUT_REPORT}
+  "\n"
+  "  "
+  ${ASCENT_REPORT}
   "\n")
 
 string(REPLACE ";" "+" Kokkos_ARCH "${Kokkos_ARCH}")

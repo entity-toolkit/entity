@@ -50,6 +50,9 @@ set(pgen
 set(output
     ${default_output}
     CACHE BOOL "Enable output")
+set(ascent
+    ${default_ascent}
+    CACHE BOOL "Enable Ascent in situ visualization")
 set(mpi
     ${default_mpi}
     CACHE BOOL "Use MPI")
@@ -316,6 +319,22 @@ if(${output})
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx_mpi)
   else()
     set(DEPENDENCIES ${DEPENDENCIES} adios2::cxx)
+  endif()
+endif()
+
+# Ascent (in situ visualization)
+if(${ascent})
+  if(NOT ${output})
+    message(
+      FATAL_ERROR
+      "${Red}Ascent requires `output=ON` to be enabled.${ColorReset}")
+  endif()
+  find_package(Ascent REQUIRED)
+  add_compile_options("-D ASCENT_ENABLED")
+  if(${mpi})
+    set(DEPENDENCIES ${DEPENDENCIES} ascent::ascent_mpi)
+  else()
+    set(DEPENDENCIES ${DEPENDENCIES} ascent::ascent)
   endif()
 endif()
 

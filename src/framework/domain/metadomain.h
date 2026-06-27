@@ -45,6 +45,10 @@
   #include <adios2/cxx/KokkosView.h>
 #endif // OUTPUT_ENABLED
 
+#if defined(ASCENT_ENABLED)
+  #include "output/ascent_writer.h"
+#endif // ASCENT_ENABLED
+
 #include <functional>
 #include <map>
 #include <numeric>
@@ -163,6 +167,13 @@ namespace ntt {
                                         timestep_t,
                                         simtime_t,
                                         const Domain<S, M>&)>& = nullptr) -> bool;
+#if defined(ASCENT_ENABLED)
+    /**
+     * @brief Trigger the Ascent pipeline if there is data pending from
+     * the most recent Write() call. Returns true if a frame was rendered.
+     */
+    auto RenderAscent(timestep_t, simtime_t) -> bool;
+#endif
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -305,6 +316,10 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
+#endif
+
+#if defined(ASCENT_ENABLED)
+    out::AscentWriter g_ascent_writer;
 #endif
 
 #if defined(MPI_ENABLED)

@@ -117,6 +117,65 @@ namespace ntt {
                             "output." + std::string(type) + ".interval_time"));
     }
     g_writer.writeAttrs(params);
+
+#if defined(ASCENT_ENABLED)
+    if (params.template get<bool>("output.ascent.enable")) {
+      const auto ascent_fields = params.template get<std::vector<std::string>>(
+        "output.ascent.fields");
+      raise::ErrorIf(M::CoordType != Coord::Cartesian,
+                     "Ascent output is currently restricted to cartesian grids",
+                     HERE);
+      raise::ErrorIf(ascent_fields.empty(),
+                     "output.ascent.fields must list at least one field",
+                     HERE);
+      g_ascent_writer.init(params.template get<std::string>("simulation.name"),
+                           params.template get<std::string>(
+                             "output.ascent.actions_file"),
+                           ascent_fields,
+                           params.template get<timestep_t>(
+                             "output.ascent.interval"),
+                           params.template get<simtime_t>(
+                             "output.ascent.interval_time"),
+                           params.template get<bool>(
+                             "output.ascent.vector_aliases"),
+                           params.template get<real_t>(
+                             "output.ascent.v_drift"),
+                           params.template get<real_t>(
+                             "output.ascent.v_rot"));
+      const auto               loc_corner = local_domain->offset_ncells();
+      const auto               loc_shape  = local_domain->mesh.n_active();
+      std::vector<std::size_t> corner(loc_corner.begin(), loc_corner.end());
+      std::vector<std::size_t> full_shape(loc_shape.begin(), loc_shape.end());
+
+      // Apply Ascent-specific downsampling. Stride is aligned to the
+      // global grid (using each rank's `offset_ncells`) so downsampled
+      // cells from neighboring ranks line up at domain boundaries.
+      const auto a_dwn = params.template get<std::vector<unsigned int>>(
+        "output.ascent.downsample");
+      std::vector<std::size_t> downsample(static_cast<std::size_t>(M::Dim), 1u);
+      std::vector<std::size_t> first_cell(static_cast<std::size_t>(M::Dim), 0u);
+      std::vector<std::size_t> shape = full_shape;
+      for (std::size_t d = 0; d < static_cast<std::size_t>(M::Dim); ++d) {
+        const std::size_t s = (d < a_dwn.size())
+                                ? static_cast<std::size_t>(a_dwn[d])
+                                : 1u;
+        downsample[d] = s;
+        if (s <= 1u) {
+          continue;
+        }
+        const std::size_t l_offset = corner[d];
+        const std::size_t n        = full_shape[d];
+        const std::size_t first    = (s - (l_offset % s)) % s;
+        raise::ErrorIf(first >= n,
+                       "output.ascent.downsample factor leaves a rank with "
+                       "no cells; reduce the factor or the decomposition",
+                       HERE);
+        first_cell[d] = first;
+        shape[d]      = (n - first + s - 1) / s;
+      }
+      g_ascent_writer.defineMesh(M::Dim, corner, shape, first_cell, downsample);
+    }
+#endif
   }
 
   template <SimEngine::type S, MetricClass M, FldsID::type F>
@@ -382,8 +441,15 @@ namespace ntt {
                                g_writer.shouldWrite("spectra",
                                                     finished_step,
                                                     finished_time);
+#if defined(ASCENT_ENABLED)
+    const auto render_ascent = g_ascent_writer.shouldRender(finished_step,
+                                                            finished_time);
+#else
+    const auto render_ascent = false;
+#endif
+    const auto write_fields_any = write_fields or render_ascent;
     const auto extension = params.template get<std::string>("output.format");
-    if (not(write_fields or write_particles or write_spectra) and
+    if (not(write_fields_any or write_particles or write_spectra) and
         extension != "disabled") {
       return false;
     }
@@ -392,8 +458,10 @@ namespace ntt {
                    "local_domain is a placeholder",
                    HERE);
     logger::Checkpoint("Writing output", HERE);
-    if (write_fields) {
-      g_writer.beginWriting(WriteMode::Fields, current_step, current_time);
+    if (write_fields_any) {
+      if (write_fields) {
+        g_writer.beginWriting(WriteMode::Fields, current_step, current_time);
+      }
       const auto incl_ghosts = params.template get<bool>("output.debug.ghosts");
       const auto dwn         = params.template get<std::vector<unsigned int>>(
         "output.fields.downsampling");
@@ -460,11 +528,51 @@ namespace ntt {
               xe(offset + i_dwn + 1) = x_Ph[dim];
             }
           });
-        g_writer.writeMesh(
-          dim,
-          xc,
-          xe,
-          { off_ncells_with_ghosts[dim], loc_shape_with_ghosts[dim] });
+        if (write_fields) {
+          g_writer.writeMesh(
+            dim,
+            xc,
+            xe,
+            { off_ncells_with_ghosts[dim], loc_shape_with_ghosts[dim] });
+        }
+
+#if defined(ASCENT_ENABLED)
+        // Ascent edge coordinates: must match the per-axis downsampling
+        // applied in publishField (defineMesh stored the same factors).
+        if (render_ascent && g_ascent_writer.initialized()) {
+          const auto a_dwn = params.template get<std::vector<unsigned int>>(
+            "output.ascent.downsample");
+          const std::size_t s = (dim < a_dwn.size())
+                                  ? static_cast<std::size_t>(a_dwn[dim])
+                                  : 1u;
+          const std::size_t first = (s <= 1u) ? 0u
+                                              : ((s - (l_offset % s)) % s);
+          const std::size_t n_dwn = (l_size > first)
+                                      ? (l_size - first + s - 1) / s
+                                      : 0u;
+          const std::size_t      nedges = n_dwn + 1;
+          const array_t<real_t*> xe_full { "Xe_ascent", nedges };
+          const auto&            metric_a = local_domain->mesh.metric;
+          // i in [0, n_dwn) maps to local cell-edge index `first + i*s`;
+          // the final edge (i == n_dwn) is clamped to the rank's right
+          // boundary (`l_size`) so neighboring ranks share an edge at the
+          // domain interface even when (l_size - first) % s != 0.
+          Kokkos::parallel_for(
+            "GenerateMeshAscent",
+            nedges,
+            Lambda(cellidx_t i) {
+              const std::size_t idx = (i == n_dwn) ? l_size
+                                                   : (first + i * s);
+              const auto      i_   = static_cast<real_t>(idx);
+              coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
+              x_Cd[dim] = i_;
+              metric_a.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+              xe_full(i) = x_Ph[dim];
+            });
+          g_ascent_writer.setMeshCoords(static_cast<unsigned short>(dim),
+                                        xe_full);
+        }
+#endif
       }
       const auto output_asis = params.template get<bool>("output.debug.as_is");
       // !TODO: this can probably be optimized to dump things at once
@@ -778,10 +886,40 @@ namespace ntt {
         } else {
           raise::Error("Wrong # of components requested for output", HERE);
         }
-        g_writer.writeField<M::Dim, 6>(names, local_domain->fields.bckp, addresses);
+        if (write_fields) {
+          g_writer.writeField<M::Dim, 6>(names,
+                                         local_domain->fields.bckp,
+                                         addresses);
+        }
+
+#if defined(ASCENT_ENABLED)
+        if (render_ascent && g_ascent_writer.initialized()) {
+          const auto& asked = g_ascent_writer.fields();
+          for (auto k = 0u; k < names.size(); ++k) {
+            // names[k] carries the leading "f" prefix from out::OutputField;
+            // the user-facing name in toml/Ascent is the same name without it.
+            const auto short_name = (names[k].size() > 1u and
+                                     names[k].front() == 'f')
+                                      ? names[k].substr(1)
+                                      : names[k];
+            for (const auto& want : asked) {
+              if (short_name == want) {
+                g_ascent_writer.publishField<M::Dim, 6>(names[k],
+                                                        local_domain->fields.bckp,
+                                                        addresses[k]);
+              }
+            }
+          }
+        }
+#endif
       }
-      g_writer.endWriting(WriteMode::Fields);
-    } // end shouldWrite("fields", step, time)
+      if (write_fields) {
+        g_writer.endWriting(WriteMode::Fields);
+      }
+      // The actual `g_ascent_writer.render()` (publish + execute) is fired
+      // separately from `Metadomain::RenderAscent` so the engine loop can
+      // surround it with its own dedicated timer.
+    } // end write_fields_any
 
     if (write_particles) {
       g_writer.beginWriting(WriteMode::Particles, current_step, current_time);
@@ -848,6 +986,16 @@ namespace ntt {
     return true;
   }
 
+#if defined(ASCENT_ENABLED)
+  template <SimEngine::type S, MetricClass M>
+  auto Metadomain<S, M>::RenderAscent(timestep_t step, simtime_t time) -> bool {
+    if (not g_ascent_writer.initialized() or not g_ascent_writer.hasPending()) {
+      return false;
+    }
+    return g_ascent_writer.render(step, time);
+  }
+#endif
+
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_OUTPUT(S, M, D)                                             \
   template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,                \
@@ -868,6 +1016,14 @@ namespace ntt {
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT)
 
 #undef METADOMAIN_OUTPUT
+
+#if defined(ASCENT_ENABLED)
+  #define METADOMAIN_RENDER_ASCENT(S, M, D)                                    \
+    template auto Metadomain<S, M<D>>::RenderAscent(timestep_t, simtime_t)     \
+      -> bool;
+  NTT_FOREACH_SPECIALIZATION(METADOMAIN_RENDER_ASCENT)
+  #undef METADOMAIN_RENDER_ASCENT
+#endif
 
 #if defined(MPI_ENABLED)
   #define COMMVECTORPOTENTIAL(S, M, D)                                         \

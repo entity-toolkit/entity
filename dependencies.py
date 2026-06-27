@@ -37,6 +37,13 @@ PAIR_DIM = 8
 
 KOKKOS_BACKENDS = ["cpu", "cuda", "hip", "sycl"]
 ADIOS2_MPI_MODES = ["non-mpi", "mpi"]
+ASCENT_BACKENDS = ["cpu", "cuda", "hip", "sycl"]
+ASCENT_MODES = ["build", "system-module"]
+ASCENT_MPI_MODES = ["non-mpi", "mpi"]
+# default points at the ALCF/Aurora pre-installed Ascent (used in system-module mode)
+ASCENT_DEFAULT_SYSTEM_DIR = (
+    "/soft/visualization/ascent/release/v0.9.5/ascent-checkout/lib/cmake/ascent"
+)
 
 MESSAGE: str = ""
 
@@ -49,12 +56,18 @@ class Settings:
     install_prefix: str = os.path.join(os.path.expanduser("~"), ".entity")
 
     apps: dict = field(
-        default_factory=lambda: {"Kokkos": False, "adios2": False, "nt2py": False}
+        default_factory=lambda: {
+            "Kokkos": False,
+            "adios2": False,
+            "Ascent": False,
+            "nt2py": False,
+        }
     )
 
     # versions
     kokkos_version: str = "5.0.1"
     adios2_version: str = "2.11.0"
+    ascent_version: str = "v0.9.5"
 
     # options
     kokkos_backend: str = "cpu"
@@ -62,6 +75,12 @@ class Settings:
     extra_kokkos_flags: List[str] = field(default_factory=list)
     adios2_mpi: str = "non-mpi"
     extra_adios2_flags: List[str] = field(default_factory=list)
+    # Ascent: either build the full third-party stack ("build") or point at a
+    # pre-installed system module ("system-module", e.g. Aurora).
+    ascent_backend: str = "cpu"
+    ascent_mode: str = "build"
+    ascent_mpi: str = "mpi"
+    ascent_system_dir: str = ASCENT_DEFAULT_SYSTEM_DIR
 
     module_loads: List[str] = field(default_factory=list)
 
@@ -75,10 +94,17 @@ class Settings:
         versions = data.get("versions", {})
         self.kokkos_version = versions.get("Kokkos", self.kokkos_version)
         self.adios2_version = versions.get("adios2", self.adios2_version)
+        self.ascent_version = versions.get("Ascent", self.ascent_version)
         options = data.get("options", {})
         self.kokkos_backend = options.get("kokkos_backend", self.kokkos_backend)
         self.kokkos_arch = options.get("kokkos_arch", self.kokkos_arch)
         self.adios2_mpi = options.get("adios2_mpi", self.adios2_mpi)
+        self.ascent_backend = options.get("ascent_backend", self.ascent_backend)
+        self.ascent_mode = options.get("ascent_mode", self.ascent_mode)
+        self.ascent_mpi = options.get("ascent_mpi", self.ascent_mpi)
+        self.ascent_system_dir = options.get(
+            "ascent_system_dir", self.ascent_system_dir
+        )
         self.module_loads = data.get("module_loads", self.module_loads)
 
     def apps_summary(self) -> str:
@@ -96,11 +122,16 @@ class Settings:
                 "versions": {
                     "Kokkos": self.kokkos_version,
                     "adios2": self.adios2_version,
+                    "Ascent": self.ascent_version,
                 },
                 "options": {
                     "kokkos_backend": self.kokkos_backend,
                     "kokkos_arch": self.kokkos_arch,
                     "adios2_mpi": self.adios2_mpi,
+                    "ascent_backend": self.ascent_backend,
+                    "ascent_mode": self.ascent_mode,
+                    "ascent_mpi": self.ascent_mpi,
+                    "ascent_system_dir": self.ascent_system_dir,
                 },
                 "module_loads": self.module_loads,
             },
@@ -269,6 +300,146 @@ setenv ADIOS2_USE_MPI {with_mpi}"""
         return ("""# skipping Adios2 install""", "")
 
 
+def InstallAscentScript(settings: Settings) -> tuple[str, str]:
+    if not settings.apps.get("Ascent", False):
+        return ("""# skipping Ascent install""", "")
+
+    prefix = settings.install_prefix
+    version = settings.ascent_version
+    backend = settings.ascent_backend
+    mode = settings.ascent_mode
+    mpi_mode = settings.ascent_mpi
+    modules_in_module = "\n".join(
+        [f"module load {module}" for module in settings.module_loads]
+    )
+
+    # ----- system-module mode: don't build, point at a pre-installed Ascent -----
+    if mode == "system-module":
+        ascent_dir = settings.ascent_system_dir.strip()
+        script = f"""
+        # Ascent: using a pre-installed system module -- nothing to build.
+        # entity will be pointed at:
+        #   Ascent_DIR={ascent_dir}
+        # Make sure the matching runtime libraries are on LD_LIBRARY_PATH before
+        # configuring/running entity, e.g. on Aurora:
+        #   module use /soft/modulefiles && module load ascent
+        echo "Ascent: using system install at {ascent_dir}"
+        """
+
+        modfile = f"""
+        #%Module1.0######################################################################
+        ##
+        ## Ascent @ system-module modulefile
+        ##
+        #################################################################################
+        proc ModulesHelp {{ }} {{
+            puts stderr \"\\tAscent @ system install\\n\"
+        }}
+
+        module-whatis      \"Sets up Ascent (system install)\"
+
+        conflict           ascent
+        {modules_in_module}
+
+        setenv             Ascent_DIR        {ascent_dir}
+        prepend-path       CMAKE_PREFIX_PATH {ascent_dir}"""
+
+        return (unindent(script), unindent(modfile))
+
+    # ----- build mode: build the full TPL stack via Ascent's build_ascent.sh -----
+    modules = "\n".join(
+        [f"module load {module} && \\" for module in settings.module_loads]
+    )
+    src_path = os.path.join(prefix, "src", "ascent")
+    install_path = os.path.join(prefix, "ascent", version, backend)
+    if os.path.exists(install_path) and not settings.overwrite:
+        raise FileExistsError(
+            f"Ascent install path {install_path} already exists and overwrite is disabled"
+        )
+
+    # build_ascent.sh installs everything under `<prefix>/install/`, with the
+    # Ascent install dir named `ascent-checkout` when the script is run from
+    # inside an Ascent source checkout (which is what we do below by cloning the
+    # repo at the requested tag and invoking its *bundled* script). TPL install
+    # dirs are version-stamped (e.g. conduit-v0.9.5), so the modulefile globs
+    # them onto LD_LIBRARY_PATH rather than hard-coding the names.
+    install_dir = os.path.join(install_path, "install")
+    ascent_dir = os.path.join(
+        install_dir, "ascent-checkout", "lib", "cmake", "ascent"
+    )
+
+    enable_mpi = "ON" if mpi_mode == "mpi" else "OFF"
+    backend_flag = {
+        "cpu": "enable_openmp=ON",
+        "cuda": "enable_cuda=ON",
+        "hip": "enable_hip=ON",
+        "sycl": "enable_sycl=ON",
+    }[backend]
+    # compiler hints for backends where the default gcc/g++ is wrong; edit as needed
+    compiler_hint = {
+        "cpu": "",
+        "cuda": "",
+        "hip": "CC=hipcc CXX=hipcc \\\n  ",
+        "sycl": "CC=icx CXX=icpx \\\n  ",
+    }[backend]
+
+    # We clone the repo at `version` and run its *own* build_ascent.sh so that
+    # the exact tagged Ascent source is built (the standalone script otherwise
+    # defaults to the `develop` branch regardless of where it was fetched from).
+    script = f"""
+# Ascent installation (full third-party stack via build_ascent.sh)
+# build_ascent.sh downloads & builds zlib, conduit, vtk-m, camp, raja, umpire
+# and Ascent itself. Review/adjust the env vars below before running:
+#   - for CUDA set CUDA_ARCH (e.g. CUDA_ARCH=80)
+#   - for HIP  set ROCM_ARCH (e.g. ROCM_ARCH=gfx90a) and ROCM_PATH
+#   - set CC/CXX to your MPI/GPU compiler wrappers as appropriate
+# NOTE: the SYCL/Intel-GPU path is the least mature; on Aurora prefer the
+#       'system-module' mode instead of building from scratch.
+{modules}
+rm -rf {src_path} {install_path} && \\
+git clone --recursive https://github.com/Alpine-DAV/ascent.git {src_path} && \\
+cd {src_path} && \\
+git checkout {version} && \\
+git submodule update --init --recursive && \\
+mkdir -p {install_path} && \\
+env \\
+  prefix={install_path} \\
+  build_jobs=$(nproc) \\
+  enable_mpi={enable_mpi} \\
+  enable_fortran=OFF \\
+  enable_python=OFF \\
+  enable_tests=OFF \\
+  {backend_flag} \\
+  {compiler_hint}bash {src_path}/scripts/build_ascent/build_ascent.sh
+# After a successful build, Ascent_DIR will be:
+#   {ascent_dir}"""
+
+    modfile = f"""
+#%Module1.0######################################################################
+##
+## Ascent @ {backend} modulefile
+##
+#################################################################################
+proc ModulesHelp {{ }} {{
+    puts stderr \"\\tAscent @ {backend}\\n\"
+}}
+
+module-whatis      \"Sets up Ascent @ {backend}\"
+
+conflict           ascent
+{modules_in_module}
+
+setenv             Ascent_DIR        {ascent_dir}
+prepend-path       CMAKE_PREFIX_PATH {ascent_dir}
+
+# third-party runtime libraries (TPL dir names are version-stamped, so glob them)
+foreach d [glob -nocomplain {install_dir}/*/lib {install_dir}/*/lib64] {{
+    prepend-path LD_LIBRARY_PATH $d
+}}"""
+
+    return (unindent(script), unindent(modfile))
+
+
 def InstallNt2pyScript(settings: Settings) -> str:
     if settings.apps.get("nt2py", False):
         prefix = settings.install_prefix
@@ -326,7 +497,14 @@ PRESETS = {
         ]
     },
     "frontier": {"module_loads": []},
-    "aurora": {"module_loads": []},
+    "aurora": {
+        "module_loads": [],
+        "kokkos_backend": "sycl",
+        "ascent": True,
+        "ascent_mode": "system-module",
+        "ascent_backend": "sycl",
+        "ascent_system_dir": ASCENT_DEFAULT_SYSTEM_DIR,
+    },
 }
 
 
@@ -336,6 +514,7 @@ def apply_preset(s: Settings, name: str) -> None:
     cluster_preset = PRESETS.get(name, {})
     s.apps["Kokkos"] = True
     s.apps["adios2"] = True
+    s.apps["Ascent"] = cluster_preset.get("ascent", False)
     s.apps["nt2py"] = False
     s.write_modulefiles = True
     s.overwrite = True
@@ -345,6 +524,14 @@ def apply_preset(s: Settings, name: str) -> None:
     s.adios2_mpi = cluster_preset.get("adios2_mpi", "mpi")
     s.extra_kokkos_flags = cluster_preset.get("extra_kokkos_flags", [])
     s.extra_adios2_flags = cluster_preset.get("extra_adios2_flags", [])
+    s.ascent_mode = cluster_preset.get("ascent_mode", "build")
+    s.ascent_backend = cluster_preset.get(
+        "ascent_backend", s.kokkos_backend
+    )
+    s.ascent_mpi = cluster_preset.get("ascent_mpi", "mpi")
+    s.ascent_system_dir = cluster_preset.get(
+        "ascent_system_dir", ASCENT_DEFAULT_SYSTEM_DIR
+    )
 
 
 def on_install_confirmed(settings: Settings) -> None:
@@ -352,11 +539,14 @@ def on_install_confirmed(settings: Settings) -> None:
     os.makedirs(settings.install_prefix, exist_ok=True)
     kokkos_script, kokkos_modfile = InstallKokkosScriptModfile(settings)
     adios2_script, adios2_modfile = InstallAdios2Script(settings)
+    ascent_script, ascent_modfile = InstallAscentScript(settings)
     with open(os.path.join(settings.install_prefix, "install.sh"), "w") as f:
         f.write("#!/usr/bin/env bash\n\n")
         f.write(kokkos_script)
         f.write("\n\n")
         f.write(adios2_script)
+        f.write("\n\n")
+        f.write(ascent_script)
         f.write("\n")
     if settings.write_modulefiles:
         os.makedirs(os.path.join(settings.install_prefix, "modules"), exist_ok=True)
@@ -391,6 +581,26 @@ def on_install_confirmed(settings: Settings) -> None:
                 )
             with open(adios2_modfile_file, "w") as f:
                 f.write(adios2_modfile)
+        if ascent_modfile != "":
+            ascent_leaf = (
+                "system"
+                if settings.ascent_mode == "system-module"
+                else settings.ascent_backend
+            )
+            ascent_modfile_file = os.path.join(
+                settings.install_prefix,
+                "modules",
+                "ascent",
+                settings.ascent_version,
+                ascent_leaf,
+            )
+            os.makedirs(os.path.dirname(ascent_modfile_file), exist_ok=True)
+            if os.path.exists(ascent_modfile_file) and not settings.overwrite:
+                raise FileExistsError(
+                    f"modulefile {ascent_modfile_file} already exists and overwrite is disabled"
+                )
+            with open(ascent_modfile_file, "w") as f:
+                f.write(ascent_modfile)
 
     os.chmod(os.path.join(settings.install_prefix, "install.sh"), 0o755)
     MESSAGE = f"- installation script written to {os.path.join(settings.install_prefix, 'install.sh')}!\n"
@@ -398,6 +608,22 @@ def on_install_confirmed(settings: Settings) -> None:
     if settings.write_modulefiles:
         MESSAGE += f"- module files have been written to {os.path.join(settings.install_prefix, 'modules')} directory.\n"
         MESSAGE += f"  add them to your .rc script as `module use --append {os.path.join(settings.install_prefix, 'modules')}`\n\n"
+
+    if settings.apps.get("Ascent", False):
+        if settings.ascent_mode == "system-module":
+            MESSAGE += (
+                "- Ascent set to use the pre-installed system module at "
+                f"{settings.ascent_system_dir}.\n"
+                "  load the matching system module before building/running entity "
+                "(e.g. `module use /soft/modulefiles && module load ascent`).\n\n"
+            )
+        else:
+            MESSAGE += (
+                "- Ascent will be built from scratch via build_ascent.sh "
+                "(zlib, conduit, vtk-m, camp, raja, umpire + Ascent).\n"
+                "  this is a long build (vtk-m alone is heavy); review the env vars "
+                "in install.sh (CC/CXX, CUDA_ARCH/ROCM_ARCH) before running.\n\n"
+            )
 
     if settings.apps.get("nt2py", False):
         MESSAGE += (
@@ -483,6 +709,11 @@ class App:
 
     def adios2_right(self) -> str:
         return f"{self.s.adios2_version} · {self.s.adios2_mpi}"
+
+    def ascent_right(self) -> str:
+        if self.s.ascent_mode == "system-module":
+            return f"{self.s.ascent_version} · system-module"
+        return f"{self.s.ascent_version} · {self.s.ascent_backend} · build"
 
     # ----- nav stack -----
 
@@ -684,12 +915,13 @@ class App:
             f"dependencies: {self.s.apps_summary()}",
             f"kokkos: {self.s.kokkos_version} · {self.s.kokkos_backend} · {arch}",
             f"adios2: {self.s.adios2_version} · {self.s.adios2_mpi}",
-            "",
-            "confirm install?",
         ]
+        if self.s.apps.get("Ascent", False):
+            lines.append(f"ascent: {self.ascent_right()}")
+        lines += ["", "confirm install?"]
 
         h, w = self.stdscr.getmaxyx()
-        win_h, win_w = min(16, max(10, h - 6)), min(94, max(52, w - 6))
+        win_h, win_w = min(18, max(10, h - 6)), min(94, max(52, w - 6))
         top, left = max(0, (h - win_h) // 2), max(0, (w - win_w) // 2)
 
         win = curses.newwin(win_h, win_w, top, left)
@@ -858,6 +1090,13 @@ class App:
             if val:
                 self.s.adios2_version = val.strip()
 
+        def edit_ascent():
+            val = self.input_box(
+                "ascent version", "enter version/tag:", self.s.ascent_version
+            )
+            if val:
+                self.s.ascent_version = val.strip()
+
         return (
             "versions",
             "set versions:",
@@ -873,6 +1112,12 @@ class App:
                     "enter to edit",
                     right=lambda: self.s.adios2_version,
                     on_enter=edit_adios2,
+                ),
+                MenuItem(
+                    "ascent version",
+                    "enter to edit",
+                    right=lambda: self.s.ascent_version,
+                    on_enter=edit_ascent,
                 ),
                 MenuItem("back", "return", on_enter=self.pop),
             ],
@@ -891,6 +1136,26 @@ class App:
 
         def cycle_adios2():
             self.s.adios2_mpi = self.cycle(self.s.adios2_mpi, ADIOS2_MPI_MODES)
+
+        def cycle_ascent_backend():
+            self.s.ascent_backend = self.cycle(
+                self.s.ascent_backend, ASCENT_BACKENDS
+            )
+
+        def cycle_ascent_mode():
+            self.s.ascent_mode = self.cycle(self.s.ascent_mode, ASCENT_MODES)
+
+        def cycle_ascent_mpi():
+            self.s.ascent_mpi = self.cycle(self.s.ascent_mpi, ASCENT_MPI_MODES)
+
+        def edit_ascent_dir():
+            val = self.input_box(
+                "ascent system dir",
+                "path to a pre-installed Ascent cmake dir:",
+                self.s.ascent_system_dir,
+            )
+            if val is not None:
+                self.s.ascent_system_dir = val.strip()
 
         return (
             "options",
@@ -918,6 +1183,40 @@ class App:
                     on_enter=cycle_adios2,
                     on_space=cycle_adios2,
                     disabled=lambda: not self.s.apps.get("adios2", False),
+                ),
+                MenuItem(
+                    "ascent mode",
+                    "space cycles: build/system-module",
+                    right=lambda: self.s.ascent_mode,
+                    on_enter=cycle_ascent_mode,
+                    on_space=cycle_ascent_mode,
+                    disabled=lambda: not self.s.apps.get("Ascent", False),
+                ),
+                MenuItem(
+                    "ascent backend",
+                    "space cycles: cpu/cuda/hip/sycl (build mode)",
+                    right=lambda: self.s.ascent_backend,
+                    on_enter=cycle_ascent_backend,
+                    on_space=cycle_ascent_backend,
+                    disabled=lambda: not self.s.apps.get("Ascent", False)
+                    or self.s.ascent_mode == "system-module",
+                ),
+                MenuItem(
+                    "ascent mpi",
+                    "space cycles: non-mpi/mpi (build mode)",
+                    right=lambda: self.s.ascent_mpi,
+                    on_enter=cycle_ascent_mpi,
+                    on_space=cycle_ascent_mpi,
+                    disabled=lambda: not self.s.apps.get("Ascent", False)
+                    or self.s.ascent_mode == "system-module",
+                ),
+                MenuItem(
+                    "ascent system dir",
+                    "enter to edit (system-module mode)",
+                    right=lambda: self.s.ascent_system_dir,
+                    on_enter=edit_ascent_dir,
+                    disabled=lambda: not self.s.apps.get("Ascent", False)
+                    or self.s.ascent_mode != "system-module",
                 ),
                 MenuItem("back", "return", on_enter=self.pop),
             ],
@@ -1018,10 +1317,11 @@ class App:
                                 [
                                     f"kokkos {self.s.kokkos_version}",
                                     f"adios2 {self.s.adios2_version}",
+                                    f"ascent {self.s.ascent_version}",
                                 ],
                                 [
                                     self.s.apps.get(app, False)
-                                    for app in ["Kokkos", "adios2"]
+                                    for app in ["Kokkos", "adios2", "Ascent"]
                                 ],
                             )
                             if ae
@@ -1039,10 +1339,11 @@ class App:
                                 [
                                     f"kokkos {self.s.kokkos_backend}/{self.s.kokkos_arch.strip() or '-'}",
                                     f"adios2 {self.s.adios2_mpi}",
+                                    f"ascent {self.s.ascent_mode if self.s.ascent_mode == 'system-module' else self.s.ascent_backend}",
                                 ],
                                 [
                                     self.s.apps.get(app, False)
-                                    for app in ["Kokkos", "adios2"]
+                                    for app in ["Kokkos", "adios2", "Ascent"]
                                 ],
                             )
                             if ae
@@ -1076,6 +1377,13 @@ class App:
                     on_enter=lambda: toggle("adios2"),
                     on_space=lambda: toggle("adios2"),
                     right=self.adios2_right,
+                ),
+                MenuItem(
+                    f"{self.checkbox(self.s.apps.get('Ascent', False))} ascent",
+                    "",
+                    on_enter=lambda: toggle("Ascent"),
+                    on_space=lambda: toggle("Ascent"),
+                    right=self.ascent_right,
                 ),
                 MenuItem(
                     f"{self.checkbox(self.s.apps.get('nt2py', False))} nt2py",
