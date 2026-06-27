@@ -253,6 +253,7 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
+       "LoadBalance",
        "ParticleSort", "Output",
        "Checkpoint" },
       []() {
@@ -266,6 +267,17 @@ namespace ntt {
     auto       time_history   = pbar::DurationHistory { 1000 };
     const auto clear_interval = m_params.template get<timestep_t>(
       "particles.clear_interval");
+
+    const auto lb_enable   = m_params.template get<bool>(
+      "simulation.domain.load_balance.enable");
+    const auto lb_interval = m_params.template get<timestep_t>(
+      "simulation.domain.load_balance.interval");
+    const auto lb_dim_mask = m_params.template get<unsigned int>(
+      "simulation.domain.load_balance.dim_mask");
+    const auto lb_tolerance = m_params.template get<real_t>(
+      "simulation.domain.load_balance.tolerance");
+    const auto lb_max_shift = m_params.template get<unsigned int>(
+      "simulation.domain.load_balance.max_shift");
 
     // main algorithm loop
     while (step < max_steps) {
@@ -282,6 +294,27 @@ namespace ntt {
         });
         timers.stop("Custom");
       }
+      if constexpr (MetricClass<M>) {
+        if (lb_enable and lb_interval > 0 and (step + 1) % lb_interval == 0 and
+            lb_dim_mask != 0u) {
+          timers.start("LoadBalance");
+          m_metadomain.Rebalance(lb_dim_mask,
+                                 lb_tolerance,
+                                 static_cast<ncells_t>(lb_max_shift));
+          timers.stop("LoadBalance");
+        }
+      }
+      // Sort particles last — after step_forward, CustomPostStep, and
+      // LoadBalance — so the tile layout (and dead-particle compaction) the
+      // next step's deposit relies on reflects every particle change made this
+      // step: moving-window shift/injection and in-place dead-tagging done in
+      // CustomPostStep, plus any rebalance migration.
+      timers.start("ParticleSort");
+      m_metadomain.runOnLocalDomains([this](auto& dom) {
+        m_metadomain.SortParticles(time, step, m_params, dom);
+      });
+      timers.stop("ParticleSort");
+
       auto print_prtl_clear = (clear_interval > 0 and
                                step % clear_interval == 0 and step > 0);
 

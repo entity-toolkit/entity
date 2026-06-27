@@ -109,6 +109,17 @@ namespace out {
                           bool,
                           Coord);
 
+    /**
+     * @brief Refresh the cached per-rank slab corner and shape.
+     *
+     * Must be called before any per-step write whenever the local domain has
+     * been resized (e.g. by `Metadomain::Rebalance`); the cached values are
+     * passed to `var.SetSelection()` inside `writeMesh` and `WriteField`.
+     * The global shape is preserved (load balancing conserves total cells).
+     */
+    void setLocalLayout(const std::vector<ncells_t>& loc_corner,
+                        const std::vector<ncells_t>& loc_shape);
+
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
     void defineSpectraOutputs(const std::vector<spidx_t>&);
 

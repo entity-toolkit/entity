@@ -28,6 +28,35 @@
     #   @example: [2, 2, 2] (total of 8 domains)
     decomposition = ""
 
+    # Diffusion-style dynamic load balancing (Cartesian metrics only).
+    # Domain boundaries between MPI neighbors are nudged to equalize the
+    # active-particle count per rank. All inter-rank traffic uses only the
+    # existing nearest-neighbor field/particle communication paths.
+    [simulation.domain.load_balance]
+      # Enable dynamic load balancing
+      #   @type: bool
+      #   @default: false
+      enable = ""
+      # Run the rebalancer every `interval` timesteps (0 disables)
+      #   @type: int
+      #   @default: 0
+      interval = ""
+      # Dimensions along which load is redistributed (1 = x1, 2 = x2, 3 = x3)
+      #   @type: array of int, subset of [1, 2, 3]
+      #   @default: [1]
+      dimensions = ""
+      # Skip rebalancing along a dim when (max - min) / mean of the per-slice
+      # particle count is below this fraction
+      #   @type: float
+      #   @default: 0.1
+      tolerance = ""
+      # Maximum cell-shift per interior boundary per event; clamped at compile
+      # time to N_GHOSTS so the migrating field strip is already cached in the
+      # rank's ghost zone.
+      #   @type: int
+      #   @default: N_GHOSTS
+      max_shift = ""
+
 [grid]
   # Spatial resolution of the grid
   #   @required
