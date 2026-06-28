@@ -332,6 +332,11 @@ if(${output})
   endif()
 endif()
 
+if(${ascent})
+  string(APPEND REPORT_TEXT "  - Ascent: v" ${Ascent_VERSION} "\n")
+  string(APPEND REPORT_TEXT "    " "${Dim}${Ascent_DIR}${ColorReset}" "\n")
+endif()
+
 string(
   APPEND
   REPORT_TEXT
