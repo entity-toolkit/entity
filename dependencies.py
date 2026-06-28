@@ -383,6 +383,31 @@ def InstallAscentScript(settings: Settings) -> tuple[str, str]:
         "sycl": "CC=icx CXX=icpx \\\n  ",
     }[backend]
 
+    # Frontier (HIP): use the verified ORNL recipe instead of CC=hipcc CXX=hipcc.
+    # The Cray wrappers (cc/CC/ftn) are the *host* compilers; build_ascent.sh sets
+    # the HIP *device* compiler itself. Forcing hipcc as host makes every TPL .cpp
+    # compile as HIP (-x hip), which breaks non-GPU TPLs such as zfp. The raw ROCm
+    # clang++ then handles HIP device compiles and bypasses the wrapper, so MPI and
+    # ROCm must be supplied explicitly: CPATH gives HIP TUs mpi.h (vtk-m flow
+    # filters), and ROCM_PATH lets BLT (camp/raja/umpire) find the ROCm root.
+    # enable_find_mpi=OFF since the Cray wrappers already inject MPI. Mirrors
+    # scripts/build_ascent/build_ascent_hip_frontier.sh.
+    cray_env = ""
+    extra_env_flags = ""
+    if settings.cluster == "frontier" and backend == "hip":
+        cray_env = (
+            "export MPICH_GPU_SUPPORT_ENABLED=1 && \\\n"
+            "export ROCM_ARCH=gfx90a && \\\n"
+            'export ROCM_PATH="${ROCM_PATH:-/opt/rocm-6.2.4}" && \\\n'
+            "export CC=$(which cc) CXX=$(which CC) FTN=$(which ftn) && \\\n"
+            'export CFLAGS="${CRAY_ROCM_INCLUDE_OPTS}" && \\\n'
+            'export CXXFLAGS="${CRAY_ROCM_INCLUDE_OPTS} -Wno-pass-failed" && \\\n'
+            'export LDFLAGS="${CRAY_ROCM_POST_LINK_OPTS}" && \\\n'
+            'export CPATH="${MPICH_DIR}/include${CPATH:+:$CPATH}" && \\\n'
+        )
+        compiler_hint = ""
+        extra_env_flags = "enable_find_mpi=OFF \\\n  "
+
     # We clone the repo at `version` and run its *own* build_ascent.sh so that
     # the exact tagged Ascent source is built (the standalone script otherwise
     # defaults to the `develop` branch regardless of where it was fetched from).
@@ -401,12 +426,20 @@ git clone --recursive https://github.com/Alpine-DAV/ascent.git {src_path} && \\
 cd {src_path} && \\
 git checkout {version} && \\
 git submodule update --init --recursive && \\
+# Ascent only needs the zfp *library*, not its tests (compiled as -x hip under a
+# HIP host compiler, which breaks) or its OpenMP (leaves libzfp.so with unresolved
+# OpenMP symbols -> ld.lld --no-allow-shlib-undefined). enable_tests=OFF above
+# does not reach zfp, so force both off here.
+sed -i 's|zfp_extra_cmake_opts="-DBUILD_ZFPY=${{enable_python}}"|zfp_extra_cmake_opts="-DBUILD_ZFPY=${{enable_python}} -DBUILD_TESTING=OFF -DZFP_WITH_OPENMP=OFF"|' {src_path}/scripts/build_ascent/build_ascent.sh && \\
+# Ascent auto-enables its Sphinx docs if it finds a system sphinx-build; that build
+# is fragile (needs sphinxcontrib-jquery etc.) and Ascent itself doesn't need docs.
+sed -i 's|-C ${{root_dir}}/ascent-config.cmake|& -DENABLE_DOCS=OFF|' {src_path}/scripts/build_ascent/build_ascent.sh && \\
 mkdir -p {install_path} && \\
-env \\
+{cray_env}env \\
   prefix={install_path} \\
   build_jobs=$(nproc) \\
   enable_mpi={enable_mpi} \\
-  enable_fortran=OFF \\
+  {extra_env_flags}enable_fortran=OFF \\
   enable_python=OFF \\
   enable_tests=OFF \\
   {backend_flag} \\
@@ -496,7 +529,30 @@ PRESETS = {
             "CMAKE_C_COMPILER=cc"
         ]
     },
-    "frontier": {"module_loads": []},
+    "frontier": {
+        # explicit modules matching the verified `entity` collection (CPE 24.11 +
+        # rocm 6.2.4); craype-accel-amd-gfx90a/rocm/cray-mpich provide the
+        # CRAY_ROCM_*/MPICH_DIR/ROCM_PATH that the hip Ascent build below relies on.
+        "module_loads": [
+            "PrgEnv-cray/8.6.0",
+            "cce/18.0.1",
+            "craype-accel-amd-gfx90a",
+            "rocm/6.2.4",
+            "cray-mpich/8.1.31",
+            "cmake/3.30.5",
+        ],
+        "kokkos_backend": "hip",
+        "kokkos_arch": "AMD_GFX90A",
+        "extra_kokkos_flags": [
+            "CMAKE_CXX_COMPILER=hipcc",
+            "AMDGPU_TARGETS=gfx90a",
+        ],
+        "adios2_mpi": "mpi",
+        "ascent": True,
+        "ascent_mode": "build",
+        "ascent_backend": "hip",
+        "ascent_mpi": "mpi",
+    },
     "aurora": {
         "module_loads": [],
         "kokkos_backend": "sycl",
