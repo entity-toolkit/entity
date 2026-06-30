@@ -463,6 +463,28 @@ namespace ntt {
                           : gdiag / static_cast<real_t>(g_renderer.samples());
       const int max_steps = 2 * g_renderer.samples() + 16;
 
+      // global box + depth-occluded spine (opaque box wireframe rendered inline
+      // in the march so the volume covers its far edges). The visual width is
+      // ~spine_width px; the 0.55*ds floor keeps the thin line gap-free at the
+      // current sampling (raise `samples` for a crisper, thinner line).
+      real_t       glo[3] = { glob_ext[0].first, glob_ext[1].first,
+                              glob_ext[2].first };
+      real_t       ghi[3] = { glob_ext[0].second, glob_ext[1].second,
+                              glob_ext[2].second };
+      const real_t px_w   = (cam.half_h * static_cast<real_t>(2)) /
+                          static_cast<real_t>(H);
+      const real_t spine_radius =
+        g_renderer.axes()
+          ? math::max(static_cast<real_t>(0.55) * ds,
+                      HALF * g_renderer.spineWidth() * px_w)
+          : ZERO;
+      // contrasting opaque spine color (white on dark bg, black on light)
+      const real_t bg_lum = static_cast<real_t>(0.299) * g_renderer.background(0) +
+                            static_cast<real_t>(0.587) * g_renderer.background(1) +
+                            static_cast<real_t>(0.114) * g_renderer.background(2);
+      const real_t sc        = (bg_lum < HALF) ? ONE : ZERO;
+      const real_t spine_rgb[3] = { sc, sc, sc };
+
       // composite order key (depends on the current decomposition offsets)
       const uint64_t order_key = out::compositeOrderKey(
         local_domain->offset_ndomains(),
@@ -529,6 +551,10 @@ namespace ntt {
                                              scene.tf.vmax,
                                              scene.tf.log_scale,
                                              g_renderer.earlyAlpha(),
+                                             glo,
+                                             ghi,
+                                             spine_radius,
+                                             spine_rgb,
                                              image));
           Kokkos::fence();
 
@@ -602,6 +628,39 @@ namespace ntt {
           const real_t hv = HALF * (umax - umin) / iaspect;
           vmin = cv - hv;
           vmax = cv + hv;
+        }
+      }
+      // spherical slices get a background border so the round outline and its
+      // R/theta labels are not clipped at the frame edges (Cartesian fills the
+      // frame and draws its ticks in dedicated margins, so it needs none).
+      if constexpr (M::CoordType != Coord::type::Cartesian) {
+        const real_t pad = static_cast<real_t>(1.12);
+        const real_t cu = HALF * (umin + umax), hu = HALF * (umax - umin) * pad;
+        const real_t cv = HALF * (vmin + vmax), hv = HALF * (vmax - vmin) * pad;
+        umin = cu - hu;
+        umax = cu + hu;
+        vmin = cv - hv;
+        vmax = cv + hv;
+      }
+
+      // hand the world window + axis names to the (host) axes overlay. Default
+      // names follow the coordinate family unless the toml set axis_labels.
+      {
+        const bool        sph = (M::CoordType != Coord::type::Cartesian);
+        const std::string xl  = g_renderer.axisLabelsSet()
+                                  ? g_renderer.axisLabel(0)
+                                  : (sph ? std::string("X") : std::string("x"));
+        const std::string yl  = g_renderer.axisLabelsSet()
+                                  ? g_renderer.axisLabel(1)
+                                  : (sph ? std::string("Z") : std::string("y"));
+        g_renderer.setSliceFrame(umin, umax, vmin, vmax, xl, yl);
+        // curvilinear slices get polar axes (R radial + Theta arc); pass the
+        // global (r, theta) extent.
+        if (sph) {
+          g_renderer.setSlicePolar(true, gext[0].first, gext[0].second,
+                                   gext[1].first, gext[1].second, mirror);
+        } else {
+          g_renderer.setSlicePolar(false, ZERO, ONE, ZERO, ONE, mirror);
         }
       }
 

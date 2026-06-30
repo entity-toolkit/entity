@@ -761,6 +761,34 @@
     #   @type: bool
     #   @default: true
     mirror = ""
+    # Draw a spine (frame) + axis ticks + labels around the rendered region.
+    # The PNG gains left/bottom margins (background-filled) for the tick labels
+    # and axis names, so they never overlap the data.
+    #   @type: bool
+    #   @default: false
+    #   @note: 2D Cartesian = a rectangular frame with linear spatial ticks;
+    #          2D spherical = polar axes (an "R" radial axis on the symmetry
+    #          axis with R=0 centered, and a "Theta" axis along the curved
+    #          outline / spine);
+    #          3D = the global box projected to a wireframe with ticks on the
+    #          three silhouette edges (x bottom, y & z on the left)
+    axes = ""
+    # Axis names. 3D uses all three; the 2D slice uses the first two. When unset,
+    # the 2D slice defaults to "x","y" (Cartesian) or "X","Z" (spherical).
+    #   @type: array<string> [size <= 3]
+    #   @default: ["x", "y", "z"]
+    axis_labels = ""
+    # Target number of ticks per axis (actual count is rounded to nice values)
+    #   @type: int [>= 2]
+    #   @default: 5
+    axis_ticks = ""
+    # 3D only: target width (pixels) of the box wireframe "spine". The spine is
+    # drawn inside the ray-march (opaque, depth-occluded by the volume); its
+    # width is floored by the ray step, so for a crisper thin line raise
+    # `samples` as well.
+    #   @type: float [> 0.0]
+    #   @default: 2.0
+    spine_width = ""
 
     # Camera (3D volume mode only; ignored by the 2D slice rasterizer). Defaults
     # frame the whole global box from outside, looking down the (1,1,1) diagonal

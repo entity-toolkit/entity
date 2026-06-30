@@ -8,6 +8,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 
+#include "output/render/axes.h"
 #include "output/render/colorbar.h"
 #include "output/render/composite.h"
 #include "output/render/png.h"
@@ -111,6 +112,24 @@ namespace out {
                                              true);
     // 2D slice mode (spherical only): mirror the half-plane into a full disk
     m_mirror = toml::find_or<bool>(td, "output", "render", "mirror", true);
+
+    // axes: spine + ticks + labels around the rendered region
+    m_axes = toml::find_or<bool>(td, "output", "render", "axes", false);
+    m_axis_nticks = toml::find_or<int>(td, "output", "render", "axis_ticks", 5);
+    m_spine_width = toml::find_or<real_t>(td, "output", "render", "spine_width",
+                                          static_cast<real_t>(2));
+    m_global_extent = global_extent;
+    {
+      const auto al = toml::find_or<std::vector<std::string>>(
+        td, "output", "render", "axis_labels", std::vector<std::string> {});
+      m_axis_labels_set = not al.empty();
+      for (std::size_t d = 0; d < al.size() and d < 3; ++d) {
+        m_axis_labels[d] = al[d];
+      }
+      // default 2D slice names track the labels (overridden per-metric by Render)
+      m_slice_xlabel = m_axis_labels[0];
+      m_slice_ylabel = m_axis_labels[1];
+    }
 
     // cadence: mirror output.* (interval in steps; interval_time in sim time)
     const auto interval = toml::find_or<timestep_t>(td,
@@ -313,28 +332,50 @@ namespace out {
       }
       // composite the premultiplied image over the opaque background:
       // out = src_premult + (1 - src_alpha) * background, alpha = opaque.
-      std::vector<uint8_t> bytes(n);
+      std::vector<uint8_t> data(n);
       for (std::size_t p = 0; p < npix; ++p) {
         const real_t a   = img[p * 4 + 3];
         const real_t inv = ONE - a;
-        bytes[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
-        bytes[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
-        bytes[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
-        bytes[p * 4 + 3] = 255;
+        data[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
+        data[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
+        data[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
+        data[p * 4 + 3] = 255;
       }
       const auto fname = dir / fmt::format("%s%08lu.png",
                                            scene.prefix.c_str(),
                                            static_cast<unsigned long>(step));
+
+      auto drawBar = [&](uint8_t* buf, int bw, int bh) {
+        if (m_colorbar) {
+          drawColorbar(buf, bw, bh, scene.tf.colormap, scene.tf.vmin,
+                       scene.tf.vmax, scene.tf.log_scale, scene.label,
+                       m_background, scene.ticks);
+        }
+      };
+
+      // canvas margins: axes (left + bottom) and the colorbar strip (right).
+      // The data region sits at (ml, 0); margins/strip are background-filled.
+      // The polar (curvilinear) overlay annotates inside the data region (the
+      // disk is centered with background around it), so it needs no margins.
+      const bool polar = (m_global_extent.size() == 2) and m_slice_polar;
+      int        ml = 0, mb = 0;
+      out::axesMargins(m_axes and not polar, m_height, ml, mb);
+      const int strip = (m_colorbar and m_colorbar_outside)
+                          ? colorbarBlockWidth(m_height)
+                          : 0;
+      const int CW = ml + m_width + strip;
+      const int CH = m_height + mb;
+
       bool ok = true;
-      if (m_colorbar and m_colorbar_outside) {
-        // extend the canvas to the right so the colorbar sits in its own margin,
-        // outside the rendered volume.
-        const int     strip = colorbarBlockWidth(m_height);
-        const int     CW    = m_width + strip;
-        const uint8_t bR    = quantize(m_background[0]);
-        const uint8_t bG    = quantize(m_background[1]);
-        const uint8_t bB    = quantize(m_background[2]);
-        std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * m_height * 4);
+      if (CW == m_width and CH == m_height and not m_axes) {
+        // no margins, no outside strip, no overlay: colorbar overlays the data
+        drawBar(data.data(), m_width, m_height);
+        ok = write_png(fname, m_width, m_height, data.data());
+      } else {
+        const uint8_t bR = quantize(m_background[0]);
+        const uint8_t bG = quantize(m_background[1]);
+        const uint8_t bB = quantize(m_background[2]);
+        std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * CH * 4);
         for (std::size_t i = 0; i < canvas.size(); i += 4) {
           canvas[i + 0] = bR;
           canvas[i + 1] = bG;
@@ -342,35 +383,31 @@ namespace out {
           canvas[i + 3] = 255;
         }
         for (int y = 0; y < m_height; ++y) {
-          std::copy_n(&bytes[static_cast<std::size_t>(y) * m_width * 4],
-                      static_cast<std::size_t>(m_width) * 4,
-                      &canvas[static_cast<std::size_t>(y) * CW * 4]);
+          std::copy_n(
+            &data[static_cast<std::size_t>(y) * m_width * 4],
+            static_cast<std::size_t>(m_width) * 4,
+            &canvas[(static_cast<std::size_t>(y) * CW + ml) * 4]);
         }
-        drawColorbar(canvas.data(),
-                     CW,
-                     m_height,
-                     scene.tf.colormap,
-                     scene.tf.vmin,
-                     scene.tf.vmax,
-                     scene.tf.log_scale,
-                     scene.label,
-                     m_background,
-                     scene.ticks);
-        ok = write_png(fname, CW, m_height, canvas.data());
-      } else {
-        if (m_colorbar) {
-          drawColorbar(bytes.data(),
-                       m_width,
-                       m_height,
-                       scene.tf.colormap,
-                       scene.tf.vmin,
-                       scene.tf.vmax,
-                       scene.tf.log_scale,
-                       scene.label,
-                       m_background,
-                       scene.ticks);
+        if (m_axes) {
+          if (m_global_extent.size() == 3) {
+            out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
+                            m_camera_dev, m_global_extent, m_axis_labels,
+                            m_background, m_axis_nticks);
+          } else if (polar) {
+            out::drawAxesPolar(canvas.data(), CW, CH, ml, m_width, m_height,
+                               m_slice_win[0], m_slice_win[1], m_slice_win[2],
+                               m_slice_win[3], m_slice_rmin, m_slice_rmax,
+                               m_slice_tmin, m_slice_tmax, m_slice_pmirror, "R",
+                               "Theta", m_background, m_axis_nticks);
+          } else {
+            out::drawAxes2D(canvas.data(), CW, CH, ml, m_width, m_height,
+                            m_slice_win[0], m_slice_win[1], m_slice_win[2],
+                            m_slice_win[3], m_slice_xlabel, m_slice_ylabel,
+                            m_background, m_axis_nticks);
+          }
         }
-        ok = write_png(fname, m_width, m_height, bytes.data());
+        drawBar(canvas.data(), CW, CH);
+        ok = write_png(fname, CW, CH, canvas.data());
       }
       if (not ok) {
         raise::Warning(

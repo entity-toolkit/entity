@@ -172,6 +172,68 @@ namespace out {
     }
 
     [[nodiscard]]
+    auto axes() const -> bool {
+      return m_axes;
+    }
+
+    [[nodiscard]]
+    auto background(int i) const -> real_t {
+      return m_background[(i < 0) ? 0 : ((i > 2) ? 2 : i)];
+    }
+
+    // target 3D spine line width in pixels
+    [[nodiscard]]
+    auto spineWidth() const -> real_t {
+      return m_spine_width;
+    }
+
+    // whether `output.render.axis_labels` was set in the toml (so the 2D path
+    // honors it instead of substituting per-metric defaults)
+    [[nodiscard]]
+    auto axisLabelsSet() const -> bool {
+      return m_axis_labels_set;
+    }
+
+    [[nodiscard]]
+    auto axisLabel(int d) const -> const std::string& {
+      return m_axis_labels[(d < 0) ? 0 : ((d > 2) ? 2 : d)];
+    }
+
+    // Set the world window + axis names the 2D slice path maps onto the image,
+    // so the (host) axes overlay can label spatial coordinates. Called by the
+    // templated 2D Render before compositing; the window is constant per run.
+    void setSliceFrame(real_t             u0,
+                       real_t             u1,
+                       real_t             v0,
+                       real_t             v1,
+                       const std::string& xlabel,
+                       const std::string& ylabel) {
+      m_slice_win[0]  = u0;
+      m_slice_win[1]  = u1;
+      m_slice_win[2]  = v0;
+      m_slice_win[3]  = v1;
+      m_slice_xlabel  = xlabel;
+      m_slice_ylabel  = ylabel;
+    }
+
+    // Mark the 2D slice as curvilinear (spherical) so the axes are drawn polar:
+    // a radial "R" axis on the symmetry axis + a "Theta" arc, with a curvilinear
+    // spine. Set per-frame by the templated 2D Render (constant per run).
+    void setSlicePolar(bool   polar,
+                       real_t rmin,
+                       real_t rmax,
+                       real_t tmin,
+                       real_t tmax,
+                       bool   mir) {
+      m_slice_polar   = polar;
+      m_slice_rmin    = rmin;
+      m_slice_rmax    = rmax;
+      m_slice_tmin    = tmin;
+      m_slice_tmax    = tmax;
+      m_slice_pmirror = mir;
+    }
+
+    [[nodiscard]]
     auto scenes() const -> const std::vector<Scene>& {
       return m_scenes;
     }
@@ -196,6 +258,24 @@ namespace out {
     // 2D slice mode (spherical): mirror the meridional half-plane across the
     // symmetry axis to render a full disk from one axisymmetric half
     bool m_mirror { true };
+    // draw a spine (frame) + axis ticks/labels around the rendered region
+    bool        m_axes { false };
+    bool        m_axis_labels_set { false };
+    int         m_axis_nticks { 5 };
+    real_t      m_spine_width { static_cast<real_t>(2) }; // 3D spine width (px)
+    std::string m_axis_labels[3] { "x", "y", "z" };
+    // global world box (2 or 3 axes); used to project the 3D axes box and to
+    // know the render mode (size 2 => 2D slice, size 3 => 3D volume).
+    boundaries_t<real_t> m_global_extent;
+    // 2D slice world window + axis names, set per-frame by the templated Render
+    real_t      m_slice_win[4] { ZERO, ONE, ZERO, ONE };
+    std::string m_slice_xlabel { "x" };
+    std::string m_slice_ylabel { "y" };
+    // 2D curvilinear (spherical) slice: draw polar axes instead of Cartesian
+    bool   m_slice_polar { false };
+    real_t m_slice_rmin { ZERO }, m_slice_rmax { ONE };
+    real_t m_slice_tmin { ZERO }, m_slice_tmax { ONE };
+    bool   m_slice_pmirror { false };
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;

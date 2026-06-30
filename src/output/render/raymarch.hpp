@@ -61,6 +61,12 @@ namespace kernel {
     const bool           log_scale;
     const real_t         early_alpha;
 
+    // global box wireframe "spine": opaque (alpha 1) segments composited inline
+    // during the march, so the volume occludes the far edges. radius <= 0 off.
+    const real_t glo0, glo1, glo2, ghi0, ghi1, ghi2;
+    const real_t spine_radius;
+    const real_t spine_cr, spine_cg, spine_cb;
+
     array_t<real_t* [4]> image; // output, (bw*bh, 4) premultiplied RGBA
 
   public:
@@ -86,6 +92,10 @@ namespace kernel {
                           real_t                         vmax_,
                           bool                           log_scale_,
                           real_t                         early_alpha_,
+                          const real_t                   glo[3],
+                          const real_t                   ghi[3],
+                          real_t                         spine_radius_,
+                          const real_t                   spine_rgb[3],
                           const array_t<real_t* [4]>&    image_)
       : Fld { Fld_ }
       , comp { comp_ }
@@ -113,7 +123,53 @@ namespace kernel {
       , vmax { vmax_ }
       , log_scale { log_scale_ }
       , early_alpha { early_alpha_ }
+      , glo0 { glo[0] }
+      , glo1 { glo[1] }
+      , glo2 { glo[2] }
+      , ghi0 { ghi[0] }
+      , ghi1 { ghi[1] }
+      , ghi2 { ghi[2] }
+      , spine_radius { spine_radius_ }
+      , spine_cr { spine_rgb[0] }
+      , spine_cg { spine_rgb[1] }
+      , spine_cb { spine_rgb[2] }
       , image { image_ } {}
+
+    // distance test: is world point (px,py,pz) within `spine_radius` of any of
+    // the 12 global-box edges? (nearest parallel edge per axis == nearest
+    // perpendicular-plane corner)
+    Inline auto onSpine(real_t px, real_t py, real_t pz) const -> bool {
+      if (spine_radius <= ZERO) {
+        return false;
+      }
+      const real_t r2 = spine_radius * spine_radius;
+      const real_t pad = spine_radius;
+      // edges parallel to x (perp plane = y,z)
+      if (px >= glo0 - pad and px <= ghi0 + pad) {
+        const real_t dy = math::min(math::abs(py - glo1), math::abs(py - ghi1));
+        const real_t dz = math::min(math::abs(pz - glo2), math::abs(pz - ghi2));
+        if (dy * dy + dz * dz < r2) {
+          return true;
+        }
+      }
+      // edges parallel to y (perp plane = x,z)
+      if (py >= glo1 - pad and py <= ghi1 + pad) {
+        const real_t dx = math::min(math::abs(px - glo0), math::abs(px - ghi0));
+        const real_t dz = math::min(math::abs(pz - glo2), math::abs(pz - ghi2));
+        if (dx * dx + dz * dz < r2) {
+          return true;
+        }
+      }
+      // edges parallel to z (perp plane = x,y)
+      if (pz >= glo2 - pad and pz <= ghi2 + pad) {
+        const real_t dx = math::min(math::abs(px - glo0), math::abs(px - ghi0));
+        const real_t dy = math::min(math::abs(py - glo1), math::abs(py - ghi1));
+        if (dx * dx + dy * dy < r2) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     // trilinear sample of the prepared scalar at world point p, reading the
     // ghost halo for corners just outside the active box.
@@ -261,31 +317,41 @@ namespace kernel {
       real_t       acc_r = ZERO, acc_g = ZERO, acc_b = ZERO, acc_a = ZERO;
       int          steps = 0;
       while (t < t_exit and steps < max_steps) {
-        const real_t s = sample(ox + t * dx, oy + t * dy, oz + t * dz);
-        // normalize through the transfer function range
-        real_t u;
-        if (log_scale) {
-          u = (s > ZERO) ? (math::log10(s) - log_vmin) * inv_range
-                         : -ONE;
+        const real_t px = ox + t * dx, py = oy + t * dy, pz = oz + t * dz;
+        real_t       cr, cg, cb, ca;
+        if (onSpine(px, py, pz)) {
+          // opaque box edge (premultiplied; alpha == 1 -> color is straight RGB).
+          // Composited inline so accumulated foreground volume occludes it.
+          cr = spine_cr;
+          cg = spine_cg;
+          cb = spine_cb;
+          ca = ONE;
         } else {
-          u = (s - vmin) * inv_range;
+          const real_t s = sample(px, py, pz);
+          // normalize through the transfer function range
+          real_t u;
+          if (log_scale) {
+            u = (s > ZERO) ? (math::log10(s) - log_vmin) * inv_range : -ONE;
+          } else {
+            u = (s - vmin) * inv_range;
+          }
+          if (u < ZERO) {
+            u = ZERO;
+          } else if (u > ONE) {
+            u = ONE;
+          }
+          int idx = static_cast<int>(u * static_cast<real_t>(n_lut - 1) + HALF);
+          if (idx < 0) {
+            idx = 0;
+          } else if (idx > n_lut - 1) {
+            idx = n_lut - 1;
+          }
+          cr = lut(idx, 0); // premultiplied
+          cg = lut(idx, 1);
+          cb = lut(idx, 2);
+          ca = lut(idx, 3);
         }
-        if (u < ZERO) {
-          u = ZERO;
-        } else if (u > ONE) {
-          u = ONE;
-        }
-        int idx = static_cast<int>(u * static_cast<real_t>(n_lut - 1) + HALF);
-        if (idx < 0) {
-          idx = 0;
-        } else if (idx > n_lut - 1) {
-          idx = n_lut - 1;
-        }
-        const real_t cr = lut(idx, 0); // premultiplied
-        const real_t cg = lut(idx, 1);
-        const real_t cb = lut(idx, 2);
-        const real_t ca = lut(idx, 3);
-        const real_t w  = ONE - acc_a;
+        const real_t w = ONE - acc_a;
         acc_r += w * cr;
         acc_g += w * cg;
         acc_b += w * cb;
