@@ -41,6 +41,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
+#include <cctype>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -174,9 +175,53 @@ namespace ntt {
           // sum boundary-crossing particle deposits back into active cells
           // (particles in neighbor domains deposit into our ghost zone)
           SynchronizeFields(*local_domain, Comm::Bckp, { 0, 1 });
-        } else if (scene.field == "Bmag" or scene.field == "Jmag") {
-          const bool is_current = (scene.field == "Jmag");
-          // raw vector components into bckp(:,0..2)
+        } else {
+          // Vector field as a scalar: "<base><selector>" with base in {E, B, J}
+          // and selector in {mag, 1/2/3, x/y/z}. A component (e.g. "B1"/"Bx") is
+          // signed; a magnitude (e.g. "Bmag") is non-negative.
+          const std::string& f    = scene.field;
+          const char         base = f.empty()
+                                      ? '?'
+                                      : static_cast<char>(std::toupper(f[0]));
+          bool               ok         = true;
+          bool               is_current = false;
+          uint8_t            src_base   = 0; // first component of the source field
+          PrepareOutputFlags interp     = PrepareOutput::None;
+          if (base == 'B') {
+            src_base = em::bx1;
+            interp   = PrepareOutput::InterpToCellCenterFromFaces;
+          } else if (base == 'E') {
+            src_base = em::ex1;
+            interp   = PrepareOutput::InterpToCellCenterFromEdges;
+          } else if (base == 'J') {
+            is_current = true;
+            src_base   = cur::jx1;
+            interp     = PrepareOutput::InterpToCellCenterFromEdges;
+          } else {
+            ok = false;
+          }
+          // selector: -1 = magnitude, 0/1/2 = a single component
+          int               comp = -2;
+          const std::string sel  = (f.size() > 1) ? f.substr(1) : std::string {};
+          if (sel == "mag") {
+            comp = -1;
+          } else if (sel == "1" or sel == "x") {
+            comp = 0;
+          } else if (sel == "2" or sel == "y") {
+            comp = 1;
+          } else if (sel == "3" or sel == "z") {
+            comp = 2;
+          } else {
+            ok = false;
+          }
+          if (not ok) {
+            raise::Warning("output.render: unknown field '" + scene.field +
+                             "' (expected N, {E,B,J}mag, or "
+                             "{E,B,J}{1,2,3}|{x,y,z}); skipping",
+                           HERE);
+            continue;
+          }
+          // raw vector components into bckp(:, 0..2)
           if (is_current) {
             Kokkos::deep_copy(
               Kokkos::subview(bckp, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
@@ -188,17 +233,14 @@ namespace ntt {
               Kokkos::subview(bckp, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL,
                               cell_range_t(0, 3)),
               Kokkos::subview(local_domain->fields.em, Kokkos::ALL, Kokkos::ALL,
-                              Kokkos::ALL, cell_range_t(em::bx1, em::bx3 + 1)));
+                              Kokkos::ALL, cell_range_t(src_base, src_base + 3)));
           }
           // interpolate to cell centers + convert to physical basis -> (3,4,5)
-          PrepareOutputFlags interp = is_current
-                                        ? PrepareOutput::InterpToCellCenterFromEdges
-                                        : PrepareOutput::InterpToCellCenterFromFaces;
-          PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
-                                         ? PrepareOutput::ConvertToHat
-                                         : PrepareOutput::ConvertToPhysCntrv;
-          list_t<uint8_t, 3> comp_from = { 0, 1, 2 };
-          list_t<uint8_t, 3> comp_to   = { 3, 4, 5 };
+          const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
+                                               ? PrepareOutput::ConvertToHat
+                                               : PrepareOutput::ConvertToPhysCntrv;
+          list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
+          list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
           Kokkos::parallel_for(
             "RenderFieldsToPhys",
             local_domain->mesh.rangeActiveCells(),
@@ -208,36 +250,27 @@ namespace ntt {
                                                  comp_to,
                                                  interp | prepare,
                                                  metric));
-          // magnitude -> bckp(:,0)
-          auto bckp_v = bckp;
-          Kokkos::parallel_for(
-            "RenderVectorMagnitude",
-            local_domain->mesh.rangeActiveCells(),
-            Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
-              const real_t v1 = bckp_v(i1, i2, i3, 3);
-              const real_t v2 = bckp_v(i1, i2, i3, 4);
-              const real_t v3 = bckp_v(i1, i2, i3, 5);
-              bckp_v(i1, i2, i3, 0) = math::sqrt(v1 * v1 + v2 * v2 + v3 * v3);
-            });
-        } else if (scene.field == "smooth_xyz") {
-          // continuous-by-construction regression field: x + y + z
-          auto bckp_v = bckp;
-          Kokkos::parallel_for(
-            "RenderSmoothXYZ",
-            local_domain->mesh.rangeActiveCells(),
-            Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
-              coord_t<Dim::_3D> x_Cd { ZERO }, x_Ph { ZERO };
-              x_Cd[0] = COORD(i1) + HALF;
-              x_Cd[1] = COORD(i2) + HALF;
-              x_Cd[2] = COORD(i3) + HALF;
-              metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-              bckp_v(i1, i2, i3, 0) = x_Ph[0] + x_Ph[1] + x_Ph[2];
-            });
-        } else {
-          raise::Warning(
-            "output.render: unknown field '" + scene.field + "', skipping",
-            HERE);
-          continue;
+          // reduce to the scalar to render -> bckp(:, 0)
+          auto      bckp_v = bckp;
+          const int cc     = comp;
+          if (comp == -1) {
+            Kokkos::parallel_for(
+              "RenderVectorMagnitude",
+              local_domain->mesh.rangeActiveCells(),
+              Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
+                const real_t v1 = bckp_v(i1, i2, i3, 3);
+                const real_t v2 = bckp_v(i1, i2, i3, 4);
+                const real_t v3 = bckp_v(i1, i2, i3, 5);
+                bckp_v(i1, i2, i3, 0) = math::sqrt(v1 * v1 + v2 * v2 + v3 * v3);
+              });
+          } else {
+            Kokkos::parallel_for(
+              "RenderVectorComponent",
+              local_domain->mesh.rangeActiveCells(),
+              Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
+                bckp_v(i1, i2, i3, 0) = bckp_v(i1, i2, i3, 3 + cc);
+              });
+          }
         }
 
         // fill the ghost halo with neighbor active values so trilinear

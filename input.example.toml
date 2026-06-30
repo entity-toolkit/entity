@@ -681,6 +681,158 @@
     #   @default: []
     custom = ""
 
+  # In-situ volume renderer. Ray-marches scalar fields on the GPU and writes
+  # PNG images directly to `<simname>/renders/` each cadence -- no field data is
+  # written to storage, and the result is seamless across MPI domain boundaries.
+  #   @note: 3D Cartesian (Minkowski) only; a no-op for other dims/metrics
+  #   @note: One PNG stream per scene (e.g. a density/|B|/|J| triptych)
+  [output.render]
+    # Toggle for the volume renderer
+    #   @type: bool
+    #   @default: false
+    enable = ""
+    # Number of timesteps between renders
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0`, `interval_time` (or `output.interval`) is used
+    interval = ""
+    # Physical (code) time interval between renders
+    #   @type: float
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
+    interval_time = ""
+    # Image width in pixels (the rendered region; the PNG is wider if a colorbar
+    # margin is added, see `colorbar_outside`)
+    #   @type: int [> 0]
+    #   @default: 1024
+    width = ""
+    # Image height in pixels
+    #   @type: int [> 0]
+    #   @default: 1024
+    height = ""
+    # Number of ray-march steps across the global box diagonal
+    #   @type: int [> 0]
+    #   @default: 400
+    #   @note: The world-space step is `box_diagonal / samples` unless `step_size`
+    #          is set. Higher = better quality, slower.
+    samples = ""
+    # Fixed world-space step between ray samples
+    #   @type: float [>= 0.0]
+    #   @default: 0.0
+    #   @note: 0 derives the step from `samples`. The step is identical on all
+    #          ranks, which is what makes the multi-domain composite seamless.
+    step_size = ""
+    # Stop marching a ray once its accumulated opacity reaches this value
+    #   @type: float [0.0 -> 1.0]
+    #   @default: 0.99
+    #   @note: Pure speed optimization; set to 1.0 to disable early termination
+    early_term_alpha = ""
+    # Number of entries in the color/opacity lookup table
+    #   @type: int [> 1]
+    #   @default: 256
+    n_lut = ""
+    # Opaque background RGB (each channel 0..1) shown through transparent/low-
+    # opacity pixels; also fills the colorbar margin
+    #   @type: array<float> [size 3]
+    #   @default: [0.0, 0.0, 0.0]
+    background = ""
+    # Draw a colorbar (gradient + value ticks + label) on each PNG
+    #   @type: bool
+    #   @default: true
+    colorbar = ""
+    # Draw the colorbar in an added right margin (the PNG becomes wider by a
+    # fixed strip) instead of overlaying it on the rendered volume
+    #   @type: bool
+    #   @default: true
+    colorbar_outside = ""
+
+    # Camera. Defaults frame the whole global box from outside, looking down the
+    # (1,1,1) diagonal -- the production setup for which the structured composite
+    # is provably seamless.
+    [output.render.camera]
+      # Orthographic (true) or perspective (false) projection
+      #   @type: bool
+      #   @default: true
+      #   @note: Orthographic is recommended; the seamless composite is always
+      #          valid for it. Perspective is only seamless with the eye outside
+      #          the box.
+      orthographic = ""
+      # Camera (eye) position in world (physical) coordinates
+      #   @type: array<float> [size 3]
+      #   @default: box center pushed back ~1.7 box-diagonals along (1, 1, 1)
+      position = ""
+      # Point the camera looks at, in world coordinates
+      #   @type: array<float> [size 3]
+      #   @default: box center
+      look_at = ""
+      # Camera up vector
+      #   @type: array<float> [size 3]
+      #   @default: [0.0, 0.0, 1.0]
+      up = ""
+      # Vertical field of view in degrees (perspective only)
+      #   @type: float [> 0.0]
+      #   @default: 35.0
+      fov = ""
+      # Vertical extent of the view in world units (orthographic only)
+      #   @type: float [> 0.0]
+      #   @default: the global box diagonal (the whole box fits from any angle)
+      ortho_height = ""
+
+    # One scene per scalar field -> one PNG stream. Repeat the table for each.
+    [[output.render.scenes]]
+      # Scalar field to render (a volume render needs a scalar, so a vector is
+      # given as a magnitude or a single component)
+      #   @required
+      #   @type: string
+      #   @enum: "N"; "Emag"/"Bmag"/"Jmag"; "{E,B,J}{1,2,3}" or "{E,B,J}{x,y,z}"
+      #   @note: "N" = number density; "{E,B,J}mag" = vector magnitude |.|
+      #   @note: "B1"/"Bx", "J3"/"Jz", ... = a single (signed) physical component
+      #   @note: a bare vector ("E"/"B"/"J") is not renderable -- choose a
+      #          component or the magnitude
+      #   @note: components are signed; pair a symmetric `min`/`max` with a
+      #          diverging colormap ("cool2warm") to center zero
+      field = ""
+      # PNG filename prefix; files are `<prefix><cycle>.png`
+      #   @type: string
+      #   @default: "<field>_"
+      prefix = ""
+      # Colorbar title
+      #   @type: string
+      #   @default: `field`
+      label = ""
+      # Lower bound of the value range mapped onto the colormap/opacity
+      #   @type: float
+      #   @default: 0.0
+      min = ""
+      # Upper bound of the value range
+      #   @type: float
+      #   @default: 1.0
+      max = ""
+      # Map the value range logarithmically
+      #   @type: bool
+      #   @default: false
+      #   @note: Requires min > 0 and max > 0
+      log = ""
+      # Colormap name
+      #   @type: string
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray"
+      #   @default: "viridis"
+      colormap = ""
+      # Opacity transfer function: [position, opacity] control points, both in
+      # [0, 1], piecewise-linear in the normalized value
+      #   @type: array<tuple<float>>
+      #   @default: linear ramp (opacity = normalized value)
+      #   @note: Keep the low end near 0 so empty regions stay transparent
+      #   @example: [[0.0, 0.0], [0.3, 0.1], [1.0, 0.7]]
+      alpha = ""
+      # Explicit value(s) to label on the colorbar
+      #   @type: array<float>
+      #   @default: 5 evenly-spaced ticks between min and max
+      #   @note: Values outside [min, max] are skipped
+      #   @example: [0.0, 0.5, 1.0]
+      colorbar_ticks = ""
+
 [checkpoint]
   # Number of timesteps between checkpoints
   #   @type: uint [> 0]
