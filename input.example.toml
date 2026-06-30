@@ -681,10 +681,19 @@
     #   @default: []
     custom = ""
 
-  # In-situ volume renderer. Ray-marches scalar fields on the GPU and writes
-  # PNG images directly to `<simname>/renders/` each cadence -- no field data is
-  # written to storage, and the result is seamless across MPI domain boundaries.
-  #   @note: 3D Cartesian (Minkowski) only; a no-op for other dims/metrics
+  # In-situ renderer. Renders scalar fields on the GPU and writes PNG images
+  # directly to `<simname>/renders/` each cadence -- no field data is written to
+  # storage, and the result is seamless across MPI domain boundaries.
+  #   @note: two modes, selected automatically by the simulation dimension:
+  #          - 3D Cartesian (Minkowski): volume ray-march (uses `samples`,
+  #            `step_size`, `early_term_alpha`, and the [camera] table)
+  #          - 2D (Minkowski, Spherical/QSpherical, and all GR Kerr-Schild):
+  #            flat slice rasterizer. Cartesian shows the (x, y) plane; spherical
+  #            shows the meridional (r, theta) half-plane mapped to Cartesian
+  #            (X = r sin th, Z = r cos th), optionally mirrored (see `mirror`).
+  #            The `samples`/`step_size`/`early_term_alpha`/[camera] keys are
+  #            ignored in 2D (one opaque sample per pixel).
+  #   @note: 1D (and 3D non-Cartesian, which does not exist) is a no-op
   #   @note: One PNG stream per scene (e.g. a density/|B|/|J| triptych)
   [output.render]
     # Toggle for the volume renderer
@@ -746,10 +755,17 @@
     #   @type: bool
     #   @default: true
     colorbar_outside = ""
+    # 2D spherical slice only: mirror the meridional half-plane across the
+    # symmetry axis to render a full disk from one axisymmetric half. No effect
+    # on Cartesian or 3D rendering.
+    #   @type: bool
+    #   @default: true
+    mirror = ""
 
-    # Camera. Defaults frame the whole global box from outside, looking down the
-    # (1,1,1) diagonal -- the production setup for which the structured composite
-    # is provably seamless.
+    # Camera (3D volume mode only; ignored by the 2D slice rasterizer). Defaults
+    # frame the whole global box from outside, looking down the (1,1,1) diagonal
+    # -- the production setup for which the structured composite is provably
+    # seamless.
     [output.render.camera]
       # Orthographic (true) or perspective (false) projection
       #   @type: bool
@@ -797,6 +813,9 @@
       #          {0,1,2,3} (e.g. "Txx", "Ttt", "T0x"); "V{i}" = one bulk-velocity
       #          component, i in {x,y,z} or {1,2,3} (e.g. "Vx", "V1"); "Vmag" =
       #          bulk-velocity magnitude sqrt(V1^2+V2^2+V3^2)
+      #   @note: moments follow the engine: SRPIC = tetrad-basis bulk 3-velocity
+      #          and stress-energy; GRPIC = Eckart-frame 4-velocity (so "Vt"/"V0"
+      #          = u^0 = Gamma/alpha is also valid) and contravariant T
       #   @note: per-species selection with a "_<id>" suffix on moments, e.g.
       #          "N_1", "Rho_2", "Txy_1_2", "V1_3"; default = all massive species
       #   @note: components are signed; pair a symmetric `min`/`max` with a

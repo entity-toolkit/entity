@@ -178,13 +178,22 @@ namespace ntt {
     void redecomposeFromCheckpoint(const std::vector<std::vector<ncells_t>>&,
                                    const std::vector<boundaries_t<real_t>>&);
 
-    /* in-situ volume renderer (see metadomain_render.cpp) ------------------ */
+    /* in-situ renderer (3D volume ray-march & 2D slice; metadomain_render.cpp) */
     void InitRenderer(const SimulationParams&);
     auto Render(const SimulationParams&,
                 timestep_t,
                 timestep_t,
                 simtime_t,
                 simtime_t) -> bool;
+    // Prepare the scalar named by a scene's `field` into bckp(:, 0) (active
+    // cells synced; ghosts not yet halo-filled). Shared by the 2D and 3D render
+    // paths so the field grammar (moments, T/V components, |E,B,J|, species
+    // suffix) has a single source of truth. Returns false (and warns) for an
+    // unknown field or invalid species so the caller can skip the scene.
+    auto prepareRenderScalar(const SimulationParams&,
+                             Domain<S, M>&,
+                             const std::string& field_name,
+                             ndfield_t<M::Dim, 6>&) const -> bool;
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);

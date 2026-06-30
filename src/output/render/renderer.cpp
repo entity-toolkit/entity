@@ -69,10 +69,11 @@ namespace out {
     if (not enable) {
       return;
     }
-    // the renderer is a 3D feature; silently no-op otherwise.
-    if (global_extent.size() != 3) {
-      raise::Warning("output.render enabled but simulation is not 3D; "
-                     "the volume renderer will be inactive",
+    // 2D (slice rasterizer) and 3D Cartesian (volume ray-march) are supported;
+    // 1D has nothing to render.
+    if (global_extent.size() != 2 and global_extent.size() != 3) {
+      raise::Warning("output.render enabled but simulation is 1D; "
+                     "the renderer will be inactive",
                      HERE);
       return;
     }
@@ -108,6 +109,8 @@ namespace out {
                                              "render",
                                              "colorbar_outside",
                                              true);
+    // 2D slice mode (spherical only): mirror the half-plane into a full disk
+    m_mirror = toml::find_or<bool>(td, "output", "render", "mirror", true);
 
     // cadence: mirror output.* (interval in steps; interval_time in sim time)
     const auto interval = toml::find_or<timestep_t>(td,
@@ -122,10 +125,11 @@ namespace out {
                                                         -1.0);
     m_tracker.init("render", interval, interval_time);
 
-    /* ---- camera --------------------------------------------------------- */
-    real_t center[3], size[3];
+    /* ---- camera (used by the 3D volume mode; the 2D slice path frames itself
+     * and ignores this, so a missing 3rd axis is zero-filled harmlessly) ---- */
+    real_t center[3] = { ZERO, ZERO, ZERO }, size[3] = { ZERO, ZERO, ZERO };
     real_t maxext = ZERO;
-    for (int d = 0; d < 3; ++d) {
+    for (std::size_t d = 0; d < global_extent.size() and d < 3; ++d) {
       center[d] = static_cast<real_t>(0.5) *
                   (global_extent[d].first + global_extent[d].second);
       size[d] = global_extent[d].second - global_extent[d].first;
@@ -249,6 +253,10 @@ namespace out {
         }
       }
       scene.tf.lut = buildLUT(colormap, m_n_lut, alpha_pts);
+      // opaque companion LUT (alpha == 1) for the flat 2D slice rasterizer
+      scene.tf.lut_opaque = buildLUT(colormap,
+                                     m_n_lut,
+                                     { { ZERO, ONE }, { ONE, ONE } });
       m_scenes.push_back(std::move(scene));
     }
 
@@ -258,7 +266,7 @@ namespace out {
     }
 
     m_enabled = true;
-    logger::Checkpoint("Volume renderer initialized", HERE);
+    logger::Checkpoint("In-situ renderer initialized", HERE);
   }
 
   void Renderer::compositeAndWrite(const SubImage& sub,

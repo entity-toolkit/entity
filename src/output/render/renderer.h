@@ -58,6 +58,10 @@ namespace out {
    */
   struct TransferFunction {
     array_t<real_t* [4]> lut;          // device, (n_lut, 4), premultiplied RGBA
+    // opaque variant (alpha == 1 everywhere, so the premultiplied entries are
+    // straight RGB) used by the flat 2D slice rasterizer, where a single
+    // per-pixel sample should paint a solid heatmap rather than fade by opacity.
+    array_t<real_t* [4]> lut_opaque;
     int                  n_lut { 256 };
     real_t               vmin { ZERO };
     real_t               vmax { ONE };
@@ -69,7 +73,7 @@ namespace out {
    * @brief One rendered scalar field -> one PNG stream.
    */
   struct Scene {
-    std::string         field;     // "N" | "Bmag" | "Jmag" | "smooth_xyz"
+    std::string         field;     // "N" | "Bmag" | "Vmag" | "Txy" | "B1" ...
     std::string         prefix;    // PNG filename prefix, e.g. "Bmag_"
     std::string         label;     // colorbar title (defaults to field)
     std::vector<real_t> ticks;     // explicit colorbar tick values (optional)
@@ -160,6 +164,13 @@ namespace out {
       return m_camera_dev;
     }
 
+    // 2D slice mode: mirror a spherical half-plane across the axis into a full
+    // disk (no effect on Cartesian or 3D rendering).
+    [[nodiscard]]
+    auto mirror() const -> bool {
+      return m_mirror;
+    }
+
     [[nodiscard]]
     auto scenes() const -> const std::vector<Scene>& {
       return m_scenes;
@@ -182,6 +193,9 @@ namespace out {
     // draw the colorbar in an extended right margin (outside the render region)
     // rather than overlaying it on top of the rendered volume
     bool m_colorbar_outside { true };
+    // 2D slice mode (spherical): mirror the meridional half-plane across the
+    // symmetry axis to render a full disk from one axisymmetric half
+    bool m_mirror { true };
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;
