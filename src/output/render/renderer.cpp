@@ -379,17 +379,20 @@ namespace out {
     constexpr int TAG_HDR  = 7301;
     constexpr int TAG_DATA = 7302;
 
+    // Wire format is premultiplied uint8 RGBA (4x less bandwidth than float).
+    // Compositing stays in float; only the per-message quantization adds error
+    // (~1 LSB through the log(N)-deep tree), so fidelity is effectively that of
+    // the final 8-bit PNG.
     auto sendSub = [&](const SubImage& s, int dest) {
       int hdr[4] = { s.x0, s.y0, s.w, s.h };
       MPI_Send(hdr, 4, MPI_INT, dest, TAG_HDR, MPI_COMM_WORLD);
       const int cnt = s.w * s.h * 4;
       if (cnt > 0) {
-        MPI_Send(s.rgba.data(),
-                 cnt,
-                 mpi::get_type<real_t>(),
-                 dest,
-                 TAG_DATA,
-                 MPI_COMM_WORLD);
+        std::vector<uint8_t> bytes(static_cast<std::size_t>(cnt));
+        for (int i = 0; i < cnt; ++i) {
+          bytes[i] = quantize(s.rgba[i]);
+        }
+        MPI_Send(bytes.data(), cnt, MPI_UNSIGNED_CHAR, dest, TAG_DATA, MPI_COMM_WORLD);
       }
     };
     auto recvSub = [&](int src) -> SubImage {
@@ -402,14 +405,19 @@ namespace out {
       s.h           = hdr[3];
       const int cnt = s.w * s.h * 4;
       if (cnt > 0) {
-        s.rgba.resize(static_cast<std::size_t>(cnt));
-        MPI_Recv(s.rgba.data(),
+        std::vector<uint8_t> bytes(static_cast<std::size_t>(cnt));
+        MPI_Recv(bytes.data(),
                  cnt,
-                 mpi::get_type<real_t>(),
+                 MPI_UNSIGNED_CHAR,
                  src,
                  TAG_DATA,
                  MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
+        s.rgba.resize(static_cast<std::size_t>(cnt));
+        const real_t inv255 = ONE / static_cast<real_t>(255);
+        for (int i = 0; i < cnt; ++i) {
+          s.rgba[i] = static_cast<real_t>(bytes[i]) * inv255;
+        }
       }
       return s;
     };
