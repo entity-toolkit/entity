@@ -1,0 +1,27 @@
+# Ascent actions for the ascent_cube example.
+#
+# This file is loaded automatically by Ascent when the option
+#   output.ascent.actions_file = "ascent_actions.yaml"
+# is set in the toml input file.
+#
+# Each cycle Entity publishes a 3D rectilinear mesh containing the field
+# components requested in `output.ascent.fields`. The pseudocolor plot below
+# renders the third component of the magnetic field on a 3D cube.
+-
+  action: "add_scenes"
+  scenes:
+    s_b3:
+      plots:
+        p1:
+          type: "pseudocolor"
+          field: "B3"
+      renders:
+        r1:
+          image_width: 800
+          image_height: 800
+          image_prefix: "cube_B3_%08d"
+          camera:
+            position: [3.0, 3.0, 3.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0

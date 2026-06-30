@@ -1,0 +1,73 @@
+# Ascent actions for the turbulence_lines example.
+#
+# Pipeline:
+#   streamline: integrate field lines through the published vector field
+#   `B` starting from a uniform grid of seeds across the interior of the
+#   box. Output is rendered as 3D tubes (`enable_tubes = "true"`) so they
+#   can be raytraced.
+# Scene:
+#   pseudocolor plot of the streamline output, ray-traced to PNG.
+#
+# Entity publishes B1/B2/B3 both as scalar fields AND as the (u,v,w)
+# components of a Conduit-Blueprint MCArray vector named `B`, so the
+# streamline filter can read it directly without an extra
+# `composite_vector` step (that step produces a vector layout VTK-h's
+# streamline backend in Ascent v0.9.x can't unpack as Vec<float,3>).
+#
+# This file is loaded automatically by Ascent when the option
+#   output.ascent.actions_file = "ascent_actions.yaml"
+# is set in the toml input file.
+
+-
+  action: "add_pipelines"
+  pipelines:
+    pl_lines:
+      f1:
+        type: "streamline"
+        params:
+          field: "B"
+          # Each line is integrated for num_steps * step_size code-units.
+          num_steps: 200
+          step_size: 0.5
+          seeds:
+            type: "box"
+            sampling_type: "uniform"
+            sampling_space: "interior"
+            # The Ascent vtkh_streamline filter expects `extents_<axis>`
+            # (not `<axis>_extents`) and per-axis seed counts.
+            extents_x: [-28.0, 28.0]
+            extents_y: [-28.0, 28.0]
+            extents_z: [-28.0, 28.0]
+            num_seeds_x: 4
+            num_seeds_y: 4
+            num_seeds_z: 4
+          rendering:
+            # Tube-rasterization options live under `rendering/` in this
+            # version of Ascent. `enable_tubes` is a string ("true"/"false").
+            enable_tubes: "true"
+            tube_size: 0.4
+            tube_sides: 6
+            output_field: "B_lines"
+
+-
+  action: "add_scenes"
+  scenes:
+    s_lines:
+      plots:
+        p1:
+          type: "pseudocolor"
+          pipeline: "pl_lines"
+          field: "B_lines"
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1024
+          image_height: 1024
+          image_prefix: "turbulence_lines_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [80.0, 80.0, 80.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0

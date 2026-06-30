@@ -28,6 +28,35 @@
     #   @example: [2, 2, 2] (total of 8 domains)
     decomposition = ""
 
+    # Diffusion-style dynamic load balancing (Cartesian metrics only).
+    # Domain boundaries between MPI neighbors are nudged to equalize the
+    # active-particle count per rank. All inter-rank traffic uses only the
+    # existing nearest-neighbor field/particle communication paths.
+    [simulation.domain.load_balance]
+      # Enable dynamic load balancing
+      #   @type: bool
+      #   @default: false
+      enable = ""
+      # Run the rebalancer every `interval` timesteps (0 disables)
+      #   @type: int
+      #   @default: 0
+      interval = ""
+      # Dimensions along which load is redistributed (1 = x1, 2 = x2, 3 = x3)
+      #   @type: array of int, subset of [1, 2, 3]
+      #   @default: [1]
+      dimensions = ""
+      # Skip rebalancing along a dim when (max - min) / mean of the per-slice
+      # particle count is below this fraction
+      #   @type: float
+      #   @default: 0.1
+      tolerance = ""
+      # Maximum cell-shift per interior boundary per event; clamped at compile
+      # time to N_GHOSTS so the migrating field strip is already cached in the
+      # rank's ghost zone.
+      #   @type: int
+      #   @default: N_GHOSTS
+      max_shift = ""
+
 [grid]
   # Spatial resolution of the grid
   #   @required
@@ -624,6 +653,70 @@
     #   @type: bool
     #   @default: false
     ghosts = ""
+
+  [output.ascent]
+    # Enable in-situ visualization via Ascent (https://ascent.readthedocs.io/)
+    #   @type: bool
+    #   @default: false
+    #   @note: Entity must be configured with `-D ascent=ON`; otherwise this is ignored
+    enable = ""
+    # Path to a YAML/JSON file describing the Ascent actions (scenes, plots, ...)
+    #   @type: string
+    #   @default: ""
+    #   @note: When empty, Ascent will look for `ascent_actions.yaml` in the cwd
+    actions_file = ""
+    # Names of field quantities to publish to Ascent every render cycle
+    #   @type: array<string>
+    #   @default: []
+    #   @note: Vector components are suffixed with the index, e.g. "B3" is the third component of B
+    fields = ""
+    # When true, components named "<X>1"/"<X>2"/"<X>3" are ALSO published as the
+    # u/v/w components of an MCArray vector field "<X>" (so streamline / gradient
+    # filters can reference the prefix directly). Disable to halve the published
+    # mesh size when the actions file only uses the scalar form (or only the
+    # vector form).
+    #   @type: bool
+    #   @default: true
+    vector_aliases = ""
+    # Per-axis stride applied when extracting fields for Ascent. A factor of
+    # `k` cuts the published mesh and per-render rendering cost by `k` along
+    # that axis (`k^Dim` overall in 3D). Aligned to the global grid so cells
+    # line up across MPI ranks. Independent of `output.fields.downsampling`.
+    #   @type: array<uint> [length = `grid.dim`] OR uint (broadcast to all axes)
+    #   @default: 1 (no downsampling)
+    #   @note: Each factor must be > 0 and small enough to leave at least one cell per rank.
+    downsample = ""
+    # Number of timesteps between Ascent renders
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0` and `interval_time == -1`, falls back to the global `output.interval`
+    #   @note: This cadence is independent of `output.fields.interval`
+    interval = ""
+    # Physical (code) time interval between Ascent renders
+    #   @type: float
+    #   @default: -1.0
+    #   @note: When `>= 0`, overrides `interval`
+    #   @note: This cadence is independent of `output.fields.interval_time`
+    interval_time = ""
+    # Drift velocity along the x-axis (code units). At render time
+    # `v_drift * t` is added to the x-component of every `camera/position`
+    # and `camera/look_at` in the actions file, so the camera tracks a
+    # feature drifting through the simulation domain (e.g. a shock front
+    # under a moving window).
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Zero leaves the actions file untouched.
+    v_drift = ""
+    # Rotational velocity (radians per code time unit) of the camera
+    # about its `look_at` point, using the camera's `up` vector as the
+    # rotation axis. Combined freely with `v_drift`: the camera orbits
+    # the (drifted) focus point at angular rate `v_rot`, so theta = v_rot * t.
+    #   @type: float
+    #   @default: 0.0
+    #   @note: Zero leaves camera positions unrotated.
+    #   @note: A full orbit takes `2*pi / v_rot` code time units.
+    v_rot = ""
 
   [output.stats]
     # Toggle for the stats output

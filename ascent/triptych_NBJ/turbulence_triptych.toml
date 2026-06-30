@@ -1,0 +1,78 @@
+[simulation]
+  name    = "turbulence_triptych"
+  engine  = "srpic"
+  runtime = 200.0
+
+[grid]
+  resolution = [64, 64, 64]
+  extent     = [[-32.0, 32.0], [-32.0, 32.0], [-32.0, 32.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 4.0
+
+  [[particles.species]]
+    label    = "e-_p"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 2e6
+
+  [[particles.species]]
+    label    = "e+_p"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 2e6
+
+[setup]
+  temperature = 1e0
+  dB          = 1.0
+  omega_0     = 0.0156
+  gamma_0     = 0.0078
+
+[output]
+  format        = "BPFile"
+  interval_time = 20.0
+
+  [output.fields]
+    # `N` is the total particle number density; `B` and `J` are the
+    # magnetic-field and electric-current vectors. Each vector is
+    # published to Ascent as three component scalars (B1/B2/B3, J1/J2/J3).
+    quantities = ["N", "B", "J"]
+    mom_smooth = 1
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+  [output.stats]
+    enable = false
+
+  # In-situ triptych: three independent ray-traced scenes (N, |B|, |J|),
+  # each rendered to its own PNG per cycle. Frames share cycle numbers,
+  # so they can be tiled side-by-side externally (see README).
+  [output.ascent]
+    enable        = true
+    actions_file  = "ascent_actions.yaml"
+    fields        = ["N", "B1", "B2", "B3", "J1", "J2", "J3"]
+    interval_time = 4.0
+
+[diagnostics]
+  colored_stdout = true

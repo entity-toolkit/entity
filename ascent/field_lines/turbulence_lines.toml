@@ -1,0 +1,74 @@
+[simulation]
+  name    = "turbulence_lines"
+  engine  = "srpic"
+  runtime = 200.0
+
+[grid]
+  resolution = [64, 64, 64]
+  extent     = [[-32.0, 32.0], [-32.0, 32.0], [-32.0, 32.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 4.0
+
+  [[particles.species]]
+    label    = "e-_p"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 2e6
+
+  [[particles.species]]
+    label    = "e+_p"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 2e6
+
+[setup]
+  temperature = 1e0
+  dB          = 1.0
+  omega_0     = 0.0156
+  gamma_0     = 0.0078
+
+[output]
+  format        = "BPFile"
+  interval_time = 20.0
+
+  [output.fields]
+    quantities = ["B"]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+  [output.stats]
+    enable = false
+
+  # Field-line rendering of the magnetic field via Ascent. We publish the
+  # three component scalars and let the actions file (a) composite them
+  # into a vector, (b) trace streamlines, (c) render as 3D tubes.
+  [output.ascent]
+    enable        = true
+    actions_file  = "ascent_actions.yaml"
+    fields        = ["B1", "B2", "B3"]
+    interval_time = 4.0
+
+[diagnostics]
+  colored_stdout = true

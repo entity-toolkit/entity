@@ -613,9 +613,9 @@ namespace ntt {
         timers.stop("FieldBoundaries");
       }
 
-      timers.start("ParticleSort");
-      m_metadomain.SortParticles(time, step, m_params, dom);
-      timers.stop("ParticleSort");
+      // NOTE: particle sorting is intentionally NOT done here. It runs once per
+      // step in the engine loop (Engine::run) after CustomPostStep and
+      // LoadBalance — see the SRPIC engine for the rationale.
 
       /**
        * Finally: em0::B   at n-1/2

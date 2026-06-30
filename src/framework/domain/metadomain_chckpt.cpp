@@ -125,8 +125,19 @@ namespace ntt {
       }
       params.saveTOML(g_checkpoint_writer.written().back().second, current_time);
 
+      // Recompute the local with-ghosts shape/offset every step so the
+      // ADIOS variable selection tracks any rebalance that has happened
+      // since InitCheckpointWriter.
+      std::vector<ncells_t> loc_off_with_ghosts;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        loc_off_with_ghosts.push_back(
+          local_domain->offset_ncells()[d] +
+          2 * N_GHOSTS * local_domain->offset_ndomains()[d]);
+      }
       local_domain->fields.CheckpointWrite(g_checkpoint_writer.io(),
-                                           g_checkpoint_writer.writer());
+                                           g_checkpoint_writer.writer(),
+                                           local_domain->mesh.n_all(),
+                                           loc_off_with_ghosts);
 #if !defined(MPI_ENABLED)
       const std::size_t dom_tot = 1, dom_offset = 0;
 #else

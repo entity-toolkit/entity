@@ -65,6 +65,15 @@ namespace ntt {
       new (&metric) M { this->m_resolution, new_extent, m_metric_params_raw };
     }
 
+    void set_resolution_and_extent(const std::vector<ncells_t>& new_res,
+                                   const boundaries_t<real_t>&  new_extent) {
+      raise::ErrorIf(new_res.size() != D, "invalid resolution dim", HERE);
+      this->m_resolution = new_res;
+      m_extent           = new_extent;
+      metric.~M();
+      new (&metric) M { this->m_resolution, m_extent, m_metric_params_raw };
+    }
+
     /**
      * @brief Get the intersection of the mesh with a box
      * @param box physical extent

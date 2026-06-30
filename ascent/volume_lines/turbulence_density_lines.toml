@@ -1,0 +1,77 @@
+[simulation]
+  name    = "turbulence_density_lines"
+  engine  = "srpic"
+  runtime = 200.0
+
+[grid]
+  resolution = [64, 64, 64]
+  extent     = [[-32.0, 32.0], [-32.0, 32.0], [-32.0, 32.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  current_filters = 4
+
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 4.0
+
+  [[particles.species]]
+    label    = "e-_p"
+    mass     = 1.0
+    charge   = -1.0
+    maxnpart = 2e6
+
+  [[particles.species]]
+    label    = "e+_p"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 2e6
+
+[setup]
+  temperature = 1e0
+  dB          = 1.0
+  omega_0     = 0.0156
+  gamma_0     = 0.0078
+
+[output]
+  format        = "BPFile"
+  interval_time = 20.0
+
+  [output.fields]
+    # `B` provides the three magnetic-field components; `N` is the total
+    # particle number density, summed over all massive species.
+    quantities    = ["B", "N"]
+    mom_smooth    = 1
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+  [output.stats]
+    enable = false
+
+  # Combined rendering: volume render of the density `N` plus magnetic
+  # field lines computed from B. Both plots live in the same Ascent
+  # scene, so they composite into a single PNG per cycle.
+  [output.ascent]
+    enable        = true
+    actions_file  = "ascent_actions.yaml"
+    fields        = ["B1", "B2", "B3", "N"]
+    interval_time = 4.0
+
+[diagnostics]
+  colored_stdout = true
