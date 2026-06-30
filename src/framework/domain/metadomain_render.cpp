@@ -276,6 +276,40 @@ namespace ntt {
             SynchronizeFields(*local_domain, Comm::Bckp, { 0, 1 });
             handled = true;
           }
+        } else if (base == "Vmag") {
+          // bulk-velocity magnitude |V| = sqrt(V1^2 + V2^2 + V3^2). Each Vi is
+          // the mass-weighted flux normalized by Rho, so deposit the three
+          // spatial components into bckp(0..2) and Rho into bckp(3), sum-sync
+          // all four, divide, then reduce to the Euclidean norm in bckp(0).
+          renderMoment<S, M, FldsID::V>(params, local_domain->mesh,
+                                        local_domain->species, species, { 1u },
+                                        bckp, 0u);
+          renderMoment<S, M, FldsID::V>(params, local_domain->mesh,
+                                        local_domain->species, species, { 2u },
+                                        bckp, 1u);
+          renderMoment<S, M, FldsID::V>(params, local_domain->mesh,
+                                        local_domain->species, species, { 3u },
+                                        bckp, 2u);
+          renderMoment<S, M, FldsID::Rho>(params, local_domain->mesh,
+                                          local_domain->species, species, {},
+                                          bckp, 3u);
+          SynchronizeFields(*local_domain, Comm::Bckp, { 0, 4 });
+          auto bckp_v = bckp;
+          Kokkos::parallel_for(
+            "RenderNormalizeVmag",
+            local_domain->mesh.rangeActiveCells(),
+            Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
+              const real_t rho = bckp_v(i1, i2, i3, 3);
+              if (rho != ZERO) {
+                const real_t v1 = bckp_v(i1, i2, i3, 0) / rho;
+                const real_t v2 = bckp_v(i1, i2, i3, 1) / rho;
+                const real_t v3 = bckp_v(i1, i2, i3, 2) / rho;
+                bckp_v(i1, i2, i3, 0) = math::sqrt(v1 * v1 + v2 * v2 + v3 * v3);
+              } else {
+                bckp_v(i1, i2, i3, 0) = ZERO;
+              }
+            });
+          handled = true;
         } else if (base.size() == 2 and base[0] == 'V') {
           // a single bulk-velocity component "V<i>" (spatial); normalize by Rho
           const int c = axisIdx(base[1]);
