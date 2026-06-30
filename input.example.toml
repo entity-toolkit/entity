@@ -781,15 +781,23 @@
 
     # One scene per scalar field -> one PNG stream. Repeat the table for each.
     [[output.render.scenes]]
-      # Scalar field to render (a volume render needs a scalar, so a vector is
+      # Scalar field to render (a volume render needs a scalar, so vectors are
       # given as a magnitude or a single component)
       #   @required
       #   @type: string
-      #   @enum: "N"; "Emag"/"Bmag"/"Jmag"; "{E,B,J}{1,2,3}" or "{E,B,J}{x,y,z}"
-      #   @note: "N" = number density; "{E,B,J}mag" = vector magnitude |.|
-      #   @note: "B1"/"Bx", "J3"/"Jz", ... = a single (signed) physical component
+      #   @enum (fields): "{E,B,J}mag"; "{E,B,J}{1,2,3}" or "{E,B,J}{x,y,z}"
+      #   @enum (moments): "N", "Nppc", "Rho", "Charge"; "T{i}{j}"; "V{i}"
+      #   @note: "{E,B,J}mag" = vector magnitude |.|; "B1"/"Bx", "J3"/"Jz", ... =
+      #          a single (signed) physical component
       #   @note: a bare vector ("E"/"B"/"J") is not renderable -- choose a
       #          component or the magnitude
+      #   @note: "N"/"Nppc" = number / per-cell count, "Rho" = mass density,
+      #          "Charge" = charge density
+      #   @note: "T{i}{j}" = one stress-energy component, i,j in {t,x,y,z} or
+      #          {0,1,2,3} (e.g. "Txx", "Ttt", "T0x"); "V{i}" = one bulk-velocity
+      #          component, i in {x,y,z} or {1,2,3} (e.g. "Vx", "V1")
+      #   @note: per-species selection with a "_<id>" suffix on moments, e.g.
+      #          "N_1", "Rho_2", "Txy_1_2", "V1_3"; default = all massive species
       #   @note: components are signed; pair a symmetric `min`/`max` with a
       #          diverging colormap ("cool2warm") to center zero
       field = ""

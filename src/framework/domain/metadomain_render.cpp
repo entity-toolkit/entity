@@ -56,13 +56,23 @@ namespace ntt {
     void renderMoment(const SimulationParams& params,
                       const Mesh<M>&          mesh,
                       const std::vector<Particles<M::Dim, M::CoordType>>& prtl_species,
-                      ndfield_t<M::Dim, 6>&   buffer,
-                      idx_t                   buff_idx) {
-      std::vector<spidx_t> specs;
-      for (auto& sp : prtl_species) {
-        if (sp.mass() > 0) {
-          specs.push_back(sp.index());
+                      const std::vector<spidx_t>& species,
+                      const std::vector<uint8_t>& components,
+                      ndfield_t<M::Dim, 6>&       buffer,
+                      idx_t                       buff_idx) {
+      std::vector<spidx_t> specs = species;
+      if (specs.empty()) {
+        // default: accumulate over all massive species
+        for (auto& sp : prtl_species) {
+          if (sp.mass() > 0) {
+            specs.push_back(sp.index());
+          }
         }
+      }
+      for (const auto& sp : specs) {
+        raise::ErrorIf((sp > prtl_species.size()) or (sp == 0),
+                       "Invalid species index " + std::to_string(sp),
+                       HERE);
       }
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
       const auto use_weights = params.get<bool>("particles.use_weights");
@@ -72,7 +82,6 @@ namespace ntt {
         "output.fields.smoothing.order");
       const auto smooth_method = OutputSmoothingType::from_string(
         params.get<std::string>("output.fields.smoothing.method"));
-      const std::vector<uint8_t> components {};
       for (const auto& sp : specs) {
         auto& prtl_spec = prtl_species[sp - 1];
         Kokkos::parallel_for(
@@ -166,34 +175,153 @@ namespace ntt {
       for (const auto& scene : g_renderer.scenes()) {
         Kokkos::deep_copy(bckp, ZERO);
 
-        if (scene.field == "N") {
-          renderMoment<S, M, FldsID::N>(params,
-                                        local_domain->mesh,
-                                        local_domain->species,
-                                        bckp,
-                                        0u);
+        // Parse an optional trailing per-species suffix "<base>_<s1>_<s2>...";
+        // species apply to particle moments only (N, Nppc, Rho, Charge, T, V).
+        std::string          base = scene.field;
+        std::vector<spidx_t> species;
+        {
+          const auto us = scene.field.find('_');
+          if (us != std::string::npos) {
+            bool        ok_sp = true;
+            std::size_t start = us + 1;
+            while (start <= scene.field.size()) {
+              const auto nx  = scene.field.find('_', start);
+              const auto tok = scene.field.substr(
+                start,
+                (nx == std::string::npos) ? std::string::npos : nx - start);
+              if (tok.empty() or
+                  tok.find_first_not_of("0123456789") != std::string::npos) {
+                ok_sp = false;
+                break;
+              }
+              species.push_back(static_cast<spidx_t>(std::stoi(tok)));
+              if (nx == std::string::npos) {
+                break;
+              }
+              start = nx + 1;
+            }
+            if (ok_sp) {
+              base = scene.field.substr(0, us);
+            } else {
+              species.clear(); // not a species suffix; keep the full name
+            }
+          }
+        }
+        bool bad_species = false;
+        for (const auto sp : species) {
+          if (sp == 0 or sp > local_domain->species.size()) {
+            bad_species = true;
+          }
+        }
+        if (bad_species) {
+          raise::Warning("output.render: invalid species in '" + scene.field +
+                           "', skipping",
+                         HERE);
+          continue;
+        }
+
+        // axis/index character -> {t,x,y,z} == {0,1,2,3}; -1 if invalid
+        auto axisIdx = [](char ch) -> int {
+          switch (ch) {
+            case 't':
+            case '0':
+              return 0;
+            case 'x':
+            case '1':
+              return 1;
+            case 'y':
+            case '2':
+              return 2;
+            case 'z':
+            case '3':
+              return 3;
+            default:
+              return -1;
+          }
+        };
+
+        bool handled = false;
+        if (base == "N" or base == "Nppc" or base == "Rho" or base == "Charge") {
+          // scalar particle moments
+          if (base == "N") {
+            renderMoment<S, M, FldsID::N>(params, local_domain->mesh,
+                                          local_domain->species, species, {},
+                                          bckp, 0u);
+          } else if (base == "Nppc") {
+            renderMoment<S, M, FldsID::Nppc>(params, local_domain->mesh,
+                                             local_domain->species, species, {},
+                                             bckp, 0u);
+          } else if (base == "Rho") {
+            renderMoment<S, M, FldsID::Rho>(params, local_domain->mesh,
+                                            local_domain->species, species, {},
+                                            bckp, 0u);
+          } else {
+            renderMoment<S, M, FldsID::Charge>(params, local_domain->mesh,
+                                               local_domain->species, species, {},
+                                               bckp, 0u);
+          }
           // sum boundary-crossing particle deposits back into active cells
-          // (particles in neighbor domains deposit into our ghost zone)
           SynchronizeFields(*local_domain, Comm::Bckp, { 0, 1 });
-        } else {
+          handled = true;
+        } else if (base.size() == 3 and base[0] == 'T') {
+          // a single stress-energy tensor component "T<i><j>"
+          const int i = axisIdx(base[1]);
+          const int j = axisIdx(base[2]);
+          if (i >= 0 and j >= 0) {
+            const std::vector<uint8_t> comps { static_cast<uint8_t>(i),
+                                               static_cast<uint8_t>(j) };
+            renderMoment<S, M, FldsID::T>(params, local_domain->mesh,
+                                          local_domain->species, species, comps,
+                                          bckp, 0u);
+            SynchronizeFields(*local_domain, Comm::Bckp, { 0, 1 });
+            handled = true;
+          }
+        } else if (base.size() == 2 and base[0] == 'V') {
+          // a single bulk-velocity component "V<i>" (spatial); normalize by Rho
+          const int c = axisIdx(base[1]);
+          if (c >= 1 and c <= 3) {
+            const std::vector<uint8_t> comps { static_cast<uint8_t>(c) };
+            renderMoment<S, M, FldsID::V>(params, local_domain->mesh,
+                                          local_domain->species, species, comps,
+                                          bckp, 0u);
+            renderMoment<S, M, FldsID::Rho>(params, local_domain->mesh,
+                                            local_domain->species, species, {},
+                                            bckp, 1u);
+            SynchronizeFields(*local_domain, Comm::Bckp, { 0, 2 });
+            // V_c = (mass-weighted bulk velocity) / Rho
+            auto bckp_v = bckp;
+            Kokkos::parallel_for(
+              "RenderNormalizeV",
+              local_domain->mesh.rangeActiveCells(),
+              Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
+                const real_t rho = bckp_v(i1, i2, i3, 1);
+                bckp_v(i1, i2, i3, 0) = (rho != ZERO)
+                                          ? (bckp_v(i1, i2, i3, 0) / rho)
+                                          : ZERO;
+              });
+            handled = true;
+          }
+        }
+
+        if (not handled) {
           // Vector field as a scalar: "<base><selector>" with base in {E, B, J}
           // and selector in {mag, 1/2/3, x/y/z}. A component (e.g. "B1"/"Bx") is
           // signed; a magnitude (e.g. "Bmag") is non-negative.
-          const std::string& f    = scene.field;
-          const char         base = f.empty()
-                                      ? '?'
-                                      : static_cast<char>(std::toupper(f[0]));
+          const std::string& f     = base;
+          const char         fbase = f.empty()
+                                       ? '?'
+                                       : static_cast<char>(std::toupper(f[0]));
           bool               ok         = true;
           bool               is_current = false;
           uint8_t            src_base   = 0; // first component of the source field
           PrepareOutputFlags interp     = PrepareOutput::None;
-          if (base == 'B') {
+          if (fbase == 'B') {
             src_base = em::bx1;
             interp   = PrepareOutput::InterpToCellCenterFromFaces;
-          } else if (base == 'E') {
+          } else if (fbase == 'E') {
             src_base = em::ex1;
             interp   = PrepareOutput::InterpToCellCenterFromEdges;
-          } else if (base == 'J') {
+          } else if (fbase == 'J') {
             is_current = true;
             src_base   = cur::jx1;
             interp     = PrepareOutput::InterpToCellCenterFromEdges;
