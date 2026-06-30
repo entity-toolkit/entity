@@ -49,7 +49,8 @@ namespace kernel {
     const real_t lo0, lo1, lo2, hi0, hi1, hi2;
     const int    ext0, ext1, ext2;
 
-    const int    W, H;
+    const int    W, H;        // full frame size (for ray generation / ndc)
+    const int    bx0, by0, bw; // screen-bbox offset and width (output stride)
     const real_t ds;          // fixed world step (global, identical on all ranks)
     const int    max_steps;   // safety cap on the marching loop
 
@@ -60,7 +61,7 @@ namespace kernel {
     const bool           log_scale;
     const real_t         early_alpha;
 
-    array_t<real_t* [4]> image; // output, (W*H, 4) premultiplied RGBA
+    array_t<real_t* [4]> image; // output, (bw*bh, 4) premultiplied RGBA
 
   public:
     VolumeRayMarch_kernel(const randacc_ndfield_t<D, 6>& Fld_,
@@ -74,6 +75,9 @@ namespace kernel {
                           int                            ext2_,
                           int                            W_,
                           int                            H_,
+                          int                            bx0_,
+                          int                            by0_,
+                          int                            bw_,
                           real_t                         ds_,
                           int                            max_steps_,
                           const array_t<real_t* [4]>&    lut_,
@@ -98,6 +102,9 @@ namespace kernel {
       , ext2 { ext2_ }
       , W { W_ }
       , H { H_ }
+      , bx0 { bx0_ }
+      , by0 { by0_ }
+      , bw { bw_ }
       , ds { ds_ }
       , max_steps { max_steps_ }
       , lut { lut_ }
@@ -146,9 +153,13 @@ namespace kernel {
       return c0 * (ONE - t2) + c1 * t2;
     }
 
-    Inline void operator()(cellidx_t px, cellidx_t py) const {
-      const auto pix = static_cast<std::size_t>(py) * static_cast<std::size_t>(W) +
-                       static_cast<std::size_t>(px);
+    Inline void operator()(cellidx_t lpx, cellidx_t lpy) const {
+      // local bbox index -> output pixel; global pixel -> ray generation
+      const auto pix = static_cast<std::size_t>(lpy) *
+                         static_cast<std::size_t>(bw) +
+                       static_cast<std::size_t>(lpx);
+      const int gpx = bx0 + static_cast<int>(lpx);
+      const int gpy = by0 + static_cast<int>(lpy);
       // default transparent
       image(pix, 0) = ZERO;
       image(pix, 1) = ZERO;
@@ -156,9 +167,9 @@ namespace kernel {
       image(pix, 3) = ZERO;
 
       // ---- ray generation ------------------------------------------------ //
-      const real_t fx = TWO * (static_cast<real_t>(px) + HALF) /
+      const real_t fx = TWO * (static_cast<real_t>(gpx) + HALF) /
                           static_cast<real_t>(W) - ONE;
-      const real_t fy = ONE - TWO * (static_cast<real_t>(py) + HALF) /
+      const real_t fy = ONE - TWO * (static_cast<real_t>(gpy) + HALF) /
                                 static_cast<real_t>(H);
       real_t ox, oy, oz, dx, dy, dz;
       if (cam.orthographic) {

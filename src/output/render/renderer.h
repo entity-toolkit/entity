@@ -75,6 +75,19 @@ namespace out {
     TransferFunction tf;
   };
 
+  /**
+   * @brief A sparse screen-space sub-image: the bounding box of one domain's
+   * projected footprint plus its premultiplied RGBA pixels.
+   * @note Each domain covers only a small part of the screen, so compositing
+   * these sparse boxes (not full frames) is what lets the renderer scale to
+   * thousands of ranks.
+   */
+  struct SubImage {
+    int                 x0 { 0 }, y0 { 0 }; // top-left pixel in the full frame
+    int                 w { 0 }, h { 0 };   // bbox size in pixels (0 => empty)
+    std::vector<real_t> rgba;                // w*h*4 premultiplied, pixel-major
+  };
+
   class Renderer {
   public:
     Renderer() {}
@@ -97,18 +110,18 @@ namespace out {
     }
 
     /**
-     * @brief Composite the per-rank host image across MPI and write the PNG.
-     * @param rgba host buffer, length width*height*4, premultiplied RGBA, in
-     *             pixel-major / channel-minor order (rgba[pix*4 + ch])
+     * @brief Composite the per-rank sparse sub-image across MPI and write PNG.
+     * @param sub this rank's sparse screen-space sub-image (premultiplied RGBA)
      * @param order_key this rank's front-to-back sort key (see composite.h)
      * @param scene the scene being written (prefix, colorbar colormap/range/label)
      * @param step current timestep (for the filename cycle number)
-     * @note Only the MPI root rank writes the file.
+     * @note Uses an order-preserving distributed tree reduce; only the MPI root
+     *       rank assembles the full frame and writes the file.
      */
-    void compositeAndWrite(const std::vector<real_t>& rgba,
-                           uint64_t                   order_key,
-                           const Scene&               scene,
-                           timestep_t                 step) const;
+    void compositeAndWrite(const SubImage& sub,
+                           uint64_t        order_key,
+                           const Scene&    scene,
+                           timestep_t      step) const;
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]

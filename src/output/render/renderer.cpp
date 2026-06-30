@@ -258,13 +258,34 @@ namespace out {
     logger::Checkpoint("Volume renderer initialized", HERE);
   }
 
-  void Renderer::compositeAndWrite(const std::vector<real_t>& rgba,
-                                   uint64_t                   order_key,
-                                   const Scene&               scene,
-                                   timestep_t                 step) const {
+  void Renderer::compositeAndWrite(const SubImage& sub,
+                                   uint64_t        order_key,
+                                   const Scene&    scene,
+                                   timestep_t      step) const {
     const std::size_t npix = static_cast<std::size_t>(m_width) *
                              static_cast<std::size_t>(m_height);
     const std::size_t n = npix * 4;
+
+    // expand a sparse sub-image into a full transparent frame (premultiplied)
+    auto subToFull = [&](const SubImage& s) -> std::vector<real_t> {
+      std::vector<real_t> full(n, ZERO);
+      for (int y = 0; y < s.h; ++y) {
+        for (int x = 0; x < s.w; ++x) {
+          const int fx = s.x0 + x;
+          const int fy = s.y0 + y;
+          if (fx < 0 or fx >= m_width or fy < 0 or fy >= m_height) {
+            continue;
+          }
+          const std::size_t fi = (static_cast<std::size_t>(fy) * m_width + fx) * 4;
+          const std::size_t si = (static_cast<std::size_t>(y) * s.w + x) * 4;
+          full[fi + 0] = s.rgba[si + 0];
+          full[fi + 1] = s.rgba[si + 1];
+          full[fi + 2] = s.rgba[si + 2];
+          full[fi + 3] = s.rgba[si + 3];
+        }
+      }
+      return full;
+    };
 
     auto write_image = [&](const std::vector<real_t>& img) {
       // ensure <name>/renders/ exists
@@ -351,57 +372,103 @@ namespace out {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     if (size == 1) {
-      write_image(rgba);
+      write_image(subToFull(sub));
       return;
     }
 
-    std::vector<real_t>            recv;
-    std::vector<unsigned long long> keys;
-    if (rank == MPI_ROOT_RANK) {
-      recv.resize(static_cast<std::size_t>(size) * n);
-      keys.resize(static_cast<std::size_t>(size));
-    }
+    constexpr int TAG_HDR  = 7301;
+    constexpr int TAG_DATA = 7302;
+
+    auto sendSub = [&](const SubImage& s, int dest) {
+      int hdr[4] = { s.x0, s.y0, s.w, s.h };
+      MPI_Send(hdr, 4, MPI_INT, dest, TAG_HDR, MPI_COMM_WORLD);
+      const int cnt = s.w * s.h * 4;
+      if (cnt > 0) {
+        MPI_Send(s.rgba.data(),
+                 cnt,
+                 mpi::get_type<real_t>(),
+                 dest,
+                 TAG_DATA,
+                 MPI_COMM_WORLD);
+      }
+    };
+    auto recvSub = [&](int src) -> SubImage {
+      int hdr[4];
+      MPI_Recv(hdr, 4, MPI_INT, src, TAG_HDR, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      SubImage s;
+      s.x0          = hdr[0];
+      s.y0          = hdr[1];
+      s.w           = hdr[2];
+      s.h           = hdr[3];
+      const int cnt = s.w * s.h * 4;
+      if (cnt > 0) {
+        s.rgba.resize(static_cast<std::size_t>(cnt));
+        MPI_Recv(s.rgba.data(),
+                 cnt,
+                 mpi::get_type<real_t>(),
+                 src,
+                 TAG_DATA,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+      }
+      return s;
+    };
+
+    // Every rank learns the full key vector (one uint64 each: ~tiny) and
+    // derives the same global front-to-back order, so no rank needs the others'
+    // images to agree on the composite order.
     const unsigned long long my_key = static_cast<unsigned long long>(order_key);
-
-    MPI_Gather(rgba.data(),
-               static_cast<int>(n),
-               mpi::get_type<real_t>(),
-               (rank == MPI_ROOT_RANK) ? recv.data() : nullptr,
-               static_cast<int>(n),
-               mpi::get_type<real_t>(),
-               MPI_ROOT_RANK,
-               MPI_COMM_WORLD);
-    MPI_Gather(&my_key,
-               1,
-               MPI_UNSIGNED_LONG_LONG,
-               (rank == MPI_ROOT_RANK) ? keys.data() : nullptr,
-               1,
-               MPI_UNSIGNED_LONG_LONG,
-               MPI_ROOT_RANK,
-               MPI_COMM_WORLD);
-
-    if (rank != MPI_ROOT_RANK) {
-      return;
-    }
-
-    // front-to-back order = ranks sorted by ascending composite key
-    std::vector<int> order(size);
+    std::vector<unsigned long long> keys(static_cast<std::size_t>(size));
+    MPI_Allgather(&my_key,
+                  1,
+                  MPI_UNSIGNED_LONG_LONG,
+                  keys.data(),
+                  1,
+                  MPI_UNSIGNED_LONG_LONG,
+                  MPI_COMM_WORLD);
+    std::vector<int> order(size); // order[position] = world rank, front-to-back
     std::iota(order.begin(), order.end(), 0);
     std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
       return keys[a] < keys[b];
     });
+    std::vector<int> pos(size); // pos[world rank] = front-to-back position
+    for (int i = 0; i < size; ++i) {
+      pos[order[i]] = i;
+    }
 
-    std::vector<real_t> acc(n, ZERO);
-    for (const int r : order) {
-      const real_t* seg_base = recv.data() + static_cast<std::size_t>(r) * n;
-      for (std::size_t p = 0; p < npix; ++p) {
-        overComposite(acc.data() + p * 4, seg_base + p * 4);
+    // Order-preserving binary tree reduction over positions. At level `s`, the
+    // front of each pair (lower position) receives the back partner's image and
+    // composites front OVER back; the back partner sends and drops out. "over"
+    // is associative, so this reproduces the sequential front-to-back composite
+    // in O(log nranks) rounds with no single-rank bottleneck.
+    SubImage  cur = sub;
+    const int P   = pos[rank];
+    for (int s = 1; s < size; s <<= 1) {
+      if ((P % (2 * s)) == 0) {
+        const int pp = P + s;
+        if (pp < size) {
+          const SubImage back = recvSub(order[pp]);
+          cur                 = overSub(cur, back); // cur is the front
+        }
+      } else if ((P % (2 * s)) == s) {
+        sendSub(cur, order[P - s]);
+        break; // absorbed into the front partner
       }
     }
-    write_image(acc);
+
+    // The fully composited image now lives at position 0; deliver it to root.
+    if (rank == order[0]) {
+      if (rank == MPI_ROOT_RANK) {
+        write_image(subToFull(cur));
+      } else {
+        sendSub(cur, MPI_ROOT_RANK);
+      }
+    } else if (rank == MPI_ROOT_RANK) {
+      write_image(subToFull(recvSub(order[0])));
+    }
 #else
     (void)order_key;
-    write_image(rgba);
+    write_image(subToFull(sub));
 #endif
   }
 

@@ -156,6 +156,11 @@ namespace ntt {
 
       const auto metric = local_domain->mesh.metric;
 
+      // screen-space bounding box of this domain's footprint (same for all
+      // scenes); we only ray-march and composite within it.
+      int        bx0 = 0, by0 = 0, bw = 0, bh = 0;
+      const bool on_screen = out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh);
+
       bool rendered_any = false;
       for (const auto& scene : g_renderer.scenes()) {
         Kokkos::deep_copy(bckp, ZERO);
@@ -240,51 +245,59 @@ namespace ntt {
         // sum-into-active that SynchronizeFields performs).
         CommunicateBckp(*local_domain, { 0, 1 });
 
-        // ---- launch the ray-march kernel ------------------------------- //
-        array_t<real_t* [4]> image { "render_img",
-                                     static_cast<std::size_t>(W) *
-                                       static_cast<std::size_t>(H) };
-        randacc_ndfield_t<M::Dim, 6> Fld { bckp };
-        Kokkos::parallel_for(
-          "VolumeRayMarch",
-          CreateRangePolicy<Dim::_2D>({ 0, 0 },
-                                      { static_cast<ncells_t>(W),
-                                        static_cast<ncells_t>(H) }),
-          kernel::VolumeRayMarch_kernel<M>(Fld,
-                                           0u,
-                                           metric,
-                                           cam,
-                                           lo,
-                                           hi,
-                                           ext0,
-                                           ext1,
-                                           ext2,
-                                           W,
-                                           H,
-                                           ds,
-                                           max_steps,
-                                           scene.tf.lut,
-                                           scene.tf.n_lut,
-                                           scene.tf.vmin,
-                                           scene.tf.vmax,
-                                           scene.tf.log_scale,
-                                           g_renderer.earlyAlpha(),
-                                           image));
-        Kokkos::fence();
+        // ---- launch the ray-march kernel over the screen bbox ---------- //
+        out::SubImage sub;
+        if (on_screen) {
+          sub.x0 = bx0;
+          sub.y0 = by0;
+          sub.w  = bw;
+          sub.h  = bh;
+          const std::size_t bnpix = static_cast<std::size_t>(bw) *
+                                    static_cast<std::size_t>(bh);
+          array_t<real_t* [4]>         image { "render_img", bnpix };
+          randacc_ndfield_t<M::Dim, 6> Fld { bckp };
+          Kokkos::parallel_for(
+            "VolumeRayMarch",
+            CreateRangePolicy<Dim::_2D>({ 0, 0 },
+                                        { static_cast<ncells_t>(bw),
+                                          static_cast<ncells_t>(bh) }),
+            kernel::VolumeRayMarch_kernel<M>(Fld,
+                                             0u,
+                                             metric,
+                                             cam,
+                                             lo,
+                                             hi,
+                                             ext0,
+                                             ext1,
+                                             ext2,
+                                             W,
+                                             H,
+                                             bx0,
+                                             by0,
+                                             bw,
+                                             ds,
+                                             max_steps,
+                                             scene.tf.lut,
+                                             scene.tf.n_lut,
+                                             scene.tf.vmin,
+                                             scene.tf.vmax,
+                                             scene.tf.log_scale,
+                                             g_renderer.earlyAlpha(),
+                                             image));
+          Kokkos::fence();
 
-        // device -> host, into a layout-agnostic pixel-major buffer
-        auto image_h = Kokkos::create_mirror_view(image);
-        Kokkos::deep_copy(image_h, image);
-        const std::size_t npix = static_cast<std::size_t>(W) *
-                                 static_cast<std::size_t>(H);
-        std::vector<real_t> rgba(npix * 4);
-        for (std::size_t p = 0; p < npix; ++p) {
-          rgba[p * 4 + 0] = image_h(p, 0);
-          rgba[p * 4 + 1] = image_h(p, 1);
-          rgba[p * 4 + 2] = image_h(p, 2);
-          rgba[p * 4 + 3] = image_h(p, 3);
+          // device -> host, into a layout-agnostic pixel-major buffer
+          auto image_h = Kokkos::create_mirror_view(image);
+          Kokkos::deep_copy(image_h, image);
+          sub.rgba.resize(bnpix * 4);
+          for (std::size_t p = 0; p < bnpix; ++p) {
+            sub.rgba[p * 4 + 0] = image_h(p, 0);
+            sub.rgba[p * 4 + 1] = image_h(p, 1);
+            sub.rgba[p * 4 + 2] = image_h(p, 2);
+            sub.rgba[p * 4 + 3] = image_h(p, 3);
+          }
         }
-        g_renderer.compositeAndWrite(rgba, order_key, scene, current_step);
+        g_renderer.compositeAndWrite(sub, order_key, scene, current_step);
         rendered_any = true;
       }
       return rendered_any;
