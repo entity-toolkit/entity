@@ -550,24 +550,25 @@ namespace ntt {
           const std::size_t n_dwn = (l_size > first)
                                       ? (l_size - first + s - 1) / s
                                       : 0u;
+          // Edge / node coordinates for the vertex-centered publish: one more
+          // than the (downsampled) cell count. Neighbouring ranks share the
+          // boundary node, so the shared edge coordinate must agree; the final
+          // edge is clamped to the rank's right boundary (`l_size`) so it lands
+          // on the same physical position as the neighbour's first node even
+          // when (l_size - first) % s != 0.
           const std::size_t      nedges = n_dwn + 1;
           const array_t<real_t*> xe_full { "Xe_ascent", nedges };
           const auto&            metric_a = local_domain->mesh.metric;
-          // i in [0, n_dwn) maps to local cell-edge index `first + i*s`;
-          // the final edge (i == n_dwn) is clamped to the rank's right
-          // boundary (`l_size`) so neighboring ranks share an edge at the
-          // domain interface even when (l_size - first) % s != 0.
           Kokkos::parallel_for(
             "GenerateMeshAscent",
             nedges,
-            Lambda(cellidx_t i) {
-              const std::size_t idx = (i == n_dwn) ? l_size
-                                                   : (first + i * s);
+            Lambda(cellidx_t e) {
+              const std::size_t idx = (e == n_dwn) ? l_size : (first + e * s);
               const auto      i_   = static_cast<real_t>(idx);
               coord_t<M::Dim> x_Cd { ZERO }, x_Ph { ZERO };
               x_Cd[dim] = i_;
               metric_a.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
-              xe_full(i) = x_Ph[dim];
+              xe_full(e) = x_Ph[dim];
             });
           g_ascent_writer.setMeshCoords(static_cast<unsigned short>(dim),
                                         xe_full);

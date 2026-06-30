@@ -75,10 +75,24 @@ namespace out {
     // m_l_shape stores the *downsampled* local cell shape (what gets
     // published). m_l_first_cell + m_downsample define how to map each
     // downsampled cell back to an original (full-resolution) cell index.
+    // m_l_shape holds the (downsampled) local *cell* counts. The published
+    // mesh is vertex-centered: fields are recentered to the n+1 grid nodes per
+    // axis. This puts every component at the same location (removing the Yee
+    // half-cell offset between B1/B2/B3 and J magnitudes) and is the natural
+    // representation for a future curvilinear coordset. Boundary nodes are
+    // one-sided (average only this domain's active cells), so no halo exchange
+    // is needed. NB: this does NOT remove the inter-domain volume-render seam,
+    // which is a VTK-m multi-domain compositing limitation (see the
+    // ascent feedback / debug notes), independent of publish-side continuity.
     std::vector<std::size_t> m_l_shape;
     std::vector<std::size_t> m_l_corner;
     std::vector<std::size_t> m_l_first_cell;
     std::vector<std::size_t> m_downsample;
+    // Number of published vertices per axis (= m_l_shape + 1). Cached so the
+    // staging buffer and publish kernels agree on the node-grid extent.
+    std::vector<std::size_t> m_l_nodes;
+    // One-shot guard for the published-mesh diagnostic dump/log.
+    bool                     m_summary_logged { false };
     std::string              m_root;
     std::string              m_actions_file;
     std::vector<std::string> m_fields;

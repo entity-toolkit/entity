@@ -32,6 +32,24 @@ namespace out {
 
   namespace {
     /*
+     * Clamp a (possibly out-of-range) source index into [lo, hi]. Used on the
+     * device by the cell -> node recentering in publishField: clamping to the
+     * local *active* cell range makes boundary nodes one-sided (they only
+     * average this domain's own cells) instead of reaching into the ghost
+     * ring, so no halo exchange is needed.
+     */
+    KOKKOS_INLINE_FUNCTION
+    auto clamp_idx(long i, long lo, long hi) -> long {
+      if (i < lo) {
+        return lo;
+      }
+      if (i > hi) {
+        return hi;
+      }
+      return i;
+    }
+
+    /*
      * Read a 3-vector from a Conduit float64/float32 array of length 3.
      * Returns false (leaving `out` untouched) for any other layout — the
      * caller then skips the transform for that camera entry instead of
@@ -420,49 +438,63 @@ namespace out {
                                 const std::vector<std::size_t>& l_first_cell,
                                 const std::vector<std::size_t>& downsample) {
     raise::ErrorIf(!m_initialized, "AscentWriter not initialized", HERE);
-    raise::ErrorIf(l_corner.size() != static_cast<std::size_t>(dim) ||
-                     l_shape.size() != static_cast<std::size_t>(dim),
+    const auto nd = static_cast<std::size_t>(dim);
+    raise::ErrorIf(l_corner.size() != nd || l_shape.size() != nd,
                    "AscentWriter::defineMesh size mismatch",
                    HERE);
-    raise::ErrorIf(!l_first_cell.empty() &&
-                     l_first_cell.size() != static_cast<std::size_t>(dim),
+    raise::ErrorIf(!l_first_cell.empty() && l_first_cell.size() != nd,
                    "AscentWriter::defineMesh l_first_cell size mismatch",
                    HERE);
-    raise::ErrorIf(!downsample.empty() &&
-                     downsample.size() != static_cast<std::size_t>(dim),
+    raise::ErrorIf(!downsample.empty() && downsample.size() != nd,
                    "AscentWriter::defineMesh downsample size mismatch",
                    HERE);
     m_dim      = dim;
     m_l_corner = l_corner;
-    m_l_shape  = l_shape;
+    m_l_shape.assign(l_shape.begin(), l_shape.end());
 
-    m_l_first_cell.assign(static_cast<std::size_t>(dim), 0u);
+    m_l_first_cell.assign(nd, 0u);
     if (!l_first_cell.empty()) {
       m_l_first_cell = l_first_cell;
     }
-    m_downsample.assign(static_cast<std::size_t>(dim), 1u);
+    m_downsample.assign(nd, 1u);
     if (!downsample.empty()) {
       m_downsample = downsample;
       for (auto s : m_downsample) {
         raise::ErrorIf(s == 0u, "downsample factor must be nonzero", HERE);
       }
     }
+
+    // Published fields are vertex-centered, so the node grid has one extra
+    // point per axis (= cells + 1). Neighbouring domains' edge-coordinate
+    // arrays share the boundary node, so publishing matching values there
+    // ties the per-rank blocks into a seamless field.
+    m_l_nodes.assign(nd, 1u);
+    for (std::size_t d = 0; d < nd; ++d) {
+      m_l_nodes[d] = m_l_shape[d] + 1u;
+    }
+
     // Mesh structure is being (re)defined; force a fresh blueprint
     // verification on the next render.
-    m_verified = false;
+    m_verified      = false;
+    m_summary_logged = false;
 
     m_mesh.reset();
-    m_mesh["coordsets/coords/type"] = "rectilinear";
-    // coordinate arrays are filled later via setMeshCoords()
-    m_mesh["topologies/mesh/type"]     = "rectilinear";
+    // Use a `uniform` coordset (origin + spacing + dims), not `rectilinear`.
+    // The grid is uniform Cartesian for every Ascent-supported case, VTK-m
+    // renders it identically, and crucially Devil Ray (dray) only ingests
+    // uniform/explicit coordsets — it rejects `rectilinear` ("Bad coordinates
+    // type rectilinear"), which is what wedged earlier dray attempts. The
+    // origin/spacing/dims are filled per axis later via setMeshCoords().
+    m_mesh["coordsets/coords/type"]    = "uniform";
+    m_mesh["topologies/mesh/type"]     = "uniform";
     m_mesh["topologies/mesh/coordset"] = "coords";
     m_mesh_defined                     = true;
 
-    // Allocate the per-field staging buffers once. Reused across every
-    // publishField() call (and across renders) to avoid the per-call
-    // device + host + std::vector allocation seen in earlier revisions.
+    // Allocate the per-field staging buffers once. Sized to the node grid
+    // (vertex association). Reused across every publishField() call (and across
+    // renders) to avoid per-call device + host + std::vector allocations.
     std::size_t nelem = 1;
-    for (auto n : m_l_shape) {
+    for (auto n : m_l_nodes) {
       nelem *= n;
     }
     m_buf_nelem   = nelem;
@@ -476,17 +508,46 @@ namespace out {
     raise::ErrorIf(dim >= static_cast<unsigned short>(m_dim),
                    "AscentWriter::setMeshCoords invalid dim",
                    HERE);
+    // The axis has (cells + 1) edge coordinates = the vertex (node) positions
+    // the vertex-centered fields are sampled on. For a `uniform` coordset we
+    // collapse them to origin + spacing + dims.
+    raise::ErrorIf(xe.extent(0) != m_l_nodes[dim],
+                   "AscentWriter::setMeshCoords edge count must equal "
+                   "published node count (cells + 1)",
+                   HERE);
     auto xe_h = Kokkos::create_mirror_view(xe);
     Kokkos::deep_copy(xe_h, xe);
 
-    static const char* const axes[3] = { "x", "y", "z" };
-    std::vector<double>      values(xe_h.extent(0));
-    for (std::size_t i = 0; i < xe_h.extent(0); ++i) {
-      values[i] = static_cast<double>(xe_h(i));
+    const std::size_t n_nodes = xe_h.extent(0);
+    const double      origin  = static_cast<double>(xe_h(0));
+    const double      spacing = (n_nodes > 1u)
+                                  ? static_cast<double>(xe_h(1)) - origin
+                                  : static_cast<double>(1.0);
+    // Sanity-check that the published grid really is uniform; entity's Ascent
+    // path is Cartesian-only (constant spacing), but warn loudly rather than
+    // silently mis-place a stretched grid.
+    if (n_nodes > 2u) {
+      const double last = static_cast<double>(xe_h(n_nodes - 1));
+      const double expect =
+        origin + spacing * static_cast<double>(n_nodes - 1);
+      const double aspc  = std::abs(spacing);
+      const double scale = (aspc > 1e-30) ? aspc : 1e-30;
+      if (std::abs(last - expect) > 1e-4 * scale *
+                                      static_cast<double>(n_nodes)) {
+        raise::Warning("AscentWriter::setMeshCoords: non-uniform spacing on a "
+                       "uniform coordset; the render will be geometrically "
+                       "off. Ascent output assumes a uniform Cartesian grid.",
+                       HERE);
+      }
     }
-    m_mesh["coordsets/coords/values/" + std::string(axes[dim])].set(
-      values.data(),
-      values.size());
+
+    static const char* const idim[3] = { "i", "j", "k" };
+    static const char* const iorg[3] = { "x", "y", "z" };
+    static const char* const ispc[3] = { "dx", "dy", "dz" };
+    m_mesh["coordsets/coords/dims/" + std::string(idim[dim])] =
+      static_cast<conduit::int64>(n_nodes);
+    m_mesh["coordsets/coords/origin/" + std::string(iorg[dim])]  = origin;
+    m_mesh["coordsets/coords/spacing/" + std::string(ispc[dim])] = spacing;
   }
 
   template <Dimension D, int N>
@@ -501,63 +562,105 @@ namespace out {
     const std::size_t gh  = ntt::N_GHOSTS;
     auto              buf = m_field_buf_d;
 
-    // Extract the (possibly downsampled) active region of the requested
-    // component into the persistent flat buffer in i-fastest order
-    // (Conduit/Blueprint layout). Conduit's `set(...)` below copies out,
-    // so the buffer can be reused across fields and across renders.
+    // Recenter the (possibly downsampled) cell field onto the grid NODES and
+    // write the node values into the persistent flat buffer in i-fastest order
+    // (Conduit/Blueprint layout). Conduit's `set(...)` below copies out, so the
+    // buffer can be reused across fields and across renders. Publishing on
+    // nodes (vs cells) puts every field component at the same location, which
+    // removes the Yee half-cell offset between B1/B2/B3 (and J) magnitudes and
+    // is the natural representation for a future curvilinear coordset.
     //
-    // Source index for downsampled cell `i_dwn` along axis d is
-    //   i_src = m_l_first_cell[d] + i_dwn * m_downsample[d] + N_GHOSTS
-    // which matches how `output.fields.downsampling` strides through the
-    // ADIOS path.
+    // Node `i` along axis d sits between sampled cells (i-1) and i; its value
+    // averages the (up to 2^D) cells touching it. The straddling cells map to
+    // source indices N_GHOSTS + m_l_first_cell[d] + {(i-1), i} * stride, then
+    // are clamped to the LOCAL ACTIVE cell range [lo_d, hi_d]. The clamp makes
+    // boundary nodes one-sided (only this domain's cells), so no neighbour data
+    // / halo exchange is needed. Note this leaves the field discontinuous
+    // across MPI domains, but VTK-m's multi-domain volume compositor seams
+    // regardless of publish-side continuity, so the simpler one-sided form is
+    // used.
     if constexpr (D == Dim::_3D) {
-      const std::size_t n1 = m_l_shape[0];
-      const std::size_t n2 = m_l_shape[1];
-      const std::size_t n3 = m_l_shape[2];
-      const std::size_t f1 = m_l_first_cell[0];
-      const std::size_t f2 = m_l_first_cell[1];
-      const std::size_t f3 = m_l_first_cell[2];
-      const std::size_t s1 = m_downsample[0];
-      const std::size_t s2 = m_downsample[1];
-      const std::size_t s3 = m_downsample[2];
+      const std::size_t nn1 = m_l_nodes[0];
+      const std::size_t nn2 = m_l_nodes[1];
+      const std::size_t nn3 = m_l_nodes[2];
+      const long        s1  = static_cast<long>(m_downsample[0]);
+      const long        s2  = static_cast<long>(m_downsample[1]);
+      const long        s3  = static_cast<long>(m_downsample[2]);
+      const long        lo1 = static_cast<long>(gh + m_l_first_cell[0]);
+      const long        lo2 = static_cast<long>(gh + m_l_first_cell[1]);
+      const long        lo3 = static_cast<long>(gh + m_l_first_cell[2]);
+      const long        hi1 = lo1 + static_cast<long>(nn1 - 2) * s1;
+      const long        hi2 = lo2 + static_cast<long>(nn2 - 2) * s2;
+      const long        hi3 = lo3 + static_cast<long>(nn3 - 2) * s3;
       Kokkos::parallel_for(
-        "AscentExtract3D",
+        "AscentRecenter3D",
         CreateRangePolicy<Dim::_3D>({ 0, 0, 0 },
-                                    { static_cast<ncells_t>(n1),
-                                      static_cast<ncells_t>(n2),
-                                      static_cast<ncells_t>(n3) }),
+                                    { static_cast<ncells_t>(nn1),
+                                      static_cast<ncells_t>(nn2),
+                                      static_cast<ncells_t>(nn3) }),
         Lambda(cellidx_t i1, cellidx_t i2, cellidx_t i3) {
-          buf(i1 + n1 * (i2 + n2 * i3)) = static_cast<double>(
-            fld(f1 + i1 * s1 + gh,
-                f2 + i2 * s2 + gh,
-                f3 + i3 * s3 + gh,
-                comp));
+          const long b1 = lo1 + (static_cast<long>(i1) - 1) * s1;
+          const long b2 = lo2 + (static_cast<long>(i2) - 1) * s2;
+          const long b3 = lo3 + (static_cast<long>(i3) - 1) * s3;
+          const long a1[2] = { clamp_idx(b1, lo1, hi1),
+                               clamp_idx(b1 + s1, lo1, hi1) };
+          const long a2[2] = { clamp_idx(b2, lo2, hi2),
+                               clamp_idx(b2 + s2, lo2, hi2) };
+          const long a3[2] = { clamp_idx(b3, lo3, hi3),
+                               clamp_idx(b3 + s3, lo3, hi3) };
+          double acc = 0.0;
+          for (int d3 = 0; d3 < 2; ++d3) {
+            for (int d2 = 0; d2 < 2; ++d2) {
+              for (int d1 = 0; d1 < 2; ++d1) {
+                acc += static_cast<double>(fld(a1[d1], a2[d2], a3[d3], comp));
+              }
+            }
+          }
+          buf(i1 + nn1 * (i2 + nn2 * i3)) = acc * 0.125;
         });
     } else if constexpr (D == Dim::_2D) {
-      const std::size_t n1 = m_l_shape[0];
-      const std::size_t n2 = m_l_shape[1];
-      const std::size_t f1 = m_l_first_cell[0];
-      const std::size_t f2 = m_l_first_cell[1];
-      const std::size_t s1 = m_downsample[0];
-      const std::size_t s2 = m_downsample[1];
+      const std::size_t nn1 = m_l_nodes[0];
+      const std::size_t nn2 = m_l_nodes[1];
+      const long        s1  = static_cast<long>(m_downsample[0]);
+      const long        s2  = static_cast<long>(m_downsample[1]);
+      const long        lo1 = static_cast<long>(gh + m_l_first_cell[0]);
+      const long        lo2 = static_cast<long>(gh + m_l_first_cell[1]);
+      const long        hi1 = lo1 + static_cast<long>(nn1 - 2) * s1;
+      const long        hi2 = lo2 + static_cast<long>(nn2 - 2) * s2;
       Kokkos::parallel_for(
-        "AscentExtract2D",
+        "AscentRecenter2D",
         CreateRangePolicy<Dim::_2D>({ 0, 0 },
-                                    { static_cast<ncells_t>(n1),
-                                      static_cast<ncells_t>(n2) }),
+                                    { static_cast<ncells_t>(nn1),
+                                      static_cast<ncells_t>(nn2) }),
         Lambda(cellidx_t i1, cellidx_t i2) {
-          buf(i1 + n1 * i2) = static_cast<double>(
-            fld(f1 + i1 * s1 + gh, f2 + i2 * s2 + gh, comp));
+          const long b1 = lo1 + (static_cast<long>(i1) - 1) * s1;
+          const long b2 = lo2 + (static_cast<long>(i2) - 1) * s2;
+          const long a1[2] = { clamp_idx(b1, lo1, hi1),
+                               clamp_idx(b1 + s1, lo1, hi1) };
+          const long a2[2] = { clamp_idx(b2, lo2, hi2),
+                               clamp_idx(b2 + s2, lo2, hi2) };
+          double acc = 0.0;
+          for (int d2 = 0; d2 < 2; ++d2) {
+            for (int d1 = 0; d1 < 2; ++d1) {
+              acc += static_cast<double>(fld(a1[d1], a2[d2], comp));
+            }
+          }
+          buf(i1 + nn1 * i2) = acc * 0.25;
         });
     } else { // Dim::_1D
-      const std::size_t n1 = m_l_shape[0];
-      const std::size_t f1 = m_l_first_cell[0];
-      const std::size_t s1 = m_downsample[0];
+      const std::size_t nn1 = m_l_nodes[0];
+      const long        s1  = static_cast<long>(m_downsample[0]);
+      const long        lo1 = static_cast<long>(gh + m_l_first_cell[0]);
+      const long        hi1 = lo1 + static_cast<long>(nn1 - 2) * s1;
       Kokkos::parallel_for(
-        "AscentExtract1D",
-        n1,
+        "AscentRecenter1D",
+        nn1,
         Lambda(cellidx_t i1) {
-          buf(i1) = static_cast<double>(fld(f1 + i1 * s1 + gh, comp));
+          const long b1 = lo1 + (static_cast<long>(i1) - 1) * s1;
+          const long a0 = clamp_idx(b1, lo1, hi1);
+          const long a1 = clamp_idx(b1 + s1, lo1, hi1);
+          buf(i1) = 0.5 * (static_cast<double>(fld(a0, comp)) +
+                           static_cast<double>(fld(a1, comp)));
         });
     }
     Kokkos::deep_copy(m_field_buf_h, m_field_buf_d);
@@ -569,7 +672,7 @@ namespace out {
                                      : name;
     const std::string base = "fields/" + short_name;
     m_mesh[base + "/topology"]    = "mesh";
-    m_mesh[base + "/association"] = "element";
+    m_mesh[base + "/association"] = "vertex";
     m_mesh[base + "/values"].set(m_field_buf_h.data(), m_buf_nelem);
 
     // Vector-field bonus path (gated by m_vector_aliases): when the
@@ -592,7 +695,7 @@ namespace out {
           static const char* const sub[] = { "u", "v", "w" };
           const std::string vec_base = "fields/" + prefix;
           m_mesh[vec_base + "/topology"]    = "mesh";
-          m_mesh[vec_base + "/association"] = "element";
+          m_mesh[vec_base + "/association"] = "vertex";
           m_mesh[vec_base + "/values/" + sub[idx - '1']].set(
             m_field_buf_h.data(),
             m_buf_nelem);
@@ -630,6 +733,63 @@ namespace out {
         return false;
       }
       m_verified = true;
+    }
+
+    // One-shot diagnostic: log the published-mesh layout (node grid, field
+    // names + associations) and drop a values-free skeleton next to the
+    // renders so the published structure can be verified from a run without
+    // re-instrumenting. Rank 0 writes the skeleton; every rank logs its line.
+    if (!m_summary_logged) {
+      std::string nodes;
+      for (std::size_t d = 0; d < m_l_nodes.size(); ++d) {
+        nodes += (d ? "x" : "") + std::to_string(m_l_nodes[d]);
+      }
+      std::string flds;
+      if (m_mesh.has_child("fields")) {
+        const auto& fields = m_mesh["fields"];
+        for (conduit::index_t i = 0; i < fields.number_of_children(); ++i) {
+          const auto& f = fields.child(i);
+          const std::string assoc = f.has_child("association")
+                                      ? f["association"].as_string()
+                                      : "?";
+          flds += (flds.empty() ? "" : ", ") + f.name() + "[" + assoc + "]";
+        }
+      }
+      logger::Checkpoint("Ascent published mesh: nodes=" + nodes +
+                           " fields={" + flds + "}",
+                         HERE);
+      int rank0 = 0;
+  #if defined(MPI_ENABLED)
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank0);
+  #endif
+      if (rank0 == 0) {
+        try {
+          // Copy structure but blank the (huge) value arrays so the dump is
+          // small and human-readable.
+          conduit::Node skel;
+          skel.set(m_mesh);
+          if (skel.has_path("coordsets/coords/values")) {
+            auto& cv = skel["coordsets/coords/values"];
+            for (conduit::index_t i = 0; i < cv.number_of_children(); ++i) {
+              cv.child(i).set("<omitted>");
+            }
+          }
+          if (skel.has_child("fields")) {
+            auto& fs = skel["fields"];
+            for (conduit::index_t i = 0; i < fs.number_of_children(); ++i) {
+              if (fs.child(i).has_child("values")) {
+                fs.child(i)["values"].set("<omitted>");
+              }
+            }
+          }
+          const auto skel_path = std::filesystem::path(m_root) / "plots" /
+                                 "ascent_published_skeleton.yaml";
+          conduit::relay::io::save(skel, skel_path.string(), "yaml");
+        } catch (...) {
+          // best-effort; never let the diagnostic abort a render
+        }
+      }
+      m_summary_logged = true;
     }
 
     m_ascent.publish(m_mesh);
