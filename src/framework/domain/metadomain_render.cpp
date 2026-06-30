@@ -284,7 +284,7 @@ namespace ntt {
           rgba[p * 4 + 2] = image_h(p, 2);
           rgba[p * 4 + 3] = image_h(p, 3);
         }
-        g_renderer.compositeAndWrite(rgba, order_key, scene.prefix, current_step);
+        g_renderer.compositeAndWrite(rgba, order_key, scene, current_step);
         rendered_any = true;
       }
       return rendered_any;

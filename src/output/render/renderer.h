@@ -62,6 +62,7 @@ namespace out {
     real_t               vmin { ZERO };
     real_t               vmax { ONE };
     bool                 log_scale { false };
+    std::string          colormap { "viridis" }; // for redrawing the colorbar
   };
 
   /**
@@ -70,6 +71,7 @@ namespace out {
   struct Scene {
     std::string      field;        // "N" | "Bmag" | "Jmag" | "smooth_xyz"
     std::string      prefix;       // PNG filename prefix, e.g. "Bmag_"
+    std::string      label;        // colorbar title (defaults to field)
     TransferFunction tf;
   };
 
@@ -99,13 +101,13 @@ namespace out {
      * @param rgba host buffer, length width*height*4, premultiplied RGBA, in
      *             pixel-major / channel-minor order (rgba[pix*4 + ch])
      * @param order_key this rank's front-to-back sort key (see composite.h)
-     * @param prefix PNG filename prefix
+     * @param scene the scene being written (prefix, colorbar colormap/range/label)
      * @param step current timestep (for the filename cycle number)
      * @note Only the MPI root rank writes the file.
      */
     void compositeAndWrite(const std::vector<real_t>& rgba,
                            uint64_t                   order_key,
-                           const std::string&         prefix,
+                           const Scene&               scene,
                            timestep_t                 step) const;
 
     /* getters -------------------------------------------------------------- */
@@ -161,6 +163,11 @@ namespace out {
     // opaque background composited under the final image (shows through
     // low-alpha pixels); defaults to black.
     real_t m_background[3] { ZERO, ZERO, ZERO };
+    // draw a colorbar (gradient + value ticks + label) on each PNG
+    bool m_colorbar { true };
+    // draw the colorbar in an extended right margin (outside the render region)
+    // rather than overlaying it on top of the rendered volume
+    bool m_colorbar_outside { true };
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;

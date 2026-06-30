@@ -8,6 +8,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 
+#include "output/render/colorbar.h"
 #include "output/render/composite.h"
 #include "output/render/png.h"
 #include "output/render/transfer_fn.h"
@@ -100,6 +101,13 @@ namespace out {
       m_background[1] = bg[1];
       m_background[2] = bg[2];
     }
+
+    m_colorbar = toml::find_or<bool>(td, "output", "render", "colorbar", true);
+    m_colorbar_outside = toml::find_or<bool>(td,
+                                             "output",
+                                             "render",
+                                             "colorbar_outside",
+                                             true);
 
     // cadence: mirror output.* (interval in steps; interval_time in sim time)
     const auto interval = toml::find_or<timestep_t>(td,
@@ -219,11 +227,13 @@ namespace out {
         raise::Warning("output.render scene with no field; skipping", HERE);
         continue;
       }
+      scene.label  = toml::find_or<std::string>(sc, "label", scene.field);
       scene.tf.vmin = toml::find_or<real_t>(sc, "min", ZERO);
       scene.tf.vmax = toml::find_or<real_t>(sc, "max", ONE);
       scene.tf.log_scale = toml::find_or<bool>(sc, "log", false);
       scene.tf.n_lut     = m_n_lut;
       const auto colormap = toml::find_or<std::string>(sc, "colormap", "viridis");
+      scene.tf.colormap   = colormap;
       // alpha control points: array of [position, alpha] pairs
       const auto alpha_raw = toml::find_or<std::vector<std::vector<real_t>>>(
         sc,
@@ -250,7 +260,7 @@ namespace out {
 
   void Renderer::compositeAndWrite(const std::vector<real_t>& rgba,
                                    uint64_t                   order_key,
-                                   const std::string&         prefix,
+                                   const Scene&               scene,
                                    timestep_t                 step) const {
     const std::size_t npix = static_cast<std::size_t>(m_width) *
                              static_cast<std::size_t>(m_height);
@@ -281,9 +291,54 @@ namespace out {
         bytes[p * 4 + 3] = 255;
       }
       const auto fname = dir / fmt::format("%s%08lu.png",
-                                           prefix.c_str(),
+                                           scene.prefix.c_str(),
                                            static_cast<unsigned long>(step));
-      if (not write_png(fname, m_width, m_height, bytes.data())) {
+      bool ok = true;
+      if (m_colorbar and m_colorbar_outside) {
+        // extend the canvas to the right so the colorbar sits in its own margin,
+        // outside the rendered volume.
+        const int     strip = colorbarBlockWidth(m_height);
+        const int     CW    = m_width + strip;
+        const uint8_t bR    = quantize(m_background[0]);
+        const uint8_t bG    = quantize(m_background[1]);
+        const uint8_t bB    = quantize(m_background[2]);
+        std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * m_height * 4);
+        for (std::size_t i = 0; i < canvas.size(); i += 4) {
+          canvas[i + 0] = bR;
+          canvas[i + 1] = bG;
+          canvas[i + 2] = bB;
+          canvas[i + 3] = 255;
+        }
+        for (int y = 0; y < m_height; ++y) {
+          std::copy_n(&bytes[static_cast<std::size_t>(y) * m_width * 4],
+                      static_cast<std::size_t>(m_width) * 4,
+                      &canvas[static_cast<std::size_t>(y) * CW * 4]);
+        }
+        drawColorbar(canvas.data(),
+                     CW,
+                     m_height,
+                     scene.tf.colormap,
+                     scene.tf.vmin,
+                     scene.tf.vmax,
+                     scene.tf.log_scale,
+                     scene.label,
+                     m_background);
+        ok = write_png(fname, CW, m_height, canvas.data());
+      } else {
+        if (m_colorbar) {
+          drawColorbar(bytes.data(),
+                       m_width,
+                       m_height,
+                       scene.tf.colormap,
+                       scene.tf.vmin,
+                       scene.tf.vmax,
+                       scene.tf.log_scale,
+                       scene.label,
+                       m_background);
+        }
+        ok = write_png(fname, m_width, m_height, bytes.data());
+      }
+      if (not ok) {
         raise::Warning(
           fmt::format("failed to write %s", fname.string().c_str()),
           HERE);
