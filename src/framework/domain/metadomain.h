@@ -39,6 +39,7 @@
 
 #if defined(OUTPUT_ENABLED)
   #include "output/checkpoint.h"
+  #include "output/render/renderer.h"
   #include "output/writer.h"
 
   #include <adios2.h>
@@ -96,6 +97,9 @@ namespace ntt {
     void SynchronizeFields(Domain<S, M>&,
                            CommTags,
                            const cell_range_t& = { 0, 0 }) const;
+    // Halo-fill of the bckp buffer (neighbor active cells -> local ghosts),
+    // used by the in-situ renderer for seamless trilinear sampling.
+    void CommunicateBckp(Domain<S, M>&, const cell_range_t&) const;
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
     void CommunicateVectorPotential(unsigned short);
 #endif
@@ -173,6 +177,14 @@ namespace ntt {
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
     void redecomposeFromCheckpoint(const std::vector<std::vector<ncells_t>>&,
                                    const std::vector<boundaries_t<real_t>>&);
+
+    /* in-situ volume renderer (see metadomain_render.cpp) ------------------ */
+    void InitRenderer(const SimulationParams&);
+    auto Render(const SimulationParams&,
+                timestep_t,
+                timestep_t,
+                simtime_t,
+                simtime_t) -> bool;
 #endif
 
     void InitStatsWriter(const SimulationParams&, bool);
@@ -305,6 +317,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
+    out::Renderer      g_renderer;
 #endif
 
 #if defined(MPI_ENABLED)

@@ -254,6 +254,7 @@ namespace Timer {
     PrintParticleSort = 1 << 4,
     PrintCheckpoint   = 1 << 5,
     PrintNormed       = 1 << 6,
+    PrintRender       = 1 << 7,
     Default           = PrintNormed | PrintTotal | PrintTitle | AutoConvert,
   };
 } // namespace Timer
