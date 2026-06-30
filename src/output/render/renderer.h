@@ -69,10 +69,11 @@ namespace out {
    * @brief One rendered scalar field -> one PNG stream.
    */
   struct Scene {
-    std::string      field;        // "N" | "Bmag" | "Jmag" | "smooth_xyz"
-    std::string      prefix;       // PNG filename prefix, e.g. "Bmag_"
-    std::string      label;        // colorbar title (defaults to field)
-    TransferFunction tf;
+    std::string         field;     // "N" | "Bmag" | "Jmag" | "smooth_xyz"
+    std::string         prefix;    // PNG filename prefix, e.g. "Bmag_"
+    std::string         label;     // colorbar title (defaults to field)
+    std::vector<real_t> ticks;     // explicit colorbar tick values (optional)
+    TransferFunction    tf;
   };
 
   /**

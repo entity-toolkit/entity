@@ -228,6 +228,9 @@ namespace out {
         continue;
       }
       scene.label  = toml::find_or<std::string>(sc, "label", scene.field);
+      scene.ticks  = toml::find_or<std::vector<real_t>>(sc,
+                                                        "colorbar_ticks",
+                                                        std::vector<real_t> {});
       scene.tf.vmin = toml::find_or<real_t>(sc, "min", ZERO);
       scene.tf.vmax = toml::find_or<real_t>(sc, "max", ONE);
       scene.tf.log_scale = toml::find_or<bool>(sc, "log", false);
@@ -343,7 +346,8 @@ namespace out {
                      scene.tf.vmax,
                      scene.tf.log_scale,
                      scene.label,
-                     m_background);
+                     m_background,
+                     scene.ticks);
         ok = write_png(fname, CW, m_height, canvas.data());
       } else {
         if (m_colorbar) {
@@ -355,7 +359,8 @@ namespace out {
                        scene.tf.vmax,
                        scene.tf.log_scale,
                        scene.label,
-                       m_background);
+                       m_background,
+                       scene.ticks);
         }
         ok = write_png(fname, m_width, m_height, bytes.data());
       }

@@ -26,6 +26,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace out {
 
@@ -162,16 +164,19 @@ namespace out {
    * @param log_scale if true, ticks are spaced/labelled logarithmically
    * @param label    title drawn above the bar (e.g. the field name)
    * @param bg       background RGB (to auto-pick contrasting text color)
+   * @param ticks    explicit tick values to label; if empty, 5 evenly-spaced
+   *                 ticks are generated. Values outside [vmin, vmax] are skipped.
    */
-  inline void drawColorbar(uint8_t*           rgba,
-                           int                W,
-                           int                H,
-                           const std::string& colormap,
-                           real_t             vmin,
-                           real_t             vmax,
-                           bool               log_scale,
-                           const std::string& label,
-                           const real_t       bg[3]) {
+  inline void drawColorbar(uint8_t*                   rgba,
+                           int                        W,
+                           int                        H,
+                           const std::string&         colormap,
+                           real_t                     vmin,
+                           real_t                     vmax,
+                           bool                       log_scale,
+                           const std::string&         label,
+                           const real_t               bg[3],
+                           const std::vector<real_t>& ticks = {}) {
     using namespace cbar_hidden;
 
     const int s       = scale(H);
@@ -221,18 +226,39 @@ namespace out {
       }
     }
 
-    // ticks + labels
+    // ticks + labels: explicit values if given, else 5 evenly-spaced
     const bool   can_log = log_scale and vmin > ZERO and vmax > ZERO;
     const real_t lvmin   = can_log ? math::log10(vmin) : ZERO;
     const real_t lvmax   = can_log ? math::log10(vmax) : ZERO;
-    const int    nticks  = 5;
-    for (int t = 0; t < nticks; ++t) {
-      const real_t u = static_cast<real_t>(t) /
-                       static_cast<real_t>(nticks - 1);
-      const real_t val = can_log
-                           ? math::pow(static_cast<real_t>(10),
-                                       lvmin + (lvmax - lvmin) * u)
-                           : (vmin + (vmax - vmin) * u);
+    std::vector<std::pair<real_t, real_t>> tk; // (u in [0,1], value)
+    if (ticks.empty()) {
+      const int nticks = 5;
+      for (int t = 0; t < nticks; ++t) {
+        const real_t u   = static_cast<real_t>(t) /
+                         static_cast<real_t>(nticks - 1);
+        const real_t val = can_log
+                             ? math::pow(static_cast<real_t>(10),
+                                         lvmin + (lvmax - lvmin) * u)
+                             : (vmin + (vmax - vmin) * u);
+        tk.emplace_back(u, val);
+      }
+    } else {
+      const real_t span = can_log ? (lvmax - lvmin) : (vmax - vmin);
+      for (const real_t v : ticks) {
+        if (can_log and v <= ZERO) {
+          continue;
+        }
+        const real_t u = (span != ZERO)
+                           ? ((can_log ? (math::log10(v) - lvmin) : (v - vmin)) /
+                              span)
+                           : ZERO;
+        if (u < static_cast<real_t>(-1e-4) or u > ONE + static_cast<real_t>(1e-4)) {
+          continue; // outside the colorbar range
+        }
+        tk.emplace_back(std::min(ONE, std::max(ZERO, u)), v);
+      }
+    }
+    for (const auto& [u, val] : tk) {
       const int ty = bar_y +
                      static_cast<int>((ONE - u) *
                                       static_cast<real_t>(bar_h - 1));
