@@ -158,6 +158,9 @@ namespace out {
     real_t m_step_size { ZERO };  // world units/step; 0 => derive from samples
     real_t m_early_alpha { static_cast<real_t>(0.99) };
     int    m_n_lut { 256 };
+    // opaque background composited under the final image (shows through
+    // low-alpha pixels); defaults to black.
+    real_t m_background[3] { ZERO, ZERO, ZERO };
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;

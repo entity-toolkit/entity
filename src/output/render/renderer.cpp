@@ -89,6 +89,18 @@ namespace out {
                                           static_cast<real_t>(0.99));
     m_n_lut = toml::find_or<int>(td, "output", "render", "n_lut", 256);
 
+    // opaque background color (shows through low-alpha pixels); default black
+    const auto bg = toml::find_or<std::vector<real_t>>(td,
+                                                       "output",
+                                                       "render",
+                                                       "background",
+                                                       std::vector<real_t> {});
+    if (bg.size() == 3) {
+      m_background[0] = bg[0];
+      m_background[1] = bg[1];
+      m_background[2] = bg[2];
+    }
+
     // cadence: mirror output.* (interval in steps; interval_time in sim time)
     const auto interval = toml::find_or<timestep_t>(td,
                                                     "output",
@@ -257,9 +269,16 @@ namespace out {
       } catch (const std::exception& e) {
         raise::Warning(e.what(), HERE);
       }
+      // composite the premultiplied image over the opaque background:
+      // out = src_premult + (1 - src_alpha) * background, alpha = opaque.
       std::vector<uint8_t> bytes(n);
-      for (std::size_t i = 0; i < n; ++i) {
-        bytes[i] = quantize(img[i]);
+      for (std::size_t p = 0; p < npix; ++p) {
+        const real_t a   = img[p * 4 + 3];
+        const real_t inv = ONE - a;
+        bytes[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
+        bytes[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
+        bytes[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
+        bytes[p * 4 + 3] = 255;
       }
       const auto fname = dir / fmt::format("%s%08lu.png",
                                            prefix.c_str(),
