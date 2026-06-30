@@ -36,12 +36,19 @@
 #include "kernels/fields_to_phys.hpp"
 #include "kernels/particle_moments.hpp"
 #include "output/render/composite.h"
+#include "output/render/fieldlines.h"
 #include "output/render/raymarch.hpp"
 #include "output/render/reduce.hpp"
 #include "output/render/slice2d.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
+
+#if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
+  #include <mpi.h>
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -122,6 +129,120 @@ namespace ntt {
           Kokkos::subview(dst, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, to),
           Kokkos::subview(src, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, from));
       }
+    }
+
+    // Volume-average this domain's physical-basis vector field (B/E/J) onto a
+    // GLOBAL coarse grid, then MPI-replicate it so every rank holds the same
+    // field and can trace identical global field lines locally. `bckp` is used
+    // as scratch (overwritten). 3D only (the field-line renderer is Cartesian).
+    template <SimEngine::type S, MetricClass M>
+    auto buildCoarseFieldVec(const Mesh<M>&            mesh,
+                             const Fields<M::Dim, S>&  fields,
+                             ndfield_t<M::Dim, 6>&     bckp,
+                             char                      fbase,
+                             const real_t              gorigin[3],
+                             const int                 gnc[3],
+                             const real_t              gdx[3]) -> out::CoarseField {
+      const auto metric = mesh.metric;
+      // raw vector components -> bckp(0,1,2)
+      uint8_t            src_base = em::bx1;
+      PrepareOutputFlags interp = PrepareOutput::InterpToCellCenterFromFaces;
+      bool               is_current = false;
+      if (fbase == 'E') {
+        src_base = em::ex1;
+        interp   = PrepareOutput::InterpToCellCenterFromEdges;
+      } else if (fbase == 'J') {
+        is_current = true;
+        src_base   = cur::jx1;
+        interp     = PrepareOutput::InterpToCellCenterFromEdges;
+      }
+      if (is_current) {
+        copyVec3ToBckp<M::Dim, 3>(fields.cur, bckp,
+                                  cell_range_t(cur::jx1, cur::jx3 + 1));
+      } else {
+        copyVec3ToBckp<M::Dim, 6>(fields.em, bckp,
+                                  cell_range_t(src_base, src_base + 3));
+      }
+      // interpolate to cell centers + convert to physical basis -> bckp(3,4,5)
+      const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
+                                           ? PrepareOutput::ConvertToHat
+                                           : PrepareOutput::ConvertToPhysCntrv;
+      list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
+      list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
+      Kokkos::parallel_for(
+        "RenderFLFieldsToPhys",
+        mesh.rangeActiveCells(),
+        kernel::FieldsToPhys_kernel<M, 6, 6>(bckp, bckp, comp_from, comp_to,
+                                             interp | prepare, metric));
+      Kokkos::fence();
+
+      // pull the physical components to host and bin into the coarse grid
+      auto bckp_h = Kokkos::create_mirror_view(bckp);
+      Kokkos::deep_copy(bckp_h, bckp);
+
+      const std::size_t ncell = static_cast<std::size_t>(gnc[0]) *
+                                static_cast<std::size_t>(gnc[1]) *
+                                static_cast<std::size_t>(gnc[2]);
+      std::vector<real_t> sum(ncell * 3, ZERO);
+      std::vector<real_t> cnt(ncell, ZERO);
+
+      const auto   le = mesh.extent();
+      const real_t llo[3] = { le[0].first, le[1].first, le[2].first };
+      const real_t lsz[3] = { le[0].second - le[0].first,
+                              le[1].second - le[1].first,
+                              le[2].second - le[2].first };
+      const int    nl[3]  = { static_cast<int>(mesh.n_active(in::x1)),
+                              static_cast<int>(mesh.n_active(in::x2)),
+                              static_cast<int>(mesh.n_active(in::x3)) };
+      const int    NG     = static_cast<int>(N_GHOSTS);
+      for (int k = 0; k < nl[2]; ++k) {
+        for (int j = 0; j < nl[1]; ++j) {
+          for (int i = 0; i < nl[0]; ++i) {
+            const real_t world[3] = {
+              llo[0] + (static_cast<real_t>(i) + HALF) * lsz[0] / nl[0],
+              llo[1] + (static_cast<real_t>(j) + HALF) * lsz[1] / nl[1],
+              llo[2] + (static_cast<real_t>(k) + HALF) * lsz[2] / nl[2]
+            };
+            int c[3];
+            for (int d = 0; d < 3; ++d) {
+              int cc = static_cast<int>(
+                std::floor((world[d] - gorigin[d]) / gdx[d]));
+              cc   = (cc < 0) ? 0 : ((cc > gnc[d] - 1) ? gnc[d] - 1 : cc);
+              c[d] = cc;
+            }
+            const std::size_t lin = (static_cast<std::size_t>(c[2]) * gnc[1] +
+                                     c[1]) *
+                                      gnc[0] +
+                                    c[0];
+            sum[lin * 3 + 0] += bckp_h(i + NG, j + NG, k + NG, 3);
+            sum[lin * 3 + 1] += bckp_h(i + NG, j + NG, k + NG, 4);
+            sum[lin * 3 + 2] += bckp_h(i + NG, j + NG, k + NG, 5);
+            cnt[lin]         += ONE;
+          }
+        }
+      }
+#if defined(MPI_ENABLED)
+      MPI_Allreduce(MPI_IN_PLACE, sum.data(), static_cast<int>(ncell * 3),
+                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, cnt.data(), static_cast<int>(ncell),
+                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+#endif
+      out::CoarseField cf;
+      cf.B.assign(ncell * 3, ZERO);
+      for (int d = 0; d < 3; ++d) {
+        cf.n[d]      = gnc[d];
+        cf.origin[d] = gorigin[d];
+        cf.dx[d]     = gdx[d];
+      }
+      for (std::size_t c = 0; c < ncell; ++c) {
+        if (cnt[c] > ZERO) {
+          const real_t inv  = ONE / cnt[c];
+          cf.B[c * 3 + 0]   = sum[c * 3 + 0] * inv;
+          cf.B[c * 3 + 1]   = sum[c * 3 + 1] * inv;
+          cf.B[c * 3 + 2]   = sum[c * 3 + 2] * inv;
+        }
+      }
+      return cf;
     }
 
   } // namespace
@@ -503,16 +624,89 @@ namespace ntt {
       int        bx0 = 0, by0 = 0, bw = 0, bh = 0;
       const bool on_screen = out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh);
 
+      // ---- magnetic-field-line tubes (built once, shared by every scene) --- //
+      // Every rank coarsens + replicates the field, traces the SAME global
+      // polylines, and keeps only the segments inside its own domain; the
+      // ordered cross-domain composite stitches them. Built before the scene
+      // loop so an overlay and a standalone tube scene share one geometry pass.
+      // NB: all ranks reach this together (cadence is collective), so the
+      // Allreduce inside buildCoarseFieldVec is safe.
+      const auto&  flc        = g_renderer.fieldlines();
+      out::TubeSet tubes      = out::emptyTubeSet();
+      out::TubeSet empty      = out::emptyTubeSet();
+      bool         have_tubes = false;
+      if (flc.enable) {
+        const int gN[3] = { static_cast<int>(mesh().n_active(in::x1)),
+                            static_cast<int>(mesh().n_active(in::x2)),
+                            static_cast<int>(mesh().n_active(in::x3)) };
+        int       gnc[3];
+        real_t    gorigin[3], gdx[3];
+        for (int d = 0; d < 3; ++d) {
+          gnc[d]     = std::max(1, (gN[d] + flc.bin - 1) / flc.bin);
+          gorigin[d] = glob_ext[d].first;
+          gdx[d]     = (glob_ext[d].second - glob_ext[d].first) / gnc[d];
+        }
+        const char fb = static_cast<char>(
+          std::toupper(flc.field.empty() ? 'B' : flc.field[0]));
+        out::CoarseField cf = buildCoarseFieldVec<S, M>(
+          local_domain->mesh, local_domain->fields, bckp, fb, gorigin, gnc, gdx);
+        // seed/tube scale: world units per screen pixel (orthographic frame)
+        const real_t wpp = (cam.half_h * TWO) / static_cast<real_t>(H);
+        real_t       vlo, vhi;
+        auto         lines = out::traceFieldLines(cf, flc, wpp, vlo, vhi);
+        if (flc.vmax > flc.vmin) { // explicit color range overrides auto
+          vlo = flc.vmin;
+          vhi = flc.vmax;
+        }
+        const real_t tube_world = math::max(flc.tube_px, ONE) * wpp;
+        const real_t eff_r = math::max(tube_world,
+                                       static_cast<real_t>(0.55) * ds);
+        std::size_t n_kept = 0;
+        tubes      = out::buildTubeSet(lines, eff_r, flc, vlo, vhi, lo, hi, cf,
+                                       n_kept);
+        have_tubes = true;
+        logger::Checkpoint("field lines: " + std::to_string(lines.size()) +
+                             " global lines, " + std::to_string(n_kept) +
+                             " local segments",
+                           HERE);
+      }
+
       bool rendered_any = false;
       for (const auto& scene : g_renderer.scenes()) {
-        Kokkos::deep_copy(bckp, ZERO);
-        if (not prepareRenderScalar(params, *local_domain, scene.field, bckp)) {
+        // a `field = "fieldlines"` scene renders the tubes standalone (no
+        // volume); any other scene may overlay them inside its volume.
+        const bool fl_only    = (scene.field == "fieldlines");
+        const bool volume_on  = not fl_only;
+        const bool show_tubes = scene.show_fieldlines and have_tubes;
+        if (volume_on) {
+          Kokkos::deep_copy(bckp, ZERO);
+          if (not prepareRenderScalar(params, *local_domain, scene.field, bckp)) {
+            continue;
+          }
+          // fill the ghost halo with neighbor active values so trilinear
+          // sampling is C0 across domain faces (a halo EXCHANGE, not the
+          // sum-into-active that SynchronizeFields performs).
+          CommunicateBckp(*local_domain, { 0, 1 });
+        } else if (not have_tubes) {
+          // standalone field-line scene but tracing produced nothing/disabled
+          raise::Warning("output.render: 'fieldlines' scene but no field-line "
+                         "geometry; skipping",
+                         HERE);
           continue;
         }
-        // fill the ghost halo with neighbor active values so trilinear
-        // sampling is C0 across domain faces (a halo EXCHANGE, not the
-        // sum-into-active that SynchronizeFields performs).
-        CommunicateBckp(*local_domain, { 0, 1 });
+        const out::TubeSet& kt = show_tubes ? tubes : empty;
+        // a standalone tube scene colors its colorbar by |field|, not by the
+        // (unused) volume transfer function
+        out::Scene scene_cb = scene;
+        if (fl_only) {
+          scene_cb.tf.vmin      = tubes.vmin;
+          scene_cb.tf.vmax      = tubes.vmax;
+          scene_cb.tf.log_scale = tubes.log_scale;
+          scene_cb.tf.colormap  = tubes.colormap;
+          if (scene_cb.label == "fieldlines") {
+            scene_cb.label = "|" + flc.field + "|";
+          }
+        }
 
         out::SubImage sub;
         if (on_screen) {
@@ -555,6 +749,8 @@ namespace ntt {
                                              ghi,
                                              spine_radius,
                                              spine_rgb,
+                                             kt,
+                                             volume_on,
                                              image));
           Kokkos::fence();
 
@@ -569,7 +765,7 @@ namespace ntt {
             sub.rgba[p * 4 + 3] = image_h(p, 3);
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene, current_step);
+        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step);
         rendered_any = true;
       }
       return rendered_any;

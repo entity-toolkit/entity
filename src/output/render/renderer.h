@@ -70,13 +70,69 @@ namespace out {
   };
 
   /**
+   * @brief Configuration for the magnetic-field-line tube overlay.
+   * @note The lines are traced once per frame through a coarse, MPI-replicated
+   * copy of the (physical-basis) field, so every rank produces the same global
+   * polylines and renders only the segments inside its own domain; the existing
+   * ordered cross-domain composite then stitches them. The coarsening (`bin`)
+   * is what makes the replicate-and-trace cheap and avoids parallel particle
+   * advection. See output/render/fieldlines.h.
+   */
+  struct FieldLineConfig {
+    bool        enable { false };     // build the geometry this run
+    std::string field { "B" };        // vector field to trace: "B" | "E" | "J"
+    int         bin { 4 };            // coarsening factor (cells/coarse cell), 2..8
+    real_t      seed_px { 8 };        // seed lattice spacing in screen pixels
+    real_t      tube_px { 2 };        // tube radius in screen pixels
+    std::string colormap { "inferno" };
+    bool        log_scale { false };
+    real_t      vmin { ZERO };        // tube color range; vmin>=vmax => auto |B|
+    real_t      vmax { ZERO };
+    real_t      step_frac { static_cast<real_t>(0.5) }; // RK4 step / coarse cell
+    int         max_steps { 4000 };   // per-direction integration cap
+    real_t      max_len_frac { static_cast<real_t>(3) }; // x global box diagonal
+    int         seed_max { 4096 };    // hard cap on seed count (spacing grows to fit)
+  };
+
+  /**
+   * @brief Device-side field-line geometry handed to the ray-march kernel.
+   * @note A flat capsule list: each row is (p0xyz, p1xyz, s0, s1) with s the
+   * per-vertex scalar (|field|) used to color the tube. Opaque (alpha==1) LUT,
+   * so a tube sample paints a solid color and is composited inline exactly like
+   * the box spine. Empty (n_seg==0) on ranks no line touches.
+   */
+  struct TubeSet {
+    array_t<real_t* [8]> seg;            // (n_seg, 8): p0, p1, s0, s1 in world coords
+    int                  n_seg { 0 };
+    real_t               radius { ZERO }; // world-space tube radius (ds floor applied)
+    array_t<real_t* [4]> lut;             // premultiplied RGBA, opaque (alpha==1)
+    int                  n_lut { 256 };
+    real_t               vmin { ZERO }, vmax { ONE };
+    bool                 log_scale { false };
+    std::string          colormap { "inferno" }; // for the standalone colorbar
+    // uniform-grid bucket index (CSR) so a ray sample tests only the few
+    // segments in its cell instead of all of them. Bucketing on the coarse
+    // grid is exact because the tube radius is << one coarse cell; a segment is
+    // registered in every cell its radius-padded AABB overlaps.
+    array_t<int*>        cell_start;      // (ncell+1) prefix offsets into seg_idx
+    array_t<int*>        seg_idx;         // segment indices, grouped by cell
+    int                  gnc[3] { 1, 1, 1 };
+    real_t               gorigin[3] { ZERO, ZERO, ZERO };
+    real_t               gdx[3] { ONE, ONE, ONE };
+  };
+
+  /**
    * @brief One rendered scalar field -> one PNG stream.
+   * @note `field == "fieldlines"` is a standalone tube scene: no scalar volume
+   * is sampled (the field lines render against the background alone). Any other
+   * field with `show_fieldlines` true overlays the tubes inside its volume.
    */
   struct Scene {
-    std::string         field;     // "N" | "Bmag" | "Vmag" | "Txy" | "B1" ...
+    std::string         field;     // "N" | "Bmag" | "Vmag" | "Txy" | "B1" | "fieldlines" ...
     std::string         prefix;    // PNG filename prefix, e.g. "Bmag_"
     std::string         label;     // colorbar title (defaults to field)
     std::vector<real_t> ticks;     // explicit colorbar tick values (optional)
+    bool                show_fieldlines { false }; // overlay B-field tubes in the volume
     TransferFunction    tf;
   };
 
@@ -238,6 +294,11 @@ namespace out {
       return m_scenes;
     }
 
+    [[nodiscard]]
+    auto fieldlines() const -> const FieldLineConfig& {
+      return m_fieldlines;
+    }
+
   private:
     bool m_enabled { false };
 
@@ -279,6 +340,7 @@ namespace out {
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;
+    FieldLineConfig    m_fieldlines;
 
     tools::Tracker m_tracker;
     path_t         m_root;

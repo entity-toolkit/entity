@@ -848,6 +848,8 @@
       #          "N_1", "Rho_2", "Txy_1_2", "V1_3"; default = all massive species
       #   @note: components are signed; pair a symmetric `min`/`max` with a
       #          diverging colormap ("cool2warm") to center zero
+      #   @note: "fieldlines" renders the magnetic field-line tubes on their own
+      #          (no scalar volume sampled); see [output.render.fieldlines] below
       field = ""
       # PNG filename prefix; files are `<prefix><cycle>.png`
       #   @type: string
@@ -888,6 +890,81 @@
       #   @note: Values outside [min, max] are skipped
       #   @example: [0.0, 0.5, 1.0]
       colorbar_ticks = ""
+      # Overlay the magnetic field-line tubes inside this scene's volume
+      #   @type: bool
+      #   @default: false
+      #   @note: requires the [output.render.fieldlines] table below (3D only).
+      #          A scene with field = "fieldlines" instead renders them alone.
+      fieldlines = ""
+
+    # Magnetic field-line tubes (3D volume mode only). Traces field lines through
+    # a coarse, MPI-replicated copy of the field and draws them as solid tubes,
+    # colored by |field|, composited inside the same ray-march as the volume so
+    # they are correctly occluded by it. Built once per frame and shared by every
+    # scene that opts in (per-scene `fieldlines = true`) and by any standalone
+    # `field = "fieldlines"` scene. The coarsening is what makes the lines cheap
+    # to trace (no parallel particle advection) and gives a smoothed morphology.
+    [output.render.fieldlines]
+      # Build the field-line geometry this run
+      #   @type: bool
+      #   @default: false
+      #   @note: implied true if any scene sets `fieldlines = true` or uses
+      #          `field = "fieldlines"`
+      enable = ""
+      # Vector field to trace
+      #   @type: string
+      #   @enum: "B", "E", "J"
+      #   @default: "B"
+      field = ""
+      # Field coarsening factor (simulation cells per coarse cell, per axis)
+      #   @type: int [1..16]
+      #   @default: 4
+      #   @note: larger = smoother "morphology" lines + cheaper replication
+      #          (the coarse field is ~ N_cells / bin^3 x 3 floats, on every rank)
+      bin = ""
+      # Seed-lattice spacing in screen pixels (sets line density)
+      #   @type: float [> 0]
+      #   @default: 8
+      #   @note: capped by `seed_max`; if seed_px asks for more seeds than that,
+      #          the spacing grows to fit and seed_px no longer governs
+      seed_px = ""
+      # Hard cap on the seed count (the seed lattice is n^3, 2 lines per seed)
+      #   @type: int [> 0]
+      #   @default: 4096
+      #   @note: lower this for fewer / more widely spaced lines
+      seed_max = ""
+      # Tube radius in screen pixels
+      #   @type: float [> 0]
+      #   @default: 2
+      tube_px = ""
+      # Tube colormap (mapped by |field| along the line)
+      #   @type: string
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray"
+      #   @default: "inferno"
+      colormap = ""
+      # Map the tube color range logarithmically
+      #   @type: bool
+      #   @default: false
+      #   @note: requires min > 0
+      log = ""
+      # Tube color range (lower / upper bound on |field|)
+      #   @type: float
+      #   @default: 0.0
+      #   @note: when min >= max, the range is auto-set from |field| along the lines
+      min = ""
+      max = ""
+      # RK4 integration step as a fraction of one coarse cell
+      #   @type: float [> 0]
+      #   @default: 0.5
+      step_frac = ""
+      # Per-direction integration-step cap
+      #   @type: int [> 0]
+      #   @default: 4000
+      max_steps = ""
+      # Maximum line length, in global box diagonals (per direction)
+      #   @type: float [> 0]
+      #   @default: 3.0
+      max_length = ""
 
 [checkpoint]
   # Number of timesteps between checkpoints

@@ -254,6 +254,10 @@ namespace out {
       scene.ticks  = toml::find_or<std::vector<real_t>>(sc,
                                                         "colorbar_ticks",
                                                         std::vector<real_t> {});
+      // overlay the B-field-line tubes inside this scene's volume; a dedicated
+      // `field = "fieldlines"` scene renders the tubes standalone (no volume).
+      scene.show_fieldlines = toml::find_or<bool>(sc, "fieldlines", false) or
+                              (scene.field == "fieldlines");
       scene.tf.vmin = toml::find_or<real_t>(sc, "min", ZERO);
       scene.tf.vmax = toml::find_or<real_t>(sc, "max", ONE);
       scene.tf.log_scale = toml::find_or<bool>(sc, "log", false);
@@ -282,6 +286,53 @@ namespace out {
     if (m_scenes.empty()) {
       raise::Warning("output.render enabled but no valid scenes; disabling", HERE);
       return;
+    }
+
+    /* ---- magnetic-field-line tube overlay ------------------------------- */
+    // The tubes are built whenever the [output.render.fieldlines] section asks
+    // for them OR any scene requests the overlay (so a bare `field =
+    // "fieldlines"` scene works without a separate enable flag).
+    bool any_fl = false;
+    for (const auto& s : m_scenes) {
+      any_fl = any_fl or s.show_fieldlines;
+    }
+    m_fieldlines.enable = toml::find_or<bool>(td, "output", "render",
+                                              "fieldlines", "enable", false) or
+                          any_fl;
+    if (m_fieldlines.enable) {
+      if (m_global_extent.size() != 3) {
+        raise::Warning("output.render.fieldlines is 3D-only; ignoring", HERE);
+        m_fieldlines.enable = false;
+      } else {
+        auto& fl   = m_fieldlines;
+        fl.field   = toml::find_or<std::string>(td, "output", "render",
+                                                "fieldlines", "field", "B");
+        fl.bin     = toml::find_or<int>(td, "output", "render", "fieldlines",
+                                        "bin", 4);
+        fl.bin     = (fl.bin < 1) ? 1 : ((fl.bin > 16) ? 16 : fl.bin);
+        fl.seed_px = toml::find_or<real_t>(td, "output", "render", "fieldlines",
+                                           "seed_px", static_cast<real_t>(8));
+        fl.tube_px = toml::find_or<real_t>(td, "output", "render", "fieldlines",
+                                           "tube_px", static_cast<real_t>(2));
+        fl.colormap = toml::find_or<std::string>(td, "output", "render",
+                                                 "fieldlines", "colormap",
+                                                 "inferno");
+        fl.log_scale = toml::find_or<bool>(td, "output", "render", "fieldlines",
+                                           "log", false);
+        fl.vmin = toml::find_or<real_t>(td, "output", "render", "fieldlines",
+                                        "min", ZERO);
+        fl.vmax = toml::find_or<real_t>(td, "output", "render", "fieldlines",
+                                        "max", ZERO);
+        fl.step_frac = toml::find_or<real_t>(td, "output", "render", "fieldlines",
+                                             "step_frac", static_cast<real_t>(0.5));
+        fl.max_steps = toml::find_or<int>(td, "output", "render", "fieldlines",
+                                          "max_steps", 4000);
+        fl.max_len_frac = toml::find_or<real_t>(td, "output", "render",
+                                                "fieldlines", "max_length",
+                                                static_cast<real_t>(3));
+        fl.seed_max = toml::find_or<int>(td, "output", "render", "fieldlines",
+                                         "seed_max", 4096);
+      }
     }
 
     m_enabled = true;

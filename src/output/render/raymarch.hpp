@@ -67,6 +67,24 @@ namespace kernel {
     const real_t spine_radius;
     const real_t spine_cr, spine_cg, spine_cb;
 
+    // magnetic-field-line tubes: opaque capsules colored by |field|, composited
+    // inline like the spine. Bucketed into the coarse grid (CSR) so a sample
+    // tests only the segments in its cell. tn_seg <= 0 disables them.
+    array_t<real_t* [8]> tseg;        // (tn_seg, 8): p0, p1, s0, s1 (world)
+    array_t<int*>        tcell_start; // (ncell+1) CSR offsets
+    array_t<int*>        tseg_idx;    // segment indices grouped by cell
+    const int            tn_seg;
+    const real_t         tube_r2;     // squared tube radius
+    const int            tgnc0, tgnc1, tgnc2;
+    const real_t         tg0, tg1, tg2;     // bucket-grid origin
+    const real_t         tdx0, tdx1, tdx2;  // bucket-grid cell size
+    array_t<real_t* [4]> tube_lut;
+    const int            tube_n_lut;
+    const real_t         tube_vmin, tube_vmax;
+    const bool           tube_log;
+    // when false the scalar volume is not sampled (standalone field-line render)
+    const bool           volume_enabled;
+
     array_t<real_t* [4]> image; // output, (bw*bh, 4) premultiplied RGBA
 
   public:
@@ -96,6 +114,8 @@ namespace kernel {
                           const real_t                   ghi[3],
                           real_t                         spine_radius_,
                           const real_t                   spine_rgb[3],
+                          const out::TubeSet&            tubes_,
+                          bool                           volume_enabled_,
                           const array_t<real_t* [4]>&    image_)
       : Fld { Fld_ }
       , comp { comp_ }
@@ -133,6 +153,26 @@ namespace kernel {
       , spine_cr { spine_rgb[0] }
       , spine_cg { spine_rgb[1] }
       , spine_cb { spine_rgb[2] }
+      , tseg { tubes_.seg }
+      , tcell_start { tubes_.cell_start }
+      , tseg_idx { tubes_.seg_idx }
+      , tn_seg { tubes_.n_seg }
+      , tube_r2 { tubes_.radius * tubes_.radius }
+      , tgnc0 { tubes_.gnc[0] }
+      , tgnc1 { tubes_.gnc[1] }
+      , tgnc2 { tubes_.gnc[2] }
+      , tg0 { tubes_.gorigin[0] }
+      , tg1 { tubes_.gorigin[1] }
+      , tg2 { tubes_.gorigin[2] }
+      , tdx0 { tubes_.gdx[0] }
+      , tdx1 { tubes_.gdx[1] }
+      , tdx2 { tubes_.gdx[2] }
+      , tube_lut { tubes_.lut }
+      , tube_n_lut { tubes_.n_lut }
+      , tube_vmin { tubes_.vmin }
+      , tube_vmax { tubes_.vmax }
+      , tube_log { tubes_.log_scale }
+      , volume_enabled { volume_enabled_ }
       , image { image_ } {}
 
     // distance test: is world point (px,py,pz) within `spine_radius` of any of
@@ -169,6 +209,48 @@ namespace kernel {
         }
       }
       return false;
+    }
+
+    // is world point within `tube_radius` of any field-line segment? Walks only
+    // the bucket of the point's coarse cell (radius << one coarse cell, so a
+    // padded-AABB insertion guarantees the nearest segment is in this cell).
+    // On a hit, `scalar` is the |field| interpolated to the closest point.
+    Inline auto inTube(real_t px, real_t py, real_t pz, real_t& scalar) const
+      -> bool {
+      if (tn_seg <= 0) {
+        return false;
+      }
+      const int c0 = static_cast<int>(math::floor((px - tg0) / tdx0));
+      const int c1 = static_cast<int>(math::floor((py - tg1) / tdx1));
+      const int c2 = static_cast<int>(math::floor((pz - tg2) / tdx2));
+      if (c0 < 0 or c0 >= tgnc0 or c1 < 0 or c1 >= tgnc1 or c2 < 0 or
+          c2 >= tgnc2) {
+        return false;
+      }
+      const int    lin  = (c2 * tgnc1 + c1) * tgnc0 + c0;
+      const int    kb   = tcell_start(lin);
+      const int    ke   = tcell_start(lin + 1);
+      real_t       best = tube_r2;
+      bool         hit  = false;
+      for (int k = kb; k < ke; ++k) {
+        const int    s  = tseg_idx(k);
+        const real_t ax = tseg(s, 0), ay = tseg(s, 1), az = tseg(s, 2);
+        const real_t bx = tseg(s, 3), by = tseg(s, 4), bz = tseg(s, 5);
+        const real_t ex = bx - ax, ey = by - ay, ez = bz - az;
+        const real_t wx = px - ax, wy = py - ay, wz = pz - az;
+        const real_t ee = ex * ex + ey * ey + ez * ez;
+        real_t       tt = (ee > ZERO) ? (wx * ex + wy * ey + wz * ez) / ee : ZERO;
+        tt              = (tt < ZERO) ? ZERO : ((tt > ONE) ? ONE : tt);
+        const real_t cx = ax + tt * ex, cy = ay + tt * ey, cz = az + tt * ez;
+        const real_t dx = px - cx, dy = py - cy, dz = pz - cz;
+        const real_t d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < best) {
+          best   = d2;
+          scalar = tseg(s, 6) * (ONE - tt) + tseg(s, 7) * tt;
+          hit    = true;
+        }
+      }
+      return hit;
     }
 
     // trilinear sample of the prepared scalar at world point p, reading the
@@ -311,6 +393,12 @@ namespace kernel {
       // ---- march at global sample positions t_k = k*ds ------------------- //
       const real_t inv_range = (vmax > vmin) ? (ONE / (vmax - vmin)) : ZERO;
       const real_t log_vmin  = log_scale ? math::log10(vmin) : ZERO;
+      const real_t tube_inv_range = (tube_vmax > tube_vmin)
+                                      ? (ONE / (tube_vmax - tube_vmin))
+                                      : ZERO;
+      const real_t tube_log_vmin = (tube_log and tube_vmin > ZERO)
+                                     ? math::log10(tube_vmin)
+                                     : ZERO;
       // first global sample index inside this segment: t_k >= t_enter
       const real_t k0    = math::ceil(t_enter / ds);
       real_t       t     = k0 * ds;
@@ -318,7 +406,8 @@ namespace kernel {
       int          steps = 0;
       while (t < t_exit and steps < max_steps) {
         const real_t px = ox + t * dx, py = oy + t * dy, pz = oz + t * dz;
-        real_t       cr, cg, cb, ca;
+        real_t       cr = ZERO, cg = ZERO, cb = ZERO, ca = ZERO;
+        real_t       tube_s = ZERO;
         if (onSpine(px, py, pz)) {
           // opaque box edge (premultiplied; alpha == 1 -> color is straight RGB).
           // Composited inline so accumulated foreground volume occludes it.
@@ -326,7 +415,33 @@ namespace kernel {
           cg = spine_cg;
           cb = spine_cb;
           ca = ONE;
-        } else {
+        } else if (inTube(px, py, pz, tube_s)) {
+          // opaque field-line tube colored by |field| through the tube LUT
+          real_t u;
+          if (tube_log) {
+            u = (tube_s > ZERO)
+                  ? (math::log10(tube_s) - tube_log_vmin) * tube_inv_range
+                  : -ONE;
+          } else {
+            u = (tube_s - tube_vmin) * tube_inv_range;
+          }
+          if (u < ZERO) {
+            u = ZERO;
+          } else if (u > ONE) {
+            u = ONE;
+          }
+          int idx = static_cast<int>(u * static_cast<real_t>(tube_n_lut - 1) +
+                                     HALF);
+          if (idx < 0) {
+            idx = 0;
+          } else if (idx > tube_n_lut - 1) {
+            idx = tube_n_lut - 1;
+          }
+          cr = tube_lut(idx, 0); // opaque LUT -> straight RGB, alpha 1
+          cg = tube_lut(idx, 1);
+          cb = tube_lut(idx, 2);
+          ca = tube_lut(idx, 3);
+        } else if (volume_enabled) {
           const real_t s = sample(px, py, pz);
           // normalize through the transfer function range
           real_t u;
@@ -351,13 +466,17 @@ namespace kernel {
           cb = lut(idx, 2);
           ca = lut(idx, 3);
         }
-        const real_t w = ONE - acc_a;
-        acc_r += w * cr;
-        acc_g += w * cg;
-        acc_b += w * cb;
-        acc_a += w * ca;
-        if (acc_a >= early_alpha) {
-          break;
+        // composite only a non-empty sample (volume-off rays contribute solely
+        // where they hit a tube or the spine)
+        if (ca > ZERO) {
+          const real_t w = ONE - acc_a;
+          acc_r += w * cr;
+          acc_g += w * cg;
+          acc_b += w * cb;
+          acc_a += w * ca;
+          if (acc_a >= early_alpha) {
+            break;
+          }
         }
         t += ds;
         ++steps;
