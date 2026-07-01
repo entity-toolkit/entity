@@ -663,16 +663,32 @@ namespace ntt {
       const int   W   = g_renderer.width();
       const int   H   = g_renderer.height();
 
-      // per-domain world AABB
+      // optional axis-aligned render region (== full extent when uncropped)
+      const real_t rlo[3] = { g_renderer.regionLo(0), g_renderer.regionLo(1),
+                              g_renderer.regionLo(2) };
+      const real_t rhi[3] = { g_renderer.regionHi(0), g_renderer.regionHi(1),
+                              g_renderer.regionHi(2) };
+      // per-domain world AABB, clipped to the region
       const auto loc_ext = local_domain->mesh.extent();
-      real_t     lo[3]   = { loc_ext[0].first, loc_ext[1].first, loc_ext[2].first };
-      real_t     hi[3]   = { loc_ext[0].second, loc_ext[1].second, loc_ext[2].second };
+      real_t     lo[3]   = { math::max(loc_ext[0].first, rlo[0]),
+                             math::max(loc_ext[1].first, rlo[1]),
+                             math::max(loc_ext[2].first, rlo[2]) };
+      real_t     hi[3]   = { math::min(loc_ext[0].second, rhi[0]),
+                             math::min(loc_ext[1].second, rhi[1]),
+                             math::min(loc_ext[2].second, rhi[2]) };
+      // does this domain intersect the region? if not, render nothing (but still
+      // join the collective composite / field-line reduce below).
+      const bool in_region = (lo[0] < hi[0]) and (lo[1] < hi[1]) and
+                             (lo[2] < hi[2]);
 
-      // fixed global world step (identical on all ranks -> seamless)
+      // global extent (drives the field-line coarse grid, which spans the full
+      // field regardless of the crop)
       const auto glob_ext = mesh().extent();
-      real_t     gdiag    = ZERO;
+      // fixed world step, identical on all ranks -> seamless. Sized to the region
+      // diagonal so `samples` spans the (possibly cropped) view.
+      real_t gdiag = ZERO;
       for (auto d { 0 }; d < 3; ++d) {
-        const real_t s = glob_ext[d].second - glob_ext[d].first;
+        const real_t s = rhi[d] - rlo[d];
         gdiag          += s * s;
       }
       gdiag = math::sqrt(gdiag);
@@ -681,14 +697,12 @@ namespace ntt {
                           : gdiag / static_cast<real_t>(g_renderer.samples());
       const int max_steps = 2 * g_renderer.samples() + 16;
 
-      // global box + depth-occluded spine (opaque box wireframe rendered inline
+      // region box + depth-occluded spine (opaque box wireframe rendered inline
       // in the march so the volume covers its far edges). The visual width is
       // ~spine_width px; the 0.55*ds floor keeps the thin line gap-free at the
       // current sampling (raise `samples` for a crisper, thinner line).
-      real_t       glo[3] = { glob_ext[0].first, glob_ext[1].first,
-                              glob_ext[2].first };
-      real_t       ghi[3] = { glob_ext[0].second, glob_ext[1].second,
-                              glob_ext[2].second };
+      real_t       glo[3] = { rlo[0], rlo[1], rlo[2] };
+      real_t       ghi[3] = { rhi[0], rhi[1], rhi[2] };
       const real_t px_w   = (cam.half_h * static_cast<real_t>(2)) /
                           static_cast<real_t>(H);
       const real_t spine_radius =
@@ -719,7 +733,8 @@ namespace ntt {
       // screen-space bounding box of this domain's footprint (same for all
       // scenes); we only ray-march and composite within it.
       int        bx0 = 0, by0 = 0, bw = 0, bh = 0;
-      const bool on_screen = out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh);
+      const bool on_screen = in_region and
+                             out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh);
 
       // ---- magnetic-field-line tubes (built once, shared by every scene) --- //
       // Every rank coarsens + replicates the field, traces the SAME global
@@ -889,23 +904,47 @@ namespace ntt {
       const int  H      = g_renderer.height();
       const bool mirror = g_renderer.mirror();
 
-      // global slice-plane world window (shared by all ranks -> seamless)
-      const auto gext = mesh().extent();
-      real_t     umin, umax, vmin, vmax;
+      // global slice-plane world window (shared by all ranks -> seamless),
+      // taken from the optional render region (== full extent when uncropped).
+      // gext (the full extent) is kept for the field-line coarse grid below.
+      const auto   gext = mesh().extent();
+      const real_t x1lo = g_renderer.regionLo(0), x1hi = g_renderer.regionHi(0);
+      const real_t x2lo = g_renderer.regionLo(1), x2hi = g_renderer.regionHi(1);
+      real_t       umin, umax, vmin, vmax;
       if constexpr (M::CoordType == Coord::type::Cartesian) {
-        umin = gext[0].first;
-        umax = gext[0].second;
-        vmin = gext[1].first;
-        vmax = gext[1].second;
+        umin = x1lo;
+        umax = x1hi;
+        vmin = x2lo;
+        vmax = x2hi;
       } else {
-        // meridional (X = r sin th, Z = r cos th) bounding box of the arc
-        const real_t rmax = gext[0].second;
-        const real_t th0  = gext[1].first;
-        const real_t th1  = gext[1].second;
-        umax = rmax;
-        umin = mirror ? -rmax : ZERO;
-        vmax = rmax * math::cos(th0);
-        vmin = rmax * math::cos(th1);
+        // meridional (X = r sin th, Z = r cos th) bounding box of the cropped
+        // annular wedge r in [x1lo, x1hi], theta in [x2lo, x2hi]. Sample the
+        // boundary (arcs + rays) so the bbox is correct for any theta range.
+        umin = static_cast<real_t>(1e30);
+        umax = static_cast<real_t>(-1e30);
+        vmin = static_cast<real_t>(1e30);
+        vmax = static_cast<real_t>(-1e30);
+        const int NB = 65;
+        auto      accXZ = [&](real_t r, real_t th) {
+          const real_t X = r * math::sin(th), Z = r * math::cos(th);
+          umin = std::min(umin, X);
+          umax = std::max(umax, X);
+          vmin = std::min(vmin, Z);
+          vmax = std::max(vmax, Z);
+          if (mirror) {
+            umin = std::min(umin, -X);
+            umax = std::max(umax, -X);
+          }
+        };
+        for (int k = 0; k < NB; ++k) {
+          const real_t t  = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
+          const real_t th = x2lo + (x2hi - x2lo) * t;
+          const real_t rr = x1lo + (x1hi - x1lo) * t;
+          accXZ(x1lo, th);
+          accXZ(x1hi, th);
+          accXZ(rr, x2lo);
+          accXZ(rr, x2hi);
+        }
       }
       // expand the window to the image aspect (centered) so geometry is not
       // stretched
@@ -951,8 +990,7 @@ namespace ntt {
         // curvilinear slices get polar axes (R radial + Theta arc); pass the
         // global (r, theta) extent.
         if (sph) {
-          g_renderer.setSlicePolar(true, gext[0].first, gext[0].second,
-                                   gext[1].first, gext[1].second, mirror);
+          g_renderer.setSlicePolar(true, x1lo, x1hi, x2lo, x2hi, mirror);
         } else {
           g_renderer.setSlicePolar(false, ZERO, ONE, ZERO, ONE, mirror);
         }
@@ -1167,6 +1205,11 @@ namespace ntt {
                                           by0,
                                           bw,
                                           mirror,
+                                          x1lo,
+                                          x1hi,
+                                          x2lo,
+                                          x2hi,
+                                          g_renderer.hasRegion(),
                                           n1,
                                           n2,
                                           ext0,

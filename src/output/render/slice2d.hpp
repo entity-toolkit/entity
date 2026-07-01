@@ -56,6 +56,12 @@ namespace kernel {
     const int    bx0, by0, bw; // screen-bbox offset and width (output stride)
     const bool   mirror;       // spherical: paint the X<0 reflected half too
 
+    // optional physical render-region clip: a pixel is drawn only if its
+    // coordinate is inside [rx1lo,rx1hi] x [rx2lo,rx2hi] (x1,x2 == x,y for
+    // Cartesian; r,theta for spherical). Off => the whole domain is drawn.
+    const real_t rx1lo, rx1hi, rx2lo, rx2hi;
+    const bool   region_clip;
+
     // local-domain active cell counts and View extents (membership + clamping)
     const real_t n1, n2;
     const int    ext0, ext1;
@@ -112,6 +118,11 @@ namespace kernel {
                        int                            by0_,
                        int                            bw_,
                        bool                           mirror_,
+                       real_t                         rx1lo_,
+                       real_t                         rx1hi_,
+                       real_t                         rx2lo_,
+                       real_t                         rx2hi_,
+                       bool                           region_clip_,
                        int                            n1_,
                        int                            n2_,
                        int                            ext0_,
@@ -138,6 +149,11 @@ namespace kernel {
       , by0 { by0_ }
       , bw { bw_ }
       , mirror { mirror_ }
+      , rx1lo { rx1lo_ }
+      , rx1hi { rx1hi_ }
+      , rx2lo { rx2lo_ }
+      , rx2hi { rx2hi_ }
+      , region_clip { region_clip_ }
       , n1 { static_cast<real_t>(n1_) }
       , n2 { static_cast<real_t>(n2_) }
       , ext0 { ext0_ }
@@ -317,9 +333,15 @@ namespace kernel {
       const real_t v = vmax - (static_cast<real_t>(gpy) + HALF) /
                                 static_cast<real_t>(H) * (vmax - vmin);
 
-      // world -> continuous local code coords
+      // world -> continuous local code coords, with an optional physical
+      // render-region clip (so a crop hides domain data outside the region, not
+      // just reframes the view)
       real_t cc1, cc2;
       if constexpr (M::CoordType == Coord::Cartesian) {
+        if (region_clip and
+            (u < rx1lo or u > rx1hi or v < rx2lo or v > rx2hi)) {
+          return;
+        }
         cc1 = metric.template convert<1, Crd::Ph, Crd::Cd>(u);
         cc2 = metric.template convert<2, Crd::Ph, Crd::Cd>(v);
       } else {
@@ -328,6 +350,10 @@ namespace kernel {
         }
         const real_t r  = math::sqrt(u * u + v * v);
         const real_t th = math::atan2(math::abs(u), v); // in [0, pi]
+        if (region_clip and
+            (r < rx1lo or r > rx1hi or th < rx2lo or th > rx2hi)) {
+          return;
+        }
         cc1 = metric.template convert<1, Crd::Ph, Crd::Cd>(r);
         cc2 = metric.template convert<2, Crd::Ph, Crd::Cd>(th);
       }

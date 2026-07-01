@@ -720,6 +720,18 @@
     #   @type: int [> 0]
     #   @default: 1024
     height = ""
+    # Axis-aligned render region [lo, hi] in physical/world coords, per axis
+    # (x1/x2/x3). Any axis left unset spans the full domain. Clamped to the box.
+    #   @type: array<float> [size 2]
+    #   @default: [] (full extent)
+    #   @note: 3D -> the volume is depth-clipped to this box, the wireframe/axes
+    #          frame it, and the default camera zooms to it; 2D -> the slice
+    #          window is framed to it. For a spherical 2D slice, x1_lim crops the
+    #          radius r and x2_lim crops the polar angle theta.
+    #   @example: x1_lim = [-64.0, 64.0]
+    x1_lim = ""
+    x2_lim = ""
+    x3_lim = ""
     # Number of ray-march steps across the global box diagonal
     #   @type: int [> 0]
     #   @default: 400

@@ -254,6 +254,34 @@ namespace out {
       return m_camera_dev;
     }
 
+    // Optional axis-aligned render region in physical/world coords. Always
+    // resolved (unset axes default to the full global extent), so the driver can
+    // use these unconditionally. `hasRegion()` reports whether any axis was
+    // overridden (e.g. to know a crop is active). `d` in {0,1,2} == {x1,x2,x3}.
+    [[nodiscard]]
+    auto hasRegion() const -> bool {
+      return m_has_region;
+    }
+
+    [[nodiscard]]
+    auto regionLo(int d) const -> real_t {
+      const int k = (d < 0) ? 0 : ((d > 2) ? 2 : d);
+      return (static_cast<std::size_t>(k) < m_region.size()) ? m_region[k].first
+                                                             : ZERO;
+    }
+
+    [[nodiscard]]
+    auto regionHi(int d) const -> real_t {
+      const int k = (d < 0) ? 0 : ((d > 2) ? 2 : d);
+      return (static_cast<std::size_t>(k) < m_region.size()) ? m_region[k].second
+                                                             : ZERO;
+    }
+
+    [[nodiscard]]
+    auto region() const -> const boundaries_t<real_t>& {
+      return m_region;
+    }
+
     // 2D slice mode: mirror a spherical half-plane across the axis into a full
     // disk (no effect on Cartesian or 3D rendering).
     [[nodiscard]]
@@ -364,6 +392,11 @@ namespace out {
     // global world box (2 or 3 axes); used to project the 3D axes box and to
     // know the render mode (size 2 => 2D slice, size 3 => 3D volume).
     boundaries_t<real_t> m_global_extent;
+    // resolved render region [lo, hi] per axis (== global extent unless the
+    // user set x{1,2,3}_lim); the volume is clipped / the slice window is framed
+    // to this, and the default camera frames it.
+    boundaries_t<real_t> m_region;
+    bool                 m_has_region { false };
     // 2D slice world window + axis names, set per-frame by the templated Render
     real_t      m_slice_win[4] { ZERO, ONE, ZERO, ONE };
     std::string m_slice_xlabel { "x" };

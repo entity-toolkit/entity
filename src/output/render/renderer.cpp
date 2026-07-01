@@ -124,6 +124,39 @@ namespace out {
     m_spine_width = toml::find_or<real_t>(td, "output", "render", "spine_width",
                                           static_cast<real_t>(2));
     m_global_extent = global_extent;
+
+    // optional axis-aligned render region (physical coords). Unset axes default
+    // to the full extent; user limits are clamped to the box (nothing to render
+    // outside it). x{1,2,3}_lim -> axes {0,1,2} (r/theta for spherical 2D).
+    m_region     = global_extent;
+    m_has_region = false;
+    {
+      const char* keys[3] = { "x1_lim", "x2_lim", "x3_lim" };
+      for (std::size_t d = 0; d < global_extent.size() and d < 3; ++d) {
+        const auto lim = toml::find_or<std::vector<real_t>>(
+          td, "output", "render", keys[d], std::vector<real_t> {});
+        if (lim.empty()) {
+          continue;
+        }
+        if (lim.size() != 2 or lim[1] <= lim[0]) {
+          raise::Warning("output.render." + std::string(keys[d]) +
+                           " must be [lo, hi] with hi > lo; ignoring",
+                         HERE);
+          continue;
+        }
+        const real_t lo = std::max(lim[0], global_extent[d].first);
+        const real_t hi = std::min(lim[1], global_extent[d].second);
+        if (hi > lo) {
+          m_region[d]  = { lo, hi };
+          m_has_region = true;
+        } else {
+          raise::Warning("output.render." + std::string(keys[d]) +
+                           " does not overlap the domain; ignoring",
+                         HERE);
+        }
+      }
+    }
+
     {
       const auto al = toml::find_or<std::vector<std::string>>(
         td, "output", "render", "axis_labels", std::vector<std::string> {});
@@ -151,12 +184,13 @@ namespace out {
 
     /* ---- camera (used by the 3D volume mode; the 2D slice path frames itself
      * and ignores this, so a missing 3rd axis is zero-filled harmlessly) ---- */
+    // frame the camera on the render region (== the full extent when uncropped)
     real_t center[3] = { ZERO, ZERO, ZERO }, size[3] = { ZERO, ZERO, ZERO };
     real_t maxext = ZERO;
-    for (std::size_t d = 0; d < global_extent.size() and d < 3; ++d) {
+    for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
       center[d] = static_cast<real_t>(0.5) *
-                  (global_extent[d].first + global_extent[d].second);
-      size[d] = global_extent[d].second - global_extent[d].first;
+                  (m_region[d].first + m_region[d].second);
+      size[d] = m_region[d].second - m_region[d].first;
       maxext  = (size[d] > maxext) ? size[d] : maxext;
     }
     const real_t diag = std::sqrt(size[0] * size[0] + size[1] * size[1] +
@@ -499,7 +533,7 @@ namespace out {
         if (m_axes) {
           if (m_global_extent.size() == 3) {
             out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
-                            m_camera_dev, m_global_extent, m_axis_labels,
+                            m_camera_dev, m_region, m_axis_labels,
                             m_background, m_axis_nticks);
           } else if (polar) {
             out::drawAxesPolar(canvas.data(), CW, CH, ml, m_width, m_height,
