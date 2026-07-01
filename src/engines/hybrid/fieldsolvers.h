@@ -86,6 +86,7 @@ namespace ntt {
       const auto d0       = params.get<real_t>("scales.skindepth0");
       const auto rho0     = params.get<real_t>("scales.larmor0");
       const auto dens_min = params.get<real_t>("hybrid.dens_min");
+      const auto hall_lim = params.get<real_t>("hybrid.hall_lim");
       const auto dx       = domain.mesh.metric.get_dx();
       if (flag == emf::push0) {
         // clang-format off
@@ -104,7 +105,7 @@ namespace ntt {
                                               0, 3, 3,            // P, N, Ee_in
                                               0, 0, 3,            // Bf, Ec, Bfs
                                               0, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                              dt, gamma_ad, theta, d0, rho0, dens_min, dx));
+                                              dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, dx));
         // clang-format on
       } else {
         // clang-format off
@@ -123,7 +124,7 @@ namespace ntt {
                                                0, 3, 0,            // P, N, Ee_in
                                                3, 0, 0,            // Bf, Ec, Bfs
                                                3, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                               dt, gamma_ad, theta, d0, rho0, dens_min, dx));
+                                               dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, dx));
         // clang-format on
       }
     }

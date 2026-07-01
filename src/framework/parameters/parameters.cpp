@@ -61,6 +61,7 @@ namespace ntt {
        *   gamma_ad - adiabatic index of the massless electron fluid (1 = isothermal)
        *   theta0   - electron temperature T_e (code units); 0 = cold electrons
        *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
+       *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
        *   v_max    - characteristic flow speed for the hybrid CFL (code units)
        */
       set("hybrid.gamma_ad",
@@ -78,6 +79,15 @@ namespace ntt {
                                 "hybrid",
                                 "dens_min",
                                 defaults::hybrid::dens_min));
+      // per-cell limiter on the Ohm's-law Hall term: caps the implied local
+      // whistler Courant (v_w ~ |B|/N, which exceeds the ambient value at shock
+      // overshoots and magnetic cavities) at hall_lim * dx/dt. Identity in
+      // resolvable cells; <= 0 disables.
+      set("hybrid.hall_lim",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "hall_lim",
+                                static_cast<real_t>(0.5)));
       // optional user-set characteristic flow speed for the hybrid CFL (code
       // units); 0 -> dt set purely by the Alfven + whistler signal speeds.
       set("hybrid.v_max",

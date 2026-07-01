@@ -61,6 +61,7 @@ namespace kernel::hybrid {
     const real_t d0;
     const real_t rho0;
     const real_t dens_min;
+    const real_t hall_lim;
     const real_t dx;
     const real_t dx_inv;
 
@@ -89,6 +90,7 @@ namespace kernel::hybrid {
                real_t                  d0,
                real_t                  rho0,
                real_t                  dens_min,
+               real_t                  hall_lim,
                real_t                  dx)
       : PP { PP }
       , NN { NN }
@@ -114,8 +116,84 @@ namespace kernel::hybrid {
       , d0 { d0 }
       , rho0 { rho0 }
       , dens_min { dens_min }
+      , hall_lim { hall_lim }
       , dx { dx }
       , dx_inv { ONE / dx } {}
+
+    /**
+     * @brief Per-cell limiter on the Hall term. The whistler speed implied at
+     *        the grid cutoff, v_w = d0^2 pi |B| / (dx N), scales with the local
+     *        |B|/N and can exceed the resolvable dx/dt at shock overshoots or
+     *        magnetic cavities (large |B|, small N), where an explicit advance
+     *        is unstable. The limiter scales the Hall term so the implied
+     *        whistler Courant never exceeds `hall_lim`; it is the identity in
+     *        resolvable cells. hall_lim <= 0 disables it.
+     */
+    Inline auto hall_limiter(const tuple_t<ncells_t, D>& i) const -> real_t {
+      if (hall_lim <= ZERO) {
+        return ONE;
+      }
+      // Worst case (max |B|, min N) over the +/-1 neighborhood the Hall stencil
+      // reads: a cell-local estimate misses a sharp front where the output
+      // cell's own B is small but the curl pulls in a much larger neighbor.
+      real_t bsq = ZERO;
+      real_t nn;
+      if constexpr (D == Dim::_1D) {
+        const auto i1 = i[0];
+        nn            = NN(i1, comp_NN);
+        for (int di = -1; di <= 1; ++di) {
+          const auto ii = i1 + static_cast<ncells_t>(di);
+          // U-basis: b1 = Bx/dx, b2/b3 physical
+          const real_t b = SQR(dx * Bfs(ii, comp_Bfs + 0)) +
+                           SQR(Bfs(ii, comp_Bfs + 1)) +
+                           SQR(Bfs(ii, comp_Bfs + 2));
+          bsq = math::max(bsq, b);
+          nn  = math::min(nn, NN(ii, comp_NN));
+        }
+      } else if constexpr (D == Dim::_2D) {
+        const auto i1 = i[0];
+        const auto i2 = i[1];
+        nn            = NN(i1, i2, comp_NN);
+        for (int di = -1; di <= 1; ++di) {
+          for (int dj = -1; dj <= 1; ++dj) {
+            const auto ii = i1 + static_cast<ncells_t>(di);
+            const auto jj = i2 + static_cast<ncells_t>(dj);
+            // U-basis: b1/b2 = B/dx, b3 physical
+            const real_t b = SQR(dx * Bfs(ii, jj, comp_Bfs + 0)) +
+                             SQR(dx * Bfs(ii, jj, comp_Bfs + 1)) +
+                             SQR(Bfs(ii, jj, comp_Bfs + 2));
+            bsq = math::max(bsq, b);
+            nn  = math::min(nn, NN(ii, jj, comp_NN));
+          }
+        }
+      } else {
+        const auto i1 = i[0];
+        const auto i2 = i[1];
+        const auto i3 = i[2];
+        nn            = NN(i1, i2, i3, comp_NN);
+        for (int di = -1; di <= 1; ++di) {
+          for (int dj = -1; dj <= 1; ++dj) {
+            for (int dk = -1; dk <= 1; ++dk) {
+              const auto ii = i1 + static_cast<ncells_t>(di);
+              const auto jj = i2 + static_cast<ncells_t>(dj);
+              const auto kk = i3 + static_cast<ncells_t>(dk);
+              // U-basis: all comps physical/dx
+              const real_t b = SQR(dx * Bfs(ii, jj, kk, comp_Bfs + 0)) +
+                               SQR(dx * Bfs(ii, jj, kk, comp_Bfs + 1)) +
+                               SQR(dx * Bfs(ii, jj, kk, comp_Bfs + 2));
+              bsq = math::max(bsq, b);
+              nn  = math::min(nn, NN(ii, jj, kk, comp_NN));
+            }
+          }
+        }
+      }
+      // v_w(B, N) = d0^2 pi |B| / (dx N); reduces to the hybrid-CFL formula
+      // (d0^2/rho0) pi / dx at B = B0 = 1/larmor0, N = 1
+      const real_t v_w = SQR(d0) * static_cast<real_t>(constant::PI) *
+                         math::sqrt(bsq) / (dx * math::max(nn, dens_min));
+      // branch instead of min(1, x/y): avoids the 0/0 when B = 0
+      return (v_w * dt > hall_lim * dx) ? (hall_lim * dx / (dt * v_w)) : ONE;
+    }
 
     /**
      * @brief Vacuum cutoff: scales E by min(1, N_raw / dens_min). Below the
@@ -140,7 +218,8 @@ namespace kernel::hybrid {
       // E_Hall = -(d0^2/rho0)(curl B)xB/N -- the WRONG sign vs the generalized
       // Ohm's law (Pegasus eq. 10 / standard Hall-MHD: +(d0^2/rho0)(curl B)xB/N).
       // The minus restores the correct sign. (motional & e-pressure unaffected.)
-      const real_t coeff { -SQR(d0) / rho0 };
+      // hall_limiter caps the implied local whistler Courant (see its doc).
+      const real_t coeff { -SQR(d0) / rho0 * hall_limiter(i) };
       if constexpr (D == Dim::_1D) {
         const auto   i1 = i[0];
         // Ee* = EMF(N^(n), P^(n), Bf*)
@@ -393,7 +472,8 @@ namespace kernel::hybrid {
       const real_t coeff_1 { rho0 * gamma_ad * theta };
       // Hall coefficient, same sign convention as `coeff` in compute_Ee above
       // (leading minus corrects the (curl B) x B sign; see note there).
-      const real_t coeff_2 { -SQR(d0) / rho0 };
+      // hall_limiter caps the implied local whistler Courant (see its doc).
+      const real_t coeff_2 { -SQR(d0) / rho0 * hall_limiter(i) };
       if constexpr (D == Dim::_1D) {
         const auto i1 = i[0];
 
