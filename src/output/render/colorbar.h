@@ -53,6 +53,7 @@ namespace out {
         case '.': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00110, 0b00110 }; return g; }
         case '-': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000 }; return g; }
         case '+': { static const uint8_t g[7] = { 0b00000, 0b00100, 0b00100, 0b11111, 0b00100, 0b00100, 0b00000 }; return g; }
+        case '=': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b11111, 0b00000, 0b11111, 0b00000, 0b00000 }; return g; }
         case '_': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111 }; return g; }
         case ':': { static const uint8_t g[7] = { 0b00000, 0b00110, 0b00110, 0b00000, 0b00110, 0b00110, 0b00000 }; return g; }
         case '/': { static const uint8_t g[7] = { 0b00001, 0b00010, 0b00010, 0b00100, 0b01000, 0b01000, 0b10000 }; return g; }

@@ -208,13 +208,15 @@ namespace out {
      * @param order_key this rank's front-to-back sort key (see composite.h)
      * @param scene the scene being written (prefix, colorbar colormap/range/label)
      * @param step current timestep (for the filename cycle number)
+     * @param time current simulation time (drawn as a corner label if enabled)
      * @note Uses an order-preserving distributed tree reduce; only the MPI root
      *       rank assembles the full frame and writes the file.
      */
     void compositeAndWrite(const SubImage& sub,
                            uint64_t        order_key,
                            const Scene&    scene,
-                           timestep_t      step) const;
+                           timestep_t      step,
+                           simtime_t       time) const;
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
@@ -351,6 +353,8 @@ namespace out {
     // 2D slice mode (spherical): mirror the meridional half-plane across the
     // symmetry axis to render a full disk from one axisymmetric half
     bool m_mirror { true };
+    // draw the current simulation time as a label in the upper-right corner
+    bool        m_time_label { false };
     // draw a spine (frame) + axis ticks/labels around the rendered region
     bool        m_axes { false };
     bool        m_axis_labels_set { false };

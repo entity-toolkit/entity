@@ -26,6 +26,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <numeric>
 #include <string>
@@ -112,6 +113,10 @@ namespace out {
                                              true);
     // 2D slice mode (spherical only): mirror the half-plane into a full disk
     m_mirror = toml::find_or<bool>(td, "output", "render", "mirror", true);
+
+    // draw the current simulation time in the upper-right corner
+    m_time_label = toml::find_or<bool>(td, "output", "render", "time_label",
+                                       false);
 
     // axes: spine + ticks + labels around the rendered region
     m_axes = toml::find_or<bool>(td, "output", "render", "axes", false);
@@ -356,7 +361,8 @@ namespace out {
   void Renderer::compositeAndWrite(const SubImage& sub,
                                    uint64_t        order_key,
                                    const Scene&    scene,
-                                   timestep_t      step) const {
+                                   timestep_t      step,
+                                   simtime_t       time) const {
     const std::size_t npix = static_cast<std::size_t>(m_width) *
                              static_cast<std::size_t>(m_height);
     const std::size_t n = npix * 4;
@@ -418,6 +424,42 @@ namespace out {
         }
       };
 
+      // upper-right corner label of the current simulation time. `data_left` is
+      // the x-offset of the render region inside the buffer (0 without axes, the
+      // left margin `ml` with axes), so the label sits in the render region's
+      // top-right, not over the colorbar strip.
+      auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int data_left) {
+        if (not m_time_label) {
+          return;
+        }
+        const int s = cbar_hidden::scale(m_height);
+        char      tbuf[48];
+        // fixed-point so it reads e.g. "T = 12345.67" (up to 5 integer digits
+        // and 2 decimals; more integer digits still print, never truncated)
+        std::snprintf(tbuf, sizeof(tbuf), "T = %.2f",
+                      static_cast<double>(time));
+        const std::string str(tbuf);
+        const int         tw  = static_cast<int>(str.size()) * 6 * s;
+        const int         pad = 3 * s;
+        const int         tx  = data_left + m_width - tw - pad;
+        // vertically center the label between the image top and the top of the
+        // colorbar bar. drawColorbar uses bar_h = ch/2, so the bar top is at
+        // bar_y = (ch - bar_h)/2 = ch/4; center the 7*s-tall glyphs in [0, bar_y].
+        const int    text_h   = 7 * s;
+        const int    bar_h    = ch / 2;
+        const int    cbar_top = m_colorbar ? (ch - bar_h) / 2 : (ch / 4);
+        int          ty       = (cbar_top - text_h) / 2;
+        if (ty < pad) {
+          ty = pad;
+        }
+        // contrasting text color (white on a dark background, black on light)
+        const real_t lum = static_cast<real_t>(0.299) * m_background[0] +
+                           static_cast<real_t>(0.587) * m_background[1] +
+                           static_cast<real_t>(0.114) * m_background[2];
+        const uint8_t tc = (lum < HALF) ? 255 : 0;
+        cbar_hidden::drawText(buf, cw, ch, tx, ty, str, s, tc, tc, tc);
+      };
+
       // canvas margins: axes (left + bottom) and the colorbar strip (right).
       // The data region sits at (ml, 0); margins/strip are background-filled.
       // The polar (curvilinear) overlay annotates inside the data region (the
@@ -435,6 +477,7 @@ namespace out {
       if (CW == m_width and CH == m_height and not m_axes) {
         // no margins, no outside strip, no overlay: colorbar overlays the data
         drawBar(data.data(), m_width, m_height);
+        drawTimeLabel(data.data(), m_width, m_height, 0);
         ok = write_png(fname, m_width, m_height, data.data());
       } else {
         const uint8_t bR = quantize(m_background[0]);
@@ -472,6 +515,7 @@ namespace out {
           }
         }
         drawBar(canvas.data(), CW, CH);
+        drawTimeLabel(canvas.data(), CW, CH, ml);
         ok = write_png(fname, CW, CH, canvas.data());
       }
       if (not ok) {

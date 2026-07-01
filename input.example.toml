@@ -761,6 +761,12 @@
     #   @type: bool
     #   @default: true
     mirror = ""
+    # Draw the current simulation time as a label ("T = <value>", fixed to 2
+    # decimals) in the upper-right corner of the render region, in a contrasting
+    # color, vertically centered between the frame top and the colorbar.
+    #   @type: bool
+    #   @default: false
+    time_label = ""
     # Draw a spine (frame) + axis ticks + labels around the rendered region.
     # The PNG gains left/bottom margins (background-filled) for the tick labels
     # and axis names, so they never overlap the data.

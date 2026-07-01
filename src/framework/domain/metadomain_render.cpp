@@ -862,7 +862,8 @@ namespace ntt {
             sub.rgba[p * 4 + 3] = image_h(p, 3);
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step);
+        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
+                                     current_time);
         rendered_any = true;
       }
       return rendered_any;
@@ -1191,7 +1192,8 @@ namespace ntt {
             sub.rgba[p * 4 + 3] = image_h(p, 3);
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step);
+        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
+                                     current_time);
         rendered_any = true;
       }
       return rendered_any;
