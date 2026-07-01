@@ -85,6 +85,10 @@ namespace out {
     real_t      seed_px { 8 };        // seed lattice spacing in screen pixels
     real_t      tube_px { 2 };        // tube radius in screen pixels
     std::string colormap { "inferno" };
+    // monochrome override: when this holds 3 entries [r,g,b] in [0,1] the lines
+    // are drawn in that single color instead of the |B| colormap (reads well as
+    // an overlay on a density/other volume). Empty => color by |B|.
+    std::vector<real_t> color {};
     bool        log_scale { false };
     real_t      vmin { ZERO };        // tube color range; vmin>=vmax => auto |B|
     real_t      vmax { ZERO };
@@ -92,6 +96,34 @@ namespace out {
     int         max_steps { 4000 };   // per-direction integration cap
     real_t      max_len_frac { static_cast<real_t>(3) }; // x global box diagonal
     int         seed_max { 4096 };    // hard cap on seed count (spacing grows to fit)
+    // 2D only: number of evenly-spaced flux-function contour levels (field lines
+    // in 2D are iso-contours of the out-of-plane vector potential psi)
+    int         levels { 16 };
+  };
+
+  /**
+   * @brief Device-side 2D field-line geometry: the flux function psi on a coarse
+   * world grid, contoured per-pixel by the slice rasterizer.
+   * @note In 2D the in-plane field lines are the iso-contours of the flux
+   * function psi (Bx = d psi/dy, By = -d psi/dx). psi is integrated on a coarse,
+   * MPI-replicated copy of the field so the contour levels are global -> the
+   * lines are seamless across domains. The kernel draws a contour where psi is
+   * within a (screen-space) line width of a level, colored by |B| = |grad psi|.
+   */
+  struct ContourSet {
+    array_t<real_t*>     psi;           // (n0*n1) flux function, c0-fastest
+    int                  n0 { 0 }, n1 { 0 };
+    real_t               origin0 { ZERO }, origin1 { ZERO };
+    real_t               dx0 { ONE }, dx1 { ONE };
+    real_t               dlevel { ONE };   // contour spacing in flux units
+    real_t               psi_ref { ZERO }; // reference (zeroth) level
+    real_t               line_half_px { ONE }; // half contour-line width, pixels
+    real_t               wpp { ONE };    // world units per screen pixel
+    array_t<real_t* [4]> lut;            // opaque colormap, by |B| = |grad psi|
+    int                  n_lut { 256 };
+    real_t               vmin { ZERO }, vmax { ONE }; // |B| color range
+    bool                 enabled { false };
+    std::string          colormap { "inferno" }; // for the standalone colorbar
   };
 
   /**

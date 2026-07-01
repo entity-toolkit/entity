@@ -300,10 +300,12 @@ namespace out {
                                               "fieldlines", "enable", false) or
                           any_fl;
     if (m_fieldlines.enable) {
-      if (m_global_extent.size() != 3) {
-        raise::Warning("output.render.fieldlines is 3D-only; ignoring", HERE);
+      if (m_global_extent.size() != 2 and m_global_extent.size() != 3) {
+        raise::Warning("output.render.fieldlines needs a 2D or 3D run; ignoring",
+                       HERE);
         m_fieldlines.enable = false;
       } else {
+        // 3D -> traced tubes inside the volume; 2D -> flux-function contours
         auto& fl   = m_fieldlines;
         fl.field   = toml::find_or<std::string>(td, "output", "render",
                                                 "fieldlines", "field", "B");
@@ -317,6 +319,16 @@ namespace out {
         fl.colormap = toml::find_or<std::string>(td, "output", "render",
                                                  "fieldlines", "colormap",
                                                  "inferno");
+        // optional monochrome color [r,g,b]; overrides the colormap when set
+        fl.color = toml::find_or<std::vector<real_t>>(td, "output", "render",
+                                                      "fieldlines", "color",
+                                                      std::vector<real_t> {});
+        if (not fl.color.empty() and fl.color.size() != 3) {
+          raise::Warning("output.render.fieldlines.color must have 3 entries "
+                         "[r,g,b]; ignoring",
+                         HERE);
+          fl.color.clear();
+        }
         fl.log_scale = toml::find_or<bool>(td, "output", "render", "fieldlines",
                                            "log", false);
         fl.vmin = toml::find_or<real_t>(td, "output", "render", "fieldlines",
@@ -332,6 +344,8 @@ namespace out {
                                                 static_cast<real_t>(3));
         fl.seed_max = toml::find_or<int>(td, "output", "render", "fieldlines",
                                          "seed_max", 4096);
+        fl.levels   = toml::find_or<int>(td, "output", "render", "fieldlines",
+                                         "levels", 16);
       }
     }
 

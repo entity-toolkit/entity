@@ -245,6 +245,103 @@ namespace ntt {
       return cf;
     }
 
+    // 2D analogue of buildCoarseFieldVec: volume-average the in-plane physical
+    // components (Bx, By) onto a coarse global 2D grid and MPI-replicate them,
+    // so every rank can integrate the SAME flux function for seamless contours.
+    template <SimEngine::type S, MetricClass M>
+    auto buildCoarseField2D(const Mesh<M>&           mesh,
+                            const Fields<M::Dim, S>& fields,
+                            ndfield_t<M::Dim, 6>&    bckp,
+                            char                     fbase,
+                            const real_t             gorigin[2],
+                            const int                gnc[2],
+                            const real_t             gdx[2]) -> out::CoarseField2D {
+      const auto metric = mesh.metric;
+      uint8_t            src_base = em::bx1;
+      PrepareOutputFlags interp = PrepareOutput::InterpToCellCenterFromFaces;
+      bool               is_current = false;
+      if (fbase == 'E') {
+        src_base = em::ex1;
+        interp   = PrepareOutput::InterpToCellCenterFromEdges;
+      } else if (fbase == 'J') {
+        is_current = true;
+        src_base   = cur::jx1;
+        interp     = PrepareOutput::InterpToCellCenterFromEdges;
+      }
+      if (is_current) {
+        copyVec3ToBckp<M::Dim, 3>(fields.cur, bckp,
+                                  cell_range_t(cur::jx1, cur::jx3 + 1));
+      } else {
+        copyVec3ToBckp<M::Dim, 6>(fields.em, bckp,
+                                  cell_range_t(src_base, src_base + 3));
+      }
+      const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
+                                           ? PrepareOutput::ConvertToHat
+                                           : PrepareOutput::ConvertToPhysCntrv;
+      list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
+      list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
+      Kokkos::parallel_for(
+        "RenderFL2DFieldsToPhys",
+        mesh.rangeActiveCells(),
+        kernel::FieldsToPhys_kernel<M, 6, 6>(bckp, bckp, comp_from, comp_to,
+                                             interp | prepare, metric));
+      Kokkos::fence();
+
+      auto bckp_h = Kokkos::create_mirror_view(bckp);
+      Kokkos::deep_copy(bckp_h, bckp);
+
+      const std::size_t   ncell = static_cast<std::size_t>(gnc[0]) * gnc[1];
+      std::vector<real_t> sum(ncell * 2, ZERO);
+      std::vector<real_t> cnt(ncell, ZERO);
+      const auto          le = mesh.extent();
+      const real_t        llo[2] = { le[0].first, le[1].first };
+      const real_t        lsz[2] = { le[0].second - le[0].first,
+                                     le[1].second - le[1].first };
+      const int           nl[2]  = { static_cast<int>(mesh.n_active(in::x1)),
+                                     static_cast<int>(mesh.n_active(in::x2)) };
+      const int           NG     = static_cast<int>(N_GHOSTS);
+      for (int j = 0; j < nl[1]; ++j) {
+        for (int i = 0; i < nl[0]; ++i) {
+          const real_t world[2] = {
+            llo[0] + (static_cast<real_t>(i) + HALF) * lsz[0] / nl[0],
+            llo[1] + (static_cast<real_t>(j) + HALF) * lsz[1] / nl[1]
+          };
+          int c[2];
+          for (int d = 0; d < 2; ++d) {
+            int cc = static_cast<int>(
+              std::floor((world[d] - gorigin[d]) / gdx[d]));
+            cc   = (cc < 0) ? 0 : ((cc > gnc[d] - 1) ? gnc[d] - 1 : cc);
+            c[d] = cc;
+          }
+          const std::size_t lin = static_cast<std::size_t>(c[1]) * gnc[0] + c[0];
+          sum[lin * 2 + 0] += bckp_h(i + NG, j + NG, 3); // Bx
+          sum[lin * 2 + 1] += bckp_h(i + NG, j + NG, 4); // By
+          cnt[lin]         += ONE;
+        }
+      }
+#if defined(MPI_ENABLED)
+      MPI_Allreduce(MPI_IN_PLACE, sum.data(), static_cast<int>(ncell * 2),
+                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE, cnt.data(), static_cast<int>(ncell),
+                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+#endif
+      out::CoarseField2D cf;
+      cf.B.assign(ncell * 2, ZERO);
+      for (int d = 0; d < 2; ++d) {
+        cf.n[d]      = gnc[d];
+        cf.origin[d] = gorigin[d];
+        cf.dx[d]     = gdx[d];
+      }
+      for (std::size_t c = 0; c < ncell; ++c) {
+        if (cnt[c] > ZERO) {
+          const real_t inv = ONE / cnt[c];
+          cf.B[c * 2 + 0]  = sum[c * 2 + 0] * inv;
+          cf.B[c * 2 + 1]  = sum[c * 2 + 1] * inv;
+        }
+      }
+      return cf;
+    }
+
   } // namespace
 
   template <SimEngine::type S, MetricClass M>
@@ -929,13 +1026,117 @@ namespace ntt {
         ndomains_per_dim(),
         fwd2d);
 
+      // ---- 2D field lines (built once) ------------------------------------ //
+      // Cartesian: iso-contours of the flux function psi. Spherical/Kerr: traced
+      // meridional streamlines (nt2py style). Both come from a coarse, MPI-
+      // replicated copy of the in-plane field, so the geometry is global and
+      // seamless across the disjoint tiles. All ranks reach buildCoarseField2D
+      // together (collective Allreduce); M is fixed per run, so every rank takes
+      // the same Cartesian/spherical branch.
+      const auto&     flc         = g_renderer.fieldlines();
+      out::ContourSet contours    = out::emptyContourSet();
+      out::ContourSet emptyc      = out::emptyContourSet();
+      out::TubeSet    lines2d     = out::emptyTubeSet();
+      out::TubeSet    emptyl      = out::emptyTubeSet();
+      bool            have_fl     = false;
+      real_t          fl_vmin     = ZERO, fl_vmax = ONE;
+      std::string     fl_colormap = flc.colormap;
+      if (flc.enable) {
+        const int gN[2] = { static_cast<int>(mesh().n_active(in::x1)),
+                            static_cast<int>(mesh().n_active(in::x2)) };
+        int       gnc[2];
+        real_t    gorigin[2], gdx[2];
+        for (int d = 0; d < 2; ++d) {
+          gnc[d]     = std::max(1, (gN[d] + flc.bin - 1) / flc.bin);
+          gorigin[d] = gext[d].first;
+          gdx[d]     = (gext[d].second - gext[d].first) / gnc[d];
+        }
+        const char fb = static_cast<char>(
+          std::toupper(flc.field.empty() ? 'B' : flc.field[0]));
+        // coarse, replicated in-plane field: (Bx,By) for Cartesian, (Br,Bth) for
+        // spherical (FieldsToPhys writes the physical components in axis order)
+        out::CoarseField2D cf = buildCoarseField2D<S, M>(
+          local_domain->mesh, local_domain->fields, bckp, fb, gorigin, gnc, gdx);
+        const real_t wpp = (umax - umin) / static_cast<real_t>(W);
+        if constexpr (M::CoordType == Coord::type::Cartesian) {
+          std::vector<real_t> psi;
+          real_t              pmin, pmax, bmin, bmax;
+          out::computeFlux2D(cf, psi, pmin, pmax, bmin, bmax);
+          const real_t line_half = HALF * math::max(flc.tube_px, ONE);
+          contours    = out::buildContourSet(cf, psi, pmin, pmax, bmin, bmax, flc,
+                                             line_half, wpp);
+          fl_vmin     = contours.vmin;
+          fl_vmax     = contours.vmax;
+          fl_colormap = contours.colormap;
+          logger::Checkpoint("field lines (2D): " + std::to_string(flc.levels) +
+                               " psi contours on a " + std::to_string(gnc[0]) +
+                               "x" + std::to_string(gnc[1]) + " grid",
+                             HERE);
+        } else {
+          // traced meridional streamlines through the coarse (r, theta) field
+          real_t vlo, vhi;
+          auto   poly = out::traceFieldLinesMeridional(cf, flc, wpp, mirror, vlo,
+                                                       vhi);
+          if (flc.vmax > flc.vmin) { // explicit |B| range overrides auto
+            vlo = flc.vmin;
+            vhi = flc.vmax;
+          }
+          const real_t eff_r = math::max(flc.tube_px, ONE) * wpp;
+          // bucket grid for buildTubeSet: cell ~ a coarse dr (a length), AABB
+          // spans the (mirrored) meridional disk, z is a single thin slab at 0
+          out::CoarseField bucket_cf;
+          bucket_cf.dx[0]    = cf.dx[0];
+          bucket_cf.dx[1]    = cf.dx[0];
+          bucket_cf.dx[2]    = cf.dx[0];
+          const real_t rmax  = gext[0].second;
+          const real_t lo[3] = { mirror ? -rmax : ZERO, -rmax, -cf.dx[0] };
+          const real_t hi[3] = { rmax, rmax, cf.dx[0] };
+          std::size_t  n_kept = 0;
+          lines2d     = out::buildTubeSet(poly, eff_r, flc, vlo, vhi, lo, hi,
+                                          bucket_cf, n_kept);
+          fl_vmin     = lines2d.vmin;
+          fl_vmax     = lines2d.vmax;
+          fl_colormap = lines2d.colormap;
+          logger::Checkpoint("field lines (2D meridional): " +
+                               std::to_string(poly.size()) + " lines, " +
+                               std::to_string(n_kept) + " segments",
+                             HERE);
+        }
+        have_fl = true;
+      }
+
       bool rendered_any = false;
       for (const auto& scene : g_renderer.scenes()) {
-        Kokkos::deep_copy(bckp, ZERO);
-        if (not prepareRenderScalar(params, *local_domain, scene.field, bckp)) {
+        // standalone `field = "fieldlines"` -> lines only (no heatmap fill); any
+        // other scene with `fieldlines = true` overlays them on its heatmap.
+        const bool fl_only    = (scene.field == "fieldlines");
+        const bool heatmap_on = not fl_only;
+        const bool show_lines = scene.show_fieldlines and have_fl;
+        if (heatmap_on) {
+          Kokkos::deep_copy(bckp, ZERO);
+          if (not prepareRenderScalar(params, *local_domain, scene.field, bckp)) {
+            continue;
+          }
+          CommunicateBckp(*local_domain, { 0, 1 });
+        } else if (not have_fl) {
+          raise::Warning("output.render: 'fieldlines' scene needs a 2D run with "
+                         "[output.render.fieldlines]; skipping",
+                         HERE);
           continue;
         }
-        CommunicateBckp(*local_domain, { 0, 1 });
+        const out::ContourSet& kc = show_lines ? contours : emptyc;
+        const out::TubeSet&    kt = show_lines ? lines2d : emptyl;
+        // a standalone field-line scene colors its colorbar by |B|
+        out::Scene scene_cb = scene;
+        if (fl_only) {
+          scene_cb.tf.vmin      = fl_vmin;
+          scene_cb.tf.vmax      = fl_vmax;
+          scene_cb.tf.log_scale = false;
+          scene_cb.tf.colormap  = fl_colormap;
+          if (scene_cb.label == "fieldlines") {
+            scene_cb.label = "|" + flc.field + "|";
+          }
+        }
 
         out::SubImage sub;
         if (bw > 0 and bh > 0) {
@@ -974,6 +1175,9 @@ namespace ntt {
                                           scene.tf.vmin,
                                           scene.tf.vmax,
                                           scene.tf.log_scale,
+                                          kc,
+                                          kt,
+                                          heatmap_on,
                                           image));
           Kokkos::fence();
 
@@ -987,7 +1191,7 @@ namespace ntt {
             sub.rgba[p * 4 + 3] = image_h(p, 3);
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene, current_step);
+        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step);
         rendered_any = true;
       }
       return rendered_any;

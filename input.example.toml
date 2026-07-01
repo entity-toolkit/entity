@@ -897,13 +897,17 @@
       #          A scene with field = "fieldlines" instead renders them alone.
       fieldlines = ""
 
-    # Magnetic field-line tubes (3D volume mode only). Traces field lines through
-    # a coarse, MPI-replicated copy of the field and draws them as solid tubes,
-    # colored by |field|, composited inside the same ray-march as the volume so
-    # they are correctly occluded by it. Built once per frame and shared by every
-    # scene that opts in (per-scene `fieldlines = true`) and by any standalone
-    # `field = "fieldlines"` scene. The coarsening is what makes the lines cheap
-    # to trace (no parallel particle advection) and gives a smoothed morphology.
+    # Magnetic field lines, drawn from a coarse, MPI-replicated copy of the field
+    # so the geometry is global and seamless across domains (the coarsening is
+    # what makes this cheap -- no parallel particle advection / flux scan).
+    #   - 3D (Cartesian): traced as solid tubes, colored by |field|, composited
+    #     inside the volume ray-march so the volume correctly occludes them.
+    #   - 2D (Cartesian): iso-contours of the flux function psi (Bx = d psi/dy,
+    #     By = -d psi/dx), i.e. the in-plane field lines, colored by |B|.
+    #   - 2D (spherical / Kerr-Schild): traced meridional streamlines of the
+    #     poloidal (Br, Btheta) field (nt2py style).
+    # Built once per frame and shared by every scene that opts in (per-scene
+    # `fieldlines = true`) and by any standalone `field = "fieldlines"` scene.
     [output.render.fieldlines]
       # Build the field-line geometry this run
       #   @type: bool
@@ -919,29 +923,40 @@
       # Field coarsening factor (simulation cells per coarse cell, per axis)
       #   @type: int [1..16]
       #   @default: 4
-      #   @note: larger = smoother "morphology" lines + cheaper replication
-      #          (the coarse field is ~ N_cells / bin^3 x 3 floats, on every rank)
+      #   @note: larger = smoother "morphology" lines + cheaper replication (the
+      #          coarse field is ~ N_cells / bin^D floats/rank; D = sim dimension)
       bin = ""
-      # Seed-lattice spacing in screen pixels (sets line density)
+      # (3D tubes) Seed-lattice spacing in screen pixels (sets line density)
       #   @type: float [> 0]
       #   @default: 8
       #   @note: capped by `seed_max`; if seed_px asks for more seeds than that,
       #          the spacing grows to fit and seed_px no longer governs
       seed_px = ""
-      # Hard cap on the seed count (the seed lattice is n^3, 2 lines per seed)
+      # (3D tubes) Hard cap on the seed count (lattice is n^3, 2 lines per seed)
       #   @type: int [> 0]
       #   @default: 4096
       #   @note: lower this for fewer / more widely spaced lines
       seed_max = ""
-      # Tube radius in screen pixels
+      # (2D contours) Number of evenly-spaced flux-function contour levels
+      #   @type: int [> 0]
+      #   @default: 16
+      #   @note: evenly-spaced psi levels => line density tracks |B| automatically
+      levels = ""
+      # Tube radius (3D) / contour line width (2D), in screen pixels
       #   @type: float [> 0]
       #   @default: 2
       tube_px = ""
-      # Tube colormap (mapped by |field| along the line)
+      # Colormap for the field lines (mapped by |B| along each line)
       #   @type: string
       #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray"
       #   @default: "inferno"
       colormap = ""
+      # Monochrome override: draw the lines in a single [r,g,b] color (each 0..1)
+      # instead of the |B| colormap -- reads well as an overlay on another volume
+      #   @type: array<float> [size 3]
+      #   @default: [] (empty => color by |B|)
+      #   @example: [1.0, 1.0, 1.0]   # white field lines
+      color = ""
       # Map the tube color range logarithmically
       #   @type: bool
       #   @default: false
@@ -953,15 +968,15 @@
       #   @note: when min >= max, the range is auto-set from |field| along the lines
       min = ""
       max = ""
-      # RK4 integration step as a fraction of one coarse cell
+      # (3D tubes) RK4 integration step as a fraction of one coarse cell
       #   @type: float [> 0]
       #   @default: 0.5
       step_frac = ""
-      # Per-direction integration-step cap
+      # (3D tubes) Per-direction integration-step cap
       #   @type: int [> 0]
       #   @default: 4000
       max_steps = ""
-      # Maximum line length, in global box diagonals (per direction)
+      # (3D tubes) Maximum line length, in global box diagonals (per direction)
       #   @type: float [> 0]
       #   @default: 3.0
       max_length = ""
