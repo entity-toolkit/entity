@@ -62,6 +62,9 @@ namespace ntt {
        *   theta0   - electron temperature T_e (code units); 0 = cold electrons
        *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
        *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
+       *   subcycle         - Pegasus-style sub-cycled field advance (default on)
+       *   subcycle_courant - target whistler Courant per field sub-step
+       *   subcycle_max     - cap on the number of field sub-steps per advance
        *   v_max    - characteristic flow speed for the hybrid CFL (code units)
        */
       set("hybrid.gamma_ad",
@@ -88,6 +91,22 @@ namespace ntt {
                                 "hybrid",
                                 "hall_lim",
                                 static_cast<real_t>(0.5)));
+      // Pegasus-style sub-cycled magnetic-field advance (fieldsolvers.h
+      // ::SubcycledFaraday): the whistler-stiff Ohm/Faraday loop is integrated
+      // with adaptive SSP-RK3 sub-steps at its own CFL instead of full-dt Euler
+      // pushes. The sub-step count targets `subcycle_courant` whistler Courant
+      // per sub-step (from the global max |B|/N) and is capped at `subcycle_max`;
+      // beyond the cap the per-cell Hall limiter (which then sees the SUB-step
+      // dt) takes over. subcycle = false -> legacy 3-push scheme.
+      set("hybrid.subcycle",
+          toml::find_or<bool>(toml_data, "hybrid", "subcycle", true));
+      set("hybrid.subcycle_courant",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "subcycle_courant",
+                                static_cast<real_t>(0.5)));
+      set("hybrid.subcycle_max",
+          toml::find_or<int>(toml_data, "hybrid", "subcycle_max", 64));
       // optional user-set characteristic flow speed for the hybrid CFL (code
       // units); 0 -> dt set purely by the Alfven + whistler signal speeds.
       set("hybrid.v_max",

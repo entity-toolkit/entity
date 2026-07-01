@@ -59,6 +59,12 @@ namespace ntt {
        *            x_prtl   at n
        *            u_prtl   at n
        */
+      // Pegasus-style sub-cycled field advance (fieldsolvers.h::SubcycledFaraday):
+      // the whistler-stiff Ohm's-law/Faraday loop is integrated with adaptive
+      // SSP-RK3 sub-steps at its own CFL instead of single full-dt Euler pushes.
+      // false -> the legacy 3-push scheme.
+      const bool subcycle = m_params.template get<bool>("hybrid.subcycle");
+
       if (step == 0) {
         // fill Bf^(n) ghosts (periodic / MPI) so the field-solver stencils are valid
         timers.start("Communications");
@@ -99,24 +105,33 @@ namespace ntt {
       hybrid::FieldBoundaries<M::Dim>(dom, m_metadomain.mesh(), BC::E);
       timers.stop("FieldBoundaries");
 
-      // Faraday push #1
+      // Faraday push #1 (predictor field advance)
       // Using: em::012 [Ee^(n)], em::345 [Bf^(n)]
       //
-      // Bf* = Bf^(n) + dt * curl Ee^(n)
+      // legacy:    Bf* = Bf^(n) + dt * curl Ee^(n)
+      // subcycled: Bf* = integrate dB/dt = -curl EMF(N^(n), V^(n), B) over dt
+      //            (E refreshed every sub-step; comms + wall conditions inside,
+      //            cur comes back with valid ghosts)
       //
       // Now: cur::012 <-- Bf*
       timers.start("FieldSolver");
-      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push1);
+      if (subcycle) {
+        hybrid::SubcycledFaraday(m_metadomain, dom, this->engineParams(), m_params);
+      } else {
+        hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push1);
+      }
       timers.stop("FieldSolver");
-      timers.start("Communications");
-      m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf* ghosts for EMF #1
-      timers.stop("Communications");
-      // reflecting wall: even-mirror the Bf* scratch ghosts (a physical wall
-      // has no halo exchange to fill them) so the Hall stencil sees no fake
-      // wall current
-      timers.start("FieldBoundaries");
-      hybrid::WallScratchB(dom, m_metadomain.mesh());
-      timers.stop("FieldBoundaries");
+      if (not subcycle) {
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf* ghosts for EMF #1
+        timers.stop("Communications");
+        // reflecting wall: even-mirror the Bf* scratch ghosts (a physical wall
+        // has no halo exchange to fill them) so the Hall stencil sees no fake
+        // wall current
+        timers.start("FieldBoundaries");
+        hybrid::WallScratchB(dom, m_metadomain.mesh());
+        timers.stop("FieldBoundaries");
+      }
 
       // EMF calculation #1
       // Using:
@@ -170,22 +185,32 @@ namespace ntt {
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("Moments");
 
-      // Faraday push #2
-      // Using: em0::345 [Ee'], em::345 [Bf^(n)]
+      // Faraday push #2 (corrector field advance)
+      // Using: em::345 [Bf^(n)] + em0::345 [Ee'] (legacy) / aux [N', V'] (subcycled)
       //
-      // Bf** = Bf^(n) + dt * curl Ee'
+      // legacy:    Bf** = Bf^(n) + dt * curl Ee'
+      // subcycled: Bf** = integrate dB/dt = -curl EMF(N', V', B) over dt
+      //            (E refreshed from the PREDICTED moments every sub-step;
+      //            this advance IS the full-interval B^(n) -> B^(n+1)
+      //            integration, accepted as Bf^(n+1) below)
       //
       // Now: cur::012 <-- Bf**
       timers.start("FieldSolver");
-      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push2);
+      if (subcycle) {
+        hybrid::SubcycledFaraday(m_metadomain, dom, this->engineParams(), m_params);
+      } else {
+        hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push2);
+      }
       timers.stop("FieldSolver");
-      timers.start("Communications");
-      m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf** ghosts for EMF #2
-      timers.stop("Communications");
-      // reflecting wall: even-mirror the Bf** scratch ghosts (see Faraday #1)
-      timers.start("FieldBoundaries");
-      hybrid::WallScratchB(dom, m_metadomain.mesh());
-      timers.stop("FieldBoundaries");
+      if (not subcycle) {
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf** ghosts for EMF #2
+        timers.stop("Communications");
+        // reflecting wall: even-mirror the Bf** scratch ghosts (see Faraday #1)
+        timers.start("FieldBoundaries");
+        hybrid::WallScratchB(dom, m_metadomain.mesh());
+        timers.stop("FieldBoundaries");
+      }
 
       // EMF calculation #2
       // Using:
@@ -223,15 +248,22 @@ namespace ntt {
       hybrid::WallBckpFill(dom, m_metadomain.mesh());
       timers.stop("FieldBoundaries");
 
-      // Faraday push #3
-      // Using: em0::345 [Ee''], em::345 [Bf^(n)]
+      // Faraday push #3 (accept B^(n+1))
+      // Using: em0::345 [Ee''], em::345 [Bf^(n)] (legacy) / cur [Bf**] (subcycled)
       //
-      // Bf^(n+1) = Bf^(n) + dt * curl Ee''
+      // legacy:    Bf^(n+1) = Bf^(n) + dt * curl Ee''
+      // subcycled: Bf^(n+1) = Bf** -- the corrector advance above already
+      //            integrated the full interval; a third full-dt Euler push
+      //            would redundantly re-integrate it (stiff-unstable)
       //
       // Now:
       //   em::345 <-- Bf^(n+1)
       timers.start("FieldSolver");
-      hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push3);
+      if (subcycle) {
+        hybrid::AcceptSubcycledB(dom);
+      } else {
+        hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push3);
+      }
       timers.stop("FieldSolver");
       timers.start("Communications");
       m_metadomain.CommunicateFields(dom, ::Comm::EM_345); // Bf^(n+1) ghosts for next step

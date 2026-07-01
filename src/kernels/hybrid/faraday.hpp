@@ -18,11 +18,13 @@ namespace kernel::hybrid {
    *         2D: dt/dx^2 for b1, b2 (from physical e3); dt for b3 (from e1, e2)
    *         3D: dt/dx for all components
    */
-  template <Dimension D, uint8_t N>
+  // NIN: number of components of Bin (6 = em, 3 = cur). Bin == Bout in-place is
+  // safe: the update reads only the cell's own B (the stencil is on Ein).
+  template <Dimension D, uint8_t N, uint8_t NIN = 6>
   class Faraday_kernel {
-    ndfield_t<D, 6> Ein;
-    ndfield_t<D, 6> Bin;
-    ndfield_t<D, N> Bout;
+    ndfield_t<D, 6>   Ein;
+    ndfield_t<D, NIN> Bin;
+    ndfield_t<D, N>   Bout;
 
     const uint8_t comp_Ein;
     const uint8_t comp_Bin;
@@ -32,14 +34,14 @@ namespace kernel::hybrid {
     const real_t dx_inv;
 
   public:
-    Faraday_kernel(const ndfield_t<D, 6>& Ein,
-                   const ndfield_t<D, 6>& Bin,
-                   ndfield_t<D, N>&       Bout,
-                   uint8_t                comp_Ein,
-                   uint8_t                comp_Bin,
-                   uint8_t                comp_Bout,
-                   real_t                 dt,
-                   real_t                 dx)
+    Faraday_kernel(const ndfield_t<D, 6>&   Ein,
+                   const ndfield_t<D, NIN>& Bin,
+                   ndfield_t<D, N>&         Bout,
+                   uint8_t                  comp_Ein,
+                   uint8_t                  comp_Bin,
+                   uint8_t                  comp_Bout,
+                   real_t                   dt,
+                   real_t                   dx)
       : Ein { Ein }
       , Bin { Bin }
       , Bout { Bout }

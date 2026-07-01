@@ -28,10 +28,16 @@ namespace kernel::hybrid {
    *   delta(b_inplane) = d(B_phys),  delta(b_outofplane) = dx * d(B_phys),
    * which is the origin of the per-term dx / dx_inv factors below.
    */
-  template <Dimension D, bool INIT>
+  // EEONLY (requires INIT): compute and write ONLY the raw edge-E (Ee_out) --
+  // used by the sub-cycled field advance, which refreshes Ee from frozen
+  // moments every sub-step and needs neither Ec nor Bc there. In this mode
+  // Bfs is the 3-component scratch (cur = the sub-stepped B) and Bf is unused
+  // (pass cur).
+  template <Dimension D, bool INIT, bool EEONLY = false>
   class EMF_kernel {
-    static constexpr uint8_t N1 = INIT ? 3 : 6;
-    static constexpr uint8_t N2 = INIT ? 6 : 3;
+    static_assert(INIT || not EEONLY, "EEONLY requires INIT (raw writes)");
+    static constexpr uint8_t N1 = (INIT || EEONLY) ? 3 : 6;
+    static constexpr uint8_t N2 = (INIT && not EEONLY) ? 6 : 3;
 
     ndfield_t<D, 6>  PP;
     ndfield_t<D, 6>  NN;
@@ -702,16 +708,19 @@ namespace kernel::hybrid {
           /// terms of Ee and Ec
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
           compute_Ee({ i1 }, Eestar0, Eestar1, Eestar2);
-          real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
-          compute_Ec({ i1 }, Ecstar0, Ecstar1, Ecstar2);
 
           Ee_out(i1, comp_Ee_out + 0) = Eestar0;
           Ee_out(i1, comp_Ee_out + 1) = Eestar1;
           Ee_out(i1, comp_Ee_out + 2) = Eestar2;
 
-          Ec_out(i1, comp_Ec_out + 0) = Ecstar0;
-          Ec_out(i1, comp_Ec_out + 1) = Ecstar1;
-          Ec_out(i1, comp_Ec_out + 2) = Ecstar2;
+          if constexpr (not EEONLY) {
+            real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
+            compute_Ec({ i1 }, Ecstar0, Ecstar1, Ecstar2);
+
+            Ec_out(i1, comp_Ec_out + 0) = Ecstar0;
+            Ec_out(i1, comp_Ec_out + 1) = Ecstar1;
+            Ec_out(i1, comp_Ec_out + 2) = Ecstar2;
+          }
         } else {
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
           compute_Ee({ i1 }, Eestar0, Eestar1, Eestar2);
@@ -755,16 +764,19 @@ namespace kernel::hybrid {
           /// terms of Ee and Ec
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
           compute_Ee({ i1, i2 }, Eestar0, Eestar1, Eestar2);
-          real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
-          compute_Ec({ i1, i2 }, Ecstar0, Ecstar1, Ecstar2);
 
           Ee_out(i1, i2, comp_Ee_out + 0) = Eestar0;
           Ee_out(i1, i2, comp_Ee_out + 1) = Eestar1;
           Ee_out(i1, i2, comp_Ee_out + 2) = Eestar2;
 
-          Ec_out(i1, i2, comp_Ec_out + 0) = Ecstar0;
-          Ec_out(i1, i2, comp_Ec_out + 1) = Ecstar1;
-          Ec_out(i1, i2, comp_Ec_out + 2) = Ecstar2;
+          if constexpr (not EEONLY) {
+            real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
+            compute_Ec({ i1, i2 }, Ecstar0, Ecstar1, Ecstar2);
+
+            Ec_out(i1, i2, comp_Ec_out + 0) = Ecstar0;
+            Ec_out(i1, i2, comp_Ec_out + 1) = Ecstar1;
+            Ec_out(i1, i2, comp_Ec_out + 2) = Ecstar2;
+          }
         } else {
           // Ee* = EMF(N^(n), P^(n), Bf*)
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
@@ -818,16 +830,19 @@ namespace kernel::hybrid {
           /// terms of Ee and Ec
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
           compute_Ee({ i1, i2, i3 }, Eestar0, Eestar1, Eestar2);
-          real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
-          compute_Ec({ i1, i2, i3 }, Ecstar0, Ecstar1, Ecstar2);
 
           Ee_out(i1, i2, i3, comp_Ee_out + 0) = Eestar0;
           Ee_out(i1, i2, i3, comp_Ee_out + 1) = Eestar1;
           Ee_out(i1, i2, i3, comp_Ee_out + 2) = Eestar2;
 
-          Ec_out(i1, i2, i3, comp_Ec_out + 0) = Ecstar0;
-          Ec_out(i1, i2, i3, comp_Ec_out + 1) = Ecstar1;
-          Ec_out(i1, i2, i3, comp_Ec_out + 2) = Ecstar2;
+          if constexpr (not EEONLY) {
+            real_t Ecstar0 { ZERO }, Ecstar1 { ZERO }, Ecstar2 { ZERO };
+            compute_Ec({ i1, i2, i3 }, Ecstar0, Ecstar1, Ecstar2);
+
+            Ec_out(i1, i2, i3, comp_Ec_out + 0) = Ecstar0;
+            Ec_out(i1, i2, i3, comp_Ec_out + 1) = Ecstar1;
+            Ec_out(i1, i2, i3, comp_Ec_out + 2) = Ecstar2;
+          }
         } else {
           real_t Eestar0 { ZERO }, Eestar1 { ZERO }, Eestar2 { ZERO };
           compute_Ee({ i1, i2, i3 }, Eestar0, Eestar1, Eestar2);
