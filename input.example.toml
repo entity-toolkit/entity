@@ -905,7 +905,10 @@
       log = ""
       # Colormap name
       #   @type: string
-      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray"
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray", "RdBu_r", and the
+      #          CMasher maps (BSD-3, https://cmasher.readthedocs.io): "dusk",
+      #          "cosmic", "freeze", "apple", "gothic", "sunburst", "voltage",
+      #          "ocean", "fusion", "prinsenvlag" (an optional "cmr." prefix is ok)
       #   @default: "viridis"
       colormap = ""
       # Opacity transfer function: [position, opacity] control points, both in
@@ -979,7 +982,10 @@
       tube_px = ""
       # Colormap for the field lines (mapped by |B| along each line)
       #   @type: string
-      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray"
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray", "RdBu_r", and the
+      #          CMasher maps (BSD-3, https://cmasher.readthedocs.io): "dusk",
+      #          "cosmic", "freeze", "apple", "gothic", "sunburst", "voltage",
+      #          "ocean", "fusion", "prinsenvlag" (an optional "cmr." prefix is ok)
       #   @default: "inferno"
       colormap = ""
       # Monochrome override: draw the lines in a single [r,g,b] color (each 0..1)
