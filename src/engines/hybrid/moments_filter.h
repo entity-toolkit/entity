@@ -10,6 +10,7 @@
 
 #include "metrics/minkowski.h"
 
+#include "engines/hybrid/fields_bcs.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
@@ -49,6 +50,9 @@ namespace ntt {
           kernel::hybrid::MomentsFilter_kernel<D>(domain.fields.aux,
                                                   domain.fields.bckp));
         metadomain.CommunicateFields(domain, ::Comm::AUX);
+        // re-mirror the reflecting-wall ghosts (fill only; the deposit tails
+        // were already folded once, before the filter)
+        MomentsWallBC(domain, metadomain.mesh(), /* fold */ false);
       }
     }
 

@@ -73,6 +73,9 @@ namespace ntt {
         hybrid::DepositMoments(dom, m_params);
         m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
         m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
+        // reflecting wall: fold the wall-ghost deposit tails back (image plasma)
+        // + mirror-fill the wall ghosts for the EMF stencils
+        hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
         // smooth N^(0),V^(0) (kills grid-scale shot noise before the field solve)
         hybrid::MomentsFilter(m_metadomain, dom, m_params);
         timers.stop("Moments");
@@ -90,6 +93,11 @@ namespace ntt {
       timers.start("Communications");
       m_metadomain.CommunicateFields(dom, ::Comm::EM_012 | ::Comm::EM0_012);
       timers.stop("Communications");
+      // reflecting wall: E_tan = 0 on the wall plane of Ee^(n) before Faraday #1
+      // (this is what freezes the wall-plane B_n for an oblique background field)
+      timers.start("FieldBoundaries");
+      hybrid::FieldBoundaries<M::Dim>(dom, m_metadomain.mesh(), BC::E);
+      timers.stop("FieldBoundaries");
 
       // Faraday push #1
       // Using: em::012 [Ee^(n)], em::345 [Bf^(n)]
@@ -103,6 +111,12 @@ namespace ntt {
       timers.start("Communications");
       m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf* ghosts for EMF #1
       timers.stop("Communications");
+      // reflecting wall: even-mirror the Bf* scratch ghosts (a physical wall
+      // has no halo exchange to fill them) so the Hall stencil sees no fake
+      // wall current
+      timers.start("FieldBoundaries");
+      hybrid::WallScratchB(dom, m_metadomain.mesh());
+      timers.stop("FieldBoundaries");
 
       // EMF calculation #1
       // Using:
@@ -137,6 +151,12 @@ namespace ntt {
       // Ee' (em0::345) ghosts for Faraday push #2; Ec'/Bc' (bckp) ghosts for the gather
       m_metadomain.CommunicateFields(dom, ::Comm::EM0_345 | ::Comm::Bckp);
       timers.stop("Communications");
+      // reflecting wall: E_tan = 0 on the wall plane of Ee' (consumed by
+      // Faraday #2) + conductor-mirror the bckp wall ghosts for the gather
+      timers.start("FieldBoundaries");
+      hybrid::WallEPrime(dom, m_metadomain.mesh());
+      hybrid::WallBckpFill(dom, m_metadomain.mesh());
+      timers.stop("FieldBoundaries");
       timers.start("ParticlePusher");
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ false);
       timers.stop("ParticlePusher");
@@ -144,6 +164,8 @@ namespace ntt {
       m_metadomain.SynchronizeFields(dom,
                                      ::Comm::AUX); // additive remap of deposit tails
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
+      // reflecting wall: image-plasma fold + ghost fill of the predicted moments
+      hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
       // smooth predicted N',V' before EMF #2
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("Moments");
@@ -160,6 +182,10 @@ namespace ntt {
       timers.start("Communications");
       m_metadomain.CommunicateFields(dom, ::Comm::CUR); // fill Bf** ghosts for EMF #2
       timers.stop("Communications");
+      // reflecting wall: even-mirror the Bf** scratch ghosts (see Faraday #1)
+      timers.start("FieldBoundaries");
+      hybrid::WallScratchB(dom, m_metadomain.mesh());
+      timers.stop("FieldBoundaries");
 
       // EMF calculation #2
       // Using:
@@ -190,6 +216,12 @@ namespace ntt {
       // Ee'' (em0::345) ghosts for Faraday push #3; Ec''/Bc'' (bckp) ghosts for the gather
       m_metadomain.CommunicateFields(dom, ::Comm::EM0_345 | ::Comm::Bckp);
       timers.stop("Communications");
+      // reflecting wall: E_tan = 0 on the wall plane of Ee'' (consumed by
+      // Faraday #3) + conductor-mirror the bckp wall ghosts for the corrector
+      timers.start("FieldBoundaries");
+      hybrid::WallEPrime(dom, m_metadomain.mesh());
+      hybrid::WallBckpFill(dom, m_metadomain.mesh());
+      timers.stop("FieldBoundaries");
 
       // Faraday push #3
       // Using: em0::345 [Ee''], em::345 [Bf^(n)]
@@ -223,6 +255,8 @@ namespace ntt {
         dom,
         ::Comm::AUX); // additive remap of deposit tails (pre-migration)
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
+      // reflecting wall: image-plasma fold + ghost fill of the final moments
+      hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
       // smooth final N^(n+1),V^(n+1) for next step's EMF #0/#1
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("Moments");
