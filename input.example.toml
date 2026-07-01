@@ -208,13 +208,38 @@
   #   @default: 0.0
   #   @note: `0.0` corresponds to cold electrons
   theta0 = ""
-  # Density floor for the Ohm's-law `1/N` divisions, in units of `n0`
+  # Vacuum threshold for the hybrid Ohm's law, in units of `n0`
   #   @type: float [> 0.0]
   #   @default: 1e-3
-  #   @note: Guards against `Inf`/`NaN` in statistically-empty or unfilled ghost cells
-  #          (a finite `ppc` leaves a fraction `e^-ppc` of cells empty), which the field
-  #          comms would otherwise spread over the whole grid
+  #   @note: Above it `E` follows the usual `[...]/N`; below it `E` ramps continuously
+  #          to zero so plasma-free cells keep `B` frozen instead of amplifying the
+  #          right-hand side by `1/dens_min` (statistically-empty or unfilled ghost
+  #          cells, a fraction `e^-ppc` for finite `ppc`)
   dens_min = ""
+  # Cap on the local whistler Courant the Ohm's-law Hall term may imply
+  #   @type: float
+  #   @default: 0.5
+  #   @note: The implied whistler speed `v_w ~ |B|/N` can outrun `dx/dt` at shock
+  #          overshoots and magnetic cavities; the Hall term is scaled so its
+  #          whistler Courant never exceeds this. Identity in resolvable cells
+  #   @note: `<= 0.0` disables the limiter
+  hall_lim = ""
+  # Pegasus-style sub-cycled magnetic-field advance
+  #   @type: bool
+  #   @default: true
+  #   @note: Integrates the whistler-stiff Ohm/Faraday loop with adaptive SSP-RK3
+  #          sub-steps at its own CFL; `false` uses the legacy 3-push scheme
+  subcycle = ""
+  # Target whistler Courant per field sub-step
+  #   @type: float [> 0.0]
+  #   @default: 0.5
+  #   @note: Only read when `subcycle = true`
+  subcycle_courant = ""
+  # Cap on the number of field sub-steps per advance
+  #   @type: int [>= 1]
+  #   @default: 64
+  #   @note: Beyond the cap the per-cell Hall limiter (`hall_lim`) takes over
+  subcycle_max = ""
   # Characteristic flow speed for the hybrid CFL, in physical (code) units
   #   @type: float [>= 0.0]
   #   @default: 0.0
