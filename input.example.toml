@@ -224,6 +224,25 @@
   #          whistler Courant never exceeds this. Identity in resolvable cells
   #   @note: `<= 0.0` disables the limiter
   hall_lim = ""
+  # Vacuum resistivity, in physical (code) units
+  #   @type: float [>= 0.0]
+  #   @default: 0.0
+  #   @note: `> 0.0` makes the sub-`dens_min` vacuum resistive: `E` crossfades to
+  #          `eta * curl B` below the threshold, so vacuum regions diffuse toward a
+  #          curl-free field instead of freezing. Needed when fast plasma sweeps
+  #          along a vacuum boundary, where a hard `E = 0` mask pumps `B` at `~ u/dx`
+  #   @note: Internally clamped to the explicit-diffusion stability limit; any value is safe
+  #   @note: `0.0` disables it (hard `E = 0` vacuum)
+  resist_vac = ""
+  # Hyper-resistivity coefficient `eta_H` (adds `-eta_H grad^4 B` to the field advance)
+  #   @type: float [>= 0.0]
+  #   @default: 0.0
+  #   @note: Damps the few-cell band the moments filter leaves without kinetic
+  #          feedback, while leaving physical scales (`k dx < 0.3`) essentially
+  #          untouched; size so `eta_H (pi/dx)^4` exceeds the drive
+  #   @note: Internally clamped to the explicit `grad^4` stability limit; any value is safe
+  #   @note: `0.0` disables it
+  resist_hyper = ""
   # Pegasus-style sub-cycled magnetic-field advance
   #   @type: bool
   #   @default: true
