@@ -293,6 +293,157 @@ namespace kernel {
     }
   }; // struct UniformInjector_kernel
 
+  /**
+   * @brief Single-species variant of UniformInjector_kernel
+   * @note injects one species per cell (e.g. the lone ion species of the hybrid
+   *       engine), where the charge-neutral pair injector does not apply
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  struct UniformInjectorSingle_kernel {
+
+    array_t<int*>      i1s, i2s, i3s;
+    array_t<prtldx_t*> dx1s, dx2s, dx3s;
+    array_t<real_t*>   ux1s, ux2s, ux3s;
+    array_t<real_t*>   phis;
+    array_t<real_t*>   weights;
+    array_t<short*>    tags;
+    array_t<npart_t**> pldis;
+
+    const npart_t          offset;
+    const npart_t          domain_idx, cntr;
+    const bool             use_tracking;
+    const M                metric;
+    const array_t<real_t*> xi_min, xi_max;
+    const ED               energy_dist;
+    const real_t           inv_V0;
+    random_number_pool_t   random_pool;
+
+    UniformInjectorSingle_kernel(Particles<M::Dim, M::CoordType>& species,
+                                 npart_t                          domain_idx,
+                                 const M&                         metric,
+                                 const array_t<real_t*>&          xi_min,
+                                 const array_t<real_t*>&          xi_max,
+                                 const ED&                        energy_dist,
+                                 real_t                           inv_V0,
+                                 random_number_pool_t&            random_pool)
+      : i1s { species.i1 }
+      , i2s { species.i2 }
+      , i3s { species.i3 }
+      , dx1s { species.dx1 }
+      , dx2s { species.dx2 }
+      , dx3s { species.dx3 }
+      , ux1s { species.ux1 }
+      , ux2s { species.ux2 }
+      , ux3s { species.ux3 }
+      , phis { species.phi }
+      , weights { species.weight }
+      , tags { species.tag }
+      , pldis { species.pld_i }
+      , offset { species.npart() }
+      , domain_idx { domain_idx }
+      , cntr { species.counter() }
+      , use_tracking { species.use_tracking() }
+      , metric { metric }
+      , xi_min { xi_min }
+      , xi_max { xi_max }
+      , energy_dist { energy_dist }
+      , inv_V0 { inv_V0 }
+      , random_pool { random_pool } {
+      if (use_tracking) {
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(species.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(species.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+    }
+
+    Inline void operator()(prtlidx_t p) const {
+      coord_t<M::Dim>           x_Cd { ZERO };
+      tuple_t<int, M::Dim>      xi_Cd { 0 };
+      tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
+      vec_t<Dim::_3D>           v { ZERO };
+      { // generate a random coordinate
+        auto rand_gen = random_pool.get_state();
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+          xi_Cd[0]  = static_cast<int>(x_Cd[0]);
+          dxi_Cd[0] = static_cast<prtldx_t>(x_Cd[0] - xi_Cd[0]);
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          dxi_Cd[1] = static_cast<prtldx_t>(x_Cd[1] - xi_Cd[1]);
+        }
+        if constexpr (M::Dim == Dim::_3D) {
+          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+          xi_Cd[2]  = static_cast<int>(x_Cd[2]);
+          dxi_Cd[2] = static_cast<prtldx_t>(x_Cd[2] - xi_Cd[2]);
+        }
+        random_pool.free_state(rand_gen);
+      }
+      { // generate the velocity
+        coord_t<M::Dim> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        if constexpr (M::CoordType == Coord::Cartesian) {
+          energy_dist(x_Ph, v);
+        } else if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
+            x_Cd_[2] = ZERO; // phi = 0
+          } else {
+            x_Cd_[2] = x_Cd[2];
+          }
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v);
+        } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v);
+        } else {
+          raise::KernelError(HERE, "Unknown simulation engine");
+        }
+      }
+      real_t weight = ONE;
+      if constexpr (M::CoordType != Coord::Cartesian) {
+        const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
+        weight                = sqrt_det_h * inv_V0;
+      }
+      // clang-format off
+      if (not use_tracking) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset,
+          i1s, i2s, i3s,
+          dx1s, dx2s, dx3s,
+          ux1s, ux2s, ux3s,
+          phis, weights, tags, pldis,
+          xi_Cd, dxi_Cd, v, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset,
+          i1s, i2s, i3s,
+          dx1s, dx2s, dx3s,
+          ux1s, ux2s, ux3s,
+          phis, weights, tags, pldis,
+          xi_Cd, dxi_Cd, v, weight, ZERO,
+          domain_idx, cntr + p);
+      }
+      // clang-format on
+    }
+  }; // struct UniformInjectorSingle_kernel
+
   template <SimEngine::type S, MetricClass M>
   struct GlobalInjector_kernel {
     static constexpr auto D = M::Dim;
