@@ -659,6 +659,10 @@ namespace ntt {
                      HERE);
       logger::Checkpoint("Rendering output (3D volume)", HERE);
 
+      // advance the moving view (region + camera) to this frame's time before
+      // reading camera()/region(); collective (same time on all ranks).
+      g_renderer.updateForTime(current_time);
+
       const auto& cam = g_renderer.camera();
       const int   W   = g_renderer.width();
       const int   H   = g_renderer.height();
@@ -899,6 +903,10 @@ namespace ntt {
                      "local_domain is a placeholder",
                      HERE);
       logger::Checkpoint("Rendering output (2D slice)", HERE);
+
+      // advance the moving view (region window) to this frame's time before
+      // reading region(); collective (same time on all ranks).
+      g_renderer.updateForTime(current_time);
 
       const int  W      = g_renderer.width();
       const int  H      = g_renderer.height();

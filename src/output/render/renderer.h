@@ -203,6 +203,15 @@ namespace out {
     }
 
     /**
+     * @brief Advance the moving view to `time`: translate the render region (and
+     * the 3D camera) by `camera_velocity * max(0, time - camera_start_time)`.
+     * @note A no-op unless `camera_velocity` was set. Call once per frame, before
+     *       reading region()/camera(). All ranks pass the same time, so the
+     *       shifted view is identical everywhere (the composite stays seamless).
+     */
+    void updateForTime(simtime_t time);
+
+    /**
      * @brief Composite the per-rank sparse sub-image across MPI and write PNG.
      * @param sub this rank's sparse screen-space sub-image (premultiplied RGBA)
      * @param order_key this rank's front-to-back sort key (see composite.h)
@@ -394,9 +403,20 @@ namespace out {
     boundaries_t<real_t> m_global_extent;
     // resolved render region [lo, hi] per axis (== global extent unless the
     // user set x{1,2,3}_lim); the volume is clipped / the slice window is framed
-    // to this, and the default camera frames it.
+    // to this, and the default camera frames it. `m_region` is the CURRENT region
+    // (shifted by the moving view below); `m_region_base` is the static toml one.
     boundaries_t<real_t> m_region;
+    boundaries_t<real_t> m_region_base;
     bool                 m_has_region { false };
+
+    // moving view: after `m_cam_t0`, the render region and the 3D camera
+    // translate at `m_cam_vel` (world units per unit sim-time) to keep a
+    // propagating feature (e.g. a shock) in frame. `m_eye_base` is the static
+    // camera eye. See updateForTime().
+    real_t    m_cam_vel[3] { ZERO, ZERO, ZERO };
+    simtime_t m_cam_t0 { 0 };
+    bool      m_cam_moving { false };
+    real_t    m_eye_base[3] { ZERO, ZERO, ZERO };
     // 2D slice world window + axis names, set per-frame by the templated Render
     real_t      m_slice_win[4] { ZERO, ONE, ZERO, ONE };
     std::string m_slice_xlabel { "x" };

@@ -732,6 +732,19 @@
     x1_lim = ""
     x2_lim = ""
     x3_lim = ""
+    # Moving view: translate the render region (and, in 3D, the camera) at this
+    # velocity in world-units-per-sim-time, to keep a propagating feature (e.g. a
+    # shock) in frame. Pair with x{1,2,3}_lim (the moving window). 2D uses the
+    # first two components; the motion starts at `camera_start_time`.
+    #   @type: array<float> [size 2 or 3]
+    #   @default: [] (static view)
+    #   @example: camera_velocity = [0.9, 0.0]   # pan along +x1 at 0.9 c
+    camera_velocity = ""
+    # Sim time at which the view starts moving (static before it, e.g. to let an
+    # initial ramp-up finish)
+    #   @type: float
+    #   @default: 0.0
+    camera_start_time = ""
     # Number of ray-march steps across the global box diagonal
     #   @type: int [> 0]
     #   @default: 400

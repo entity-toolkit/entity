@@ -274,6 +274,30 @@ namespace out {
     m_camera_dev.half_h       = static_cast<real_t>(0.5) * ortho_height;
     m_camera_dev.half_w       = m_camera_dev.half_h * m_camera_dev.aspect;
 
+    /* ---- moving view (pan the region/camera to track a feature) --------- */
+    // remember the static region + camera eye; updateForTime() translates them.
+    m_region_base = m_region;
+    for (int d = 0; d < 3; ++d) {
+      m_eye_base[d] = m_camera_dev.eye[d];
+    }
+    {
+      const auto vel = toml::find_or<std::vector<real_t>>(
+        td, "output", "render", "camera_velocity", std::vector<real_t> {});
+      for (std::size_t d = 0; d < vel.size() and d < 3; ++d) {
+        m_cam_vel[d] = vel[d];
+      }
+      m_cam_moving = (m_cam_vel[0] != ZERO) or (m_cam_vel[1] != ZERO) or
+                     (m_cam_vel[2] != ZERO);
+      m_cam_t0 = toml::find_or<simtime_t>(td, "output", "render",
+                                          "camera_start_time", 0.0);
+      if (m_cam_moving and not m_has_region and global_extent.size() == 2) {
+        raise::Warning("output.render.camera_velocity set without x{1,2}_lim: "
+                       "the 2D window will pan off the domain. Set a region to "
+                       "track a feature within it.",
+                       HERE);
+      }
+    }
+
     /* ---- scenes --------------------------------------------------------- */
     m_scenes.clear();
     const auto scenes_arr = toml::find_or<toml::array>(td,
@@ -390,6 +414,26 @@ namespace out {
 
     m_enabled = true;
     logger::Checkpoint("In-situ renderer initialized", HERE);
+  }
+
+  void Renderer::updateForTime(simtime_t time) {
+    if (not m_cam_moving) {
+      return;
+    }
+    const real_t dt = static_cast<real_t>(
+      (time > m_cam_t0) ? (time - m_cam_t0) : static_cast<simtime_t>(0));
+    const real_t shift[3] = { m_cam_vel[0] * dt, m_cam_vel[1] * dt,
+                              m_cam_vel[2] * dt };
+    // translate the render region (its width is preserved)
+    for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
+      m_region[d] = { m_region_base[d].first + shift[d],
+                      m_region_base[d].second + shift[d] };
+    }
+    // translate the 3D camera by the same shift -- a pure pan: forward/right/up
+    // and the ortho height are unchanged, so only the eye moves.
+    for (int d = 0; d < 3; ++d) {
+      m_camera_dev.eye[d] = m_eye_base[d] + shift[d];
+    }
   }
 
   void Renderer::compositeAndWrite(const SubImage& sub,
