@@ -11,6 +11,23 @@
 
 namespace kernel::hybrid {
 
+  /**
+   * Fields are stored in the contravariant (Idx::U) code basis of the Minkowski
+   * metric (cell size dx): components with index i <= D are physical/dx
+   * (h_ii = dx^2), out-of-plane components are physical (h_ii = 1). The
+   * deposited moments (PP = V, NN = N in `aux`) are physical (Cartesian XYZ
+   * velocity moments; N in units of n0).
+   *
+   * Inputs (Bf, Bfs, Ee_in) are U-basis. The outputs follow two conventions:
+   *   - Ee_out (edge E, consumed by the Faraday curl and the trapezoidal
+   *     average with Ee_in): U-basis, matching em/em0 storage.
+   *   - Ec_out, Bc_out (cell-centered, read raw by the particle pusher and
+   *     averaged with Ec = em0::012): physical (XYZ).
+   *
+   * Index-space differences of U-basis fields obey
+   *   delta(b_inplane) = d(B_phys),  delta(b_outofplane) = dx * d(B_phys),
+   * which is the origin of the per-term dx / dx_inv factors below.
+   */
   template <Dimension D, bool INIT>
   class EMF_kernel {
     static constexpr uint8_t N1 = INIT ? 3 : 6;
@@ -44,6 +61,8 @@ namespace kernel::hybrid {
     const real_t d0;
     const real_t rho0;
     const real_t dens_min;
+    const real_t dx;
+    const real_t dx_inv;
 
   public:
     EMF_kernel(const ndfield_t<D, 6>&  PP,
@@ -69,7 +88,8 @@ namespace kernel::hybrid {
                real_t                  theta,
                real_t                  d0,
                real_t                  rho0,
-               real_t                  dens_min)
+               real_t                  dens_min,
+               real_t                  dx)
       : PP { PP }
       , NN { NN }
       , Ee_in { Ee_in }
@@ -93,7 +113,9 @@ namespace kernel::hybrid {
       , theta { theta }
       , d0 { d0 }
       , rho0 { rho0 }
-      , dens_min { dens_min } {}
+      , dens_min { dens_min }
+      , dx { dx }
+      , dx_inv { ONE / dx } {}
 
     Inline void compute_Ee(const tuple_t<ncells_t, D>& i,
                            real_t&                     E0,
@@ -117,18 +139,19 @@ namespace kernel::hybrid {
           math::max(INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)), dens_min)
         };
 
-        E0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
-             Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
+        // 1D basis: b1 = Bx/dx, b2/b3 physical; output e1 = Ex/dx, e2/e3 physical
+        E0 = dx_inv * (-Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
+                       Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1));
         E1 = -INV_4 * (Bfs(i1, comp_Bfs + 2) + Bfs(i1 - 1, comp_Bfs + 2)) *
                (PP(i1, comp_PP + 0) + PP(i1 - 1, comp_PP + 0)) +
-             (INV_2) * (PP(i1, comp_PP + 2) + PP(i1 - 1, comp_PP + 2)) *
+             dx * (INV_2) * (PP(i1, comp_PP + 2) + PP(i1 - 1, comp_PP + 2)) *
                Bfs(i1, comp_Bfs + 0);
         E2 = (INV_4) * (Bfs(i1, comp_Bfs + 1) + Bfs(i1 - 1, comp_Bfs + 1)) *
                (PP(i1, comp_PP + 0) + PP(i1 - 1, comp_PP + 0)) -
-             INV_2 * (PP(i1, comp_PP + 1) + PP(i1 - 1, comp_PP + 1)) *
+             dx * INV_2 * (PP(i1, comp_PP + 1) + PP(i1 - 1, comp_PP + 1)) *
                Bfs(i1, comp_Bfs + 0);
 
-        E0 += coeff *
+        E0 += coeff * SQR(dx_inv) *
               (-INV_2 * (Bfs(i1 + 1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1)) *
                  Bfs(i1, comp_Bfs + 1) -
                INV_2 * (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
@@ -156,25 +179,31 @@ namespace kernel::hybrid {
                    NN(i1 - 1, i2, comp_NN) + NN(i1 - 1, i2 - 1, comp_NN)),
           dens_min) };
 
-        E0 = INV_4 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+        // 2D basis: b1/b2 = B/dx, b3 physical; output e1/e2 = E/dx, e3 physical
+        E0 = dx_inv * INV_4 *
+               (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
                (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1)) -
              INV_2 * (PP(i1, i2, comp_PP + 2) + PP(i1, i2 - 1, comp_PP + 2)) *
                Bfs(i1, i2, comp_Bfs + 1);
-        E1 = -INV_4 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
+        E1 = -dx_inv * INV_4 *
+               (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
                (PP(i1, i2, comp_PP + 0) + PP(i1 - 1, i2, comp_PP + 0)) +
              (INV_2) * (PP(i1, i2, comp_PP + 2) + PP(i1 - 1, i2, comp_PP + 2)) *
                Bfs(i1, i2, comp_Bfs + 0);
-        E2 = -INV_8 * (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
-               (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1) +
-                PP(i1 - 1, i2, comp_PP + 1) + PP(i1 - 1, i2 - 1, comp_PP + 1)) +
-             (INV_8) *
-               (Bfs(i1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
-               (PP(i1, i2, comp_PP + 0) + PP(i1, i2 - 1, comp_PP + 0) +
-                PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0));
+        E2 = dx *
+             (-INV_8 *
+                (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
+                (PP(i1, i2, comp_PP + 1) + PP(i1, i2 - 1, comp_PP + 1) +
+                 PP(i1 - 1, i2, comp_PP + 1) + PP(i1 - 1, i2 - 1, comp_PP + 1)) +
+              (INV_8) *
+                (Bfs(i1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
+                (PP(i1, i2, comp_PP + 0) + PP(i1, i2 - 1, comp_PP + 0) +
+                 PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0)));
 
         E0 +=
           coeff *
-          (-INV_8 * (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+          (-SQR(dx_inv) * INV_8 *
+             (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
              (Bfs(i1 + 1, i2, comp_Bfs + 2) + Bfs(i1 + 1, i2 - 1, comp_Bfs + 2) -
               Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
            (INV_2) *
@@ -183,7 +212,7 @@ namespace kernel::hybrid {
               Bfs(i1 + 1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
              Bfs(i1, i2, comp_Bfs + 1));
         E1 += coeff *
-              (-INV_8 *
+              (-SQR(dx_inv) * INV_8 *
                  (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
                  (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
                   Bfs(i1 - 1, i2 + 1, comp_Bfs + 2) -
@@ -358,19 +387,24 @@ namespace kernel::hybrid {
         const real_t Nc { math::max(NN(i1, comp_NN), dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
+        // output is PHYSICAL (pusher reads bckp raw); b1 = Bx/dx, b2/b3 physical
         E0 = -Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
              Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 1);
-        E1 = (INV_2 * Bfs(i1 + 1, comp_Bfs + 0) + INV_2 * Bfs(i1, comp_Bfs + 0)) *
+        E1 = dx *
+               (INV_2 * Bfs(i1 + 1, comp_Bfs + 0) +
+                INV_2 * Bfs(i1, comp_Bfs + 0)) *
                PP(i1, comp_PP + 2) -
              Bfs(i1, comp_Bfs + 2) * PP(i1, comp_PP + 0);
-        E2 = -(INV_2 * Bfs(i1 + 1, comp_Bfs + 0) + INV_2 * Bfs(i1, comp_Bfs + 0)) *
+        E2 = -dx *
+               (INV_2 * Bfs(i1 + 1, comp_Bfs + 0) +
+                INV_2 * Bfs(i1, comp_Bfs + 0)) *
                PP(i1, comp_PP + 1) +
              Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 0);
 
-        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv * INV_2 *
               (NN(i1 + 1, comp_NN) - NN(i1 - 1, comp_NN));
 
-        E0 += coeff_2 *
+        E0 += coeff_2 * dx_inv *
               (-INV_2 * (Bfs(i1 + 1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1)) *
                  Bfs(i1, comp_Bfs + 1) -
                INV_2 * (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
@@ -394,38 +428,48 @@ namespace kernel::hybrid {
         const real_t Nc { math::max(NN(i1, i2, comp_NN), dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
-        E0 = -INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+        // output is PHYSICAL (pusher reads bckp raw); b1/b2 = B/dx, b3 physical
+        E0 = -dx * INV_2 *
+               (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
                PP(i1, i2, comp_PP + 2) +
              Bfs(i1, i2, comp_Bfs + 2) * PP(i1, i2, comp_PP + 1);
-        E1 = INV_2 * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+        E1 = dx * INV_2 *
+               (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
                PP(i1, i2, comp_PP + 2) -
              Bfs(i1, i2, comp_Bfs + 2) * PP(i1, i2, comp_PP + 0);
-        E2 = -INV_2 * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
-               PP(i1, i2, comp_PP + 1) +
-             INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
-               PP(i1, i2, comp_PP + 0);
+        E2 = dx *
+             (-INV_2 *
+                (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+                PP(i1, i2, comp_PP + 1) +
+              INV_2 *
+                (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+                PP(i1, i2, comp_PP + 0));
 
-        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv * INV_2 *
               (NN(i1 + 1, i2, comp_NN) - NN(i1 - 1, i2, comp_NN));
-        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * INV_2 *
+        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv * INV_2 *
               (NN(i1, i2 + 1, comp_NN) - NN(i1, i2 - 1, comp_NN));
         E0 +=
           coeff_2 *
-          ((INV_8) * (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
+          (dx * (INV_8) *
+             (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
              (Bfs(i1 + 1, i2 + 1, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
               Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
               Bfs(i1 + 1, i2 + 1, comp_Bfs + 1) - Bfs(i1 + 1, i2, comp_Bfs + 1) +
               Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) -
-           INV_2 * (Bfs(i1 + 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) *
+           dx_inv * INV_2 *
+             (Bfs(i1 + 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) *
              Bfs(i1, i2, comp_Bfs + 2));
         E1 +=
           coeff_2 *
-          (-INV_8 * (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
+          (-dx * INV_8 *
+             (Bfs(i1 + 1, i2, comp_Bfs + 0) + Bfs(i1, i2, comp_Bfs + 0)) *
              (Bfs(i1 + 1, i2 + 1, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
               Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
               Bfs(i1 + 1, i2 + 1, comp_Bfs + 1) - Bfs(i1 + 1, i2, comp_Bfs + 1) +
               Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) -
-           INV_2 * (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)) *
+           dx_inv * INV_2 *
+             (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)) *
              Bfs(i1, i2, comp_Bfs + 2));
         E2 += coeff_2 *
               ((INV_4) *
@@ -448,33 +492,40 @@ namespace kernel::hybrid {
         // Ee* = EMF(N^(n), P^(n), Bf*)
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
-        E0 = -INV_2 *
-               (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) + Bfs(i1, i2, i3, comp_Bfs + 1)) *
-               PP(i1, i2, i3, comp_PP + 2) +
-             INV_2 *
-               (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) + Bfs(i1, i2, i3, comp_Bfs + 2)) *
-               PP(i1, i2, i3, comp_PP + 1);
-        E1 = INV_2 *
-               (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3, comp_Bfs + 0)) *
-               PP(i1, i2, i3, comp_PP + 2) -
-             INV_2 *
-               (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) + Bfs(i1, i2, i3, comp_Bfs + 2)) *
-               PP(i1, i2, i3, comp_PP + 0);
-        E2 = -INV_2 *
-               (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3, comp_Bfs + 0)) *
-               PP(i1, i2, i3, comp_PP + 1) +
-             INV_2 *
-               (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) + Bfs(i1, i2, i3, comp_Bfs + 1)) *
-               PP(i1, i2, i3, comp_PP + 0);
+        // output is PHYSICAL (pusher reads bckp raw); all b comps = B/dx in 3D
+        E0 = dx * (-INV_2 *
+                     (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                      Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                     PP(i1, i2, i3, comp_PP + 2) +
+                   INV_2 *
+                     (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                      Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                     PP(i1, i2, i3, comp_PP + 1));
+        E1 = dx * (INV_2 *
+                     (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                      Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                     PP(i1, i2, i3, comp_PP + 2) -
+                   INV_2 *
+                     (Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +
+                      Bfs(i1, i2, i3, comp_Bfs + 2)) *
+                     PP(i1, i2, i3, comp_PP + 0));
+        E2 = dx * (-INV_2 *
+                     (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
+                      Bfs(i1, i2, i3, comp_Bfs + 0)) *
+                     PP(i1, i2, i3, comp_PP + 1) +
+                   INV_2 *
+                     (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
+                      Bfs(i1, i2, i3, comp_Bfs + 1)) *
+                     PP(i1, i2, i3, comp_PP + 0));
 
-        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
+        E0 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv *
               INV_2 * (NN(i1 + 1, i2, i3, comp_NN) - NN(i1 - 1, i2, i3, comp_NN));
-        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
+        E1 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv *
               INV_2 * (NN(i1, i2 + 1, i3, comp_NN) - NN(i1, i2 - 1, i3, comp_NN));
-        E2 += coeff_1 * math::pow(Nc, gamma_ad - ONE) *
+        E2 += coeff_1 * math::pow(Nc, gamma_ad - ONE) * dx_inv *
               INV_2 * (NN(i1, i2, i3 + 1, comp_NN) - NN(i1, i2, i3 - 1, comp_NN));
 
-        E0 += coeff_2 * (INV_8 *
+        E0 += coeff_2 * dx * (INV_8 *
                            (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
                             Bfs(i1, i2, i3, comp_Bfs + 1)) *
                            (Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 0) -
@@ -496,7 +547,7 @@ namespace kernel::hybrid {
                             Bfs(i1 + 1, i2, i3, comp_Bfs + 2) +
                             Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) +
                             Bfs(i1 - 1, i2, i3, comp_Bfs + 2)));
-        E1 += coeff_2 * (-INV_8 *
+        E1 += coeff_2 * dx * (-INV_8 *
                            (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
                             Bfs(i1, i2, i3, comp_Bfs + 0)) *
                            (Bfs(i1 + 1, i2 + 1, i3, comp_Bfs + 0) -
@@ -518,7 +569,7 @@ namespace kernel::hybrid {
                             Bfs(i1, i2 + 1, i3, comp_Bfs + 2) +
                             Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
                             Bfs(i1, i2 - 1, i3, comp_Bfs + 2)));
-        E2 += coeff_2 * (-INV_8 *
+        E2 += coeff_2 * dx * (-INV_8 *
                            (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
                             Bfs(i1, i2, i3, comp_Bfs + 0)) *
                            (Bfs(i1 + 1, i2, i3 + 1, comp_Bfs + 0) -
@@ -583,7 +634,8 @@ namespace kernel::hybrid {
           Ec_out(i1, comp_Ec_out + 2) = INV_2 * (Ecstar2 + Ec(i1, comp_Ec + 2));
 
           // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
-          Bc_out(i1, comp_Bc_out + 0) = INV_2 *
+          // (PHYSICAL output: b1 is stored as Bx/dx in 1D, b2/b3 physical)
+          Bc_out(i1, comp_Bc_out + 0) = dx * INV_2 *
                                         ((INV_2 * Bf(i1 + 1, comp_Bf + 0) +
                                           INV_2 * Bf(i1, comp_Bf + 0)) +
                                          (INV_2 * Bfs(i1 + 1, comp_Bfs + 0) +
@@ -642,15 +694,18 @@ namespace kernel::hybrid {
                                             (Ecstar2 + Ec(i1, i2, comp_Ec + 2));
 
           // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
-          Bc_out(i1, i2, comp_Bc_out + 0) = INV_4 * (Bf(i1 + 1, i2, comp_Bf + 0) +
-                                                     Bf(i1, i2, comp_Bf + 0) +
-                                                     Bfs(i1 + 1, i2, comp_Bfs + 0) +
-                                                     Bfs(i1, i2, comp_Bfs + 0));
+          // (PHYSICAL output: b1/b2 are stored as B/dx in 2D, b3 physical)
+          Bc_out(i1, i2, comp_Bc_out + 0) = dx * INV_4 *
+                                            (Bf(i1 + 1, i2, comp_Bf + 0) +
+                                             Bf(i1, i2, comp_Bf + 0) +
+                                             Bfs(i1 + 1, i2, comp_Bfs + 0) +
+                                             Bfs(i1, i2, comp_Bfs + 0));
 
-          Bc_out(i1, i2, comp_Bc_out + 1) = INV_4 * (Bf(i1, i2 + 1, comp_Bf + 1) +
-                                                     Bf(i1, i2, comp_Bf + 1) +
-                                                     Bfs(i1, i2 + 1, comp_Bfs + 1) +
-                                                     Bfs(i1, i2, comp_Bfs + 1));
+          Bc_out(i1, i2, comp_Bc_out + 1) = dx * INV_4 *
+                                            (Bf(i1, i2 + 1, comp_Bf + 1) +
+                                             Bf(i1, i2, comp_Bf + 1) +
+                                             Bfs(i1, i2 + 1, comp_Bfs + 1) +
+                                             Bfs(i1, i2, comp_Bfs + 1));
           Bc_out(i1, i2, comp_Bc_out + 2) = INV_2 * (Bf(i1, i2, comp_Bf + 2) +
                                                      Bfs(i1, i2, comp_Bfs + 2));
         }
@@ -704,18 +759,19 @@ namespace kernel::hybrid {
                                                  Ec(i1, i2, i3, comp_Ec + 2));
 
           // Bc' = 0.5 * (Bc* + Bc^(n)), where Bc* = interpolate Bf*
-          Bc_out(i1, i2, i3, comp_Bc_out + 0) = INV_4 *
+          // (PHYSICAL output: all b comps are stored as B/dx in 3D)
+          Bc_out(i1, i2, i3, comp_Bc_out + 0) = dx * INV_4 *
                                                 (Bf(i1 + 1, i2, i3, comp_Bf + 0) +
                                                  Bf(i1, i2, i3, comp_Bf + 0) +
                                                  Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
                                                  Bfs(i1, i2, i3, comp_Bfs + 0));
 
-          Bc_out(i1, i2, i3, comp_Bc_out + 1) = INV_4 *
+          Bc_out(i1, i2, i3, comp_Bc_out + 1) = dx * INV_4 *
                                                 (Bf(i1, i2 + 1, i3, comp_Bf + 1) +
                                                  Bf(i1, i2, i3, comp_Bf + 1) +
                                                  Bfs(i1, i2 + 1, i3, comp_Bfs + 1) +
                                                  Bfs(i1, i2, i3, comp_Bfs + 1));
-          Bc_out(i1, i2, i3, comp_Bc_out + 2) = INV_4 *
+          Bc_out(i1, i2, i3, comp_Bc_out + 2) = dx * INV_4 *
                                                 (Bf(i1, i2, i3 + 1, comp_Bf + 2) +
                                                  Bf(i1, i2, i3, comp_Bf + 2) +
                                                  Bfs(i1, i2, i3 + 1, comp_Bfs + 2) +

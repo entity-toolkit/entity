@@ -33,6 +33,7 @@ namespace ntt {
                  const prm::Parameters&                           engine_params,
                  const faraday&                                   flag) {
       const auto dt = engine_params.get<real_t>("dt");
+      const auto dx = domain.mesh.metric.get_dx();
       if (flag == faraday::push1) {
         Kokkos::parallel_for(
           "FaradayPush1",
@@ -43,7 +44,8 @@ namespace ntt {
                                                0,
                                                3,
                                                0,
-                                               dt));
+                                               dt,
+                                               dx));
       } else if (flag == faraday::push2) {
         Kokkos::parallel_for(
           "FaradayPush2",
@@ -54,7 +56,8 @@ namespace ntt {
                                                3,
                                                3,
                                                0,
-                                               dt));
+                                               dt,
+                                               dx));
       } else if (flag == faraday::push3) {
         Kokkos::parallel_for(
           "FaradayPush3",
@@ -65,7 +68,8 @@ namespace ntt {
                                                3,
                                                3,
                                                3,
-                                               dt));
+                                               dt,
+                                               dx));
       } else {
         raise::Error("Wrong option for `flag`", HERE);
       }
@@ -82,6 +86,7 @@ namespace ntt {
       const auto d0       = params.get<real_t>("scales.skindepth0");
       const auto rho0     = params.get<real_t>("scales.larmor0");
       const auto dens_min = params.get<real_t>("hybrid.dens_min");
+      const auto dx       = domain.mesh.metric.get_dx();
       if (flag == emf::push0) {
         // clang-format off
         Kokkos::parallel_for(
@@ -99,7 +104,7 @@ namespace ntt {
                                               0, 3, 3,            // P, N, Ee_in
                                               0, 0, 3,            // Bf, Ec, Bfs
                                               0, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                              dt, gamma_ad, theta, d0, rho0, dens_min));
+                                              dt, gamma_ad, theta, d0, rho0, dens_min, dx));
         // clang-format on
       } else {
         // clang-format off
@@ -118,7 +123,7 @@ namespace ntt {
                                                0, 3, 0,            // P, N, Ee_in
                                                3, 0, 0,            // Bf, Ec, Bfs
                                                3, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                               dt, gamma_ad, theta, d0, rho0, dens_min));
+                                               dt, gamma_ad, theta, d0, rho0, dens_min, dx));
         // clang-format on
       }
     }

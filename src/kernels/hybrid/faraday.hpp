@@ -5,9 +5,19 @@
 
 #include "arch/kokkos_aliases.h"
 #include "utils/error.h"
+#include "utils/numeric.h"
 
 namespace kernel::hybrid {
 
+  /**
+   * @note Fields are stored in the contravariant (Idx::U) code basis of the
+   *       Minkowski metric: components with index i <= D carry a 1/dx
+   *       (h_ii = dx^2), out-of-plane components are physical (h_ii = 1). The
+   *       index-space curl therefore needs per-component coefficients:
+   *         1D: dt/dx for b2, b3 (from physical e2, e3); b1 untouched
+   *         2D: dt/dx^2 for b1, b2 (from physical e3); dt for b3 (from e1, e2)
+   *         3D: dt/dx for all components
+   */
   template <Dimension D, uint8_t N>
   class Faraday_kernel {
     ndfield_t<D, 6> Ein;
@@ -19,6 +29,7 @@ namespace kernel::hybrid {
     const uint8_t comp_Bout;
 
     const real_t dt;
+    const real_t dx_inv;
 
   public:
     Faraday_kernel(const ndfield_t<D, 6>& Ein,
@@ -27,14 +38,16 @@ namespace kernel::hybrid {
                    uint8_t                comp_Ein,
                    uint8_t                comp_Bin,
                    uint8_t                comp_Bout,
-                   real_t                 dt)
+                   real_t                 dt,
+                   real_t                 dx)
       : Ein { Ein }
       , Bin { Bin }
       , Bout { Bout }
       , comp_Ein { comp_Ein }
       , comp_Bin { comp_Bin }
       , comp_Bout { comp_Bout }
-      , dt { dt } {}
+      , dt { dt }
+      , dx_inv { ONE / dx } {}
 
     Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
@@ -43,13 +56,14 @@ namespace kernel::hybrid {
         // NOT in-place on `em`, and is zero-initialized -- so B_x must be
         // copied through, else the subsequent EMF (Ohm's-law Hall/motional
         // terms) would read Bf*_x = 0 instead of B_x^n.
+        const real_t coeff { dt * dx_inv };
         Bout(i1, comp_Bout + 0) = Bin(i1, comp_Bin + 0);
         Bout(i1, comp_Bout + 1) = Bin(i1, comp_Bin + 1) -
-                                  dt * (-Ein(i1 + 1, comp_Ein + 2) +
-                                        Ein(i1, comp_Ein + 2));
+                                  coeff * (-Ein(i1 + 1, comp_Ein + 2) +
+                                           Ein(i1, comp_Ein + 2));
         Bout(i1, comp_Bout + 2) = Bin(i1, comp_Bin + 2) -
-                                  dt * (Ein(i1 + 1, comp_Ein + 1) -
-                                        Ein(i1, comp_Ein + 1));
+                                  coeff * (Ein(i1 + 1, comp_Ein + 1) -
+                                           Ein(i1, comp_Ein + 1));
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 1D implementation called for D != 1");
       }
@@ -57,17 +71,19 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
+        const real_t coeff1 { dt * SQR(dx_inv) }; // in-plane b from physical e3
+        const real_t coeff2 { dt };               // out-of-plane b3 from e1/dx, e2/dx
         Bout(i1, i2, comp_Bout + 0) = Bin(i1, i2, comp_Bin + 0) -
-                                      dt * (Ein(i1, i2 + 1, comp_Ein + 2) -
-                                            Ein(i1, i2, comp_Ein + 2));
+                                      coeff1 * (Ein(i1, i2 + 1, comp_Ein + 2) -
+                                                Ein(i1, i2, comp_Ein + 2));
         Bout(i1, i2, comp_Bout + 1) = Bin(i1, i2, comp_Bin + 1) -
-                                      dt * (-Ein(i1 + 1, i2, comp_Ein + 2) +
-                                            Ein(i1, i2, comp_Ein + 2));
+                                      coeff1 * (-Ein(i1 + 1, i2, comp_Ein + 2) +
+                                                Ein(i1, i2, comp_Ein + 2));
         Bout(i1, i2, comp_Bout + 2) = Bin(i1, i2, comp_Bin + 2) -
-                                      dt * (-Ein(i1, i2 + 1, comp_Ein + 0) +
-                                            Ein(i1, i2, comp_Ein + 0) +
-                                            Ein(i1 + 1, i2, comp_Ein + 1) -
-                                            Ein(i1, i2, comp_Ein + 1));
+                                      coeff2 * (-Ein(i1, i2 + 1, comp_Ein + 0) +
+                                                Ein(i1, i2, comp_Ein + 0) +
+                                                Ein(i1 + 1, i2, comp_Ein + 1) -
+                                                Ein(i1, i2, comp_Ein + 1));
       } else {
         raise::KernelError(HERE, "Faraday_kernel: 2D implementation called for D != 2");
       }
@@ -75,19 +91,21 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
+        const real_t coeff { dt * dx_inv }; // all comps stored as physical/dx
         Bout(i1, i2, i3, comp_Bout + 0) = Bin(i1, i2, i3, comp_Bin + 0) -
-                                          dt *
+                                          coeff *
                                             (-Ein(i1, i2, i3 + 1, comp_Ein + 1) +
                                              Ein(i1, i2, i3, comp_Ein + 1) +
                                              Ein(i1, i2 + 1, i3, comp_Ein + 2) -
                                              Ein(i1, i2, i3, comp_Ein + 2));
         Bout(i1, i2, i3, comp_Bout + 1) = Bin(i1, i2, i3, comp_Bin + 1) -
-                                          dt * (Ein(i1, i2, i3 + 1, comp_Ein + 0) -
-                                                Ein(i1, i2, i3, comp_Ein + 0) -
-                                                Ein(i1 + 1, i2, i3, comp_Ein + 2) +
-                                                Ein(i1, i2, i3, comp_Ein + 2));
+                                          coeff *
+                                            (Ein(i1, i2, i3 + 1, comp_Ein + 0) -
+                                             Ein(i1, i2, i3, comp_Ein + 0) -
+                                             Ein(i1 + 1, i2, i3, comp_Ein + 2) +
+                                             Ein(i1, i2, i3, comp_Ein + 2));
         Bout(i1, i2, i3, comp_Bout + 2) = Bin(i1, i2, i3, comp_Bin + 2) -
-                                          dt *
+                                          coeff *
                                             (-Ein(i1, i2 + 1, i3, comp_Ein + 0) +
                                              Ein(i1, i2, i3, comp_Ein + 0) +
                                              Ein(i1 + 1, i2, i3, comp_Ein + 1) -
