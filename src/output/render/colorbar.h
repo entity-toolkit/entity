@@ -167,6 +167,10 @@ namespace out {
    * @param bg       background RGB (to auto-pick contrasting text color)
    * @param ticks    explicit tick values to label; if empty, 5 evenly-spaced
    *                 ticks are generated. Values outside [vmin, vmax] are skipped.
+   * @param span_top,span_bot vertical pixel span the bar should occupy (e.g. the
+   *                 data domain, so the bar is centered on the actual data). When
+   *                 span_top < 0 or the span is empty, the bar is half the canvas
+   *                 height, centered on the canvas (the default).
    */
   inline void drawColorbar(uint8_t*                   rgba,
                            int                        W,
@@ -177,23 +181,27 @@ namespace out {
                            bool                       log_scale,
                            const std::string&         label,
                            const real_t               bg[3],
-                           const std::vector<real_t>& ticks = {}) {
+                           const std::vector<real_t>& ticks    = {},
+                           int                        span_top = -1,
+                           int                        span_bot = -1) {
     using namespace cbar_hidden;
 
-    const int s       = scale(H);
-    const int char_h  = 8 * s;
-    const int bar_w   = std::max(12, H / 50);
-    const int bar_h   = H / 2;
-    const int gap     = 3 * s;
-    const int pad     = 4 * s;
-    const int block_w = colorbarBlockWidth(H);
+    const int  s       = scale(H);
+    const int  char_h  = 8 * s;
+    const int  bar_w   = std::max(12, H / 50);
+    const bool aligned = (span_top >= 0) and (span_bot > span_top);
+    const int  bar_h   = aligned ? (span_bot - span_top) : (H / 2);
+    const int  gap     = 3 * s;
+    const int  pad     = 4 * s;
+    const int  block_w = colorbarBlockWidth(H);
 
     // place the bar near the right edge of the (possibly extended) canvas
     int bar_x = W - block_w + pad;
     if (bar_x < pad) {
       bar_x = pad;
     }
-    const int bar_y = (H - bar_h) / 2;
+    // vertical position: aligned to the data span if given, else canvas-centered
+    const int bar_y = aligned ? span_top : ((H - bar_h) / 2);
 
     // contrasting monochrome for text / frame / ticks
     const real_t  lum = static_cast<real_t>(0.299) * bg[0] +

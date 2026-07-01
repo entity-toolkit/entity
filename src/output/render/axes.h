@@ -335,6 +335,10 @@ namespace out {
                          real_t             u1,
                          real_t             v0,
                          real_t             v1,
+                         real_t             du0,
+                         real_t             du1,
+                         real_t             dv0,
+                         real_t             dv1,
                          const std::string& xlabel,
                          const std::string& ylabel,
                          const real_t       bg[3],
@@ -347,14 +351,12 @@ namespace out {
     const int     gap = 2 * s;
     const int     th  = std::max(0, s / 2 - 1); // spine half-thickness
 
+    // [u0,u1]x[v0,v1] is the world window mapped onto the full data region;
+    // [du0,du1]x[dv0,dv1] is the actual data box (the domain/region), a sub-rect
+    // when the window was aspect-expanded. The spine + ticks clamp to the DATA
+    // box so the empty aspect pad stays outside the frame.
     const int xL = x0, xR = x0 + W - 1, yT = 0, yB = H - 1;
-    // spine
-    line(rgba, CW, CH, xL, yT, xR, yT, th, c);
-    line(rgba, CW, CH, xL, yB, xR, yB, th, c);
-    line(rgba, CW, CH, xL, yT, xL, yB, th, c);
-    line(rgba, CW, CH, xR, yT, xR, yB, th, c);
-
-    auto X = [&](real_t u) -> int {
+    auto      X  = [&](real_t u) -> int {
       return static_cast<int>(std::lround(
         static_cast<double>(xL) +
         static_cast<double>((u - u0) / (u1 - u0)) * (xR - xL)));
@@ -364,35 +366,46 @@ namespace out {
         static_cast<double>(yB) -
         static_cast<double>((v - v0) / (v1 - v0)) * (yB - yT)));
     };
+    auto clampX = [&](int x) { return (x < xL) ? xL : ((x > xR) ? xR : x); };
+    auto clampY = [&](int y) { return (y < yT) ? yT : ((y > yB) ? yB : y); };
+    const int xLd = clampX(X(du0)), xRd = clampX(X(du1));
+    const int yTd = clampY(Y(dv1)), yBd = clampY(Y(dv0)); // dv1 = top
 
-    // x ticks (bottom): marks + labels below the spine
-    for (const real_t tv : niceTicks(u0, u1, nticks)) {
+    // spine around the data box
+    line(rgba, CW, CH, xLd, yTd, xRd, yTd, th, c);
+    line(rgba, CW, CH, xLd, yBd, xRd, yBd, th, c);
+    line(rgba, CW, CH, xLd, yTd, xLd, yBd, th, c);
+    line(rgba, CW, CH, xRd, yTd, xRd, yBd, th, c);
+
+    // x ticks (below the data box): marks + labels
+    for (const real_t tv : niceTicks(du0, du1, nticks)) {
       const int x = X(tv);
-      if (x < xL or x > xR) {
+      if (x < xLd or x > xRd) {
         continue;
       }
-      line(rgba, CW, CH, x, yB, x, yB + tl, 0, c);
+      line(rgba, CW, CH, x, yBd, x, yBd + tl, 0, c);
       const std::string lab = cbar_hidden::fmtNum(tv);
-      text(rgba, CW, CH, x - textW(lab, s) / 2, yB + tl + gap, lab, s, c);
+      text(rgba, CW, CH, x - textW(lab, s) / 2, yBd + tl + gap, lab, s, c);
     }
-    // y ticks (left): marks + right-aligned labels left of the spine
-    for (const real_t tv : niceTicks(v0, v1, nticks)) {
+    // y ticks (left of the data box): marks + right-aligned labels
+    for (const real_t tv : niceTicks(dv0, dv1, nticks)) {
       const int y = Y(tv);
-      if (y < yT or y > yB) {
+      if (y < yTd or y > yBd) {
         continue;
       }
-      line(rgba, CW, CH, xL, y, xL - tl, y, 0, c);
+      line(rgba, CW, CH, xLd, y, xLd - tl, y, 0, c);
       const std::string lab = cbar_hidden::fmtNum(tv);
-      text(rgba, CW, CH, xL - tl - gap - textW(lab, s), y - ch / 2, lab, s, c);
+      text(rgba, CW, CH, xLd - tl - gap - textW(lab, s), y - ch / 2, lab, s, c);
     }
     // axis names
     if (not xlabel.empty()) {
-      text(rgba, CW, CH, xL + W / 2 - textW(xlabel, s) / 2,
-           yB + tl + gap + ch + gap, xlabel, s, c);
+      text(rgba, CW, CH, (xLd + xRd) / 2 - textW(xlabel, s) / 2,
+           yBd + tl + gap + ch + gap, xlabel, s, c);
     }
     if (not ylabel.empty()) {
-      textVert(rgba, CW, CH, std::max(gap, x0 - tl - gap - 7 * (6 * s) - gap - 6 * s),
-               (yT + yB) / 2 - 4 * s * static_cast<int>(ylabel.size()) / 2,
+      textVert(rgba, CW, CH,
+               std::max(gap, xLd - tl - gap - 7 * (6 * s) - gap - 6 * s),
+               (yTd + yBd) / 2 - 4 * s * static_cast<int>(ylabel.size()) / 2,
                ylabel, s, c);
     }
   }

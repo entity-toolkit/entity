@@ -494,19 +494,20 @@ namespace out {
                                            scene.prefix.c_str(),
                                            static_cast<unsigned long>(step));
 
-      auto drawBar = [&](uint8_t* buf, int bw, int bh) {
+      auto drawBar = [&](uint8_t* buf, int bw, int bh, int span_top, int span_bot) {
         if (m_colorbar) {
           drawColorbar(buf, bw, bh, scene.tf.colormap, scene.tf.vmin,
                        scene.tf.vmax, scene.tf.log_scale, scene.label,
-                       m_background, scene.ticks);
+                       m_background, scene.ticks, span_top, span_bot);
         }
       };
 
-      // upper-right corner label of the current simulation time. `data_left` is
-      // the x-offset of the render region inside the buffer (0 without axes, the
-      // left margin `ml` with axes), so the label sits in the render region's
-      // top-right, not over the colorbar strip.
-      auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int data_left) {
+      // Draw the sim-time label, right-aligned to `right_x` and vertically
+      // centered in the band [0, top_limit] -- i.e. OUTSIDE the plotted data:
+      // above the colorbar (3D / disk) or, for a 2D slice, in the aspect-pad
+      // above the data box (so it never sits inside the simulation axes).
+      auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int right_x,
+                               int top_limit) {
         if (not m_time_label) {
           return;
         }
@@ -517,16 +518,11 @@ namespace out {
         std::snprintf(tbuf, sizeof(tbuf), "T = %.2f",
                       static_cast<double>(time));
         const std::string str(tbuf);
-        const int         tw  = static_cast<int>(str.size()) * 6 * s;
-        const int         pad = 3 * s;
-        const int         tx  = data_left + m_width - tw - pad;
-        // vertically center the label between the image top and the top of the
-        // colorbar bar. drawColorbar uses bar_h = ch/2, so the bar top is at
-        // bar_y = (ch - bar_h)/2 = ch/4; center the 7*s-tall glyphs in [0, bar_y].
-        const int    text_h   = 7 * s;
-        const int    bar_h    = ch / 2;
-        const int    cbar_top = m_colorbar ? (ch - bar_h) / 2 : (ch / 4);
-        int          ty       = (cbar_top - text_h) / 2;
+        const int         tw     = static_cast<int>(str.size()) * 6 * s;
+        const int         pad    = 3 * s;
+        const int         tx     = right_x - tw - pad;
+        const int         text_h = 7 * s;
+        int               ty     = (top_limit - text_h) / 2;
         if (ty < pad) {
           ty = pad;
         }
@@ -551,11 +547,50 @@ namespace out {
       const int CW = ml + m_width + strip;
       const int CH = m_height + mb;
 
+      // 2D-Cartesian data box (== the render region, before the aspect-expansion
+      // that pads the window with background): its top & right edges in
+      // data-region pixels. The axes/spine clamp to it and the time label sits
+      // in the pad above it, so neither includes the empty aspect padding.
+      const bool cart2d     = (m_global_extent.size() == 2) and not polar;
+      int        dbox_top   = 0;         // data box top edge (px from data top)
+      int        dbox_bot   = m_height;  // data box bottom edge (px)
+      int        dbox_right = m_width;   // data box right edge (px from data left)
+      if (cart2d and m_region.size() >= 2) {
+        const real_t u0 = m_slice_win[0], u1 = m_slice_win[1];
+        const real_t v0 = m_slice_win[2], v1 = m_slice_win[3];
+        const real_t du1 = m_region[0].second; // data box right in world (x1)
+        const real_t dv0 = m_region[1].first;  // data box bottom in world (x2)
+        const real_t dv1 = m_region[1].second; // data box top in world   (x2)
+        if (u1 > u0) {
+          int r = static_cast<int>(std::lround(
+            static_cast<double>((du1 - u0) / (u1 - u0)) * (m_width - 1)));
+          dbox_right = (r < 0) ? 0 : ((r > m_width) ? m_width : r);
+        }
+        if (v1 > v0) {
+          int t = static_cast<int>(std::lround(
+            static_cast<double>((v1 - dv1) / (v1 - v0)) * (m_height - 1)));
+          int b = static_cast<int>(std::lround(
+            static_cast<double>((v1 - dv0) / (v1 - v0)) * (m_height - 1)));
+          dbox_top = (t < 0) ? 0 : ((t > m_height) ? m_height : t);
+          dbox_bot = (b < 0) ? 0 : ((b > m_height) ? m_height : b);
+        }
+      }
+      // time-label anchor: for a 2D slice, the top-right of the data box (label
+      // goes in the pad above it); otherwise the top-right above the colorbar.
+      const int cbar_top   = m_colorbar ? (CH - CH / 2) / 2 : (CH / 4);
+      const int tl_right   = cart2d ? (ml + dbox_right) : (ml + m_width);
+      const int tl_top     = cart2d ? dbox_top : cbar_top;
+      // colorbar vertical span: aligned to the actual data domain for a 2D slice
+      // (so it's centered on the data, not the aspect-padded canvas); sentinel
+      // (-1) elsewhere -> drawColorbar centers it on the canvas as before.
+      const int cbar_span_top = cart2d ? dbox_top : -1;
+      const int cbar_span_bot = cart2d ? dbox_bot : -1;
+
       bool ok = true;
       if (CW == m_width and CH == m_height and not m_axes) {
         // no margins, no outside strip, no overlay: colorbar overlays the data
-        drawBar(data.data(), m_width, m_height);
-        drawTimeLabel(data.data(), m_width, m_height, 0);
+        drawBar(data.data(), m_width, m_height, cbar_span_top, cbar_span_bot);
+        drawTimeLabel(data.data(), m_width, m_height, tl_right, tl_top);
         ok = write_png(fname, m_width, m_height, data.data());
       } else {
         const uint8_t bR = quantize(m_background[0]);
@@ -586,14 +621,18 @@ namespace out {
                                m_slice_tmin, m_slice_tmax, m_slice_pmirror, "R",
                                "Theta", m_background, m_axis_nticks);
           } else {
+            // data box (== region, un-expanded) so the spine hugs the domain,
+            // not the aspect-padded window
+            const real_t du0 = m_region[0].first, du1 = m_region[0].second;
+            const real_t dv0 = m_region[1].first, dv1 = m_region[1].second;
             out::drawAxes2D(canvas.data(), CW, CH, ml, m_width, m_height,
                             m_slice_win[0], m_slice_win[1], m_slice_win[2],
-                            m_slice_win[3], m_slice_xlabel, m_slice_ylabel,
-                            m_background, m_axis_nticks);
+                            m_slice_win[3], du0, du1, dv0, dv1, m_slice_xlabel,
+                            m_slice_ylabel, m_background, m_axis_nticks);
           }
         }
-        drawBar(canvas.data(), CW, CH);
-        drawTimeLabel(canvas.data(), CW, CH, ml);
+        drawBar(canvas.data(), CW, CH, cbar_span_top, cbar_span_bot);
+        drawTimeLabel(canvas.data(), CW, CH, tl_right, tl_top);
         ok = write_png(fname, CW, CH, canvas.data());
       }
       if (not ok) {
