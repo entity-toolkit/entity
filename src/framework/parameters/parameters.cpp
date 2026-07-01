@@ -62,6 +62,7 @@ namespace ntt {
        *   theta0   - electron temperature T_e (code units); 0 = cold electrons
        *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
        *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
+       *   resist_vac - vacuum resistivity: E -> eta curl B below dens_min (0 = off)
        *   subcycle         - Pegasus-style sub-cycled field advance (default on)
        *   subcycle_courant - target whistler Courant per field sub-step
        *   subcycle_max     - cap on the number of field sub-steps per advance
@@ -91,6 +92,16 @@ namespace ntt {
                                 "hybrid",
                                 "hall_lim",
                                 static_cast<real_t>(0.5)));
+      // vacuum resistivity (code units). > 0 turns the E = 0 vacuum of dens_min
+      // into a resistive vacuum: below the threshold compute_Ee crossfades E to
+      // eta * curl B, so vacuum regions diffuse toward a curl-free (potential)
+      // field instead of freezing. Needed when fast plasma sweeps along a vacuum
+      // boundary, where a hard E = 0 mask makes an artificial tangential-E jump
+      // (a surface current) that pumps B at rate ~ u/dx. Internally clamped to
+      // the explicit-diffusion stability limit (0.4 dx^2/dt at the sub-step dt),
+      // so any value is safe; eta ~ u_sweep * dx suffices.
+      set("hybrid.resist_vac",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist_vac", ZERO));
       // Pegasus-style sub-cycled magnetic-field advance (fieldsolvers.h
       // ::SubcycledFaraday): the whistler-stiff Ohm/Faraday loop is integrated
       // with adaptive SSP-RK3 sub-steps at its own CFL instead of full-dt Euler

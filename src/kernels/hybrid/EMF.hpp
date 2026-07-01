@@ -68,6 +68,7 @@ namespace kernel::hybrid {
     const real_t rho0;
     const real_t dens_min;
     const real_t hall_lim;
+    const real_t resist_vac;
     const real_t dx;
     const real_t dx_inv;
 
@@ -97,6 +98,7 @@ namespace kernel::hybrid {
                real_t                  rho0,
                real_t                  dens_min,
                real_t                  hall_lim,
+               real_t                  resist_vac,
                real_t                  dx)
       : PP { PP }
       , NN { NN }
@@ -123,8 +125,62 @@ namespace kernel::hybrid {
       , rho0 { rho0 }
       , dens_min { dens_min }
       , hall_lim { hall_lim }
+      , resist_vac { resist_vac }
       , dx { dx }
       , dx_inv { ONE / dx } {}
+
+    /**
+     * @brief Effective vacuum resistivity, clamped to the explicit-diffusion
+     *        stability limit eta dt / dx^2 <= 0.4 for this kernel's dt (the
+     *        sub-step dt inside the sub-cycled advance), so the user knob can
+     *        never destabilize the update.
+     */
+    Inline auto eta_vac() const -> real_t {
+      return math::min(resist_vac, static_cast<real_t>(0.4) * SQR(dx) / dt);
+    }
+
+    /**
+     * @brief curl B at the Ee component locations, prefactored into the OUTPUT
+     *        basis of compute_Ee (1D/2D: in-plane comps E/dx, out-of-plane
+     *        physical; 3D: all E/dx). The resistive-vacuum E adds +eta times
+     *        these below the density threshold.
+     */
+    Inline void res_curl(const tuple_t<ncells_t, D>& i,
+                         real_t&                     c0,
+                         real_t&                     c1,
+                         real_t&                     c2) const {
+      if constexpr (D == Dim::_1D) {
+        const auto i1 = i[0];
+        c0            = ZERO; // (curl B)_x = 0 in 1D
+        c1 = -dx_inv * (Bfs(i1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2));
+        c2 = dx_inv * (Bfs(i1, comp_Bfs + 1) - Bfs(i1 - 1, comp_Bfs + 1));
+      } else if constexpr (D == Dim::_2D) {
+        const auto i1 = i[0];
+        const auto i2 = i[1];
+        c0            = SQR(dx_inv) *
+             (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2));
+        c1 = -SQR(dx_inv) *
+             (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2));
+        c2 = (Bfs(i1, i2, comp_Bfs + 1) - Bfs(i1 - 1, i2, comp_Bfs + 1)) -
+             (Bfs(i1, i2, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0));
+      } else {
+        const auto i1 = i[0];
+        const auto i2 = i[1];
+        const auto i3 = i[2];
+        c0            = dx_inv * ((Bfs(i1, i2, i3, comp_Bfs + 2) -
+                        Bfs(i1, i2 - 1, i3, comp_Bfs + 2)) -
+                       (Bfs(i1, i2, i3, comp_Bfs + 1) -
+                        Bfs(i1, i2, i3 - 1, comp_Bfs + 1)));
+        c1 = dx_inv * ((Bfs(i1, i2, i3, comp_Bfs + 0) -
+                        Bfs(i1, i2, i3 - 1, comp_Bfs + 0)) -
+                       (Bfs(i1, i2, i3, comp_Bfs + 2) -
+                        Bfs(i1 - 1, i2, i3, comp_Bfs + 2)));
+        c2 = dx_inv * ((Bfs(i1, i2, i3, comp_Bfs + 1) -
+                        Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) -
+                       (Bfs(i1, i2, i3, comp_Bfs + 0) -
+                        Bfs(i1, i2 - 1, i3, comp_Bfs + 0)));
+      }
+    }
 
     /**
      * @brief Per-cell limiter on the Hall term. The whistler speed implied at
@@ -208,6 +264,14 @@ namespace kernel::hybrid {
      *        Ohm's law with a 1/dens_min-amplified right-hand side. The ramp is
      *        continuous, so cells do not flicker at the threshold and plasma-side
      *        interface cells keep evolving from their own E.
+     *
+     *        A hard E = 0 vacuum is only safe when the interface is quiescent.
+     *        When fast plasma sweeps ALONG a vacuum boundary, masking E to zero
+     *        makes an artificial tangential-E discontinuity (a surface current)
+     *        and Faraday pumps B at the interface at rate ~ u/dx. The optional
+     *        resistive vacuum (resist_vac) crossfades E to eta * curl B below the
+     *        threshold instead, so the vacuum diffuses toward a curl-free
+     *        (potential) field and tangential E has a physical continuation.
      */
     Inline auto vac_factor(real_t n_raw) const -> real_t {
       // safe for dens_min <= 0: the branch is never taken
@@ -257,9 +321,22 @@ namespace kernel::hybrid {
         E2 += coeff * ((Bfs(i1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
                        Bfs(i1, comp_Bfs + 0));
 
-        E0 *= -vac_factor(N0r) / N0;
-        E1 *= -vac_factor(N12r) / N1;
-        E2 *= -vac_factor(N12r) / N2;
+        {
+          const real_t vac0 { vac_factor(N0r) };
+          const real_t vac12 { vac_factor(N12r) };
+          E0 *= -vac0 / N0;
+          E1 *= -vac12 / N1;
+          E2 *= -vac12 / N2;
+          if (resist_vac > ZERO) {
+            // resistive vacuum: crossfade to E = eta * curl B below the
+            // threshold (see the note at vac_factor)
+            real_t c0, c1, c2;
+            res_curl(i, c0, c1, c2);
+            const real_t eta = eta_vac();
+            E1 += (ONE - vac12) * eta * c1;
+            E2 += (ONE - vac12) * eta * c2;
+          }
+        }
       } else if constexpr (D == Dim::_2D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
@@ -329,9 +406,24 @@ namespace kernel::hybrid {
              (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
               Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
 
-        E0 *= -vac_factor(N0r) / N0;
-        E1 *= -vac_factor(N1r) / N1;
-        E2 *= -vac_factor(N2r) / N2;
+        {
+          const real_t vac0 { vac_factor(N0r) };
+          const real_t vac1 { vac_factor(N1r) };
+          const real_t vac2 { vac_factor(N2r) };
+          E0 *= -vac0 / N0;
+          E1 *= -vac1 / N1;
+          E2 *= -vac2 / N2;
+          if (resist_vac > ZERO) {
+            // resistive vacuum: crossfade to E = eta * curl B below the
+            // threshold (see the note at vac_factor)
+            real_t c0, c1, c2;
+            res_curl(i, c0, c1, c2);
+            const real_t eta = eta_vac();
+            E0 += (ONE - vac0) * eta * c0;
+            E1 += (ONE - vac1) * eta * c1;
+            E2 += (ONE - vac2) * eta * c2;
+          }
+        }
 
       } else if constexpr (D == Dim::_3D) {
         const auto   i1 = i[0];
@@ -465,9 +557,24 @@ namespace kernel::hybrid {
               Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
               Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
 
-        E0 *= -vac_factor(N0r) / N0;
-        E1 *= -vac_factor(N1r) / N1;
-        E2 *= -vac_factor(N2r) / N2;
+        {
+          const real_t vac0 { vac_factor(N0r) };
+          const real_t vac1 { vac_factor(N1r) };
+          const real_t vac2 { vac_factor(N2r) };
+          E0 *= -vac0 / N0;
+          E1 *= -vac1 / N1;
+          E2 *= -vac2 / N2;
+          if (resist_vac > ZERO) {
+            // resistive vacuum: crossfade to E = eta * curl B below the
+            // threshold (see the note at vac_factor)
+            real_t c0, c1, c2;
+            res_curl(i, c0, c1, c2);
+            const real_t eta = eta_vac();
+            E0 += (ONE - vac0) * eta * c0;
+            E1 += (ONE - vac1) * eta * c1;
+            E2 += (ONE - vac2) * eta * c2;
+          }
+        }
       }
     }
 
