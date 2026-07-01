@@ -531,6 +531,13 @@ namespace ntt {
                                            domain.fields.buff.extent(2) };
       }
     }
+    // buff accumulates the received deposit tails from every direction and is
+    // added into cur/cur0 once after the loop, so it must be zeroed exactly
+    // once, here, before the loop. Zeroing it per direction would keep only the
+    // last direction's contribution.
+    if (comm_cur or comm_cur0) {
+      Kokkos::deep_copy(domain.fields.buff, ZERO);
+    }
     // traverse in all directions and sync the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
@@ -543,7 +550,6 @@ namespace ntt {
         continue;
       }
       if (comm_cur) {
-        Kokkos::deep_copy(domain.fields.buff, ZERO);
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.cur,
                                           domain.fields.buff,
@@ -556,7 +562,6 @@ namespace ntt {
                                           { 0, 3 },
                                           SYNCHRONIZE);
       } else if (comm_cur0) {
-        Kokkos::deep_copy(domain.fields.buff, ZERO);
         comm::CommunicateField<M::Dim, 3>(domain.index(),
                                           domain.fields.cur0,
                                           domain.fields.buff,
