@@ -69,6 +69,7 @@ namespace kernel::hybrid {
     const real_t dens_min;
     const real_t hall_lim;
     const real_t resist_vac;
+    const real_t resist_hyper;
     const real_t dx;
     const real_t dx_inv;
 
@@ -99,6 +100,7 @@ namespace kernel::hybrid {
                real_t                  dens_min,
                real_t                  hall_lim,
                real_t                  resist_vac,
+               real_t                  resist_hyper,
                real_t                  dx)
       : PP { PP }
       , NN { NN }
@@ -126,6 +128,7 @@ namespace kernel::hybrid {
       , dens_min { dens_min }
       , hall_lim { hall_lim }
       , resist_vac { resist_vac }
+      , resist_hyper { resist_hyper }
       , dx { dx }
       , dx_inv { ONE / dx } {}
 
@@ -140,10 +143,34 @@ namespace kernel::hybrid {
     }
 
     /**
+     * @brief Effective HYPER-resistivity (E -= eta_H grad^2 curl B, i.e.
+     *        dB/dt -= eta_H grad^4 B), applied everywhere in compute_Ee.
+     *
+     * The moments filter creates a spectral gap: p binomial passes attenuate
+     * the deposited N, V by cos^(2p)(k dx / 2), which is ~zero at wavelengths
+     * of a few cells. In that band the field solver evolves B with no kinetic
+     * feedback, so the ion damping that would physically kill those modes never
+     * reaches Ohm's law, and sustained compression/shear in the frozen moments
+     * pumps the orphaned band by induction. Hyper-resistivity (damping ~ eta_H
+     * k^4) blankets the filtered band while leaving physical scales (k dx < 0.3)
+     * essentially untouched; size eta_H so eta_H (pi/dx)^4 exceeds the drive.
+     *
+     * Clamped to the explicit grad^4 stability limit for this kernel's dt (the
+     * sub-step dt inside the sub-cycled advance): the discrete grad^2 max
+     * eigenvalue is 4 D / dx^2, so eta_H (4 D / dx^2)^2 dt <= 1.
+     */
+    Inline auto eta_hyper() const -> real_t {
+      constexpr real_t ndim = static_cast<real_t>(static_cast<dim_t>(D));
+      return math::min(resist_hyper,
+                       SQR(SQR(dx)) / (SQR(static_cast<real_t>(4) * ndim) * dt));
+    }
+
+    /**
      * @brief curl B at the Ee component locations, prefactored into the OUTPUT
      *        basis of compute_Ee (1D/2D: in-plane comps E/dx, out-of-plane
-     *        physical; 3D: all E/dx). The resistive-vacuum E adds +eta times
-     *        these below the density threshold.
+     *        physical; 3D: all E/dx). The resistive-vacuum E is +eta times
+     *        these; the hyper-resistive E is -eta_H dx_inv^2 times their
+     *        discrete Laplacian.
      */
     Inline void res_curl(const tuple_t<ncells_t, D>& i,
                          real_t&                     c0,
@@ -327,14 +354,26 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac12 / N1;
           E2 *= -vac12 / N2;
-          if (resist_vac > ZERO) {
-            // resistive vacuum: crossfade to E = eta * curl B below the
-            // threshold (see the note at vac_factor)
+          if (resist_vac > ZERO or resist_hyper > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
-            const real_t eta = eta_vac();
-            E1 += (ONE - vac12) * eta * c1;
-            E2 += (ONE - vac12) * eta * c2;
+            if (resist_vac > ZERO) {
+              // resistive vacuum: crossfade to E = eta * curl B below the
+              // threshold (see the note at vac_factor)
+              const real_t eta = eta_vac();
+              E1 += (ONE - vac12) * eta * c1;
+              E2 += (ONE - vac12) * eta * c2;
+            }
+            if (resist_hyper > ZERO) {
+              // hyper-resistivity, everywhere: E -= eta_H grad^2(curl B)
+              // (see the note at eta_hyper)
+              real_t l0, l1, l2, r0, r1, r2;
+              res_curl({ i1 - 1 }, l0, l1, l2);
+              res_curl({ i1 + 1 }, r0, r1, r2);
+              const real_t etah = eta_hyper() * SQR(dx_inv);
+              E1 -= etah * (l1 + r1 - TWO * c1);
+              E2 -= etah * (l2 + r2 - TWO * c2);
+            }
           }
         }
       } else if constexpr (D == Dim::_2D) {
@@ -413,15 +452,30 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
-          if (resist_vac > ZERO) {
-            // resistive vacuum: crossfade to E = eta * curl B below the
-            // threshold (see the note at vac_factor)
+          if (resist_vac > ZERO or resist_hyper > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
-            const real_t eta = eta_vac();
-            E0 += (ONE - vac0) * eta * c0;
-            E1 += (ONE - vac1) * eta * c1;
-            E2 += (ONE - vac2) * eta * c2;
+            if (resist_vac > ZERO) {
+              // resistive vacuum: crossfade to E = eta * curl B below the
+              // threshold (see the note at vac_factor)
+              const real_t eta = eta_vac();
+              E0 += (ONE - vac0) * eta * c0;
+              E1 += (ONE - vac1) * eta * c1;
+              E2 += (ONE - vac2) * eta * c2;
+            }
+            if (resist_hyper > ZERO) {
+              // hyper-resistivity, everywhere: E -= eta_H grad^2(curl B)
+              // (see the note at eta_hyper)
+              real_t w0, w1, w2, e0, e1, e2, s0, s1, s2, n0, n1, n2;
+              res_curl({ i1 - 1, i2 }, w0, w1, w2);
+              res_curl({ i1 + 1, i2 }, e0, e1, e2);
+              res_curl({ i1, i2 - 1 }, s0, s1, s2);
+              res_curl({ i1, i2 + 1 }, n0, n1, n2);
+              const real_t etah = eta_hyper() * SQR(dx_inv);
+              E0 -= etah * (w0 + e0 + s0 + n0 - static_cast<real_t>(4) * c0);
+              E1 -= etah * (w1 + e1 + s1 + n1 - static_cast<real_t>(4) * c1);
+              E2 -= etah * (w2 + e2 + s2 + n2 - static_cast<real_t>(4) * c2);
+            }
           }
         }
 
@@ -564,15 +618,41 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
-          if (resist_vac > ZERO) {
-            // resistive vacuum: crossfade to E = eta * curl B below the
-            // threshold (see the note at vac_factor)
+          if (resist_vac > ZERO or resist_hyper > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
-            const real_t eta = eta_vac();
-            E0 += (ONE - vac0) * eta * c0;
-            E1 += (ONE - vac1) * eta * c1;
-            E2 += (ONE - vac2) * eta * c2;
+            if (resist_vac > ZERO) {
+              // resistive vacuum: crossfade to E = eta * curl B below the
+              // threshold (see the note at vac_factor)
+              const real_t eta = eta_vac();
+              E0 += (ONE - vac0) * eta * c0;
+              E1 += (ONE - vac1) * eta * c1;
+              E2 += (ONE - vac2) * eta * c2;
+            }
+            if (resist_hyper > ZERO) {
+              // hyper-resistivity, everywhere: E -= eta_H grad^2(curl B)
+              // (see the note at eta_hyper)
+              real_t a0, a1, a2, lap0, lap1, lap2;
+              lap0 = -static_cast<real_t>(6) * c0;
+              lap1 = -static_cast<real_t>(6) * c1;
+              lap2 = -static_cast<real_t>(6) * c2;
+              res_curl({ i1 - 1, i2, i3 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              res_curl({ i1 + 1, i2, i3 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              res_curl({ i1, i2 - 1, i3 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              res_curl({ i1, i2 + 1, i3 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              res_curl({ i1, i2, i3 - 1 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              res_curl({ i1, i2, i3 + 1 }, a0, a1, a2);
+              lap0 += a0; lap1 += a1; lap2 += a2;
+              const real_t etah = eta_hyper() * SQR(dx_inv);
+              E0 -= etah * lap0;
+              E1 -= etah * lap1;
+              E2 -= etah * lap2;
+            }
           }
         }
       }

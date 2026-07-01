@@ -63,6 +63,7 @@ namespace ntt {
        *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
        *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
        *   resist_vac - vacuum resistivity: E -> eta curl B below dens_min (0 = off)
+       *   resist_hyper - hyper-resistivity eta_H grad^4 B, everywhere (0 = off)
        *   subcycle         - Pegasus-style sub-cycled field advance (default on)
        *   subcycle_courant - target whistler Courant per field sub-step
        *   subcycle_max     - cap on the number of field sub-steps per advance
@@ -102,6 +103,17 @@ namespace ntt {
       // so any value is safe; eta ~ u_sweep * dx suffices.
       set("hybrid.resist_vac",
           toml::find_or<real_t>(toml_data, "hybrid", "resist_vac", ZERO));
+      // hyper-resistivity (E -= eta_H grad^2 curl B => dB/dt -= eta_H grad^4 B),
+      // applied everywhere in the Faraday-side Ohm's law. The moments filter
+      // (algorithms.current_filters) attenuates the deposited N, V by
+      // cos^(2p)(k dx/2) -- near-zero for few-cell wavelengths -- so in that band
+      // the field evolves with no kinetic feedback and sustained compression or
+      // shear in the frozen moments pumps the band by induction. eta_H k^4
+      // blankets the filtered band while leaving k dx < 0.3 untouched; size so
+      // eta_H (pi/dx)^4 exceeds the drive. Internally clamped to the explicit
+      // grad^4 stability limit at the actual sub-step dt.
+      set("hybrid.resist_hyper",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist_hyper", ZERO));
       // Pegasus-style sub-cycled magnetic-field advance (fieldsolvers.h
       // ::SubcycledFaraday): the whistler-stiff Ohm/Faraday loop is integrated
       // with adaptive SSP-RK3 sub-steps at its own CFL instead of full-dt Euler

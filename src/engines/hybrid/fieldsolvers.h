@@ -99,6 +99,7 @@ namespace ntt {
       const auto dens_min = params.get<real_t>("hybrid.dens_min");
       const auto hall_lim = params.get<real_t>("hybrid.hall_lim");
       const auto res_vac  = params.get<real_t>("hybrid.resist_vac");
+      const auto res_hyp  = params.get<real_t>("hybrid.resist_hyper");
       const auto dx       = domain.mesh.metric.get_dx();
       if (flag == emf::push0) {
         // clang-format off
@@ -117,7 +118,7 @@ namespace ntt {
                                               0, 3, 3,            // P, N, Ee_in
                                               0, 0, 3,            // Bf, Ec, Bfs
                                               0, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                              dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, dx));
+                                              dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, res_hyp, dx));
         // clang-format on
       } else {
         // clang-format off
@@ -136,7 +137,7 @@ namespace ntt {
                                                0, 3, 0,            // P, N, Ee_in
                                                3, 0, 0,            // Bf, Ec, Bfs
                                                3, 0, 3,            // Ee_out, Ec_out, Bc_out
-                                               dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, dx));
+                                               dt, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, res_hyp, dx));
         // clang-format on
       }
     }
@@ -184,6 +185,7 @@ namespace ntt {
       const auto dens_min = params.get<real_t>("hybrid.dens_min");
       const auto hall_lim = params.get<real_t>("hybrid.hall_lim");
       const auto res_vac  = params.get<real_t>("hybrid.resist_vac");
+      const auto res_hyp  = params.get<real_t>("hybrid.resist_hyper");
       const auto courant  = params.get<real_t>("hybrid.subcycle_courant");
       auto       m_max    = params.get<int>("hybrid.subcycle_max");
       raise::ErrorIf(courant <= ZERO,
@@ -246,7 +248,7 @@ namespace ntt {
                                                     0, 3, 0,            // P, N, Ee_in
                                                     0, 0, 0,            // Bf, Ec, Bfs
                                                     3, 0, 0,            // Ee_out, Ec_out, Bc_out
-                                                    dt_sub, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, dx));
+                                                    dt_sub, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, res_hyp, dx));
         // clang-format on
         metadomain.CommunicateFields(domain, ::Comm::EM0_345);
         WallEPrime(domain, metadomain.mesh());
