@@ -117,6 +117,19 @@ namespace kernel::hybrid {
       , dx { dx }
       , dx_inv { ONE / dx } {}
 
+    /**
+     * @brief Vacuum cutoff: scales E by min(1, N_raw / dens_min). Below the
+     *        density threshold a cell has no ions to define an E field, so E
+     *        ramps to zero and B is left frozen there, instead of running the
+     *        Ohm's law with a 1/dens_min-amplified right-hand side. The ramp is
+     *        continuous, so cells do not flicker at the threshold and plasma-side
+     *        interface cells keep evolving from their own E.
+     */
+    Inline auto vac_factor(real_t n_raw) const -> real_t {
+      // safe for dens_min <= 0: the branch is never taken
+      return (n_raw < dens_min) ? (n_raw / dens_min) : ONE;
+    }
+
     Inline void compute_Ee(const tuple_t<ncells_t, D>& i,
                            real_t&                     E0,
                            real_t&                     E1,
@@ -131,13 +144,11 @@ namespace kernel::hybrid {
       if constexpr (D == Dim::_1D) {
         const auto   i1 = i[0];
         // Ee* = EMF(N^(n), P^(n), Bf*)
-        const real_t N0 { math::max(NN(i1, comp_NN), dens_min) };
-        const real_t N1 {
-          math::max(INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)), dens_min)
-        };
-        const real_t N2 {
-          math::max(INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)), dens_min)
-        };
+        const real_t N0r { NN(i1, comp_NN) };
+        const real_t N12r { INV_2 * (NN(i1, comp_NN) + NN(i1 - 1, comp_NN)) };
+        const real_t N0 { math::max(N0r, dens_min) };
+        const real_t N1 { math::max(N12r, dens_min) };
+        const real_t N2 { math::max(N12r, dens_min) };
 
         // 1D basis: b1 = Bx/dx, b2/b3 physical; output e1 = Ex/dx, e2/e3 physical
         E0 = dx_inv * (-Bfs(i1, comp_Bfs + 1) * PP(i1, comp_PP + 2) +
@@ -161,23 +172,24 @@ namespace kernel::hybrid {
         E2 += coeff * ((Bfs(i1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2)) *
                        Bfs(i1, comp_Bfs + 0));
 
-        E0 *= -ONE / N0;
-        E1 *= -ONE / N1;
-        E2 *= -ONE / N2;
+        E0 *= -vac_factor(N0r) / N0;
+        E1 *= -vac_factor(N12r) / N1;
+        E2 *= -vac_factor(N12r) / N2;
       } else if constexpr (D == Dim::_2D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
 
-        const real_t N0 { math::max(
-          INV_2 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN)),
-          dens_min) };
-        const real_t N1 { math::max(
-          INV_2 * (NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN)),
-          dens_min) };
-        const real_t N2 { math::max(
-          INV_4 * (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN) +
-                   NN(i1 - 1, i2, comp_NN) + NN(i1 - 1, i2 - 1, comp_NN)),
-          dens_min) };
+        const real_t N0r { INV_2 *
+                           (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN)) };
+        const real_t N1r { INV_2 *
+                           (NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN)) };
+        const real_t N2r { INV_4 *
+                           (NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN) +
+                            NN(i1 - 1, i2, comp_NN) +
+                            NN(i1 - 1, i2 - 1, comp_NN)) };
+        const real_t N0 { math::max(N0r, dens_min) };
+        const real_t N1 { math::max(N1r, dens_min) };
+        const real_t N2 { math::max(N2r, dens_min) };
 
         // 2D basis: b1/b2 = B/dx, b3 physical; output e1/e2 = E/dx, e3 physical
         E0 = dx_inv * INV_4 *
@@ -232,26 +244,29 @@ namespace kernel::hybrid {
              (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
               Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
 
-        E0 *= -ONE / N0;
-        E1 *= -ONE / N1;
-        E2 *= -ONE / N2;
+        E0 *= -vac_factor(N0r) / N0;
+        E1 *= -vac_factor(N1r) / N1;
+        E2 *= -vac_factor(N2r) / N2;
 
       } else if constexpr (D == Dim::_3D) {
         const auto   i1 = i[0];
         const auto   i2 = i[1];
         const auto   i3 = i[2];
-        const real_t N0 { math::max(
-          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
-                   NN(i1, i2 - 1, i3, comp_NN) + NN(i1, i2 - 1, i3 - 1, comp_NN)),
-          dens_min) };
-        const real_t N1 { math::max(
-          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2, i3 - 1, comp_NN) +
-                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2, i3 - 1, comp_NN)),
-          dens_min) };
-        const real_t N2 { math::max(
-          INV_4 * (NN(i1, i2, i3, comp_NN) + NN(i1, i2 - 1, i3, comp_NN) +
-                   NN(i1 - 1, i2, i3, comp_NN) + NN(i1 - 1, i2 - 1, i3, comp_NN)),
-          dens_min) };
+        const real_t N0r { INV_4 * (NN(i1, i2, i3, comp_NN) +
+                                    NN(i1, i2, i3 - 1, comp_NN) +
+                                    NN(i1, i2 - 1, i3, comp_NN) +
+                                    NN(i1, i2 - 1, i3 - 1, comp_NN)) };
+        const real_t N1r { INV_4 * (NN(i1, i2, i3, comp_NN) +
+                                    NN(i1, i2, i3 - 1, comp_NN) +
+                                    NN(i1 - 1, i2, i3, comp_NN) +
+                                    NN(i1 - 1, i2, i3 - 1, comp_NN)) };
+        const real_t N2r { INV_4 * (NN(i1, i2, i3, comp_NN) +
+                                    NN(i1, i2 - 1, i3, comp_NN) +
+                                    NN(i1 - 1, i2, i3, comp_NN) +
+                                    NN(i1 - 1, i2 - 1, i3, comp_NN)) };
+        const real_t N0 { math::max(N0r, dens_min) };
+        const real_t N1 { math::max(N1r, dens_min) };
+        const real_t N2 { math::max(N2r, dens_min) };
         E0 = -INV_8 *
                (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
                (PP(i1, i2, i3, comp_PP + 2) + PP(i1, i2, i3 - 1, comp_PP + 2) +
@@ -365,9 +380,9 @@ namespace kernel::hybrid {
               Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
               Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
 
-        E0 *= -ONE / N0;
-        E1 *= -ONE / N1;
-        E2 *= -ONE / N2;
+        E0 *= -vac_factor(N0r) / N0;
+        E1 *= -vac_factor(N1r) / N1;
+        E2 *= -vac_factor(N2r) / N2;
       }
     }
 
@@ -382,9 +397,10 @@ namespace kernel::hybrid {
       if constexpr (D == Dim::_1D) {
         const auto i1 = i[0];
 
-        // floored cell-centered density: the pusher reads Ec, so an empty cell
-        // here would inject Inf into the particle push (NaN cascade)
-        const real_t Nc { math::max(NN(i1, comp_NN), dens_min) };
+        // floored cell-centered density: the pusher reads Ec raw, so an
+        // unfloored empty cell would divide by zero into the particle push
+        const real_t Ncr { NN(i1, comp_NN) };
+        const real_t Nc { math::max(Ncr, dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
         // output is PHYSICAL (pusher reads bckp raw); b1 = Bx/dx, b2/b3 physical
@@ -416,16 +432,17 @@ namespace kernel::hybrid {
               (Bfs(i1 + 1, comp_Bfs + 0) + Bfs(i1, comp_Bfs + 0)) *
               (Bfs(i1 + 1, comp_Bfs + 2) - Bfs(i1 - 1, comp_Bfs + 2));
 
-        E0 *= -ONE / Nc;
-        E1 *= -ONE / Nc;
-        E2 *= -ONE / Nc;
+        E0 *= -vac_factor(Ncr) / Nc;
+        E1 *= -vac_factor(Ncr) / Nc;
+        E2 *= -vac_factor(Ncr) / Nc;
 
       } else if constexpr (D == Dim::_2D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
 
         // floored cell-centered density (see 1D note above)
-        const real_t Nc { math::max(NN(i1, i2, comp_NN), dens_min) };
+        const real_t Ncr { NN(i1, i2, comp_NN) };
+        const real_t Nc { math::max(Ncr, dens_min) };
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
         // output is PHYSICAL (pusher reads bckp raw); b1/b2 = B/dx, b3 physical
@@ -479,16 +496,17 @@ namespace kernel::hybrid {
                  (Bfs(i1, i2 + 1, comp_Bfs + 1) + Bfs(i1, i2, comp_Bfs + 1)) *
                  (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)));
 
-        E0 *= -ONE / Nc;
-        E1 *= -ONE / Nc;
-        E2 *= -ONE / Nc;
+        E0 *= -vac_factor(Ncr) / Nc;
+        E1 *= -vac_factor(Ncr) / Nc;
+        E2 *= -vac_factor(Ncr) / Nc;
       } else if constexpr (D == Dim::_3D) {
         const auto i1 = i[0];
         const auto i2 = i[1];
         const auto i3 = i[2];
 
         // floored cell-centered density (see 1D note above)
-        const real_t Nc { math::max(NN(i1, i2, i3, comp_NN), dens_min) };
+        const real_t Ncr { NN(i1, i2, i3, comp_NN) };
+        const real_t Nc { math::max(Ncr, dens_min) };
         // Ee* = EMF(N^(n), P^(n), Bf*)
 
         // Ec* = EMF(N^(n), P^(n), Bc*), where Bc* = interpolate Bf*
@@ -592,9 +610,9 @@ namespace kernel::hybrid {
                             Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
                             Bfs(i1, i2 - 1, i3, comp_Bfs + 2)));
 
-        E0 *= -ONE / Nc;
-        E1 *= -ONE / Nc;
-        E2 *= -ONE / Nc;
+        E0 *= -vac_factor(Ncr) / Nc;
+        E1 *= -vac_factor(Ncr) / Nc;
+        E2 *= -vac_factor(Ncr) / Nc;
       }
     }
 

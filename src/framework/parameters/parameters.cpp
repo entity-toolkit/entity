@@ -60,7 +60,7 @@ namespace ntt {
        * SR/GR engines):
        *   gamma_ad - adiabatic index of the massless electron fluid (1 = isothermal)
        *   theta0   - electron temperature T_e (code units); 0 = cold electrons
-       *   dens_min - density floor for the Ohm's-law 1/N divisions (units of n0)
+       *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
        *   v_max    - characteristic flow speed for the hybrid CFL (code units)
        */
       set("hybrid.gamma_ad",
@@ -70,10 +70,9 @@ namespace ntt {
                                 defaults::hybrid::gamma_ad));
       set("hybrid.theta0",
           toml::find_or<real_t>(toml_data, "hybrid", "theta0", ZERO));
-      // density floor for the hybrid Ohm's-law 1/N divisions. With a finite ppc a
-      // fraction e^-ppc of cells are statistically empty and the non-periodic-wall
-      // ghost cells are never filled; an unfloored 1/N there yields Inf -> NaN that
-      // the field comms then spread over the whole grid.
+      // vacuum threshold for the hybrid Ohm's law. Above it E follows the usual
+      // [...]/N; below it E ramps continuously to zero so that plasma-free cells
+      // keep B frozen instead of amplifying the right-hand side by 1/dens_min.
       set("hybrid.dens_min",
           toml::find_or<real_t>(toml_data,
                                 "hybrid",
