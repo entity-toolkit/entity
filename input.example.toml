@@ -681,6 +681,343 @@
     #   @default: []
     custom = ""
 
+  # In-situ renderer. Renders scalar fields on the GPU and writes PNG images
+  # directly to `<simname>/renders/` each cadence -- no field data is written to
+  # storage, and the result is seamless across MPI domain boundaries.
+  #   @note: two modes, selected automatically by the simulation dimension:
+  #          - 3D Cartesian (Minkowski): volume ray-march (uses `samples`,
+  #            `step_size`, `early_term_alpha`, and the [camera] table)
+  #          - 2D (Minkowski, Spherical/QSpherical, and all GR Kerr-Schild):
+  #            flat slice rasterizer. Cartesian shows the (x, y) plane; spherical
+  #            shows the meridional (r, theta) half-plane mapped to Cartesian
+  #            (X = r sin th, Z = r cos th), optionally mirrored (see `mirror`).
+  #            The `samples`/`step_size`/`early_term_alpha`/[camera] keys are
+  #            ignored in 2D (one opaque sample per pixel).
+  #   @note: 1D (and 3D non-Cartesian, which does not exist) is a no-op
+  #   @note: One PNG stream per scene (e.g. a density/|B|/|J| triptych)
+  [output.render]
+    # Toggle for the volume renderer
+    #   @type: bool
+    #   @default: false
+    enable = ""
+    # Number of timesteps between renders
+    #   @type: uint
+    #   @default: 0
+    #   @note: When `!= 0`, overrides `output.interval`
+    #   @note: When `== 0`, `interval_time` (or `output.interval`) is used
+    interval = ""
+    # Physical (code) time interval between renders
+    #   @type: float
+    #   @default: -1.0
+    #   @note: When `< 0`, the output is controlled by `interval`
+    interval_time = ""
+    # Image width in pixels (the rendered region; the PNG is wider if a colorbar
+    # margin is added, see `colorbar_outside`)
+    #   @type: int [> 0]
+    #   @default: 1024
+    width = ""
+    # Image height in pixels
+    #   @type: int [> 0]
+    #   @default: 1024
+    height = ""
+    # Axis-aligned render region [lo, hi] in physical/world coords, per axis
+    # (x1/x2/x3). Any axis left unset spans the full domain. Clamped to the box.
+    #   @type: array<float> [size 2]
+    #   @default: [] (full extent)
+    #   @note: 3D -> the volume is depth-clipped to this box, the wireframe/axes
+    #          frame it, and the default camera zooms to it; 2D -> the slice
+    #          window is framed to it. For a spherical 2D slice, x1_lim crops the
+    #          radius r and x2_lim crops the polar angle theta.
+    #   @example: x1_lim = [-64.0, 64.0]
+    x1_lim = ""
+    x2_lim = ""
+    x3_lim = ""
+    # Moving view: translate the render region (and, in 3D, the camera) at this
+    # velocity in world-units-per-sim-time, to keep a propagating feature (e.g. a
+    # shock) in frame. Pair with x{1,2,3}_lim (the moving window). 2D uses the
+    # first two components; the motion starts at `camera_start_time`.
+    #   @type: array<float> [size 2 or 3]
+    #   @default: [] (static view)
+    #   @example: camera_velocity = [0.9, 0.0]   # pan along +x1 at 0.9 c
+    camera_velocity = ""
+    # Sim time at which the view starts moving (static before it, e.g. to let an
+    # initial ramp-up finish)
+    #   @type: float
+    #   @default: 0.0
+    camera_start_time = ""
+    # Number of ray-march steps across the global box diagonal
+    #   @type: int [> 0]
+    #   @default: 400
+    #   @note: The world-space step is `box_diagonal / samples` unless `step_size`
+    #          is set. Higher = better quality, slower.
+    samples = ""
+    # Fixed world-space step between ray samples
+    #   @type: float [>= 0.0]
+    #   @default: 0.0
+    #   @note: 0 derives the step from `samples`. The step is identical on all
+    #          ranks, which is what makes the multi-domain composite seamless.
+    step_size = ""
+    # Stop marching a ray once its accumulated opacity reaches this value
+    #   @type: float [0.0 -> 1.0]
+    #   @default: 0.99
+    #   @note: Pure speed optimization; set to 1.0 to disable early termination
+    early_term_alpha = ""
+    # Number of entries in the color/opacity lookup table
+    #   @type: int [> 1]
+    #   @default: 256
+    n_lut = ""
+    # Opaque background RGB (each channel 0..1) shown through transparent/low-
+    # opacity pixels; also fills the colorbar margin
+    #   @type: array<float> [size 3]
+    #   @default: [0.0, 0.0, 0.0]
+    background = ""
+    # Draw a colorbar (gradient + value ticks + label) on each PNG
+    #   @type: bool
+    #   @default: true
+    colorbar = ""
+    # Draw the colorbar in an added right margin (the PNG becomes wider by a
+    # fixed strip) instead of overlaying it on the rendered volume
+    #   @type: bool
+    #   @default: true
+    colorbar_outside = ""
+    # 2D spherical slice only: mirror the meridional half-plane across the
+    # symmetry axis to render a full disk from one axisymmetric half. No effect
+    # on Cartesian or 3D rendering.
+    #   @type: bool
+    #   @default: true
+    mirror = ""
+    # Draw the current simulation time as a label ("T = <value>", fixed to 2
+    # decimals) in the upper-right corner of the render region, in a contrasting
+    # color, vertically centered between the frame top and the colorbar.
+    #   @type: bool
+    #   @default: false
+    time_label = ""
+    # Draw a spine (frame) + axis ticks + labels around the rendered region.
+    # The PNG gains left/bottom margins (background-filled) for the tick labels
+    # and axis names, so they never overlap the data.
+    #   @type: bool
+    #   @default: false
+    #   @note: 2D Cartesian = a rectangular frame with linear spatial ticks;
+    #          2D spherical = polar axes (an "R" radial axis on the symmetry
+    #          axis with R=0 centered, and a "Theta" axis along the curved
+    #          outline / spine);
+    #          3D = the global box projected to a wireframe with ticks on the
+    #          three silhouette edges (x bottom, y & z on the left)
+    axes = ""
+    # Axis names. 3D uses all three; the 2D slice uses the first two. When unset,
+    # the 2D slice defaults to "x","y" (Cartesian) or "X","Z" (spherical).
+    #   @type: array<string> [size <= 3]
+    #   @default: ["x", "y", "z"]
+    axis_labels = ""
+    # Target number of ticks per axis (actual count is rounded to nice values)
+    #   @type: int [>= 2]
+    #   @default: 5
+    axis_ticks = ""
+    # 3D only: target width (pixels) of the box wireframe "spine". The spine is
+    # drawn inside the ray-march (opaque, depth-occluded by the volume); its
+    # width is floored by the ray step, so for a crisper thin line raise
+    # `samples` as well.
+    #   @type: float [> 0.0]
+    #   @default: 2.0
+    spine_width = ""
+
+    # Camera (3D volume mode only; ignored by the 2D slice rasterizer). Defaults
+    # frame the whole global box from outside, looking down the (1,1,1) diagonal
+    # -- the production setup for which the structured composite is provably
+    # seamless.
+    [output.render.camera]
+      # Orthographic (true) or perspective (false) projection
+      #   @type: bool
+      #   @default: true
+      #   @note: Orthographic is recommended; the seamless composite is always
+      #          valid for it. Perspective is only seamless with the eye outside
+      #          the box.
+      orthographic = ""
+      # Camera (eye) position in world (physical) coordinates
+      #   @type: array<float> [size 3]
+      #   @default: box center pushed back ~1.7 box-diagonals along (1, 1, 1)
+      position = ""
+      # Point the camera looks at, in world coordinates
+      #   @type: array<float> [size 3]
+      #   @default: box center
+      look_at = ""
+      # Camera up vector
+      #   @type: array<float> [size 3]
+      #   @default: [0.0, 0.0, 1.0]
+      up = ""
+      # Vertical field of view in degrees (perspective only)
+      #   @type: float [> 0.0]
+      #   @default: 35.0
+      fov = ""
+      # Vertical extent of the view in world units (orthographic only)
+      #   @type: float [> 0.0]
+      #   @default: the global box diagonal (the whole box fits from any angle)
+      ortho_height = ""
+
+    # One scene per scalar field -> one PNG stream. Repeat the table for each.
+    [[output.render.scenes]]
+      # Scalar field to render (a volume render needs a scalar, so vectors are
+      # given as a magnitude or a single component)
+      #   @required
+      #   @type: string
+      #   @enum (fields): "{E,B,J}mag"; "{E,B,J}{1,2,3}" or "{E,B,J}{x,y,z}"
+      #   @enum (moments): "N", "Nppc", "Rho", "Charge"; "T{i}{j}"; "V{i}"; "Vmag"
+      #   @note: "{E,B,J}mag" = vector magnitude |.|; "B1"/"Bx", "J3"/"Jz", ... =
+      #          a single (signed) physical component
+      #   @note: a bare vector ("E"/"B"/"J") is not renderable -- choose a
+      #          component or the magnitude
+      #   @note: "N"/"Nppc" = number / per-cell count, "Rho" = mass density,
+      #          "Charge" = charge density
+      #   @note: "T{i}{j}" = one stress-energy component, i,j in {t,x,y,z} or
+      #          {0,1,2,3} (e.g. "Txx", "Ttt", "T0x"); "V{i}" = one bulk-velocity
+      #          component, i in {x,y,z} or {1,2,3} (e.g. "Vx", "V1"); "Vmag" =
+      #          bulk-velocity magnitude sqrt(V1^2+V2^2+V3^2)
+      #   @note: moments follow the engine: SRPIC = tetrad-basis bulk 3-velocity
+      #          and stress-energy; GRPIC = Eckart-frame 4-velocity (so "Vt"/"V0"
+      #          = u^0 = Gamma/alpha is also valid) and contravariant T
+      #   @note: per-species selection with a "_<id>" suffix on moments, e.g.
+      #          "N_1", "Rho_2", "Txy_1_2", "V1_3"; default = all massive species
+      #   @note: components are signed; pair a symmetric `min`/`max` with a
+      #          diverging colormap ("cool2warm") to center zero
+      #   @note: "fieldlines" renders the magnetic field-line tubes on their own
+      #          (no scalar volume sampled); see [output.render.fieldlines] below
+      field = ""
+      # PNG filename prefix; files are `<prefix><cycle>.png`
+      #   @type: string
+      #   @default: "<field>_"
+      prefix = ""
+      # Colorbar title
+      #   @type: string
+      #   @default: `field`
+      label = ""
+      # Lower bound of the value range mapped onto the colormap/opacity
+      #   @type: float
+      #   @default: 0.0
+      min = ""
+      # Upper bound of the value range
+      #   @type: float
+      #   @default: 1.0
+      max = ""
+      # Map the value range logarithmically
+      #   @type: bool
+      #   @default: false
+      #   @note: Requires min > 0 and max > 0
+      log = ""
+      # Colormap name
+      #   @type: string
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray", "RdBu_r", and the
+      #          CMasher maps (BSD-3, https://cmasher.readthedocs.io): "dusk",
+      #          "cosmic", "freeze", "apple", "gothic", "sunburst", "voltage",
+      #          "ocean", "fusion", "prinsenvlag" (an optional "cmr." prefix is ok)
+      #   @default: "viridis"
+      colormap = ""
+      # Opacity transfer function: [position, opacity] control points, both in
+      # [0, 1], piecewise-linear in the normalized value
+      #   @type: array<tuple<float>>
+      #   @default: linear ramp (opacity = normalized value)
+      #   @note: Keep the low end near 0 so empty regions stay transparent
+      #   @example: [[0.0, 0.0], [0.3, 0.1], [1.0, 0.7]]
+      alpha = ""
+      # Explicit value(s) to label on the colorbar
+      #   @type: array<float>
+      #   @default: 5 evenly-spaced ticks between min and max
+      #   @note: Values outside [min, max] are skipped
+      #   @example: [0.0, 0.5, 1.0]
+      colorbar_ticks = ""
+      # Overlay the magnetic field-line tubes inside this scene's volume
+      #   @type: bool
+      #   @default: false
+      #   @note: requires the [output.render.fieldlines] table below (3D only).
+      #          A scene with field = "fieldlines" instead renders them alone.
+      fieldlines = ""
+
+    # Magnetic field lines, drawn from a coarse, MPI-replicated copy of the field
+    # so the geometry is global and seamless across domains (the coarsening is
+    # what makes this cheap -- no parallel particle advection / flux scan).
+    #   - 3D (Cartesian): traced as solid tubes, colored by |field|, composited
+    #     inside the volume ray-march so the volume correctly occludes them.
+    #   - 2D (Cartesian): iso-contours of the flux function psi (Bx = d psi/dy,
+    #     By = -d psi/dx), i.e. the in-plane field lines, colored by |B|.
+    #   - 2D (spherical / Kerr-Schild): traced meridional streamlines of the
+    #     poloidal (Br, Btheta) field (nt2py style).
+    # Built once per frame and shared by every scene that opts in (per-scene
+    # `fieldlines = true`) and by any standalone `field = "fieldlines"` scene.
+    [output.render.fieldlines]
+      # Build the field-line geometry this run
+      #   @type: bool
+      #   @default: false
+      #   @note: implied true if any scene sets `fieldlines = true` or uses
+      #          `field = "fieldlines"`
+      enable = ""
+      # Vector field to trace
+      #   @type: string
+      #   @enum: "B", "E", "J"
+      #   @default: "B"
+      field = ""
+      # Field coarsening factor (simulation cells per coarse cell, per axis)
+      #   @type: int [1..16]
+      #   @default: 4
+      #   @note: larger = smoother "morphology" lines + cheaper replication (the
+      #          coarse field is ~ N_cells / bin^D floats/rank; D = sim dimension)
+      bin = ""
+      # (3D tubes) Seed-lattice spacing in screen pixels (sets line density)
+      #   @type: float [> 0]
+      #   @default: 8
+      #   @note: capped by `seed_max`; if seed_px asks for more seeds than that,
+      #          the spacing grows to fit and seed_px no longer governs
+      seed_px = ""
+      # (3D tubes) Hard cap on the seed count (lattice is n^3, 2 lines per seed)
+      #   @type: int [> 0]
+      #   @default: 4096
+      #   @note: lower this for fewer / more widely spaced lines
+      seed_max = ""
+      # (2D contours) Number of evenly-spaced flux-function contour levels
+      #   @type: int [> 0]
+      #   @default: 16
+      #   @note: evenly-spaced psi levels => line density tracks |B| automatically
+      levels = ""
+      # Tube radius (3D) / contour line width (2D), in screen pixels
+      #   @type: float [> 0]
+      #   @default: 2
+      tube_px = ""
+      # Colormap for the field lines (mapped by |B| along each line)
+      #   @type: string
+      #   @enum: "viridis", "inferno", "plasma", "cool2warm", "gray", "RdBu_r", and the
+      #          CMasher maps (BSD-3, https://cmasher.readthedocs.io): "dusk",
+      #          "cosmic", "freeze", "apple", "gothic", "sunburst", "voltage",
+      #          "ocean", "fusion", "prinsenvlag" (an optional "cmr." prefix is ok)
+      #   @default: "inferno"
+      colormap = ""
+      # Monochrome override: draw the lines in a single [r,g,b] color (each 0..1)
+      # instead of the |B| colormap -- reads well as an overlay on another volume
+      #   @type: array<float> [size 3]
+      #   @default: [] (empty => color by |B|)
+      #   @example: [1.0, 1.0, 1.0]   # white field lines
+      color = ""
+      # Map the tube color range logarithmically
+      #   @type: bool
+      #   @default: false
+      #   @note: requires min > 0
+      log = ""
+      # Tube color range (lower / upper bound on |field|)
+      #   @type: float
+      #   @default: 0.0
+      #   @note: when min >= max, the range is auto-set from |field| along the lines
+      min = ""
+      max = ""
+      # (3D tubes) RK4 integration step as a fraction of one coarse cell
+      #   @type: float [> 0]
+      #   @default: 0.5
+      step_frac = ""
+      # (3D tubes) Per-direction integration-step cap
+      #   @type: int [> 0]
+      #   @default: 4000
+      max_steps = ""
+      # (3D tubes) Maximum line length, in global box diagonals (per direction)
+      #   @type: float [> 0]
+      #   @default: 3.0
+      max_length = ""
+
 [checkpoint]
   # Number of timesteps between checkpoints
   #   @type: uint [> 0]
