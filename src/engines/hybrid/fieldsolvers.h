@@ -215,12 +215,20 @@ namespace ntt {
                     MPI_MAX,
                     MPI_COMM_WORLD);
 #endif
-      int m = static_cast<int>(
-        std::ceil(static_cast<double>(vw_max * dt / (courant * dx))));
-      if (m < 1) {
-        m = 1;
-      }
-      if (m > m_max) {
+      // clamp in double before the int cast: at runaway field amplitudes
+      // vw_max*dt/(courant*dx) exceeds INT_MAX, and casting that to int is UB
+      // (wraps negative), which the m < 1 -> m = 1 clamp would then turn into
+      // m = 1, disabling the subcycler exactly when it is needed. Comparing in
+      // double and taking the else-branch also routes a NaN/Inf vw_max to m_max.
+      const double m_want = std::ceil(static_cast<double>(vw_max) * dt /
+                                      (courant * dx));
+      int          m;
+      if (m_want < static_cast<double>(m_max)) {
+        m = static_cast<int>(m_want);
+        if (m < 1) {
+          m = 1;
+        }
+      } else {
         m = m_max;
       }
       const real_t dt_sub = dt / static_cast<real_t>(m);
