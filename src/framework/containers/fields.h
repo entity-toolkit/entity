@@ -175,7 +175,10 @@ namespace ntt {
     void CheckpointRead(adios2::IO&,
                         adios2::Engine&,
                         const adios2::Box<adios2::Dims>&);
-    void CheckpointWrite(adios2::IO&, adios2::Engine&) const;
+    void CheckpointWrite(adios2::IO&,
+                         adios2::Engine&,
+                         const std::vector<ncells_t>&,
+                         const std::vector<ncells_t>&) const;
 #endif
   };
 
