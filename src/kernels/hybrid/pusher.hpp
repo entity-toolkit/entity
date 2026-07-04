@@ -39,6 +39,16 @@
  *   - Corrector   : push (Fig. 2 step 12), deposit final N^(n+1), V^(n+1), AND
  *                   write back x^(n+1), v^(n+1) (+ i/dx_prev) and apply particle BCs.
  *
+ * SINK ROUTING. The per-particle flow is shared between the flat and the tiled
+ * (TEAM_POLICY) launches through a sink object (see the TiledScatter_kernel
+ * body contract in kernels/tiled_scatter.hpp): after the push, the kernel
+ * `select()`s the deposit-time footprint (computed from the post-push register
+ * position) on the sink and emits each stencil write through it. The flat
+ * launch uses the nested `FlatSink` (a bounds-clipping ScatterView accessor,
+ * `select()` a no-op); the tiled launch hands in the harness sink, which
+ * routes to per-tile SLM scratch when the footprint fits and to the
+ * bounds-clipped global escape valve when it does not.
+ *
  * @note NON-RELATIVISTIC. ux1/ux2/ux3 store the 3-velocity v; gamma == 1 everywhere
  *       (no 1/sqrt(1+v^2) in the rotation, no dt/gamma in the drift).
  * @note Cartesian Minkowski only. 1D gather/deposit are implemented; 2D/3D are
@@ -59,6 +69,8 @@
 #include "framework/containers/particles.h"
 #include "kernels/particle_shapes.hpp"
 #include "kernels/pushers/context.h" // kernel::sr::PusherBoundaries<D> (BC flags)
+
+#include <utility>
 
 #if defined(MPI_ENABLED)
   #include "arch/mpi_tags.h"
@@ -151,10 +163,83 @@ namespace kernel::hybrid {
       , normalized_dt_half { HALF * (ctx.charge / ctx.mass) * ctx.omegaB0 * ctx.dt }
       , dt_half { HALF * ctx.dt } {}
 
+    /**
+     * Tiled-body constructor (TEAM_POLICY launch): the deposit goes through
+     * the TiledScatter_kernel sink instead of a ScatterView, so `moments`
+     * stays empty and is never accessed on this path (only the sink entry
+     * point below is called by the harness).
+     */
+    Pusher_kernel(const PusherContext&                   pusher_ctx,
+                  const kernel::sr::PusherBoundaries<D>& pusher_boundaries,
+                  ParticleArrays&                        pusher_arrays,
+                  const randacc_ndfield_t<D, 6>&         EB,
+                  const M&                               metric)
+      : ctx { pusher_ctx }
+      , bc { pusher_boundaries }
+      , particles { pusher_arrays }
+      , EB { EB }
+      , moments {}
+      , metric { metric }
+      , normalized_dt_half { HALF * (ctx.charge / ctx.mass) * ctx.omegaB0 * ctx.dt }
+      , dt_half { HALF * ctx.dt } {}
+
     // ........................................................................
-    // main per-particle update
+    // flat-path write sink: ScatterView accessor + per-write storage-extent
+    // clip — the same guards the flat deposit always had (see the comment
+    // above inX1; they are load-bearing here: an overshooting particle's
+    // stencil would otherwise scatter past the array end). select() is a
+    // no-op: the flat path has no scratch window to prove containment
+    // against.
+    // ........................................................................
+    struct FlatSink {
+      using acc_t = decltype(std::declval<const scatter_ndfield_t<D, 6>&>().access());
+
+      acc_t buff;
+      int   e1, e2, e3; // storage extents (= ni + 2*N_GHOSTS)
+
+      Inline void select(int, int) {}
+
+      Inline void select(int, int, int, int) {}
+
+      Inline void select(int, int, int, int, int, int) {}
+
+      Inline void operator()(int c1, int comp, real_t v) const {
+        if (c1 >= 0 and c1 < e1) {
+          buff(c1, comp) += v;
+        }
+      }
+
+      Inline void operator()(int c1, int c2, int comp, real_t v) const {
+        if (c1 >= 0 and c1 < e1 and c2 >= 0 and c2 < e2) {
+          buff(c1, c2, comp) += v;
+        }
+      }
+
+      Inline void operator()(int c1, int c2, int c3, int comp, real_t v) const {
+        if (c1 >= 0 and c1 < e1 and c2 >= 0 and c2 < e2 and c3 >= 0 and c3 < e3) {
+          buff(c1, c2, c3, comp) += v;
+        }
+      }
+    };
+
+    // ........................................................................
+    // main per-particle update — flat entry (RangePolicy over particles)
     // ........................................................................
     Inline void operator()(prtlidx_t p) const {
+      FlatSink sink { moments.access(),
+                      ctx.ni1 + 2 * static_cast<int>(N_GHOSTS),
+                      ctx.ni2 + 2 * static_cast<int>(N_GHOSTS),
+                      ctx.ni3 + 2 * static_cast<int>(N_GHOSTS) };
+      (*this)(p, sink);
+    }
+
+    // ........................................................................
+    // main per-particle update — sink entry, shared by the flat launch
+    // (FlatSink above) and the tiled TEAM_POLICY launch (harness Sink; see
+    // the body contract in kernels/tiled_scatter.hpp)
+    // ........................................................................
+    template <class SinkLike>
+    Inline void operator()(prtlidx_t p, SinkLike& sink) const {
       if (particles.tag(p) != ParticleTag::alive) {
         return;
       }
@@ -192,8 +277,33 @@ namespace kernel::hybrid {
         halfDrift(i1, dx1, i2, dx2, i3, dx3, v);
       }
 
+      // deposit-time footprint from the post-push register position (for
+      // MomentsOnly, the stored position), in global storage coordinates
+      // (incl. N_GHOSTS): the deposit below writes exactly
+      // [i - window, i + window] per axis. The tiled sink uses it to route
+      // the whole particle to SLM scratch (fits) or the global escape
+      // valve (drifted past the halo); FlatSink ignores it.
+      {
+        const int G = static_cast<int>(N_GHOSTS);
+        if constexpr (D == Dim::_1D) {
+          sink.select(i1 + G - window, i1 + G + window);
+        } else if constexpr (D == Dim::_2D) {
+          sink.select(i1 + G - window,
+                      i1 + G + window,
+                      i2 + G - window,
+                      i2 + G + window);
+        } else {
+          sink.select(i1 + G - window,
+                      i1 + G + window,
+                      i2 + G - window,
+                      i2 + G + window,
+                      i3 + G - window,
+                      i3 + G + window);
+        }
+      }
+
       // fused moment deposit at the advanced (or, for MomentsOnly, the stored) state
-      deposit(p, i1, dx1, i2, dx2, i3, dx3, v);
+      deposit(p, i1, dx1, i2, dx2, i3, dx3, v, sink);
 
       // corrector commits the accepted move -> store back + particle boundaries
       if constexpr (Mode == PushMode::Corrector) {
@@ -414,9 +524,14 @@ namespace kernel::hybrid {
     }
 
     // ........................................................................
-    // fused moment deposit:  N -> aux::3,  V = m*v -> aux::0..2 (non-relativistic).
-    // Cell-centered, shape-weighted, transpose of `gather`.
+    // fused moment deposit:  N -> comp 3,  V = m*v -> comps 0..2
+    // (non-relativistic). Cell-centered, shape-weighted, transpose of
+    // `gather`. Writes go through the sink's emit(c..., comp, val); bounds
+    // handling lives in the sink (FlatSink clips per write, the tiled sink
+    // routes per the select()ed footprint), so the loops here are
+    // unconditional.
     // ........................................................................
+    template <class SinkLike>
     Inline void deposit(prtlidx_t              p,
                         int                    i1,
                         real_t                 dx1,
@@ -424,7 +539,8 @@ namespace kernel::hybrid {
                         real_t                 dx2,
                         int                    i3,
                         real_t                 dx3,
-                        const vec_t<Dim::_3D>& v) const {
+                        const vec_t<Dim::_3D>& v,
+                        SinkLike&              emit) const {
       real_t w { ctx.inv_n0 };
       if constexpr (D == Dim::_1D) {
         w /= metric.sqrt_det_h({ static_cast<real_t>(i1) + HALF });
@@ -444,67 +560,48 @@ namespace kernel::hybrid {
       const real_t cV1 { w * ctx.mass * v[1] };
       const real_t cV2 { w * ctx.mass * v[2] };
 
-      auto buff = moments.access();
       if constexpr (D == Dim::_1D) {
         for (int di1 { -window }; di1 <= window; ++di1) {
           const int c { i1 + di1 + static_cast<int>(N_GHOSTS) };
-          if (not inX1(c)) {
-            continue;
-          }
           const real_t S { prtl_shape::particle_shape<O>(
             math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-          buff(c, 0) += cV0 * S;
-          buff(c, 1) += cV1 * S;
-          buff(c, 2) += cV2 * S;
-          buff(c, 3) += cN * S;
+          emit(c, 0, cV0 * S);
+          emit(c, 1, cV1 * S);
+          emit(c, 2, cV2 * S);
+          emit(c, 3, cN * S);
         }
       } else if constexpr (D == Dim::_2D) {
         for (int di2 { -window }; di2 <= window; ++di2) {
           const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
-          if (not inX2(c2)) {
-            continue;
-          }
           const real_t sx2 { prtl_shape::particle_shape<O>(
             math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
           for (int di1 { -window }; di1 <= window; ++di1) {
             const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
-            if (not inX1(c1)) {
-              continue;
-            }
             const real_t S { sx2 * prtl_shape::particle_shape<O>(
                                      math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-            buff(c1, c2, 0) += cV0 * S;
-            buff(c1, c2, 1) += cV1 * S;
-            buff(c1, c2, 2) += cV2 * S;
-            buff(c1, c2, 3) += cN * S;
+            emit(c1, c2, 0, cV0 * S);
+            emit(c1, c2, 1, cV1 * S);
+            emit(c1, c2, 2, cV2 * S);
+            emit(c1, c2, 3, cN * S);
           }
         }
       } else if constexpr (D == Dim::_3D) {
         for (int di3 { -window }; di3 <= window; ++di3) {
           const int c3 { i3 + di3 + static_cast<int>(N_GHOSTS) };
-          if (not inX3(c3)) {
-            continue;
-          }
           const real_t sx3 { prtl_shape::particle_shape<O>(
             math::abs(dx3 - (static_cast<real_t>(di3) + HALF))) };
           for (int di2 { -window }; di2 <= window; ++di2) {
             const int c2 { i2 + di2 + static_cast<int>(N_GHOSTS) };
-            if (not inX2(c2)) {
-              continue;
-            }
             const real_t sx23 { sx3 * prtl_shape::particle_shape<O>(
                                         math::abs(dx2 - (static_cast<real_t>(di2) + HALF))) };
             for (int di1 { -window }; di1 <= window; ++di1) {
               const int c1 { i1 + di1 + static_cast<int>(N_GHOSTS) };
-              if (not inX1(c1)) {
-                continue;
-              }
               const real_t S { sx23 * prtl_shape::particle_shape<O>(
                                         math::abs(dx1 - (static_cast<real_t>(di1) + HALF))) };
-              buff(c1, c2, c3, 0) += cV0 * S;
-              buff(c1, c2, c3, 1) += cV1 * S;
-              buff(c1, c2, c3, 2) += cV2 * S;
-              buff(c1, c2, c3, 3) += cN * S;
+              emit(c1, c2, c3, 0, cV0 * S);
+              emit(c1, c2, c3, 1, cV1 * S);
+              emit(c1, c2, c3, 2, cV2 * S);
+              emit(c1, c2, c3, 3, cN * S);
             }
           }
         }
