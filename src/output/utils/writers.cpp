@@ -76,13 +76,18 @@ namespace out {
   }
 
   template <Dimension D, int N>
-  void WriteNDField(adios2::IO&            io,
-                    adios2::Engine&        writer,
-                    const std::string&     name,
-                    const ndfield_t<D, N>& data) {
+  void WriteNDField(adios2::IO&                      io,
+                    adios2::Engine&                  writer,
+                    const std::string&               name,
+                    const ndfield_t<D, N>&           data,
+                    const adios2::Box<adios2::Dims>& range) {
+    auto var = io.InquireVariable<real_t>(name);
+    if (not range.first.empty()) {
+      var.SetSelection(range);
+    }
     auto data_h = Kokkos::create_mirror_view(data);
     Kokkos::deep_copy(data_h, data);
-    writer.Put(io.InquireVariable<real_t>(name), data_h.data(), adios2::Mode::Sync);
+    writer.Put(var, data_h.data(), adios2::Mode::Sync);
   }
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
@@ -122,7 +127,8 @@ namespace out {
   template void WriteNDField<D, N>(adios2::IO&,                                \
                                    adios2::Engine&,                            \
                                    const std::string&,                         \
-                                   const ndfield_t<D, N>&);
+                                   const ndfield_t<D, N>&,                     \
+                                   const adios2::Box<adios2::Dims>&);
   NDFIELD_WRITERS(Dim::_1D, 3)
   NDFIELD_WRITERS(Dim::_1D, 6)
   NDFIELD_WRITERS(Dim::_2D, 3)

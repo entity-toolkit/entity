@@ -17,6 +17,7 @@
   #include <iterator>
 #endif // MPI_ENABLED
 
+#include <cstddef>
 #include <iomanip>
 #include <numeric>
 #include <sstream>
@@ -26,8 +27,8 @@
 
 namespace diag {
   auto npart_stats(npart_t npart, npart_t maxnpart)
-    -> std::vector<std::pair<npart_t, unsigned short>> {
-    auto stats = std::vector<std::pair<npart_t, unsigned short>>();
+    -> std::vector<std::pair<std::size_t, unsigned short>> {
+    auto stats = std::vector<std::pair<std::size_t, unsigned short>>();
     const auto percentage = [](npart_t part, npart_t maxpart) -> unsigned short {
       return static_cast<unsigned short>(
         100.0f * static_cast<float>(part) / static_cast<float>(maxpart));
@@ -59,9 +60,9 @@ namespace diag {
     if (rank != MPI_ROOT_RANK) {
       return stats;
     }
-    const npart_t tot_npart = std::accumulate(mpi_npart.begin(),
-                                              mpi_npart.end(),
-                                              static_cast<npart_t>(0));
+    const std::size_t tot_npart = std::accumulate(mpi_npart.begin(),
+                                                  mpi_npart.end(),
+                                                  static_cast<std::size_t>(0));
     const npart_t max_idx   = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));

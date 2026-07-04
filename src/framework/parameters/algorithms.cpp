@@ -33,6 +33,11 @@ namespace ntt {
 
       deposit_enable = toml::find_or(toml_data, "algorithms", "deposit", "enable", true);
       deposit_order = static_cast<unsigned short>(SHAPE_ORDER);
+      deposit_team_policy_team_size = toml::find_or(toml_data,
+                                                    "algorithms",
+                                                    "deposit",
+                                                    "team_policy_team_size",
+                                                    defaults::team_policy_team_size);
 
       fieldsolver_enable = toml::find_or(toml_data,
                                          "algorithms",
@@ -140,6 +145,8 @@ namespace ntt {
 
       params->set("algorithms.deposit.enable", deposit_enable.value());
       params->set("algorithms.deposit.order", deposit_order.value());
+      params->set("algorithms.deposit.team_policy_team_size",
+                  deposit_team_policy_team_size.value());
 
       params->set("algorithms.fieldsolver.enable", fieldsolver_enable.value());
       for (const auto& [key, value] : fieldsolver_stencil_coeffs.value()) {

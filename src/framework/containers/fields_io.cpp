@@ -68,15 +68,27 @@ namespace ntt {
   }
 
   template <Dimension D, SimEngine::type S>
-  void Fields<D, S>::CheckpointWrite(adios2::IO& io, adios2::Engine& writer) const {
+  void Fields<D, S>::CheckpointWrite(
+    adios2::IO&                  io,
+    adios2::Engine&              writer,
+    const std::vector<ncells_t>& local_shape,
+    const std::vector<ncells_t>& local_offset) const {
     logger::Checkpoint("Writing fields checkpoint", HERE);
 
-    out::WriteNDField<D, 6>(io, writer, "em", em);
-    if (::traits::engine::WriteEM0FieldToCheckpoint<S>) {
-      out::WriteNDField<D, 6>(io, writer, "em0", em0);
-    }
-    if (::traits::engine::WriteCurFieldToCheckpoint<S>) {
-      out::WriteNDField<D, 3>(io, writer, "cur", cur);
+    // Per-rank slab: re-set the variable selection to track the (possibly
+    // rebalanced) local layout. The component axis is always full.
+    auto build_range = [&](unsigned short ncomp) {
+      auto start = adios2::Dims(local_offset.begin(), local_offset.end());
+      auto count = adios2::Dims(local_shape.begin(), local_shape.end());
+      start.push_back(0);
+      count.push_back(ncomp);
+      return adios2::Box<adios2::Dims>(start, count);
+    };
+
+    out::WriteNDField<D, 6>(io, writer, "em", em, build_range(6));
+    if (S == ntt::SimEngine::GRPIC) {
+      out::WriteNDField<D, 6>(io, writer, "em0", em0, build_range(6));
+      out::WriteNDField<D, 3>(io, writer, "cur", cur, build_range(3));
     }
   }
 
@@ -90,7 +102,10 @@ namespace ntt {
   template void Fields<D, S>::CheckpointRead(adios2::IO&,                       \
                                              adios2::Engine&,                   \
                                              const adios2::Box<adios2::Dims>&); \
-  template void Fields<D, S>::CheckpointWrite(adios2::IO&, adios2::Engine&) const;
+  template void Fields<D, S>::CheckpointWrite(adios2::IO&,                    \
+                                              adios2::Engine&,                \
+                                              const std::vector<ncells_t>&,   \
+                                              const std::vector<ncells_t>&) const;
 
   NTT_FOREACH_SPECIALIZATION_FIELDS(FIELDS_CHECKPOINTS)
 #undef FIELDS_CHECKPOINTS

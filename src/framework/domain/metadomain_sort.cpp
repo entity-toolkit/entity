@@ -21,9 +21,7 @@ namespace ntt {
       const auto clearing_interval = species.clearing_interval();
       if ((clearing_interval > 0u) and (step % clearing_interval == 0u) and
           (step > 0u)) {
-        for (auto& species : domain.species) {
-          species.RemoveDead();
-        }
+        species.RemoveDead();
       }
       const auto spatial_sorting_interval = species.spatial_sorting_interval();
       if ((spatial_sorting_interval > 0u) and

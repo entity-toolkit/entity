@@ -352,6 +352,51 @@ namespace ntt {
       const auto dt_hyb = cfl * ((dt_adv < dt_gyr) ? dt_adv : dt_gyr);
       set("algorithms.timestep.dt", dt_hyb);
     }
+    /* [simulation.domain.load_balance] ------------------------------------- */
+    set("simulation.domain.load_balance.enable",
+        toml::find_or(toml_data, "simulation", "domain", "load_balance", "enable", false));
+    set("simulation.domain.load_balance.interval",
+        toml::find_or<timestep_t>(toml_data,
+                                  "simulation",
+                                  "domain",
+                                  "load_balance",
+                                  "interval",
+                                  0u));
+    set("simulation.domain.load_balance.tolerance",
+        toml::find_or(toml_data,
+                      "simulation",
+                      "domain",
+                      "load_balance",
+                      "tolerance",
+                      static_cast<real_t>(0.1)));
+    set("simulation.domain.load_balance.max_shift",
+        toml::find_or<unsigned int>(toml_data,
+                                    "simulation",
+                                    "domain",
+                                    "load_balance",
+                                    "max_shift",
+                                    static_cast<unsigned int>(N_GHOSTS)));
+    {
+      // dimensions: list of 1/2/3 mapped to a bitmask
+      const auto dim_ints = toml::find_or<std::vector<int>>(
+        toml_data,
+        "simulation",
+        "domain",
+        "load_balance",
+        "dimensions",
+        std::vector<int> { 1 });
+      unsigned int mask = 0u;
+      for (const auto& d : dim_ints) {
+        if (d == 1 or d == 2 or d == 3) {
+          mask |= 1u << (d - 1);
+        } else {
+          raise::Error(
+            "simulation.domain.load_balance.dimensions: unknown dim, expected 1/2/3",
+            HERE);
+        }
+      }
+      set("simulation.domain.load_balance.dim_mask", mask);
+    }
 
     /* extra physics ------------------------------------------------------ */
     params::Extra                     extra_params {};
