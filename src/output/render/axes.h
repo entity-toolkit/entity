@@ -621,10 +621,12 @@ namespace out {
 
     (void)ok;
     // The wireframe "spine" is drawn in the ray-march (depth-occluded), so here
-    // we only annotate. For each axis, pick one *silhouette* edge (its two
-    // adjacent faces face opposite ways) and, among the two candidates, the one
-    // whose screen position matches the convention x=bottom, y & z on the left
-    // of the default diagonal view.
+    // we only annotate. For each axis, pick one *silhouette* edge: its two
+    // adjacent faces point opposite ways relative to the camera (one toward it,
+    // one away), so the edge lies on the box OUTLINE and is always in the
+    // foreground -- never hidden behind the volume. Among the (usually two)
+    // silhouette candidates take the one nearest the bottom-left of the image,
+    // the conventional, view-independent place for axis annotation.
     auto frontFace = [&](int axis, int side) -> bool {
       const real_t nrm = (side != 0) ? ONE : -ONE; // outward normal sign
       return (nrm * (-cam.forward[axis])) > ZERO;   // points toward the camera?
@@ -641,8 +643,10 @@ namespace out {
           const int    m1 = m0 | (1 << d);
           const real_t mx = HALF * (cx[m0] + cx[m1]);
           const real_t my = HALF * (cy[m0] + cy[m1]);
-          // screen-position convention: x on the bottom, y & z on the left edges
-          real_t       score = (d == 0) ? my : -mx;
+          // prefer the foreground (bottom-left) edge: larger pixel-y is lower,
+          // smaller pixel-x is further left. Axis-independent, so it follows the
+          // camera instead of assuming the default diagonal view.
+          real_t       score = my - mx;
           if (frontFace(e1, s1) != frontFace(e2, s2)) {
             score += static_cast<real_t>(1e6); // strongly prefer silhouette edges
           }
