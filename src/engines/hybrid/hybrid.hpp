@@ -74,17 +74,23 @@ namespace ntt {
         timers.start("FieldBoundaries");
         hybrid::FieldBoundaries<M::Dim>(dom, m_metadomain.mesh(), BC::B);
         timers.stop("FieldBoundaries");
+
         // compute N^(0) and V^(0) -> aux::012, aux::3 (deposit-only, no push)
-        timers.start("Moments");
         hybrid::DepositMoments(dom, m_params);
+
+        timers.start("Communications");
         m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
         m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
+        timers.stop("Communications");
         // reflecting wall: fold the wall-ghost deposit tails back (image plasma)
         // + mirror-fill the wall ghosts for the EMF stencils
+        timers.start("FieldBoundaries");
         hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+        timers.stop("FieldBoundaries");
         // smooth N^(0),V^(0) (kills grid-scale shot noise before the field solve)
+        timers.start("MomentFiltering");
         hybrid::MomentsFilter(m_metadomain, dom, m_params);
-        timers.stop("Moments");
+        timers.stop("MomentFiltering");
       }
 
       // EMF calculation #0 — the un-averaged field E^(n).
@@ -175,15 +181,19 @@ namespace ntt {
       timers.start("ParticlePusher");
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ false);
       timers.stop("ParticlePusher");
-      timers.start("Moments");
+      timers.start("Communications");
       m_metadomain.SynchronizeFields(dom,
                                      ::Comm::AUX); // additive remap of deposit tails
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
+      timers.stop("Communications");
       // reflecting wall: image-plasma fold + ghost fill of the predicted moments
+      timers.start("FieldBoundaries");
       hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+      timers.stop("FieldBoundaries");
       // smooth predicted N',V' before EMF #2
+      timers.start("MomentFiltering");
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
-      timers.stop("Moments");
+      timers.stop("MomentFiltering");
 
       // Faraday push #2 (corrector field advance)
       // Using: em::345 [Bf^(n)] + em0::345 [Ee'] (legacy) / aux [N', V'] (subcycled)
@@ -282,24 +292,22 @@ namespace ntt {
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ true);
       timers.stop("ParticlePusher");
 
-      timers.start("Moments");
-      m_metadomain.SynchronizeFields(
-        dom,
-        ::Comm::AUX); // additive remap of deposit tails (pre-migration)
+      timers.start("Communications");
+      m_metadomain.SynchronizeFields(dom, ::Comm::AUX);
       m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
+      timers.stop("Communications");
       // reflecting wall: image-plasma fold + ghost fill of the final moments
+      timers.start("FieldBoundaries");
       hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+      timers.stop("FieldBoundaries");
       // smooth final N^(n+1),V^(n+1) for next step's EMF #0/#1
+      timers.start("MomentFiltering");
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
-      timers.stop("Moments");
+      timers.stop("MomentFiltering");
 
       timers.start("Communications");
       m_metadomain.CommunicateParticles(dom);
       timers.stop("Communications");
-
-      timers.start("ParticleSort");
-      m_metadomain.SortParticles(time, step, m_params, dom);
-      timers.stop("ParticleSort");
 
       /**
        * Finally:   em::012    --

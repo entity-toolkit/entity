@@ -247,15 +247,32 @@ namespace ntt {
   void Engine<S, M>::run() {
     init();
 
+    // engine-specific timer set: PIC (SRPIC/GRPIC) and HYBRID exercise
+    // different sub-steps, so each gets only the timers it actually uses (no
+    // permanently-zero rows, no Moments leaking into PIC).
+    const auto timer_names = []() -> std::vector<std::string> {
+      // shared bookkeeping timers driven from Engine::run (all engines):
+      // Custom (post-step), LoadBalance, and the ParticleSort/Output/Checkpoint
+      // "extras" that printAll() prints separately below the total.
+      if constexpr (S == SimEngine::HYBRID) {
+        return {
+          "FieldSolver",   "ParticlePusher", // field solve + push (fused deposit)
+          "MomentFiltering",                    // binomial smoothing of N,V (+ its comm)
+          "FieldBoundaries", "Communications", "Custom", "LoadBalance",
+          "ParticleSort",  "Output",         "Checkpoint"
+        };
+      } else {
+        return {
+          "FieldSolver",       "CurrentFiltering", "CurrentDeposit",
+          "ParticlePusher",    "FieldBoundaries",  "ParticleBoundaries",
+          "Communications",    "Injector",         "Custom",
+          "LoadBalance",       "ParticleSort",     "Output",
+          "Checkpoint"
+        };
+      }
+    }();
     auto timers = timer::Timers {
-      { "FieldSolver",
-       "CurrentFiltering", "CurrentDeposit",
-       "ParticlePusher", "FieldBoundaries",
-       "ParticleBoundaries", "Communications",
-       "Injector", "Custom",
-       "LoadBalance",
-       "ParticleSort", "Output",
-       "Checkpoint" },
+      timer_names,
       []() {
         Kokkos::fence();
        },
