@@ -38,6 +38,21 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Sort.hpp>
 
+// Entity's Kokkos alias macros (arch/kokkos_aliases.h) define bare words such
+// as `Function`, `Inline`, `Lambda` and `ClassLambda`. These collide with
+// template-parameter and member names used inside the vendor sort headers
+// (rocPRIM, cub, oneDPL) and corrupt their parsing (e.g. rocPRIM's
+// `template<class Tuple, class Function, ...>`). Suspend the aliases across the
+// vendor includes only, then restore them for the rest of the translation unit.
+#pragma push_macro("Function")
+#pragma push_macro("Inline")
+#pragma push_macro("Lambda")
+#pragma push_macro("ClassLambda")
+#undef Function
+#undef Inline
+#undef Lambda
+#undef ClassLambda
+
 #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
   #include <oneapi/dpl/algorithm>
   #include <oneapi/dpl/execution>
@@ -48,6 +63,11 @@
 #if defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
   #include <rocprim/rocprim.hpp>
 #endif
+
+#pragma pop_macro("ClassLambda")
+#pragma pop_macro("Lambda")
+#pragma pop_macro("Inline")
+#pragma pop_macro("Function")
 
 #include <algorithm>
 #include <cstdint>
