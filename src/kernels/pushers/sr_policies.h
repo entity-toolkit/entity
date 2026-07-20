@@ -110,25 +110,23 @@ namespace kernel::sr {
                         ntt::EmissionTypeFlag        emission_type,
                         bool                         atm,
                         F&&                          callback) {
-    auto with_emission = [&](auto next) {
+    auto with_emission = [&]<class PG, class D>(const PG& pg, D& dom, auto next) {
       switch (emission_type) {
         case ntt::EmissionType::SYNCHROTRON:
-          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::SYNCHROTRON>(
-            domain,
+          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::SYNCHROTRON>(
+            dom,
             params,
             pusher_ctx));
           break;
         case ntt::EmissionType::COMPTON:
-          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::COMPTON>(
-            domain,
+          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::COMPTON>(
+            dom,
             params,
             pusher_ctx));
           break;
         case ntt::EmissionType::CUSTOM:
-          if constexpr (::traits::pgen::HasEmissionPolicy<PGen, decltype(domain)>) {
-            next(pgen.EmissionPolicy(pusher_ctx.time,
-                                     pusher_ctx.species_index,
-                                     domain));
+          if constexpr (::traits::pgen::HasEmissionPolicy<PG, D>) {
+            next(pg.EmissionPolicy(pusher_ctx.time, pusher_ctx.species_index, dom));
           } else {
             raise::Error("Custom emission policy flag is set but problem "
                          "generator does not define an emission policy",
@@ -142,22 +140,22 @@ namespace kernel::sr {
       }
     };
 
-    auto with_custom_prtl_upd = [&](auto next) {
-      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>) {
-        next(pgen.CustomParticleUpdate(pusher_ctx.time,
-                                       pusher_ctx.species_index,
-                                       domain));
+    auto with_custom_prtl_upd = [&]<class PG, class D>(const PG& pg,
+                                                       D&        dom,
+                                                       auto      next) {
+      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PG, D>) {
+        next(pg.CustomParticleUpdate(pusher_ctx.time, pusher_ctx.species_index, dom));
       } else {
         next(::traits::custom_prtl_update::NoPolicy_t {});
       }
     };
 
-    auto with_ext_fields = [&](auto next) {
-      if constexpr (::traits::pgen::HasExternalFields<PGen, DOM>) {
-        const auto [apply_extfields, external_fields] = pgen.ExternalFields(
+    auto with_ext_fields = [&]<class PG, class D>(const PG& pg, D& dom, auto next) {
+      if constexpr (::traits::pgen::HasExternalFields<PG, D>) {
+        const auto [apply_extfields, external_fields] = pg.ExternalFields(
           pusher_ctx.time,
           pusher_ctx.species_index,
-          domain);
+          dom);
         if (apply_extfields) {
           next(external_fields);
         } else {
@@ -168,9 +166,9 @@ namespace kernel::sr {
       }
     };
 
-    with_emission([&](auto ep) {
-      with_custom_prtl_upd([&](auto cpu) {
-        with_ext_fields([&](auto ef) {
+    with_emission(pgen, domain, [&](auto ep) {
+      with_custom_prtl_upd(pgen, domain, [&](auto cpu) {
+        with_ext_fields(pgen, domain, [&](auto ef) {
           using E   = decltype(ep);
           using CPU = decltype(cpu);
           using EF  = decltype(ef);
