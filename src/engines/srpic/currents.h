@@ -364,7 +364,7 @@ namespace ntt {
         if (m < 0 or i == nfilter - 1u) {
           // refresh ghosts to distance G (and leave them valid for the
           // downstream field solver after the final pass)
-          metadomain.CommunicateFields(domain, Comm::J);
+          metadomain.CommunicateFields(domain, ::Comm::CUR);
           m = G - 1;
         }
       }

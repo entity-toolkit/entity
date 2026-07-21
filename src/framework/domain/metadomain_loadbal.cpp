@@ -341,7 +341,7 @@ namespace ntt {
     }
 
     /* --- 8. Refill ghost zones from neighbors ---------------------------- */
-    CommunicateFields(local_dom, Comm::E | Comm::B);
+    CommunicateFields(local_dom, Comm::EM);
 
     /* --- 9. Shift particle indices, retag, and migrate ------------------- */
     // Particle indices i_d are in active-cell coordinates: i_d in [0, n_active)
