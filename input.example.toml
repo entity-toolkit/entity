@@ -226,6 +226,10 @@
 
 # Electron-fluid closure for the hybrid Ohm's law
 #   @note: Only read by the `HYBRID` engine (ignored by `SRPIC`/`GRPIC`)
+#   @note: In `team_policy=ON` builds the fused ion push+moment deposit runs
+#          tiled (TeamPolicy + SLM scratch); for it to actually hit the fast
+#          path, keep `particles.spatial_sorting_interval = 1` for ion species
+#          (see the note there)
 [hybrid]
   # Adiabatic index of the massless electron fluid
   #   @type: float [> 0.0]
@@ -508,6 +512,15 @@
   #   @type: uint
   #   @default: 0
   #   @note: Set to 0 to disable spatial sorting
+  #   @note: In `team_policy=ON` builds the tiled deposits (currents, and the
+  #          HYBRID fused push+moment deposit) stay correct for any interval,
+  #          but their per-tile SLM scratch is only *used* by particles that
+  #          are still within `team_policy_drift` (CMake, default 1) cells of
+  #          their sorted tile: with an interval > team_policy_drift + 1 most
+  #          particles take the slower global escape valve and the tiled
+  #          kernels perform like the flat ones. Keep this at 1 for HYBRID ion
+  #          species (each push moves particles), or build with
+  #          `team_policy_drift` = interval.
   spatial_sorting_interval = ""
 
   # @inferred:
