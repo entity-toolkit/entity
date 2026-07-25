@@ -157,6 +157,85 @@ namespace out {
       }
     }
 
+    /* ---- fulldome fisheye (planetarium dome master) --------------------- */
+    // A 2D-only radial ("fisheye") projection of a circular cutout centered on
+    // the domain, drawn into the frame's inscribed circle (corners kept as the
+    // background border -> a valid dome master). The 3D dome is a separate
+    // workstream; warn if asked for here so it does not silently fall back to
+    // the volume camera.
+    {
+      const bool dome_enable = toml::find_or(td, "output", "render", "dome",
+                                             "enable", false);
+      if (dome_enable) {
+        if (global_extent.size() != 2) {
+          raise::Warning("output.render.dome is 2D-only for now; ignoring", HERE);
+        } else {
+          m_dome.enabled  = true;
+          const real_t fov = toml::find_or<real_t>(td, "output", "render", "dome",
+                                                   "fov", static_cast<real_t>(180));
+          m_dome.theta_max = HALF * fov * static_cast<real_t>(constant::PI) /
+                             static_cast<real_t>(180);
+          const auto proj = toml::find_or<std::string>(td, "output", "render",
+                                                       "dome", "projection",
+                                                       "equidistant");
+          if (proj == "gnomonic") {
+            m_dome.law = DomeMap::Gnomonic;
+          } else if (proj == "stereographic") {
+            m_dome.law = DomeMap::Stereographic;
+          } else if (proj == "orthographic") {
+            m_dome.law = DomeMap::Orthographic;
+          } else {
+            if (proj != "equidistant") {
+              raise::Warning("output.render.dome.projection '" + proj +
+                               "' unknown; using 'equidistant'",
+                             HERE);
+            }
+            m_dome.law = DomeMap::Equidistant;
+          }
+          // the gnomonic (flat-tangent) law diverges as the dome half-FOV -> 90
+          // deg (a flat plane never reaches the horizon), so cap it below that.
+          if (m_dome.law == DomeMap::Gnomonic) {
+            const real_t cap = static_cast<real_t>(89.0 * constant::PI / 180.0);
+            if (m_dome.theta_max >= cap) {
+              raise::Warning("output.render.dome: 'gnomonic' needs fov < 180 deg "
+                             "(a flat plane cannot reach the dome horizon); "
+                             "capping the half-FOV at 89 deg",
+                             HERE);
+              m_dome.theta_max = cap;
+            }
+          }
+          // default center = domain center; default radius = the largest disk
+          // that fits inside the (rectangular) domain (half the shorter side).
+          const real_t Lx = global_extent[0].second - global_extent[0].first;
+          const real_t Ly = global_extent[1].second - global_extent[1].first;
+          m_dome.cx = HALF * (global_extent[0].first + global_extent[0].second);
+          m_dome.cy = HALF * (global_extent[1].first + global_extent[1].second);
+          const auto ctr = toml::find_or<std::vector<real_t>>(
+            td, "output", "render", "dome", "center", std::vector<real_t> {});
+          if (ctr.size() == 2) {
+            m_dome.cx = ctr[0];
+            m_dome.cy = ctr[1];
+          } else if (not ctr.empty()) {
+            raise::Warning("output.render.dome.center must have 2 entries "
+                           "[x, y]; using the domain center",
+                           HERE);
+          }
+          const real_t rdef = HALF * std::min(Lx, Ly);
+          m_dome.R = toml::find_or<real_t>(td, "output", "render", "dome",
+                                          "radius", rdef);
+          if (m_dome.R <= ZERO) {
+            m_dome.R = rdef;
+          }
+          if (m_width != m_height) {
+            raise::Warning("output.render.dome: width != height; the fisheye "
+                           "disk is centered on the shorter side and the frame "
+                           "is not a square dome master",
+                           HERE);
+          }
+        }
+      }
+    }
+
     {
       const auto al = toml::find_or<std::vector<std::string>>(
         td, "output", "render", "axis_labels", std::vector<std::string> {});
@@ -539,9 +618,12 @@ namespace out {
       // The polar (curvilinear) overlay annotates inside the data region (the
       // disk is centered with background around it), so it needs no margins.
       const bool polar = (m_global_extent.size() == 2) and m_slice_polar;
+      // a fisheye dome master must stay exactly W x H (its inscribed circle is
+      // the dome), so it takes no axes margins and no outside colorbar strip.
+      const bool dome = m_dome_active;
       int        ml = 0, mb = 0;
-      out::axesMargins(m_axes and not polar, m_height, ml, mb);
-      const int strip = (m_colorbar and m_colorbar_outside)
+      out::axesMargins(m_axes and not polar and not dome, m_height, ml, mb);
+      const int strip = (m_colorbar and m_colorbar_outside and not dome)
                           ? colorbarBlockWidth(m_height)
                           : 0;
       const int CW = ml + m_width + strip;
@@ -551,7 +633,8 @@ namespace out {
       // that pads the window with background): its top & right edges in
       // data-region pixels. The axes/spine clamp to it and the time label sits
       // in the pad above it, so neither includes the empty aspect padding.
-      const bool cart2d     = (m_global_extent.size() == 2) and not polar;
+      const bool cart2d     = (m_global_extent.size() == 2) and not polar and
+                          not dome;
       int        dbox_top   = 0;         // data box top edge (px from data top)
       int        dbox_bot   = m_height;  // data box bottom edge (px)
       int        dbox_right = m_width;   // data box right edge (px from data left)
@@ -609,7 +692,7 @@ namespace out {
             static_cast<std::size_t>(m_width) * 4,
             &canvas[(static_cast<std::size_t>(y) * CW + ml) * 4]);
         }
-        if (m_axes) {
+        if (m_axes and not dome) {
           if (m_global_extent.size() == 3) {
             out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
                             m_camera_dev, m_region, m_axis_labels,

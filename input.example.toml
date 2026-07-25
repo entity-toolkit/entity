@@ -854,6 +854,52 @@
       #   @default: the global box diagonal (the whole box fits from any angle)
       ortho_height = ""
 
+    # Fulldome fisheye ("planetarium dome master"). 2D only; a circular image is
+    # centered in the frame's inscribed circle with the corners left as the
+    # background (the dome master's black border). Set `width == height` (e.g.
+    # 4096) for a square master. When enabled, the axes and the outside colorbar
+    # strip are suppressed so the PNG stays exactly width x height. Seamless
+    # across MPI domains (the pixel->world map is a shared, deterministic function
+    # and the tiles stay disjoint). Ignored (with a warning) for 3D.
+    #   @note: CARTESIAN -- the flat plane is warped radially into the disk; use
+    #          `fov`/`radius`/`center`/`projection` below.
+    #   @note: SPHERICAL / GR Kerr-Schild -- the meridional slice is ALREADY a
+    #          disk, so dome mode only mirrors it to a full disk (see `mirror`
+    #          above; keep it true) and fits it to the inscribed circle. The
+    #          `fov`/`radius`/`center`/`projection` keys are ignored (the native
+    #          (X, Z) meridional map is used, with image radius proportional to
+    #          the physical radius r, r=0 at the disk center).
+    [output.render.dome]
+      # Build the fisheye dome master instead of the plain slice
+      #   @type: bool
+      #   @default: false
+      enable = ""
+      # (Cartesian only) Full dome field of view in degrees (image radius maps
+      # linearly to the dome zenith angle: the rim is at fov/2)
+      #   @type: float [> 0.0, <= 180.0]
+      #   @default: 180.0   # a full hemisphere
+      fov = ""
+      # (Cartesian only) World radius of the circular cutout mapped onto the dome
+      #   @type: float [> 0.0]
+      #   @default: half the shorter domain side (the largest centered disk that
+      #             fits inside the box)
+      radius = ""
+      # (Cartesian only) World-space center of the cutout
+      #   @type: array<float> [size 2]
+      #   @default: the domain center
+      center = ""
+      # (Cartesian only) How the dome zenith angle maps to a world radius on the
+      # flat slice
+      #   @type: string
+      #   @enum: "equidistant"  (r proportional to angle; the fulldome image
+      #            standard -- a straight radial scaling of the cutout)
+      #          "gnomonic"     (r ~ tan(angle); the slice as a flat "ceiling"
+      #            tangent to the dome -- straight sim lines stay straight)
+      #          "stereographic" (r ~ tan(angle/2); conformal, preserves shapes)
+      #          "orthographic" (r ~ sin(angle); the slice as seen face-on)
+      #   @default: "equidistant"
+      projection = ""
+
     # One scene per scalar field -> one PNG stream. Repeat the table for each.
     [[output.render.scenes]]
       # Scalar field to render (a volume render needs a scalar, so vectors are

@@ -169,6 +169,27 @@ namespace out {
   };
 
   /**
+   * @brief Fulldome fisheye ("planetarium dome master") projection parameters.
+   * @note When `enabled`, the 2D slice rasterizer ignores the linear world
+   * window and instead maps each pixel radially: the frame's inscribed circle is
+   * the dome, a pixel at normalized image radius rho in [0,1] is the dome zenith
+   * angle theta = rho * theta_max (azimuthal-equidistant image law -- the
+   * fulldome standard), and `law` picks how theta maps to a world radius r in a
+   * disk of radius `R` centered at (cx, cy). Pixels outside the inscribed circle
+   * are left transparent, so the corners are the dome master's black border.
+   * Cartesian 2D only (see Metadomain::Render); a metric-agnostic POD so the
+   * (templated) Render can copy it by value into the device kernel.
+   */
+  struct DomeMap {
+    enum Law { Equidistant = 0, Gnomonic = 1, Stereographic = 2, Orthographic = 3 };
+    bool   enabled { false };
+    int    law { Equidistant };
+    real_t theta_max { static_cast<real_t>(1.5707963267948966) }; // dome half-FOV (rad)
+    real_t cx { ZERO }, cy { ZERO }; // world center of the cutout
+    real_t R { ONE };                // world radius of the cutout
+  };
+
+  /**
    * @brief A sparse screen-space sub-image: the bounding box of one domain's
    * projected footprint plus its premultiplied RGBA pixels.
    * @note Each domain covers only a small part of the screen, so compositing
@@ -370,6 +391,20 @@ namespace out {
       return m_fieldlines;
     }
 
+    // Fulldome fisheye projection (planetarium dome master). `dome()` carries the
+    // parsed config + resolved center/radius/FOV; `enabled` there reflects the
+    // toml + a 2D run. The templated Render only activates it for Cartesian, so
+    // it reports the per-run truth back via setDomeActive(), which the (metric-
+    // agnostic) compositeAndWrite reads to emit a clean square frame.
+    [[nodiscard]]
+    auto dome() const -> const DomeMap& {
+      return m_dome;
+    }
+
+    void setDomeActive(bool active) {
+      m_dome_active = active;
+    }
+
   private:
     bool m_enabled { false };
 
@@ -430,6 +465,11 @@ namespace out {
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;
     FieldLineConfig    m_fieldlines;
+
+    // fulldome fisheye config (parsed in init); m_dome_active is set per-run by
+    // the templated Render (true only for a 2D Cartesian dome).
+    DomeMap m_dome;
+    bool    m_dome_active { false };
 
     tools::Tracker m_tracker;
     path_t         m_root;

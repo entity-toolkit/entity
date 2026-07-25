@@ -56,6 +56,12 @@ namespace kernel {
     const int    bx0, by0, bw; // screen-bbox offset and width (output stride)
     const bool   mirror;       // spherical: paint the X<0 reflected half too
 
+    // fulldome fisheye ("dome master"): when enabled, a pixel maps radially
+    // (azimuthal-equidistant image law) to a world point in a disk of radius
+    // `R` centered at (cx, cy); pixels outside the inscribed circle stay
+    // transparent. Cartesian only (host disables it for spherical).
+    const out::DomeMap dome;
+
     // optional physical render-region clip: a pixel is drawn only if its
     // coordinate is inside [rx1lo,rx1hi] x [rx2lo,rx2hi] (x1,x2 == x,y for
     // Cartesian; r,theta for spherical). Off => the whole domain is drawn.
@@ -118,6 +124,7 @@ namespace kernel {
                        int                            by0_,
                        int                            bw_,
                        bool                           mirror_,
+                       const out::DomeMap&            dome_,
                        real_t                         rx1lo_,
                        real_t                         rx1hi_,
                        real_t                         rx2lo_,
@@ -149,6 +156,7 @@ namespace kernel {
       , by0 { by0_ }
       , bw { bw_ }
       , mirror { mirror_ }
+      , dome { dome_ }
       , rx1lo { rx1lo_ }
       , rx1hi { rx1hi_ }
       , rx2lo { rx2lo_ }
@@ -327,18 +335,59 @@ namespace kernel {
       image(pix, 2) = ZERO;
       image(pix, 3) = ZERO;
 
-      // pixel center -> slice-plane world coords (v flipped so +v is up)
-      const real_t u = umin + (static_cast<real_t>(gpx) + HALF) /
-                                static_cast<real_t>(W) * (umax - umin);
-      const real_t v = vmax - (static_cast<real_t>(gpy) + HALF) /
-                                static_cast<real_t>(H) * (vmax - vmin);
+      // pixel center -> slice-plane world coords (v flipped so +v is up).
+      // Cartesian dome mode maps the pixel radially (fisheye) instead, leaving
+      // the corners (outside the inscribed circle) transparent. Curvilinear
+      // slices are already a meridional disk, so they keep the linear window
+      // even in dome mode -> the fisheye is compile-time gated to Cartesian.
+      real_t u, v;
+      bool   dome_fisheye = false;
+      if constexpr (M::CoordType == Coord::Cartesian) {
+        dome_fisheye = dome.enabled;
+      }
+      if (dome_fisheye) {
+        const real_t cxp = HALF * static_cast<real_t>(W);
+        const real_t cyp = HALF * static_cast<real_t>(H);
+        const real_t Rpx = HALF * static_cast<real_t>((W < H) ? W : H);
+        const real_t dxp = (static_cast<real_t>(gpx) + HALF) - cxp;
+        const real_t dyp = cyp - (static_cast<real_t>(gpy) + HALF); // +y up
+        const real_t rho = math::sqrt(dxp * dxp + dyp * dyp) / Rpx;
+        if (rho > ONE) {
+          return; // outside the inscribed dome circle -> transparent border
+        }
+        const real_t phi   = math::atan2(dyp, dxp);
+        const real_t theta = rho * dome.theta_max; // dome zenith angle
+        // normalized world radius fr = r / R for the chosen plane<->dome law
+        real_t fr;
+        if (dome.law == out::DomeMap::Gnomonic) {
+          const real_t tm = math::tan(dome.theta_max);
+          fr = (tm > ZERO) ? (math::tan(theta) / tm) : rho;
+        } else if (dome.law == out::DomeMap::Stereographic) {
+          const real_t tm = math::tan(HALF * dome.theta_max);
+          fr = (tm > ZERO) ? (math::tan(HALF * theta) / tm) : rho;
+        } else if (dome.law == out::DomeMap::Orthographic) {
+          const real_t sm = math::sin(dome.theta_max);
+          fr = (sm > ZERO) ? (math::sin(theta) / sm) : rho;
+        } else { // Equidistant (fulldome standard): r = R * theta/theta_max
+          fr = rho;
+        }
+        const real_t r = dome.R * fr;
+        u = dome.cx + r * math::cos(phi);
+        v = dome.cy + r * math::sin(phi);
+      } else {
+        u = umin + (static_cast<real_t>(gpx) + HALF) /
+                     static_cast<real_t>(W) * (umax - umin);
+        v = vmax - (static_cast<real_t>(gpy) + HALF) /
+                     static_cast<real_t>(H) * (vmax - vmin);
+      }
 
       // world -> continuous local code coords, with an optional physical
       // render-region clip (so a crop hides domain data outside the region, not
-      // just reframes the view)
+      // just reframes the view). The dome's own circular cutout replaces the
+      // rectangular clip, so it is skipped in dome mode.
       real_t cc1, cc2;
       if constexpr (M::CoordType == Coord::Cartesian) {
-        if (region_clip and
+        if (region_clip and not dome.enabled and
             (u < rx1lo or u > rx1hi or v < rx2lo or v > rx2hi)) {
           return;
         }

@@ -912,6 +912,18 @@ namespace ntt {
       const int  H      = g_renderer.height();
       const bool mirror = g_renderer.mirror();
 
+      // fulldome fisheye ("dome master"). Cartesian slices are a flat plane, so
+      // the kernel warps each pixel radially (fisheye). Curvilinear slices
+      // (spherical / GR Kerr-Schild) are ALREADY a meridional disk, so dome mode
+      // there is only a framing change: mirror to a full disk (the `mirror`
+      // default) and fit that disk to the frame's inscribed circle (the pad skip
+      // below), while the kernel keeps its native (X, Z) meridional map. Reported
+      // back so the (metric-agnostic) compositor keeps the frame a clean square.
+      // All ranks take the same branch (M is fixed per run), so it stays seamless
+      // across tiles.
+      const out::DomeMap dome = g_renderer.dome();
+      g_renderer.setDomeActive(dome.enabled);
+
       // global slice-plane world window (shared by all ranks -> seamless),
       // taken from the optional render region (== full extent when uncropped).
       // gext (the full extent) is kept for the field-line coarse grid below.
@@ -973,15 +985,19 @@ namespace ntt {
       }
       // spherical slices get a background border so the round outline and its
       // R/theta labels are not clipped at the frame edges (Cartesian fills the
-      // frame and draws its ticks in dedicated margins, so it needs none).
+      // frame and draws its ticks in dedicated margins, so it needs none). A dome
+      // master skips it: the disk must reach the frame's inscribed circle (which
+      // the projector maps to the dome horizon), and it draws no axes.
       if constexpr (M::CoordType != Coord::type::Cartesian) {
-        const real_t pad = static_cast<real_t>(1.12);
-        const real_t cu = HALF * (umin + umax), hu = HALF * (umax - umin) * pad;
-        const real_t cv = HALF * (vmin + vmax), hv = HALF * (vmax - vmin) * pad;
-        umin = cu - hu;
-        umax = cu + hu;
-        vmin = cv - hv;
-        vmax = cv + hv;
+        if (not dome.enabled) {
+          const real_t pad = static_cast<real_t>(1.12);
+          const real_t cu = HALF * (umin + umax), hu = HALF * (umax - umin) * pad;
+          const real_t cv = HALF * (vmin + vmax), hv = HALF * (vmax - vmin) * pad;
+          umin = cu - hu;
+          umax = cu + hu;
+          vmin = cv - hv;
+          vmax = cv + hv;
+        }
       }
 
       // hand the world window + axis names to the (host) axes overlay. Default
@@ -1015,8 +1031,40 @@ namespace ntt {
       // boundary; an arc for spherical, a box for Cartesian)
       const auto   le    = local_domain->mesh.extent();
       auto         toPix = [&](real_t u, real_t v, real_t& px, real_t& py) {
-        px = (u - umin) / (umax - umin) * static_cast<real_t>(W) - HALF;
-        py = (vmax - v) / (vmax - vmin) * static_cast<real_t>(H) - HALF;
+        if (dome.enabled and M::CoordType == Coord::type::Cartesian) {
+          // forward fisheye projection (inverse of the kernel's radial map),
+          // used to bound this domain's footprint on the dome disk. Cartesian
+          // only -- curvilinear dome uses the linear (X, Z) map below, matching
+          // the kernel's native meridional projection.
+          const real_t cxp = HALF * static_cast<real_t>(W);
+          const real_t cyp = HALF * static_cast<real_t>(H);
+          const real_t Rpx = HALF * static_cast<real_t>(std::min(W, H));
+          const real_t dx  = u - dome.cx, dy = v - dome.cy;
+          const real_t rw  = std::sqrt(dx * dx + dy * dy);
+          real_t       fr  = (dome.R > ZERO) ? (rw / dome.R) : ZERO;
+          if (fr > ONE) {
+            fr = ONE; // clamp onto the rim (conservative for the bbox)
+          }
+          real_t theta;
+          if (dome.law == out::DomeMap::Gnomonic) {
+            theta = std::atan(fr * std::tan(dome.theta_max));
+          } else if (dome.law == out::DomeMap::Stereographic) {
+            theta = static_cast<real_t>(2) *
+                    std::atan(fr * std::tan(HALF * dome.theta_max));
+          } else if (dome.law == out::DomeMap::Orthographic) {
+            theta = std::asin(fr * std::sin(dome.theta_max));
+          } else {
+            theta = fr * dome.theta_max;
+          }
+          const real_t rho = (dome.theta_max > ZERO) ? (theta / dome.theta_max)
+                                                     : fr;
+          const real_t phi = std::atan2(dy, dx);
+          px = cxp + rho * Rpx * std::cos(phi) - HALF;
+          py = cyp - rho * Rpx * std::sin(phi) - HALF;
+        } else {
+          px = (u - umin) / (umax - umin) * static_cast<real_t>(W) - HALF;
+          py = (vmax - v) / (vmax - vmin) * static_cast<real_t>(H) - HALF;
+        }
       };
       real_t minx = static_cast<real_t>(1e30), miny = static_cast<real_t>(1e30);
       real_t maxx = static_cast<real_t>(-1e30), maxy = static_cast<real_t>(-1e30);
@@ -1029,10 +1077,28 @@ namespace ntt {
         maxy = std::max(maxy, py);
       };
       if constexpr (M::CoordType == Coord::type::Cartesian) {
-        acc(le[0].first, le[1].first);
-        acc(le[0].second, le[1].first);
-        acc(le[0].first, le[1].second);
-        acc(le[0].second, le[1].second);
+        if (dome.enabled) {
+          // the fisheye map is nonlinear (and a domain straddling the center
+          // wraps around the image center), so bound the footprint by sampling
+          // the whole domain-rectangle boundary, not just the 4 corners
+          const int    NB = 65;
+          const real_t x0 = le[0].first, x1 = le[0].second;
+          const real_t y0 = le[1].first, y1 = le[1].second;
+          for (int k = 0; k < NB; ++k) {
+            const real_t t  = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
+            const real_t xx = x0 + (x1 - x0) * t;
+            const real_t yy = y0 + (y1 - y0) * t;
+            acc(xx, y0);
+            acc(xx, y1);
+            acc(x0, yy);
+            acc(x1, yy);
+          }
+        } else {
+          acc(le[0].first, le[1].first);
+          acc(le[0].second, le[1].first);
+          acc(le[0].first, le[1].second);
+          acc(le[0].second, le[1].second);
+        }
       } else {
         const int    NB = 33;
         const real_t r0 = le[0].first, r1 = le[0].second;
@@ -1213,6 +1279,7 @@ namespace ntt {
                                           by0,
                                           bw,
                                           mirror,
+                                          dome,
                                           x1lo,
                                           x1hi,
                                           x2lo,
