@@ -73,6 +73,33 @@ namespace out {
     m_mode = mode;
   }
 
+  void Writer::setLocalLayout(const std::vector<ncells_t>& loc_corner,
+                              const std::vector<ncells_t>& loc_shape) {
+    raise::ErrorIf(loc_corner.size() != m_flds_l_corner.size() or
+                     loc_shape.size() != m_flds_l_shape.size(),
+                   "setLocalLayout dim mismatch with the original layout",
+                   HERE);
+    m_flds_l_corner = loc_corner;
+    m_flds_l_shape  = loc_shape;
+    m_flds_l_corner_dwn.clear();
+    m_flds_l_shape_dwn.clear();
+    m_flds_l_first.clear();
+    for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
+      const double d = static_cast<double>(m_dwn[i]);
+      const double l = static_cast<double>(loc_corner[i]);
+      const double n = static_cast<double>(loc_shape[i]);
+      const double f = math::ceil(l / d) * d - l;
+      m_flds_l_corner_dwn.push_back(static_cast<ncells_t>(math::ceil(l / d)));
+      m_flds_l_first.push_back(static_cast<ncells_t>(f));
+      m_flds_l_shape_dwn.push_back(static_cast<ncells_t>(math::ceil((n - f) / d)));
+    }
+    if constexpr (not std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
+                                   Kokkos::LayoutRight>::value) {
+      std::reverse(m_flds_l_corner_dwn.begin(), m_flds_l_corner_dwn.end());
+      std::reverse(m_flds_l_shape_dwn.begin(), m_flds_l_shape_dwn.end());
+    }
+  }
+
   void Writer::defineMeshLayout(
     const std::vector<ncells_t>&                 glob_shape,
     const std::vector<ncells_t>&                 loc_corner,
@@ -111,25 +138,24 @@ namespace out {
 
     for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
       // cell-centers
+      // ConstantDims is intentionally NOT set: per-rank slab shape can change
+      // when dynamic load balancing shifts domain boundaries between writes.
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1),
                                   { m_flds_g_shape_dwn[i] },
                                   { m_flds_l_corner_dwn[i] },
-                                  { m_flds_l_shape_dwn[i] },
-                                  adios2::ConstantDims);
+                                  { m_flds_l_shape_dwn[i] });
       // cell-edges
       const auto is_last = (m_flds_l_corner[i] + m_flds_l_shape[i] ==
                             m_flds_g_shape[i]);
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1) + "e",
                                   { m_flds_g_shape_dwn[i] + 1 },
                                   { m_flds_l_corner_dwn[i] },
-                                  { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) },
-                                  adios2::ConstantDims);
+                                  { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) });
       m_io.DefineVariable<std::size_t>(
         "N" + std::to_string(i + 1) + "l",
         { static_cast<unsigned long>(2 * domain_idx.second) },
         { static_cast<unsigned long>(2 * domain_idx.first) },
-        { static_cast<unsigned long>(2) },
-        adios2::ConstantDims);
+        { static_cast<unsigned long>(2) });
     }
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
@@ -154,21 +180,21 @@ namespace out {
       m_flds_writers.emplace_back(S, fld);
     }
     for (const auto& fld : m_flds_writers) {
+      // ConstantDims is intentionally NOT set: per-rank slab shape can change
+      // when dynamic load balancing shifts domain boundaries between writes.
       if (fld.comp.empty()) {
         // scalar
         m_io.DefineVariable<real_t>(fld.name(),
                                     m_flds_g_shape_dwn,
                                     m_flds_l_corner_dwn,
-                                    m_flds_l_shape_dwn,
-                                    adios2::ConstantDims);
+                                    m_flds_l_shape_dwn);
       } else {
         // vector or tensor
         for (auto i { 0u }; i < fld.comp.size(); ++i) {
           m_io.DefineVariable<real_t>(fld.name(i),
                                       m_flds_g_shape_dwn,
                                       m_flds_l_corner_dwn,
-                                      m_flds_l_shape_dwn,
-                                      adios2::ConstantDims);
+                                      m_flds_l_shape_dwn);
         }
       }
     }
@@ -198,9 +224,14 @@ namespace out {
                   std::size_t               comp,
                   std::vector<unsigned int> dwn,
                   std::vector<ncells_t>     first_cell,
-                  bool                      ghosts) {
+                  bool                      ghosts,
+                  const adios2::Dims&       loc_corner_dwn,
+                  const adios2::Dims&       loc_shape_dwn) {
     // when dwn != 1 in any direction, it is assumed that ghosts == false
-    auto         var      = io.InquireVariable<real_t>(varname);
+    auto var = io.InquireVariable<real_t>(varname);
+    // Refresh the per-step (start, count) so the slab tracks any rebalance
+    // that happened since the variable was declared.
+    var.SetSelection(adios2::Box<adios2::Dims>(loc_corner_dwn, loc_shape_dwn));
     const auto   gh_zones = ghosts ? 0 : N_GHOSTS;
     ndarray_t<D> output_field {};
 
@@ -332,7 +363,9 @@ namespace out {
                        addresses[i],
                        m_dwn,
                        m_flds_l_first,
-                       m_flds_ghosts);
+                       m_flds_ghosts,
+                       m_flds_l_corner_dwn,
+                       m_flds_l_shape_dwn);
     }
   }
 
@@ -410,8 +443,28 @@ namespace out {
                          const array_t<real_t*>&         xc,
                          const array_t<real_t*>&         xe,
                          const std::vector<std::size_t>& loc_off_sz) {
+    // Per-step (start, count) for the per-rank slab; tracks the (possibly
+    // rebalanced) layout cached by setLocalLayout().
     auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
     auto vare = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1) + "e");
+    // m_flds_l_corner_dwn / m_flds_l_shape_dwn are reversed for non-LayoutRight
+    // (see defineMeshLayout / setLocalLayout); m_flds_l_corner / m_flds_l_shape
+    // / m_flds_g_shape are not. Map the dim-order index to the dwn-array index.
+    constexpr bool layout_right = std::is_same<
+      typename ndfield_t<Dim::_3D, 6>::array_layout,
+      Kokkos::LayoutRight>::value;
+    const auto i_dwn = layout_right
+                         ? static_cast<std::size_t>(dim)
+                         : (m_flds_g_shape.size() - 1u -
+                            static_cast<std::size_t>(dim));
+    const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
+                          m_flds_g_shape[dim]);
+    varc.SetSelection(adios2::Box<adios2::Dims>(
+      { m_flds_l_corner_dwn[i_dwn] },
+      { m_flds_l_shape_dwn[i_dwn] }));
+    vare.SetSelection(adios2::Box<adios2::Dims>(
+      { m_flds_l_corner_dwn[i_dwn] },
+      { m_flds_l_shape_dwn[i_dwn] + (is_last ? 1ul : 0ul) }));
     auto xc_h = Kokkos::create_mirror_view(xc);
     auto xe_h = Kokkos::create_mirror_view(xe);
     Kokkos::deep_copy(xc_h, xc);
@@ -506,7 +559,9 @@ namespace out {
                                  std::size_t,                                  \
                                  std::vector<unsigned int>,                    \
                                  std::vector<ncells_t>,                        \
-                                 bool);
+                                 bool,                                         \
+                                 const adios2::Dims&,                          \
+                                 const adios2::Dims&);
   WRITE_FIELD(Dim::_1D, 3)
   WRITE_FIELD(Dim::_1D, 6)
   WRITE_FIELD(Dim::_2D, 3)

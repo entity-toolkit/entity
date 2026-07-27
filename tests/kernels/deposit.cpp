@@ -142,15 +142,21 @@ void testDeposit(const std::vector<ncells_t>&         res,
 
   auto J_scat = Kokkos::Experimental::create_scatter_view(J);
 
+  // The deposit kernel now takes a `ParticleArrays` SoA struct instead of
+  // the individual per-component arrays. Pack the per-test arrays into one;
+  // payload (pld_*) members stay default (unused here).
+  ParticleArrays pa;
+  pa.i1 = i1, pa.i2 = i2, pa.i3 = i3;
+  pa.i1_prev = i1_prev, pa.i2_prev = i2_prev, pa.i3_prev = i3_prev;
+  pa.dx1 = dx1, pa.dx2 = dx2, pa.dx3 = dx3;
+  pa.dx1_prev = dx1_prev, pa.dx2_prev = dx2_prev, pa.dx3_prev = dx3_prev;
+  pa.ux1 = ux1, pa.ux2 = ux2, pa.ux3 = ux3;
+  pa.phi = phi, pa.weight = weight, pa.tag = tag;
+
   // clang-format off
   Kokkos::parallel_for("CurrentsDeposit", 10,
                        kernel::DepositCurrents_kernel<S, M, O>(J_scat,
-                                                            i1, i2, i3,
-                                                            i1_prev, i2_prev, i3_prev,
-                                                            dx1, dx2, dx3,
-                                                            dx1_prev, dx2_prev, dx3_prev,
-                                                            ux1, ux2, ux3,
-                                                            phi, weight, tag,
+                                                            pa,
                                                             metric, charge, inv_dt));
   // clang-format on
 

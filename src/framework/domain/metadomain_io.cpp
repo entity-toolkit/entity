@@ -409,6 +409,9 @@ namespace ntt {
           }
         }
       }
+      // Refresh the writer's cached per-rank slab so that field/mesh writes
+      // pick up the (possibly rebalanced) current local layout.
+      g_writer.setLocalLayout(off_ncells_with_ghosts, loc_shape_with_ghosts);
       for (auto dim { 0u }; dim < M::Dim; ++dim) {
         const auto l_size   = local_domain->mesh.n_active()[dim];
         const auto l_offset = local_domain->offset_ncells()[dim];

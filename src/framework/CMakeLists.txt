@@ -19,6 +19,7 @@
 # * domain/metadomain_stats.cpp
 # * domain/metadomain_io.cpp
 # * domain/metadomain_reshape.cpp
+# * domain/metadomain_loadbal.cpp
 # * containers/particles.cpp
 # * containers/particles_comm.cpp
 # * containers/particles_io.cpp
@@ -59,6 +60,7 @@ set(SOURCES
     ${SRC_DIR}/domain/metadomain_sort.cpp
     ${SRC_DIR}/domain/metadomain_stats.cpp
     ${SRC_DIR}/domain/metadomain_reshape.cpp
+    ${SRC_DIR}/domain/metadomain_loadbal.cpp
     ${SRC_DIR}/containers/particles.cpp
     ${SRC_DIR}/containers/particles_sort.cpp
     ${SRC_DIR}/containers/fields.cpp)

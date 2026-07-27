@@ -416,7 +416,8 @@ namespace ntt {
          */
         if (deposit_enabled) {
           timers.start("CurrentDeposit");
-          Kokkos::deep_copy(dom.fields.cur0, ZERO);
+          // `cur0` is zeroed inside grpic::CurrentsDeposit (matching SRPIC),
+          // so no pre-zero is needed here.
           grpic::CurrentsDeposit(dom, this->engineParams());
           timers.stop("CurrentDeposit");
 
@@ -612,9 +613,9 @@ namespace ntt {
         timers.stop("FieldBoundaries");
       }
 
-      timers.start("ParticleSort");
-      m_metadomain.SortParticles(time, step, m_params, dom);
-      timers.stop("ParticleSort");
+      // NOTE: particle sorting is intentionally NOT done here. It runs once per
+      // step in the engine loop (Engine::run) after CustomPostStep and
+      // LoadBalance — see the SRPIC engine for the rationale.
 
       /**
        * Finally: em0::B   at n-1/2

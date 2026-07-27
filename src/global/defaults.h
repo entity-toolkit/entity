@@ -22,6 +22,8 @@ namespace ntt::defaults {
 
   const unsigned short current_filters = 0;
 
+  const std::size_t team_policy_team_size = 0;
+
   const std::string em_pusher      = "Boris";
   const std::string ph_pusher      = "Photon";
   const timestep_t  clear_interval = 100;
