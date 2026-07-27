@@ -112,7 +112,7 @@ namespace sort {
       }
     }
 
-    Inline auto operator()(prtldx_t p) const {
+    Inline auto operator()(prtlidx_t p) const {
       if (tag(p) != ntt::ParticleTag::alive) {
         tile_indices(p) = total_tiles + 1u;
       } else {
