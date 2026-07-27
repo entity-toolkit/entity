@@ -87,41 +87,12 @@ namespace ntt {
           dt,     layout,  species.npart()
         };
 
-      const auto scratch = Kokkos::PerTeam(
-        decltype(deposit_kernel)::scratch_bytes());
-
-      // Team (work-group) size. The default (team_size_req == 0) leaves
-      // Kokkos::AUTO, which sizes the team from the backend occupancy
-      // heuristic. A positive `algorithms.deposit.team_policy_team_size`
-      // overrides it, clamped to the scratch/backend-feasible maximum so an
-      // over-large request cannot abort the launch (Kokkos errors when
-      // team_size > team_size_max). No portable subgroup rounding is applied;
-      // pick a multiple of the device subgroup width (printed per arch by
-      // ideal_tile_size.py) for the best occupancy.
-      Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
-                                  Kokkos::AUTO);
-      policy.set_scratch_size(0, scratch);
-      if (team_size_req > 0) {
-        const int ts_max = policy.team_size_max(deposit_kernel,
-                                                Kokkos::ParallelForTag {});
-        int       ts     = team_size_req;
-        if (ts > ts_max) {
-          raise::Warning(
-            fmt::format("algorithms.deposit.team_policy_team_size = %d exceeds "
-                        "the tiled-deposit maximum %d on this backend; clamping "
-                        "to %d",
-                        team_size_req,
-                        ts_max,
-                        ts_max),
-            HERE);
-          ts = ts_max;
-        }
-        policy = Kokkos::TeamPolicy<>(static_cast<int>(layout.ntiles_total), ts);
-        policy.set_scratch_size(0, scratch);
-        logger::Checkpoint(
-          fmt::format("Tiled deposit: explicit team size %d", ts),
-          HERE);
-      }
+      // Policy boilerplate (scratch sizing, optional explicit team size with
+      // clamping) is shared by all tiled scatters — see MakeTiledPolicy in
+      // kernels/tiled_scatter.hpp.
+      const auto policy = kernel::MakeTiledPolicy(deposit_kernel,
+                                                  layout.ntiles_total,
+                                                  team_size_req);
       Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
 
       // Particles appended since the last sort (injection / MPI receive on a
