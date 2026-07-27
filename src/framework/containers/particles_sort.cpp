@@ -205,6 +205,35 @@ namespace ntt {
     m_is_sorted = true;
   }
 
+  namespace {
+    // Grow-only reserve for a persistent sort-scratch View: (re)allocate to
+    // `n` (plus 1/8 headroom) only when the current capacity is smaller, so a
+    // slowly growing npart triggers a handful of reallocations over a run
+    // instead of one device alloc/free per sort. The old buffer is released
+    // before the new one is allocated, keeping the transient peak at a single
+    // buffer during the (rare) grow. Callers always operate on the leading
+    // `[0, n)` prefix, so the extra headroom slots are never read.
+    template <typename V>
+    inline void reserve_scratch_1d(V& v, const char* label, npart_t n) {
+      if (static_cast<npart_t>(v.extent(0)) < n) {
+        v = V {};
+        v = V { label, n + n / 8u };
+      }
+    }
+
+    template <typename V>
+    inline void reserve_scratch_2d(V&          v,
+                                   const char* label,
+                                   npart_t     n,
+                                   npart_t     ncols) {
+      if (static_cast<npart_t>(v.extent(0)) < n or
+          static_cast<npart_t>(v.extent(1)) != ncols) {
+        v = V {};
+        v = V { label, n + n / 8u, ncols };
+      }
+    }
+  } // namespace
+
 #if defined(TEAM_POLICY)
   template <Dimension D, Coord::type C>
   void Particles<D, C>::compute_tile_offsets(
@@ -296,7 +325,18 @@ namespace ntt {
     }
 
     // 2. Compute per-particle tile key (with min(i, i_prev)).
+#if defined(TEAM_POLICY_USE_VENDOR_SORT) &&                                    \
+  defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+    // oneDPL sorts the keys in place, so reuse a persistent, grow-only keys
+    // buffer instead of allocating a fresh one every sort. `tile_indices`
+    // aliases the (possibly over-capacity) persistent buffer; downstream
+    // consumers bound their work by the explicit `npart_local`, never by
+    // `tile_indices.extent(0)`.
+    reserve_scratch_1d(m_sort_keys, "tile_indices", npart_local);
+    array_t<ncells_t*> tile_indices = m_sort_keys;
+#else
     array_t<ncells_t*> tile_indices { "tile_indices", npart_local };
+#endif
     Kokkos::parallel_for(
       "FillTileIndices",
       rangeActiveParticles(),
@@ -321,31 +361,43 @@ namespace ntt {
   #if defined(TEAM_POLICY_USE_VENDOR_SORT)
     // Vendor path: produce an explicit permutation via sort_by_key, then
     // apply it to each SoA member by gathering the alive prefix through a
-    // reusable scratch buffer (one per member type, sized to the alive
-    // count, copied back in place). The *_prev arrays are skipped — see
-    // apply_permutation_to_soa. Peak transient = one
-    // `npart_partitioned × sizeof(member)` scratch at a time.
-    prtl_perm_t perm { "tile_perm", npart_local };
+    // reusable scratch buffer (one per member type, copied back in place).
+    // The *_prev arrays are skipped — see apply_permutation_to_soa. On the
+    // SYCL/oneDPL path the keys, perm, and per-type gather scratch are all
+    // persistent, grow-only buffers (class members) reused across sorts, so
+    // steady state makes no per-sort device allocation; the fixed cost is a
+    // handful of `npart_partitioned`-sized buffers held resident.
     #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+    // Persistent, reused perm: oneDPL's sort_by_key is in place and never
+    // reassigns `perm`, so it can share a grow-only buffer across sorts (no
+    // per-sort device allocation). `npart_local` is passed explicitly since
+    // `tile_indices` is now an over-capacity persistent buffer whose extent
+    // is the reserved capacity, not the count to sort.
+    reserve_scratch_1d(m_sort_perm, "tile_perm", npart_local);
+    prtl_perm_t perm = m_sort_perm;
     sort_helpers::sort_by_key_dispatch(tile_indices,
                                        perm,
                                        n_bins,
+                                       npart_local,
                                        sort::backend::OneDPL {});
     #elif defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
+    prtl_perm_t perm { "tile_perm", npart_local };
     sort_helpers::sort_by_key_dispatch(tile_indices,
                                        perm,
                                        n_bins,
                                        sort::backend::Rocthrust {});
     #else
+    prtl_perm_t perm { "tile_perm", npart_local };
     sort_helpers::sort_by_key_dispatch(tile_indices,
                                        perm,
                                        n_bins,
                                        sort::backend::Thrust {});
     #endif
     // `tile_indices` is sorted in place by sort_by_key. Build the tile
-    // offsets from it now, then drop it before the gather allocates its
-    // `maxnpart`-sized buffers — so the keys are not co-resident with
-    // them at the gather's peak (#2).
+    // offsets from it now, then release this handle. On the CUDA/HIP vendor
+    // path this frees the transient keys buffer before the gather; on SYCL
+    // `tile_indices` aliases the persistent `m_sort_keys`, so this only
+    // drops the local handle (the buffer is retained and reused next sort).
     compute_tile_offsets(tile_indices, total_tiles, npart_local);
     tile_indices = array_t<ncells_t*> {};
     Kokkos::fence("SortSpatially: pre-gather drain");
@@ -589,14 +641,16 @@ namespace ntt {
     // Permuting prev would therefore reorder data that is overwritten
     // before it is ever observed.
     //
-    // Each block below allocates a single `n`-sized scratch buffer that
-    // is reused for every member of that type, then freed before the next
-    // block allocates its own. The whole gather thus makes one transient
-    // allocation per type group (int / prtldx_t / real_t / short / each
-    // payload) instead of one fresh maxnpart buffer per member, and peak
-    // transient is a single n-sized scratch at a time.
+    // Each block below reuses a single persistent, grow-only scratch buffer
+    // (one per member type) for every member of that type. `reserve_scratch_*`
+    // (re)allocates only when the live count outgrows capacity, so the gather
+    // makes no per-sort device allocation once warmed up (grow-only, with
+    // headroom) -- instead of one fresh buffer per type group every sort.
+    // Reused across members within a group; the fences in `permute_1d_into`
+    // keep the shared buffer from being clobbered before its copy-back drains.
     {
-      array_t<int*> scratch { "perm_scratch_int", n };
+      reserve_scratch_1d(m_sort_scratch_int, "perm_scratch_int", n);
+      auto& scratch = m_sort_scratch_int;
       if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         permute_1d_into(i1, scratch, perm, n);
       }
@@ -608,7 +662,8 @@ namespace ntt {
       }
     }
     {
-      array_t<prtldx_t*> scratch { "perm_scratch_prtldx", n };
+      reserve_scratch_1d(m_sort_scratch_prtldx, "perm_scratch_prtldx", n);
+      auto& scratch = m_sort_scratch_prtldx;
       if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         permute_1d_into(dx1, scratch, perm, n);
       }
@@ -620,7 +675,8 @@ namespace ntt {
       }
     }
     {
-      array_t<real_t*> scratch { "perm_scratch_real", n };
+      reserve_scratch_1d(m_sort_scratch_real, "perm_scratch_real", n);
+      auto& scratch = m_sort_scratch_real;
       permute_1d_into(ux1, scratch, perm, n);
       permute_1d_into(ux2, scratch, perm, n);
       permute_1d_into(ux3, scratch, perm, n);
@@ -630,18 +686,19 @@ namespace ntt {
       }
     }
     {
-      array_t<short*> scratch { "perm_scratch_tag", n };
+      reserve_scratch_1d(m_sort_scratch_tag, "perm_scratch_tag", n);
+      auto& scratch = m_sort_scratch_tag;
       permute_1d_into(tag, scratch, perm, n);
     }
     if (npld_r() > 0) {
-      const auto         ncols = static_cast<npart_t>(npld_r());
-      array_t<real_t**>  scratch { "perm_scratch_pld_r", n, ncols };
-      permute_2d_into(pld_r, scratch, perm, n, ncols);
+      const auto ncols = static_cast<npart_t>(npld_r());
+      reserve_scratch_2d(m_sort_scratch_pld_r, "perm_scratch_pld_r", n, ncols);
+      permute_2d_into(pld_r, m_sort_scratch_pld_r, perm, n, ncols);
     }
     if (npld_i() > 0) {
-      const auto         ncols = static_cast<npart_t>(npld_i());
-      array_t<npart_t**> scratch { "perm_scratch_pld_i", n, ncols };
-      permute_2d_into(pld_i, scratch, perm, n, ncols);
+      const auto ncols = static_cast<npart_t>(npld_i());
+      reserve_scratch_2d(m_sort_scratch_pld_i, "perm_scratch_pld_i", n, ncols);
+      permute_2d_into(pld_i, m_sort_scratch_pld_i, perm, n, ncols);
     }
   }
 #endif // TEAM_POLICY_USE_VENDOR_SORT
