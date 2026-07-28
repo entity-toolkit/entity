@@ -30,6 +30,7 @@
 #include <filesystem>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace out {
@@ -84,6 +85,14 @@ namespace out {
 
     m_width  = toml::find_or<int>(td, "output", "render", "width", 1024);
     m_height = toml::find_or<int>(td, "output", "render", "height", 1024);
+    // `resolution` is a convenience that forces a square frame (width == height),
+    // the natural shape for a dome master.
+    const int resolution = toml::find_or<int>(td, "output", "render",
+                                              "resolution", 0);
+    if (resolution > 0) {
+      m_width  = resolution;
+      m_height = resolution;
+    }
     m_samples = toml::find_or<int>(td, "output", "render", "samples", 400);
     m_step_size = toml::find_or<real_t>(td, "output", "render", "step_size", ZERO);
     m_early_alpha = toml::find_or<real_t>(td,
@@ -281,6 +290,27 @@ namespace out {
                                      "camera",
                                      "orthographic",
                                      true);
+    // `mode` overrides the `orthographic` flag: "orthographic" | "perspective" |
+    // "dome". The dome is a fulldome azimuthal-equidistant fisheye from an
+    // INTERIOR eye (the box center by default) -- see Metadomain::Render (3D).
+    const auto cam_mode = toml::find_or<std::string>(
+      td, "output", "render", "camera", "mode", std::string {});
+    int projection = ortho ? CameraDevice::Ortho : CameraDevice::Perspective;
+    if (cam_mode == "dome") {
+      projection = CameraDevice::Dome;
+    } else if (cam_mode == "perspective") {
+      projection = CameraDevice::Perspective;
+    } else if (cam_mode == "orthographic") {
+      projection = CameraDevice::Ortho;
+    } else if (not cam_mode.empty()) {
+      raise::Warning("output.render.camera.mode '" + cam_mode +
+                       "' unknown (want orthographic/perspective/dome); using "
+                       "the 'orthographic' flag",
+                     HERE);
+    }
+    const bool   is_dome  = (projection == CameraDevice::Dome);
+    const real_t dome_fov = toml::find_or<real_t>(
+      td, "output", "render", "camera", "dome_fov", static_cast<real_t>(180));
     auto pos = toml::find_or<std::vector<real_t>>(td,
                                                   "output",
                                                   "render",
@@ -317,20 +347,44 @@ namespace out {
 
     real_t eye[3], lookat[3], upv[3];
     for (int d = 0; d < 3; ++d) {
-      // default eye: box center pushed back along (1,1,1) by ~1.7 diagonals
-      eye[d] = (pos.size() == 3)
-                 ? pos[d]
-                 : center[d] + static_cast<real_t>(1.7) * diag *
-                                 static_cast<real_t>(0.57735026919);
+      if (pos.size() == 3) {
+        eye[d] = pos[d];
+      } else if (is_dome) {
+        // interior eye: the domain center (looking outward at the sky)
+        eye[d] = center[d];
+      } else {
+        // default eye: box center pushed back along (1,1,1) by ~1.7 diagonals
+        eye[d] = center[d] + static_cast<real_t>(1.7) * diag *
+                               static_cast<real_t>(0.57735026919);
+      }
       lookat[d] = (look.size() == 3) ? look[d] : center[d];
     }
-    upv[0] = (up.size() == 3) ? up[0] : ZERO;
-    upv[1] = (up.size() == 3) ? up[1] : ZERO;
-    upv[2] = (up.size() == 3) ? up[2] : ONE;
+    // up / screen-up: default +z, except the dome (whose default zenith is +z,
+    // so +z would be collinear with `forward`) uses +y as the disk's screen-up.
+    if (up.size() == 3) {
+      upv[0] = up[0];
+      upv[1] = up[1];
+      upv[2] = up[2];
+    } else if (is_dome) {
+      upv[0] = ZERO;
+      upv[1] = ONE;
+      upv[2] = ZERO;
+    } else {
+      upv[0] = ZERO;
+      upv[1] = ZERO;
+      upv[2] = ONE;
+    }
 
     real_t forward[3] = { lookat[0] - eye[0],
                           lookat[1] - eye[1],
                           lookat[2] - eye[2] };
+    // for the dome, `forward` is the ZENITH; with the default interior eye at the
+    // center (== lookat) the difference is zero, so default the zenith to +z.
+    if (is_dome and look.size() != 3) {
+      forward[0] = ZERO;
+      forward[1] = ZERO;
+      forward[2] = ONE;
+    }
     normalize3(forward);
     real_t right[3];
     cross3(forward, upv, right);
@@ -349,9 +403,35 @@ namespace out {
     m_camera_dev.tan_half_fov = std::tan(static_cast<real_t>(0.5) * fov *
                                          static_cast<real_t>(constant::PI) /
                                          static_cast<real_t>(180.0));
-    m_camera_dev.orthographic = ortho;
+    // keep `orthographic` consistent with the resolved projection so that
+    // `mode` actually overrides the flag: the kernel/screenBBox pick ortho vs
+    // perspective from `orthographic`, and only Dome is read off `projection`.
+    // (When `mode` is unset, `projection` was derived from `ortho`, so this
+    // round-trips to the original flag -- back-compatible.)
+    m_camera_dev.orthographic = (projection == CameraDevice::Ortho);
     m_camera_dev.half_h       = static_cast<real_t>(0.5) * ortho_height;
     m_camera_dev.half_w       = m_camera_dev.half_h * m_camera_dev.aspect;
+    m_camera_dev.projection   = projection;
+    if (is_dome) {
+      real_t hf = HALF * dome_fov * static_cast<real_t>(constant::PI) /
+                  static_cast<real_t>(180);
+      if (hf <= ZERO) {
+        hf = HALF * static_cast<real_t>(constant::PI); // fall back to a 180 dome
+      }
+      if (hf > static_cast<real_t>(constant::PI)) {
+        hf = static_cast<real_t>(constant::PI); // full sphere cap
+      }
+      m_camera_dev.dome_half_fov = hf;
+      // a fisheye disk needs a square frame; the kernel uses the full-frame ndc
+      m_camera_dev.aspect = ONE;
+      m_camera_dev.half_w = m_camera_dev.half_h;
+      if (m_width != m_height) {
+        raise::Warning("output.render.camera.mode='dome' wants width == height "
+                       "for a circular dome master; the fisheye disk will be "
+                       "elliptical otherwise",
+                       HERE);
+      }
+    }
 
     /* ---- moving view (pan the region/camera to track a feature) --------- */
     // remember the static region + camera eye; updateForTime() translates them.
@@ -515,6 +595,189 @@ namespace out {
     }
   }
 
+  void Renderer::writeFrame(const std::vector<real_t>& img,
+                            const Scene&               scene,
+                            timestep_t                 step,
+                            simtime_t                  time) const {
+    const std::size_t npix = static_cast<std::size_t>(m_width) *
+                             static_cast<std::size_t>(m_height);
+    const std::size_t n = npix * 4;
+    // ensure <name>/renders/ exists
+    const auto dir = m_root / path_t("renders");
+    try {
+      if (not std::filesystem::exists(m_root)) {
+        std::filesystem::create_directory(m_root);
+      }
+      if (not std::filesystem::exists(dir)) {
+        std::filesystem::create_directory(dir);
+      }
+    } catch (const std::exception& e) {
+      raise::Warning(e.what(), HERE);
+    }
+    // composite the premultiplied image over the opaque background:
+    // out = src_premult + (1 - src_alpha) * background, alpha = opaque.
+    std::vector<uint8_t> data(n);
+    for (std::size_t p = 0; p < npix; ++p) {
+      const real_t a   = img[p * 4 + 3];
+      const real_t inv = ONE - a;
+      data[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
+      data[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
+      data[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
+      data[p * 4 + 3] = 255;
+    }
+    const auto fname = dir / fmt::format("%s%08lu.png",
+                                         scene.prefix.c_str(),
+                                         static_cast<unsigned long>(step));
+
+    auto drawBar = [&](uint8_t* buf, int bw, int bh, int span_top, int span_bot) {
+      if (m_colorbar) {
+        drawColorbar(buf, bw, bh, scene.tf.colormap, scene.tf.vmin,
+                     scene.tf.vmax, scene.tf.log_scale, scene.label,
+                     m_background, scene.ticks, span_top, span_bot);
+      }
+    };
+
+    // Draw the sim-time label, right-aligned to `right_x` and vertically
+    // centered in the band [0, top_limit] -- i.e. OUTSIDE the plotted data:
+    // above the colorbar (3D / disk) or, for a 2D slice, in the aspect-pad
+    // above the data box (so it never sits inside the simulation axes).
+    auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int right_x,
+                             int top_limit) {
+      if (not m_time_label) {
+        return;
+      }
+      const int s = cbar_hidden::scale(m_height);
+      char      tbuf[48];
+      // fixed-point so it reads e.g. "T = 12345.67" (up to 5 integer digits
+      // and 2 decimals; more integer digits still print, never truncated)
+      std::snprintf(tbuf, sizeof(tbuf), "T = %.2f", static_cast<double>(time));
+      const std::string str(tbuf);
+      const int         tw     = static_cast<int>(str.size()) * 6 * s;
+      const int         pad    = 3 * s;
+      const int         tx     = right_x - tw - pad;
+      const int         text_h = 7 * s;
+      int               ty     = (top_limit - text_h) / 2;
+      if (ty < pad) {
+        ty = pad;
+      }
+      // contrasting text color (white on a dark background, black on light)
+      const real_t lum = static_cast<real_t>(0.299) * m_background[0] +
+                         static_cast<real_t>(0.587) * m_background[1] +
+                         static_cast<real_t>(0.114) * m_background[2];
+      const uint8_t tc = (lum < HALF) ? 255 : 0;
+      cbar_hidden::drawText(buf, cw, ch, tx, ty, str, s, tc, tc, tc);
+    };
+
+    // canvas margins: axes (left + bottom) and the colorbar strip (right).
+    // The data region sits at (ml, 0); margins/strip are background-filled.
+    // The polar (curvilinear) overlay annotates inside the data region (the
+    // disk is centered with background around it), so it needs no margins.
+    const bool polar = (m_global_extent.size() == 2) and m_slice_polar;
+    // a fisheye dome master (2D or 3D) must stay exactly W x H (its inscribed
+    // circle is the dome), so it takes no axes margins and no outside colorbar.
+    const bool dome = m_dome_active;
+    int        ml = 0, mb = 0;
+    out::axesMargins(m_axes and not polar and not dome, m_height, ml, mb);
+    const int strip = (m_colorbar and m_colorbar_outside and not dome)
+                        ? colorbarBlockWidth(m_height)
+                        : 0;
+    const int CW = ml + m_width + strip;
+    const int CH = m_height + mb;
+
+    // 2D-Cartesian data box (== the render region, before the aspect-expansion
+    // that pads the window with background): its top & right edges in
+    // data-region pixels. The axes/spine clamp to it and the time label sits
+    // in the pad above it, so neither includes the empty aspect padding.
+    const bool cart2d     = (m_global_extent.size() == 2) and not polar and
+                        not dome;
+    int        dbox_top   = 0;         // data box top edge (px from data top)
+    int        dbox_bot   = m_height;  // data box bottom edge (px)
+    int        dbox_right = m_width;   // data box right edge (px from data left)
+    if (cart2d and m_region.size() >= 2) {
+      const real_t u0 = m_slice_win[0], u1 = m_slice_win[1];
+      const real_t v0 = m_slice_win[2], v1 = m_slice_win[3];
+      const real_t du1 = m_region[0].second; // data box right in world (x1)
+      const real_t dv0 = m_region[1].first;  // data box bottom in world (x2)
+      const real_t dv1 = m_region[1].second; // data box top in world   (x2)
+      if (u1 > u0) {
+        int r = static_cast<int>(std::lround(
+          static_cast<double>((du1 - u0) / (u1 - u0)) * (m_width - 1)));
+        dbox_right = (r < 0) ? 0 : ((r > m_width) ? m_width : r);
+      }
+      if (v1 > v0) {
+        int t = static_cast<int>(std::lround(
+          static_cast<double>((v1 - dv1) / (v1 - v0)) * (m_height - 1)));
+        int b = static_cast<int>(std::lround(
+          static_cast<double>((v1 - dv0) / (v1 - v0)) * (m_height - 1)));
+        dbox_top = (t < 0) ? 0 : ((t > m_height) ? m_height : t);
+        dbox_bot = (b < 0) ? 0 : ((b > m_height) ? m_height : b);
+      }
+    }
+    // time-label anchor: for a 2D slice, the top-right of the data box (label
+    // goes in the pad above it); otherwise the top-right above the colorbar.
+    const int cbar_top   = m_colorbar ? (CH - CH / 2) / 2 : (CH / 4);
+    const int tl_right   = cart2d ? (ml + dbox_right) : (ml + m_width);
+    const int tl_top     = cart2d ? dbox_top : cbar_top;
+    // colorbar vertical span: aligned to the actual data domain for a 2D slice
+    // (so it's centered on the data, not the aspect-padded canvas); sentinel
+    // (-1) elsewhere -> drawColorbar centers it on the canvas as before.
+    const int cbar_span_top = cart2d ? dbox_top : -1;
+    const int cbar_span_bot = cart2d ? dbox_bot : -1;
+
+    bool ok = true;
+    if (CW == m_width and CH == m_height and not m_axes) {
+      // no margins, no outside strip, no overlay: colorbar overlays the data
+      drawBar(data.data(), m_width, m_height, cbar_span_top, cbar_span_bot);
+      drawTimeLabel(data.data(), m_width, m_height, tl_right, tl_top);
+      ok = write_png(fname, m_width, m_height, data.data());
+    } else {
+      const uint8_t bR = quantize(m_background[0]);
+      const uint8_t bG = quantize(m_background[1]);
+      const uint8_t bB = quantize(m_background[2]);
+      std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * CH * 4);
+      for (std::size_t i = 0; i < canvas.size(); i += 4) {
+        canvas[i + 0] = bR;
+        canvas[i + 1] = bG;
+        canvas[i + 2] = bB;
+        canvas[i + 3] = 255;
+      }
+      for (int y = 0; y < m_height; ++y) {
+        std::copy_n(&data[static_cast<std::size_t>(y) * m_width * 4],
+                    static_cast<std::size_t>(m_width) * 4,
+                    &canvas[(static_cast<std::size_t>(y) * CW + ml) * 4]);
+      }
+      if (m_axes and not dome) {
+        if (m_global_extent.size() == 3) {
+          out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
+                          m_camera_dev, m_region, m_axis_labels, m_background,
+                          m_axis_nticks);
+        } else if (polar) {
+          out::drawAxesPolar(canvas.data(), CW, CH, ml, m_width, m_height,
+                             m_slice_win[0], m_slice_win[1], m_slice_win[2],
+                             m_slice_win[3], m_slice_rmin, m_slice_rmax,
+                             m_slice_tmin, m_slice_tmax, m_slice_pmirror, "R",
+                             "Theta", m_background, m_axis_nticks);
+        } else {
+          // data box (== region, un-expanded) so the spine hugs the domain,
+          // not the aspect-padded window
+          const real_t du0 = m_region[0].first, du1 = m_region[0].second;
+          const real_t dv0 = m_region[1].first, dv1 = m_region[1].second;
+          out::drawAxes2D(canvas.data(), CW, CH, ml, m_width, m_height,
+                          m_slice_win[0], m_slice_win[1], m_slice_win[2],
+                          m_slice_win[3], du0, du1, dv0, dv1, m_slice_xlabel,
+                          m_slice_ylabel, m_background, m_axis_nticks);
+        }
+      }
+      drawBar(canvas.data(), CW, CH, cbar_span_top, cbar_span_bot);
+      drawTimeLabel(canvas.data(), CW, CH, tl_right, tl_top);
+      ok = write_png(fname, CW, CH, canvas.data());
+    }
+    if (not ok) {
+      raise::Warning(fmt::format("failed to write %s", fname.string().c_str()),
+                     HERE);
+    }
+  }
+
   void Renderer::compositeAndWrite(const SubImage& sub,
                                    uint64_t        order_key,
                                    const Scene&    scene,
@@ -546,183 +809,7 @@ namespace out {
     };
 
     auto write_image = [&](const std::vector<real_t>& img) {
-      // ensure <name>/renders/ exists
-      const auto dir = m_root / path_t("renders");
-      try {
-        if (not std::filesystem::exists(m_root)) {
-          std::filesystem::create_directory(m_root);
-        }
-        if (not std::filesystem::exists(dir)) {
-          std::filesystem::create_directory(dir);
-        }
-      } catch (const std::exception& e) {
-        raise::Warning(e.what(), HERE);
-      }
-      // composite the premultiplied image over the opaque background:
-      // out = src_premult + (1 - src_alpha) * background, alpha = opaque.
-      std::vector<uint8_t> data(n);
-      for (std::size_t p = 0; p < npix; ++p) {
-        const real_t a   = img[p * 4 + 3];
-        const real_t inv = ONE - a;
-        data[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
-        data[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
-        data[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
-        data[p * 4 + 3] = 255;
-      }
-      const auto fname = dir / fmt::format("%s%08lu.png",
-                                           scene.prefix.c_str(),
-                                           static_cast<unsigned long>(step));
-
-      auto drawBar = [&](uint8_t* buf, int bw, int bh, int span_top, int span_bot) {
-        if (m_colorbar) {
-          drawColorbar(buf, bw, bh, scene.tf.colormap, scene.tf.vmin,
-                       scene.tf.vmax, scene.tf.log_scale, scene.label,
-                       m_background, scene.ticks, span_top, span_bot);
-        }
-      };
-
-      // Draw the sim-time label, right-aligned to `right_x` and vertically
-      // centered in the band [0, top_limit] -- i.e. OUTSIDE the plotted data:
-      // above the colorbar (3D / disk) or, for a 2D slice, in the aspect-pad
-      // above the data box (so it never sits inside the simulation axes).
-      auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int right_x,
-                               int top_limit) {
-        if (not m_time_label) {
-          return;
-        }
-        const int s = cbar_hidden::scale(m_height);
-        char      tbuf[48];
-        // fixed-point so it reads e.g. "T = 12345.67" (up to 5 integer digits
-        // and 2 decimals; more integer digits still print, never truncated)
-        std::snprintf(tbuf, sizeof(tbuf), "T = %.2f",
-                      static_cast<double>(time));
-        const std::string str(tbuf);
-        const int         tw     = static_cast<int>(str.size()) * 6 * s;
-        const int         pad    = 3 * s;
-        const int         tx     = right_x - tw - pad;
-        const int         text_h = 7 * s;
-        int               ty     = (top_limit - text_h) / 2;
-        if (ty < pad) {
-          ty = pad;
-        }
-        // contrasting text color (white on a dark background, black on light)
-        const real_t lum = static_cast<real_t>(0.299) * m_background[0] +
-                           static_cast<real_t>(0.587) * m_background[1] +
-                           static_cast<real_t>(0.114) * m_background[2];
-        const uint8_t tc = (lum < HALF) ? 255 : 0;
-        cbar_hidden::drawText(buf, cw, ch, tx, ty, str, s, tc, tc, tc);
-      };
-
-      // canvas margins: axes (left + bottom) and the colorbar strip (right).
-      // The data region sits at (ml, 0); margins/strip are background-filled.
-      // The polar (curvilinear) overlay annotates inside the data region (the
-      // disk is centered with background around it), so it needs no margins.
-      const bool polar = (m_global_extent.size() == 2) and m_slice_polar;
-      // a fisheye dome master must stay exactly W x H (its inscribed circle is
-      // the dome), so it takes no axes margins and no outside colorbar strip.
-      const bool dome = m_dome_active;
-      int        ml = 0, mb = 0;
-      out::axesMargins(m_axes and not polar and not dome, m_height, ml, mb);
-      const int strip = (m_colorbar and m_colorbar_outside and not dome)
-                          ? colorbarBlockWidth(m_height)
-                          : 0;
-      const int CW = ml + m_width + strip;
-      const int CH = m_height + mb;
-
-      // 2D-Cartesian data box (== the render region, before the aspect-expansion
-      // that pads the window with background): its top & right edges in
-      // data-region pixels. The axes/spine clamp to it and the time label sits
-      // in the pad above it, so neither includes the empty aspect padding.
-      const bool cart2d     = (m_global_extent.size() == 2) and not polar and
-                          not dome;
-      int        dbox_top   = 0;         // data box top edge (px from data top)
-      int        dbox_bot   = m_height;  // data box bottom edge (px)
-      int        dbox_right = m_width;   // data box right edge (px from data left)
-      if (cart2d and m_region.size() >= 2) {
-        const real_t u0 = m_slice_win[0], u1 = m_slice_win[1];
-        const real_t v0 = m_slice_win[2], v1 = m_slice_win[3];
-        const real_t du1 = m_region[0].second; // data box right in world (x1)
-        const real_t dv0 = m_region[1].first;  // data box bottom in world (x2)
-        const real_t dv1 = m_region[1].second; // data box top in world   (x2)
-        if (u1 > u0) {
-          int r = static_cast<int>(std::lround(
-            static_cast<double>((du1 - u0) / (u1 - u0)) * (m_width - 1)));
-          dbox_right = (r < 0) ? 0 : ((r > m_width) ? m_width : r);
-        }
-        if (v1 > v0) {
-          int t = static_cast<int>(std::lround(
-            static_cast<double>((v1 - dv1) / (v1 - v0)) * (m_height - 1)));
-          int b = static_cast<int>(std::lround(
-            static_cast<double>((v1 - dv0) / (v1 - v0)) * (m_height - 1)));
-          dbox_top = (t < 0) ? 0 : ((t > m_height) ? m_height : t);
-          dbox_bot = (b < 0) ? 0 : ((b > m_height) ? m_height : b);
-        }
-      }
-      // time-label anchor: for a 2D slice, the top-right of the data box (label
-      // goes in the pad above it); otherwise the top-right above the colorbar.
-      const int cbar_top   = m_colorbar ? (CH - CH / 2) / 2 : (CH / 4);
-      const int tl_right   = cart2d ? (ml + dbox_right) : (ml + m_width);
-      const int tl_top     = cart2d ? dbox_top : cbar_top;
-      // colorbar vertical span: aligned to the actual data domain for a 2D slice
-      // (so it's centered on the data, not the aspect-padded canvas); sentinel
-      // (-1) elsewhere -> drawColorbar centers it on the canvas as before.
-      const int cbar_span_top = cart2d ? dbox_top : -1;
-      const int cbar_span_bot = cart2d ? dbox_bot : -1;
-
-      bool ok = true;
-      if (CW == m_width and CH == m_height and not m_axes) {
-        // no margins, no outside strip, no overlay: colorbar overlays the data
-        drawBar(data.data(), m_width, m_height, cbar_span_top, cbar_span_bot);
-        drawTimeLabel(data.data(), m_width, m_height, tl_right, tl_top);
-        ok = write_png(fname, m_width, m_height, data.data());
-      } else {
-        const uint8_t bR = quantize(m_background[0]);
-        const uint8_t bG = quantize(m_background[1]);
-        const uint8_t bB = quantize(m_background[2]);
-        std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * CH * 4);
-        for (std::size_t i = 0; i < canvas.size(); i += 4) {
-          canvas[i + 0] = bR;
-          canvas[i + 1] = bG;
-          canvas[i + 2] = bB;
-          canvas[i + 3] = 255;
-        }
-        for (int y = 0; y < m_height; ++y) {
-          std::copy_n(
-            &data[static_cast<std::size_t>(y) * m_width * 4],
-            static_cast<std::size_t>(m_width) * 4,
-            &canvas[(static_cast<std::size_t>(y) * CW + ml) * 4]);
-        }
-        if (m_axes and not dome) {
-          if (m_global_extent.size() == 3) {
-            out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
-                            m_camera_dev, m_region, m_axis_labels,
-                            m_background, m_axis_nticks);
-          } else if (polar) {
-            out::drawAxesPolar(canvas.data(), CW, CH, ml, m_width, m_height,
-                               m_slice_win[0], m_slice_win[1], m_slice_win[2],
-                               m_slice_win[3], m_slice_rmin, m_slice_rmax,
-                               m_slice_tmin, m_slice_tmax, m_slice_pmirror, "R",
-                               "Theta", m_background, m_axis_nticks);
-          } else {
-            // data box (== region, un-expanded) so the spine hugs the domain,
-            // not the aspect-padded window
-            const real_t du0 = m_region[0].first, du1 = m_region[0].second;
-            const real_t dv0 = m_region[1].first, dv1 = m_region[1].second;
-            out::drawAxes2D(canvas.data(), CW, CH, ml, m_width, m_height,
-                            m_slice_win[0], m_slice_win[1], m_slice_win[2],
-                            m_slice_win[3], du0, du1, dv0, dv1, m_slice_xlabel,
-                            m_slice_ylabel, m_background, m_axis_nticks);
-          }
-        }
-        drawBar(canvas.data(), CW, CH, cbar_span_top, cbar_span_bot);
-        drawTimeLabel(canvas.data(), CW, CH, tl_right, tl_top);
-        ok = write_png(fname, CW, CH, canvas.data());
-      }
-      if (not ok) {
-        raise::Warning(
-          fmt::format("failed to write %s", fname.string().c_str()),
-          HERE);
-      }
+      writeFrame(img, scene, step, time);
     };
 
 #if defined(MPI_ENABLED)
@@ -836,6 +923,152 @@ namespace out {
 #else
     (void)order_key;
     write_image(subToFull(sub));
+#endif
+  }
+
+  void Renderer::compositeFragAndWrite(FragImage&&  frag,
+                                       const Scene& scene,
+                                       timestep_t   step,
+                                       simtime_t    time) const {
+    // fully-opaque cull is exact: mergeFrag only drops provably-occluded
+    // fragments, so the result is independent of the tree's grouping.
+    const real_t cull = ONE;
+
+    // collapse a merged fragment image into a full premultiplied float frame
+    auto fragToFull = [&](const FragImage& f) -> std::vector<real_t> {
+      const std::size_t   npix = static_cast<std::size_t>(m_width) *
+                               static_cast<std::size_t>(m_height);
+      std::vector<real_t> full(npix * 4, ZERO);
+      for (int y = 0; y < f.h; ++y) {
+        for (int x = 0; x < f.w; ++x) {
+          const int fx = f.x0 + x, fy = f.y0 + y;
+          if (fx < 0 or fx >= m_width or fy < 0 or fy >= m_height) {
+            continue;
+          }
+          const std::size_t p  = static_cast<std::size_t>(y) * f.w + x;
+          const uint32_t    k0 = f.offs[p], k1 = f.offs[p + 1];
+          if (k1 <= k0) {
+            continue;
+          }
+          real_t out[4];
+          out::fragOver(f.depth, f.rgba, k0, k1, out);
+          const std::size_t fi = (static_cast<std::size_t>(fy) * m_width + fx) * 4;
+          full[fi + 0] = out[0];
+          full[fi + 1] = out[1];
+          full[fi + 2] = out[2];
+          full[fi + 3] = out[3];
+        }
+      }
+      return full;
+    };
+
+#if defined(MPI_ENABLED)
+    int rank = 0, size = 1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (size == 1) {
+      writeFrame(fragToFull(frag), scene, step, time);
+      return;
+    }
+
+    constexpr int TAG_HDR   = 7401;
+    constexpr int TAG_OFFS  = 7402;
+    constexpr int TAG_DEPTH = 7403;
+    constexpr int TAG_RGBA  = 7404;
+
+    // Wire format: header {x0,y0,w,h,n_frag}; per-pixel prefix offsets (uint32);
+    // per-fragment depth (full real_t, so the cross-rank ordering key is exact)
+    // and premultiplied RGBA (uint8; only this adds ~1 LSB through the tree).
+    auto sendFrag = [&](const FragImage& s, int dest) {
+      const uint32_t nfrag = s.offs.empty()
+                               ? 0u
+                               : s.offs.back();
+      // MPI counts are `int`; the RGBA payload has nfrag*4 elements, so a single
+      // message overflows int once nfrag > INT_MAX/4. That regime (a 4096^2
+      // near-opaque-free dome on many ranks) needs the band-tiling optimization;
+      // fail loudly here rather than send a negative count.
+      raise::ErrorIf(nfrag > 536870911u,
+                     "dome A-buffer: per-message fragment count exceeds the MPI "
+                     "int limit (nfrag*4 > INT_MAX). Lower render.resolution "
+                     "(frame-band tiling is a pending optimization).",
+                     HERE);
+      int hdr[5] = { s.x0, s.y0, s.w, s.h, static_cast<int>(nfrag) };
+      MPI_Send(hdr, 5, MPI_INT, dest, TAG_HDR, MPI_COMM_WORLD);
+      const int np = s.w * s.h;
+      if (np > 0) {
+        MPI_Send(s.offs.data(), np + 1, MPI_UINT32_T, dest, TAG_OFFS,
+                 MPI_COMM_WORLD);
+      }
+      if (nfrag > 0) {
+        // depth is sent at full real_t precision (NOT downcast to float): the
+        // depth key orders fragments across ranks, and local fragments keep
+        // real_t, so a float round-trip would make cross-rank vs within-rank
+        // ordering disagree at close depths -> a seam at the domain boundary.
+        MPI_Send(s.depth.data(), static_cast<int>(nfrag),
+                 mpi::get_type<real_t>(), dest, TAG_DEPTH, MPI_COMM_WORLD);
+        std::vector<uint8_t> bytes(static_cast<std::size_t>(nfrag) * 4);
+        for (std::size_t i = 0; i < bytes.size(); ++i) {
+          bytes[i] = quantize(s.rgba[i]);
+        }
+        MPI_Send(bytes.data(), static_cast<int>(bytes.size()),
+                 MPI_UNSIGNED_CHAR, dest, TAG_RGBA, MPI_COMM_WORLD);
+      }
+    };
+    auto recvFrag = [&](int src) -> FragImage {
+      int hdr[5];
+      MPI_Recv(hdr, 5, MPI_INT, src, TAG_HDR, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      FragImage s;
+      s.x0                 = hdr[0];
+      s.y0                 = hdr[1];
+      s.w                  = hdr[2];
+      s.h                  = hdr[3];
+      const uint32_t nfrag = static_cast<uint32_t>(hdr[4]);
+      const int      np    = s.w * s.h;
+      if (np > 0) {
+        s.offs.resize(static_cast<std::size_t>(np) + 1);
+        MPI_Recv(s.offs.data(), np + 1, MPI_UINT32_T, src, TAG_OFFS,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      }
+      if (nfrag > 0) {
+        s.depth.resize(nfrag);
+        MPI_Recv(s.depth.data(), static_cast<int>(nfrag), mpi::get_type<real_t>(),
+                 src, TAG_DEPTH, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        std::vector<uint8_t> bytes(static_cast<std::size_t>(nfrag) * 4);
+        MPI_Recv(bytes.data(), static_cast<int>(bytes.size()),
+                 MPI_UNSIGNED_CHAR, src, TAG_RGBA, MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+        s.rgba.resize(static_cast<std::size_t>(nfrag) * 4);
+        const real_t inv255 = ONE / static_cast<real_t>(255);
+        for (std::size_t i = 0; i < s.rgba.size(); ++i) {
+          s.rgba[i] = static_cast<real_t>(bytes[i]) * inv255;
+        }
+      }
+      return s;
+    };
+
+    // Order-INDEPENDENT binary tree reduction: mergeFrag (depth-sorted merge +
+    // occlusion cull) is associative + commutative, so no global order is needed
+    // -- reduce straight to rank 0 (== MPI_ROOT_RANK). Each round, the lower
+    // partner receives + merges, the upper sends and drops out.
+    FragImage cur = std::move(frag);
+    for (int s = 1; s < size; s <<= 1) {
+      if ((rank % (2 * s)) == 0) {
+        const int pp = rank + s;
+        if (pp < size) {
+          FragImage back = recvFrag(pp);
+          cur            = mergeFrag(cur, back, cull);
+        }
+      } else if ((rank % (2 * s)) == s) {
+        sendFrag(cur, rank - s);
+        break;
+      }
+    }
+    if (rank == MPI_ROOT_RANK) {
+      writeFrame(fragToFull(cur), scene, step, time);
+    }
+#else
+    writeFrame(fragToFull(frag), scene, step, time);
 #endif
   }
 

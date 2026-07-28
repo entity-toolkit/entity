@@ -42,15 +42,22 @@ namespace out {
    * @note Trivially copyable; captured by value into the Kokkos kernel.
    */
   struct CameraDevice {
+    // projection: 0 orthographic, 1 perspective (pinhole), 2 dome (fulldome
+    // azimuthal-equidistant fisheye from an interior eye). `orthographic` is
+    // kept for back-compat (== projection 0); the kernel branches on `projection`.
+    enum Projection { Ortho = 0, Perspective = 1, Dome = 2 };
     real_t eye[3] { ZERO, ZERO, ZERO };
     real_t right[3] { ONE, ZERO, ZERO };
     real_t up[3] { ZERO, ONE, ZERO };
+    // for the dome, `forward` is the ZENITH direction (center of the fisheye disk)
     real_t forward[3] { ZERO, ZERO, -ONE };
     real_t tan_half_fov { ONE };
     real_t aspect { ONE };
     bool   orthographic { true };
     real_t half_w { ONE };
     real_t half_h { ONE };
+    int    projection { Ortho };
+    real_t dome_half_fov { static_cast<real_t>(1.5707963267948966) }; // rad; 180 deg dome => PI/2
   };
 
   /**
@@ -202,6 +209,27 @@ namespace out {
     std::vector<real_t> rgba;                // w*h*4 premultiplied, pixel-major
   };
 
+  /**
+   * @brief A sparse screen-space *fragment* buffer for the interior-eye (dome)
+   * composite (A-buffer / deep image).
+   * @note With the camera inside the box there is no single global front-to-back
+   * domain order, so each domain contributes, per pixel, one depth-tagged
+   * premultiplied-RGBA fragment (its convex slab is one contiguous ray
+   * interval). Compositing is a per-pixel sort by `depth` (== ray t_enter) then
+   * front-to-back "over". The MPI reduce merges depth-sorted lists (associative
+   * + commutative), so no global order is needed. CSR layout because per-pixel
+   * fragment counts vary strongly across the frame. A leaf (one rank) holds 0/1
+   * fragment per covered pixel. See composite.h::mergeFrag / fragOver.
+   */
+  struct FragImage {
+    int                   x0 { 0 }, y0 { 0 }; // top-left pixel in the full frame
+    int                   w { 0 }, h { 0 };   // bbox size in pixels (0 => empty)
+    // per-pixel prefix offsets into depth/rgba, length w*h+1 (offs[0] == 0).
+    std::vector<uint32_t> offs;
+    std::vector<real_t>   depth; // n_frag entries, ascending within each pixel
+    std::vector<real_t>   rgba;  // n_frag*4 premultiplied, pixel-major
+  };
+
   class Renderer {
   public:
     Renderer() {}
@@ -247,6 +275,22 @@ namespace out {
                            const Scene&    scene,
                            timestep_t      step,
                            simtime_t       time) const;
+
+    /**
+     * @brief Depth-resolved (A-buffer) composite for the interior-eye dome, then
+     * write the PNG.
+     * @param frag this rank's sparse screen-space fragment image (depth + RGBA)
+     * @param scene the scene being written
+     * @param step current timestep (for the filename cycle number)
+     * @param time current simulation time (drawn as a corner label if enabled)
+     * @note Order-independent: the tree reduce merges depth-sorted fragment lists
+     *       (associative + commutative), so no global rank order is needed. The
+     *       root collapses each pixel's list front-to-back and writes the file.
+     */
+    void compositeFragAndWrite(FragImage&&  frag,
+                               const Scene& scene,
+                               timestep_t   step,
+                               simtime_t    time) const;
 
     /* getters -------------------------------------------------------------- */
     [[nodiscard]]
@@ -406,6 +450,14 @@ namespace out {
     }
 
   private:
+    // Composite a full premultiplied float frame over the background and write
+    // the PNG (with the colorbar / axes / time-label overlays). Shared by the
+    // ordered (SubImage) composite and the depth-resolved (FragImage) composite.
+    void writeFrame(const std::vector<real_t>& img,
+                    const Scene&               scene,
+                    timestep_t                 step,
+                    simtime_t                  time) const;
+
     bool m_enabled { false };
 
     int    m_width { 1024 };

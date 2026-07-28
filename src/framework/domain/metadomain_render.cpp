@@ -55,6 +55,7 @@
 #include <cmath>
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ntt {
@@ -667,6 +668,12 @@ namespace ntt {
       const int   W   = g_renderer.width();
       const int   H   = g_renderer.height();
 
+      // fulldome fisheye from an interior eye: the composite is depth-resolved
+      // (A-buffer) instead of the ordered SubImage tree, and the frame is a
+      // clean square (setDomeActive -> writeFrame drops axes/colorbar margins).
+      const bool is_dome = (cam.projection == out::CameraDevice::Dome);
+      g_renderer.setDomeActive(is_dome);
+
       // optional axis-aligned render region (== full extent when uncropped)
       const real_t rlo[3] = { g_renderer.regionLo(0), g_renderer.regionLo(1),
                               g_renderer.regionLo(2) };
@@ -737,8 +744,11 @@ namespace ntt {
       // screen-space bounding box of this domain's footprint (same for all
       // scenes); we only ray-march and composite within it.
       int        bx0 = 0, by0 = 0, bw = 0, bh = 0;
-      const bool on_screen = in_region and
-                             out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh);
+      const bool on_screen =
+        in_region and (is_dome ? out::screenBBoxDome(cam, W, H, lo, hi, bx0, by0,
+                                                     bw, bh)
+                               : out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw,
+                                                 bh));
 
       // ---- magnetic-field-line tubes (built once, shared by every scene) --- //
       // Every rank coarsens + replicates the field, traces the SAME global
@@ -824,15 +834,17 @@ namespace ntt {
           }
         }
 
-        out::SubImage sub;
+        // external camera -> sparse SubImage (ordered composite); dome (interior
+        // eye) -> sparse FragImage (depth-resolved A-buffer composite). Both are
+        // built only when this domain is on-screen, but the composite call is
+        // collective, so every rank reaches it (with an empty image otherwise).
+        out::SubImage  sub;
+        out::FragImage frag;
         if (on_screen) {
-          sub.x0 = bx0;
-          sub.y0 = by0;
-          sub.w  = bw;
-          sub.h  = bh;
           const std::size_t bnpix = static_cast<std::size_t>(bw) *
                                     static_cast<std::size_t>(bh);
           array_t<real_t* [4]>         image { "render_img", bnpix };
+          array_t<real_t*>             depth { "render_depth", bnpix };
           randacc_ndfield_t<M::Dim, 6> Fld { bckp };
           Kokkos::parallel_for(
             "VolumeRayMarch",
@@ -867,22 +879,63 @@ namespace ntt {
                                              spine_rgb,
                                              kt,
                                              volume_on,
-                                             image));
+                                             image,
+                                             depth));
           Kokkos::fence();
 
-          // device -> host, into a layout-agnostic pixel-major buffer
+          // device -> host, into layout-agnostic pixel-major buffers
           auto image_h = Kokkos::create_mirror_view(image);
           Kokkos::deep_copy(image_h, image);
-          sub.rgba.resize(bnpix * 4);
-          for (std::size_t p = 0; p < bnpix; ++p) {
-            sub.rgba[p * 4 + 0] = image_h(p, 0);
-            sub.rgba[p * 4 + 1] = image_h(p, 1);
-            sub.rgba[p * 4 + 2] = image_h(p, 2);
-            sub.rgba[p * 4 + 3] = image_h(p, 3);
+          if (is_dome) {
+            auto depth_h = Kokkos::create_mirror_view(depth);
+            Kokkos::deep_copy(depth_h, depth);
+            // leaf fragment image: one depth-tagged fragment per covered pixel
+            frag.x0 = bx0;
+            frag.y0 = by0;
+            frag.w  = bw;
+            frag.h  = bh;
+            frag.offs.assign(bnpix + 1, 0u);
+            for (std::size_t p = 0; p < bnpix; ++p) {
+              frag.offs[p + 1] = (image_h(p, 3) > ZERO) ? 1u : 0u;
+            }
+            for (std::size_t p = 0; p < bnpix; ++p) {
+              frag.offs[p + 1] += frag.offs[p];
+            }
+            const std::size_t nfrag = frag.offs[bnpix];
+            frag.depth.resize(nfrag);
+            frag.rgba.resize(nfrag * 4);
+            std::size_t o = 0;
+            for (std::size_t p = 0; p < bnpix; ++p) {
+              if (image_h(p, 3) > ZERO) {
+                frag.depth[o]      = depth_h(p);
+                frag.rgba[o * 4 + 0] = image_h(p, 0);
+                frag.rgba[o * 4 + 1] = image_h(p, 1);
+                frag.rgba[o * 4 + 2] = image_h(p, 2);
+                frag.rgba[o * 4 + 3] = image_h(p, 3);
+                ++o;
+              }
+            }
+          } else {
+            sub.x0 = bx0;
+            sub.y0 = by0;
+            sub.w  = bw;
+            sub.h  = bh;
+            sub.rgba.resize(bnpix * 4);
+            for (std::size_t p = 0; p < bnpix; ++p) {
+              sub.rgba[p * 4 + 0] = image_h(p, 0);
+              sub.rgba[p * 4 + 1] = image_h(p, 1);
+              sub.rgba[p * 4 + 2] = image_h(p, 2);
+              sub.rgba[p * 4 + 3] = image_h(p, 3);
+            }
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
-                                     current_time);
+        if (is_dome) {
+          g_renderer.compositeFragAndWrite(std::move(frag), scene_cb,
+                                           current_step, current_time);
+        } else {
+          g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
+                                       current_time);
+        }
         rendered_any = true;
       }
       return rendered_any;

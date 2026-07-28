@@ -720,6 +720,11 @@
     #   @type: int [> 0]
     #   @default: 1024
     height = ""
+    # Convenience: force a square frame (sets width == height == resolution), the
+    # natural shape for a dome master. Overrides `width`/`height` when > 0.
+    #   @type: int [> 0]
+    #   @default: 0 (use width/height)
+    resolution = ""
     # Axis-aligned render region [lo, hi] in physical/world coords, per axis
     # (x1/x2/x3). Any axis left unset spans the full domain. Clamped to the box.
     #   @type: array<float> [size 2]
@@ -826,6 +831,18 @@
     # -- the production setup for which the structured composite is provably
     # seamless.
     [output.render.camera]
+      # Projection mode. Overrides `orthographic` below when set.
+      #   @type: string
+      #   @enum: "orthographic", "perspective", "dome"
+      #   @default: (unset -> use `orthographic`)
+      #   @note: "dome" is a fulldome azimuthal-equidistant fisheye rendered from
+      #          an INTERIOR eye (the domain center by default), i.e. a 3D
+      #          planetarium dome master. It uses a depth-resolved (A-buffer)
+      #          composite that is seamless across a full 3D domain decomposition
+      #          (unlike ortho/perspective, which need the eye outside the box).
+      #          Set a square frame (`resolution`, or width == height). `forward`
+      #          is the dome ZENITH (screen-up defaults to +y for a +z zenith).
+      mode = ""
       # Orthographic (true) or perspective (false) projection
       #   @type: bool
       #   @default: true
@@ -835,20 +852,26 @@
       orthographic = ""
       # Camera (eye) position in world (physical) coordinates
       #   @type: array<float> [size 3]
-      #   @default: box center pushed back ~1.7 box-diagonals along (1, 1, 1)
+      #   @default: box center pushed back ~1.7 box-diagonals along (1, 1, 1);
+      #             for `mode = "dome"`, the domain center (interior eye)
       position = ""
-      # Point the camera looks at, in world coordinates
+      # Point the camera looks at, in world coordinates (the dome ZENITH target)
       #   @type: array<float> [size 3]
-      #   @default: box center
+      #   @default: box center; for `mode = "dome"`, the zenith defaults to +z
       look_at = ""
-      # Camera up vector
+      # Camera up vector (dome: the disk's screen-up)
       #   @type: array<float> [size 3]
-      #   @default: [0.0, 0.0, 1.0]
+      #   @default: [0.0, 0.0, 1.0]; for `mode = "dome"`, [0.0, 1.0, 0.0]
       up = ""
       # Vertical field of view in degrees (perspective only)
       #   @type: float [> 0.0]
       #   @default: 35.0
       fov = ""
+      # Full dome field of view in degrees (dome mode only): the image rim is at
+      # dome_fov/2 from the zenith (180 = a full hemisphere down to the horizon).
+      #   @type: float [> 0.0, <= 360.0]
+      #   @default: 180.0
+      dome_fov = ""
       # Vertical extent of the view in world units (orthographic only)
       #   @type: float [> 0.0]
       #   @default: the global box diagonal (the whole box fits from any angle)

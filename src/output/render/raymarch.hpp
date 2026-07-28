@@ -86,6 +86,10 @@ namespace kernel {
     const bool           volume_enabled;
 
     array_t<real_t* [4]> image; // output, (bw*bh, 4) premultiplied RGBA
+    // per-pixel front depth (ray t at domain entry) for the interior-eye dome
+    // A-buffer composite; INF where the pixel produced no fragment. Written for
+    // every projection (the external composite simply ignores it).
+    array_t<real_t*>     depth_img;
 
   public:
     VolumeRayMarch_kernel(const randacc_ndfield_t<D, 6>& Fld_,
@@ -116,7 +120,8 @@ namespace kernel {
                           const real_t                   spine_rgb[3],
                           const out::TubeSet&            tubes_,
                           bool                           volume_enabled_,
-                          const array_t<real_t* [4]>&    image_)
+                          const array_t<real_t* [4]>&    image_,
+                          const array_t<real_t*>&        depth_img_)
       : Fld { Fld_ }
       , comp { comp_ }
       , metric { metric_ }
@@ -173,7 +178,8 @@ namespace kernel {
       , tube_vmax { tubes_.vmax }
       , tube_log { tubes_.log_scale }
       , volume_enabled { volume_enabled_ }
-      , image { image_ } {}
+      , image { image_ }
+      , depth_img { depth_img_ } {}
 
     // distance test: is world point (px,py,pz) within `spine_radius` of any of
     // the 12 global-box edges? (nearest parallel edge per axis == nearest
@@ -298,11 +304,13 @@ namespace kernel {
                        static_cast<std::size_t>(lpx);
       const int gpx = bx0 + static_cast<int>(lpx);
       const int gpy = by0 + static_cast<int>(lpy);
-      // default transparent
-      image(pix, 0) = ZERO;
-      image(pix, 1) = ZERO;
-      image(pix, 2) = ZERO;
-      image(pix, 3) = ZERO;
+      const real_t INF = static_cast<real_t>(1e30);
+      // default transparent + no fragment
+      image(pix, 0)  = ZERO;
+      image(pix, 1)  = ZERO;
+      image(pix, 2)  = ZERO;
+      image(pix, 3)  = ZERO;
+      depth_img(pix) = INF;
 
       // ---- ray generation ------------------------------------------------ //
       const real_t fx = TWO * (static_cast<real_t>(gpx) + HALF) /
@@ -310,7 +318,25 @@ namespace kernel {
       const real_t fy = ONE - TWO * (static_cast<real_t>(gpy) + HALF) /
                                 static_cast<real_t>(H);
       real_t ox, oy, oz, dx, dy, dz;
-      if (cam.orthographic) {
+      if (cam.projection == out::CameraDevice::Dome) {
+        // fulldome azimuthal-equidistant fisheye from an interior eye: image
+        // radius rho in [0,1] -> zenith angle theta = rho * dome_half_fov, about
+        // the `forward` (zenith) axis; corners (rho > 1) are transparent.
+        const real_t rho = math::sqrt(fx * fx + fy * fy);
+        if (rho > ONE) {
+          return; // outside the dome disk
+        }
+        const real_t theta = rho * cam.dome_half_fov;
+        const real_t phi   = math::atan2(fy, fx);
+        const real_t st = math::sin(theta), ct = math::cos(theta);
+        const real_t cp = math::cos(phi), sp = math::sin(phi);
+        dx = ct * cam.forward[0] + st * (cp * cam.right[0] + sp * cam.up[0]);
+        dy = ct * cam.forward[1] + st * (cp * cam.right[1] + sp * cam.up[1]);
+        dz = ct * cam.forward[2] + st * (cp * cam.right[2] + sp * cam.up[2]);
+        ox = cam.eye[0];
+        oy = cam.eye[1];
+        oz = cam.eye[2];
+      } else if (cam.orthographic) {
         const real_t sx = fx * cam.half_w;
         const real_t sy = fy * cam.half_h;
         ox = cam.eye[0] + sx * cam.right[0] + sy * cam.up[0];
@@ -486,6 +512,12 @@ namespace kernel {
       image(pix, 1) = acc_g;
       image(pix, 2) = acc_b;
       image(pix, 3) = acc_a;
+      // record the domain's front depth (geometric slab entry) for a produced
+      // fragment; the A-buffer composite orders domains by this. Domain slabs
+      // are disjoint contiguous ray intervals, so t_enter is a correct key.
+      if (acc_a > ZERO) {
+        depth_img(pix) = t_enter;
+      }
     }
   };
 
