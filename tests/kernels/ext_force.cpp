@@ -54,15 +54,18 @@ void put_value(array_t<T*>& arr, T v, prtlidx_t p) {
 struct Force {
   Force(real_t force) : force { force } {}
 
-  Inline auto fx1(const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx1(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
+    -> real_t {
     return force * math::sin(ONE) * math::sin(ONE);
   }
 
-  Inline auto fx2(const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx2(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
+    -> real_t {
     return force * math::sin(ONE) * math::cos(ONE);
   }
 
-  Inline auto fx3(const coord_t<Dim::_3D>&) const -> real_t {
+  Inline auto fx3(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
+    -> real_t {
     return force * math::cos(ONE);
   }
 
