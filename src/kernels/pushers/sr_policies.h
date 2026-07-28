@@ -102,6 +102,62 @@ namespace kernel::sr {
     }
   }
 
+  // The optional-method dispatch below is split into these free function
+  // templates on purpose. `if constexpr` whose condition depends only on a
+  // template parameter captured from an *enclosing* scope is not reliably
+  // discarded inside a generic lambda: several compilers (nvcc, intel, ...)
+  // still parse/instantiate the dead branch, which fails when the pgen does
+  // not define the optional method. Making the predicate a template parameter
+  // of a regular function template guarantees the dead branch is discarded.
+
+  template <bool HasEP, class PGen, class DOM, class Next>
+  void DispatchEmissionPolicy(const PGen&          pgen,
+                              DOM&                 domain,
+                              const PusherContext& pusher_ctx,
+                              Next&&               next) {
+    if constexpr (HasEP) {
+      next(pgen.EmissionPolicy(pusher_ctx.time, pusher_ctx.species_index, domain));
+    } else {
+      raise::Error("Custom emission policy flag is set but problem "
+                   "generator does not define an emission policy",
+                   HERE);
+    }
+  }
+
+  template <bool HasCPU, class PGen, class DOM, class Next>
+  void DispatchCustomPrtlUpdate(const PGen&          pgen,
+                                DOM&                 domain,
+                                const PusherContext& pusher_ctx,
+                                Next&&               next) {
+    if constexpr (HasCPU) {
+      next(pgen.CustomParticleUpdate(pusher_ctx.time,
+                                     pusher_ctx.species_index,
+                                     domain));
+    } else {
+      next(::traits::custom_prtl_update::NoPolicy_t {});
+    }
+  }
+
+  template <bool HasEF, class PGen, class DOM, class Next>
+  void DispatchExternalFields(const PGen&          pgen,
+                              DOM&                 domain,
+                              const PusherContext& pusher_ctx,
+                              Next&&               next) {
+    if constexpr (HasEF) {
+      const auto [apply_extfields, external_fields] = pgen.ExternalFields(
+        pusher_ctx.time,
+        pusher_ctx.species_index,
+        domain);
+      if (apply_extfields) {
+        next(external_fields);
+      } else {
+        next(::traits::extfields::NoPolicy_t {});
+      }
+    } else {
+      next(::traits::extfields::NoPolicy_t {});
+    }
+  }
+
   template <MetricClass M, class DOM, class PGen, class F>
   void MakePusherPolicy(const PGen&                  pgen,
                         DOM&                         domain,
@@ -110,6 +166,10 @@ namespace kernel::sr {
                         ntt::EmissionTypeFlag        emission_type,
                         bool                         atm,
                         F&&                          callback) {
+    constexpr bool has_emission  = ::traits::pgen::HasEmissionPolicy<PGen, DOM>;
+    constexpr bool has_cpu       = ::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>;
+    constexpr bool has_extfields = ::traits::pgen::HasExternalFields<PGen, DOM>;
+
     auto with_emission = [&](auto next) {
       switch (emission_type) {
         case ntt::EmissionType::SYNCHROTRON:
@@ -125,15 +185,7 @@ namespace kernel::sr {
             pusher_ctx));
           break;
         case ntt::EmissionType::CUSTOM:
-          if constexpr (::traits::pgen::HasEmissionPolicy<PGen, decltype(domain)>) {
-            next(pgen.EmissionPolicy(pusher_ctx.time,
-                                     pusher_ctx.species_index,
-                                     domain));
-          } else {
-            raise::Error("Custom emission policy flag is set but problem "
-                         "generator does not define an emission policy",
-                         HERE);
-          }
+          DispatchEmissionPolicy<has_emission>(pgen, domain, pusher_ctx, next);
           break;
         case ntt::EmissionType::NONE:
         default:
@@ -143,29 +195,11 @@ namespace kernel::sr {
     };
 
     auto with_custom_prtl_upd = [&](auto next) {
-      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>) {
-        next(pgen.CustomParticleUpdate(pusher_ctx.time,
-                                       pusher_ctx.species_index,
-                                       domain));
-      } else {
-        next(::traits::custom_prtl_update::NoPolicy_t {});
-      }
+      DispatchCustomPrtlUpdate<has_cpu>(pgen, domain, pusher_ctx, next);
     };
 
     auto with_ext_fields = [&](auto next) {
-      if constexpr (::traits::pgen::HasExternalFields<PGen, DOM>) {
-        const auto [apply_extfields, external_fields] = pgen.ExternalFields(
-          pusher_ctx.time,
-          pusher_ctx.species_index,
-          domain);
-        if (apply_extfields) {
-          next(external_fields);
-        } else {
-          next(::traits::extfields::NoPolicy_t {});
-        }
-      } else {
-        next(::traits::extfields::NoPolicy_t {});
-      }
+      DispatchExternalFields<has_extfields>(pgen, domain, pusher_ctx, next);
     };
 
     with_emission([&](auto ep) {
