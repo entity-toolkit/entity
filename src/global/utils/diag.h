@@ -36,6 +36,7 @@ namespace diag {
    * @param maxnpart (per each species)
    * @param particlesort (if true, dead particles were removed)
    * @param output (if true, output was written)
+   * @param render (if true, a volume render was produced)
    * @param checkpoint (if true, checkpoint was written)
    * @param colorful_print (if true, print with colors)
    */
@@ -49,6 +50,7 @@ namespace diag {
                         const std::vector<std::string>&,
                         const std::vector<npart_t>&,
                         const std::vector<npart_t>&,
+                        bool,
                         bool,
                         bool,
                         bool,

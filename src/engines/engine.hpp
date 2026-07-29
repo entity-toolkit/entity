@@ -142,6 +142,7 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     m_metadomain.InitWriter(&m_adios, m_params);
     m_metadomain.InitCheckpointWriter(&m_adios, m_params);
+    m_metadomain.InitRenderer(m_params);
 #endif
     logger::Checkpoint("Initializing Engine", HERE);
     if (not is_resuming) {
@@ -255,7 +256,7 @@ namespace ntt {
        "Injector", "Custom",
        "LoadBalance",
        "ParticleSort", "Output",
-       "Checkpoint" },
+       "Render", "Checkpoint" },
       []() {
         Kokkos::fence();
        },
@@ -323,6 +324,7 @@ namespace ntt {
       ++step;
 
       auto print_output     = false;
+      auto print_render     = false;
       auto print_checkpoint = false;
 #if defined(OUTPUT_ENABLED)
       timers.start("Output");
@@ -368,6 +370,10 @@ namespace ntt {
       }
       timers.stop("Output");
 
+      timers.start("Render");
+      print_render = m_metadomain.Render(m_params, step, step - 1, time, time - dt);
+      timers.stop("Render");
+
       timers.start("Checkpoint");
       print_checkpoint = m_metadomain.WriteCheckpoint(m_params,
                                                       step,
@@ -394,6 +400,7 @@ namespace ntt {
           m_metadomain.l_maxnpart_perspec(),
           print_prtl_clear,
           print_output,
+          print_render,
           print_checkpoint,
           m_params.get<bool>("diagnostics.colored_stdout"));
       }

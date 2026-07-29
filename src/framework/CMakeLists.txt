@@ -66,6 +66,7 @@ set(SOURCES
     ${SRC_DIR}/containers/fields.cpp)
 if(${output})
   list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_io.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_render.cpp)
   list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_chckpt.cpp)
   list(APPEND SOURCES ${SRC_DIR}/containers/fields_io.cpp)
   list(APPEND SOURCES ${SRC_DIR}/containers/particles_io.cpp)
