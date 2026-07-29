@@ -703,9 +703,15 @@ namespace ntt {
         gdiag          += s * s;
       }
       gdiag = math::sqrt(gdiag);
+      // marched extent per ray: the dome clips each ray to `dome_radius`, so size
+      // the step by the radius (== `samples` steps across the hemisphere) rather
+      // than the box diagonal. Identical on all ranks -> seamless.
+      const real_t march_len = (is_dome and cam.dome_radius > ZERO)
+                                 ? cam.dome_radius
+                                 : gdiag;
       const real_t ds = (g_renderer.stepSize() > ZERO)
                           ? g_renderer.stepSize()
-                          : gdiag / static_cast<real_t>(g_renderer.samples());
+                          : march_len / static_cast<real_t>(g_renderer.samples());
       const int max_steps = 2 * g_renderer.samples() + 16;
 
       // region box + depth-occluded spine (opaque box wireframe rendered inline

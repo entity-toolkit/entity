@@ -58,6 +58,10 @@ namespace out {
     real_t half_h { ONE };
     int    projection { Ortho };
     real_t dome_half_fov { static_cast<real_t>(1.5707963267948966) }; // rad; 180 deg dome => PI/2
+    // dome far-clip: rays stop at this world distance from the eye, so the
+    // sampled region is a half-ball (hemisphere) of this radius instead of the
+    // whole box -> no box corner/edge path-length artifacts. 0 => no clip.
+    real_t dome_radius { ZERO };
   };
 
   /**

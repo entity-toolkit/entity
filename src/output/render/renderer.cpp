@@ -431,6 +431,23 @@ namespace out {
                        "elliptical otherwise",
                        HERE);
       }
+      // spherical far-clip: each ray stops at `dome_radius` from the eye, so the
+      // sampled region is a half-ball (hemisphere) instead of the whole box ->
+      // uniform path length, no box corner/edge projection artifacts. Default =
+      // the largest sphere centered in the box (half the shortest side). A value
+      // of 0 disables the clip (march to the box boundary); a negative value
+      // also selects the default.
+      real_t insc = static_cast<real_t>(1e30);
+      for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
+        insc = (size[d] < insc) ? size[d] : insc;
+      }
+      insc *= HALF;
+      real_t domeR = toml::find_or<real_t>(td, "output", "render", "camera",
+                                          "dome_radius", insc);
+      if (domeR < ZERO) {
+        domeR = insc;
+      }
+      m_camera_dev.dome_radius = domeR;
     }
 
     /* ---- moving view (pan the region/camera to track a feature) --------- */

@@ -872,6 +872,16 @@
       #   @type: float [> 0.0, <= 360.0]
       #   @default: 180.0
       dome_fov = ""
+      # Dome far-clip radius in world units (dome mode only): each ray stops this
+      # far from the eye, so the sampled region is a half-ball (hemisphere) of
+      # this radius rather than the whole box -> uniform path length and no box
+      # corner/edge projection artifacts. `samples` then counts steps across this
+      # radius.
+      #   @type: float [>= 0.0]
+      #   @default: the largest sphere centered in the box (half the shortest
+      #             side), so it touches the face centers and never a corner
+      #   @note: 0 disables the clip (rays march to the box boundary)
+      dome_radius = ""
       # Vertical extent of the view in world units (orthographic only)
       #   @type: float [> 0.0]
       #   @default: the global box diagonal (the whole box fits from any angle)

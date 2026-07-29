@@ -412,6 +412,14 @@ namespace kernel {
         t_enter = (t1 > t_enter) ? t1 : t_enter;
         t_exit  = (t2 < t_exit) ? t2 : t_exit;
       }
+      // dome: clip each ray to a fixed radius around the interior eye, so the
+      // sampled region is a half-ball (hemisphere) of that radius rather than
+      // the whole box -> uniform path length, no box corner/edge projection
+      // artifacts. `t` is world distance from the shared eye (dir is unit), so
+      // this is a sphere clip and is identical on every rank (seamless).
+      if (cam.projection == out::CameraDevice::Dome and cam.dome_radius > ZERO) {
+        t_exit = (t_exit < cam.dome_radius) ? t_exit : cam.dome_radius;
+      }
       if (t_enter >= t_exit) {
         return;
       }
