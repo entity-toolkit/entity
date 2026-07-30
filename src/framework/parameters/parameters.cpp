@@ -64,6 +64,7 @@ namespace ntt {
        *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
        *   resist_vac - vacuum resistivity: E -> eta curl B below dens_min (0 = off)
        *   resist_hyper - hyper-resistivity eta_H grad^4 B, everywhere (0 = off)
+       *   resist - uniform Ohmic resistivity: E += eta curl B everywhere (0 = off)
        *   subcycle         - Pegasus-style sub-cycled field advance (default on)
        *   subcycle_courant - target whistler Courant per field sub-step
        *   subcycle_max     - cap on the number of field sub-steps per advance
@@ -114,6 +115,17 @@ namespace ntt {
       // grad^4 stability limit at the actual sub-step dt.
       set("hybrid.resist_hyper",
           toml::find_or<real_t>(toml_data, "hybrid", "resist_hyper", ZERO));
+      // uniform Ohmic resistivity (code units). > 0 adds E += eta * curl B in the
+      // Faraday-side Ohm's law everywhere (=> dB/dt += eta grad^2 B), the k^2
+      // companion to resist_hyper's k^4: it damps the intermediate few-cell band
+      // (k dx ~ 0.1-0.3) that hyper-resistivity barely reaches but a strong
+      // boundary/beam drive (e.g. a high-Mach reflecting-wall shock foot) pumps.
+      // Unlike resist_vac this fires in dense plasma too. Trades against physical
+      // magnetic diffusion, so keep it as small as stability allows. Internally
+      // clamped to the explicit grad^2 diffusion limit at the actual sub-step dt,
+      // so any value is safe.
+      set("hybrid.resist",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist", ZERO));
       // Pegasus-style sub-cycled magnetic-field advance (fieldsolvers.h
       // ::SubcycledFaraday): the whistler-stiff Ohm/Faraday loop is integrated
       // with adaptive SSP-RK3 sub-steps at its own CFL instead of full-dt Euler

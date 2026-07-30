@@ -70,6 +70,7 @@ namespace kernel::hybrid {
     const real_t hall_lim;
     const real_t resist_vac;
     const real_t resist_hyper;
+    const real_t resist;
     const real_t dx;
     const real_t dx_inv;
 
@@ -101,6 +102,7 @@ namespace kernel::hybrid {
                real_t                  hall_lim,
                real_t                  resist_vac,
                real_t                  resist_hyper,
+               real_t                  resist,
                real_t                  dx)
       : PP { PP }
       , NN { NN }
@@ -129,6 +131,7 @@ namespace kernel::hybrid {
       , hall_lim { hall_lim }
       , resist_vac { resist_vac }
       , resist_hyper { resist_hyper }
+      , resist { resist }
       , dx { dx }
       , dx_inv { ONE / dx } {}
 
@@ -163,6 +166,30 @@ namespace kernel::hybrid {
       constexpr real_t ndim = static_cast<real_t>(static_cast<dim_t>(D));
       return math::min(resist_hyper,
                        SQR(SQR(dx)) / (SQR(static_cast<real_t>(4) * ndim) * dt));
+    }
+
+    /**
+     * @brief Effective UNIFORM Ohmic resistivity, applied EVERYWHERE in
+     *        compute_Ee: E += eta * curl B  ->  dB/dt += eta grad^2 B.
+     *
+     * The k^2 companion to the k^4 hyper-resistivity. Hyper-resistivity is
+     * concentrated at the grid cutoff (eta_H k^4) and barely touches the
+     * intermediate band (k dx ~ 0.1-0.3); a strong boundary/beam drive -- e.g.
+     * the counter-streaming foot of a high-Mach reflecting-wall shock -- pumps
+     * exactly that band, radiating a few-d_i wave train the filter+hyper stack
+     * leaves under-damped. A small uniform eta (damping ~ eta k^2) blankets it,
+     * as in dHybrid. Trades against physical magnetic diffusion, so keep it as
+     * small as stability allows (scan upward from ~0.05).
+     *
+     * Clamped to the explicit grad^2 diffusion stability limit for this kernel's
+     * dt (the sub-step dt inside the sub-cycled advance): the discrete grad^2 max
+     * eigenvalue is 4 D / dx^2, so eta (4 D / dx^2) dt <= 1 (a factor 2 below the
+     * hard <= 2 limit) makes any user knob safe.
+     */
+    Inline auto eta_res() const -> real_t {
+      constexpr real_t ndim = static_cast<real_t>(static_cast<dim_t>(D));
+      return math::min(resist,
+                       SQR(dx) / (static_cast<real_t>(4) * ndim * dt));
     }
 
     /**
@@ -354,9 +381,19 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac12 / N1;
           E2 *= -vac12 / N2;
-          if (resist_vac > ZERO or resist_hyper > ZERO) {
+          if (resist_vac > ZERO or resist_hyper > ZERO or resist > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
+            if (resist > ZERO) {
+              // uniform Ohmic resistivity, everywhere: E += eta * curl B
+              //   -> dB/dt += eta grad^2 B  (the k^2 companion to the k^4
+              // hyper-resistivity; see eta_res). c0 = 0 in 1D, so its E0 term
+              // is a harmless no-op there.
+              const real_t eta_u = eta_res();
+              E0 += eta_u * c0;
+              E1 += eta_u * c1;
+              E2 += eta_u * c2;
+            }
             if (resist_vac > ZERO) {
               // resistive vacuum: crossfade to E = eta * curl B below the
               // threshold (see the note at vac_factor)
@@ -452,9 +489,19 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
-          if (resist_vac > ZERO or resist_hyper > ZERO) {
+          if (resist_vac > ZERO or resist_hyper > ZERO or resist > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
+            if (resist > ZERO) {
+              // uniform Ohmic resistivity, everywhere: E += eta * curl B
+              //   -> dB/dt += eta grad^2 B  (the k^2 companion to the k^4
+              // hyper-resistivity; see eta_res). c0 = 0 in 1D, so its E0 term
+              // is a harmless no-op there.
+              const real_t eta_u = eta_res();
+              E0 += eta_u * c0;
+              E1 += eta_u * c1;
+              E2 += eta_u * c2;
+            }
             if (resist_vac > ZERO) {
               // resistive vacuum: crossfade to E = eta * curl B below the
               // threshold (see the note at vac_factor)
@@ -618,9 +665,19 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
-          if (resist_vac > ZERO or resist_hyper > ZERO) {
+          if (resist_vac > ZERO or resist_hyper > ZERO or resist > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
+            if (resist > ZERO) {
+              // uniform Ohmic resistivity, everywhere: E += eta * curl B
+              //   -> dB/dt += eta grad^2 B  (the k^2 companion to the k^4
+              // hyper-resistivity; see eta_res). c0 = 0 in 1D, so its E0 term
+              // is a harmless no-op there.
+              const real_t eta_u = eta_res();
+              E0 += eta_u * c0;
+              E1 += eta_u * c1;
+              E2 += eta_u * c2;
+            }
             if (resist_vac > ZERO) {
               // resistive vacuum: crossfade to E = eta * curl B below the
               // threshold (see the note at vac_factor)
