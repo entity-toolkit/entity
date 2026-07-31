@@ -33,7 +33,7 @@ namespace ntt {
         HERE);
 
       categories.emplace();
-      for (const auto& category : { "fields", "particles", "spectra", "stats" }) {
+      for (const auto& category : { "fields", "particles", "spectra", "spectra3D", "stats" }) {
         const auto q_int               = toml::find_or<timestep_t>(toml_data,
                                                      "output",
                                                      category,
@@ -158,6 +158,41 @@ namespace ntt {
                                      "spectra",
                                      "n_bins",
                                      defaults::output::spec_nbins);
+      
+      /* Spectra3D ------------------------------------------------------------ */
+      spectra3d_e_min = toml::find_or(toml_data, "output", "spectra3D", "e_min", defaults::output::spec3d_emin);
+
+      spectra3d_e_max = toml::find_or(toml_data, "output", "spectra3D", "e_max", defaults::output::spec3d_emin);
+
+      spectra3d_log_bins = toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "log_bins",
+                      defaults::output::spec3d_log);
+      
+      spectra3d_n_bins = toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "n_bins",
+                      defaults::output::spec3d_nbins);
+
+      spectra3d_nx1 = toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx1",
+                      defaults::output::spec3d_nx1);
+
+      spectra3d_nx2 = toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx2",
+                      defaults::output::spec3d_nx1);
+      
+      spectra3d_nx3 = toml::find_or(toml_data,
+                      "output",
+                      "spectra3D",
+                      "nx3",
+                      defaults::output::spec3d_nx1);
 
       /* Stats ---------------------------------------------------------------- */
       stats_quantities        = toml::find_or(toml_data,
@@ -208,6 +243,14 @@ namespace ntt {
       params->set("output.spectra.e_max", spectra_e_max.value());
       params->set("output.spectra.log_bins", spectra_log_bins.value());
       params->set("output.spectra.n_bins", spectra_n_bins.value());
+
+      params->set("output.spectra3D.e_min", spectra3d_e_min.value());
+      params->set("output.spectra3D.e_max", spectra3d_e_max.value());
+      params->set("output.spectra3D.log_bins", spectra3d_log_bins.value());
+      params->set("output.spectra3D.n_bins", spectra3d_n_bins.value());
+      params->set("output.spectra3D.nx1", spectra3d_nx1.value());
+      params->set("output.spectra3D.nx2", spectra3d_nx2.value());
+      params->set("output.spectra3D.nx3", spectra3d_nx3.value());
 
       params->set("output.stats.quantities", stats_quantities.value());
       params->set("output.stats.custom", stats_custom_quantities.value());
