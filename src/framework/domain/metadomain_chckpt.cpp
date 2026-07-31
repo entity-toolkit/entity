@@ -80,17 +80,17 @@ namespace ntt {
         species.CheckpointDeclare(g_checkpoint_writer.io());
       }
       for (auto d { 0u }; d < M::Dim; ++d) {
-        g_checkpoint_writer.io().DefineVariable<real_t>(
+        g_checkpoint_writer.io().template DefineVariable<real_t>(
           fmt::format("subdomain_x%d_min", d + 1),
           { adios2::UnknownDim },
           { adios2::UnknownDim },
           { adios2::UnknownDim });
-        g_checkpoint_writer.io().DefineVariable<real_t>(
+        g_checkpoint_writer.io().template DefineVariable<real_t>(
           fmt::format("subdomain_x%d_max", d + 1),
           { adios2::UnknownDim },
           { adios2::UnknownDim },
           { adios2::UnknownDim });
-        g_checkpoint_writer.io().DefineVariable<ncells_t>(
+        g_checkpoint_writer.io().template DefineVariable<ncells_t>(
           fmt::format("subdomain_nx%d", d + 1),
           { adios2::UnknownDim },
           { adios2::UnknownDim },

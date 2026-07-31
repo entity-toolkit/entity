@@ -960,7 +960,7 @@ namespace ntt {
       Kokkos::parallel_for(
         "GenerateEnergyBins",
         n_bins + 1,
-        Lambda(index_t e) {
+        Lambda(uint32_t e) {
           if (log_bins) {
             energy(e) = math::pow(10.0, e_min + (e_max - e_min) * e / n_bins);
           } else {
@@ -996,7 +996,7 @@ namespace ntt {
         Kokkos::parallel_for(
           "ComputeSpectra",
           species.rangeActiveParticles(),
-          Lambda(index_t p) {
+          Lambda(prtlidx_t p) {
             if (tag(p) != ParticleTag::alive) {
               return;
             }

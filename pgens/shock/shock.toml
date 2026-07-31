@@ -63,7 +63,19 @@
     stride = 10 
 
   [output.spectra]
-    enable = false
+    enable = true
+    e_min = 1e-2
+    e_max = 1e1
+    log_bins = true
+
+  [output.spectra3D]
+    enable = true
+    e_min = 1e-2
+    e_max = 1e1
+    log_bins = true
+    nx1 = 40
+    nx2 = 3
+    nx3 = 1
 
 [diagnostics]
   log_level = "WARNING"
