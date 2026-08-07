@@ -1,0 +1,58 @@
+[simulation]
+  name    = "ascent_cube"
+  engine  = "srpic"
+  runtime = 1.0
+
+[grid]
+  resolution = [64, 64, 64]
+  extent     = [[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 0.1
+  skindepth0 = 0.1
+
+[algorithms.fieldsolver]
+  enable = true
+
+[algorithms.deposit]
+  enable = false
+
+[particles]
+  ppc0 = 0.0
+
+[setup]
+  # Amplitude of the initial B3 component.
+  B0 = 1.0
+
+[output]
+  format        = "hdf5"
+  interval_time = 0.1
+
+  [output.fields]
+    quantities   = ["B"]
+    downsampling = [1, 1, 1]
+
+  [output.particles]
+    enable = false
+
+  [output.spectra]
+    enable = false
+
+  # In-situ visualization with Ascent. The cadence is independent of the
+  # ADIOS field-output cadence (set above). Here Ascent renders 5x more
+  # frequently than fields are dumped to disk.
+  [output.ascent]
+    enable        = true
+    actions_file  = "ascent_actions.yaml"
+    fields        = ["B3"]
+    interval_time = 0.02
+
+[diagnostics]
+  interval = 1

@@ -136,7 +136,10 @@ namespace timer {
 
   auto Timers::printAll(TimerFlags flags, npart_t npart, ncells_t ncells) const
     -> std::string {
-    const std::vector<std::string> extras { "ParticleSort", "Output", "Checkpoint" };
+    const std::vector<std::string> extras { "ParticleSort",
+                                             "Output",
+                                             "Ascent",
+                                             "Checkpoint" };
     const auto stats = gather(extras, npart, ncells);
     if (stats.empty()) {
       return "";
@@ -259,9 +262,10 @@ namespace timer {
       }
     }
 
-    // print extra timers for output/checkpoint/particleSort
+    // print extra timers for output/ascent/checkpoint/particleSort
     const std::vector<TimerFlags> extras_f { Timer::PrintParticleSort,
                                              Timer::PrintOutput,
+                                             Timer::PrintAscent,
                                              Timer::PrintCheckpoint };
     for (auto i { 0u }; i < extras.size(); ++i) {
       const auto& name    = extras[i];

@@ -59,6 +59,18 @@ endif()
 
 set_property(CACHE default_gui PROPERTY TYPE BOOL)
 
+if(DEFINED ENV{Entity_ENABLE_ASCENT})
+  set(default_ascent
+      $ENV{Entity_ENABLE_ASCENT}
+      CACHE INTERNAL "Default flag for Ascent in situ visualization")
+else()
+  set(default_ascent
+      OFF
+      CACHE INTERNAL "Default flag for Ascent in situ visualization")
+endif()
+
+set_property(CACHE default_ascent PROPERTY TYPE BOOL)
+
 if(DEFINED ENV{Entity_ENABLE_MPI})
   set(default_mpi
       $ENV{Entity_ENABLE_MPI}

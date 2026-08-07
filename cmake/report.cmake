@@ -103,6 +103,15 @@ printchoices(
   OUTPUT_REPORT
   46)
 printchoices(
+  "Ascent"
+  "ascent"
+  "${ON_OFF_VALUES}"
+  ${ascent}
+  ${default_ascent}
+  "${Green}"
+  ASCENT_REPORT
+  46)
+printchoices(
   "MPI"
   "mpi"
   "${ON_OFF_VALUES}"
@@ -213,6 +222,9 @@ string(
   "\n"
   "  "
   ${OUTPUT_REPORT}
+  "\n"
+  "  "
+  ${ASCENT_REPORT}
   "\n")
 
 string(REPLACE ";" "+" Kokkos_ARCH "${Kokkos_ARCH}")
@@ -318,6 +330,11 @@ if(${output})
     string(APPEND REPORT_TEXT "    " "${Dim}${adios2_BUILD_DIR}${ColorReset}"
            "\n")
   endif()
+endif()
+
+if(${ascent})
+  string(APPEND REPORT_TEXT "  - Ascent: v" ${Ascent_VERSION} "\n")
+  string(APPEND REPORT_TEXT "    " "${Dim}${Ascent_DIR}${ColorReset}" "\n")
 endif()
 
 string(

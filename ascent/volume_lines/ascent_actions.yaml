@@ -1,0 +1,81 @@
+# Ascent actions for the turbulence_density_lines example.
+#
+# Pipeline:
+#   pl_lines: streamline tracing of the published vector field `B`. Entity
+#             publishes B1/B2/B3 both as scalars AND as the (u,v,w)
+#             components of a Conduit-Blueprint MCArray vector named `B`,
+#             so the streamline filter can consume it directly without an
+#             extra `composite_vector` step.
+#
+# Scene with two co-rendered plots:
+#   p_density: ray-traced volume render of the density `N` directly off the
+#              published mesh (no pipeline).
+#   p_lines:   pseudocolor of the streamline tubes from `pl_lines`.
+#
+# Both plots share the same camera/render so they composite into a single
+# image per cycle.
+
+-
+  action: "add_pipelines"
+  pipelines:
+    pl_lines:
+      f1:
+        type: "streamline"
+        params:
+          field: "B"
+          num_steps: 200
+          step_size: 0.5
+          seeds:
+            type: "box"
+            sampling_type: "uniform"
+            sampling_space: "interior"
+            # `extents_<axis>` (not `<axis>_extents`) and per-axis seed
+            # counts are required by this version of Ascent's
+            # vtkh_streamline filter.
+            extents_x: [-28.0, 28.0]
+            extents_y: [-28.0, 28.0]
+            extents_z: [-28.0, 28.0]
+            num_seeds_x: 4
+            num_seeds_y: 4
+            num_seeds_z: 3
+          rendering:
+            # Tube-rasterization options live under `rendering/`.
+            enable_tubes: "true"
+            tube_size: 0.35
+            tube_sides: 6
+            output_field: "B_lines"
+
+-
+  action: "add_scenes"
+  scenes:
+    s_combo:
+      plots:
+        # Background: ray-traced volume render of particle density.
+        p_density:
+          type: "volume"
+          field: "N"
+          # Make low densities transparent so the field lines show through.
+          min_value: 1.5
+          max_value: 5.0
+          color_table:
+            name: "Viridis"
+        # Foreground: magnetic field lines as 3D tubes.
+        p_lines:
+          type: "pseudocolor"
+          pipeline: "pl_lines"
+          field: "B_lines"
+          color_table:
+            name: "Plasma"
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1280
+          image_height: 1024
+          image_prefix: "density_lines_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [120.0, 120.0, 120.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0

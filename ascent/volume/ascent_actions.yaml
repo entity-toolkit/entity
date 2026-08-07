@@ -1,0 +1,56 @@
+# Ascent actions for the turbulence_ascent example.
+#
+# Pipeline:
+#   1. composite_vector: stitch the three published scalars (B1, B2, B3)
+#      into a single vector field `B`.
+#   2. vector_magnitude: derive |B| from `B`.
+# Scene:
+#   3. volume plot of |B| (ray-cast / volume rendering) from a 3D camera.
+#
+# This file is loaded automatically by Ascent when the option
+#   output.ascent.actions_file = "ascent_actions.yaml"
+# is set in the toml input file.
+
+-
+  action: "add_pipelines"
+  pipelines:
+    pl_b:
+      f1:
+        type: "composite_vector"
+        params:
+          field1: "B1"
+          field2: "B2"
+          field3: "B3"
+          output_name: "B"
+      f2:
+        type: "vector_magnitude"
+        params:
+          field: "B"
+          output_name: "Bmag"
+
+-
+  action: "add_scenes"
+  scenes:
+    s_bmag:
+      plots:
+        p1:
+          type: "volume"
+          field: "Bmag"
+          pipeline: "pl_b"
+          # Tweak the transfer function so weak |B| is transparent and
+          # strong |B| stands out.
+          min_value: 0.5
+          max_value: 4.0
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1024
+          image_height: 1024
+          image_prefix: "turbulence_ascent_Bmag_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [80.0, 80.0, 80.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0

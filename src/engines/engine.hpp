@@ -255,7 +255,7 @@ namespace ntt {
        "Injector", "Custom",
        "LoadBalance",
        "ParticleSort", "Output",
-       "Checkpoint" },
+       "Ascent", "Checkpoint" },
       []() {
         Kokkos::fence();
        },
@@ -323,6 +323,7 @@ namespace ntt {
       ++step;
 
       auto print_output     = false;
+      auto print_ascent     = false;
       auto print_checkpoint = false;
 #if defined(OUTPUT_ENABLED)
       timers.start("Output");
@@ -368,6 +369,12 @@ namespace ntt {
       }
       timers.stop("Output");
 
+#if defined(ASCENT_ENABLED)
+      timers.start("Ascent");
+      print_ascent = m_metadomain.RenderAscent(step, time);
+      timers.stop("Ascent");
+#endif
+
       timers.start("Checkpoint");
       print_checkpoint = m_metadomain.WriteCheckpoint(m_params,
                                                       step,
@@ -394,6 +401,7 @@ namespace ntt {
           m_metadomain.l_maxnpart_perspec(),
           print_prtl_clear,
           print_output,
+          print_ascent,
           print_checkpoint,
           m_params.get<bool>("diagnostics.colored_stdout"));
       }

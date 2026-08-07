@@ -165,6 +165,108 @@ namespace ntt {
     output_params.read(dim, get<std::size_t>("particles.nspec"), toml_data);
     output_params.setParams(this);
 
+    /* [output.ascent] (in situ visualization) ------------------------------ */
+    set("output.ascent.enable",
+        toml::find_or<bool>(toml_data, "output", "ascent", "enable", false));
+    set("output.ascent.actions_file",
+        toml::find_or<std::string>(toml_data,
+                                   "output",
+                                   "ascent",
+                                   "actions_file",
+                                   ""));
+    set("output.ascent.fields",
+        toml::find_or<std::vector<std::string>>(toml_data,
+                                                "output",
+                                                "ascent",
+                                                "fields",
+                                                std::vector<std::string> {}));
+    set("output.ascent.vector_aliases",
+        toml::find_or<bool>(toml_data,
+                            "output",
+                            "ascent",
+                            "vector_aliases",
+                            true));
+    // Shift applied at render time to the x-component of every
+    // `camera/position` and `camera/look_at` in the actions file:
+    // dx = v_drift * t. Lets the camera ride along with a moving
+    // window so the rendered region tracks a feature drifting through
+    // the simulation domain (e.g. a shock front).
+    set("output.ascent.v_drift",
+        toml::find_or<real_t>(toml_data,
+                              "output",
+                              "ascent",
+                              "v_drift",
+                              ZERO));
+    // Rotational velocity (radians per code time unit) around the
+    // camera's `look_at` point, with the camera's `up` vector as the
+    // rotation axis. The rotation angle theta = v_rot * t is applied
+    // before any v_drift translation, which keeps the camera orbiting
+    // the (drifted) focus point regardless of v_drift.
+    set("output.ascent.v_rot",
+        toml::find_or<real_t>(toml_data,
+                              "output",
+                              "ascent",
+                              "v_rot",
+                              ZERO));
+    {
+      // Per-axis stride applied when extracting fields for Ascent. A factor
+      // > 1 cuts the published mesh and rendered work by that factor in
+      // the corresponding direction. Accepts either a scalar (broadcast to
+      // all axes) or an array of length `dim`.
+      std::vector<unsigned int> a_dwn;
+      try {
+        a_dwn = toml::find<std::vector<unsigned int>>(toml_data,
+                                                      "output",
+                                                      "ascent",
+                                                      "downsample");
+      } catch (...) {
+        try {
+          const auto a_dwn_scalar = toml::find<unsigned int>(toml_data,
+                                                             "output",
+                                                             "ascent",
+                                                             "downsample");
+          a_dwn.assign(static_cast<std::size_t>(dim), a_dwn_scalar);
+        } catch (...) {
+          a_dwn.assign(static_cast<std::size_t>(dim), 1u);
+        }
+      }
+      if (a_dwn.size() > static_cast<std::size_t>(dim)) {
+        a_dwn.erase(a_dwn.begin() + dim, a_dwn.end());
+      }
+      raise::ErrorIf(a_dwn.size() != static_cast<std::size_t>(dim),
+                     "output.ascent.downsample must have length `grid.dim`",
+                     HERE);
+      for (const auto& d : a_dwn) {
+        raise::ErrorIf(d == 0u,
+                       "output.ascent.downsample factor must be nonzero",
+                       HERE);
+      }
+      set("output.ascent.downsample", a_dwn);
+    }
+    {
+      // Cadence is independent of [output.fields]: when neither is set, fall
+      // back to the global [output] interval keys.
+      const auto a_int = toml::find_or<timestep_t>(toml_data,
+                                                   "output",
+                                                   "ascent",
+                                                   "interval",
+                                                   0);
+      const auto a_int_time = toml::find_or<simtime_t>(toml_data,
+                                                       "output",
+                                                       "ascent",
+                                                       "interval_time",
+                                                       -1.0);
+      if ((a_int == 0) and (a_int_time == -1.0)) {
+        set("output.ascent.interval",
+            get<timestep_t>("output.interval"));
+        set("output.ascent.interval_time",
+            get<simtime_t>("output.interval_time"));
+      } else {
+        set("output.ascent.interval", a_int);
+        set("output.ascent.interval_time", a_int_time);
+      }
+    }
+
     /* [checkpoint] --------------------------------------------------------- */
     set("checkpoint.interval",
         toml::find_or(toml_data,

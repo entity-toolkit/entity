@@ -1,0 +1,131 @@
+# Ascent actions for the turbulence_triptych example.
+#
+# Pipelines:
+#   pl_b: (B1,B2,B3) -> composite_vector -> vector_magnitude  -> "Bmag"
+#   pl_j: (J1,J2,J3) -> composite_vector -> vector_magnitude  -> "Jmag"
+#
+# Scenes (each ray-traced to its own PNG; share camera + cadence):
+#   s_n:    volume render of the published density `N` (no pipeline).
+#   s_bmag: volume render of |B| from pl_b.
+#   s_jmag: volume render of |J| from pl_j.
+#
+# Ascent v0.9.x does not expose render viewports for in-image
+# side-by-side composition, so each quantity is written to its own
+# stream of PNGs with a synchronized cycle index in the file name
+# (`*_%08d`). Tile them externally, e.g.:
+#   montage -tile 3x1 -geometry +4+0 \
+#     N_00000010.png Bmag_00000010.png Jmag_00000010.png triptych_0010.png
+#
+# This file is loaded automatically by Ascent when the option
+#   output.ascent.actions_file = "ascent_actions.yaml"
+# is set in the toml input file.
+
+-
+  action: "add_pipelines"
+  pipelines:
+    pl_b:
+      f1:
+        type: "composite_vector"
+        params:
+          field1: "B1"
+          field2: "B2"
+          field3: "B3"
+          output_name: "B_vec"
+      f2:
+        type: "vector_magnitude"
+        params:
+          field: "B_vec"
+          output_name: "Bmag"
+    pl_j:
+      f1:
+        type: "composite_vector"
+        params:
+          field1: "J1"
+          field2: "J2"
+          field3: "J3"
+          output_name: "J_vec"
+      f2:
+        type: "vector_magnitude"
+        params:
+          field: "J_vec"
+          output_name: "Jmag"
+
+-
+  action: "add_scenes"
+  scenes:
+    # Particle number density.
+    s_n:
+      plots:
+        p1:
+          type: "volume"
+          field: "N"
+          # Make low densities transparent so structure stands out.
+          min_value: 1.5
+          max_value: 5.0
+          color_table:
+            name: "Viridis"
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1024
+          image_height: 1024
+          image_prefix: "N_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [80.0, 80.0, 80.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0
+
+    # Magnetic-field magnitude.
+    s_bmag:
+      plots:
+        p1:
+          type: "volume"
+          field: "Bmag"
+          pipeline: "pl_b"
+          min_value: 0.5
+          max_value: 4.0
+          color_table:
+            name: "Plasma"
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1024
+          image_height: 1024
+          image_prefix: "Bmag_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [80.0, 80.0, 80.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0
+
+    # Current-density magnitude.
+    s_jmag:
+      plots:
+        p1:
+          type: "volume"
+          field: "Jmag"
+          pipeline: "pl_j"
+          # |J| dynamic range is much smaller than |B|; tighten transfer
+          # function around the bulk so current sheets stand out.
+          min_value: 0.05
+          max_value: 0.6
+          color_table:
+            name: "Inferno"
+      renders:
+        r1:
+          type: "raytracer"
+          image_width: 1024
+          image_height: 1024
+          image_prefix: "Jmag_%08d"
+          bg_color: [0.0, 0.0, 0.0]
+          fg_color: [1.0, 1.0, 1.0]
+          camera:
+            position: [80.0, 80.0, 80.0]
+            look_at: [0.0, 0.0, 0.0]
+            up: [0.0, 0.0, 1.0]
+            fov: 35.0
