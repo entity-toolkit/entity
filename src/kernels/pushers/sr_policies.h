@@ -102,6 +102,57 @@ namespace kernel::sr {
     }
   }
 
+  // nvcc/nvc++ workaround: if constexpr inside generic lambdas does not reliably
+  // discard dead branches on some NVC++ versions. Factor the three optional-pgen
+  // dispatches into regular template functions so the discard happens at template
+  // instantiation, not inside a lambda operator().
+
+  template <class PGen, class DOM, class Next>
+  void sr_dispatch_custom_emission(const PGen&   pgen,
+                                   simtime_t     time,
+                                   spidx_t       sp,
+                                   DOM&          dom,
+                                   Next&&        next) {
+    if constexpr (::traits::pgen::HasEmissionPolicy<PGen, DOM>) {
+      next(pgen.EmissionPolicy(time, sp, dom));
+    } else {
+      raise::Error("Custom emission policy flag is set but problem "
+                   "generator does not define an emission policy",
+                   HERE);
+    }
+  }
+
+  template <class PGen, class DOM, class Next>
+  void sr_dispatch_cpu_policy(const PGen& pgen,
+                              simtime_t   time,
+                              spidx_t     sp,
+                              DOM&        dom,
+                              Next&&      next) {
+    if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>) {
+      next(pgen.CustomParticleUpdate(time, sp, dom));
+    } else {
+      next(::traits::custom_prtl_update::NoPolicy_t {});
+    }
+  }
+
+  template <class PGen, class DOM, class Next>
+  void sr_dispatch_extfields(const PGen& pgen,
+                             simtime_t   time,
+                             spidx_t     sp,
+                             DOM&        dom,
+                             Next&&      next) {
+    if constexpr (::traits::pgen::HasExternalFields<PGen, DOM>) {
+      const auto [apply_extfields, external_fields] = pgen.ExternalFields(time, sp, dom);
+      if (apply_extfields) {
+        next(external_fields);
+      } else {
+        next(::traits::extfields::NoPolicy_t {});
+      }
+    } else {
+      next(::traits::extfields::NoPolicy_t {});
+    }
+  }
+
   template <MetricClass M, class DOM, class PGen, class F>
   void MakePusherPolicy(const PGen&                  pgen,
                         DOM&                         domain,
@@ -125,15 +176,11 @@ namespace kernel::sr {
             pusher_ctx));
           break;
         case ntt::EmissionType::CUSTOM:
-          if constexpr (::traits::pgen::HasEmissionPolicy<PGen, decltype(domain)>) {
-            next(pgen.EmissionPolicy(pusher_ctx.time,
-                                     pusher_ctx.species_index,
-                                     domain));
-          } else {
-            raise::Error("Custom emission policy flag is set but problem "
-                         "generator does not define an emission policy",
-                         HERE);
-          }
+          sr_dispatch_custom_emission(pgen,
+                                      pusher_ctx.time,
+                                      pusher_ctx.species_index,
+                                      domain,
+                                      next);
           break;
         case ntt::EmissionType::NONE:
         default:
@@ -143,29 +190,11 @@ namespace kernel::sr {
     };
 
     auto with_custom_prtl_upd = [&](auto next) {
-      if constexpr (::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>) {
-        next(pgen.CustomParticleUpdate(pusher_ctx.time,
-                                       pusher_ctx.species_index,
-                                       domain));
-      } else {
-        next(::traits::custom_prtl_update::NoPolicy_t {});
-      }
+      sr_dispatch_cpu_policy(pgen, pusher_ctx.time, pusher_ctx.species_index, domain, next);
     };
 
     auto with_ext_fields = [&](auto next) {
-      if constexpr (::traits::pgen::HasExternalFields<PGen, DOM>) {
-        const auto [apply_extfields, external_fields] = pgen.ExternalFields(
-          pusher_ctx.time,
-          pusher_ctx.species_index,
-          domain);
-        if (apply_extfields) {
-          next(external_fields);
-        } else {
-          next(::traits::extfields::NoPolicy_t {});
-        }
-      } else {
-        next(::traits::extfields::NoPolicy_t {});
-      }
+      sr_dispatch_extfields(pgen, pusher_ctx.time, pusher_ctx.species_index, domain, next);
     };
 
     with_emission([&](auto ep) {

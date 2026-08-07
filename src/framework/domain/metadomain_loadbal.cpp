@@ -110,9 +110,7 @@ namespace ntt {
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::Rebalance(unsigned int dim_mask,
                                    real_t       tolerance,
-                                   ncells_t     max_shift_cells)
-    requires(MetricClass<M>)
-  {
+                                   ncells_t     max_shift_cells) {
 #if !defined(MPI_ENABLED)
     (void)dim_mask;
     (void)tolerance;
@@ -377,6 +375,10 @@ namespace ntt {
           if (tag(p) != ParticleTag::alive) {
             return;
           }
+          // nvcc: force capture of all vars before any constexpr-if branch
+          (void)i1; (void)i1p; (void)i2; (void)i2p; (void)i3; (void)i3p;
+          (void)dx1; (void)dx2; (void)dx3;
+          (void)new_n1; (void)new_n2; (void)new_n3;
           if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
                         M::Dim == Dim::_3D) {
             i1(p)  += dx1;

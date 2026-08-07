@@ -146,8 +146,7 @@ namespace ntt {
      */
     void Rebalance(unsigned int    dim_mask,
                    real_t          tolerance,
-                   ncells_t        max_shift_cells)
-      requires(MetricClass<M>);
+                   ncells_t        max_shift_cells);
 
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
