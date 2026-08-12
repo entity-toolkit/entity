@@ -3,6 +3,8 @@
  * @brief Kernels for injecting particles in different ways
  * @implements
  *   - kernel::UniformInjector_kernel<>
+ *   - kernel::UniformInjectorSingle_kernel<>
+ *   - kernel::LatticeInjector_kernel<>
  *   - kernel::GlobalInjector_kernel<>
  *   - kernel::NonUniformInjector_kernel<>
  * @namespaces:
@@ -443,6 +445,200 @@ namespace kernel {
       // clang-format on
     }
   }; // struct UniformInjectorSingle_kernel
+
+  /**
+   * @brief Quiet-start injector: exactly `prod(nppd_i)` particles per cell placed
+   *        on a deterministic sub-cell lattice (no random positions)
+   * @note Single species (as UniformInjectorSingle_kernel); call it once per
+   *       species with the same lattice to inject an exactly neutral pair.
+   * @note The particle index decomposes as p = cell * ppc_cell + sub, with `cell`
+   *       running over the cells of the (cell-aligned) injection region and `sub`
+   *       over the nppd_1 x nppd_2 x nppd_3 sub-cell lattice sites of one cell,
+   *       placed at dx_i = (s_i + 1/2) / nppd_i. A lattice commensurate with the
+   *       grid deposits an EXACTLY uniform density for any B-spline shape (also
+   *       for a non-cubic nppd_i), i.e. it
+   *       carries no 1/sqrt(ppc) density shot noise -- unlike random placement,
+   *       whose (multinomial) per-cell count noise is white down to the longest
+   *       wavelengths and, e.g., Bragg-scatters a whistler into its
+   *       counter-propagating partner.
+   * @note Velocities still come from `energy_dist`, so a finite-temperature draw
+   *       remains noisy in velocity space; only the positional/density noise is
+   *       removed.
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  struct LatticeInjector_kernel {
+
+    array_t<int*>      i1s, i2s, i3s;
+    array_t<prtldx_t*> dx1s, dx2s, dx3s;
+    array_t<real_t*>   ux1s, ux2s, ux3s;
+    array_t<real_t*>   phis;
+    array_t<real_t*>   weights;
+    array_t<short*>    tags;
+    array_t<npart_t**> pldis;
+
+    const npart_t offset;
+    const npart_t domain_idx, cntr;
+    const bool    use_tracking;
+    const M       metric;
+    // cell-aligned injection region: first cell and # of cells per direction
+    const int     i1_offset, i2_offset, i3_offset;
+    const npart_t ncells_1, ncells_2;
+    // sub-cell lattice: nppd_i sites in direction i, ppc_cell = prod(nppd_i)
+    const npart_t ppc_cell, nppd_1, nppd_2, nppd_3;
+    const real_t  inv_nppd_1, inv_nppd_2, inv_nppd_3;
+    const ED      energy_dist;
+    const real_t  inv_V0;
+
+    LatticeInjector_kernel(Particles<M::Dim, M::CoordType>& species,
+                          npart_t                          domain_idx,
+                          const M&                         metric,
+                          int                              i1_offset,
+                          int                              i2_offset,
+                          int                              i3_offset,
+                          npart_t                          ncells_1,
+                          npart_t                          ncells_2,
+                          npart_t                          nppd_1,
+                          npart_t                          nppd_2,
+                          npart_t                          nppd_3,
+                          const ED&                        energy_dist,
+                          real_t                           inv_V0)
+      : i1s { species.i1 }
+      , i2s { species.i2 }
+      , i3s { species.i3 }
+      , dx1s { species.dx1 }
+      , dx2s { species.dx2 }
+      , dx3s { species.dx3 }
+      , ux1s { species.ux1 }
+      , ux2s { species.ux2 }
+      , ux3s { species.ux3 }
+      , phis { species.phi }
+      , weights { species.weight }
+      , tags { species.tag }
+      , pldis { species.pld_i }
+      , offset { species.npart() }
+      , domain_idx { domain_idx }
+      , cntr { species.counter() }
+      , use_tracking { species.use_tracking() }
+      , metric { metric }
+      , i1_offset { i1_offset }
+      , i2_offset { i2_offset }
+      , i3_offset { i3_offset }
+      , ncells_1 { ncells_1 }
+      , ncells_2 { ncells_2 }
+      , ppc_cell { nppd_1 * nppd_2 * nppd_3 }
+      , nppd_1 { nppd_1 }
+      , nppd_2 { nppd_2 }
+      , nppd_3 { nppd_3 }
+      , inv_nppd_1 { ONE / static_cast<real_t>(nppd_1) }
+      , inv_nppd_2 { ONE / static_cast<real_t>(nppd_2) }
+      , inv_nppd_3 { ONE / static_cast<real_t>(nppd_3) }
+      , energy_dist { energy_dist }
+      , inv_V0 { inv_V0 } {
+      raise::ErrorIf(nppd_1 == 0 or nppd_2 == 0 or nppd_3 == 0,
+                     "LatticeInjector_kernel: empty lattice",
+                     HERE);
+      if (use_tracking) {
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(species.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(species.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+    }
+
+    Inline void operator()(prtlidx_t p) const {
+      coord_t<M::Dim>           x_Cd { ZERO };
+      tuple_t<int, M::Dim>      xi_Cd { 0 };
+      tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
+      vec_t<Dim::_3D>           v { ZERO };
+      { // deterministic lattice coordinate (cell index & sub-cell site)
+        // the cell index and the sub-cell fraction are formed separately: no
+        // large-index cancellation, so dx is exact even for 10^5 cells in single
+        const npart_t cell { p / ppc_cell };
+        const npart_t sub { p % ppc_cell };
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          xi_Cd[0]  = i1_offset + static_cast<int>(cell % ncells_1);
+          dxi_Cd[0] = static_cast<prtldx_t>(
+            (static_cast<real_t>(sub % nppd_1) + HALF) * inv_nppd_1);
+          x_Cd[0] = static_cast<real_t>(xi_Cd[0]) +
+                    static_cast<real_t>(dxi_Cd[0]);
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          xi_Cd[1]  = i2_offset + static_cast<int>((cell / ncells_1) % ncells_2);
+          dxi_Cd[1] = static_cast<prtldx_t>(
+            (static_cast<real_t>((sub / nppd_1) % nppd_2) + HALF) * inv_nppd_2);
+          x_Cd[1] = static_cast<real_t>(xi_Cd[1]) +
+                    static_cast<real_t>(dxi_Cd[1]);
+        }
+        if constexpr (M::Dim == Dim::_3D) {
+          xi_Cd[2]  = i3_offset + static_cast<int>(cell / (ncells_1 * ncells_2));
+          dxi_Cd[2] = static_cast<prtldx_t>(
+            (static_cast<real_t>(sub / (nppd_1 * nppd_2)) + HALF) * inv_nppd_3);
+          x_Cd[2] = static_cast<real_t>(xi_Cd[2]) +
+                    static_cast<real_t>(dxi_Cd[2]);
+        }
+      }
+      { // generate the velocity (identical to UniformInjectorSingle_kernel)
+        coord_t<M::Dim> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        if constexpr (M::CoordType == Coord::Cartesian) {
+          energy_dist(x_Ph, v);
+        } else if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
+            x_Cd_[2] = ZERO; // phi = 0
+          } else {
+            x_Cd_[2] = x_Cd[2];
+          }
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v);
+        } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v);
+        } else {
+          raise::KernelError(HERE, "Unknown simulation engine");
+        }
+      }
+      real_t weight = ONE;
+      if constexpr (M::CoordType != Coord::Cartesian) {
+        const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
+        weight                = sqrt_det_h * inv_V0;
+      }
+      // clang-format off
+      if (not use_tracking) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset,
+          i1s, i2s, i3s,
+          dx1s, dx2s, dx3s,
+          ux1s, ux2s, ux3s,
+          phis, weights, tags, pldis,
+          xi_Cd, dxi_Cd, v, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset,
+          i1s, i2s, i3s,
+          dx1s, dx2s, dx3s,
+          ux1s, ux2s, ux3s,
+          phis, weights, tags, pldis,
+          xi_Cd, dxi_Cd, v, weight, ZERO,
+          domain_idx, cntr + p);
+      }
+      // clang-format on
+    }
+  }; // struct LatticeInjector_kernel
 
   template <SimEngine::type S, MetricClass M>
   struct GlobalInjector_kernel {

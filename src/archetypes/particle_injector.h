@@ -6,6 +6,8 @@
  *   - arch::ComputeNumInject<> -> tuple<bool, npart_t, array_t<real_t*>, array_t<real_t*>>
  *   - arch::AtmosphereDensityProfile<>
  *   - arch::InjectUniform<> -> void
+ *   - arch::BalancedLattice -> std::array<npart_t, 3>
+ *   - arch::InjectLattice<> -> void
  *   - arch::InjectGlobally<> -> void
  *   - arch::InjectNonUniform<> -> void
  * @namespaces:
@@ -34,6 +36,7 @@
   #include <mpi.h>
 #endif
 
+#include <array>
 #include <map>
 #include <tuple>
 #include <utility>
@@ -329,6 +332,216 @@ namespace arch {
       domain.species[species - 1].set_counter(
         domain.species[species - 1].counter() + nparticles);
     }
+  }
+
+  /**
+   * @brief Factorizes `ppc` into `dim` per-direction lattice counts, as close
+   * to each other as the divisors allow (e.g. 512 in 2D -> 16 x 32)
+   * @param ppc Number of lattice sites per cell
+   * @param dim Number of directions to distribute them over
+   * @return Array of 3 counts (unused directions are 1); their product is `ppc`
+   */
+  inline auto BalancedLattice(npart_t ppc, dim_t dim) -> std::array<npart_t, 3> {
+    std::array<npart_t, 3> nppd { 1, 1, 1 };
+    auto                   rest = ppc;
+    for (auto d { 0u }; d + 1u < static_cast<unsigned int>(dim); ++d) {
+      // largest n <= rest^(1/k) that divides rest, k = remaining directions
+      const auto k = static_cast<unsigned int>(dim) - d;
+      npart_t    n { 1 };
+      while (true) {
+        npart_t pw { 1 };
+        for (auto i { 0u }; i < k; ++i) {
+          pw *= (n + 1);
+        }
+        if (pw > rest) {
+          break;
+        }
+        ++n;
+      }
+      while (n > 1 and (rest % n) != 0) {
+        --n;
+      }
+      nppd[d]  = n;
+      rest    /= n;
+    }
+    nppd[static_cast<unsigned int>(dim) - 1u] = rest;
+    return nppd;
+  }
+
+  /**
+   * @brief Injects a uniform number density on a deterministic sub-cell lattice,
+   *        i.e. exactly `ppc` particles per cell at fixed
+   *        positions, instead of at random positions as `InjectUniform`
+   * @note Drop-in replacement for `InjectUniform` with the same arguments and the
+   *       same density convention (`nparticles = ppc0 * number_density / 2` per
+   *       cell, see `ComputeNumInject`).
+   * @note The per-cell count is factorized into per-direction counts
+   *       (`BalancedLattice`), so any integer ppc works; it need not be a perfect
+   *       square/cube. The injection region must be cell-aligned, which the
+   *       default (whole-domain) box always is.
+   * @param params Simulation parameters
+   * @param domain Domain object
+   * @param species Species index
+   * @param energy_dist Energy distribution object
+   * @param number_density Number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in global coords
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam ED Energy distribution type
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  inline void InjectLattice(const SimulationParams&     params,
+                            Domain<S, M>&               domain,
+                            spidx_t                     species,
+                            const ED&                   energy_dist,
+                            real_t                      number_density,
+                            bool                        use_weights = false,
+                            const boundaries_t<real_t>& box         = {}) {
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
+                   "Weights must be used for non-Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
+                   "Weights should not be used for Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
+                   "Weights must be enabled from the input file to use them in "
+                   "the injector",
+                   HERE);
+
+    constexpr auto dim { static_cast<dim_t>(M::Dim) };
+    // # of lattice sites per cell, same convention as ComputeNumInject
+    const auto     ppc_real = params.template get<real_t>("particles.ppc0") *
+                          number_density * HALF;
+    const auto ppc_cell = static_cast<npart_t>(ppc_real + HALF);
+    raise::ErrorIf(ppc_cell == 0,
+                   "InjectLattice: ppc0 * number_density / 2 rounds to zero",
+                   HERE);
+    raise::ErrorIf(
+      math::abs(ppc_real - static_cast<real_t>(ppc_cell)) >
+        static_cast<real_t>(1e-4),
+      "InjectLattice: ppc0 * number_density / 2 = " + std::to_string(ppc_real) +
+        " must be an integer (particles per cell)",
+      HERE);
+    // sub-cell lattice, as isotropic as the divisors of ppc_cell allow
+    const auto nppd = BalancedLattice(ppc_cell, dim);
+    if (nppd[static_cast<unsigned int>(dim) - 1u] >
+        4u * nppd[0]) { // e.g. a prime ppc -> 1 x ppc
+      raise::Warning(
+        "InjectLattice: " + std::to_string(ppc_cell) +
+          " particles per cell factorize into a lopsided sub-cell "
+          "lattice; pick a ppc0 with a more balanced factorization",
+        HERE);
+    }
+
+    boundaries_t<real_t> nonempty_box;
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      if (d < box.size()) {
+        nonempty_box.emplace_back(box[d].first, box[d].second);
+      } else {
+        nonempty_box.push_back(Range::All);
+      }
+    }
+    const auto region = DeduceRegion(domain, nonempty_box);
+    if (not std::get<0>(region)) {
+      return;
+    }
+    auto xi_min_h = Kokkos::create_mirror_view(std::get<1>(region));
+    auto xi_max_h = Kokkos::create_mirror_view(std::get<2>(region));
+    Kokkos::deep_copy(xi_min_h, std::get<1>(region));
+    Kokkos::deep_copy(xi_max_h, std::get<2>(region));
+
+    // the lattice is defined per cell, so the region has to be cell-aligned
+    constexpr auto         tol { static_cast<real_t>(1e-4) };
+    std::array<int, 3>     offsets { 0, 0, 0 };
+    std::array<npart_t, 3> ncells { 1, 1, 1 };
+    npart_t                nparticles { ppc_cell };
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      raise::ErrorIf(xi_min_h(d) < -tol,
+                     "InjectLattice: negative injection region",
+                     HERE);
+      offsets[d]     = static_cast<int>(xi_min_h(d) + HALF);
+      ncells[d]      = static_cast<npart_t>(xi_max_h(d) - xi_min_h(d) + HALF);
+      const auto dlo = xi_min_h(d) - static_cast<real_t>(offsets[d]);
+      const auto dhi = (xi_max_h(d) - xi_min_h(d)) -
+                       static_cast<real_t>(ncells[d]);
+      raise::ErrorIf(math::abs(dlo) > tol or math::abs(dhi) > tol,
+                     "InjectLattice: the injection region must be aligned with "
+                     "cell boundaries (direction " +
+                       std::to_string(d) + ": [" + std::to_string(xi_min_h(d)) +
+                       ", " + std::to_string(xi_max_h(d)) + "] in cell units)",
+                     HERE);
+      nparticles *= ncells[d];
+    }
+    if (nparticles == 0) {
+      return;
+    }
+
+    Kokkos::parallel_for("InjectLattice",
+                         nparticles,
+                         kernel::LatticeInjector_kernel<S, M, ED>(
+                           domain.species[species - 1],
+                           domain.index(),
+                           domain.mesh.metric,
+                           offsets[0],
+                           offsets[1],
+                           offsets[2],
+                           ncells[0],
+                           ncells[1],
+                           nppd[0],
+                           nppd[1],
+                           nppd[2],
+                           energy_dist,
+                           ONE / params.template get<real_t>("scales.V0")));
+    domain.species[species - 1].set_npart(
+      domain.species[species - 1].npart() + nparticles);
+    domain.species[species - 1].set_counter(
+      domain.species[species - 1].counter() + nparticles);
+  }
+
+  /**
+   * @brief Charge-neutral pair variant of `InjectLattice`
+   * @note Both species land on the SAME lattice sites (the placement is
+   *       deterministic), so the initial charge density is exactly zero.
+   * @param params Simulation parameters
+   * @param domain Domain object
+   * @param species Pair of species indices
+   * @param energy_dists Pair of energy distribution objects
+   * @param number_density Total number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in global coords
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam ED1 Energy distribution type for species 1
+   * @tparam ED2 Energy distribution type for species 2
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED1, EnrgDistClass<M::Dim> ED2>
+  inline void InjectLattice(const SimulationParams&            params,
+                            Domain<S, M>&                      domain,
+                            const std::pair<spidx_t, spidx_t>& species,
+                            const std::pair<ED1, ED2>&         energy_dists,
+                            real_t                             number_density,
+                            bool                        use_weights = false,
+                            const boundaries_t<real_t>& box         = {}) {
+    if (domain.species[species.first - 1].charge() +
+          domain.species[species.second - 1].charge() !=
+        0.0f) {
+      raise::Warning("Total charge of the injected species is non-zero", HERE);
+    }
+    InjectLattice<S, M, ED1>(params,
+                             domain,
+                             species.first,
+                             energy_dists.first,
+                             number_density,
+                             use_weights,
+                             box);
+    InjectLattice<S, M, ED2>(params,
+                             domain,
+                             species.second,
+                             energy_dists.second,
+                             number_density,
+                             use_weights,
+                             box);
   }
 
   /**
