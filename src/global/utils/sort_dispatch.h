@@ -115,11 +115,16 @@ namespace ntt::sort_helpers {
   }
 
 #if defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+  // `n` (the alive/local count) is passed explicitly rather than derived from
+  // `keys.extent(0)`, because the caller backs `keys` with a persistent,
+  // over-capacity buffer whose extent is the reserved capacity, not the count
+  // to sort. oneDPL's sort_by_key is in place, so no output/scratch buffers
+  // are allocated here and `perm` may safely be a reused persistent buffer.
   inline void sort_by_key_dispatch(const array_t<ncells_t*>& keys,
                                    prtl_perm_t&              perm,
                                    ncells_t /*n_bins*/,
+                                   npart_t                   n,
                                    ::sort::backend::OneDPL) {
-    const auto n = static_cast<npart_t>(keys.extent(0));
     if (n == 0u) {
       return;
     }

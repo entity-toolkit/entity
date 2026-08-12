@@ -99,6 +99,33 @@ namespace ntt {
     // vendor libraries detected by CMake.
     TileLayout<D> m_tile_layout {};
 
+#if defined(TEAM_POLICY) &&                                                    \
+  ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
+   (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
+   (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+    // Persistent, grow-only scratch reused by every SortSpatially call so
+    // the sort makes (almost) no per-call device allocations. npart grows
+    // slowly and monotonically over a run, so these reallocate only a
+    // handful of times (grow-only, with headroom) instead of the sort
+    // churning ~6 transient device buffers every call. On the SYCL /
+    // Level-Zero USM pooling allocator (Aurora) that per-sort churn
+    // otherwise accumulates retained pool blocks until the device OOMs
+    // mid-run on a sort buffer -- see the notes in SortSpatially and
+    // apply_permutation_to_soa. `m_sort_keys` / `m_sort_perm` are reused
+    // only on the SYCL/oneDPL path, whose sort is in place; the CUDA/HIP
+    // double-buffer dispatch keeps using fresh transients (it may hand back
+    // a different buffer). The per-type gather scratch is reused on every
+    // vendor backend.
+    array_t<ncells_t*> m_sort_keys {};
+    prtl_perm_t        m_sort_perm {};
+    array_t<int*>      m_sort_scratch_int {};
+    array_t<prtldx_t*> m_sort_scratch_prtldx {};
+    array_t<real_t*>   m_sort_scratch_real {};
+    array_t<short*>    m_sort_scratch_tag {};
+    array_t<real_t**>  m_sort_scratch_pld_r {};
+    array_t<npart_t**> m_sort_scratch_pld_i {};
+#endif
+
   public:
     // for empty allocation
     Particles() {}
