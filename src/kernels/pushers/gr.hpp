@@ -349,15 +349,32 @@ namespace kernel::gr {
         xp_mid[0] = HALF * (xp[0] + xp_upd[0]);
         xp_mid[1] = HALF * (xp[1] + xp_upd[1]);
 
+        const real_t small_angle { constant::SMALL_ANGLE_GR };
+        const auto   large_angle { constant::PI - small_angle };
+
+        real_t       theta_Cd { xp_mid[1] };
+        const real_t theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(
+          theta_Cd) };
+        coord_t<Dim::_2D> xp_mid_ { ZERO };
+
+        if (theta_Ph < small_angle) {
+          theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
+        } else if (theta_Ph >= large_angle) {
+          theta_Cd = metric.template convert<2, Crd::Ph, Crd::Cd>(large_angle);
+        }
+
+        xp_mid_[0] = xp_mid[0];
+        xp_mid_[1] = theta_Cd;
+
         // find contravariant midpoint velocity
-        metric.template transform<Idx::D, Idx::U>(xp_mid, vp, vp_cntrv);
+        metric.template transform<Idx::D, Idx::U>(xp_mid_, vp, vp_cntrv);
         real_t gamma = computeGamma(T {}, vp, vp_cntrv);
 
         // find midpoint coefficients
-        real_t u0 { gamma / metric.alpha(xp_mid) };
+        real_t u0 { gamma / metric.alpha(xp_mid_) };
 
         // find updated coordinate shift
-        xp_upd[0] = xp[0] + ctx.dt * (vp_cntrv[0] / u0 - metric.beta1(xp_mid));
+        xp_upd[0] = xp[0] + ctx.dt * (vp_cntrv[0] / u0 - metric.beta1(xp_mid_));
         xp_upd[1] = xp[1] + ctx.dt * (vp_cntrv[1] / u0);
       }
     } else if constexpr (D == Dim::_3D) {
@@ -768,7 +785,6 @@ namespace kernel::gr {
       /* x^i(n) -> x^i(n + 1) */
       coord_t<Dim::_2D> xp_upd { ZERO };
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);
-
       // update phi
       UpdatePhi<Massive_t>(
         Massive_t {},

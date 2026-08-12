@@ -105,14 +105,87 @@ namespace ntt {
     }
     Kokkos::deep_copy(dst_dev, dst_h);
   }
+
+  // Shift particle cell indices by dx_d after the local active-cell offset
+  // moved, and re-tag every particle whose new index falls outside the new
+  // active range [0, new_n_d) for the corresponding neighbor.
+  template <Dimension D>
+  class ShiftPrtlIndices_kernel {
+    array_t<int*>   i1, i1_prev, i2, i2_prev, i3, i3_prev;
+    array_t<short*> tag;
+
+    const int dx1, dx2, dx3;
+    const int new_n1, new_n2, new_n3;
+
+  public:
+    ShiftPrtlIndices_kernel(array_t<int*>&   i1,
+                            array_t<int*>&   i1_prev,
+                            array_t<int*>&   i2,
+                            array_t<int*>&   i2_prev,
+                            array_t<int*>&   i3,
+                            array_t<int*>&   i3_prev,
+                            array_t<short*>& tag,
+                            int              dx1,
+                            int              dx2,
+                            int              dx3,
+                            int              new_n1,
+                            int              new_n2,
+                            int              new_n3)
+      : i1 { i1 }
+      , i1_prev { i1_prev }
+      , i2 { i2 }
+      , i2_prev { i2_prev }
+      , i3 { i3 }
+      , i3_prev { i3_prev }
+      , tag { tag }
+      , dx1 { dx1 }
+      , dx2 { dx2 }
+      , dx3 { dx3 }
+      , new_n1 { new_n1 }
+      , new_n2 { new_n2 }
+      , new_n3 { new_n3 } {}
+
+    Inline void operator()(prtlidx_t p) const {
+      if (tag(p) != ParticleTag::alive) {
+        return;
+      }
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        i1(p)      += dx1;
+        i1_prev(p) += dx1;
+      }
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
+        i2(p)      += dx2;
+        i2_prev(p) += dx2;
+      }
+      if constexpr (D == Dim::_3D) {
+        i3(p)      += dx3;
+        i3_prev(p) += dx3;
+      }
+      if constexpr (D == Dim::_1D) {
+        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= new_n1);
+      } else if constexpr (D == Dim::_2D) {
+        tag(p) = mpi::SendTag(tag(p),
+                              i1(p) < 0,
+                              i1(p) >= new_n1,
+                              i2(p) < 0,
+                              i2(p) >= new_n2);
+      } else if constexpr (D == Dim::_3D) {
+        tag(p) = mpi::SendTag(tag(p),
+                              i1(p) < 0,
+                              i1(p) >= new_n1,
+                              i2(p) < 0,
+                              i2(p) >= new_n2,
+                              i3(p) < 0,
+                              i3(p) >= new_n3);
+      }
+    }
+  };
 #endif // MPI_ENABLED
 
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::Rebalance(unsigned int dim_mask,
                                    real_t       tolerance,
-                                   ncells_t     max_shift_cells)
-    requires(MetricClass<M>)
-  {
+                                   ncells_t     max_shift_cells) {
 #if !defined(MPI_ENABLED)
     (void)dim_mask;
     (void)tolerance;
@@ -353,9 +426,6 @@ namespace ntt {
       if (sp.npart() == 0) {
         continue;
       }
-      auto      i1 = sp.i1, i2 = sp.i2, i3 = sp.i3;
-      auto      i1p = sp.i1_prev, i2p = sp.i2_prev, i3p = sp.i3_prev;
-      auto      tag    = sp.tag;
       const int dx1    = -delta[0];
       int       dx2    = 0;
       int       dx3    = 0;
@@ -370,44 +440,21 @@ namespace ntt {
         dx3    = -delta[2];
         new_n3 = static_cast<int>(new_local_ncells[2]);
       }
-      Kokkos::parallel_for(
-        "RebalanceShiftPrtls",
-        sp.rangeActiveParticles(),
-        Lambda(prtlidx_t p) {
-          if (tag(p) != ParticleTag::alive) {
-            return;
-          }
-          if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
-                        M::Dim == Dim::_3D) {
-            i1(p)  += dx1;
-            i1p(p) += dx1;
-          }
-          if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
-            i2(p)  += dx2;
-            i2p(p) += dx2;
-          }
-          if constexpr (M::Dim == Dim::_3D) {
-            i3(p)  += dx3;
-            i3p(p) += dx3;
-          }
-          if constexpr (M::Dim == Dim::_1D) {
-            tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= new_n1);
-          } else if constexpr (M::Dim == Dim::_2D) {
-            tag(p) = mpi::SendTag(tag(p),
-                                  i1(p) < 0,
-                                  i1(p) >= new_n1,
-                                  i2(p) < 0,
-                                  i2(p) >= new_n2);
-          } else if constexpr (M::Dim == Dim::_3D) {
-            tag(p) = mpi::SendTag(tag(p),
-                                  i1(p) < 0,
-                                  i1(p) >= new_n1,
-                                  i2(p) < 0,
-                                  i2(p) >= new_n2,
-                                  i3(p) < 0,
-                                  i3(p) >= new_n3);
-          }
-        });
+      Kokkos::parallel_for("RebalanceShiftPrtls",
+                           sp.rangeActiveParticles(),
+                           ShiftPrtlIndices_kernel<M::Dim> { sp.i1,
+                                                             sp.i1_prev,
+                                                             sp.i2,
+                                                             sp.i2_prev,
+                                                             sp.i3,
+                                                             sp.i3_prev,
+                                                             sp.tag,
+                                                             dx1,
+                                                             dx2,
+                                                             dx3,
+                                                             new_n1,
+                                                             new_n2,
+                                                             new_n3 });
       sp.set_unsorted();
     }
 

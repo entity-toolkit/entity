@@ -13,6 +13,8 @@
 #include "enums.h"
 #include "global.h"
 
+#include "arch/mpi_tags.h"
+
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 
@@ -199,6 +201,47 @@ namespace arch {
     } else {
       raise::Error("Invalid direction", HERE);
     }
+
+#if defined(MPI_ENABLED)
+    // Retag particles for MPI communication after moving the window
+    const int ni1 = static_cast<int>(domain.mesh.n_active(in::x1));
+    const int ni2 = (M::Dim == Dim::_2D || M::Dim == Dim::_3D)
+                      ? static_cast<int>(domain.mesh.n_active(in::x2))
+                      : 0;
+    const int ni3 = (M::Dim == Dim::_3D)
+                      ? static_cast<int>(domain.mesh.n_active(in::x3))
+                      : 0;
+    for (auto s { 0u }; s < nspec; ++s) {
+      auto& species = domain.species[s];
+      auto  i1      = species.i1;
+      auto  i2      = species.i2;
+      auto  i3      = species.i3;
+      auto  tag     = species.tag;
+      Kokkos::parallel_for(
+        "RetagWindowParticles",
+        species.rangeActiveParticles(),
+        Lambda(prtlidx_t p) {
+          if constexpr (M::Dim == Dim::_1D) {
+            tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
+          } else if constexpr (M::Dim == Dim::_2D) {
+            tag(p) = mpi::SendTag(tag(p),
+                                  i1(p) < 0,
+                                  i1(p) >= ni1,
+                                  i2(p) < 0,
+                                  i2(p) >= ni2);
+          } else if constexpr (M::Dim == Dim::_3D) {
+            tag(p) = mpi::SendTag(tag(p),
+                                  i1(p) < 0,
+                                  i1(p) >= ni1,
+                                  i2(p) < 0,
+                                  i2(p) >= ni2,
+                                  i3(p) < 0,
+                                  i3(p) >= ni3);
+          }
+        });
+    }
+
+#endif
 
     // shift fields in the window back by the window size
     std::vector<ncells_t> xi_min, xi_max;
