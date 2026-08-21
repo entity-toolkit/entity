@@ -554,15 +554,13 @@ namespace kernel::bc {
         }
 
         if (tags & BC::B) {
-          if (i1 == 0) {
-            Fld(i_edge, em::bx1) = ZERO;
-          } else {
+          if (i1 != 0) {
             if constexpr (not P) {
-              Fld(i_edge - i1, em::bx1) = -Fld(i_edge + i1, em::bx1);
+              Fld(i_edge - i1, em::bx1) = Fld(i_edge + i1, em::bx1);
               Fld(i_edge - i1, em::bx2) = Fld(i_edge + i1 - 1, em::bx2);
               Fld(i_edge - i1, em::bx3) = Fld(i_edge + i1 - 1, em::bx3);
             } else {
-              Fld(i_edge + i1, em::bx1)     = -Fld(i_edge - i1, em::bx1);
+              Fld(i_edge + i1, em::bx1)     = Fld(i_edge - i1, em::bx1);
               Fld(i_edge + i1 - 1, em::bx2) = Fld(i_edge - i1, em::bx2);
               Fld(i_edge + i1 - 1, em::bx3) = Fld(i_edge - i1, em::bx3);
             }
@@ -596,15 +594,13 @@ namespace kernel::bc {
           }
 
           if (tags & BC::B) {
-            if (i1 == 0) {
-              Fld(i_edge, i2, em::bx1) = ZERO;
-            } else {
+            if (i1 != 0) {
               if constexpr (not P) {
-                Fld(i_edge - i1, i2, em::bx1) = -Fld(i_edge + i1, i2, em::bx1);
+                Fld(i_edge - i1, i2, em::bx1) = Fld(i_edge + i1, i2, em::bx1);
                 Fld(i_edge - i1, i2, em::bx2) = Fld(i_edge + i1 - 1, i2, em::bx2);
                 Fld(i_edge - i1, i2, em::bx3) = Fld(i_edge + i1 - 1, i2, em::bx3);
               } else {
-                Fld(i_edge + i1, i2, em::bx1) = -Fld(i_edge - i1, i2, em::bx1);
+                Fld(i_edge + i1, i2, em::bx1) = Fld(i_edge - i1, i2, em::bx1);
                 Fld(i_edge + i1 - 1, i2, em::bx2) = Fld(i_edge - i1, i2, em::bx2);
                 Fld(i_edge + i1 - 1, i2, em::bx3) = Fld(i_edge - i1, i2, em::bx3);
               }
@@ -629,16 +625,14 @@ namespace kernel::bc {
           }
 
           if (tags & BC::B) {
-            if (i2 == 0) {
-              Fld(i1, i_edge, em::bx2) = ZERO;
-            } else {
+            if (i2 != 0) {
               if constexpr (not P) {
                 Fld(i1, i_edge - i2, em::bx1) = Fld(i1, i_edge + i2 - 1, em::bx1);
-                Fld(i1, i_edge - i2, em::bx2) = -Fld(i1, i_edge + i2, em::bx2);
+                Fld(i1, i_edge - i2, em::bx2) = Fld(i1, i_edge + i2, em::bx2);
                 Fld(i1, i_edge - i2, em::bx3) = Fld(i1, i_edge + i2 - 1, em::bx3);
               } else {
                 Fld(i1, i_edge + i2 - 1, em::bx1) = Fld(i1, i_edge - i2, em::bx1);
-                Fld(i1, i_edge + i2, em::bx2) = -Fld(i1, i_edge - i2, em::bx2);
+                Fld(i1, i_edge + i2, em::bx2) = Fld(i1, i_edge - i2, em::bx2);
                 Fld(i1, i_edge + i2 - 1, em::bx3) = Fld(i1, i_edge - i2, em::bx3);
               }
             }
@@ -678,11 +672,9 @@ namespace kernel::bc {
           }
 
           if (tags & BC::B) {
-            if (i1 == 0) {
-              Fld(i_edge, i2, i3, em::bx1) = ZERO;
-            } else {
+            if (i1 != 0) {
               if constexpr (not P) {
-                Fld(i_edge - i1, i2, i3, em::bx1) = -Fld(i_edge + i1, i2, i3, em::bx1);
+                Fld(i_edge - i1, i2, i3, em::bx1) = Fld(i_edge + i1, i2, i3, em::bx1);
                 Fld(i_edge - i1, i2, i3, em::bx2) = Fld(i_edge + i1 - 1,
                                                         i2,
                                                         i3,
@@ -692,7 +684,7 @@ namespace kernel::bc {
                                                         i3,
                                                         em::bx3);
               } else {
-                Fld(i_edge + i1, i2, i3, em::bx1) = -Fld(i_edge - i1, i2, i3, em::bx1);
+                Fld(i_edge + i1, i2, i3, em::bx1) = Fld(i_edge - i1, i2, i3, em::bx1);
                 Fld(i_edge + i1 - 1, i2, i3, em::bx2) = Fld(i_edge - i1,
                                                             i2,
                                                             i3,
@@ -729,15 +721,13 @@ namespace kernel::bc {
           }
 
           if (tags & BC::B) {
-            if (i2 == 0) {
-              Fld(i1, i_edge, i3, em::bx2) = ZERO;
-            } else {
+            if (i2 != 0) {
               if constexpr (not P) {
                 Fld(i1, i_edge - i2, i3, em::bx1) = Fld(i1,
                                                         i_edge + i2 - 1,
                                                         i3,
                                                         em::bx1);
-                Fld(i1, i_edge - i2, i3, em::bx2) = -Fld(i1, i_edge + i2, i3, em::bx2);
+                Fld(i1, i_edge - i2, i3, em::bx2) = Fld(i1, i_edge + i2, i3, em::bx2);
                 Fld(i1, i_edge - i2, i3, em::bx3) = Fld(i1,
                                                         i_edge + i2 - 1,
                                                         i3,
@@ -747,7 +737,7 @@ namespace kernel::bc {
                                                             i_edge - i2,
                                                             i3,
                                                             em::bx1);
-                Fld(i1, i_edge + i2, i3, em::bx2) = -Fld(i1, i_edge - i2, i3, em::bx2);
+                Fld(i1, i_edge + i2, i3, em::bx2) = Fld(i1, i_edge - i2, i3, em::bx2);
                 Fld(i1, i_edge + i2 - 1, i3, em::bx3) = Fld(i1,
                                                             i_edge - i2,
                                                             i3,
@@ -780,9 +770,7 @@ namespace kernel::bc {
           }
 
           if (tags & BC::B) {
-            if (i3 == 0) {
-              Fld(i1, i2, i_edge, em::bx3) = ZERO;
-            } else {
+            if (i3 != 0) {
               if constexpr (not P) {
                 Fld(i1, i2, i_edge - i3, em::bx1) = Fld(i1,
                                                         i2,
@@ -792,7 +780,7 @@ namespace kernel::bc {
                                                         i2,
                                                         i_edge + i3 - 1,
                                                         em::bx2);
-                Fld(i1, i2, i_edge - i3, em::bx3) = -Fld(i1, i2, i_edge + i3, em::bx3);
+                Fld(i1, i2, i_edge - i3, em::bx3) = Fld(i1, i2, i_edge + i3, em::bx3);
               } else {
                 Fld(i1, i2, i_edge + i3 - 1, em::bx1) = Fld(i1,
                                                             i2,
@@ -802,7 +790,7 @@ namespace kernel::bc {
                                                             i2,
                                                             i_edge - i3,
                                                             em::bx2);
-                Fld(i1, i2, i_edge + i3, em::bx3) = -Fld(i1, i2, i_edge - i3, em::bx3);
+                Fld(i1, i2, i_edge + i3, em::bx3) = Fld(i1, i2, i_edge - i3, em::bx3);
               }
             }
           }
