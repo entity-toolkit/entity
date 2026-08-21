@@ -80,6 +80,7 @@ namespace arch {
    * @param piston_position Position of the piston at the start of timestep in global coordinates
    * @param piston_v Velocity of piston at current timestep
    * @param massive Whether the particle is massive or massless (e.g. photon)
+   * @param is_left Is piston on the left side of the box or right side of the box
    */
   template <CartesianMetricClass M>
   Inline void Piston(prtlidx_t                  p,
@@ -88,10 +89,11 @@ namespace arch {
                      const M&                   metric,
                      real_t                     piston_position,
                      real_t                     piston_v,
-                     bool                       massive) {
+                     bool                       massive,
+                     bool                       is_left = true) {
 
     // check if particle actually crosses the piston, if not return
-    if (!CrossesPiston<M>(p, dt, particles, metric, piston_position, piston_v, true)) {
+    if (!CrossesPiston<M>(p, dt, particles, metric, piston_position, piston_v, is_left)) {
       return;
     }
     // step 1: calculate the particle 3 velocity
