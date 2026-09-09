@@ -62,11 +62,10 @@ namespace ntt {
   }
 
   template <Dimension D, SimEngine::type S>
-  void Fields<D, S>::CheckpointWrite(
-    adios2::IO&                  io,
-    adios2::Engine&              writer,
-    const std::vector<ncells_t>& local_shape,
-    const std::vector<ncells_t>& local_offset) const {
+  void Fields<D, S>::CheckpointWrite(adios2::IO&                  io,
+                                     adios2::Engine&              writer,
+                                     const std::vector<ncells_t>& local_shape,
+                                     const std::vector<ncells_t>& local_offset) const {
     logger::Checkpoint("Writing fields checkpoint", HERE);
 
     // Per-rank slab: re-set the variable selection to track the (possibly
@@ -95,9 +94,9 @@ namespace ntt {
   template void Fields<D, S>::CheckpointRead(adios2::IO&,                       \
                                              adios2::Engine&,                   \
                                              const adios2::Box<adios2::Dims>&); \
-  template void Fields<D, S>::CheckpointWrite(adios2::IO&,                    \
-                                              adios2::Engine&,                \
-                                              const std::vector<ncells_t>&,   \
+  template void Fields<D, S>::CheckpointWrite(adios2::IO&,                      \
+                                              adios2::Engine&,                  \
+                                              const std::vector<ncells_t>&,     \
                                               const std::vector<ncells_t>&) const;
 
   FIELDS_CHECKPOINTS(Dim::_1D, SimEngine::SRPIC)

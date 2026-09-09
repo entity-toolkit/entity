@@ -63,7 +63,7 @@ namespace diag {
     const std::size_t tot_npart = std::accumulate(mpi_npart.begin(),
                                                   mpi_npart.end(),
                                                   static_cast<std::size_t>(0));
-    const npart_t max_idx   = std::distance(
+    const npart_t     max_idx   = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));
     const npart_t min_idx = std::distance(

@@ -450,18 +450,15 @@ namespace out {
     // m_flds_l_corner_dwn / m_flds_l_shape_dwn are reversed for non-LayoutRight
     // (see defineMeshLayout / setLocalLayout); m_flds_l_corner / m_flds_l_shape
     // / m_flds_g_shape are not. Map the dim-order index to the dwn-array index.
-    constexpr bool layout_right = std::is_same<
-      typename ndfield_t<Dim::_3D, 6>::array_layout,
-      Kokkos::LayoutRight>::value;
-    const auto i_dwn = layout_right
-                         ? static_cast<std::size_t>(dim)
-                         : (m_flds_g_shape.size() - 1u -
-                            static_cast<std::size_t>(dim));
+    constexpr bool layout_right = std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
+                                               Kokkos::LayoutRight>::value;
+    const auto i_dwn   = layout_right ? static_cast<std::size_t>(dim)
+                                      : (m_flds_g_shape.size() - 1u -
+                                       static_cast<std::size_t>(dim));
     const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
                           m_flds_g_shape[dim]);
-    varc.SetSelection(adios2::Box<adios2::Dims>(
-      { m_flds_l_corner_dwn[i_dwn] },
-      { m_flds_l_shape_dwn[i_dwn] }));
+    varc.SetSelection(adios2::Box<adios2::Dims>({ m_flds_l_corner_dwn[i_dwn] },
+                                                { m_flds_l_shape_dwn[i_dwn] }));
     vare.SetSelection(adios2::Box<adios2::Dims>(
       { m_flds_l_corner_dwn[i_dwn] },
       { m_flds_l_shape_dwn[i_dwn] + (is_last ? 1ul : 0ul) }));

@@ -253,8 +253,8 @@ namespace reporter {
 
 #if defined(TEAM_POLICY)
     AddParam(report, 4, "TEAM_POLICY", "%s", "ON");
-  #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                     \
-    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
+  #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                    \
+    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                      \
     (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
     AddParam(report, 4, "VENDOR_SORT", "%s", "ON");
   #else

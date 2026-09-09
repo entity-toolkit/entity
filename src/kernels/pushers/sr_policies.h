@@ -166,8 +166,8 @@ namespace kernel::sr {
                         ntt::EmissionTypeFlag        emission_type,
                         bool                         atm,
                         F&&                          callback) {
-    constexpr bool has_emission  = ::traits::pgen::HasEmissionPolicy<PGen, DOM>;
-    constexpr bool has_cpu       = ::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>;
+    constexpr bool has_emission = ::traits::pgen::HasEmissionPolicy<PGen, DOM>;
+    constexpr bool has_cpu = ::traits::pgen::HasCustomPrtlUpdate<PGen, DOM>;
     constexpr bool has_extfields = ::traits::pgen::HasExternalFields<PGen, DOM>;
 
     auto with_emission = [&](auto next) {

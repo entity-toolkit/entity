@@ -102,8 +102,8 @@ auto main(int argc, char* argv[]) -> int {
 #else
       const ncells_t T = 1u;
 #endif
-      const auto     na   = grid.n_active();
-      const ncells_t ntx2 = (na[1] + T - 1u) / T;
+      const auto     na      = grid.n_active();
+      const ncells_t ntx2    = (na[1] + T - 1u) / T;
       const auto     tile_of = [&](int a, int b) -> ncells_t {
         return (static_cast<ncells_t>(a) / T) * ntx2 +
                (static_cast<ncells_t>(b) / T);
@@ -159,11 +159,10 @@ auto main(int argc, char* argv[]) -> int {
         raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
                        "error in sorting particle real payload 1",
                        HERE);
-        raise::ErrorIf(
-          pld_i_h(p, 0) !=
-            static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
-          "error in sorting particle integer payload 0",
-          HERE);
+        raise::ErrorIf(pld_i_h(p, 0) != static_cast<npart_t>(
+                                          weight_h(p) + static_cast<real_t>(10.0)),
+                       "error in sorting particle integer payload 0",
+                       HERE);
       }
       raise::ErrorIf(n_alive_obs != 59u,
                      "wrong number of alive particles after sort",
@@ -267,9 +266,9 @@ auto main(int argc, char* argv[]) -> int {
 #else
       const ncells_t T = 1u;
 #endif
-      const auto     na   = grid.n_active();
-      const ncells_t ntx2 = (na[1] + T - 1u) / T;
-      const ncells_t ntx3 = (na[2] + T - 1u) / T;
+      const auto     na      = grid.n_active();
+      const ncells_t ntx2    = (na[1] + T - 1u) / T;
+      const ncells_t ntx3    = (na[2] + T - 1u) / T;
       const auto     tile_of = [&](int a, int b, int c) -> ncells_t {
         return ((static_cast<ncells_t>(a) / T) * ntx2 +
                 (static_cast<ncells_t>(b) / T)) *
