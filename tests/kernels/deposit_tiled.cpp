@@ -21,7 +21,8 @@
 
 #include "metrics/minkowski.h"
 
-#include "kernels/currents_deposit.hpp"
+#include "kernels/deposition/currents/global.hpp"
+#include "kernels/deposition/currents/tiled.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
@@ -34,12 +35,6 @@
 namespace {
 
   using namespace ntt;
-
-  void errorIf(bool condition, const std::string& msg) {
-    if (condition) {
-      throw std::runtime_error(msg);
-    }
-  }
 
   template <typename T>
   void put_value(const array_t<T*>& arr, T value, int i) {
@@ -87,13 +82,12 @@ namespace {
                                                        ncells_t ntx2,
                                                        ncells_t tx1,
                                                        ncells_t tx2) {
-    const ncells_t total_tiles = ntx1 * ntx2;
-    const ncells_t hot_tile    = tx1 * ntx2 + tx2;
+    const ncells_t    total_tiles = ntx1 * ntx2;
+    const ncells_t    hot_tile    = tx1 * ntx2 + tx2;
     array_t<npart_t*> offsets("tile_offsets", total_tiles + 1u);
-    auto h = Kokkos::create_mirror_view(offsets);
+    auto              h = Kokkos::create_mirror_view(offsets);
     for (ncells_t t = 0; t <= total_tiles; ++t) {
-      h(t) = (t <= hot_tile) ? static_cast<npart_t>(0)
-                             : static_cast<npart_t>(1);
+      h(t) = (t <= hot_tile) ? static_cast<npart_t>(0) : static_cast<npart_t>(1);
     }
     Kokkos::deep_copy(offsets, h);
     return offsets;
@@ -213,15 +207,17 @@ namespace {
 
   template <unsigned short O, unsigned short T_TILE>
   void run_one_case() {
-    using metric_t = metric::Minkowski<Dim::_2D>;
+    using metric_t               = metric::Minkowski<Dim::_2D>;
     constexpr unsigned short nx1 = 50u, nx2 = 50u;
-    metric_t metric { { nx1, nx2 },
+    metric_t                 metric {
+                      { nx1, nx2 },
                       { { 0.0, 55.0 }, { 0.0, 55.0 } },
-                      {} };
+                      {}
+    };
 
     // Particle setup (mirrors deposit.cpp).
     const int      i0 = 25, j0 = 21, i0f = 24, j0f = 20;
-    const real_t   uz = 2.5;
+    const real_t   uz  = 2.5;
     const prtldx_t dxi = static_cast<prtldx_t>(0.65);
     const prtldx_t dxf = static_cast<prtldx_t>(0.99);
     const prtldx_t dyi = static_cast<prtldx_t>(0.65);
@@ -272,13 +268,27 @@ namespace {
         10,
         kernel::DepositCurrents_kernel<SimEngine::SRPIC, metric_t, O>(
           J_scat,
-          pack_arrays(i1, i2, i3,
-                      i1_prev, i2_prev, i3_prev,
-                      dx1, dx2, dx3,
-                      dx1_prev, dx2_prev, dx3_prev,
-                      ux1, ux2, ux3,
-                      phi, weight, tag),
-          metric, charge, dt));
+          pack_arrays(i1,
+                      i2,
+                      i3,
+                      i1_prev,
+                      i2_prev,
+                      i3_prev,
+                      dx1,
+                      dx2,
+                      dx3,
+                      dx1_prev,
+                      dx2_prev,
+                      dx3_prev,
+                      ux1,
+                      ux2,
+                      ux3,
+                      phi,
+                      weight,
+                      tag),
+          metric,
+          charge,
+          dt));
       Kokkos::Experimental::contribute(J_flat, J_scat);
       Kokkos::fence("flat deposit done");
     }
@@ -305,29 +315,40 @@ namespace {
       layout.ntiles_per_axis[2] = 1u;
       layout.ntiles_total       = ntx1 * ntx2;
       layout.tile_size          = T_TILE;
-      layout.tile_offsets       = build_tile_offsets_single_particle(ntx1,
-                                                                      ntx2,
-                                                                      tx1,
-                                                                      tx2);
+      layout.tile_offsets = build_tile_offsets_single_particle(ntx1, ntx2, tx1, tx2);
 
       using kernel_t =
         kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, metric_t, O, T_TILE>;
       // npart = full slot count (10): the lone alive particle sits in slot 0
       // and the per-tile slice clamp keeps the (dead) tail out.
       kernel_t kern { J_tiled,
-                      pack_arrays(i1, i2, i3,
-                                  i1_prev, i2_prev, i3_prev,
-                                  dx1, dx2, dx3,
-                                  dx1_prev, dx2_prev, dx3_prev,
-                                  ux1, ux2, ux3,
-                                  phi, weight, tag),
-                      metric, charge, dt, layout,
+                      pack_arrays(i1,
+                                  i2,
+                                  i3,
+                                  i1_prev,
+                                  i2_prev,
+                                  i3_prev,
+                                  dx1,
+                                  dx2,
+                                  dx3,
+                                  dx1_prev,
+                                  dx2_prev,
+                                  dx3_prev,
+                                  ux1,
+                                  ux2,
+                                  ux3,
+                                  phi,
+                                  weight,
+                                  tag),
+                      metric,
+                      charge,
+                      dt,
+                      layout,
                       static_cast<npart_t>(10) };
 
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
                                   Kokkos::AUTO);
-      policy.set_scratch_size(0,
-                              Kokkos::PerTeam(kernel_t::scratch_bytes()));
+      policy.set_scratch_size(0, Kokkos::PerTeam(kernel_t::scratch_bytes()));
       Kokkos::parallel_for("TiledDeposit", policy, kern);
       Kokkos::fence("tiled deposit done");
     }
@@ -338,8 +359,8 @@ namespace {
     Kokkos::deep_copy(h_flat, J_flat);
     Kokkos::deep_copy(h_tiled, J_tiled);
 
-    const real_t eps      = static_cast<real_t>(1.0e-5);
-    real_t       max_diff = ZERO;
+    const real_t eps        = static_cast<real_t>(1.0e-5);
+    real_t       max_diff   = ZERO;
     int          fail_count = 0;
     for (ncells_t i = 0; i < h_flat.extent(0); ++i) {
       for (ncells_t j = 0; j < h_flat.extent(1); ++j) {
@@ -353,9 +374,8 @@ namespace {
           }
           if (diff > eps * math::max(mag, static_cast<real_t>(1.0))) {
             if (fail_count < 5) {
-              std::cerr << "  J(" << i << "," << j << ",c=" << c
-                        << ") flat=" << a << " tiled=" << b
-                        << " diff=" << diff << '\n';
+              std::cerr << "  J(" << i << "," << j << ",c=" << c << ") flat=" << a
+                        << " tiled=" << b << " diff=" << diff << '\n';
             }
             ++fail_count;
           }
@@ -364,9 +384,8 @@ namespace {
     }
     if (fail_count > 0) {
       std::cerr << "X-1 deposit_tiled equivalence FAILED for O=" << O
-                << " T_TILE=" << T_TILE
-                << " : " << fail_count << " mismatches; max_diff=" << max_diff
-                << '\n';
+                << " T_TILE=" << T_TILE << " : " << fail_count
+                << " mismatches; max_diff=" << max_diff << '\n';
       throw std::logic_error("DepositCurrentsTiled_kernel mismatch");
     }
     std::cerr << "X-1 deposit_tiled OK  O=" << O << " T_TILE=" << T_TILE
@@ -404,34 +423,37 @@ namespace {
                 << ", build has " << N_GHOSTS << ")\n";
       return;
     }
-    using metric_t = metric::Minkowski<Dim::_2D>;
+    using metric_t               = metric::Minkowski<Dim::_2D>;
     constexpr unsigned short nx1 = 50u, nx2 = 50u;
-    metric_t metric { { nx1, nx2 }, { { 0.0, 55.0 }, { 0.0, 55.0 } }, {} };
+    metric_t                 metric {
+                      { nx1, nx2 },
+                      { { 0.0, 55.0 }, { 0.0, 55.0 } },
+                      {}
+    };
 
-    constexpr int n_slots = 64;
-    constexpr int n_base  = 5;
+    constexpr int n_slots       = 64;
+    constexpr int n_base        = 5;
     const int     bases[n_base] = { 1, 13, 25, 37, 48 };
     const int     n_alive       = n_base * n_base; // 25
 
-    array_t<int*>      i1 { "i1", n_slots }, i2 { "i2", n_slots },
-      i3 { "i3", n_slots };
-    array_t<int*>      i1_prev { "i1_prev", n_slots },
+    array_t<int*> i1 { "i1", n_slots }, i2 { "i2", n_slots }, i3 { "i3", n_slots };
+    array_t<int*> i1_prev { "i1_prev", n_slots },
       i2_prev { "i2_prev", n_slots }, i3_prev { "i3_prev", n_slots };
     array_t<prtldx_t*> dx1 { "dx1", n_slots }, dx2 { "dx2", n_slots },
       dx3 { "dx3", n_slots };
     array_t<prtldx_t*> dx1_prev { "dx1_prev", n_slots },
       dx2_prev { "dx2_prev", n_slots }, dx3_prev { "dx3_prev", n_slots };
-    array_t<real_t*>   ux1 { "ux1", n_slots }, ux2 { "ux2", n_slots },
+    array_t<real_t*> ux1 { "ux1", n_slots }, ux2 { "ux2", n_slots },
       ux3 { "ux3", n_slots };
-    array_t<real_t*>   phi { "phi", n_slots }, weight { "weight", n_slots };
-    array_t<short*>    tag { "tag", n_slots };
-    const real_t       charge = 1.0, dt = 1.0;
+    array_t<real_t*> phi { "phi", n_slots }, weight { "weight", n_slots };
+    array_t<short*>  tag { "tag", n_slots };
+    const real_t     charge = 1.0, dt = 1.0;
 
     // Fill alive particles on host (slots >= n_alive stay zero == dead).
-    auto h_i1  = Kokkos::create_mirror_view(i1);
-    auto h_i2  = Kokkos::create_mirror_view(i2);
-    auto h_i1p = Kokkos::create_mirror_view(i1_prev);
-    auto h_i2p = Kokkos::create_mirror_view(i2_prev);
+    auto h_i1   = Kokkos::create_mirror_view(i1);
+    auto h_i2   = Kokkos::create_mirror_view(i2);
+    auto h_i1p  = Kokkos::create_mirror_view(i1_prev);
+    auto h_i2p  = Kokkos::create_mirror_view(i2_prev);
     auto h_dx1  = Kokkos::create_mirror_view(dx1);
     auto h_dx2  = Kokkos::create_mirror_view(dx2);
     auto h_dx1p = Kokkos::create_mirror_view(dx1_prev);
@@ -439,13 +461,13 @@ namespace {
     auto h_ux3  = Kokkos::create_mirror_view(ux3);
     auto h_w    = Kokkos::create_mirror_view(weight);
     auto h_tag  = Kokkos::create_mirror_view(tag);
-    int  p = 0;
+    int  p      = 0;
     for (int a = 0; a < n_base; ++a) {
       for (int b = 0; b < n_base; ++b, ++p) {
-        h_i1p(p) = bases[a];
-        h_i1(p)  = bases[a] - 1;
-        h_i2p(p) = bases[b];
-        h_i2(p)  = bases[b] - 1;
+        h_i1p(p)  = bases[a];
+        h_i1(p)   = bases[a] - 1;
+        h_i2p(p)  = bases[b];
+        h_i2(p)   = bases[b] - 1;
         h_dx1p(p) = static_cast<prtldx_t>(0.65);
         h_dx1(p)  = static_cast<prtldx_t>(0.99);
         h_dx2p(p) = static_cast<prtldx_t>(0.65);
@@ -478,13 +500,27 @@ namespace {
         n_slots,
         kernel::DepositCurrents_kernel<SimEngine::SRPIC, metric_t, O>(
           J_scat,
-          pack_arrays(i1, i2, i3,
-                      i1_prev, i2_prev, i3_prev,
-                      dx1, dx2, dx3,
-                      dx1_prev, dx2_prev, dx3_prev,
-                      ux1, ux2, ux3,
-                      phi, weight, tag),
-          metric, charge, dt));
+          pack_arrays(i1,
+                      i2,
+                      i3,
+                      i1_prev,
+                      i2_prev,
+                      i3_prev,
+                      dx1,
+                      dx2,
+                      dx3,
+                      dx1_prev,
+                      dx2_prev,
+                      dx3_prev,
+                      ux1,
+                      ux2,
+                      ux3,
+                      phi,
+                      weight,
+                      tag),
+          metric,
+          charge,
+          dt));
       Kokkos::Experimental::contribute(J_flat, J_scat);
       Kokkos::fence("flat drift deposit done");
     }
@@ -515,19 +551,33 @@ namespace {
       // tile 0, so the team must walk [0, n_alive) and route the drifted
       // ones to the global-J escape valve.
       kernel_t kern { J_tiled,
-                      pack_arrays(i1, i2, i3,
-                                  i1_prev, i2_prev, i3_prev,
-                                  dx1, dx2, dx3,
-                                  dx1_prev, dx2_prev, dx3_prev,
-                                  ux1, ux2, ux3,
-                                  phi, weight, tag),
-                      metric, charge, dt, layout,
+                      pack_arrays(i1,
+                                  i2,
+                                  i3,
+                                  i1_prev,
+                                  i2_prev,
+                                  i3_prev,
+                                  dx1,
+                                  dx2,
+                                  dx3,
+                                  dx1_prev,
+                                  dx2_prev,
+                                  dx3_prev,
+                                  ux1,
+                                  ux2,
+                                  ux3,
+                                  phi,
+                                  weight,
+                                  tag),
+                      metric,
+                      charge,
+                      dt,
+                      layout,
                       static_cast<npart_t>(n_alive) };
 
       Kokkos::TeamPolicy<> policy(static_cast<int>(layout.ntiles_total),
                                   Kokkos::AUTO);
-      policy.set_scratch_size(0,
-                              Kokkos::PerTeam(kernel_t::scratch_bytes()));
+      policy.set_scratch_size(0, Kokkos::PerTeam(kernel_t::scratch_bytes()));
       Kokkos::parallel_for("TiledDepositDrift", policy, kern);
       Kokkos::fence("tiled drift deposit done");
     }
