@@ -240,15 +240,15 @@ namespace ntt {
       const auto& off    = g_domain_offsets[idx];
       const auto  ncells = g_subdomains[idx].mesh.n_active();
       for (auto d { 0u }; d < M::Dim; ++d) {
-        ncells_per_pos[d][off[d]] = ncells[d];
-        load_per_pos[d][off[d]]  += static_cast<double>(npart_per_dom[idx]);
+        ncells_per_pos[d][off[d]]  = ncells[d];
+        load_per_pos[d][off[d]]   += static_cast<double>(npart_per_dom[idx]);
       }
     }
 
     /* --- 3. Diffusion-style boundary shifts per balanced dim ------------- */
     std::vector<std::vector<ncells_t>> new_ncells_per_pos = ncells_per_pos;
     const auto MIN_NCELLS = static_cast<ncells_t>(2 * N_GHOSTS + 4);
-    bool any_shift = false;
+    bool       any_shift  = false;
 
     for (auto d { 0u }; d < M::Dim; ++d) {
       if ((dim_mask & (1u << d)) == 0u) {
@@ -260,19 +260,18 @@ namespace ntt {
       }
 
       double total_load = 0.0;
-      double max_load = 0.0;
-      double min_load = std::numeric_limits<double>::infinity();
+      double max_load   = 0.0;
+      double min_load   = std::numeric_limits<double>::infinity();
       for (auto p { 0u }; p < N; ++p) {
         total_load += load_per_pos[d][p];
-        max_load = std::max(max_load, load_per_pos[d][p]);
-        min_load = std::min(min_load, load_per_pos[d][p]);
+        max_load    = std::max(max_load, load_per_pos[d][p]);
+        min_load    = std::min(min_load, load_per_pos[d][p]);
       }
       if (total_load <= 0.0) {
         continue;
       }
       const auto mean = total_load / static_cast<double>(N);
-      if (((max_load - min_load) / mean) <
-          static_cast<double>(tolerance)) {
+      if (((max_load - min_load) / mean) < static_cast<double>(tolerance)) {
         continue;
       }
 
@@ -282,30 +281,28 @@ namespace ntt {
       std::vector<int> bnd_shift(N + 1, 0);
       const int        cap = static_cast<int>(max_shift_cells);
       for (auto k { 1u }; k < N; ++k) {
-        const auto l_load    = load_per_pos[d][k - 1];
-        const auto r_load    = load_per_pos[d][k];
-        const auto l_density = (ncells_per_pos[d][k - 1] > 0)
-                                 ? l_load / static_cast<double>(
-                                              ncells_per_pos[d][k - 1])
-                                 : 0.0;
-        const auto r_density = (ncells_per_pos[d][k] > 0)
-                                 ? r_load / static_cast<double>(
-                                              ncells_per_pos[d][k])
-                                 : 0.0;
+        const auto l_load      = load_per_pos[d][k - 1];
+        const auto r_load      = load_per_pos[d][k];
+        const auto l_density   = (ncells_per_pos[d][k - 1] > 0)
+                                   ? l_load /
+                                     static_cast<double>(ncells_per_pos[d][k - 1])
+                                   : 0.0;
+        const auto r_density   = (ncells_per_pos[d][k] > 0)
+                                   ? r_load /
+                                     static_cast<double>(ncells_per_pos[d][k])
+                                   : 0.0;
         const auto avg_density = std::max(0.5 * (l_density + r_density), 1.0);
         // Move boundary towards the lighter side. Halve the gradient so that
         // a single sweep does roughly one diffusion step.
-        int shift = static_cast<int>(
+        int        shift       = static_cast<int>(
           std::round(0.5 * (l_load - r_load) / avg_density));
-        shift = std::clamp(shift, -cap, cap);
+        shift             = std::clamp(shift, -cap, cap);
         // Don't shrink either side below MIN_NCELLS.
         const int max_pos = static_cast<int>(ncells_per_pos[d][k - 1]) -
                             static_cast<int>(MIN_NCELLS);
         const int max_neg = static_cast<int>(ncells_per_pos[d][k]) -
                             static_cast<int>(MIN_NCELLS);
-        shift = std::clamp(shift,
-                           -std::max(max_neg, 0),
-                           std::max(max_pos, 0));
+        shift = std::clamp(shift, -std::max(max_neg, 0), std::max(max_pos, 0));
         bnd_shift[k] = shift;
         if (shift != 0) {
           any_shift = true;
@@ -314,8 +311,7 @@ namespace ntt {
       // new_ncells[p] = ncells[p] + bnd_shift[p] - bnd_shift[p+1]
       for (auto p { 0u }; p < N; ++p) {
         new_ncells_per_pos[d][p] = static_cast<ncells_t>(
-          static_cast<int>(ncells_per_pos[d][p]) + bnd_shift[p] -
-          bnd_shift[p + 1]);
+          static_cast<int>(ncells_per_pos[d][p]) + bnd_shift[p] - bnd_shift[p + 1]);
       }
     }
 
@@ -351,11 +347,11 @@ namespace ntt {
       extent_per_pos[d].resize(N);
       ncells_t running { 0 };
       for (auto p { 0u }; p < N; ++p) {
-        new_offset_per_pos[d][p] = running;
-        const auto x_lo = face_phys(d, static_cast<real_t>(running));
-        running        += new_ncells_per_pos[d][p];
-        const auto x_hi = face_phys(d, static_cast<real_t>(running));
-        extent_per_pos[d][p] = { x_lo, x_hi };
+        new_offset_per_pos[d][p]  = running;
+        const auto x_lo           = face_phys(d, static_cast<real_t>(running));
+        running                  += new_ncells_per_pos[d][p];
+        const auto x_hi           = face_phys(d, static_cast<real_t>(running));
+        extent_per_pos[d][p]      = { x_lo, x_hi };
       }
     }
 
@@ -365,7 +361,7 @@ namespace ntt {
 
     auto em_old_h = Kokkos::create_mirror_view(local_dom.fields.em);
     Kokkos::deep_copy(em_old_h, local_dom.fields.em);
-    auto em0_old_h  = decltype(Kokkos::create_mirror_view(local_dom.fields.em0)) {};
+    auto em0_old_h = decltype(Kokkos::create_mirror_view(local_dom.fields.em0)) {};
     auto cur0_old_h = decltype(Kokkos::create_mirror_view(local_dom.fields.cur0)) {};
     if constexpr (S == SimEngine::GRPIC) {
       em0_old_h  = Kokkos::create_mirror_view(local_dom.fields.em0);
@@ -378,8 +374,8 @@ namespace ntt {
     std::vector<ncells_t> new_local_ncells(M::Dim);
     std::vector<ncells_t> new_local_offset(M::Dim);
     for (unsigned int idx { 0 }; idx < g_ndomains; ++idx) {
-      auto&                 sub        = g_subdomains[idx];
-      const auto&           off_ndoms  = g_domain_offsets[idx];
+      auto&                 sub       = g_subdomains[idx];
+      const auto&           off_ndoms = g_domain_offsets[idx];
       std::vector<ncells_t> ncells_d(M::Dim);
       std::vector<ncells_t> offset_d(M::Dim);
       boundaries_t<real_t>  ext_d;
@@ -459,8 +455,9 @@ namespace ntt {
     }
 
     CommunicateParticles(local_dom);
-    logger::Checkpoint("Rebalance: domains shifted, fields and particles redistributed",
-                       HERE);
+    logger::Checkpoint(
+      "Rebalance: domains shifted, fields and particles redistributed",
+      HERE);
 #endif // MPI_ENABLED
   }
 

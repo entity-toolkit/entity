@@ -144,9 +144,7 @@ namespace ntt {
      * @note Only neighbor communication is used (CommunicateFields ghosts +
      * CommunicateParticles).
      */
-    void Rebalance(unsigned int    dim_mask,
-                   real_t          tolerance,
-                   ncells_t        max_shift_cells);
+    void Rebalance(unsigned int dim_mask, real_t tolerance, ncells_t max_shift_cells);
 
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)

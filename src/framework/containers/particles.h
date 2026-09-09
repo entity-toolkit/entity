@@ -337,6 +337,7 @@ namespace ntt {
   ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
    (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+
   private:
     /**
      * @brief Apply a particle-index permutation (built by oneDPL/Thrust
