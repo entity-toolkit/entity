@@ -245,7 +245,7 @@ namespace kernel::sr {
 
         // compute the external force either user-provided or from the atmosphere model
         if constexpr (HasExtForce or Atm) {
-          getExternalForce(xp_Cd, xp_Ph, external_force_Cart);
+          getExternalForce(xp_Cd, xp_Ph, p, external_force_Cart);
         }
 
         if (ctx.pusher_flags & ParticlePusher::GCA) {
@@ -1425,18 +1425,19 @@ namespace kernel::sr {
 
     Inline void getExternalForce(const coord_t<M::PrtlDim>& xp_Cd,
                                  const coord_t<M::PrtlDim>& xp_Ph,
+                                 [[maybe_unused]] prtlidx_t p,
                                  vec_t<Dim::_3D>& external_force_Cart) const
       requires(Atm or HasExtForce)
     {
       real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
       if constexpr (HasExtFx1) {
-        f_x1 = policies.external_fields_policy.fx1(xp_Ph);
+        f_x1 = policies.external_fields_policy.fx1(xp_Ph, particles, p);
       }
       if constexpr (HasExtFx2) {
-        f_x2 = policies.external_fields_policy.fx2(xp_Ph);
+        f_x2 = policies.external_fields_policy.fx2(xp_Ph, particles, p);
       }
       if constexpr (HasExtFx3) {
-        f_x3 = policies.external_fields_policy.fx3(xp_Ph);
+        f_x3 = policies.external_fields_policy.fx3(xp_Ph, particles, p);
       }
       if constexpr (Atm) {
         if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {

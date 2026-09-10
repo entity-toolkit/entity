@@ -89,15 +89,15 @@ struct WithDx1Dx2Dx3 {
 };
 
 struct WithFx1Fx2Fx3 {
-  real_t fx1(const coord_t<Dimension::_2D>&) const {
+  real_t fx1(const coord_t<Dimension::_2D>&, const ntt::ParticleArrays&, prtlidx_t) const {
     return ZERO;
   }
 
-  real_t fx2(const coord_t<Dimension::_2D>&) const {
+  real_t fx2(const coord_t<Dimension::_2D>&, const ntt::ParticleArrays&, prtlidx_t) const {
     return ZERO;
   }
 
-  real_t fx3(const coord_t<Dimension::_2D>&) const {
+  real_t fx3(const coord_t<Dimension::_2D>&, const ntt::ParticleArrays&, prtlidx_t) const {
     return ZERO;
   }
 };

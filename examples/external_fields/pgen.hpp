@@ -40,7 +40,8 @@ namespace user {
      */
 
     // f_ext: external force-field (acceleration):
-    Inline auto fx1(const coord_t<D>&) const -> real_t {
+    Inline auto fx1(const coord_t<D>&, const ntt::ParticleArrays&, prtlidx_t) const
+      -> real_t {
       return (sp % 2u == 0u) ? -HALF : HALF;
     }
 

@@ -4,7 +4,7 @@
  * @implements
  *   - EnrgDistClass<> - checks if a class can be used as an energy distribution
  *   - SpatialDistClass<> - checks if a class can be used as a spatial distribution
- *   - traits::fieldsetter::HasFx1, ::HasFx2, ::HasFx3 - checks for F functions in field setter class
+ *   - traits::fieldsetter::HasFx1, ::HasFx2, ::HasFx3 - checks for particle-aware F functions fx*(x, particles, p)
  *   - traits::fieldsetter::HasEx1, ::HasEx2, ::HasEx3 - checks for E functions in field setter class
  *   - traits::fieldsetter::HasBx1, ::HasBx2, ::HasBx3 - checks for B functions in field setter class
  *   - traits::fieldsetter::HasDx1, ::HasDx2, ::HasDx3 - checks for D functions in field setter class
@@ -25,6 +25,10 @@
 #include "global.h"
 
 #include <Kokkos_Pair.hpp>
+
+namespace ntt {
+  struct ParticleArrays;
+} // namespace ntt
 
 template <class ED, Dimension D>
 concept EnrgDistClass = requires(const ED&         edist,
@@ -50,18 +54,27 @@ concept SpatialDistClass = SimpleSpatialDistClass<SD, D> or
 
 namespace traits::fieldsetter {
   template <class T, Dimension D>
-  concept HasFx1 = requires(const T& t, const coord_t<D>& x_Ph) {
-    { t.fx1(x_Ph) } -> std::convertible_to<real_t>;
+  concept HasFx1 = requires(const T&                   t,
+                            const coord_t<D>&          x_Ph,
+                            const ntt::ParticleArrays& prtls,
+                            prtlidx_t                  p) {
+    { t.fx1(x_Ph, prtls, p) } -> std::convertible_to<real_t>;
   };
 
   template <class T, Dimension D>
-  concept HasFx2 = requires(const T& t, const coord_t<D>& x_Ph) {
-    { t.fx2(x_Ph) } -> std::convertible_to<real_t>;
+  concept HasFx2 = requires(const T&                   t,
+                            const coord_t<D>&          x_Ph,
+                            const ntt::ParticleArrays& prtls,
+                            prtlidx_t                  p) {
+    { t.fx2(x_Ph, prtls, p) } -> std::convertible_to<real_t>;
   };
 
   template <class T, Dimension D>
-  concept HasFx3 = requires(const T& t, const coord_t<D>& x_Ph) {
-    { t.fx3(x_Ph) } -> std::convertible_to<real_t>;
+  concept HasFx3 = requires(const T&                   t,
+                            const coord_t<D>&          x_Ph,
+                            const ntt::ParticleArrays& prtls,
+                            prtlidx_t                  p) {
+    { t.fx3(x_Ph, prtls, p) } -> std::convertible_to<real_t>;
   };
 
   template <class T, Dimension D>
