@@ -165,6 +165,10 @@ namespace ntt {
       m_neighbor_idx[dir] = idx;
     }
 
+    void set_offset_ncells(const std::vector<ncells_t>& off) {
+      m_offset_ncells = off;
+    }
+
     /* printer overload ----------------------------------------------------- */
     auto Report() const -> std::string {
       std::string report;

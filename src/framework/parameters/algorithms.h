@@ -34,6 +34,7 @@ namespace ntt {
 
       std::optional<bool>           deposit_enable;
       std::optional<unsigned short> deposit_order;
+      std::optional<std::size_t>    deposit_team_policy_team_size;
 
       std::optional<bool>                          fieldsolver_enable;
       std::optional<std::map<std::string, real_t>> fieldsolver_stencil_coeffs;
