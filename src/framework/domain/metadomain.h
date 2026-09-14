@@ -189,16 +189,15 @@ namespace ntt {
                                    const std::vector<boundaries_t<real_t>>&);
 #endif
 
+    using custom_stats_output_t = std::function<
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>;
     void InitStatsWriter(const SimulationParams&, bool);
-    auto WriteStats(
-      const SimulationParams&,
-      timestep_t,
-      timestep_t,
-      simtime_t,
-      simtime_t,
-      const std::function<
-        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
-      -> bool;
+    auto WriteStats(const SimulationParams&,
+                    timestep_t,
+                    timestep_t,
+                    simtime_t,
+                    simtime_t,
+                    const custom_stats_output_t& = nullptr) -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);

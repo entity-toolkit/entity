@@ -104,10 +104,52 @@ namespace ntt {
     g_writer.writeAttrs(params);
   }
 
+  template <SimEngine::type S, MetricClass M>
+  void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
+                                         bool                    is_resuming) {
+    raise::ErrorIf(
+      l_subdomain_indices().size() != 1,
+      "StatsWriter for now is only supported for one subdomain per rank",
+      HERE);
+    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
+    raise::ErrorIf(local_domain->is_placeholder(),
+                   "local_domain is a placeholder",
+                   HERE);
+    const auto simname  = params.template get<std::string>("simulation.name");
+    const auto filename = std::filesystem::path(simname) /
+                          (simname + "_stats.csv");
+    const auto enable_stats = params.template get<bool>("output.stats.enable");
+    if (enable_stats and (not is_resuming)) {
+      CallOnce(
+        [](auto& filename) {
+          if (std::filesystem::exists(filename)) {
+            std::filesystem::remove(filename);
+          }
+        },
+        filename);
+    }
+    const auto stats_to_write = params.template get<std::vector<std::string>>(
+      "output.stats.quantities");
+    const auto custom_stats_to_write = params.template get<std::vector<std::string>>(
+      "output.stats.custom");
+    g_stats_writer.init(
+      params.template get<timestep_t>("output.stats.interval"),
+      params.template get<simtime_t>("output.stats.interval_time"));
+    g_stats_writer.defineStatsFilename(filename);
+    g_stats_writer.defineStatsOutputs(stats_to_write, false);
+    g_stats_writer.defineStatsOutputs(custom_stats_to_write, true);
+
+    if (not std::filesystem::exists(filename)) {
+      g_stats_writer.writeHeader();
+    }
+  }
+
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_OUTPUT(S, M, D)                                             \
   template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,                \
-                                                const SimulationParams&);
+                                                const SimulationParams&);      \
+  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,  \
+                                                     bool);
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT)
 
