@@ -40,6 +40,7 @@ stdenv.mkDerivation {
 
   propagatedBuildInputs = [
     pkgs.libgcc
+    pkgs.gcc15
   ]
   ++ (
     if hdf5 then

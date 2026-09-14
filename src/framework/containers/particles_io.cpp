@@ -130,14 +130,17 @@ namespace ntt {
     }
 
 #if !defined(MPI_ENABLED)
-    const npart_t nout_offset = 0;
-    const npart_t nout_total  = nout;
+    const std::size_t nout_offset = 0;
+    const std::size_t nout_total  = nout;
     (void)domains_total;
     (void)domains_offset;
 #else
-    npart_t nout_offset    = 0;
-    npart_t nout_total     = nout;
-    auto    nout_total_vec = std::vector<npart_t>(domains_total);
+    // global totals/offsets are sums over all ranks and can exceed the
+    // per-rank `npart_t` (uint32_t) range at large problem sizes, so
+    // accumulate them in a 64-bit type
+    std::size_t nout_offset    = 0;
+    std::size_t nout_total     = 0;
+    auto        nout_total_vec = std::vector<npart_t>(domains_total);
     MPI_Allgather(&nout,
                   1,
                   mpi::get_type<npart_t>(),
@@ -145,7 +148,6 @@ namespace ntt {
                   1,
                   mpi::get_type<npart_t>(),
                   MPI_COMM_WORLD);
-    nout_total = 0;
     for (auto r = 0u; r < domains_total; ++r) {
       if (r < domains_offset) {
         nout_offset += nout_total_vec[r];
@@ -442,10 +444,13 @@ namespace ntt {
     set_npart(npart_read);
 
 #if !defined(MPI_ENABLED)
-    const npart_t npart_offset = 0u;
+    const std::size_t npart_offset = 0u;
     (void)domains_total;
 #else
-    npart_t npart_offset = 0u;
+    // global offset is a sum over all ranks and can exceed the per-rank
+    // `npart_t` (uint32_t) range at large problem sizes, so accumulate
+    // it in a 64-bit type
+    std::size_t npart_offset = 0u;
     {
       const auto           npart_send = npart();
       std::vector<npart_t> glob_nparts(domains_total);
@@ -618,8 +623,11 @@ namespace ntt {
       fmt::format("Writing particle checkpoint for species #%d", index()),
       HERE);
 
-    npart_t npart_offset = 0u;
-    npart_t npart_total  = npart();
+    // global totals/offsets are sums over all ranks and can exceed the
+    // per-rank `npart_t` (uint32_t) range at large problem sizes, so
+    // accumulate them in a 64-bit type
+    std::size_t npart_offset = 0u;
+    std::size_t npart_total  = npart();
 
 #if defined(MPI_ENABLED)
     {

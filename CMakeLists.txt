@@ -58,6 +58,28 @@ set(gpu_aware_mpi
     ${default_gpu_aware_mpi}
     CACHE BOOL "Enable GPU-aware MPI")
 
+set(team_policy
+    ${default_team_policy}
+    CACHE BOOL "Enable team_policy tile-blocked deposit/pusher kernels")
+set(team_policy_tile_size
+    ${default_team_policy_tile_size}
+    CACHE STRING "team_policy tile edge length in cells")
+set(team_policy_tile_sizes
+    "4;6;8;10;12;14;16"
+    CACHE STRING "team_policy tile-size choices")
+set(team_policy_drift
+    ${default_team_policy_drift}
+    CACHE
+      STRING
+      "team_policy tiled-deposit scratch halo drift in cells (max cells a particle may move between two sorts). Sizes the deposit scratch halo only; the sort cadence is set at runtime via spatial_sorting_interval. Default 1."
+)
+set(vendor_sort
+    ${default_vendor_sort}
+    CACHE
+      BOOL
+      "Use the vendor sort_by_key (oneDPL/Thrust/rocThrust) for the team_policy spatial sort when available. OFF forces the Kokkos::BinSort fallback, which sorts each SoA member in place (lower peak memory, no maxnpart gather buffer) at the cost of sort speed."
+)
+
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -136,21 +158,14 @@ else()
   set(DEVICE_ENABLED OFF)
 endif()
 
+# ------------------------------ team_policy wiring ------------------------ #
+if(${team_policy})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/team_policy.cmake)
+endif()
+
 # MPI
 if(${mpi})
-  find_or_fetch_dependency(MPI FALSE REQUIRED)
-  include_directories(${MPI_CXX_INCLUDE_PATH})
-  add_compile_options("-D MPI_ENABLED")
-  set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
-  if(${DEVICE_ENABLED})
-    if(${gpu_aware_mpi})
-      add_compile_options("-D GPU_AWARE_MPI")
-    endif()
-  else()
-    set(gpu_aware_mpi
-        OFF
-        CACHE BOOL "Use explicit copy when using MPI + GPU")
-  endif()
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpi.cmake)
 endif()
 
 # Output
