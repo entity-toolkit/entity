@@ -7,7 +7,7 @@
 
 let
   name = "kokkos";
-  pversion = "5.0.1";
+  pversion = "5.2.1";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       clang
@@ -23,11 +23,11 @@ let
       pkgs.clang-tools
       cudatoolkit
       cuda_cudart
-      pkgs.gcc13
+      pkgs.gcc15
     ];
     "NONE" = [
       pkgs.clang-tools
-      pkgs.gcc13
+      pkgs.gcc15
     ];
   };
   getArch =
@@ -57,7 +57,7 @@ pkgs.stdenv.mkDerivation rec {
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
     rev = "${pversion}";
-    sha256 = "sha256-ChpwGBwE7sNovjdAM/iCeOqqwGufKxAh5vQ3qK6aFBU=";
+    sha256 = "sha256-9a0am5NR7WtZXA0Nn0nnCohlWlgFDbAzVcc4rvUbGZc=";
   };
 
   nativeBuildInputs = with pkgs; [

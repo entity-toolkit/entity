@@ -78,7 +78,8 @@ namespace out {
   void WriteNDField(adios2::IO&,
                     adios2::Engine&,
                     const std::string&,
-                    const ndfield_t<D, N>&);
+                    const ndfield_t<D, N>&,
+                    const adios2::Box<adios2::Dims>& = {});
 
 } // namespace out
 
