@@ -173,14 +173,14 @@ namespace kernel::sr {
     auto with_emission = [&](auto next) {
       switch (emission_type) {
         case ntt::EmissionType::SYNCHROTRON:
-          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::SYNCHROTRON>(
-            dom,
+          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::SYNCHROTRON>(
+            domain,
             params,
             pusher_ctx));
           break;
         case ntt::EmissionType::COMPTON:
-          next(MakePusherPolicyEmission<M, D, ntt::EmissionType::COMPTON>(
-            dom,
+          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::COMPTON>(
+            domain,
             params,
             pusher_ctx));
           break;
@@ -202,9 +202,9 @@ namespace kernel::sr {
       DispatchExternalFields<has_extfields>(pgen, domain, pusher_ctx, next);
     };
 
-    with_emission(pgen, domain, [&](auto ep) {
-      with_custom_prtl_upd(pgen, domain, [&](auto cpu) {
-        with_ext_fields(pgen, domain, [&](auto ef) {
+    with_emission([&](auto ep) {
+      with_custom_prtl_upd([&](auto cpu) {
+        with_ext_fields([&](auto ef) {
           using E   = decltype(ep);
           using CPU = decltype(cpu);
           using EF  = decltype(ef);
