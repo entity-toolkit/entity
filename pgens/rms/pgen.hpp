@@ -27,6 +27,18 @@ namespace user {
     comp_n_t    = 5u,
   };
 
+  struct ComputeN {
+    static constexpr uint8_t N = 1;
+
+    Inline void operator()(const ParticleArrays& /* prtls */,
+                           float /* mass */,
+                           float /* charge */,
+                           prtlidx_t /* p */,
+                           list_t<real_t, N>& contribs) const {
+      contribs[0] = ONE;
+    }
+  };
+
   struct ComputeRhoV {
     static constexpr uint8_t N = 5;
 
@@ -314,39 +326,19 @@ namespace user {
     }
   };
 
-  template <CartesianMetricClass M>
+  template <Dimension D>
   struct PlanckDistribution {
-    const ndfield_t<M::Dim, 6> nt_array;
+    const real_t T_ph_inj;
+    const real_t boost_beta;
 
-    const M              metric;
     random_number_pool_t random_pool;
 
-    PlanckDistribution(const ndfield_t<M::Dim, 6>& nt_array,
-                       const M&                    metric,
-                       random_number_pool_t&       pool)
-      : nt_array { nt_array }
-      , metric { metric }
+    PlanckDistribution(real_t T_ph_inj, real_t boost_beta, random_number_pool_t& pool)
+      : T_ph_inj { T_ph_inj }
+      , boost_beta { boost_beta }
       , random_pool { pool } {}
 
-    Inline void operator()(const coord_t<M::Dim>& x_Ph, vec_t<Dim::_3D>& v) const {
-      coord_t<M::Dim> x_Cd { ZERO };
-      metric.template convert<Crd::Ph, Crd::Cd>(x_Ph, x_Cd);
-      real_t temperature { ZERO };
-      if constexpr (M::Dim == Dim::_1D) {
-        const auto i1_ = static_cast<int>(x_Cd[0]) + N_GHOSTS;
-        temperature    = nt_array(i1_, comp_n_t) / nt_array(i1_, comp_n);
-      } else if constexpr (M::Dim == Dim::_2D) {
-        const auto i1_ = static_cast<int>(x_Cd[0]) + N_GHOSTS;
-        const auto i2_ = static_cast<int>(x_Cd[1]) + N_GHOSTS;
-        temperature = nt_array(i1_, i2_, comp_n_t) / nt_array(i1_, i2_, comp_n);
-      } else if constexpr (M::Dim == Dim::_3D) {
-        const auto i1_ = static_cast<int>(x_Cd[0]) + N_GHOSTS;
-        const auto i2_ = static_cast<int>(x_Cd[1]) + N_GHOSTS;
-        const auto i3_ = static_cast<int>(x_Cd[2]) + N_GHOSTS;
-        temperature    = nt_array(i1_, i2_, i3_, comp_n_t) /
-                      nt_array(i1_, i2_, i3_, comp_n);
-      }
-
+    Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& k) const {
       real_t     prob { ZERO }, n { ZERO };
       auto       gen   = random_pool.get_state();
       const auto rnd   = Random<real_t>(gen);
@@ -361,16 +353,25 @@ namespace user {
         n    += ONE;
         prob += ONE / (static_cast<real_t>(1.20206) * CUBE(n));
       }
-      const auto energy = -static_cast<real_t>(2.7) * temperature *
+      const auto energy = -static_cast<real_t>(2.7) * T_ph_inj *
                           math::log(
                             rnd1 * rnd2 * rnd3 + static_cast<real_t>(1e-16)) /
                           n;
       const auto costh = TWO * rndth - ONE;
       const auto phi   = static_cast<real_t>(constant::TWO_PI) * rndph;
 
-      v[0] = energy * math::sqrt(ONE - SQR(costh)) * math::cos(phi);
-      v[1] = energy * math::sqrt(ONE - SQR(costh)) * math::sin(phi);
-      v[2] = energy * costh;
+      k[0] = energy * math::sqrt(ONE - SQR(costh)) * math::cos(phi);
+      k[1] = energy * math::sqrt(ONE - SQR(costh)) * math::sin(phi);
+      k[2] = energy * costh;
+
+      // boost the photon momentum in the -x direction
+      const auto gamma = ONE / math::sqrt(ONE - SQR(boost_beta));
+      const auto kx    = k[0];
+      const auto ky    = k[1];
+      const auto kz    = k[2];
+      k[0]             = gamma * (kx - boost_beta * energy);
+      k[1]             = ky;
+      k[2]             = kz;
     }
   };
 
@@ -381,27 +382,25 @@ namespace user {
       Must satisfy E = -v x B for Lorentz Force to be zero.
 
       @param bmag: magnetic field scaling
-      @param btheta: magnetic field polar angle
-      @param bphi: magnetic field azimuthal angle
-      @param drift_ux: drift velocity in the x direction
+      @param thetaB: Bx = bmag * cos(thetaB)
+      @param beta_upstream: drift three-velocity in the x direction
     */
-    InitFields(real_t bmag, real_t btheta, real_t bphi, real_t drift_ux)
+    InitFields(real_t bmag, real_t thetaB, real_t beta_upstream)
       : Bmag { bmag }
-      , Btheta { btheta * static_cast<real_t>(convert::deg2rad) }
-      , Bphi { bphi * static_cast<real_t>(convert::deg2rad) }
-      , Vx { drift_ux } {}
+      , thetaB { thetaB * static_cast<real_t>(convert::deg2rad) }
+      , beta_upstream { beta_upstream } {}
 
     // magnetic field components
     Inline auto bx1(const coord_t<D>&) const -> real_t {
-      return Bmag * math::cos(Btheta);
+      return Bmag * math::cos(thetaB);
     }
 
     Inline auto bx2(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(Btheta) * math::sin(Bphi);
+      return ZERO;
     }
 
     Inline auto bx3(const coord_t<D>&) const -> real_t {
-      return Bmag * math::sin(Btheta) * math::cos(Bphi);
+      return Bmag * math::sin(thetaB);
     }
 
     // electric field components
@@ -410,15 +409,15 @@ namespace user {
     }
 
     Inline auto ex2(const coord_t<D>&) const -> real_t {
-      return -Vx * Bmag * math::sin(Btheta) * math::cos(Bphi);
+      return -beta_upstream * Bmag * math::sin(thetaB);
     }
 
     Inline auto ex3(const coord_t<D>&) const -> real_t {
-      return Vx * Bmag * math::sin(Btheta) * math::sin(Bphi);
+      return ZERO;
     }
 
   private:
-    const real_t Btheta, Bphi, Vx, Bmag;
+    const real_t Bmag, thetaB, beta_upstream;
   };
 
   template <SimEngine::type S, class M>
@@ -438,14 +437,19 @@ namespace user {
     Metadomain<S, M>&       metadomain;
 
     // domain properties
-    const real_t  global_xmin, global_xmax;
+    const real_t global_xmin, global_xmax;
     // gas properties
-    const real_t  drift_ux, temperature, temperature_ratio, filling_fraction;
+    const real_t beta_upstream, Te, Te_ovr_Ti;
     // magnetic field properties
-    real_t        Btheta, Bphi, Bmag;
-    // injector properties
-    const real_t  injector_velocity, injection_start;
-    const int     injection_frequency;
+    const real_t Bmag, thetaB;
+    // photon properties
+    // const real_t photon_inj_rate; // units of n0 / time
+    const real_t photon_density; // units of n0
+    const real_t T_ph_inj;       // photon injection temperature
+    // plasma injector properties
+    const real_t filling_fraction, beta_injector;
+    const int    injection_interval;
+
     InitFields<D> init_flds;
 
     PGen(const SimulationParams& p, Metadomain<S, M>& m)
@@ -453,24 +457,21 @@ namespace user {
       , metadomain { m }
       , global_xmin { metadomain.mesh().extent(in::x1).first }
       , global_xmax { metadomain.mesh().extent(in::x1).second }
-      , drift_ux { params.template get<real_t>("setup.drift_ux") }
-      , temperature { params.template get<real_t>("setup.temperature") }
-      , temperature_ratio { params.template get<real_t>(
-          "setup.temperature_ratio",
-          ONE) }
+      , beta_upstream { params.template get<real_t>("setup.beta_upstream") }
+      , Te { params.template get<real_t>("setup.Te") }
+      , Te_ovr_Ti { params.template get<real_t>("setup.Te_ovr_Ti", ONE) }
       , Bmag { params.template get<real_t>("setup.Bmag", ZERO) }
-      , Btheta { params.template get<real_t>("setup.Btheta", ZERO) }
-      , Bphi { params.template get<real_t>("setup.Bphi", ZERO) }
-      , init_flds { Bmag, Btheta, Bphi, drift_ux }
+      , thetaB { params.template get<real_t>("setup.thetaB", ZERO) }
+      // , photon_inj_rate { params.template get<real_t>("setup.photon_inj_rate", ZERO) }
+      , photon_density { params.template get<real_t>("setup.photon_density", ZERO) }
+      , T_ph_inj { params.template get<real_t>("setup.T_ph_inj") }
       , filling_fraction { params.template get<real_t>("setup.filling_fraction",
                                                        1.0) }
-      , injector_velocity { params.template get<real_t>(
-          "setup.injector_velocity",
-          1.0) }
-      , injection_start { params.template get<real_t>("setup.injection_start", 0.0) }
-      , injection_frequency {
-        params.template get<int>("setup.injection_frequency", 100)
-      } {}
+      , beta_injector { params.template get<real_t>("setup.beta_injector", 1.0) }
+      , injection_interval { params.template get<int>(
+          "setup.injection_interval",
+          100) }
+      , init_flds { Bmag, thetaB, beta_upstream } {}
 
     auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
@@ -511,8 +512,7 @@ namespace user {
 
       // minimum and maximum position of particles
       real_t xg_min = global_xmin;
-      // real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
-      real_t xg_max = global_xmax;
+      real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
 
       // define box to inject into
       boundaries_t<real_t> box;
@@ -527,192 +527,183 @@ namespace user {
         }
       }
 
-      // define temperatures of species
-      const auto temperatures = std::make_pair(temperature,
-                                               temperature_ratio * temperature);
-      // define drift speed of species
-      const auto drifts       = std::make_pair(
-        std::vector<real_t> { -drift_ux, ZERO, ZERO },
-        std::vector<real_t> { -drift_ux, ZERO, ZERO });
+      const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
 
       // inject particles
-      arch::InjectUniformMaxwellians<S, M>(params,
-                                           domain,
-                                           ONE,
-                                           temperatures,
-                                           { 1, 2 },
-                                           drifts,
-                                           false,
-                                           box);
+      arch::InjectUniformMaxwellians<S, M>(
+        params,
+        domain,
+        TWO,
+        std::make_pair(Te, Te / Te_ovr_Ti),
+        { 1, 2 },
+        std::make_pair(
+          std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO },
+          std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
+        false,
+        box);
+
+      const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+                                                          beta_upstream,
+                                                          domain.random_pool());
+      arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, box);
     }
 
-    void CustomPostStep(timestep_t /* step */,
-                        simtime_t /* time */,
-                        Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
       const auto dt = params.template get<real_t>("algorithms.timestep.dt");
-      // if (step % injection_frequency == 0) {
-      //   /*
-      //    *  Replenish plasma in a moving injector
-      //    *
-      //    *  Injector setup:
-      //    *
-      //    * global_xmin           purge/replenish  global_xmax
-      //    * |         x_init            |          |
-      //    * V           v               V          V
-      //    * |:::::::::::;::::::::::|\\\\\\\\|......|
-      //    *                       xmin    xmax
-      //    *                                 ^
-      //    *                                 |
-      //    *                           moving injector
-      //    */
-      //
-      //   // initial position of injector
-      //   const auto x_init = global_xmin +
-      //                       filling_fraction * (global_xmax - global_xmin);
-      //
-      //   // compute the position of the injector after the current timestep
-      //   auto xmax = x_init +
-      //               injector_velocity *
-      //                 (std::max<real_t>(time - injection_start, ZERO) + dt);
-      //   if (xmax >= global_xmax) {
-      //     xmax = global_xmax;
-      //   }
-      //
-      //   // compute the beginning of the injected region
-      //   auto xmin = xmax - injection_frequency * dt;
-      //   if (xmin <= global_xmin) {
-      //     xmin = global_xmin;
-      //   }
-      //
-      //   // define indice range to reset fields
-      //   boundaries_t<bool> incl_ghosts;
-      //   for (auto d = 0; d < M::Dim; ++d) {
-      //     incl_ghosts.emplace_back(false, false);
-      //   }
-      //
-      //   // define box to reset fields
-      //   boundaries_t<real_t> purge_box;
-      //   // loop over all dimension
-      //   for (auto d = 0u; d < M::Dim; ++d) {
-      //     if (d == 0) {
-      //       purge_box.emplace_back(xmin, global_xmax);
-      //     } else {
-      //       purge_box.push_back(Range::All);
-      //     }
-      //   }
-      //
-      //   const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-      //   tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
-      //   for (auto d = 0; d < M::Dim; ++d) {
-      //     x_min[d] = extent[d].first;
-      //     x_max[d] = extent[d].second;
-      //   }
-      //
-      //   Kokkos::parallel_for("ResetFields",
-      //                        CreateRangePolicy<M::Dim>(x_min, x_max),
-      //                        arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
-      //                          domain.fields.em,
-      //                          init_flds,
-      //                          domain.mesh.metric });
-      //   metadomain.CommunicateFields(domain, Comm::E | Comm::B);
-      //
-      //   /*
-      //     tag particles inside the injection zone as dead
-      //   */
-      //   const auto& mesh = domain.mesh;
-      //
-      //   // loop over particle species
-      //   for (auto s { 0u }; s < 2; ++s) {
-      //     // get particle properties
-      //     auto& species = domain.species[s];
-      //     auto  i1      = species.i1;
-      //     auto  dx1     = species.dx1;
-      //     auto  tag     = species.tag;
-      //
-      //     Kokkos::parallel_for(
-      //       "RemoveParticles",
-      //       species.rangeActiveParticles(),
-      //       Lambda(prtlidx_t p) {
-      //         // check if the particle is already dead
-      //         if (tag(p) == ParticleTag::dead) {
-      //           return;
-      //         }
-      //         const auto x_Cd = static_cast<real_t>(i1(p)) +
-      //                           static_cast<real_t>(dx1(p));
-      //         const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
-      //           x_Cd);
-      //
-      //         if (x_Ph > xmin) {
-      //           tag(p) = ParticleTag::dead;
-      //         }
-      //       });
-      //   }
-      //
-      //   // define box to inject into
-      //   boundaries_t<real_t> inj_box;
-      //   // loop over all dimension
-      //   for (auto d = 0u; d < M::Dim; ++d) {
-      //     if (d == 0) {
-      //       inj_box.emplace_back(xmin, xmax);
-      //     } else {
-      //       inj_box.push_back(Range::All);
-      //     }
-      //   }
-      //
-      //   // same maxwell distribution as above
-      //   const auto temperatures = std::make_pair(temperature,
-      //                                            temperature_ratio * temperature);
-      //   const auto drifts       = std::make_pair(
-      //     std::vector<real_t> { -drift_ux, ZERO, ZERO },
-      //     std::vector<real_t> { -drift_ux, ZERO, ZERO });
-      //   arch::InjectUniformMaxwellians<S, M>(params,
-      //                                        domain,
-      //                                        ONE,
-      //                                        temperatures,
-      //                                        { 1, 2 },
-      //                                        drifts,
-      //                                        false,
-      //                                        inj_box);
-      // }
 
-      {
+      if (step % injection_interval == 0) {
         /*
-         * Inject photons
+         *  Replenish plasma in a moving injector
+         *
+         *  Injector setup:
+         *
+         * global_xmin           purge/replenish  global_xmax
+         * |         x_init            |          |
+         * V           v               V          V
+         * |:::::::::::;::::::::::|\\\\\\\\|......|
+         *                       xmin    xmax
+         *                                 ^
+         *                                 |
+         *                           moving injector
          */
-        auto compute_rho_v    = ComputeRhoV {};
-        auto compute_pressure = ComputePressure<D> { domain.fields.bckp };
-        arch::ComputeMomentWithSpeciesNew<S, M, decltype(compute_rho_v), 6>(
-          params,
-          domain,
-          { 1, 2 },
-          domain.fields.bckp,
-          { comp_n, comp_rho, comp_rho_vx, comp_rho_vy, comp_rho_vz },
-          compute_rho_v);
-        arch::ComputeMomentWithSpeciesNew<S, M, decltype(compute_pressure), 6>(
-          params,
-          domain,
-          { 1, 2 },
-          domain.fields.bckp,
-          { comp_n_t },
-          compute_pressure);
 
-        // inject photons with a Planck distribution in energy and spatial distribution following the plasma density
-        const auto energy_dist = PlanckDistribution<M>(domain.fields.bckp,
-                                                       domain.mesh.metric,
-                                                       domain.random_pool());
-        const auto spatial_dist = PhotonSpatialDistribution<M>(domain.fields.bckp,
-                                                               domain.mesh.metric);
-        const auto photon_inj_rate = params.template get<real_t>(
-          "setup.photon_injection_rate",
-          ZERO);
-        arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(spatial_dist)>(
+        // initial position of injector
+        const auto x_init = global_xmin +
+                            filling_fraction * (global_xmax - global_xmin);
+
+        // compute the position of the injector after the current timestep
+        const auto xmax = std::min<real_t>(x_init + beta_injector * (step + 1) * dt,
+                                           global_xmax);
+
+        // compute the beginning of the injected region
+        const auto xmin = (step == 0)
+                            ? std::max<real_t>(x_init - beta_upstream * dt,
+                                               global_xmin)
+                            : xmax - injection_interval * dt * beta_injector -
+                                (injection_interval + 1) * dt * beta_upstream;
+
+        // define indice range to reset fields
+        boundaries_t<bool> incl_ghosts;
+        for (auto d = 0; d < M::Dim; ++d) {
+          incl_ghosts.emplace_back(false, false);
+        }
+
+        // define box to reset fields
+        boundaries_t<real_t> purge_box;
+        // loop over all dimension
+        for (auto d = 0u; d < M::Dim; ++d) {
+          if (d == 0) {
+            purge_box.emplace_back(xmin, global_xmax);
+          } else {
+            purge_box.push_back(Range::All);
+          }
+        }
+
+        const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
+        tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
+        for (auto d = 0; d < M::Dim; ++d) {
+          x_min[d] = extent[d].first;
+          x_max[d] = extent[d].second;
+        }
+
+        Kokkos::parallel_for("ResetFields",
+                             CreateRangePolicy<M::Dim>(x_min, x_max),
+                             arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
+                               domain.fields.em,
+                               init_flds,
+                               domain.mesh.metric });
+        metadomain.CommunicateFields(domain, Comm::E | Comm::B);
+
+        /*
+          tag particles inside the injection zone as dead
+        */
+        // const auto& mesh = domain.mesh;
+
+        // loop over particle species
+        // for (auto& species : domain.species) {
+        //   // get particle properties
+        //   auto  i1      = species.i1;
+        //   auto  dx1     = species.dx1;
+        //   auto  tag     = species.tag;
+
+        //   Kokkos::parallel_for(
+        //     "RemoveParticles",
+        //     species.rangeActiveParticles(),
+        //     Lambda(prtlidx_t p) {
+        //       // check if the particle is already dead
+        //       if (tag(p) == ParticleTag::dead) {
+        //         return;
+        //       }
+        //       const auto x_Cd = static_cast<real_t>(i1(p)) +
+        //                         static_cast<real_t>(dx1(p));
+        //       const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
+        //         x_Cd);
+
+        //       if (x_Ph > xmin) {
+        //         tag(p) = ParticleTag::dead;
+        //       }
+        //     });
+        // }
+
+        // define box to inject into
+        boundaries_t<real_t> inj_box;
+        // loop over all dimension
+        for (auto d = 0u; d < M::Dim; ++d) {
+          if (d == 0) {
+            inj_box.emplace_back(xmin, xmax);
+          } else {
+            inj_box.push_back(Range::All);
+          }
+        }
+
+        const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
+
+        // same maxwell distribution as above
+        arch::InjectUniformMaxwellians<S, M>(
           params,
           domain,
-          3,
-          energy_dist,
-          spatial_dist,
-          static_cast<real_t>(photon_inj_rate * dt));
+          TWO,
+          std::make_pair(Te, Te / Te_ovr_Ti),
+          { 1, 2 },
+          std::make_pair(
+            std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO },
+            std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
+          false,
+          inj_box);
+
+        // replenish photons
+        const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+                                                            beta_upstream,
+                                                            domain.random_pool());
+        arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, inj_box);
       }
+
+      // {
+      //   /*
+      //    * Inject photons
+      //    */
+      //   auto compute_n = ComputeN {};
+      //   arch::ComputeMomentWithSpeciesNew<S, M, decltype(compute_n), 6>(
+      //     params,
+      //     domain,
+      //     { 1, 2 },
+      //     domain.fields.bckp,
+      //     { comp_n },
+      //     compute_n);
+      //
+      //   // inject photons with a Planck distribution in energy and spatial distribution following the plasma density
+      //   const auto energy_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+      //                                                       domain.random_pool());
+      //   const auto spatial_dist = PhotonSpatialDistribution<M>(domain.fields.bckp,
+      //                                                          domain.mesh.metric);
+      //   arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(spatial_dist)>(
+      //     params,
+      //     domain,
+      //     3,
+      //     energy_dist,
+      //     spatial_dist,
+      //     static_cast<real_t>(photon_inj_rate * dt));
+      // }
     }
 
     void CustomFieldOutput(const std::string& label,
