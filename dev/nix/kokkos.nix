@@ -27,6 +27,7 @@ let
     ];
     "NONE" = [
       pkgs.clang-tools
+      pkgs.libgcc
       pkgs.gcc15
     ];
   };

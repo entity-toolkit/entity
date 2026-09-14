@@ -326,12 +326,8 @@ namespace arch {
                    "Weights must be used for non-Cartesian coordinates",
                    HERE);
     raise::ErrorIf(
-      params.template get<bool>("particles.use_weights") and not use_weights,
-      "Weights are enabled in the input but not enabled in the injector",
-      HERE);
-    raise::ErrorIf(
-      not params.template get<bool>("particles.use_weights") and use_weights,
-      "Weights are not enabled in the input but enabled in the injector",
+      params.template get<bool>("particles.use_weights") != use_weights,
+      "Mismatch between use_weights in the input file and the injector",
       HERE);
     if (domain.species[species.first - 1].charge() +
           domain.species[species.second - 1].charge() !=
@@ -383,6 +379,150 @@ namespace arch {
         domain.species[sp - 1].set_npart(domain.species[sp - 1].npart() + n_inj);
         domain.species[sp - 1].set_counter(domain.species[sp - 1].counter() + n_inj);
       }
+    }
+  }
+
+  /**
+   * @brief Injects particles based on spatial distribution function
+   * @param params Simulation parameters
+   * @param domain Local domain object
+   * @param species Species index
+   * @param energy_dist Energy distribution class
+   * @param spatial_dist Spatial distribution class
+   * @param number_density Number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam ED Energy distribution type
+   * @tparam SD Spatial distribution type
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED, SpatialDistClass<M::Dim> SD>
+  inline void InjectNonUniform(const SimulationParams& params,
+                               Domain<S, M>&           domain,
+                               spidx_t                 species,
+                               const ED&               energy_dist,
+                               const SD&               spatial_dist,
+                               real_t                  number_density,
+                               bool use_weights = (M::CoordType != Coord::Cartesian),
+                               const boundaries_t<real_t>& box = {}) {
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
+                   "Weights must be used for non-Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf(
+      params.template get<bool>("particles.use_weights") != use_weights,
+      "Mismatch between use_weights in the input file and the injector",
+      HERE);
+    {
+      range_t<M::Dim> cell_range;
+      if (box.empty()) {
+        cell_range = domain.mesh.rangeActiveCells();
+      } else {
+        boundaries_t<real_t> reduced_box(box);
+        if (reduced_box.size() > M::Dim) {
+          reduced_box.resize(M::Dim);
+        }
+        raise::ErrorIf(reduced_box.size() != M::Dim,
+                       "Box must have the same dimension as the mesh",
+                       HERE);
+        boundaries_t<bool> incl_ghosts;
+        for (auto d = 0; d < M::Dim; ++d) {
+          incl_ghosts.emplace_back(false, false);
+        }
+        const auto extent = domain.mesh.ExtentToRange(reduced_box, incl_ghosts);
+        tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
+        for (auto d = 0; d < M::Dim; ++d) {
+          x_min[d] = extent[d].first;
+          x_max[d] = extent[d].second;
+        }
+        cell_range = CreateRangePolicy<M::Dim>(x_min, x_max);
+      }
+      const auto ppc = number_density *
+                       params.template get<real_t>("particles.ppc0") * HALF;
+      auto injector_kernel = kernel::SingleSpeciesNonUniformInjector_kernel<S, M, ED, SD>(
+        ppc,
+        domain.species[species - 1],
+        domain.index(),
+        domain.mesh.metric,
+        energy_dist,
+        spatial_dist,
+        ONE / params.template get<real_t>("scales.V0"),
+        domain.random_pool());
+      Kokkos::parallel_for("InjectSingleSpeciesNonUniformNumberDensity",
+                           cell_range,
+                           injector_kernel);
+      const auto n_inj = injector_kernel.number_injected();
+      domain.species[species - 1].set_npart(
+        domain.species[species - 1].npart() + n_inj);
+      domain.species[species - 1].set_counter(
+        domain.species[species - 1].counter() + n_inj);
+    }
+  }
+
+  /**
+   * @brief Injects uniform number density of a single species everywhere in the domain
+   * @param domain Domain object
+   * @param species Species index
+   * @param energy_dist Energy distribution objects
+   * @param number_density Number density (in units of n0)
+   * @param use_weights Use weights
+   * @param box Region to inject the particles in global coords
+   * @tparam S Simulation engine type
+   * @tparam M Metric type
+   * @tparam ED Energy distribution type
+   */
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  inline void InjectUniform(const SimulationParams&     params,
+                            Domain<S, M>&               domain,
+                            spidx_t                     species,
+                            const ED&                   energy_dist,
+                            real_t                      number_density,
+                            bool                        use_weights = false,
+                            const boundaries_t<real_t>& box         = {}) {
+    raise::ErrorIf((M::CoordType != Coord::Cartesian) && (not use_weights),
+                   "Weights must be used for non-Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf((M::CoordType == Coord::Cartesian) && use_weights,
+                   "Weights should not be used for Cartesian coordinates",
+                   HERE);
+    raise::ErrorIf(params.template get<bool>("particles.use_weights") != use_weights,
+                   "Weights must be enabled from the input file to use them in "
+                   "the injector",
+                   HERE);
+    if (domain.species[species - 1].charge() != 0.0f) {
+      raise::Warning("Charge of the injected species is non-zero", HERE);
+    }
+
+    {
+      boundaries_t<real_t> nonempty_box;
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        if (d < box.size()) {
+          nonempty_box.emplace_back(box[d].first, box[d].second);
+        } else {
+          nonempty_box.push_back(Range::All);
+        }
+      }
+      const auto result = ComputeNumInject(params, domain, number_density, nonempty_box);
+      if (not std::get<0>(result)) {
+        return;
+      }
+      const auto nparticles = std::get<1>(result);
+      const auto xi_min     = std::get<2>(result);
+      const auto xi_max     = std::get<3>(result);
+
+      Kokkos::parallel_for("InjectUniform",
+                           nparticles,
+                           kernel::SingleSpeciesUniformInjector_kernel<S, M, ED>(
+                             domain.species[species - 1],
+                             domain.index(),
+                             domain.mesh.metric,
+                             xi_min,
+                             xi_max,
+                             energy_dist,
+                             ONE / params.template get<real_t>("scales.V0"),
+                             domain.random_pool()));
+      domain.species[species - 1].set_npart(
+        domain.species[species - 1].npart() + nparticles);
     }
   }
 

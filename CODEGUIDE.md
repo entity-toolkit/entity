@@ -16,7 +16,7 @@ entity
 │   ├── styling.cmake            #   styling functions
 │   └── tests.cmake              #   root cmake for tests
 ├── dev                          # developer-specific tools
-│   ├── nix                      #   nix-shells
+│   ├── nix                      #   nix-shell & devenv environments
 │   ├── runners                  #   dockerfiles for github runners on different architectures
 │   ├── scripts                  #   developer-specific scripts
 │   ├── Dockerfile.common        #   parent docker environment for development
