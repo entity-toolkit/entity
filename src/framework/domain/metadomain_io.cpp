@@ -864,19 +864,6 @@ namespace ntt {
       auto e_max = params.template get<real_t>("output.spectra3D.e_max");
 
 
-      const auto x1_size_local   = local_domain->mesh.n_active()[0];
-      const auto x1_offset_local = local_domain->offset_ncells()[0];
-      const auto x1_size_global   = mesh().n_active()[0];
-
-      // divide based on physical coordinates maybe rather than cells
-
-      std::size_t x2_size_local = 0;
-      std::size_t x2_offset_local = 0;
-      std::size_t x2_size_global = 0;
-
-      std::size_t x3_size_local = 0;
-      std::size_t x3_offset_local = 0;
-      std::size_t x3_size_global = 0; 
 
       auto x1_min = mesh().extent(in::x1).first; // extent is in physical units, not code
       decltype(x1_min) x2_min = 0;
@@ -886,62 +873,25 @@ namespace ntt {
       decltype(x1_max) x2_max = 0;
       decltype(x1_max) x3_max = 0;
       
-      //auto x1_extent_local  = mesh().extent(in::x1)
-      //const auto nx1          = local_domain->mesh.n_active(in::x1);
-      //const auto nx2          = local_domain->mesh.n_active(in::x2);
+      
 
-      //auto dx1 = (x1_extent_local.second - x1_extent_local.first) / (real_t)(nx1_bin - 1);
-      auto x1_extent_local  = local_domain->mesh.extent(in::x1);
-      auto x1_min_local = x1_extent_local.first; 
-      auto x1_max_local = x1_extent_local.second;
-
-      auto x1_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx1_bins) * (x1_min_local - x1_min) / (x1_max - x1_min));
-      auto x1_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx1_bins) * (x1_max_local - x1_min) / (x1_max - x1_min));
-
-      decltype(x1_min_local) x2_min_local=0;
-      decltype(x1_max_local) x2_max_local=0;
-      decltype(x1_ind_rank_min) x2_ind_rank_min=0;
-      decltype(x1_ind_rank_max) x2_ind_rank_max=0;
-
-      decltype(x1_min_local) x3_min_local=0;
-      decltype(x1_max_local) x3_max_local=0;
-      decltype(x1_ind_rank_min) x3_ind_rank_min=0;
-      decltype(x1_ind_rank_max) x3_ind_rank_max=0;
-
-      real_t dx1_bin = (x1_max - x1_min )/nx1_bins;
-      real_t dx2_bin = 1.;
-      real_t dx3_bin = 1.;
 
       
 
-      if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+      if constexpr (D == Dim::_2D or D == Dim::_3D){ // only pick x2 if simulation is in 2D
           
           x2_min = mesh().extent(in::x2).first;
           x2_max = mesh().extent(in::x2).second;
-
-          auto x2_extent_local  = local_domain->mesh.extent(in::x2);
-          x2_min_local = x2_extent_local.first; 
-          x2_max_local = x2_extent_local.second;
-
-          dx2_bin = (static_cast<real_t>(x2_max) - static_cast<real_t>(x2_min) )/static_cast<real_t>(nx2_bins);
-
-          x2_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx2_bins) * (x2_min_local - x1_min) / (x2_max - x2_min));
-          x2_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx2_bins) * (x2_max_local - x1_min) / (x2_max - x2_min));
+          
       }
 
-      if constexpr (M::PrtlDim == Dim::_3D){
+      if constexpr (D == Dim::_3D){
 
           x3_min = mesh().extent(in::x3).first;
           x3_max = mesh().extent(in::x3).second;
 
-          auto x3_extent_local  = local_domain->mesh.extent(in::x3);
-          x3_min_local = x3_extent_local.first; 
-          x3_max_local = x3_extent_local.second;
 
-          dx3_bin = (static_cast<real_t>(x3_max) - static_cast<real_t>(x3_min) )/static_cast<real_t>(nx3_bins);
-
-          x3_ind_rank_min = static_cast<std::size_t>(static_cast<real_t>(nx3_bins) * (x3_min_local - x3_min) / (x1_max - x1_min));
-          x3_ind_rank_max = static_cast<std::size_t>(static_cast<real_t>(nx3_bins) * (x3_max_local - x3_min) / (x1_max - x1_min));          
+          
       }
 
       
@@ -982,11 +932,11 @@ namespace ntt {
         decltype(i1) i3; 
         decltype(dx1) dx2;
         decltype(dx1) dx3;
-        if constexpr (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+        if constexpr (D == Dim::_2D or D == Dim::_3D){ // only pick x2 if simulation is in 2D
           i2 = species.i2;
           dx2 = species.dx2;
         }
-        if constexpr (M::PrtlDim == Dim::_3D){
+        if constexpr (D == Dim::_3D){
           i3 = species.i3;
           dx3 = species.dx3;
         }
@@ -1002,13 +952,13 @@ namespace ntt {
             }
             
             coord_t<D> x_Cd {ZERO}; 
-            if  (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+            if  constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
               x_Cd[0] = static_cast<real_t>(i1(p)) + static_cast<real_t>(dx1(p));
             }
-            if  (D == Dim::_2D or D == Dim::_3D) {
+            if  constexpr (D == Dim::_2D or D == Dim::_3D) {
               x_Cd[1] = static_cast<real_t>(i2(p)) + static_cast<real_t>(dx2(p));
             }
-            if  (D == Dim::_3D) {
+            if  constexpr (D == Dim::_3D) {
               x_Cd[2] = static_cast<real_t>(i3(p)) + static_cast<real_t>(dx3(p));
             }
             coord_t<D> x_Ph { ZERO };
@@ -1045,7 +995,7 @@ namespace ntt {
 
             
             std::size_t x2_ind = 0;
-            if (M::PrtlDim == Dim::_2D or M::PrtlDim == Dim::_3D){ // only pick x2 if simulation is in 2D
+            if constexpr (D == Dim::_2D or D == Dim::_3D){ // only pick x2 if simulation is in 2D
               if (x_Ph[1] <= x2_min) {
                 x2_ind = 0;
               } else if (x_Ph[1] >= x2_max) {
@@ -1054,11 +1004,10 @@ namespace ntt {
                 x2_ind = static_cast<std::size_t>(
                   static_cast<real_t>(nx2_bins) * (x_Ph[1] - x2_min) / (x2_max - x2_min));
               }
-              //real_t x2_center = x2_min + (x2_ind+0.5)*dx2_bin;
-              //owns_x2 = (x2_center >= x2_min_local) && (x2_center <= x2_max_local);
+              
             }
             std::size_t x3_ind = 0;
-            if (M::PrtlDim == Dim::_3D){ // only pick x3 if simulation is in 3D
+            if constexpr (D == Dim::_3D){ // only pick x3 if simulation is in 3D
               
               if (x_Ph[2] <= x3_min) {
                 x3_ind = 0;

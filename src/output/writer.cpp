@@ -413,6 +413,7 @@ namespace out {
 #else
     int rank = 0;
     int size = 1;
+    auto counts3D_h_all  = counts3D_h;
 #endif 
     using Shape = std::vector<std::size_t>;
 
