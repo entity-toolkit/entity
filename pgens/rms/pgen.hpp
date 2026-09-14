@@ -329,11 +329,13 @@ namespace user {
   template <Dimension D>
   struct PlanckDistribution {
     const real_t T_ph_inj;
+    const real_t boost_beta;
 
     random_number_pool_t random_pool;
 
-    PlanckDistribution(real_t T_ph_inj, random_number_pool_t& pool)
+    PlanckDistribution(real_t T_ph_inj, real_t boost_beta, random_number_pool_t& pool)
       : T_ph_inj { T_ph_inj }
+      , boost_beta { boost_beta }
       , random_pool { pool } {}
 
     Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& k) const {
@@ -361,6 +363,15 @@ namespace user {
       k[0] = energy * math::sqrt(ONE - SQR(costh)) * math::cos(phi);
       k[1] = energy * math::sqrt(ONE - SQR(costh)) * math::sin(phi);
       k[2] = energy * costh;
+
+      // boost the photon momentum in the -x direction
+      const auto gamma = ONE / math::sqrt(ONE - SQR(boost_beta));
+      const auto kx    = k[0];
+      const auto ky    = k[1];
+      const auto kz    = k[2];
+      k[0]             = gamma * (kx - boost_beta * energy);
+      k[1]             = ky;
+      k[2]             = kz;
     }
   };
 
@@ -432,8 +443,9 @@ namespace user {
     // magnetic field properties
     const real_t Bmag, thetaB;
     // photon properties
-    const real_t photon_inj_rate; // units of n0 / time
-    const real_t T_ph_inj;        // photon injection temperature
+    // const real_t photon_inj_rate; // units of n0 / time
+    const real_t photon_density; // units of n0
+    const real_t T_ph_inj;       // photon injection temperature
     // plasma injector properties
     const real_t filling_fraction, beta_injector;
     const int    injection_interval;
@@ -450,12 +462,15 @@ namespace user {
       , Te_ovr_Ti { params.template get<real_t>("setup.Te_ovr_Ti", ONE) }
       , Bmag { params.template get<real_t>("setup.Bmag", ZERO) }
       , thetaB { params.template get<real_t>("setup.thetaB", ZERO) }
-      , photon_inj_rate { params.template get<real_t>("setup.photon_inj_rate", ZERO) }
+      // , photon_inj_rate { params.template get<real_t>("setup.photon_inj_rate", ZERO) }
+      , photon_density { params.template get<real_t>("setup.photon_density", ZERO) }
       , T_ph_inj { params.template get<real_t>("setup.T_ph_inj") }
       , filling_fraction { params.template get<real_t>("setup.filling_fraction",
                                                        1.0) }
       , beta_injector { params.template get<real_t>("setup.beta_injector", 1.0) }
-      , injection_interval { params.template get<int>("setup.injection_interval", 100) }
+      , injection_interval { params.template get<int>(
+          "setup.injection_interval",
+          100) }
       , init_flds { Bmag, thetaB, beta_upstream } {}
 
     auto MatchFields(simtime_t) const -> InitFields<D> {
@@ -526,13 +541,16 @@ namespace user {
           std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
         false,
         box);
+
+      const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+                                                          beta_upstream,
+                                                          domain.random_pool());
+      arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, box);
     }
 
-    void CustomPostStep(timestep_t step,
-                        simtime_t time,
-                        Domain<S, M>& domain) {
+    void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
       const auto dt = params.template get<real_t>("algorithms.timestep.dt");
-      
+
       if (step % injection_interval == 0) {
         /*
          *  Replenish plasma in a moving injector
@@ -548,24 +566,28 @@ namespace user {
          *                                 |
          *                           moving injector
          */
-      
+
         // initial position of injector
-        const auto x_init = global_xmin + filling_fraction * (global_xmax - global_xmin);
-      
+        const auto x_init = global_xmin +
+                            filling_fraction * (global_xmax - global_xmin);
+
         // compute the position of the injector after the current timestep
-        const auto xmax = std::min<real_t>(x_init + beta_injector * (step + 1) * dt, global_xmax);
-      
+        const auto xmax = std::min<real_t>(x_init + beta_injector * (step + 1) * dt,
+                                           global_xmax);
+
         // compute the beginning of the injected region
         const auto xmin = (step == 0)
-                          ? std::max<real_t>(x_init - beta_upstream * dt, global_xmin)
-                          : xmax - injection_interval * dt * beta_injector - (injection_interval + 1) * dt * beta_upstream;
-      
+                            ? std::max<real_t>(x_init - beta_upstream * dt,
+                                               global_xmin)
+                            : xmax - injection_interval * dt * beta_injector -
+                                (injection_interval + 1) * dt * beta_upstream;
+
         // define indice range to reset fields
         boundaries_t<bool> incl_ghosts;
         for (auto d = 0; d < M::Dim; ++d) {
           incl_ghosts.emplace_back(false, false);
         }
-      
+
         // define box to reset fields
         boundaries_t<real_t> purge_box;
         // loop over all dimension
@@ -576,14 +598,14 @@ namespace user {
             purge_box.push_back(Range::All);
           }
         }
-      
+
         const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
         tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
         for (auto d = 0; d < M::Dim; ++d) {
           x_min[d] = extent[d].first;
           x_max[d] = extent[d].second;
         }
-      
+
         Kokkos::parallel_for("ResetFields",
                              CreateRangePolicy<M::Dim>(x_min, x_max),
                              arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
@@ -591,19 +613,19 @@ namespace user {
                                init_flds,
                                domain.mesh.metric });
         metadomain.CommunicateFields(domain, Comm::E | Comm::B);
-      
+
         /*
           tag particles inside the injection zone as dead
         */
         // const auto& mesh = domain.mesh;
-      
+
         // loop over particle species
         // for (auto& species : domain.species) {
         //   // get particle properties
         //   auto  i1      = species.i1;
         //   auto  dx1     = species.dx1;
         //   auto  tag     = species.tag;
-      
+
         //   Kokkos::parallel_for(
         //     "RemoveParticles",
         //     species.rangeActiveParticles(),
@@ -616,13 +638,13 @@ namespace user {
         //                         static_cast<real_t>(dx1(p));
         //       const auto x_Ph = mesh.metric.template convert<1, Crd::Cd, Crd::XYZ>(
         //         x_Cd);
-      
+
         //       if (x_Ph > xmin) {
         //         tag(p) = ParticleTag::dead;
         //       }
         //     });
         // }
-      
+
         // define box to inject into
         boundaries_t<real_t> inj_box;
         // loop over all dimension
@@ -633,7 +655,7 @@ namespace user {
             inj_box.push_back(Range::All);
           }
         }
-      
+
         const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
 
         // same maxwell distribution as above
@@ -648,34 +670,40 @@ namespace user {
             std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
           false,
           inj_box);
-      }
 
-      {
-        /*
-         * Inject photons
-         */
-        auto compute_n = ComputeN {};
-        arch::ComputeMomentWithSpeciesNew<S, M, decltype(compute_n), 6>(
-          params,
-          domain,
-          { 1, 2 },
-          domain.fields.bckp,
-          { comp_n },
-          compute_n);
-
-        // inject photons with a Planck distribution in energy and spatial distribution following the plasma density
-        const auto energy_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+        // replenish photons
+        const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+                                                            beta_upstream,
                                                             domain.random_pool());
-        const auto spatial_dist = PhotonSpatialDistribution<M>(domain.fields.bckp,
-                                                               domain.mesh.metric);
-        arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(spatial_dist)>(
-          params,
-          domain,
-          3,
-          energy_dist,
-          spatial_dist,
-          static_cast<real_t>(photon_inj_rate * dt));
+        arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, inj_box);
       }
+
+      // {
+      //   /*
+      //    * Inject photons
+      //    */
+      //   auto compute_n = ComputeN {};
+      //   arch::ComputeMomentWithSpeciesNew<S, M, decltype(compute_n), 6>(
+      //     params,
+      //     domain,
+      //     { 1, 2 },
+      //     domain.fields.bckp,
+      //     { comp_n },
+      //     compute_n);
+      //
+      //   // inject photons with a Planck distribution in energy and spatial distribution following the plasma density
+      //   const auto energy_dist = PlanckDistribution<M::Dim>(T_ph_inj,
+      //                                                       domain.random_pool());
+      //   const auto spatial_dist = PhotonSpatialDistribution<M>(domain.fields.bckp,
+      //                                                          domain.mesh.metric);
+      //   arch::InjectNonUniform<S, M, decltype(energy_dist), decltype(spatial_dist)>(
+      //     params,
+      //     domain,
+      //     3,
+      //     energy_dist,
+      //     spatial_dist,
+      //     static_cast<real_t>(photon_inj_rate * dt));
+      // }
     }
 
     void CustomFieldOutput(const std::string& label,

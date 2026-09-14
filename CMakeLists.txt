@@ -7,7 +7,11 @@ set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
+<<<<<<< HEAD
   VERSION 1.5.0
+=======
+  VERSION 1.4.4
+>>>>>>> master
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
