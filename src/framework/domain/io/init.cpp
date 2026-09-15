@@ -93,7 +93,9 @@ namespace ntt {
     for (const auto& sp : species_params()) {
       spectra_species.push_back(sp.index());
     }
-    g_writer.defineSpectraOutputs(spectra_species);
+    const auto num_spatial_bins = params.template get<std::vector<size_t>>(
+      "output.spectra.num_spatial_bins");
+    g_writer.defineSpectraOutputs(spectra_species, num_spatial_bins);
     for (const auto& type : { "fields", "particles", "spectra" }) {
       g_writer.addTracker(type,
                           params.template get<timestep_t>(
