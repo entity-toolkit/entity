@@ -189,6 +189,7 @@ namespace kernel {
                                             nmin_i(1),
                                             dncells_i(1),
                                             nbins_i(1));
+        auto dn_acc                    = dn_scatter.access();
         dn_acc(i1_ind, i2_ind, e_ind) += particles.weight(p);
       } else if constexpr (D == Dim::_3D) {
         const auto i1_ind = SpatialBinIndex(static_cast<real_t>(particles.i1(p)) +
@@ -206,6 +207,7 @@ namespace kernel {
                                             nmin_i(2),
                                             dncells_i(2),
                                             nbins_i(2));
+        auto dn_acc                            = dn_scatter.access();
         dn_acc(i1_ind, i2_ind, i3_ind, e_ind) += particles.weight(p);
       } else {
         raise::KernelError(HERE, "invalid dimension");

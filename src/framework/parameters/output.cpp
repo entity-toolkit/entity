@@ -171,11 +171,12 @@ namespace ntt {
                                                 "num_energy_bins",
                                                 defaults::output::spec_num_e_bins);
       }
-      spectra_num_spatial_bins = toml::find_or(toml_data,
-                                               "output",
-                                               "spectra",
-                                               "num_spatial_bins",
-                                               std::vector<size_t> { 1, 1, 1 });
+      spectra_num_spatial_bins = toml::find_or<std::vector<size_t>>(
+        toml_data,
+        "output",
+        "spectra",
+        "num_spatial_bins",
+        std::vector<size_t> { 1, 1, 1 });
       if (spectra_num_spatial_bins->size() < static_cast<size_t>(dim)) {
         raise::Error("`output.spectra.num_spatial_bins` must have at least " +
                        std::to_string(static_cast<size_t>(dim)) + " entries",
