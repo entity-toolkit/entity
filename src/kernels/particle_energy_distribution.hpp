@@ -90,7 +90,7 @@ namespace kernel {
       if (en <= energy_binning.e_min) {
         return 0u;
       } else if (en >= energy_binning.e_max) {
-        return energy_binning.n_bins;
+        return energy_binning.n_bins - 1u;
       } else {
         return static_cast<size_t>(static_cast<real_t>(energy_binning.n_bins) *
                                    (en - energy_binning.e_min) /
@@ -161,7 +161,7 @@ namespace kernel {
       } else if (ni >= dncells * static_cast<real_t>(nbins)) {
         return nbins - 1u;
       } else {
-        return static_cast<size_t>(static_cast<real_t>(nbins) * ni / dncells);
+        return static_cast<size_t>(ni / dncells);
       }
     }
 
