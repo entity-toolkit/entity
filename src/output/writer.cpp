@@ -200,14 +200,34 @@ namespace out {
     }
   }
 
-  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs) {
+  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs,
+                                    const std::vector<size_t>& num_spatial_bins) {
     m_spectra_writers.clear();
     for (const auto& s : specs) {
       m_spectra_writers.emplace_back(s);
     }
     m_io.DefineVariable<real_t>("sEbn", {}, {}, { adios2::UnknownDim });
+    const auto spatial_binning_enabled = std::any_of(num_spatial_bins.begin(),
+                                                     num_spatial_bins.end(),
+                                                     [](const auto& n) {
+                                                       return n != 1u;
+                                                     });
+    const auto nspec_dims = spatial_binning_enabled ? num_spatial_bins.size() + 1u
+                                                    : 1u;
     for (const auto& sp : m_spectra_writers) {
-      m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
+      m_io.DefineVariable<real_t>(sp.name(),
+                                  {},
+                                  {},
+                                  adios2::Dims(nspec_dims, adios2::UnknownDim));
+    }
+    if (spatial_binning_enabled) {
+      const auto dim = num_spatial_bins.size();
+      for (auto d { 0u }; d < dim; ++d) {
+        m_io.DefineVariable<real_t>("sX" + std::to_string(d + 1) + "bn",
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
     }
   }
 
@@ -383,6 +403,47 @@ namespace out {
     m_keepalive.emplace_back(array_h);
   }
 
+  template <uint8_t N, class HostView>
+  void PutSpectrumSpatial(adios2::IO&            io,
+                          adios2::Engine&        writer,
+                          std::vector<std::any>& keepalive,
+                          const std::string&     varname,
+                          const HostView&        counts_h) {
+    auto var = io.InquireVariable<real_t>(varname);
+
+    adios2::Dims start(N, 0u), count(N, 0u), zeros(N, 0u);
+    auto         ntot { 1ul };
+    for (auto d { 0u }; d < N; ++d) {
+      count[d]  = counts_h.extent(d);
+      ntot     *= counts_h.extent(d);
+    }
+
+#if defined(MPI_ENABLED)
+    HostView counts_h_all { "counts_h_all", counts_h.layout() };
+    int      rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(counts_h.data(),
+               counts_h_all.data(),
+               static_cast<int>(ntot),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+      writer.Put<real_t>(var, counts_h_all.data(), adios2::Mode::Deferred);
+      keepalive.emplace_back(counts_h_all);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>(start, zeros));
+      writer.Put<real_t>(var, nullptr, adios2::Mode::Sync);
+    }
+#else
+    var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+    writer.Put<real_t>(var, counts_h.data(), adios2::Mode::Deferred);
+    keepalive.emplace_back(counts_h);
+#endif
+  }
+
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
                              const std::string&      varname) {
     auto var      = m_io.InquireVariable<real_t>(varname);
@@ -416,74 +477,129 @@ namespace out {
 #endif
   }
 
-// spectrum3D, broken up into separate sub-domains
-  void Writer::writeSpectrum3D(const array_t<real_t****>& counts3D,
-                             const std::string&      varname) {
-    // need to include the rank specific coordinates contained here
-    std::string varname3d = varname + "_3D"; 
-    //auto var      = m_io.InquireVariable<real_t>(varname);
-    auto counts3D_h = Kokkos::create_mirror_view(counts3D);
-    // copy to host
-    Kokkos::deep_copy(counts3D_h, counts3D);
-#if defined(MPI_ENABLED)
-    array_t<real_t****> counts3D_all { "counts3D_all", counts3D.extent(0), counts3D.extent(1), counts3D.extent(2), counts3D.extent(3) };
-    //auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
-    int              rank;
-    int              size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    auto counts3D_h_all  = Kokkos::create_mirror_view(counts3D_all);
-    
-
-    MPI_Allreduce(counts3D_h.data(),
-               counts3D_h_all.data(),
-               counts3D_h.extent(0)*counts3D_h.extent(1)*counts3D_h.extent(2)*counts3D_h.extent(3),// size so probably need to multiply counts_h.extent(0)*counts_h.extent(1)*counts_h.extent(2)
-               mpi::get_type<real_t>(),
-               MPI_SUM,
-               MPI_COMM_WORLD); // size
-    //Kokkos::deep_copy()
-#else
-    int rank = 0;
-    int size = 1;
-    auto counts3D_h_all  = counts3D_h;
-#endif 
-    using Shape = std::vector<std::size_t>;
-
-    Shape shape = {counts3D.extent(0), counts3D.extent(1), counts3D.extent(2), counts3D.extent(3)};              // global size of counts3D_all
-    Shape start, count;                        // per-rank selection  
-
-    // split the domain along the x1 direction across the different ranks
-    auto split_x1 = [&](std::size_t n, int this_rank, int nranks)
-    {
-      // base number of cells to allocate to each rank
-      std::size_t base = n / nranks;
-      // remainder that do not fit neatly in one rank
-      std::size_t rem = n % nranks;
-      // number of cells to allocate to the rank including the remainder
-      std::size_t nloc = base + (this_rank <(int)rem ? 1 : 0); // allocate one more if this rank is less that the remainder
-      //offset to allocate
-      std::size_t off = base * this_rank + std::min<std::size_t>(this_rank, rem);
-
-      return std::pair{nloc, off};
-    };
-
-    auto [nloc0, off0] = split_x1(counts3D.extent(0), rank, size);
-    start = {off0, 0, 0, 0};
-    count = {nloc0, counts3D.extent(1), counts3D.extent(2), counts3D.extent(3)};
-
-    auto var = m_io.InquireVariable<real_t>(varname3d);
-    if (!var)
-    {
-        var = m_io.DefineVariable<real_t>(varname3d, shape, start, count, adios2::ConstantDims);
+  template <uint8_t N>
+  void Writer::writeSpectrumSpatial(const nddata_t<N, real_t>& counts,
+                                    const std::string&         varname) {
+    static_assert(N >= 2 and N <= 4, "writeSpectrumSpatial: N must be 2, 3 or 4");
+    // host-resident copy, layout inherited from `counts`
+    auto counts_h    = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
+                                                        counts);
+    using counts_h_t = decltype(counts_h);
+    using layout_t   = typename counts_h_t::array_layout;
+    if constexpr (std::is_same<layout_t, Kokkos::LayoutRight>::value) {
+      PutSpectrumSpatial<N>(m_io, m_writer, m_keepalive, varname, counts_h);
+    } else {
+      // ADIOS2 reads the raw buffer as row-major: remap on the host
+      using counts_rm_t =
+        Kokkos::View<typename counts_h_t::data_type, Kokkos::LayoutRight, Kokkos::HostSpace>;
+      counts_rm_t counts_rm {};
+      if constexpr (N == 2) {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1) };
+      } else if constexpr (N == 3) {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1),
+                                  counts_h.extent(2) };
+      } else {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1),
+                                  counts_h.extent(2),
+                                  counts_h.extent(3) };
+      }
+      Kokkos::deep_copy(counts_rm, counts_h);
+      PutSpectrumSpatial<N>(m_io, m_writer, m_keepalive, varname, counts_rm);
     }
-    
-    //auto var = m_io.DefineVariable<real_t>(varname3d, shape, start, count, adios2::ConstantDims);
-    
-    auto counts3D_h_all_slab = Kokkos::subview(counts3D_h_all, Kokkos::make_pair(off0, off0+nloc0), Kokkos::ALL(), Kokkos::ALL(), Kokkos::ALL());
-
-    m_writer.Put(var, counts3D_h_all_slab, adios2::Mode::Sync);  
   }
+
+  //   // spectrum3D, broken up into separate sub-domains
+  //   void Writer::writeSpectrum3D(const array_t<real_t****>& counts3D,
+  //                                const std::string&         varname) {
+  //     // need to include the rank specific coordinates contained here
+  //     std::string varname3d  = varname + "_3D";
+  //     // auto var      = m_io.InquireVariable<real_t>(varname);
+  //     auto        counts3D_h = Kokkos::create_mirror_view(counts3D);
+  //     // copy to host
+  //     Kokkos::deep_copy(counts3D_h, counts3D);
+  // #if defined(MPI_ENABLED)
+  //     array_t<real_t****> counts3D_all { "counts3D_all",
+  //                                        counts3D.extent(0),
+  //                                        counts3D.extent(1),
+  //                                        counts3D.extent(2),
+  //                                        counts3D.extent(3) };
+  //     // auto             counts_h_all = Kokkos::create_mirror_view(counts_all);
+  //     int                 rank;
+  //     int                 size;
+  //     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  //     MPI_Comm_size(MPI_COMM_WORLD, &size);
+  //
+  //     auto counts3D_h_all = Kokkos::create_mirror_view(counts3D_all);
+  //
+  //     MPI_Allreduce(
+  //       counts3D_h.data(),
+  //       counts3D_h_all.data(),
+  //       counts3D_h.extent(0) * counts3D_h.extent(1) * counts3D_h.extent(2) *
+  //         counts3D_h.extent(
+  //           3), // size so probably need to multiply counts_h.extent(0)*counts_h.extent(1)*counts_h.extent(2)
+  //       mpi::get_type<real_t>(),
+  //       MPI_SUM,
+  //       MPI_COMM_WORLD); // size
+  //                        // Kokkos::deep_copy()
+  // #else
+  //     int  rank           = 0;
+  //     int  size           = 1;
+  //     auto counts3D_h_all = counts3D_h;
+  // #endif
+  //     using Shape = std::vector<std::size_t>;
+  //
+  //     Shape shape = { counts3D.extent(0),
+  //                     counts3D.extent(1),
+  //                     counts3D.extent(2),
+  //                     counts3D.extent(3) }; // global size of counts3D_all
+  //     Shape start, count;                   // per-rank selection
+  //
+  //     // split the domain along the x1 direction across the different ranks
+  //     auto split_x1 = [&](std::size_t n, int this_rank, int nranks) {
+  //       // base number of cells to allocate to each rank
+  //       std::size_t base = n / nranks;
+  //       // remainder that do not fit neatly in one rank
+  //       std::size_t rem  = n % nranks;
+  //       // number of cells to allocate to the rank including the remainder
+  //       std::size_t nloc = base +
+  //                          (this_rank < (int)rem
+  //                             ? 1
+  //                             : 0); // allocate one more if this rank is less that the remainder
+  //       // offset to allocate
+  //       std::size_t off = base * this_rank + std::min<std::size_t>(this_rank, rem);
+  //
+  //       return std::pair { nloc, off };
+  //     };
+  //
+  //     auto [nloc0, off0] = split_x1(counts3D.extent(0), rank, size);
+  //     start              = { off0, 0, 0, 0 };
+  //     count = { nloc0, counts3D.extent(1), counts3D.extent(2), counts3D.extent(3) };
+  //
+  //     auto var = m_io.InquireVariable<real_t>(varname3d);
+  //     if (!var) {
+  //       var = m_io.DefineVariable<real_t>(varname3d,
+  //                                         shape,
+  //                                         start,
+  //                                         count,
+  //                                         adios2::ConstantDims);
+  //     }
+  //
+  //     // auto var = m_io.DefineVariable<real_t>(varname3d, shape, start, count, adios2::ConstantDims);
+  //
+  //     auto counts3D_h_all_slab = Kokkos::subview(counts3D_h_all,
+  //                                                Kokkos::make_pair(off0, off0 + nloc0),
+  //                                                Kokkos::ALL(),
+  //                                                Kokkos::ALL(),
+  //                                                Kokkos::ALL());
+  //
+  //     m_writer.Put(var, counts3D_h_all_slab, adios2::Mode::Sync);
+  //   }
 
   void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
                                  const std::string&      varname) {
@@ -567,8 +683,6 @@ namespace out {
         mode_str = "particles";
       } else if (write_mode == WriteMode::Spectra) {
         mode_str = "spectra";
-      } else if (write_mode == WriteMode::Spectra3D) {
-        mode_str = "spectra3D";
       } else {
         raise::Fatal("Unknown write mode", HERE);
       }
@@ -637,5 +751,13 @@ namespace out {
   WRITE_FIELD(Dim::_3D, 3)
   WRITE_FIELD(Dim::_3D, 6)
 #undef WRITE_FIELD
+
+#define WRITE_SPECTRUM_SPATIAL(N)                                              \
+  template void Writer::writeSpectrumSpatial<N>(const nddata_t<N, real_t>&,    \
+                                                const std::string&);
+  WRITE_SPECTRUM_SPATIAL(2)
+  WRITE_SPECTRUM_SPATIAL(3)
+  WRITE_SPECTRUM_SPATIAL(4)
+#undef WRITE_SPECTRUM_SPATIAL
 
 } // namespace out

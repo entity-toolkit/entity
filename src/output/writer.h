@@ -139,7 +139,11 @@ namespace out {
                                npart_t,
                                const std::string&);
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
-    void writeSpectrum3D(const array_t<real_t****>&, const std::string&);
+
+    template <uint8_t N>
+    void writeSpectrumSpatial(const nddata_t<N, real_t>&,
+                              const std::string&); // @TODO implement for N = 2, 3, 4
+
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
     void beginWriting(WriteModeTags, timestep_t, simtime_t);
