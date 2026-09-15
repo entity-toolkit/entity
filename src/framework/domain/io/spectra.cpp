@@ -143,6 +143,7 @@ namespace ntt {
           nbins_i,
           { e_min, e_max, log_bins, num_energy_bins },
           local_domain->mesh.metric);
+        // @TODO: write
       }
     }
 
@@ -164,6 +165,13 @@ namespace ntt {
         });
 
       g_writer.writeSpectrumBins(energy, "sEbn");
+    }
+    if (spatial_binning_enabled) {
+      for (auto d = 0u; d < dim; ++d) {
+        array_t<real_t*> xi { "xi", num_spatial_bins[d] + 1 };
+        // @TODO: fill spatial bins (in physical units)
+        g_writer.writeSpectrumBins(xi, "sX" + std::to_string(d + 1) + "bn");
+      }
     }
     g_writer.endWriting(WriteMode::Spectra);
   }

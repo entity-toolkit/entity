@@ -121,7 +121,8 @@ namespace out {
                         const std::vector<ncells_t>& loc_shape);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineSpectraOutputs(const std::vector<spidx_t>&);
+    void defineSpectraOutputs(const std::vector<spidx_t>&,
+                              const std::vector<size_t>&);
 
     void writeMesh(unsigned short,
                    const array_t<real_t*>&,
