@@ -67,11 +67,19 @@ namespace kernel::sr {
     using F                   = typename P::ExternalFieldsPolicy;
     static constexpr auto Atm = P::ApplyAtmosphere;
 
-    static constexpr auto D            = M::Dim;
-    static constexpr auto HasExtFx1    = ::traits::fieldsetter::HasFx1<F, D>;
-    static constexpr auto HasExtFx2    = ::traits::fieldsetter::HasFx2<F, D>;
-    static constexpr auto HasExtFx3    = ::traits::fieldsetter::HasFx3<F, D>;
-    static constexpr auto HasExtForce  = HasExtFx1 or HasExtFx2 or HasExtFx3;
+    static constexpr auto D         = M::Dim;
+    static constexpr auto HasExtFx1 = ::traits::fieldsetter::HasFx1<F, D>;
+    static constexpr auto HasExtFx2 = ::traits::fieldsetter::HasFx2<F, D>;
+    static constexpr auto HasExtFx3 = ::traits::fieldsetter::HasFx3<F, D>;
+    static constexpr auto HasExtFx1WithIndex =
+      ::traits::fieldsetter::HasFx1WithIndex<F, D>;
+    static constexpr auto HasExtFx2WithIndex =
+      ::traits::fieldsetter::HasFx2WithIndex<F, D>;
+    static constexpr auto HasExtFx3WithIndex =
+      ::traits::fieldsetter::HasFx3WithIndex<F, D>;
+    static constexpr auto HasExtForce = HasExtFx1 or HasExtFx2 or HasExtFx3 or
+                                        HasExtFx1WithIndex or
+                                        HasExtFx2WithIndex or HasExtFx3WithIndex;
     static constexpr auto HasExtEx1    = ::traits::fieldsetter::HasEx1<F, D>;
     static constexpr auto HasExtEx2    = ::traits::fieldsetter::HasEx2<F, D>;
     static constexpr auto HasExtEx3    = ::traits::fieldsetter::HasEx3<F, D>;
@@ -245,7 +253,7 @@ namespace kernel::sr {
 
         // compute the external force either user-provided or from the atmosphere model
         if constexpr (HasExtForce or Atm) {
-          getExternalForce(xp_Cd, xp_Ph, external_force_Cart);
+          getExternalForce(xp_Cd, xp_Ph, p, external_force_Cart);
         }
 
         if (ctx.pusher_flags & ParticlePusher::GCA) {
@@ -1425,17 +1433,24 @@ namespace kernel::sr {
 
     Inline void getExternalForce(const coord_t<M::PrtlDim>& xp_Cd,
                                  const coord_t<M::PrtlDim>& xp_Ph,
+                                 [[maybe_unused]] prtlidx_t p,
                                  vec_t<Dim::_3D>& external_force_Cart) const
       requires(Atm or HasExtForce)
     {
       real_t f_x1 = ZERO, f_x2 = ZERO, f_x3 = ZERO;
-      if constexpr (HasExtFx1) {
+      if constexpr (HasExtFx1WithIndex) {
+        f_x1 = policies.external_fields_policy.fx1(xp_Ph, p);
+      } else if constexpr (HasExtFx1) {
         f_x1 = policies.external_fields_policy.fx1(xp_Ph);
       }
-      if constexpr (HasExtFx2) {
+      if constexpr (HasExtFx2WithIndex) {
+        f_x2 = policies.external_fields_policy.fx2(xp_Ph, p);
+      } else if constexpr (HasExtFx2) {
         f_x2 = policies.external_fields_policy.fx2(xp_Ph);
       }
-      if constexpr (HasExtFx3) {
+      if constexpr (HasExtFx3WithIndex) {
+        f_x3 = policies.external_fields_policy.fx3(xp_Ph, p);
+      } else if constexpr (HasExtFx3) {
         f_x3 = policies.external_fields_policy.fx3(xp_Ph);
       }
       if constexpr (Atm) {
