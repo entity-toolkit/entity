@@ -5,6 +5,7 @@
  *   - ntt::Fields
  * @cpp:
  *   - fields.cpp
+ *   - checkpoint/fields.cpp
  * @namespaces:
  *   - ntt::
  * @note SRPIC engine allocates em(6), bckp(6), cur(3), buff(3)
