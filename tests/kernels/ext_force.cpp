@@ -24,6 +24,7 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace ntt;
@@ -51,21 +52,25 @@ void put_value(array_t<T*>& arr, T v, prtlidx_t p) {
   Kokkos::deep_copy(arr, h);
 }
 
+// per-particle weight given to the two test particles; the indexed force
+// setter reads it back from the particle arrays and scales the force by it
+auto weight_of(prtlidx_t p) -> real_t {
+  return (p == 0) ? ONE : TWO;
+}
+
+// force setter depending only on the position
 struct Force {
   Force(real_t force) : force { force } {}
 
-  Inline auto fx1(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
-    -> real_t {
+  Inline auto fx1(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::sin(ONE);
   }
 
-  Inline auto fx2(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
-    -> real_t {
+  Inline auto fx2(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::sin(ONE) * math::cos(ONE);
   }
 
-  Inline auto fx3(const coord_t<Dim::_3D>&, const ntt::ParticleArrays&, prtlidx_t) const
-    -> real_t {
+  Inline auto fx3(const coord_t<Dim::_3D>&) const -> real_t {
     return force * math::cos(ONE);
   }
 
@@ -73,7 +78,31 @@ private:
   const real_t force;
 };
 
-template <SimEngine::type S, typename M>
+// force setter carrying its own copy of the particle arrays and reading
+// per-particle properties through the particle index
+struct IndexedForce {
+  IndexedForce(real_t force, const ParticleArrays& prtls)
+    : force { force }
+    , prtls { prtls } {}
+
+  Inline auto fx1(const coord_t<Dim::_3D>&, prtlidx_t p) const -> real_t {
+    return prtls.weight(p) * force * math::sin(ONE) * math::sin(ONE);
+  }
+
+  Inline auto fx2(const coord_t<Dim::_3D>&, prtlidx_t p) const -> real_t {
+    return prtls.weight(p) * force * math::sin(ONE) * math::cos(ONE);
+  }
+
+  Inline auto fx3(const coord_t<Dim::_3D>&, prtlidx_t p) const -> real_t {
+    return prtls.weight(p) * force * math::cos(ONE);
+  }
+
+private:
+  const real_t         force;
+  const ParticleArrays prtls;
+};
+
+template <SimEngine::type S, typename M, bool Indexed>
 void testPusher(const std::vector<ncells_t>& res) {
   static_assert(M::Dim == 3);
   raise::ErrorIf(res.size() != M::Dim, "res.size() != M::Dim", HERE);
@@ -144,6 +173,7 @@ void testPusher(const std::vector<ncells_t>& res) {
   put_value<real_t>(ux1, ux1_0, 0);
   put_value<real_t>(ux2, ux2_0, 0);
   put_value<real_t>(ux3, ux3_0, 0);
+  put_value<real_t>(weight, weight_of(0), 0);
   put_value<short>(tag, ParticleTag::alive, 0);
 
   put_value<int>(i1, (int)(x1_0), 1);
@@ -155,11 +185,10 @@ void testPusher(const std::vector<ncells_t>& res) {
   put_value<real_t>(ux1, -ux1_0, 1);
   put_value<real_t>(ux2, -ux2_0, 1);
   put_value<real_t>(ux3, -ux3_0, 1);
+  put_value<real_t>(weight, weight_of(1), 1);
   put_value<short>(tag, ParticleTag::alive, 1);
 
   const real_t eps = std::is_same_v<real_t, float> ? 1e-4 : 1e-6;
-
-  const auto ext_force = Force { f_mag };
 
   static plog::RollingFileAppender<plog::NttInfoFormatter> file_appender(
     "pusher_log.csv");
@@ -189,7 +218,17 @@ void testPusher(const std::vector<ncells_t>& res) {
   pusher_arrays.ux2      = ux2;
   pusher_arrays.ux3      = ux3;
   pusher_arrays.phi      = phi;
+  pusher_arrays.weight   = weight;
   pusher_arrays.tag      = tag;
+
+  using ext_force_t    = std::conditional_t<Indexed, IndexedForce, Force>;
+  const auto ext_force = [&]() -> ext_force_t {
+    if constexpr (Indexed) {
+      return { f_mag, pusher_arrays };
+    } else {
+      return { f_mag };
+    }
+  }();
 
   const auto pusher_policy =
     ::kernel::sr::PusherPolicy<Minkowski<Dim::_3D>,
@@ -256,12 +295,16 @@ void testPusher(const std::vector<ncells_t>& res) {
                  ux2_(1),
                  ux3_(1));
 
+    // the indexed setter scales the force by the particle weight
+    const real_t scale_0 = Indexed ? weight_of(0) : ONE;
+    const real_t scale_1 = Indexed ? weight_of(1) : ONE;
+
     {
-      const real_t ux1_expect = ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                          std::sin(ONE);
-      const real_t ux2_expect = ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                          std::cos(ONE);
-      const real_t ux3_expect = ux3_0 + (time + dt) * f_mag * std::cos(ONE);
+      const real_t f = (time + dt) * f_mag * scale_0;
+
+      const real_t ux1_expect = ux1_0 + f * std::sin(ONE) * std::sin(ONE);
+      const real_t ux2_expect = ux2_0 + f * std::sin(ONE) * std::cos(ONE);
+      const real_t ux3_expect = ux3_0 + f * std::cos(ONE);
 
       check_value(t, ux1_(0), ux1_expect, eps, "Particle #1 ux1");
       check_value(t, ux2_(0), ux2_expect, eps, "Particle #1 ux2");
@@ -269,11 +312,11 @@ void testPusher(const std::vector<ncells_t>& res) {
     }
 
     {
-      const real_t ux1_expect = -ux1_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                           std::sin(ONE);
-      const real_t ux2_expect = -ux2_0 + (time + dt) * f_mag * std::sin(ONE) *
-                                           std::cos(ONE);
-      const real_t ux3_expect = -ux3_0 + (time + dt) * f_mag * std::cos(ONE);
+      const real_t f = (time + dt) * f_mag * scale_1;
+
+      const real_t ux1_expect = -ux1_0 + f * std::sin(ONE) * std::sin(ONE);
+      const real_t ux2_expect = -ux2_0 + f * std::sin(ONE) * std::cos(ONE);
+      const real_t ux3_expect = -ux3_0 + f * std::cos(ONE);
 
       check_value(t, ux1_(1), ux1_expect, eps, "Particle #2 ux1");
       check_value(t, ux2_(1), ux2_expect, eps, "Particle #2 ux2");
@@ -288,7 +331,8 @@ auto main(int argc, char* argv[]) -> int {
   try {
     using namespace ntt;
 
-    testPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>>({ 10, 10, 10 });
+    testPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>, false>({ 10, 10, 10 });
+    testPusher<SimEngine::SRPIC, Minkowski<Dim::_3D>, true>({ 10, 10, 10 });
 
   } catch (std::exception& e) {
     std::cerr << e.what() << '\n';

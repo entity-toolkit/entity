@@ -105,7 +105,13 @@ static_assert(not EmissionPolicyClass<NoPayload_EmissionPolicy, MockMetric>);
 // --- ExtFieldsPolicyClass ---
 
 struct WithFx1 {
-  real_t fx1(const coord_t<Dimension::_2D>&, const ntt::ParticleArrays&, prtlidx_t) const {
+  real_t fx1(const coord_t<Dimension::_2D>&) const {
+    return ZERO;
+  }
+};
+
+struct WithIndexedFx1 {
+  real_t fx1(const coord_t<Dimension::_2D>&, prtlidx_t) const {
     return ZERO;
   }
 };
@@ -113,6 +119,7 @@ struct WithFx1 {
 struct Empty {};
 
 static_assert(ExtFieldsPolicyClass<WithFx1, Dimension::_2D>);
+static_assert(ExtFieldsPolicyClass<WithIndexedFx1, Dimension::_2D>);
 static_assert(not ExtFieldsPolicyClass<Empty, Dimension::_2D>);
 
 // --- CustomParticleUpdatePolicyClass with a real updater ---
