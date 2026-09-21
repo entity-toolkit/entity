@@ -1,3 +1,4 @@
+#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -10,6 +11,7 @@
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 #include "output/utils/readers.h"
+#include "output/utils/tuning.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -122,6 +124,15 @@ namespace ntt {
 
     adios2::IO io = ptr_adios->DeclareIO("Entity::CheckpointRead");
     io.SetEngine("BPFile");
+    out::ApplyBp5ReadTuning(
+      io,
+      "BPFile",
+      { params.template get<int>("adios2.read_threads",
+                                 defaults::adios2::read_threads),
+        params.template get<int>("adios2.read_open_timeout_secs",
+                                 defaults::adios2::read_open_timeout_secs),
+        params.template get<int>("adios2.read_poll_secs",
+                                 defaults::adios2::read_poll_secs) });
 
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
 
