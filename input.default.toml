@@ -290,8 +290,8 @@
       gamma_qed = 10.0
       # Minimum photon energy for synchrotron emission (units of `m0 c^2`)
       #   @type: float [> 0.0]
-      #   @default: 1e-4
-      photon_energy_min = 1e-4
+      #   @default: 1e-3
+      photon_energy_min = 1e-3
       # Weights for the emitted synchrotron photons
       #   @type: float [> 0.0]
       #   @default: 1.0
@@ -327,8 +327,8 @@
       gamma_qed = 10.0
       # Minimum photon energy for inverse Compton emission (units of `m0 c^2`)
       #   @type: float [> 0.0]
-      #   @default: 1e-4
-      photon_energy_min = 1e-4
+      #   @default: 1e-3
+      photon_energy_min = 1e-3
       # Weights for the emitted inverse Compton photons
       #   @type: float [> 0.0]
       #   @default: 1.0
@@ -586,14 +586,14 @@
 [output]
   # Output format
   #   @type: string
-  #   @default: "hdf5"
+  #   @default: "bpfile"
   #   @enum: "disabled", "hdf5", "BPFile"
-  format = "hdf5"
+  format = "bpfile"
   # Number of timesteps between all outputs
   #   @type: uint [> 0]
-  #   @default: 1
+  #   @default: 100
   #   @note: Value is overriden by output intervals for specific outputs
-  interval = 1
+  interval = 100
   # Physical (code) time interval between all outputs
   #   @type: float
   #   @default: -1.0

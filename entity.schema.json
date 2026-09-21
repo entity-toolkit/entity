@@ -751,10 +751,10 @@
                   "description": "Minimum photon energy for synchrotron emission (units of `m0 c^2`)",
                   "type": "number",
                   "exclusiveMinimum": 0.0,
-                  "default": 0.0001,
+                  "default": 0.001,
                   "x-entity": {
                     "type": "float [> 0.0]",
-                    "default": "1e-4"
+                    "default": "1e-3"
                   }
                 },
                 "photon_weight": {
@@ -815,10 +815,10 @@
                   "description": "Minimum photon energy for inverse Compton emission (units of `m0 c^2`)",
                   "type": "number",
                   "exclusiveMinimum": 0.0,
-                  "default": 0.0001,
+                  "default": 0.001,
                   "x-entity": {
                     "type": "float [> 0.0]",
-                    "default": "1e-4"
+                    "default": "1e-3"
                   }
                 },
                 "photon_weight": {
@@ -1377,7 +1377,7 @@
               "pattern": "(?i)^(disabled|hdf5|BPFile)$"
             }
           ],
-          "default": "hdf5",
+          "default": "bpfile",
           "x-entity": {
             "type": "string"
           }
@@ -1386,7 +1386,7 @@
           "description": "Number of timesteps between all outputs",
           "type": "integer",
           "minimum": 1,
-          "default": 1,
+          "default": 100,
           "x-entity": {
             "type": "uint [> 0]",
             "notes": [
