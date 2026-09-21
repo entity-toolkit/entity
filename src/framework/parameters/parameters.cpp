@@ -210,6 +210,21 @@ namespace ntt {
                               "adios2",
                               "buffer_chunk_size",
                               defaults::adios2::buffer_chunk_size));
+    set("adios2.read_threads",
+        toml::find_or<int>(toml_data,
+                           "adios2",
+                           "read_threads",
+                           defaults::adios2::read_threads));
+    set("adios2.read_open_timeout_secs",
+        toml::find_or<int>(toml_data,
+                           "adios2",
+                           "read_open_timeout_secs",
+                           defaults::adios2::read_open_timeout_secs));
+    set("adios2.read_poll_secs",
+        toml::find_or<int>(toml_data,
+                           "adios2",
+                           "read_poll_secs",
+                           defaults::adios2::read_poll_secs));
 
     /* [diagnostics] -------------------------------------------------------- */
     set("diagnostics.interval",

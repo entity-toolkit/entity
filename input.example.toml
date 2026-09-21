@@ -750,6 +750,22 @@
   #   @default: 16777216
   #   @note: Scales with per-rank output volume; matches ADIOS2's default
   buffer_chunk_size = ""
+  # Size of the BP5 reader thread pool used when resuming (BP5 Threads)
+  #   @type: int
+  #   @default: 0
+  #   @note: 0 lets ADIOS2 size the pool itself. The best value depends on how
+  #          many ranks share a node, so tune it per machine if restarts are slow
+  read_threads = ""
+  # How long to wait for the checkpoint file to appear, in seconds
+  #   @type: int
+  #   @default: 600
+  #   @note: Guards against a checkpoint directory that is slow to become
+  #          visible on a shared filesystem
+  read_open_timeout_secs = ""
+  # Polling interval while waiting for the checkpoint file, in seconds
+  #   @type: int
+  #   @default: 1
+  read_poll_secs = ""
 
 [diagnostics]
   # Number of timesteps between diagnostic logs

@@ -4,8 +4,10 @@
  * for large-scale parallel filesystems.
  * @implements
  *   - out::Bp5Tuning
+ *   - out::Bp5ReadTuning
  *   - out::TotalAggregators -> int
  *   - out::ApplyBp5Tuning -> void
+ *   - out::ApplyBp5ReadTuning -> void
  * @cpp:
  *   - tuning.cpp
  * @namespaces:
@@ -37,9 +39,26 @@ namespace out {
   // aggregators_per_node <= 0, which leaves ADIOS2 on its built-in default.
   auto TotalAggregators(int aggregators_per_node) -> int;
 
+  // Checkpoint-read knobs from the [adios2] toml section. The aggregation and
+  // buffering parameters above are write-side only and are deliberately not
+  // reused here: ADIOS2 accepts unknown parameters silently, so setting them
+  // on a reader would look like tuning while doing nothing.
+  struct Bp5ReadTuning {
+    const int threads { ntt::defaults::adios2::read_threads };
+    const int open_timeout_secs { ntt::defaults::adios2::read_open_timeout_secs };
+    const int poll_secs { ntt::defaults::adios2::read_poll_secs };
+  };
+
   // Apply the [adios2] BP5 tuning to a freshly declared IO whose engine is
   // BPFile/BP5. A no-op for other engines.
   void ApplyBp5Tuning(adios2::IO&, const std::string& engine, const Bp5Tuning&);
+
+  // Apply the checkpoint-read knobs to a freshly declared reader IO whose
+  // engine is BPFile/BP5. A no-op for other engines. `threads <= 0` leaves
+  // ADIOS2 to size its own reader thread pool.
+  void ApplyBp5ReadTuning(adios2::IO&,
+                          const std::string& engine,
+                          const Bp5ReadTuning&);
 
 } // namespace out
 
