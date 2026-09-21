@@ -153,11 +153,38 @@ namespace ntt {
                                        "spectra",
                                        "log_bins",
                                        defaults::output::spec_log);
-      spectra_n_bins   = toml::find_or(toml_data,
-                                     "output",
-                                     "spectra",
-                                     "n_bins",
-                                     defaults::output::spec_nbins);
+      if (toml_data.contains("output") and
+          toml_data.at("output").contains("spectra") and
+          toml_data.at("output").at("spectra").contains("n_bins")) {
+        spectra_num_energy_bins = toml::find<size_t>(toml_data,
+                                                     "output",
+                                                     "spectra",
+                                                     "n_bins");
+        raise::Warning(
+          "`output.spectra.n_bins` is deprecated and will be removed in 1.6+ "
+          "versions, use `output.spectra.num_energy_bins` instead",
+          HERE);
+      } else {
+        spectra_num_energy_bins = toml::find_or(toml_data,
+                                                "output",
+                                                "spectra",
+                                                "num_energy_bins",
+                                                defaults::output::spec_num_e_bins);
+      }
+      spectra_num_spatial_bins = toml::find_or<std::vector<size_t>>(
+        toml_data,
+        "output",
+        "spectra",
+        "num_spatial_bins",
+        std::vector<size_t> { 1, 1, 1 });
+      if (spectra_num_spatial_bins->size() < static_cast<size_t>(dim)) {
+        raise::Error("`output.spectra.num_spatial_bins` must have at least " +
+                       std::to_string(static_cast<size_t>(dim)) + " entries",
+                     HERE);
+      }
+      spectra_num_spatial_bins->erase(
+        spectra_num_spatial_bins->begin() + static_cast<ssize_t>(dim),
+        spectra_num_spatial_bins->end());
 
       /* Stats ---------------------------------------------------------------- */
       stats_quantities        = toml::find_or(toml_data,
@@ -207,7 +234,10 @@ namespace ntt {
       params->set("output.spectra.e_min", spectra_e_min.value());
       params->set("output.spectra.e_max", spectra_e_max.value());
       params->set("output.spectra.log_bins", spectra_log_bins.value());
-      params->set("output.spectra.n_bins", spectra_n_bins.value());
+      params->set("output.spectra.num_energy_bins",
+                  spectra_num_energy_bins.value());
+      params->set("output.spectra.num_spatial_bins",
+                  spectra_num_spatial_bins.value());
 
       params->set("output.stats.quantities", stats_quantities.value());
       params->set("output.stats.custom", stats_custom_quantities.value());
