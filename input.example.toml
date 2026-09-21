@@ -623,7 +623,7 @@
     #   @type: float
     #   @default: 1e3
     e_max = ""
-    # Whether to use logarithmic bins
+    # Whether to use logarithmic bins for energy
     #   @type: bool
     #   @default: true
     log_bins = ""
