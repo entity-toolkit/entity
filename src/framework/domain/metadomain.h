@@ -6,11 +6,19 @@
  *   - ntt::Metadomain<>
  * @cpp:
  *   - metadomain.cpp
- *   - metadomain_comm.cpp
- *   - metadomain_chckpt.cpp
- *   - metadomain_io.cpp
  *   - metadomain_stats.cpp
  *   - metadomain_reshape.cpp
+ *   - checkpoint/init.cpp
+ *   - checkpoint/write.cpp
+ *   - checkpoint/resume.cpp
+ *   - comm/fields.cpp
+ *   - comm/fields_sync.cpp
+ *   - comm/particles.cpp
+ *   - comm/vector_potential.cpp
+ *   - io/init.cpp
+ *   - io/write.cpp
+ *   - io/fields.cpp
+ *   - io/spectra.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -148,24 +156,31 @@ namespace ntt {
      * @note Only neighbor communication is used (CommunicateFields ghosts +
      * CommunicateParticles).
      */
-    void Rebalance(unsigned int    dim_mask,
-                   real_t          tolerance,
-                   ncells_t        max_shift_cells);
+    void Rebalance(unsigned int dim_mask, real_t tolerance, ncells_t max_shift_cells);
 
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
+    using custom_field_output_t = std::function<void(const std::string&,
+                                                     ndfield_t<M::Dim, 6>&,
+                                                     uint32_t,
+                                                     timestep_t,
+                                                     simtime_t,
+                                                     const Domain<S, M>&)>;
     void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
                timestep_t,
                timestep_t,
                simtime_t,
                simtime_t,
-               const std::function<void(const std::string&,
-                                        ndfield_t<M::Dim, 6>&,
-                                        uint32_t,
-                                        timestep_t,
-                                        simtime_t,
-                                        const Domain<S, M>&)>& = nullptr) -> bool;
+               const custom_field_output_t& = nullptr) -> bool;
+    void WriteFields(const SimulationParams&,
+                     Domain<S, M>*,
+                     timestep_t,
+                     timestep_t,
+                     simtime_t,
+                     simtime_t,
+                     const custom_field_output_t&);
+    void WriteSpectra(const SimulationParams&, Domain<S, M>*, timestep_t, simtime_t);
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -195,16 +210,15 @@ namespace ntt {
                              ndfield_t<M::Dim, 6>&) const -> bool;
 #endif
 
+    using custom_stats_output_t = std::function<
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>;
     void InitStatsWriter(const SimulationParams&, bool);
-    auto WriteStats(
-      const SimulationParams&,
-      timestep_t,
-      timestep_t,
-      simtime_t,
-      simtime_t,
-      const std::function<
-        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
-      -> bool;
+    auto WriteStats(const SimulationParams&,
+                    timestep_t,
+                    timestep_t,
+                    simtime_t,
+                    simtime_t,
+                    const custom_stats_output_t& = nullptr) -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);

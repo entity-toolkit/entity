@@ -14,17 +14,28 @@
 # * domain/grid.cpp
 # * domain/metadomain.cpp
 # * domain/metadomain_sort.cpp
-# * domain/metadomain_comm.cpp
-# * domain/metadomain_chckpt.cpp
-# * domain/metadomain_stats.cpp
-# * domain/metadomain_io.cpp
 # * domain/metadomain_reshape.cpp
 # * domain/metadomain_loadbal.cpp
+# * domain/metadomain_render.cpp
+# * domain/checkpoint/init.cpp
+# * domain/checkpoint/write.cpp
+# * domain/checkpoint/resume.cpp
+# * domain/comm/fields.cpp
+# * domain/comm/fields_sync.cpp
+# * domain/comm/particles.cpp
+# * domain/comm/vector_potential.cpp
+# * domain/io/init.cpp
+# * domain/io/write.cpp
+# * domain/io/spectra.cpp
+# * domain/io/fields.cpp
+# * domain/io/stats.cpp
 # * containers/particles.cpp
-# * containers/particles_comm.cpp
-# * containers/particles_io.cpp
 # * containers/particles_sort.cpp
 # * containers/fields.cpp
+# * containers/comm/particles.cpp
+# * containers/io/particles.cpp
+# * containers/checkpoint/particles.cpp
+# * containers/checkpoint/fields.cpp
 #
 # @includes:
 #
@@ -56,23 +67,35 @@ set(SOURCES
     ${SRC_DIR}/parameters/extra.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
-    ${SRC_DIR}/domain/metadomain_comm.cpp
     ${SRC_DIR}/domain/metadomain_sort.cpp
-    ${SRC_DIR}/domain/metadomain_stats.cpp
     ${SRC_DIR}/domain/metadomain_reshape.cpp
     ${SRC_DIR}/domain/metadomain_loadbal.cpp
+    ${SRC_DIR}/domain/metadomain_render.cpp
+    ${SRC_DIR}/domain/comm/fields.cpp
+    ${SRC_DIR}/domain/comm/fields_sync.cpp
+    ${SRC_DIR}/domain/comm/particles.cpp
+    ${SRC_DIR}/domain/io/stats.cpp
     ${SRC_DIR}/containers/particles.cpp
     ${SRC_DIR}/containers/particles_sort.cpp
     ${SRC_DIR}/containers/fields.cpp)
 if(${output})
-  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_io.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_render.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/domain/metadomain_chckpt.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/containers/fields_io.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/containers/particles_io.cpp)
+  list(
+    APPEND
+    SOURCES
+    ${SRC_DIR}/domain/io/init.cpp
+    ${SRC_DIR}/domain/io/write.cpp
+    ${SRC_DIR}/domain/io/spectra.cpp
+    ${SRC_DIR}/domain/io/fields.cpp
+    ${SRC_DIR}/domain/checkpoint/init.cpp
+    ${SRC_DIR}/domain/checkpoint/write.cpp
+    ${SRC_DIR}/domain/checkpoint/resume.cpp
+    ${SRC_DIR}/containers/checkpoint/fields.cpp
+    ${SRC_DIR}/containers/checkpoint/particles.cpp
+    ${SRC_DIR}/containers/io/particles.cpp
+    ${SRC_DIR}/domain/comm/vector_potential.cpp)
 endif()
 if(${mpi})
-  list(APPEND SOURCES ${SRC_DIR}/containers/particles_comm.cpp)
+  list(APPEND SOURCES ${SRC_DIR}/containers/comm/particles.cpp)
 endif()
 add_library(ntt_framework ${SOURCES})
 

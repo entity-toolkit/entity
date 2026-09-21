@@ -83,10 +83,10 @@ namespace ntt {
     const real_t      dt;
     const std::size_t team_policy_team_size;
     const timestep_t  max_steps;
-    const timestep_t start_step;
-    const simtime_t  start_time;
-    simtime_t        time;
-    timestep_t       step;
+    const timestep_t  start_step;
+    const simtime_t   start_time;
+    simtime_t         time;
+    timestep_t        step;
 
   public:
     static constexpr Dimension D { M::Dim };
@@ -254,9 +254,9 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
-       "LoadBalance",
-       "ParticleSort", "Output",
-       "Render", "Checkpoint" },
+       "LoadBalance", "ParticleSort",
+       "Output", "Render",
+       "Checkpoint" },
       []() {
         Kokkos::fence();
        },
@@ -269,7 +269,7 @@ namespace ntt {
     const auto clear_interval = m_params.template get<timestep_t>(
       "particles.clear_interval");
 
-    const auto lb_enable   = m_params.template get<bool>(
+    const auto lb_enable = m_params.template get<bool>(
       "simulation.domain.load_balance.enable");
     const auto lb_interval = m_params.template get<timestep_t>(
       "simulation.domain.load_balance.interval");

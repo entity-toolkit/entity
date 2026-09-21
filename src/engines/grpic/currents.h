@@ -25,7 +25,8 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/currents_deposit.hpp"
+#include "kernels/deposition/currents/global.hpp"
+#include "kernels/deposition/currents/tiled.hpp"
 #include "kernels/digital_filter.hpp"
 
 namespace ntt {
@@ -50,21 +51,21 @@ namespace ntt {
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
-     * Identical in structure to the SRPIC launcher (`engines/srpic/currents.h`):
-     * iterates over `tile_layout.ntiles_total` teams; each team accumulates its
-     * tile's particle contributions in SLM scratch and atomically flushes to the
-     * global J (here `cur0`, the GRPIC half-step current). Requires the species
-     * to have been sorted with `team_policy` enabled (`tile_layout` populated by
-     * `SortSpatially`).
+     * Identical in structure to the SRPIC launcher
+     * (`engines/srpic/currents.h`): iterates over `tile_layout.ntiles_total`
+     * teams; each team accumulates its tile's particle contributions in SLM
+     * scratch and atomically flushes to the global J (here `cur0`, the GRPIC
+     * half-step current). Requires the species to have been sorted with
+     * `team_policy` enabled (`tile_layout` populated by `SortSpatially`).
      *
-     * The deposit body (`kernel::DepositOneParticle<SimEngine::GRPIC, M, O>`) is
-     * the same shared math used by the flat path — it already carries the GR
+     * The deposit body (`kernel::DepositOneParticle<SimEngine::GRPIC, M, O>`)
+     * is the same shared math used by the flat path — it already carries the GR
      * velocity-recovery branch — so the only engine-specific differences from
      * SRPIC are the `SimEngine::GRPIC` tag and the `cur0` target.
      *
      * Falls back to the flat kernel for the tail `[npart_partitioned, npart)`
      * exactly as SRPIC does; see the per-step coverage note in
-     * `kernels/currents_deposit.hpp`.
+     * `kernels/deposition/currents/tiled.hpp`.
      */
     template <GRMetricClass M, unsigned short O>
     void CallDepositKernelTiled(const Particles<M::Dim, M::CoordType>& species,
@@ -87,8 +88,8 @@ namespace ntt {
 
       auto deposit_kernel =
         kernel::DepositCurrentsTiled_kernel<SimEngine::GRPIC, M, O, T> {
-          cur,    species, local_metric, (real_t)(species.charge()),
-          dt,     layout,  species.npart()
+          cur, species, local_metric,   (real_t)(species.charge()),
+          dt,  layout,  species.npart()
         };
 
       const auto scratch = Kokkos::PerTeam(
@@ -111,20 +112,20 @@ namespace ntt {
         int       ts     = team_size_req;
         if (ts > ts_max) {
           raise::Warning(
-            fmt::format("algorithms.deposit.team_policy_team_size = %d exceeds "
-                        "the tiled-deposit maximum %d on this backend; clamping "
-                        "to %d",
-                        team_size_req,
-                        ts_max,
-                        ts_max),
+            fmt::format(
+              "algorithms.deposit.team_policy_team_size = %d exceeds "
+              "the tiled-deposit maximum %d on this backend; clamping "
+              "to %d",
+              team_size_req,
+              ts_max,
+              ts_max),
             HERE);
           ts = ts_max;
         }
         policy = Kokkos::TeamPolicy<>(static_cast<int>(layout.ntiles_total), ts);
         policy.set_scratch_size(0, scratch);
-        logger::Checkpoint(
-          fmt::format("Tiled deposit: explicit team size %d", ts),
-          HERE);
+        logger::Checkpoint(fmt::format("Tiled deposit: explicit team size %d", ts),
+                           HERE);
       }
       Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
 
@@ -177,7 +178,7 @@ namespace ntt {
       // only case the tiled kernel cannot serve is the very first step, before
       // any SortSpatially has populated a layout; that species takes the flat
       // scatter-view path for that step alone. See engines/srpic/currents.h and
-      // kernels/currents_deposit.hpp for the full coverage argument.
+      // kernels/deposition/currents/tiled.hpp for the full coverage argument.
       for (auto& species : domain.species) {
         if ((species.pusher() == ParticlePusher::NONE) or
             (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {

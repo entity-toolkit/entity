@@ -37,6 +37,15 @@ namespace ntt {
     static constexpr auto dimension = D;
   };
 
+#define NTT_FOREACH_COORDINATE(MACRO)                                          \
+  MACRO(Dim::_1D, Coord::Cartesian)                                            \
+  MACRO(Dim::_2D, Coord::Cartesian)                                            \
+  MACRO(Dim::_3D, Coord::Cartesian)                                            \
+  MACRO(Dim::_2D, Coord::Spherical)                                            \
+  MACRO(Dim::_2D, Coord::Qspherical)                                           \
+  MACRO(Dim::_3D, Coord::Spherical)                                            \
+  MACRO(Dim::_3D, Coord::Qspherical)
+
 #define NTT_FOREACH_SPECIALIZATION(MACRO)                                      \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D)                         \

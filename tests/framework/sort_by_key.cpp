@@ -75,8 +75,7 @@ namespace {
     }
     for (npart_t i = 0u; i < n; ++i) {
       raise::ErrorIf(seen[i] != 1,
-                     std::string("permutation not a bijection for backend ") +
-                       label,
+                     std::string("permutation not a bijection for backend ") + label,
                      HERE);
     }
 

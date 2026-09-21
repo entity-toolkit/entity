@@ -265,21 +265,20 @@ namespace ntt {
                                     static_cast<unsigned int>(N_GHOSTS)));
     {
       // dimensions: list of 1/2/3 mapped to a bitmask
-      const auto dim_ints = toml::find_or<std::vector<int>>(
-        toml_data,
-        "simulation",
-        "domain",
-        "load_balance",
-        "dimensions",
-        std::vector<int> { 1 });
-      unsigned int mask = 0u;
+      const auto   dim_ints = toml::find_or<std::vector<int>>(toml_data,
+                                                            "simulation",
+                                                            "domain",
+                                                            "load_balance",
+                                                            "dimensions",
+                                                            std::vector<int> { 1 });
+      unsigned int mask     = 0u;
       for (const auto& d : dim_ints) {
         if (d == 1 or d == 2 or d == 3) {
           mask |= 1u << (d - 1);
         } else {
-          raise::Error(
-            "simulation.domain.load_balance.dimensions: unknown dim, expected 1/2/3",
-            HERE);
+          raise::Error("simulation.domain.load_balance.dimensions: unknown "
+                       "dim, expected 1/2/3",
+                       HERE);
         }
       }
       set("simulation.domain.load_balance.dim_mask", mask);

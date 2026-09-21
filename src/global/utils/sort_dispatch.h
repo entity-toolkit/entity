@@ -81,9 +81,8 @@ namespace ntt::sort_helpers {
   // bits when total_tiles ~ 176K). Returns at least 1.
   inline unsigned int significant_bits(ncells_t n_bins) {
     unsigned int bits = 0u;
-    while (bits < 32u &&
-           (static_cast<std::uint64_t>(1u) << bits) <
-             static_cast<std::uint64_t>(n_bins)) {
+    while (bits < 32u && (static_cast<std::uint64_t>(1u) << bits) <
+                           static_cast<std::uint64_t>(n_bins)) {
       ++bits;
     }
     return (bits == 0u) ? 1u : bits;
@@ -123,15 +122,15 @@ namespace ntt::sort_helpers {
   inline void sort_by_key_dispatch(const array_t<ncells_t*>& keys,
                                    prtl_perm_t&              perm,
                                    ncells_t /*n_bins*/,
-                                   npart_t                   n,
+                                   npart_t n,
                                    ::sort::backend::OneDPL) {
     if (n == 0u) {
       return;
     }
-    auto*  keys_ptr = keys.data();
-    auto*  perm_ptr = perm.data();
-    auto   exec     = Kokkos::DefaultExecutionSpace();
-    auto   perm_v   = perm;
+    auto* keys_ptr = keys.data();
+    auto* perm_ptr = perm.data();
+    auto  exec     = Kokkos::DefaultExecutionSpace();
+    auto  perm_v   = perm;
     Kokkos::parallel_for(
       "PermInitIota",
       n,
@@ -181,14 +180,14 @@ namespace ntt::sort_helpers {
     cub::DoubleBuffer<npart_t>  d_perm(perm.data(), perm_out.data());
 
     std::size_t temp_bytes = 0;
-    auto        err = cub::DeviceRadixSort::SortPairs(nullptr,
-                                              temp_bytes,
-                                              d_keys,
-                                              d_perm,
-                                              n,
-                                              0,
-                                              end_bit,
-                                              stream);
+    auto        err        = cub::DeviceRadixSort::SortPairs(nullptr,
+                                               temp_bytes,
+                                               d_keys,
+                                               d_perm,
+                                               n,
+                                               0,
+                                               end_bit,
+                                               stream);
     raise::ErrorIf(err != cudaSuccess,
                    "cub::DeviceRadixSort::SortPairs (size query) failed",
                    HERE);
@@ -202,9 +201,7 @@ namespace ntt::sort_helpers {
                                           0,
                                           end_bit,
                                           stream);
-    raise::ErrorIf(err != cudaSuccess,
-                   "cub::DeviceRadixSort::SortPairs failed",
-                   HERE);
+    raise::ErrorIf(err != cudaSuccess, "cub::DeviceRadixSort::SortPairs failed", HERE);
     exec.fence("sort_by_key_dispatch Thrust: post-sort");
 
     // Publish results from whichever buffer cub left as Current() (depends on
@@ -239,9 +236,9 @@ namespace ntt::sort_helpers {
       n,
       KOKKOS_LAMBDA(const npart_t i) { perm_v(i) = i; });
 
-    array_t<ncells_t*>  keys_out("tile_keys_sorted", n);
-    prtl_perm_t         perm_out("tile_perm_sorted", n);
-    const unsigned int  end_bit = significant_bits(n_bins);
+    array_t<ncells_t*> keys_out("tile_keys_sorted", n);
+    prtl_perm_t        perm_out("tile_perm_sorted", n);
+    const unsigned int end_bit = significant_bits(n_bins);
 
     exec.fence("sort_by_key_dispatch Rocthrust: pre-sort");
     auto stream = exec.hip_stream();
@@ -256,7 +253,7 @@ namespace ntt::sort_helpers {
     rocprim::double_buffer<npart_t>  d_perm(perm.data(), perm_out.data());
 
     std::size_t temp_bytes = 0;
-    auto        err = rocprim::radix_sort_pairs(nullptr,
+    auto        err        = rocprim::radix_sort_pairs(nullptr,
                                          temp_bytes,
                                          d_keys,
                                          d_perm,
@@ -277,9 +274,7 @@ namespace ntt::sort_helpers {
                                     0u,
                                     end_bit,
                                     stream);
-    raise::ErrorIf(err != hipSuccess,
-                   "rocprim::radix_sort_pairs failed",
-                   HERE);
+    raise::ErrorIf(err != hipSuccess, "rocprim::radix_sort_pairs failed", HERE);
     exec.fence("sort_by_key_dispatch Rocthrust: post-sort");
 
     // Publish results from whichever buffer rocprim left as `current()`
@@ -305,15 +300,12 @@ namespace ntt::sort_helpers {
     if (n == 0u) {
       return;
     }
-    auto keys_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
-                                                       keys);
+    auto keys_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), keys);
     auto perm_h = Kokkos::create_mirror_view(perm);
     std::iota(perm_h.data(), perm_h.data() + n, npart_t { 0u });
-    std::stable_sort(perm_h.data(),
-                     perm_h.data() + n,
-                     [&](npart_t a, npart_t b) {
-                       return keys_h(a) < keys_h(b);
-                     });
+    std::stable_sort(perm_h.data(), perm_h.data() + n, [&](npart_t a, npart_t b) {
+      return keys_h(a) < keys_h(b);
+    });
     Kokkos::deep_copy(perm, perm_h);
   }
 
