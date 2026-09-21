@@ -146,7 +146,7 @@ printchoices(
   ON
   "${Green}"
   VENDOR_SORT_REPORT
-  44)
+  46)
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -234,6 +234,9 @@ string(
   "  - DEVICES [${Magenta}Kokkos_ENABLE_***${ColorReset}]:              "
   "${Kokkos_DEVICES}"
   "\n"
+  "  "
+  ${VENDOR_SORT_REPORT}
+  "\n"
   "  > Multi-node specs"
   " ${Dim}[requires mpi=ON]${ColorReset}"
   "\n"
@@ -255,9 +258,6 @@ string(
   "    "
   "- Deposit drift [${Magenta}team_policy_drift${ColorReset}]:      "
   ${team_policy_drift}
-  "\n"
-  "    "
-  ${VENDOR_SORT_REPORT}
   "\n")
 
 string(
