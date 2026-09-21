@@ -102,6 +102,20 @@ struct WithFx1Fx2Fx3 {
   }
 };
 
+struct WithIndexedFx1Fx2Fx3 {
+  real_t fx1(const coord_t<Dimension::_2D>&, prtlidx_t) const {
+    return ZERO;
+  }
+
+  real_t fx2(const coord_t<Dimension::_2D>&, prtlidx_t) const {
+    return ZERO;
+  }
+
+  real_t fx3(const coord_t<Dimension::_2D>&, prtlidx_t) const {
+    return ZERO;
+  }
+};
+
 struct WithConditionalEx1Bx2 {
   Kokkos::pair<bool, real_t> ex1(const coord_t<Dimension::_2D>&,
                                  const vec_t<Dim::_3D>&,
@@ -134,6 +148,20 @@ static_assert(traits::fieldsetter::HasDx3<WithDx1Dx2Dx3, Dimension::_2D>);
 static_assert(traits::fieldsetter::HasFx1<WithFx1Fx2Fx3, Dimension::_2D>);
 static_assert(traits::fieldsetter::HasFx2<WithFx1Fx2Fx3, Dimension::_2D>);
 static_assert(traits::fieldsetter::HasFx3<WithFx1Fx2Fx3, Dimension::_2D>);
+
+// the indexed variants are a separate, opt-in signature: neither form
+// satisfies the other's trait
+static_assert(
+  traits::fieldsetter::HasFx1WithIndex<WithIndexedFx1Fx2Fx3, Dimension::_2D>);
+static_assert(
+  traits::fieldsetter::HasFx2WithIndex<WithIndexedFx1Fx2Fx3, Dimension::_2D>);
+static_assert(
+  traits::fieldsetter::HasFx3WithIndex<WithIndexedFx1Fx2Fx3, Dimension::_2D>);
+static_assert(
+  not traits::fieldsetter::HasFx1WithIndex<WithFx1Fx2Fx3, Dimension::_2D>);
+static_assert(
+  not traits::fieldsetter::HasFx1<WithIndexedFx1Fx2Fx3, Dimension::_2D>);
+static_assert(not traits::fieldsetter::HasFx1WithIndex<Empty, Dimension::_2D>);
 
 // conditional variants require 3-arg signature returning Kokkos::pair<bool, real_t>
 static_assert(
