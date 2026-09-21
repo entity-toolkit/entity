@@ -627,10 +627,14 @@
     #   @type: bool
     #   @default: true
     log_bins = ""
-    # Number of bins for the spectra output
+    # Number of energy bins for the spectra output
     #   @type: uint [> 0]
     #   @default: 200
-    n_bins = ""
+    num_energy_bins = ""
+    # Number of spatial bins for the spectra output
+    #  @type: array<uint> [size 1 :->: 3]
+    #  @default: [1, 1, 1]
+    num_spatial_bins = ""
     # Number of timesteps between spectra outputs
     #   @type: uint
     #   @default: 0
