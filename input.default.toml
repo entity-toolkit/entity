@@ -46,7 +46,7 @@
       #   @default: 0
       interval = 0
       # Dimensions along which load is redistributed (1 = x1, 2 = x2, 3 = x3)
-      #   @type: array of int, subset of [1, 2, 3]
+      #   @type: array<int> [subset of {1, 2, 3}]
       #   @default: [1]
       #   @enum: 1, 2, 3
       dimensions = [1]
@@ -558,7 +558,7 @@
     # Particle emission policy for the species
     #   @type: string
     #   @default: "None"
-    #   @enum: "None", "Synchrotron", "Compton"
+    #   @enum: "None", "Synchrotron", "Compton", "Custom"
     #   @note: Only one emission mechanism allowed
     #   @note: Appropriate radiation drag flag will be applied automatically
     #          (unless explicitly set to "None")
@@ -676,7 +676,7 @@
     #   @note: If empty, all species are output
     species = []
     # Stride for the output of particles
-    #   @type: uint [> 1]
+    #   @type: uint [>= 1]
     #   @default: 100
     stride = 100
     # Number of timesteps between particle outputs
@@ -713,8 +713,8 @@
     # Number of energy bins for the spectra output
     #   @type: uint [> 0]
     #   @default: 200
-    #   @deprecated: starting v1.5.0
-    num_bins = 200
+    #   @deprecated: removed in 1.6+, use `num_energy_bins` instead
+    n_bins = 200
     # Number of energy bins for the spectra output
     #   @type: uint [> 0]
     #   @default: 200

@@ -142,7 +142,7 @@ in
         neocmakelsp
         black
         pyright
-        taplo
+        tombi
         vscode-langservers-extracted
       ])
       ++ extraPkgs;

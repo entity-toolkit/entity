@@ -158,7 +158,7 @@
                     1
                   ],
                   "x-entity": {
-                    "type": "array of int, subset of [1, 2, 3]"
+                    "type": "array<int> [subset of {1, 2, 3}]"
                   }
                 },
                 "tolerance": {
@@ -1112,8 +1112,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "ppc0",
-        "species"
+        "ppc0"
       ],
       "x-entity": {
         "inferred": [
@@ -1299,12 +1298,13 @@
                     "enum": [
                       "None",
                       "Synchrotron",
-                      "Compton"
+                      "Compton",
+                      "Custom"
                     ]
                   },
                   {
                     "type": "string",
-                    "pattern": "(?i)^(None|Synchrotron|Compton)$"
+                    "pattern": "(?i)^(None|Synchrotron|Compton|Custom)$"
                   }
                 ],
                 "default": "None",
@@ -1600,11 +1600,11 @@
             "stride": {
               "description": "Stride for the output of particles",
               "type": "integer",
-              "exclusiveMinimum": 1,
               "default": 100,
               "x-entity": {
-                "type": "uint [> 1]"
-              }
+                "type": "uint [>= 1]"
+              },
+              "minimum": 1
             },
             "interval": {
               "description": "Number of timesteps between particle outputs",
@@ -1674,7 +1674,7 @@
                 "type": "bool"
               }
             },
-            "num_bins": {
+            "n_bins": {
               "description": "Number of energy bins for the spectra output",
               "type": "integer",
               "minimum": 1,
@@ -1682,7 +1682,7 @@
               "deprecated": true,
               "x-entity": {
                 "type": "uint [> 0]",
-                "deprecated": "starting v1.5.0"
+                "deprecated": "removed in 1.6+, use `num_energy_bins` instead"
               }
             },
             "num_energy_bins": {

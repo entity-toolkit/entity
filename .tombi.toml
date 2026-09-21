@@ -12,5 +12,11 @@ toml-version = "v1.0.0"
 
 [[schemas]]
   path = "entity.schema.json"
-  include = ["*.toml"]
-  exclude = [".tombi.toml"]
+  include = ["**/*.toml"]
+  exclude = [
+    ".tombi.toml",
+    "extern/**",               # submodules: adios2's pyproject/REUSE, entity-pgens' own configs
+    ".venv/**",
+    "build/**",
+    "**/*.ckpt/**",            # checkpoint metadata dumps carry a [metadata] table, not input
+  ]
