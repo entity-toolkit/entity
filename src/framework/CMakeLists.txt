@@ -16,6 +16,7 @@
 # * domain/metadomain_sort.cpp
 # * domain/metadomain_reshape.cpp
 # * domain/metadomain_loadbal.cpp
+# * domain/metadomain_render.cpp
 # * domain/checkpoint/init.cpp
 # * domain/checkpoint/write.cpp
 # * domain/checkpoint/resume.cpp
@@ -69,6 +70,7 @@ set(SOURCES
     ${SRC_DIR}/domain/metadomain_sort.cpp
     ${SRC_DIR}/domain/metadomain_reshape.cpp
     ${SRC_DIR}/domain/metadomain_loadbal.cpp
+    ${SRC_DIR}/domain/metadomain_render.cpp
     ${SRC_DIR}/domain/comm/fields.cpp
     ${SRC_DIR}/domain/comm/fields_sync.cpp
     ${SRC_DIR}/domain/comm/particles.cpp

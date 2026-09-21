@@ -32,6 +32,11 @@ entity
 ├── pgens                        # problem generators
 ├── examples                     # example problem generators with standard use-cases
 ├── tutorials                    # problem generators from tutorials
+├── scripts                      # user-facing helper scripts
+│   ├── dependencies.py          #   deployment scripts on various machines
+│   ├── generate_template.py     #   renders `input.default.toml` from `entity.schema.json`
+│   ├── ideal_tile_size.py       #   recommends the team tile size for the tiled deposit
+│   └── render_preview.py        #   previews the in-situ renderer geometry from an input file
 ├── src                          # main code containing all separate submodules
 │   ├── archetypes               #   archetypes which can be used by the user in problem generators
 │   ├── engines                  #   simulation engines
@@ -48,15 +53,15 @@ entity
 ├── .gitattributes
 ├── .gitignore
 ├── .gitmodules
-├── .taplo.toml                  # formatting guidelines for toml files
+├── .tombi.toml                  # formatting guidelines for toml files + schema association
 ├── CITATION
 ├── CODEGUIDE.md                 # this file
 ├── CMakeLists.txt               # root cmake file
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
-├── dependencies.py              # deployment scripts on various machines
-└── input.example.toml           # most complete toml file with all possible input options
+├── entity.schema.json           # JSON Schema for the input file: the source of truth
+└── input.default.toml           # generated reference input with every option at its default
 ```
 
 ## Testing
@@ -75,13 +80,76 @@ You can also compile all the problem generators and run the ones from the `examp
 ./dev/scripts/tests.sh --build build_dir --flags "-D mpi=ON" --with_pgens --make_plots
 ```
 
+## Input configuration
+
+`entity.schema.json` is the single source of truth for the input file. It is a [JSON Schema](https://json-schema.org) (draft 2020-12) describing every table and key the code reads, and it serves two purposes at once:
+
+* editors validate and autocomplete input files against it as you type (see [Formatting](#formatting) below);
+* `input.default.toml` -- the annotated reference input listing every option -- is *generated* from it, so the docs cannot drift from what is validated.
+
+Regenerate the reference input after any schema change:
+
+```sh
+python scripts/generate_template.py -d -o input.default.toml
+```
+
+Dropping `-d` renders the same file with every value left as `""`, i.e. a blank form to fill in rather than a list of defaults. Writing to stdout (the default) is handy for reviewing a change: `diff <(python scripts/generate_template.py -d) input.default.toml`.
+
+### The `x-entity` annotations
+
+Standard JSON Schema keywords (`type`, `enum`, `minimum`, `items`, `prefixItems`, `required`, `default`, `deprecated`, ...) carry everything a validator can check. Everything else lives in an `x-entity` object on the node, and is what the generator turns into the `@`-annotations above each key:
+
+| field | meaning |
+| --- | --- |
+| `type` | the literal `@type:` string, e.g. `"array<uint> [size 1 :->: 3]"` -- richer than the JSON type |
+| `default` | the literal `@default:` text, for defaults the code computes at runtime (`"N_GHOSTS"`, `"1% of the domain size"`) or that need a specific notation (`"1e-4"` rather than `0.0001`) |
+| `notes` | ordered `@note:` lines; embedded newlines are kept as hard line breaks |
+| `examples` | ordered `@example:` lines |
+| `enum` | an *illustrative, non-exhaustive* value list, never validated (e.g. `output.fields.quantities`) |
+| `deprecated` | the `@deprecated:` text, paired with the standard `"deprecated": true` |
+| `inferred` | see below |
+
+`x-entity.inferred` sits on a **table** and lists quantities the code derives rather than reads -- `grid.dim`, `scales.sigma0`, `checkpoint.start_step`. They are deliberately *not* in `properties`, so `additionalProperties: false` rejects them as input keys, and the generator emits them as an `@inferred:` comment block after that table's own keys.
+
+### Adding a new input parameter
+
+1. Add the key to `entity.schema.json`, in the position you want it to appear in the reference input -- property order is emission order, and scalar keys are emitted before sub-tables regardless.
+2. Give it a `description` (the brief line) and an `x-entity.type`; add real constraints (`minimum`, `enum`, `minItems`, ...) wherever they are checkable, and a `default` when it has a literal one.
+3. Regenerate `input.default.toml`.
+4. Parse it in `src/framework/parameters/`, and register any derived quantity under `x-entity.inferred`.
+
+Three things to keep in mind:
+
+* **String enums are matched case-insensitively by the code** (`fmt::toLower` is applied to `engine`, `metric`, the boundary lists, `pusher`, `log_level`, ...), so a bare `"enum"` would reject perfectly valid input. The convention is `anyOf: [{"enum": [<canonical>]}, {"type": "string", "pattern": "(?i)^(<canonical>|...)$"}]` -- the enum branch drives completion and hover, the pattern branch keeps any casing legal. Note `(?i)` is a Rust/Python regex extension: tombi honours it, JS-based validators do not.
+* **Every table is closed.** Set `additionalProperties: false` so typos are caught; tombi's `strict = true` closes objects that omit it anyway. `[setup]` is the one deliberate exception (`additionalProperties: true`), since its keys belong to the problem generator.
+* **If a key's documented default is `[]`, the empty array must validate**, which `minItems` would otherwise forbid -- use `anyOf: [{"maxItems": 0}, {<the real shape>}]` (see `output.render.x1_lim`).
+
 ## Code guidelines
 
 ### Formatting
 
 To maintain coherence throughout the source code, we use `clang-format` to enforce a uniform style. A corresponding `.clang-format` file with all the style-related settings can be found in the root directory of the code. To use this, one needs to have the `clang-format` executable (typically provided with the `llvm` package). After installing the `clang-format` itself (check by running `clang-format --version`), you can use it either manually by running `clang-format .` in the route directory of the code, or attach it to your favorite code editor to run on save. For VSCode, the recommended extension is [`xaver.clang-format`](https://github.com/xaverh/vscode-clang-format), for vim -- [`rhysd/vim-clang-format`](https://vimawesome.com/plugin/vim-clang-format), for nvim -- [`stevearc/conform.nvim`](https://github.com/stevearc/conform.nvim), for [emacs](https://www.vim.org/download.php).
 
-You can run the formatting on all files with `./dev/scripts/format.sh`.
+You can run the formatting on all files with `./dev/scripts/format.sh` (this covers C++ and CMake; TOML is handled separately, below).
+
+TOML files are formatted and validated with [`tombi`](https://tombi-toml.github.io/tombi/), which is a formatter, linter and language server in one. The settings live in `.tombi.toml` in the root directory, which also associates `entity.schema.json` with every `.toml` file in the tree -- so input files are checked against the schema as you edit them, with completion and hover documentation for every key. It is provided by the nix shell (`dev/nix`); otherwise install it with `uvx tombi`, `pip install tombi`, `npm i -g tombi` or `brew install tombi`.
+
+From the command line:
+
+```sh
+tombi format              # formats the whole project (or pass files/directories)
+tombi format --check      # verify only, for CI -- mirrors `format.sh --verify`
+tombi lint <file.toml>    # schema validation only
+```
+
+In the editor, point it at the `tombi lsp` language server. For VSCode, the extension is [`tombi-toml.tombi`](https://marketplace.visualstudio.com/items?itemName=tombi-toml.tombi); for nvim, `tombi` ships as a built-in `nvim-lspconfig` server, so `vim.lsp.enable('tombi')` is enough. Individual input files can opt into the schema explicitly -- useful outside the repo -- with a directive on the first line:
+
+```toml
+#:schema ./entity.schema.json
+```
+
+> [!NOTE]
+> `tombi` replaces `taplo`, which the project used previously and which is no longer maintained.
 
 Best practices are also enforced using `clang-tidy`; to generate recommendations for all the files, run `./dev/scripts/tidy.sh --build build_dir` where `build_dir` is the directory where the code was built, or for specific files: `./dev/scripts/tidy.sh --build build_dir --files "(file1|file2).cpp"` or only for the changed files: `./dev/scripts/tidy.sh --build build_dir --changed`. The recommendations will be in the `tidy/` directory.
 

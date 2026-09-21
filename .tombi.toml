@@ -1,0 +1,16 @@
+toml-version = "v1.0.0"
+
+[format]
+  [format.rules]
+    indent-sub-tables = true
+    indent-table-key-value-pairs = true
+    trailing-comment-alignment = true
+
+[schema]
+  enabled = true
+  strict = true
+
+[[schemas]]
+  path = "entity.schema.json"
+  include = ["*.toml"]
+  exclude = [".tombi.toml"]
