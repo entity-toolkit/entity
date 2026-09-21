@@ -122,11 +122,8 @@ namespace ntt {
 
     adios2::IO io = ptr_adios->DeclareIO("Entity::CheckpointRead");
     io.SetEngine("BPFile");
-#if !defined(MPI_ENABLED)
+
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
-#else
-    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
-#endif
 
     reader.BeginStep();
 
