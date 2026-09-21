@@ -24,7 +24,8 @@
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "kernels/currents_deposit.hpp"
+#include "kernels/deposition/currents/global.hpp"
+#include "kernels/deposition/currents/tiled.hpp"
 #include "kernels/digital_filter.hpp"
 
 #include <utility>
@@ -83,8 +84,8 @@ namespace ntt {
 
       auto deposit_kernel =
         kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, M, O, T> {
-          cur,    species, local_metric, (real_t)(species.charge()),
-          dt,     layout,  species.npart()
+          cur, species, local_metric,   (real_t)(species.charge()),
+          dt,  layout,  species.npart()
         };
 
       const auto scratch = Kokkos::PerTeam(
@@ -107,20 +108,20 @@ namespace ntt {
         int       ts     = team_size_req;
         if (ts > ts_max) {
           raise::Warning(
-            fmt::format("algorithms.deposit.team_policy_team_size = %d exceeds "
-                        "the tiled-deposit maximum %d on this backend; clamping "
-                        "to %d",
-                        team_size_req,
-                        ts_max,
-                        ts_max),
+            fmt::format(
+              "algorithms.deposit.team_policy_team_size = %d exceeds "
+              "the tiled-deposit maximum %d on this backend; clamping "
+              "to %d",
+              team_size_req,
+              ts_max,
+              ts_max),
             HERE);
           ts = ts_max;
         }
         policy = Kokkos::TeamPolicy<>(static_cast<int>(layout.ntiles_total), ts);
         policy.set_scratch_size(0, scratch);
-        logger::Checkpoint(
-          fmt::format("Tiled deposit: explicit team size %d", ts),
-          HERE);
+        logger::Checkpoint(fmt::format("Tiled deposit: explicit team size %d", ts),
+                           HERE);
       }
       Kokkos::parallel_for("CurrentsDepositTiled", policy, deposit_kernel);
 
@@ -170,7 +171,7 @@ namespace ntt {
       //   - a particle whose full stencil has drifted out of its tile is
       //     deposited straight to the global J view (the per-particle escape
       //     valve); `team_policy_drift` sizes the scratch halo so the
-      //     common in-tile case stays in fast SLM (see currents_deposit.hpp);
+      //     common in-tile case stays in fast SLM (see kernels/deposition/currents/tiled.hpp);
       //   - particles dead-tagged in place since the sort are clamped out by
       //     the kernel and skipped by the dead-tag test;
       //   - particles appended past the partition since the sort (injection /
@@ -296,7 +297,7 @@ namespace ntt {
       // to the x2 upper bound when that side is AXIS — a physical boundary, so
       // never the shrinking comm margin. This folds the old RangeWithAxisBCs
       // fixup into make_range, letting the same loop serve every CoordType.
-      const int  G = static_cast<int>(N_GHOSTS);
+      const int  G         = static_cast<int>(N_GHOSTS);
       const auto comm_side = [](FldsBC b) {
         return (b == FldsBC::PERIODIC) or (b == FldsBC::SYNC);
       };
@@ -335,8 +336,7 @@ namespace ntt {
             { domain.mesh.i_max(in::x1) + mh(0) });
         } else if constexpr (M::Dim == Dim::_2D) {
           return CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1) - ml(0),
-              domain.mesh.i_min(in::x2) - ml(1) },
+            { domain.mesh.i_min(in::x1) - ml(0), domain.mesh.i_min(in::x2) - ml(1) },
             { domain.mesh.i_max(in::x1) + mh(0),
               domain.mesh.i_max(in::x2) + mh(1) });
         } else {
@@ -354,11 +354,10 @@ namespace ntt {
         Kokkos::parallel_for(
           "CurrentsFilter",
           make_range(m),
-          kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
-            domain.fields.buff,
-            domain.fields.cur,
-            size,
-            flds_bc));
+          kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(domain.fields.buff,
+                                                             domain.fields.cur,
+                                                             size,
+                                                             flds_bc));
         std::swap(domain.fields.cur, domain.fields.buff);
         --m;
         if (m < 0 or i == nfilter - 1u) {

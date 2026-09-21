@@ -10,8 +10,8 @@
 
 #if defined(TEAM_POLICY)
   #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                    \
-      (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                    \
-      (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
+    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                      \
+    (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
     #define TEAM_POLICY_USE_VENDOR_SORT
     #include "utils/sort_dispatch.h"
   #endif
@@ -222,10 +222,7 @@ namespace ntt {
     }
 
     template <typename V>
-    inline void reserve_scratch_2d(V&          v,
-                                   const char* label,
-                                   npart_t     n,
-                                   npart_t     ncols) {
+    inline void reserve_scratch_2d(V& v, const char* label, npart_t n, npart_t ncols) {
       if (static_cast<npart_t>(v.extent(0)) < n or
           static_cast<npart_t>(v.extent(1)) != ncols) {
         v = V {};
@@ -236,10 +233,9 @@ namespace ntt {
 
 #if defined(TEAM_POLICY)
   template <Dimension D, Coord::type C>
-  void Particles<D, C>::compute_tile_offsets(
-    const array_t<ncells_t*>& tile_indices,
-    ncells_t                  total_tiles,
-    npart_t                   npart_local) {
+  void Particles<D, C>::compute_tile_offsets(const array_t<ncells_t*>& tile_indices,
+                                             ncells_t total_tiles,
+                                             npart_t  npart_local) {
     // Compute the per-tile prefix-sum `tile_offsets` for the tiled
     // pusher from the (already sorted) `tile_indices` — monotonically
     // non-decreasing for alive particles, with the dead sentinel
@@ -280,7 +276,7 @@ namespace ntt {
     }
     Kokkos::deep_copy(tile_offsets, h_offsets);
 
-    m_tile_layout.tile_offsets = tile_offsets;
+    m_tile_layout.tile_offsets      = tile_offsets;
     // tile_offsets(total_tiles) is the alive-particle count at sort time:
     // the tiles partition exactly [0, npart_partitioned). The deposit
     // launcher compares this against the live npart() to detect (and
@@ -300,8 +296,7 @@ namespace ntt {
       return;
     }
 
-    constexpr unsigned short T = static_cast<unsigned short>(
-      TEAM_POLICY_TILE_SIZE);
+    constexpr unsigned short T = static_cast<unsigned short>(TEAM_POLICY_TILE_SIZE);
     static_assert(T > 0u, "TEAM_POLICY_TILE_SIZE must be > 0");
 
     // 1. Compute per-axis tile counts and total_tiles.
@@ -325,8 +320,8 @@ namespace ntt {
     }
 
     // 2. Compute per-particle tile key (with min(i, i_prev)).
-#if defined(TEAM_POLICY_USE_VENDOR_SORT) &&                                    \
-  defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+  #if defined(TEAM_POLICY_USE_VENDOR_SORT) && defined(SYCL_ENABLED) &&         \
+    defined(ONEDPL_ENABLED)
     // oneDPL sorts the keys in place, so reuse a persistent, grow-only keys
     // buffer instead of allocating a fresh one every sort. `tile_indices`
     // aliases the (possibly over-capacity) persistent buffer; downstream
@@ -334,23 +329,23 @@ namespace ntt {
     // `tile_indices.extent(0)`.
     reserve_scratch_1d(m_sort_keys, "tile_indices", npart_local);
     array_t<ncells_t*> tile_indices = m_sort_keys;
-#else
+  #else
     array_t<ncells_t*> tile_indices { "tile_indices", npart_local };
-#endif
+  #endif
     Kokkos::parallel_for(
       "FillTileIndices",
       rangeActiveParticles(),
       sort::PositionToTileIndex<D, false, true> { i1,
-                                                   i2,
-                                                   i3,
-                                                   tag,
-                                                   tile_indices,
-                                                   ncells_active,
-                                                   static_cast<ncells_t>(T),
-                                                   array_t<npart_t*> {},
-                                                   i1_prev,
-                                                   i2_prev,
-                                                   i3_prev });
+                                                  i2,
+                                                  i3,
+                                                  tag,
+                                                  tile_indices,
+                                                  ncells_active,
+                                                  static_cast<ncells_t>(T),
+                                                  array_t<npart_t*> {},
+                                                  i1_prev,
+                                                  i2_prev,
+                                                  i3_prev });
 
     // 3. Sort. Vendor library (oneDPL/Thrust) when compiled in;
     //    Kokkos::BinSort otherwise. n_bins = total_tiles + 2 covers
@@ -603,9 +598,7 @@ namespace ntt {
         });
       Kokkos::fence("permute_2d_into: gather");
       Kokkos::deep_copy(
-        Kokkos::subview(arr,
-                        std::make_pair(static_cast<npart_t>(0), n),
-                        Kokkos::ALL),
+        Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n), Kokkos::ALL),
         Kokkos::subview(scratch,
                         std::make_pair(static_cast<npart_t>(0), n),
                         Kokkos::ALL));
@@ -704,9 +697,9 @@ namespace ntt {
 #endif // TEAM_POLICY_USE_VENDOR_SORT
 
 #if defined(TEAM_POLICY_USE_VENDOR_SORT)
-  #define APPLY_PERM_INSTANTIATE(D, C)                                         \
-    template void Particles<D, C>::apply_permutation_to_soa(                   \
-      const prtl_perm_t&, npart_t);
+  #define APPLY_PERM_INSTANTIATE(D, C)                                          \
+    template void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t&, \
+                                                            npart_t);
 #else
   #define APPLY_PERM_INSTANTIATE(D, C)
 #endif

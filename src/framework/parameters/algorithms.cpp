@@ -32,7 +32,7 @@ namespace ntt {
                                                 defaults::current_filters);
 
       deposit_enable = toml::find_or(toml_data, "algorithms", "deposit", "enable", true);
-      deposit_order = static_cast<unsigned short>(SHAPE_ORDER);
+      deposit_order                 = static_cast<unsigned short>(SHAPE_ORDER);
       deposit_team_policy_team_size = toml::find_or(toml_data,
                                                     "algorithms",
                                                     "deposit",

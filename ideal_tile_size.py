@@ -9,7 +9,7 @@ flushes once to global memory.  With
     HALO = stencil_reach + drift   (stencil_reach = shape_order for Esirkepov, 2 for the
                                     O==0 zigzag deposit; drift = the compile-time
                                     `team_policy_drift` CMake knob, NOT the runtime
-                                    spatial_sorting_interval -- see currents_deposit.hpp)
+                                    spatial_sorting_interval -- see kernels/deposition/currents/tiled.hpp)
 
 the tile size is squeezed by three competing pressures:
 

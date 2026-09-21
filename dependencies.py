@@ -8,7 +8,6 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
-
 # ============================
 # colors: edit these
 # ============================
@@ -53,8 +52,8 @@ class Settings:
     )
 
     # versions
-    kokkos_version: str = "5.0.1"
-    adios2_version: str = "2.11.0"
+    kokkos_version: str = "5.2.1"
+    adios2_version: str = "2.12.1"
 
     # options
     kokkos_backend: str = "cpu"
@@ -135,7 +134,9 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
             [f"module load {module}" for module in settings.module_loads]
         )
         src_path = os.path.join(prefix, "src", "kokkos")
-        install_path = os.path.join(prefix, "kokkos", version, backend, arch.lower() if arch else "")
+        install_path = os.path.join(
+            prefix, "kokkos", version, backend, arch.lower() if arch else ""
+        )
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
@@ -300,7 +301,7 @@ PRESETS = {
     },
     "stellar": {"module_loads": []},
     "perlmutter": {
-        "module_loads": ["gpu/1.0"],
+        "module_loads": ["gpu/1.0", "python/3.14-26.8.1"],
         "kokkos_backend": "cuda",
         "kokkos_arch": "AMPERE80",
         "extra_kokkos_flags": [
@@ -313,17 +314,19 @@ PRESETS = {
         ],
     },
     "lumi": {
-        "module_loads": ["PrgEnv-cray", "cray-mpich", "craype-accel-amd-gfx90a", "rocm"],
+        "module_loads": [
+            "PrgEnv-cray",
+            "cray-mpich",
+            "craype-accel-amd-gfx90a",
+            "rocm",
+        ],
         "kokkos_backend": "hip",
         "kokkos_arch": "AMD_GFX90A",
         "extra_kokkos_flags": [
             "CMAKE_CXX_COMPILER=hipcc",
             "AMDGPU_TARGETS=gfx90a",
         ],
-        "extra_adios2_flags": [
-            "CMAKE_CXX_COMPILER=CC",
-            "CMAKE_C_COMPILER=cc"
-        ]
+        "extra_adios2_flags": ["CMAKE_CXX_COMPILER=CC", "CMAKE_C_COMPILER=cc"],
     },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
@@ -366,7 +369,7 @@ def on_install_confirmed(settings: Settings) -> None:
                 "modules",
                 "kokkos",
                 settings.kokkos_version,
-                settings.kokkos_backend, 
+                settings.kokkos_backend,
                 settings.kokkos_arch.strip().lower(),
             )
             os.makedirs(os.path.dirname(kokkos_modfile_file), exist_ok=True)
@@ -1089,14 +1092,18 @@ class App:
 
     def menu_cluster(self) -> Tuple[str, str, List[MenuItem]]:
         def choose(name: str):
-            print ("CALLING:", name)
+            print("CALLING:", name)
             apply_preset(self.s, name)
             self.push("custom")
 
         return (
             "cluster-specific",
             "pick a preset:",
-            [MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c)) for cluster in list(PRESETS.keys())] + [MenuItem("back", "", on_enter=self.pop)],
+            [
+                MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c))
+                for cluster in list(PRESETS.keys())
+            ]
+            + [MenuItem("back", "", on_enter=self.pop)],
         )
 
     def get_menu(self) -> Tuple[str, str, List[MenuItem]]:

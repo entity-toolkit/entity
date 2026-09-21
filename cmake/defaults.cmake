@@ -108,12 +108,12 @@ if(DEFINED ENV{Entity_ENABLE_VENDOR_SORT})
   set(default_vendor_sort
       $ENV{Entity_ENABLE_VENDOR_SORT}
       CACHE INTERNAL
-        "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
+            "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
 else()
   set(default_vendor_sort
       ON
       CACHE INTERNAL
-        "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
+            "Default flag for vendor sort_by_key (oneDPL/Thrust/rocThrust)")
 endif()
 set_property(CACHE default_vendor_sort PROPERTY TYPE BOOL)
 
@@ -123,5 +123,7 @@ set(default_team_policy_tile_size
 
 set(default_team_policy_drift
     1
-    CACHE INTERNAL
-      "Default tiled-deposit scratch halo drift for team_policy (cells between sorts)")
+    CACHE
+      INTERNAL
+      "Default tiled-deposit scratch halo drift for team_policy (cells between sorts)"
+)

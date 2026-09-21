@@ -6,9 +6,10 @@
  *   - ntt::Particles<> : ntt::ParticleSpecies, ntt::ParticleArrays
  * @cpp:
  *   - particles.cpp
- *   - particles_io.cpp
- *   - particles_comm.cpp
  *   - particles_sort.cpp
+ *   - comm/particles.cpp
+ *   - io/particles.cpp
+ *   - checkpoint/particles.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -25,7 +26,6 @@
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
-#include "utils/sorting.h"
 
 #include "framework/containers/species.h"
 #include "framework/domain/grid.h"
@@ -337,6 +337,7 @@ namespace ntt {
   ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
    (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+
   private:
     /**
      * @brief Apply a particle-index permutation (built by oneDPL/Thrust
