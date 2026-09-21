@@ -83,7 +83,7 @@ printchoices(
   ${default_deposit}
   "${Blue}"
   DEPOSIT_REPORT
-  46)
+  44)
 printchoices(
   "Shape order"
   "shape_order"
@@ -110,18 +110,43 @@ printchoices(
   OFF
   "${Green}"
   MPI_REPORT
+  44)
+printchoices(
+  "GPU-aware MPI"
+  "gpu_aware_mpi"
+  "${ON_OFF_VALUES}"
+  ${gpu_aware_mpi}
+  OFF
+  "${Green}"
+  GPU_AWARE_MPI_REPORT
+  44)
+printchoices(
+  "Team Policy"
+  "team_policy"
+  "${ON_OFF_VALUES}"
+  ${team_policy}
+  OFF
+  "${Green}"
+  TEAM_POLICY_REPORT
+  44)
+printchoices(
+  "Tile Size"
+  "team_policy_tile_size"
+  "${team_policy_tile_sizes}"
+  ${team_policy_tile_size}
+  ${default_team_policy_tile_size}
+  "${Blue}"
+  TEAM_POLICY_TILE_SIZE_REPORT
+  44)
+printchoices(
+  "Vendor sort"
+  "vendor_sort"
+  "${ON_OFF_VALUES}"
+  ${vendor_sort}
+  ON
+  "${Green}"
+  VENDOR_SORT_REPORT
   46)
-if(${mpi} AND ${DEVICE_ENABLED})
-  printchoices(
-    "GPU-aware MPI"
-    "gpu_aware_mpi"
-    "${ON_OFF_VALUES}"
-    ${gpu_aware_mpi}
-    OFF
-    "${Green}"
-    GPU_AWARE_MPI_REPORT
-    46)
-endif()
 printchoices(
   "Debug mode"
   "DEBUG"
@@ -158,24 +183,13 @@ string(APPEND REPORT_TEXT ${DASHED_LINE_SYMBOL} "\n" "Configurations" "\n")
 
 if(${PGEN_FOUND})
   string(APPEND REPORT_TEXT "  " ${PGEN_REPORT} "\n")
+else()
+  string(
+    APPEND
+    REPORT_TEXT
+    "  - Problem generator [${Magenta}pgen${ColorReset}]:                 ${Dim}none${ColorReset}\n"
+  )
 endif()
-string(APPEND REPORT_TEXT "  " ${TESTS_REPORT} "\n")
-
-string(
-  APPEND
-  REPORT_TEXT
-  "  "
-  ${PRECISION_REPORT}
-  "\n"
-  "  "
-  ${DEPOSIT_REPORT}
-  "\n"
-  "  "
-  ${SHAPEFUNCTION_REPORT}
-  "\n"
-  "  "
-  ${OUTPUT_REPORT}
-  "\n")
 
 string(REPLACE ";" "+" Kokkos_ARCH "${Kokkos_ARCH}")
 string(REPLACE ";" "+" Kokkos_DEVICES "${Kokkos_DEVICES}")
@@ -183,6 +197,37 @@ string(REPLACE ";" "+" Kokkos_DEVICES "${Kokkos_DEVICES}")
 string(
   APPEND
   REPORT_TEXT
+  "  "
+  ${TESTS_REPORT}
+  "\n"
+  "  "
+  ${OUTPUT_REPORT}
+  "\n"
+  "  - Install prefix [${Magenta}CMAKE_INSTALL_PREFIX${ColorReset}]:    "
+  "${CMAKE_INSTALL_PREFIX}"
+  "\n"
+  ${DASHED_LINE_SYMBOL}
+  "\n"
+  "Algorithmic specs"
+  "\n"
+  "  "
+  ${PRECISION_REPORT}
+  "\n"
+  "  "
+  ${SHAPEFUNCTION_REPORT}
+  "\n"
+  "  > PIC-specific specs"
+  "\n"
+  "    "
+  ${DEPOSIT_REPORT}
+  "\n"
+  ${DASHED_LINE_SYMBOL}
+  "\n"
+  "Performance specs"
+  "\n"
+  "  "
+  ${DEBUG_REPORT}
+  "\n"
   "  - ARCH [${Magenta}Kokkos_ARCH_***${ColorReset}]:                   "
   "${Kokkos_ARCH}"
   "\n"
@@ -190,30 +235,39 @@ string(
   "${Kokkos_DEVICES}"
   "\n"
   "  "
+  ${VENDOR_SORT_REPORT}
+  "\n"
+  "  > Multi-node specs"
+  " ${Dim}[requires mpi=ON]${ColorReset}"
+  "\n"
+  "    "
   ${MPI_REPORT}
+  "\n"
+  "    "
+  ${GPU_AWARE_MPI_REPORT}
+  "\n"
+  "  > Team-policy specs"
+  " ${Dim}[requires team_policy=ON]${ColorReset}"
+  "\n"
+  "    "
+  ${TEAM_POLICY_REPORT}
+  "\n"
+  "    "
+  ${TEAM_POLICY_TILE_SIZE_REPORT}
+  "\n"
+  "    "
+  "- Deposit drift [${Magenta}team_policy_drift${ColorReset}]:      "
+  ${team_policy_drift}
   "\n")
-
-if(${mpi} AND ${DEVICE_ENABLED})
-  string(APPEND REPORT_TEXT "  " ${GPU_AWARE_MPI_REPORT} "\n")
-endif()
 
 string(
   APPEND
   REPORT_TEXT
   "  "
-  ${DEBUG_REPORT}
-  "\n"
-  "  - Install prefix [${Magenta}CMAKE_INSTALL_PREFIX${ColorReset}]:    "
-  "${CMAKE_INSTALL_PREFIX}"
-  "\n"
   ${DASHED_LINE_SYMBOL}
   "\n"
   "Compilers & dependencies"
-  "\n")
-
-string(
-  APPEND
-  REPORT_TEXT
+  "\n"
   "  - C compiler [${Magenta}CMAKE_C_COMPILER${ColorReset}]: v"
   ${CMAKE_C_COMPILER_VERSION}
   "\n"

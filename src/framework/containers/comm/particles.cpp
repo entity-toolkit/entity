@@ -1,3 +1,5 @@
+#include "framework/containers/particles.h"
+
 #include "enums.h"
 #include "global.h"
 
@@ -9,7 +11,7 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "framework/containers/particles.h"
+#include "framework/specialization_registry.h"
 #include "kernels/comm.hpp"
 
 #include <mpi.h>
@@ -266,6 +268,11 @@ namespace ntt {
     auto iteration        = 0;
     auto current_received = 0;
 
+    // `tag_offsets` is the same for every direction; mirror it to the host
+    // once here instead of re-copying it inside the direction loop.
+    auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
+    Kokkos::deep_copy(tag_offsets_h, tag_offsets);
+
     for (const auto& direction : dirs_to_comm) {
       const auto send_rank     = send_ranks.at(direction);
       const auto recv_rank     = recv_ranks.at(direction);
@@ -290,9 +297,6 @@ namespace ntt {
         send_buff_pld_i = array_t<npart_t*> { "send_buff_pld_i",
                                               npart_send_in * NPLDS_I };
       }
-
-      auto tag_offsets_h = Kokkos::create_mirror_view(tag_offsets);
-      Kokkos::deep_copy(tag_offsets_h, tag_offsets);
 
       npart_t idx_offset = npart_dead;
       if (tag_send > 2) {
@@ -396,13 +400,7 @@ namespace ntt {
                                              const dir::map_t<D, int>&,        \
                                              const dir::map_t<D, int>&);
 
-  PARTICLES_COMM(Dim::_1D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_2D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_3D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_2D, Coord::Spherical)
-  PARTICLES_COMM(Dim::_2D, Coord::Qspherical)
-  PARTICLES_COMM(Dim::_3D, Coord::Spherical)
-  PARTICLES_COMM(Dim::_3D, Coord::Qspherical)
+  NTT_FOREACH_COORDINATE(PARTICLES_COMM)
 #undef PARTICLES_COMM
 
 } // namespace ntt

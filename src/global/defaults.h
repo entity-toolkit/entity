@@ -22,6 +22,8 @@ namespace ntt::defaults {
 
   const unsigned short current_filters = 0;
 
+  const std::size_t team_policy_team_size = 0;
+
   const std::string em_pusher      = "Boris";
   const std::string ph_pusher      = "Photon";
   const timestep_t  clear_interval = 100;
@@ -73,7 +75,7 @@ namespace ntt::defaults {
     const real_t                   spec_emin        = 1e-3;
     const real_t                   spec_emax        = 1e3;
     const bool                     spec_log         = true;
-    const std::size_t              spec_nbins       = 200;
+    const std::size_t              spec_num_e_bins  = 200;
     const std::vector<std::string> stats_quantities = { "B^2",
                                                         "E^2",
                                                         "ExB",

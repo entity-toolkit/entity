@@ -6,9 +6,10 @@
  *   - ntt::Particles<> : ntt::ParticleSpecies, ntt::ParticleArrays
  * @cpp:
  *   - particles.cpp
- *   - particles_io.cpp
- *   - particles_comm.cpp
  *   - particles_sort.cpp
+ *   - comm/particles.cpp
+ *   - io/particles.cpp
+ *   - checkpoint/particles.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -88,6 +89,41 @@ namespace ntt {
     const uint8_t m_ntags { 2u };
 #else // MPI_ENABLED
     const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
+#endif
+
+    // team_policy: tile metadata produced by SortSpatially
+    // and consumed by the tiled deposit / pusher kernels. Lazily
+    // allocated on first sort. The sort backend itself (oneDPL on SYCL,
+    // Thrust on CUDA, std::sort on Host, Kokkos::BinSort otherwise) is
+    // selected at compile time based on the Kokkos device and the
+    // vendor libraries detected by CMake.
+    TileLayout<D> m_tile_layout {};
+
+#if defined(TEAM_POLICY) &&                                                    \
+  ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
+   (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
+   (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+    // Persistent, grow-only scratch reused by every SortSpatially call so
+    // the sort makes (almost) no per-call device allocations. npart grows
+    // slowly and monotonically over a run, so these reallocate only a
+    // handful of times (grow-only, with headroom) instead of the sort
+    // churning ~6 transient device buffers every call. On the SYCL /
+    // Level-Zero USM pooling allocator (Aurora) that per-sort churn
+    // otherwise accumulates retained pool blocks until the device OOMs
+    // mid-run on a sort buffer -- see the notes in SortSpatially and
+    // apply_permutation_to_soa. `m_sort_keys` / `m_sort_perm` are reused
+    // only on the SYCL/oneDPL path, whose sort is in place; the CUDA/HIP
+    // double-buffer dispatch keeps using fresh transients (it may hand back
+    // a different buffer). The per-type gather scratch is reused on every
+    // vendor backend.
+    array_t<ncells_t*> m_sort_keys {};
+    prtl_perm_t        m_sort_perm {};
+    array_t<int*>      m_sort_scratch_int {};
+    array_t<prtldx_t*> m_sort_scratch_prtldx {};
+    array_t<real_t*>   m_sort_scratch_real {};
+    array_t<short*>    m_sort_scratch_tag {};
+    array_t<real_t**>  m_sort_scratch_pld_r {};
+    array_t<npart_t**> m_sort_scratch_pld_i {};
 #endif
 
   public:
@@ -198,6 +234,20 @@ namespace ntt {
       return m_ntags;
     }
 
+#if defined(TEAM_POLICY)
+    // Build m_tile_layout.tile_offsets / npart_partitioned from the
+    // already-sorted tile-index keys. A separate member function (not a
+    // lambda local to SortSpatially) so the inner device kernel is not an
+    // extended __device__ lambda nested inside another lambda — which
+    // nvcc forbids. Lets the vendor path run the offsets pass and then
+    // release the keys before the SoA gather allocates its buffers.
+    // NOTE: must be public — nvcc forbids an extended __host__ __device__
+    // lambda inside a member function with private/protected access.
+    void compute_tile_offsets(const array_t<ncells_t*>& tile_indices,
+                              ncells_t                  total_tiles,
+                              npart_t                   npart_local);
+#endif
+
     [[nodiscard]]
     auto memory_footprint() const -> std::size_t {
       std::size_t footprint  = 0;
@@ -276,8 +326,54 @@ namespace ntt {
     /**
      * @brief Sort particles spatially by their cell indices
      * @param grid The grid object to get the cell information for sorting
+     * @note In team_policy mode (compile-time `team_policy=ON`), also
+     *       populates `m_tile_layout` with tile-offset and per-tile
+     *       permutation metadata that the tiled deposit/pusher kernels
+     *       consume.
      */
     void SortSpatially(const Grid<D>&);
+
+#if defined(TEAM_POLICY) &&                                                    \
+  ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
+   (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
+   (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
+
+  private:
+    /**
+     * @brief Apply a particle-index permutation (built by oneDPL/Thrust
+     *        sort_by_key) to the SoA member arrays. Members are gathered
+     *        through `perm` into a reusable `n`-sized scratch buffer
+     *        (one per member type, shared across members of that type)
+     *        and copied back in place, so the large persistent member
+     *        arrays keep their storage/address and the gather makes a
+     *        handful of transient allocations instead of one maxnpart
+     *        buffer per member. The *_prev arrays are intentionally not
+     *        permuted (overwritten by the next push before any read).
+     *        Only compiled when a vendor sort backend is enabled; the
+     *        BinSort path applies the permutation in place via
+     *        `sorter.sort(view)` instead.
+     * @param perm Permutation: sorted position -> pre-sort slot index.
+     * @param n Number of leading (alive) particles to gather. Pass
+     *        `npart_partitioned` so only the alive set is moved into
+     *        `[0, n)` (the dead were binned to the sentinel tile and sort
+     *        to the tail); the caller then drops the dead tail via
+     *        `set_npart(n)`.
+     */
+    void apply_permutation_to_soa(const prtl_perm_t& perm, npart_t n);
+
+  public:
+#endif
+
+    /**
+     * @brief Read-only access to the tile layout produced by the most
+     *        recent SortSpatially call. Returns a default-constructed
+     *        layout (`ntiles_total == 0`) when the species has not yet
+     *        been sorted.
+     */
+    [[nodiscard]]
+    auto tile_layout() const -> const TileLayout<D>& {
+      return m_tile_layout;
+    }
 
     /**
      * @brief Copy particle data from device to host.

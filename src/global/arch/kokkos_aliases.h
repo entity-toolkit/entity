@@ -4,12 +4,13 @@
  * @implements
  *   - ClassLambda, Lambda, Function, Inline macros
  *   - array_t, array_mirror_t, scatter_array_t
- *   - ndarray_t, ndfield_t
+ *   - nddata_t, scatter_nddata_t, ndarray_t, ndfield_t
  *   - ndfield_mirror_t, scatter_ndfield_t
  *   - range_t, range_h_t
  *   - CreateRangePolicy, CreateRangePolicyOnHost
  *   - random_number_pool_t, random_generator_t
  *   - Random function
+ *   - prtl_perm_t, TileLayout<>
  * @cpp:
  *   - arch/kokkos_aliases.cpp
  * @namespaces:
@@ -78,6 +79,38 @@ namespace kokkos_aliases_hidden {
 
 template <unsigned short D, typename T>
 using nddata_t = typename kokkos_aliases_hidden::nddata_impl<D, T>::type;
+
+// Scatter view for nddata
+namespace kokkos_aliases_hidden {
+  // c++ magic
+  template <unsigned short D, typename T>
+  struct scatter_nddata_impl {
+    using type = void;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<1, T> {
+    using type = scatter_array_t<T*>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<2, T> {
+    using type = scatter_array_t<T**>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<3, T> {
+    using type = scatter_array_t<T***>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<4, T> {
+    using type = scatter_array_t<T****>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <unsigned short D, typename T>
+using scatter_nddata_t = typename kokkos_aliases_hidden::scatter_nddata_impl<D, T>::type;
 
 template <unsigned short D>
 using ndarray_t = typename kokkos_aliases_hidden::nddata_impl<D, real_t>::type;
@@ -225,6 +258,79 @@ namespace kokkos_aliases_hidden {
 template <Dimension D>
 using range_h_t = typename kokkos_aliases_hidden::range_h_impl<D>::type;
 
+// Array aliases of arbitrary type and dimensions (up to 4)
+namespace kokkos_aliases_hidden {
+  // c++ magic
+  template <unsigned short D, typename T>
+  struct scratch_nddata_impl {
+    using type = void;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<1, T> {
+    using type = Kokkos::View<T*,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<2, T> {
+    using type = Kokkos::View<T**,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<3, T> {
+    using type = Kokkos::View<T***,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <typename T>
+  struct scratch_nddata_impl<4, T> {
+    using type = Kokkos::View<T****,
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <unsigned short D, typename T>
+using scratch_nddata_t = typename kokkos_aliases_hidden::scratch_nddata_impl<D, T>::type;
+
+// Defining aliases for Scratch memory ndfield
+namespace kokkos_aliases_hidden {
+  template <Dimension D, unsigned short N, typename T>
+  struct scratch_ndfield_impl {
+    using type = void;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_1D, N, T> {
+    using type = Kokkos::View<T* [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_2D, N, T> {
+    using type = Kokkos::View<T** [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+
+  template <unsigned short N, typename T>
+  struct scratch_ndfield_impl<Dim::_3D, N, T> {
+    using type = Kokkos::View<T*** [N],
+                              Kokkos::DefaultExecutionSpace::scratch_memory_space,
+                              Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <Dimension D, unsigned short N, typename T>
+using scratch_ndfield_t =
+  typename kokkos_aliases_hidden::scratch_ndfield_impl<D, N, T>::type;
+
 /**
  * @brief Function template for generating 1D Kokkos range policy for particles.
  * @tparam D Dimension
@@ -257,6 +363,39 @@ auto CreateRangePolicy(const tuple_t<ncells_t, D>&, const tuple_t<ncells_t, D>&)
 template <Dimension D>
 auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
+
+// --------------------------- team_policy types ---------------------------- //
+// Particle permutation index: maps a sorted-position p in [0, npart) to a
+// pre-sort particle index. Produced by SortSpatially, consumed by tiled
+// pusher and deposit kernels to walk particles tile-by-tile without
+// physically re-permuting the SoA arrays in lock step every step.
+using prtl_perm_t = array_t<npart_t*>;
+
+// Tile layout metadata: the contract between Stream 1 (sort) and Streams
+// 2/3 (tiled deposit / pusher). Scalars are host-resident; the views are
+// device-resident.
+//   ntiles_per_axis  : number of tiles along each axis (1 for unused axes).
+//   ntiles_total     : product of ntiles_per_axis = league size for TeamPolicy.
+//   tile_size        : tile edge length in cells (compile-time CMake knob,
+//                      replicated here for runtime checks).
+//   npart_partitioned: number of (alive) particles partitioned at the last
+//                      sort, i.e. tile_offsets(ntiles_total). The tiles cover
+//                      exactly [0, npart_partitioned); particles appended past
+//                      it (injection / MPI receive on a no-sort step) are not
+//                      partitioned and must be deposited separately.
+//   tile_offsets     : prefix-sum of per-tile particle counts; size
+//                      ntiles_total + 1; tile t owns particles
+//                      [tile_offsets(t), tile_offsets(t+1)).
+//   tile_perm        : size npart, particle index sorted by tile.
+template <Dimension D>
+struct TileLayout {
+  ncells_t          ntiles_per_axis[3] { 1u, 1u, 1u };
+  ncells_t          ntiles_total { 0u };
+  unsigned short    tile_size { 0u };
+  npart_t           npart_partitioned { 0u };
+  array_t<npart_t*> tile_offsets;
+  prtl_perm_t       tile_perm;
+};
 
 // Random number pool/generator type alias
 // (using math:: instead of Kokkos:: to suppress compiler warning on unused namespace alias)

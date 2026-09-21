@@ -73,6 +73,33 @@ namespace out {
     m_mode = mode;
   }
 
+  void Writer::setLocalLayout(const std::vector<ncells_t>& loc_corner,
+                              const std::vector<ncells_t>& loc_shape) {
+    raise::ErrorIf(loc_corner.size() != m_flds_l_corner.size() or
+                     loc_shape.size() != m_flds_l_shape.size(),
+                   "setLocalLayout dim mismatch with the original layout",
+                   HERE);
+    m_flds_l_corner = loc_corner;
+    m_flds_l_shape  = loc_shape;
+    m_flds_l_corner_dwn.clear();
+    m_flds_l_shape_dwn.clear();
+    m_flds_l_first.clear();
+    for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
+      const double d = static_cast<double>(m_dwn[i]);
+      const double l = static_cast<double>(loc_corner[i]);
+      const double n = static_cast<double>(loc_shape[i]);
+      const double f = math::ceil(l / d) * d - l;
+      m_flds_l_corner_dwn.push_back(static_cast<ncells_t>(math::ceil(l / d)));
+      m_flds_l_first.push_back(static_cast<ncells_t>(f));
+      m_flds_l_shape_dwn.push_back(static_cast<ncells_t>(math::ceil((n - f) / d)));
+    }
+    if constexpr (not std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
+                                   Kokkos::LayoutRight>::value) {
+      std::reverse(m_flds_l_corner_dwn.begin(), m_flds_l_corner_dwn.end());
+      std::reverse(m_flds_l_shape_dwn.begin(), m_flds_l_shape_dwn.end());
+    }
+  }
+
   void Writer::defineMeshLayout(
     const std::vector<ncells_t>&                 glob_shape,
     const std::vector<ncells_t>&                 loc_corner,
@@ -111,25 +138,24 @@ namespace out {
 
     for (auto i { 0u }; i < m_flds_g_shape.size(); ++i) {
       // cell-centers
+      // ConstantDims is intentionally NOT set: per-rank slab shape can change
+      // when dynamic load balancing shifts domain boundaries between writes.
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1),
                                   { m_flds_g_shape_dwn[i] },
                                   { m_flds_l_corner_dwn[i] },
-                                  { m_flds_l_shape_dwn[i] },
-                                  adios2::ConstantDims);
+                                  { m_flds_l_shape_dwn[i] });
       // cell-edges
       const auto is_last = (m_flds_l_corner[i] + m_flds_l_shape[i] ==
                             m_flds_g_shape[i]);
       m_io.DefineVariable<real_t>("X" + std::to_string(i + 1) + "e",
                                   { m_flds_g_shape_dwn[i] + 1 },
                                   { m_flds_l_corner_dwn[i] },
-                                  { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) },
-                                  adios2::ConstantDims);
+                                  { m_flds_l_shape_dwn[i] + (is_last ? 1 : 0) });
       m_io.DefineVariable<std::size_t>(
         "N" + std::to_string(i + 1) + "l",
         { static_cast<unsigned long>(2 * domain_idx.second) },
         { static_cast<unsigned long>(2 * domain_idx.first) },
-        { static_cast<unsigned long>(2) },
-        adios2::ConstantDims);
+        { static_cast<unsigned long>(2) });
     }
 
     if constexpr (std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
@@ -154,34 +180,54 @@ namespace out {
       m_flds_writers.emplace_back(S, fld);
     }
     for (const auto& fld : m_flds_writers) {
+      // ConstantDims is intentionally NOT set: per-rank slab shape can change
+      // when dynamic load balancing shifts domain boundaries between writes.
       if (fld.comp.empty()) {
         // scalar
         m_io.DefineVariable<real_t>(fld.name(),
                                     m_flds_g_shape_dwn,
                                     m_flds_l_corner_dwn,
-                                    m_flds_l_shape_dwn,
-                                    adios2::ConstantDims);
+                                    m_flds_l_shape_dwn);
       } else {
         // vector or tensor
         for (auto i { 0u }; i < fld.comp.size(); ++i) {
           m_io.DefineVariable<real_t>(fld.name(i),
                                       m_flds_g_shape_dwn,
                                       m_flds_l_corner_dwn,
-                                      m_flds_l_shape_dwn,
-                                      adios2::ConstantDims);
+                                      m_flds_l_shape_dwn);
         }
       }
     }
   }
 
-  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs) {
+  void Writer::defineSpectraOutputs(const std::vector<spidx_t>& specs,
+                                    const std::vector<size_t>& num_spatial_bins) {
     m_spectra_writers.clear();
     for (const auto& s : specs) {
       m_spectra_writers.emplace_back(s);
     }
     m_io.DefineVariable<real_t>("sEbn", {}, {}, { adios2::UnknownDim });
+    const auto spatial_binning_enabled = std::any_of(num_spatial_bins.begin(),
+                                                     num_spatial_bins.end(),
+                                                     [](const auto& n) {
+                                                       return n != 1u;
+                                                     });
+    const auto nspec_dims = spatial_binning_enabled ? num_spatial_bins.size() + 1u
+                                                    : 1u;
     for (const auto& sp : m_spectra_writers) {
-      m_io.DefineVariable<real_t>(sp.name(), {}, {}, { adios2::UnknownDim });
+      m_io.DefineVariable<real_t>(sp.name(),
+                                  {},
+                                  {},
+                                  adios2::Dims(nspec_dims, adios2::UnknownDim));
+    }
+    if (spatial_binning_enabled) {
+      const auto dim = num_spatial_bins.size();
+      for (auto d { 0u }; d < dim; ++d) {
+        m_io.DefineVariable<real_t>("sX" + std::to_string(d + 1) + "bn",
+                                    {},
+                                    {},
+                                    { adios2::UnknownDim });
+      }
     }
   }
 
@@ -198,9 +244,14 @@ namespace out {
                   std::size_t               comp,
                   std::vector<unsigned int> dwn,
                   std::vector<ncells_t>     first_cell,
-                  bool                      ghosts) {
+                  bool                      ghosts,
+                  const adios2::Dims&       loc_corner_dwn,
+                  const adios2::Dims&       loc_shape_dwn) {
     // when dwn != 1 in any direction, it is assumed that ghosts == false
-    auto         var      = io.InquireVariable<real_t>(varname);
+    auto var = io.InquireVariable<real_t>(varname);
+    // Refresh the per-step (start, count) so the slab tracks any rebalance
+    // that happened since the variable was declared.
+    var.SetSelection(adios2::Box<adios2::Dims>(loc_corner_dwn, loc_shape_dwn));
     const auto   gh_zones = ghosts ? 0 : N_GHOSTS;
     ndarray_t<D> output_field {};
 
@@ -332,7 +383,9 @@ namespace out {
                        addresses[i],
                        m_dwn,
                        m_flds_l_first,
-                       m_flds_ghosts);
+                       m_flds_ghosts,
+                       m_flds_l_corner_dwn,
+                       m_flds_l_shape_dwn);
     }
   }
 
@@ -348,6 +401,47 @@ namespace out {
     Kokkos::deep_copy(array_h, array);
     m_writer.Put<real_t>(var, array_h, adios2::Mode::Deferred);
     m_keepalive.emplace_back(array_h);
+  }
+
+  template <uint8_t N, class HostView>
+  void PutSpectrumSpatial(adios2::IO&            io,
+                          adios2::Engine&        writer,
+                          std::vector<std::any>& keepalive,
+                          const std::string&     varname,
+                          const HostView&        counts_h) {
+    auto var = io.InquireVariable<real_t>(varname);
+
+    adios2::Dims start(N, 0u), count(N, 0u), zeros(N, 0u);
+    auto         ntot { 1ul };
+    for (auto d { 0u }; d < N; ++d) {
+      count[d]  = counts_h.extent(d);
+      ntot     *= counts_h.extent(d);
+    }
+
+#if defined(MPI_ENABLED)
+    HostView counts_h_all { "counts_h_all", counts_h.layout() };
+    int      rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Reduce(counts_h.data(),
+               counts_h_all.data(),
+               static_cast<int>(ntot),
+               mpi::get_type<real_t>(),
+               MPI_SUM,
+               MPI_ROOT_RANK,
+               MPI_COMM_WORLD);
+    if (rank == MPI_ROOT_RANK) {
+      var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+      writer.Put<real_t>(var, counts_h_all.data(), adios2::Mode::Deferred);
+      keepalive.emplace_back(counts_h_all);
+    } else {
+      var.SetSelection(adios2::Box<adios2::Dims>(start, zeros));
+      writer.Put<real_t>(var, nullptr, adios2::Mode::Sync);
+    }
+#else
+    var.SetSelection(adios2::Box<adios2::Dims>(start, count));
+    writer.Put<real_t>(var, counts_h.data(), adios2::Mode::Deferred);
+    keepalive.emplace_back(counts_h);
+#endif
   }
 
   void Writer::writeSpectrum(const array_t<real_t*>& counts,
@@ -383,6 +477,43 @@ namespace out {
 #endif
   }
 
+  template <uint8_t N>
+  void Writer::writeSpectrumSpatial(const nddata_t<N, real_t>& counts,
+                                    const std::string&         varname) {
+    static_assert(N >= 2 and N <= 4, "writeSpectrumSpatial: N must be 2, 3 or 4");
+    // host-resident copy, layout inherited from `counts`
+    auto counts_h    = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
+                                                        counts);
+    using counts_h_t = decltype(counts_h);
+    using layout_t   = typename counts_h_t::array_layout;
+    if constexpr (std::is_same<layout_t, Kokkos::LayoutRight>::value) {
+      PutSpectrumSpatial<N>(m_io, m_writer, m_keepalive, varname, counts_h);
+    } else {
+      // ADIOS2 reads the raw buffer as row-major: remap on the host
+      using counts_rm_t =
+        Kokkos::View<typename counts_h_t::data_type, Kokkos::LayoutRight, Kokkos::HostSpace>;
+      counts_rm_t counts_rm {};
+      if constexpr (N == 2) {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1) };
+      } else if constexpr (N == 3) {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1),
+                                  counts_h.extent(2) };
+      } else {
+        counts_rm = counts_rm_t { "counts_rm",
+                                  counts_h.extent(0),
+                                  counts_h.extent(1),
+                                  counts_h.extent(2),
+                                  counts_h.extent(3) };
+      }
+      Kokkos::deep_copy(counts_rm, counts_h);
+      PutSpectrumSpatial<N>(m_io, m_writer, m_keepalive, varname, counts_rm);
+    }
+  }
+
   void Writer::writeSpectrumBins(const array_t<real_t*>& e_bins,
                                  const std::string&      varname) {
     auto var      = m_io.InquireVariable<real_t>(varname);
@@ -410,8 +541,25 @@ namespace out {
                          const array_t<real_t*>&         xc,
                          const array_t<real_t*>&         xe,
                          const std::vector<std::size_t>& loc_off_sz) {
+    // Per-step (start, count) for the per-rank slab; tracks the (possibly
+    // rebalanced) layout cached by setLocalLayout().
     auto varc = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1));
     auto vare = m_io.InquireVariable<real_t>("X" + std::to_string(dim + 1) + "e");
+    // m_flds_l_corner_dwn / m_flds_l_shape_dwn are reversed for non-LayoutRight
+    // (see defineMeshLayout / setLocalLayout); m_flds_l_corner / m_flds_l_shape
+    // / m_flds_g_shape are not. Map the dim-order index to the dwn-array index.
+    constexpr bool layout_right = std::is_same<typename ndfield_t<Dim::_3D, 6>::array_layout,
+                                               Kokkos::LayoutRight>::value;
+    const auto i_dwn   = layout_right ? static_cast<std::size_t>(dim)
+                                      : (m_flds_g_shape.size() - 1u -
+                                       static_cast<std::size_t>(dim));
+    const auto is_last = (m_flds_l_corner[dim] + m_flds_l_shape[dim] ==
+                          m_flds_g_shape[dim]);
+    varc.SetSelection(adios2::Box<adios2::Dims>({ m_flds_l_corner_dwn[i_dwn] },
+                                                { m_flds_l_shape_dwn[i_dwn] }));
+    vare.SetSelection(adios2::Box<adios2::Dims>(
+      { m_flds_l_corner_dwn[i_dwn] },
+      { m_flds_l_shape_dwn[i_dwn] + (is_last ? 1ul : 0ul) }));
     auto xc_h = Kokkos::create_mirror_view(xc);
     auto xe_h = Kokkos::create_mirror_view(xe);
     Kokkos::deep_copy(xc_h, xc);
@@ -506,7 +654,9 @@ namespace out {
                                  std::size_t,                                  \
                                  std::vector<unsigned int>,                    \
                                  std::vector<ncells_t>,                        \
-                                 bool);
+                                 bool,                                         \
+                                 const adios2::Dims&,                          \
+                                 const adios2::Dims&);
   WRITE_FIELD(Dim::_1D, 3)
   WRITE_FIELD(Dim::_1D, 6)
   WRITE_FIELD(Dim::_2D, 3)
@@ -514,5 +664,13 @@ namespace out {
   WRITE_FIELD(Dim::_3D, 3)
   WRITE_FIELD(Dim::_3D, 6)
 #undef WRITE_FIELD
+
+#define WRITE_SPECTRUM_SPATIAL(N)                                              \
+  template void Writer::writeSpectrumSpatial<N>(const nddata_t<N, real_t>&,    \
+                                                const std::string&);
+  WRITE_SPECTRUM_SPATIAL(2)
+  WRITE_SPECTRUM_SPATIAL(3)
+  WRITE_SPECTRUM_SPATIAL(4)
+#undef WRITE_SPECTRUM_SPATIAL
 
 } // namespace out
