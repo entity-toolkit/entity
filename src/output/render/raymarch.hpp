@@ -2,11 +2,9 @@
  * @file output/render/raymarch.hpp
  * @brief Header-only Kokkos volume ray-march kernel (one parallel_for over pixels)
  * @implements
- *   - kernel::VolumeRayMarch_kernel<M>
+ *   - render::VolumeRayMarch_kernel<M>
  * @namespaces:
- *   - kernel::
- * @macros:
- *   - OUTPUT_ENABLED
+ *   - render::
  * @note
  * Pure Kokkos: the only device entities are Views, the (trivially-copyable)
  * metric, and the POD camera. Runs in Kokkos::DefaultExecutionSpace, inheriting
@@ -25,15 +23,13 @@
 #ifndef OUTPUT_RENDER_RAYMARCH_HPP
 #define OUTPUT_RENDER_RAYMARCH_HPP
 
-#include "enums.h"
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/metric.h"
 
 #include "output/render/renderer.h"
 
-namespace kernel {
+namespace render {
   using namespace ntt;
 
   template <class M>
@@ -49,10 +45,10 @@ namespace kernel {
     const real_t lo0, lo1, lo2, hi0, hi1, hi2;
     const int    ext0, ext1, ext2;
 
-    const int    W, H;        // full frame size (for ray generation / ndc)
+    const int    W, H;         // full frame size (for ray generation / ndc)
     const int    bx0, by0, bw; // screen-bbox offset and width (output stride)
-    const real_t ds;          // fixed world step (global, identical on all ranks)
-    const int    max_steps;   // safety cap on the marching loop
+    const real_t ds;        // fixed world step (global, identical on all ranks)
+    const int    max_steps; // safety cap on the marching loop
 
     // transfer function
     array_t<real_t* [4]> lut;
@@ -74,10 +70,10 @@ namespace kernel {
     array_t<int*>        tcell_start; // (ncell+1) CSR offsets
     array_t<int*>        tseg_idx;    // segment indices grouped by cell
     const int            tn_seg;
-    const real_t         tube_r2;     // squared tube radius
+    const real_t         tube_r2; // squared tube radius
     const int            tgnc0, tgnc1, tgnc2;
-    const real_t         tg0, tg1, tg2;     // bucket-grid origin
-    const real_t         tdx0, tdx1, tdx2;  // bucket-grid cell size
+    const real_t         tg0, tg1, tg2;    // bucket-grid origin
+    const real_t         tdx0, tdx1, tdx2; // bucket-grid cell size
     array_t<real_t* [4]> tube_lut;
     const int            tube_n_lut;
     const real_t         tube_vmin, tube_vmax;
@@ -188,7 +184,7 @@ namespace kernel {
       if (spine_radius <= ZERO) {
         return false;
       }
-      const real_t r2 = spine_radius * spine_radius;
+      const real_t r2  = spine_radius * spine_radius;
       const real_t pad = spine_radius;
       // edges parallel to x (perp plane = y,z)
       if (px >= glo0 - pad and px <= ghi0 + pad) {
@@ -229,15 +225,14 @@ namespace kernel {
       const int c0 = static_cast<int>(math::floor((px - tg0) / tdx0));
       const int c1 = static_cast<int>(math::floor((py - tg1) / tdx1));
       const int c2 = static_cast<int>(math::floor((pz - tg2) / tdx2));
-      if (c0 < 0 or c0 >= tgnc0 or c1 < 0 or c1 >= tgnc1 or c2 < 0 or
-          c2 >= tgnc2) {
+      if (c0 < 0 or c0 >= tgnc0 or c1 < 0 or c1 >= tgnc1 or c2 < 0 or c2 >= tgnc2) {
         return false;
       }
-      const int    lin  = (c2 * tgnc1 + c1) * tgnc0 + c0;
-      const int    kb   = tcell_start(lin);
-      const int    ke   = tcell_start(lin + 1);
-      real_t       best = tube_r2;
-      bool         hit  = false;
+      const int lin  = (c2 * tgnc1 + c1) * tgnc0 + c0;
+      const int kb   = tcell_start(lin);
+      const int ke   = tcell_start(lin + 1);
+      real_t    best = tube_r2;
+      bool      hit  = false;
       for (int k = kb; k < ke; ++k) {
         const int    s  = tseg_idx(k);
         const real_t ax = tseg(s, 0), ay = tseg(s, 1), az = tseg(s, 2);
@@ -245,8 +240,8 @@ namespace kernel {
         const real_t ex = bx - ax, ey = by - ay, ez = bz - az;
         const real_t wx = px - ax, wy = py - ay, wz = pz - az;
         const real_t ee = ex * ex + ey * ey + ez * ez;
-        real_t       tt = (ee > ZERO) ? (wx * ex + wy * ey + wz * ez) / ee : ZERO;
-        tt              = (tt < ZERO) ? ZERO : ((tt > ONE) ? ONE : tt);
+        real_t tt = (ee > ZERO) ? (wx * ex + wy * ey + wz * ez) / ee : ZERO;
+        tt        = (tt < ZERO) ? ZERO : ((tt > ONE) ? ONE : tt);
         const real_t cx = ax + tt * ex, cy = ay + tt * ey, cz = az + tt * ez;
         const real_t dx = px - cx, dy = py - cy, dz = pz - cz;
         const real_t d2 = dx * dx + dy * dy + dz * dz;
@@ -273,13 +268,13 @@ namespace kernel {
       const real_t t1 = g1 - f1;
       const real_t t2 = g2 - f2;
       // base View index of the lower corner (active cell i -> View i + N_GHOSTS)
-      int b0 = static_cast<int>(f0) + static_cast<int>(N_GHOSTS);
-      int b1 = static_cast<int>(f1) + static_cast<int>(N_GHOSTS);
-      int b2 = static_cast<int>(f2) + static_cast<int>(N_GHOSTS);
+      int          b0 = static_cast<int>(f0) + static_cast<int>(N_GHOSTS);
+      int          b1 = static_cast<int>(f1) + static_cast<int>(N_GHOSTS);
+      int          b2 = static_cast<int>(f2) + static_cast<int>(N_GHOSTS);
       // clamp so both corners (b, b+1) stay in range [0, ext-1]
-      b0 = (b0 < 0) ? 0 : ((b0 > ext0 - 2) ? ext0 - 2 : b0);
-      b1 = (b1 < 0) ? 0 : ((b1 > ext1 - 2) ? ext1 - 2 : b1);
-      b2 = (b2 < 0) ? 0 : ((b2 > ext2 - 2) ? ext2 - 2 : b2);
+      b0              = (b0 < 0) ? 0 : ((b0 > ext0 - 2) ? ext0 - 2 : b0);
+      b1              = (b1 < 0) ? 0 : ((b1 > ext1 - 2) ? ext1 - 2 : b1);
+      b2              = (b2 < 0) ? 0 : ((b2 > ext2 - 2) ? ext2 - 2 : b2);
       const real_t c000 = Fld(b0, b1, b2, comp);
       const real_t c100 = Fld(b0 + 1, b1, b2, comp);
       const real_t c010 = Fld(b0, b1 + 1, b2, comp);
@@ -302,26 +297,27 @@ namespace kernel {
       const auto pix = static_cast<std::size_t>(lpy) *
                          static_cast<std::size_t>(bw) +
                        static_cast<std::size_t>(lpx);
-      const int gpx = bx0 + static_cast<int>(lpx);
-      const int gpy = by0 + static_cast<int>(lpy);
+      const int    gpx = bx0 + static_cast<int>(lpx);
+      const int    gpy = by0 + static_cast<int>(lpy);
       const real_t INF = static_cast<real_t>(1e30);
       // default transparent + no fragment
-      image(pix, 0)  = ZERO;
-      image(pix, 1)  = ZERO;
-      image(pix, 2)  = ZERO;
-      image(pix, 3)  = ZERO;
-      depth_img(pix) = INF;
+      image(pix, 0)    = ZERO;
+      image(pix, 1)    = ZERO;
+      image(pix, 2)    = ZERO;
+      image(pix, 3)    = ZERO;
+      depth_img(pix)   = INF;
 
       // ---- ray generation ------------------------------------------------ //
       const real_t fx = TWO * (static_cast<real_t>(gpx) + HALF) /
-                          static_cast<real_t>(W) - ONE;
+                          static_cast<real_t>(W) -
+                        ONE;
       const real_t fy = ONE - TWO * (static_cast<real_t>(gpy) + HALF) /
                                 static_cast<real_t>(H);
       real_t ox, oy, oz, dx, dy, dz;
       if (cam.projection == out::CameraDevice::Dome) {
         // fulldome azimuthal-equidistant fisheye from an interior eye: image
-        // radius rho in [0,1] -> zenith angle theta = rho * dome_half_fov, about
-        // the `forward` (zenith) axis; corners (rho > 1) are transparent.
+        // radius rho in [0,1] -> zenith angle theta = rho * dome_half_fov,
+        // about the `forward` (zenith) axis; corners (rho > 1) are transparent.
         const real_t rho = math::sqrt(fx * fx + fy * fy);
         if (rho > ONE) {
           return; // outside the dome disk
@@ -339,25 +335,25 @@ namespace kernel {
       } else if (cam.orthographic) {
         const real_t sx = fx * cam.half_w;
         const real_t sy = fy * cam.half_h;
-        ox = cam.eye[0] + sx * cam.right[0] + sy * cam.up[0];
-        oy = cam.eye[1] + sx * cam.right[1] + sy * cam.up[1];
-        oz = cam.eye[2] + sx * cam.right[2] + sy * cam.up[2];
-        dx = cam.forward[0];
-        dy = cam.forward[1];
-        dz = cam.forward[2];
+        ox              = cam.eye[0] + sx * cam.right[0] + sy * cam.up[0];
+        oy              = cam.eye[1] + sx * cam.right[1] + sy * cam.up[1];
+        oz              = cam.eye[2] + sx * cam.right[2] + sy * cam.up[2];
+        dx              = cam.forward[0];
+        dy              = cam.forward[1];
+        dz              = cam.forward[2];
       } else {
-        const real_t nx = fx * cam.aspect * cam.tan_half_fov;
-        const real_t ny = fy * cam.tan_half_fov;
-        dx = cam.forward[0] + nx * cam.right[0] + ny * cam.up[0];
-        dy = cam.forward[1] + nx * cam.right[1] + ny * cam.up[1];
-        dz = cam.forward[2] + nx * cam.right[2] + ny * cam.up[2];
-        const real_t inv = ONE / math::sqrt(dx * dx + dy * dy + dz * dz);
-        dx *= inv;
-        dy *= inv;
-        dz *= inv;
-        ox = cam.eye[0];
-        oy = cam.eye[1];
-        oz = cam.eye[2];
+        const real_t nx   = fx * cam.aspect * cam.tan_half_fov;
+        const real_t ny   = fy * cam.tan_half_fov;
+        dx                = cam.forward[0] + nx * cam.right[0] + ny * cam.up[0];
+        dy                = cam.forward[1] + nx * cam.right[1] + ny * cam.up[1];
+        dz                = cam.forward[2] + nx * cam.right[2] + ny * cam.up[2];
+        const real_t inv  = ONE / math::sqrt(dx * dx + dy * dy + dz * dz);
+        dx               *= inv;
+        dy               *= inv;
+        dz               *= inv;
+        ox                = cam.eye[0];
+        oy                = cam.eye[1];
+        oz                = cam.eye[2];
       }
 
       // ---- ray-AABB slab test against [lo, hi] --------------------------- //
@@ -430,12 +426,12 @@ namespace kernel {
       const real_t tube_inv_range = (tube_vmax > tube_vmin)
                                       ? (ONE / (tube_vmax - tube_vmin))
                                       : ZERO;
-      const real_t tube_log_vmin = (tube_log and tube_vmin > ZERO)
-                                     ? math::log10(tube_vmin)
-                                     : ZERO;
+      const real_t tube_log_vmin  = (tube_log and tube_vmin > ZERO)
+                                      ? math::log10(tube_vmin)
+                                      : ZERO;
       // first global sample index inside this segment: t_k >= t_enter
-      const real_t k0    = math::ceil(t_enter / ds);
-      real_t       t     = k0 * ds;
+      const real_t k0             = math::ceil(t_enter / ds);
+      real_t       t              = k0 * ds;
       real_t       acc_r = ZERO, acc_g = ZERO, acc_b = ZERO, acc_a = ZERO;
       int          steps = 0;
       while (t < t_exit and steps < max_steps) {
@@ -464,8 +460,7 @@ namespace kernel {
           } else if (u > ONE) {
             u = ONE;
           }
-          int idx = static_cast<int>(u * static_cast<real_t>(tube_n_lut - 1) +
-                                     HALF);
+          int idx = static_cast<int>(u * static_cast<real_t>(tube_n_lut - 1) + HALF);
           if (idx < 0) {
             idx = 0;
           } else if (idx > tube_n_lut - 1) {
@@ -478,7 +473,7 @@ namespace kernel {
         } else if (volume_enabled) {
           const real_t s = sample(px, py, pz);
           // normalize through the transfer function range
-          real_t u;
+          real_t       u;
           if (log_scale) {
             u = (s > ZERO) ? (math::log10(s) - log_vmin) * inv_range : -ONE;
           } else {
@@ -503,11 +498,11 @@ namespace kernel {
         // composite only a non-empty sample (volume-off rays contribute solely
         // where they hit a tube or the spine)
         if (ca > ZERO) {
-          const real_t w = ONE - acc_a;
-          acc_r += w * cr;
-          acc_g += w * cg;
-          acc_b += w * cb;
-          acc_a += w * ca;
+          const real_t w  = ONE - acc_a;
+          acc_r          += w * cr;
+          acc_g          += w * cg;
+          acc_b          += w * cb;
+          acc_a          += w * ca;
           if (acc_a >= early_alpha) {
             break;
           }
@@ -529,6 +524,6 @@ namespace kernel {
     }
   };
 
-} // namespace kernel
+} // namespace render
 
 #endif // OUTPUT_RENDER_RAYMARCH_HPP

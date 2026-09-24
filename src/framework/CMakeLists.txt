@@ -16,7 +16,6 @@
 # * domain/metadomain_sort.cpp
 # * domain/metadomain_reshape.cpp
 # * domain/metadomain_loadbal.cpp
-# * domain/metadomain_render.cpp
 # * domain/checkpoint/init.cpp
 # * domain/checkpoint/write.cpp
 # * domain/checkpoint/resume.cpp
@@ -29,6 +28,7 @@
 # * domain/io/spectra.cpp
 # * domain/io/fields.cpp
 # * domain/io/stats.cpp
+# * domain/io/render.cpp
 # * containers/particles.cpp
 # * containers/particles_sort.cpp
 # * containers/fields.cpp
@@ -70,11 +70,12 @@ set(SOURCES
     ${SRC_DIR}/domain/metadomain_sort.cpp
     ${SRC_DIR}/domain/metadomain_reshape.cpp
     ${SRC_DIR}/domain/metadomain_loadbal.cpp
-    ${SRC_DIR}/domain/metadomain_render.cpp
+    ${SRC_DIR}/domain/io/init.cpp
+    ${SRC_DIR}/domain/io/render.cpp
+    ${SRC_DIR}/domain/io/stats.cpp
     ${SRC_DIR}/domain/comm/fields.cpp
     ${SRC_DIR}/domain/comm/fields_sync.cpp
     ${SRC_DIR}/domain/comm/particles.cpp
-    ${SRC_DIR}/domain/io/stats.cpp
     ${SRC_DIR}/containers/particles.cpp
     ${SRC_DIR}/containers/particles_sort.cpp
     ${SRC_DIR}/containers/fields.cpp)
@@ -82,7 +83,6 @@ if(${output})
   list(
     APPEND
     SOURCES
-    ${SRC_DIR}/domain/io/init.cpp
     ${SRC_DIR}/domain/io/write.cpp
     ${SRC_DIR}/domain/io/spectra.cpp
     ${SRC_DIR}/domain/io/fields.cpp

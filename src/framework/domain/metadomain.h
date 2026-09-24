@@ -39,6 +39,7 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
 #include "framework/parameters/parameters.h"
+#include "output/render/renderer.h"
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)
@@ -47,7 +48,6 @@
 
 #if defined(OUTPUT_ENABLED)
   #include "output/checkpoint.h"
-  #include "output/render/renderer.h"
   #include "output/writer.h"
 
   #include <adios2.h>
@@ -191,14 +191,12 @@ namespace ntt {
     void ContinueFromCheckpoint(adios2::ADIOS*, const SimulationParams&);
     void redecomposeFromCheckpoint(const std::vector<std::vector<ncells_t>>&,
                                    const std::vector<boundaries_t<real_t>>&);
+#endif
 
-    /* in-situ renderer (3D volume ray-march & 2D slice; metadomain_render.cpp) */
+    /* in-situ renderer (3D volume ray-march & 2D slice) */
     void InitRenderer(const SimulationParams&);
-    auto Render(const SimulationParams&,
-                timestep_t,
-                timestep_t,
-                simtime_t,
-                simtime_t) -> bool;
+    auto Render(const SimulationParams&, timestep_t, timestep_t, simtime_t, simtime_t)
+      -> bool;
     // Prepare the scalar named by a scene's `field` into bckp(:, 0) (active
     // cells synced; ghosts not yet halo-filled). Shared by the 2D and 3D render
     // paths so the field grammar (moments, T/V components, |E,B,J|, species
@@ -208,7 +206,6 @@ namespace ntt {
                              Domain<S, M>&,
                              const std::string& field_name,
                              ndfield_t<M::Dim, 6>&) const -> bool;
-#endif
 
     using custom_stats_output_t = std::function<
       real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>;
@@ -339,8 +336,8 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
-    out::Renderer      g_renderer;
 #endif
+    out::Renderer g_renderer;
 
 #if defined(MPI_ENABLED)
     int g_mpi_rank { -1 }, g_mpi_size { -1 };

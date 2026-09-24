@@ -554,11 +554,11 @@ namespace out {
       b = anchors.rgb[anchors.n - 1][2];
       return;
     }
-    const real_t x   = u * static_cast<real_t>(anchors.n - 1);
-    const int    i0  = static_cast<int>(x);
-    const int    i1  = (i0 + 1 < anchors.n) ? (i0 + 1) : i0;
-    const real_t t   = x - static_cast<real_t>(i0);
-    r = static_cast<real_t>(anchors.rgb[i0][0]) * (ONE - t) +
+    const real_t x  = u * static_cast<real_t>(anchors.n - 1);
+    const int    i0 = static_cast<int>(x);
+    const int    i1 = (i0 + 1 < anchors.n) ? (i0 + 1) : i0;
+    const real_t t  = x - static_cast<real_t>(i0);
+    r               = static_cast<real_t>(anchors.rgb[i0][0]) * (ONE - t) +
         static_cast<real_t>(anchors.rgb[i1][0]) * t;
     g = static_cast<real_t>(anchors.rgb[i0][1]) * (ONE - t) +
         static_cast<real_t>(anchors.rgb[i1][1]) * t;
@@ -607,7 +607,7 @@ namespace out {
       const real_t u = (n_lut > 1)
                          ? static_cast<real_t>(i) / static_cast<real_t>(n_lut - 1)
                          : ZERO;
-      real_t r, g, b;
+      real_t       r, g, b;
       colormapRGB(colormap, u, r, g, b);
       const real_t a = alphaAt(alpha_pts, u);
       lut_h(i, 0)    = r * a; // premultiplied

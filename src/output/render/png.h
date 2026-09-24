@@ -22,14 +22,13 @@
 
 #include <cstdint>
 #include <fstream>
-#include <string>
 #include <vector>
 
 namespace out {
 
   namespace png_hidden {
 
-    inline auto crc32(const uint8_t* data, std::size_t len) -> uint32_t {
+    inline auto crc32(const uint8_t* data, size_t len) -> uint32_t {
       static uint32_t table[256];
       static bool     ready = false;
       if (not ready) {
@@ -43,16 +42,16 @@ namespace out {
         ready = true;
       }
       uint32_t c = 0xFFFFFFFFu;
-      for (std::size_t i = 0; i < len; ++i) {
+      for (size_t i = 0; i < len; ++i) {
         c = table[(c ^ data[i]) & 0xFFu] ^ (c >> 8);
       }
       return c ^ 0xFFFFFFFFu;
     }
 
-    inline auto adler32(const uint8_t* data, std::size_t len) -> uint32_t {
+    inline auto adler32(const uint8_t* data, size_t len) -> uint32_t {
       constexpr uint32_t MOD = 65521u;
       uint32_t           a = 1u, b = 0u;
-      for (std::size_t i = 0; i < len; ++i) {
+      for (size_t i = 0; i < len; ++i) {
         a = (a + data[i]) % MOD;
         b = (b + a) % MOD;
       }
@@ -81,13 +80,14 @@ namespace out {
     }
 
     // zlib stream wrapping `raw` in stored (BTYPE=00) DEFLATE blocks
-    inline auto zlib_store(const std::vector<uint8_t>& raw) -> std::vector<uint8_t> {
+    inline auto zlib_store(const std::vector<uint8_t>& raw)
+      -> std::vector<uint8_t> {
       std::vector<uint8_t> z;
       z.push_back(0x78); // CMF: CM=8, CINFO=7
       z.push_back(0x01); // FLG: makes (CMF<<8 | FLG) % 31 == 0, no dict, level 0
-      std::size_t          off    = 0;
-      const std::size_t    n      = raw.size();
-      constexpr std::size_t BLOCK = 65535u;
+      size_t           off   = 0;
+      const size_t     n     = raw.size();
+      constexpr size_t BLOCK = 65535u;
       if (n == 0) {
         z.push_back(0x01); // final, stored
         z.push_back(0x00);
@@ -96,8 +96,8 @@ namespace out {
         z.push_back(0xFF);
       }
       while (off < n) {
-        const std::size_t len   = (n - off > BLOCK) ? BLOCK : (n - off);
-        const bool        final = (off + len >= n);
+        const size_t len   = (n - off > BLOCK) ? BLOCK : (n - off);
+        const bool   final = (off + len >= n);
         z.push_back(final ? 0x01 : 0x00);
         const uint16_t l  = static_cast<uint16_t>(len);
         const uint16_t nl = static_cast<uint16_t>(~l);
@@ -105,7 +105,9 @@ namespace out {
         z.push_back(static_cast<uint8_t>((l >> 8) & 0xFFu));
         z.push_back(static_cast<uint8_t>(nl & 0xFFu));
         z.push_back(static_cast<uint8_t>((nl >> 8) & 0xFFu));
-        z.insert(z.end(), raw.begin() + off, raw.begin() + off + len);
+        z.insert(z.end(),
+                 raw.begin() + static_cast<ssize_t>(off),
+                 raw.begin() + static_cast<ssize_t>(off + len));
         off += len;
       }
       put_u32_be(z, adler32(raw.data(), raw.size()));
@@ -122,17 +124,15 @@ namespace out {
    * @param rgba pointer to width*height*4 bytes, row-major, top-left origin
    * @return true on success
    */
-  inline auto write_png(const path_t&  path,
-                        int            width,
-                        int            height,
-                        const uint8_t* rgba) -> bool {
+  inline auto write_png(const path_t& path, int width, int height, const uint8_t* rgba)
+    -> bool {
     using namespace png_hidden;
-    const std::size_t    w = static_cast<std::size_t>(width);
-    const std::size_t    h = static_cast<std::size_t>(height);
+    const size_t         w = static_cast<size_t>(width);
+    const size_t         h = static_cast<size_t>(height);
     // build filtered raw scanlines: each row prefixed with filter byte 0 (None)
     std::vector<uint8_t> raw;
     raw.reserve(h * (1 + w * 4));
-    for (std::size_t y = 0; y < h; ++y) {
+    for (size_t y = 0u; y < h; ++y) {
       raw.push_back(0x00);
       const uint8_t* row = rgba + y * w * 4;
       raw.insert(raw.end(), row, row + w * 4);
@@ -140,7 +140,7 @@ namespace out {
 
     std::vector<uint8_t> file;
     // PNG signature
-    const uint8_t sig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
+    const uint8_t        sig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
     file.insert(file.end(), sig, sig + 8);
 
     // IHDR

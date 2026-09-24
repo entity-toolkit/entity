@@ -65,7 +65,7 @@ namespace out {
 
   void Renderer::init(const ntt::SimulationParams& params,
                       const boundaries_t<real_t>&  global_extent) {
-    m_enabled = false;
+    m_enabled      = false;
     const auto& td = params.data();
 
     const bool enable = toml::find_or(td, "output", "render", "enable", false);
@@ -85,10 +85,9 @@ namespace out {
 
     m_width  = toml::find_or<int>(td, "output", "render", "width", 1024);
     m_height = toml::find_or<int>(td, "output", "render", "height", 1024);
-    // `resolution` is a convenience that forces a square frame (width == height),
-    // the natural shape for a dome master.
-    const int resolution = toml::find_or<int>(td, "output", "render",
-                                              "resolution", 0);
+    // `resolution` is a convenience that forces a square frame (width ==
+    // height), the natural shape for a dome master.
+    const int resolution = toml::find_or<int>(td, "output", "render", "resolution", 0);
     if (resolution > 0) {
       m_width  = resolution;
       m_height = resolution;
@@ -100,7 +99,7 @@ namespace out {
                                           "render",
                                           "early_term_alpha",
                                           static_cast<real_t>(0.99));
-    m_n_lut = toml::find_or<int>(td, "output", "render", "n_lut", 256);
+    m_n_lut       = toml::find_or<int>(td, "output", "render", "n_lut", 256);
 
     // opaque background color (shows through low-alpha pixels); default black
     const auto bg = toml::find_or<std::vector<real_t>>(td,
@@ -124,13 +123,15 @@ namespace out {
     m_mirror = toml::find_or<bool>(td, "output", "render", "mirror", true);
 
     // draw the current simulation time in the upper-right corner
-    m_time_label = toml::find_or<bool>(td, "output", "render", "time_label",
-                                       false);
+    m_time_label = toml::find_or<bool>(td, "output", "render", "time_label", false);
 
     // axes: spine + ticks + labels around the rendered region
-    m_axes = toml::find_or<bool>(td, "output", "render", "axes", false);
+    m_axes        = toml::find_or<bool>(td, "output", "render", "axes", false);
     m_axis_nticks = toml::find_or<int>(td, "output", "render", "axis_ticks", 5);
-    m_spine_width = toml::find_or<real_t>(td, "output", "render", "spine_width",
+    m_spine_width = toml::find_or<real_t>(td,
+                                          "output",
+                                          "render",
+                                          "spine_width",
                                           static_cast<real_t>(2));
     m_global_extent = global_extent;
 
@@ -141,9 +142,12 @@ namespace out {
     m_has_region = false;
     {
       const char* keys[3] = { "x1_lim", "x2_lim", "x3_lim" };
-      for (std::size_t d = 0; d < global_extent.size() and d < 3; ++d) {
-        const auto lim = toml::find_or<std::vector<real_t>>(
-          td, "output", "render", keys[d], std::vector<real_t> {});
+      for (size_t d = 0; d < global_extent.size() and d < 3; ++d) {
+        const auto lim = toml::find_or<std::vector<real_t>>(td,
+                                                            "output",
+                                                            "render",
+                                                            keys[d],
+                                                            std::vector<real_t> {});
         if (lim.empty()) {
           continue;
         }
@@ -173,19 +177,26 @@ namespace out {
     // workstream; warn if asked for here so it does not silently fall back to
     // the volume camera.
     {
-      const bool dome_enable = toml::find_or(td, "output", "render", "dome",
-                                             "enable", false);
+      const bool dome_enable =
+        toml::find_or(td, "output", "render", "dome", "enable", false);
       if (dome_enable) {
         if (global_extent.size() != 2) {
           raise::Warning("output.render.dome is 2D-only for now; ignoring", HERE);
         } else {
-          m_dome.enabled  = true;
-          const real_t fov = toml::find_or<real_t>(td, "output", "render", "dome",
-                                                   "fov", static_cast<real_t>(180));
+          m_dome.enabled   = true;
+          const real_t fov = toml::find_or<real_t>(td,
+                                                   "output",
+                                                   "render",
+                                                   "dome",
+                                                   "fov",
+                                                   static_cast<real_t>(180));
           m_dome.theta_max = HALF * fov * static_cast<real_t>(constant::PI) /
                              static_cast<real_t>(180);
-          const auto proj = toml::find_or<std::string>(td, "output", "render",
-                                                       "dome", "projection",
+          const auto proj = toml::find_or<std::string>(td,
+                                                       "output",
+                                                       "render",
+                                                       "dome",
+                                                       "projection",
                                                        "equidistant");
           if (proj == "gnomonic") {
             m_dome.law = DomeMap::Gnomonic;
@@ -206,10 +217,11 @@ namespace out {
           if (m_dome.law == DomeMap::Gnomonic) {
             const real_t cap = static_cast<real_t>(89.0 * constant::PI / 180.0);
             if (m_dome.theta_max >= cap) {
-              raise::Warning("output.render.dome: 'gnomonic' needs fov < 180 deg "
-                             "(a flat plane cannot reach the dome horizon); "
-                             "capping the half-FOV at 89 deg",
-                             HERE);
+              raise::Warning(
+                "output.render.dome: 'gnomonic' needs fov < 180 deg "
+                "(a flat plane cannot reach the dome horizon); "
+                "capping the half-FOV at 89 deg",
+                HERE);
               m_dome.theta_max = cap;
             }
           }
@@ -220,7 +232,12 @@ namespace out {
           m_dome.cx = HALF * (global_extent[0].first + global_extent[0].second);
           m_dome.cy = HALF * (global_extent[1].first + global_extent[1].second);
           const auto ctr = toml::find_or<std::vector<real_t>>(
-            td, "output", "render", "dome", "center", std::vector<real_t> {});
+            td,
+            "output",
+            "render",
+            "dome",
+            "center",
+            std::vector<real_t> {});
           if (ctr.size() == 2) {
             m_dome.cx = ctr[0];
             m_dome.cy = ctr[1];
@@ -230,8 +247,7 @@ namespace out {
                            HERE);
           }
           const real_t rdef = HALF * std::min(Lx, Ly);
-          m_dome.R = toml::find_or<real_t>(td, "output", "render", "dome",
-                                          "radius", rdef);
+          m_dome.R = toml::find_or<real_t>(td, "output", "render", "dome", "radius", rdef);
           if (m_dome.R <= ZERO) {
             m_dome.R = rdef;
           }
@@ -247,9 +263,13 @@ namespace out {
 
     {
       const auto al = toml::find_or<std::vector<std::string>>(
-        td, "output", "render", "axis_labels", std::vector<std::string> {});
+        td,
+        "output",
+        "render",
+        "axis_labels",
+        std::vector<std::string> {});
       m_axis_labels_set = not al.empty();
-      for (std::size_t d = 0; d < al.size() and d < 3; ++d) {
+      for (size_t d = 0; d < al.size() and d < 3; ++d) {
         m_axis_labels[d] = al[d];
       }
       // default 2D slice names track the labels (overridden per-metric by Render)
@@ -258,16 +278,16 @@ namespace out {
     }
 
     // cadence: mirror output.* (interval in steps; interval_time in sim time)
-    const auto interval = toml::find_or<timestep_t>(td,
-                                                    "output",
-                                                    "render",
-                                                    "interval",
-                                                    0u);
-    const auto interval_time = toml::find_or<simtime_t>(td,
-                                                        "output",
-                                                        "render",
-                                                        "interval_time",
-                                                        -1.0);
+    auto interval = toml::find_or<timestep_t>(td, "output", "render", "interval", 0u);
+    auto interval_time = toml::find_or<simtime_t>(td,
+                                                  "output",
+                                                  "render",
+                                                  "interval_time",
+                                                  -1.0);
+    if ((interval == 0) and (interval_time == -1.0)) {
+      interval      = params.template get<timestep_t>("output.interval");
+      interval_time = params.template get<timestep_t>("output.interval_time");
+    }
     m_tracker.init("render", interval, interval_time);
 
     /* ---- camera (used by the 3D volume mode; the 2D slice path frames itself
@@ -275,26 +295,26 @@ namespace out {
     // frame the camera on the render region (== the full extent when uncropped)
     real_t center[3] = { ZERO, ZERO, ZERO }, size[3] = { ZERO, ZERO, ZERO };
     real_t maxext = ZERO;
-    for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
+    for (size_t d = 0; d < m_region.size() and d < 3; ++d) {
       center[d] = static_cast<real_t>(0.5) *
                   (m_region[d].first + m_region[d].second);
       size[d] = m_region[d].second - m_region[d].first;
       maxext  = (size[d] > maxext) ? size[d] : maxext;
     }
-    const real_t diag = std::sqrt(size[0] * size[0] + size[1] * size[1] +
-                                  size[2] * size[2]);
+    const real_t diag = std::sqrt(
+      size[0] * size[0] + size[1] * size[1] + size[2] * size[2]);
 
-    const bool ortho = toml::find_or(td,
-                                     "output",
-                                     "render",
-                                     "camera",
-                                     "orthographic",
-                                     true);
+    const bool ortho =
+      toml::find_or(td, "output", "render", "camera", "orthographic", true);
     // `mode` overrides the `orthographic` flag: "orthographic" | "perspective" |
     // "dome". The dome is a fulldome azimuthal-equidistant fisheye from an
     // INTERIOR eye (the box center by default) -- see Metadomain::Render (3D).
-    const auto cam_mode = toml::find_or<std::string>(
-      td, "output", "render", "camera", "mode", std::string {});
+    const auto cam_mode = toml::find_or<std::string>(td,
+                                                     "output",
+                                                     "render",
+                                                     "camera",
+                                                     "mode",
+                                                     std::string {});
     int projection = ortho ? CameraDevice::Ortho : CameraDevice::Perspective;
     if (cam_mode == "dome") {
       projection = CameraDevice::Dome;
@@ -309,27 +329,31 @@ namespace out {
                      HERE);
     }
     const bool   is_dome  = (projection == CameraDevice::Dome);
-    const real_t dome_fov = toml::find_or<real_t>(
-      td, "output", "render", "camera", "dome_fov", static_cast<real_t>(180));
-    auto pos = toml::find_or<std::vector<real_t>>(td,
+    const real_t dome_fov = toml::find_or<real_t>(td,
+                                                  "output",
+                                                  "render",
+                                                  "camera",
+                                                  "dome_fov",
+                                                  static_cast<real_t>(180));
+    auto         pos      = toml::find_or<std::vector<real_t>>(td,
                                                   "output",
                                                   "render",
                                                   "camera",
                                                   "position",
                                                   std::vector<real_t> {});
-    auto look = toml::find_or<std::vector<real_t>>(td,
+    auto         look     = toml::find_or<std::vector<real_t>>(td,
                                                    "output",
                                                    "render",
                                                    "camera",
                                                    "look_at",
                                                    std::vector<real_t> {});
-    auto up = toml::find_or<std::vector<real_t>>(td,
+    auto         up       = toml::find_or<std::vector<real_t>>(td,
                                                  "output",
                                                  "render",
                                                  "camera",
                                                  "up",
                                                  std::vector<real_t> {});
-    const real_t fov = toml::find_or<real_t>(td,
+    const real_t fov      = toml::find_or<real_t>(td,
                                              "output",
                                              "render",
                                              "camera",
@@ -423,27 +447,31 @@ namespace out {
       }
       m_camera_dev.dome_half_fov = hf;
       // a fisheye disk needs a square frame; the kernel uses the full-frame ndc
-      m_camera_dev.aspect = ONE;
-      m_camera_dev.half_w = m_camera_dev.half_h;
+      m_camera_dev.aspect        = ONE;
+      m_camera_dev.half_w        = m_camera_dev.half_h;
       if (m_width != m_height) {
         raise::Warning("output.render.camera.mode='dome' wants width == height "
                        "for a circular dome master; the fisheye disk will be "
                        "elliptical otherwise",
                        HERE);
       }
-      // spherical far-clip: each ray stops at `dome_radius` from the eye, so the
-      // sampled region is a half-ball (hemisphere) instead of the whole box ->
-      // uniform path length, no box corner/edge projection artifacts. Default =
-      // the largest sphere centered in the box (half the shortest side). A value
-      // of 0 disables the clip (march to the box boundary); a negative value
-      // also selects the default.
+      // spherical far-clip: each ray stops at `dome_radius` from the eye, so
+      // the sampled region is a half-ball (hemisphere) instead of the whole box
+      // -> uniform path length, no box corner/edge projection artifacts.
+      // Default = the largest sphere centered in the box (half the shortest
+      // side). A value of 0 disables the clip (march to the box boundary); a
+      // negative value also selects the default.
       real_t insc = static_cast<real_t>(1e30);
-      for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
+      for (size_t d = 0; d < m_region.size() and d < 3; ++d) {
         insc = (size[d] < insc) ? size[d] : insc;
       }
-      insc *= HALF;
-      real_t domeR = toml::find_or<real_t>(td, "output", "render", "camera",
-                                          "dome_radius", insc);
+      insc         *= HALF;
+      real_t domeR  = toml::find_or<real_t>(td,
+                                           "output",
+                                           "render",
+                                           "camera",
+                                           "dome_radius",
+                                           insc);
       if (domeR < ZERO) {
         domeR = insc;
       }
@@ -457,15 +485,21 @@ namespace out {
       m_eye_base[d] = m_camera_dev.eye[d];
     }
     {
-      const auto vel = toml::find_or<std::vector<real_t>>(
-        td, "output", "render", "camera_velocity", std::vector<real_t> {});
-      for (std::size_t d = 0; d < vel.size() and d < 3; ++d) {
+      const auto vel = toml::find_or<std::vector<real_t>>(td,
+                                                          "output",
+                                                          "render",
+                                                          "camera_velocity",
+                                                          std::vector<real_t> {});
+      for (size_t d = 0; d < vel.size() and d < 3; ++d) {
         m_cam_vel[d] = vel[d];
       }
       m_cam_moving = (m_cam_vel[0] != ZERO) or (m_cam_vel[1] != ZERO) or
                      (m_cam_vel[2] != ZERO);
-      m_cam_t0 = toml::find_or<simtime_t>(td, "output", "render",
-                                          "camera_start_time", 0.0);
+      m_cam_t0 = toml::find_or<simtime_t>(td,
+                                          "output",
+                                          "render",
+                                          "camera_start_time",
+                                          0.0);
       if (m_cam_moving and not m_has_region and global_extent.size() == 2) {
         raise::Warning("output.render.camera_velocity set without x{1,2}_lim: "
                        "the 2D window will pan off the domain. Set a region to "
@@ -483,26 +517,26 @@ namespace out {
                                                        toml::array {});
     for (const auto& sc : scenes_arr) {
       Scene scene;
-      scene.field  = toml::find_or<std::string>(sc, "field", "");
+      scene.field = toml::find_or<std::string>(sc, "field", "");
       scene.prefix = toml::find_or<std::string>(sc, "prefix", scene.field + "_");
       if (scene.field.empty()) {
         raise::Warning("output.render scene with no field; skipping", HERE);
         continue;
       }
-      scene.label  = toml::find_or<std::string>(sc, "label", scene.field);
-      scene.ticks  = toml::find_or<std::vector<real_t>>(sc,
-                                                        "colorbar_ticks",
-                                                        std::vector<real_t> {});
+      scene.label = toml::find_or<std::string>(sc, "label", scene.field);
+      scene.ticks = toml::find_or<std::vector<real_t>>(sc,
+                                                       "colorbar_ticks",
+                                                       std::vector<real_t> {});
       // overlay the B-field-line tubes inside this scene's volume; a dedicated
       // `field = "fieldlines"` scene renders the tubes standalone (no volume).
       scene.show_fieldlines = toml::find_or<bool>(sc, "fieldlines", false) or
                               (scene.field == "fieldlines");
-      scene.tf.vmin = toml::find_or<real_t>(sc, "min", ZERO);
-      scene.tf.vmax = toml::find_or<real_t>(sc, "max", ONE);
+      scene.tf.vmin      = toml::find_or<real_t>(sc, "min", ZERO);
+      scene.tf.vmax      = toml::find_or<real_t>(sc, "max", ONE);
       scene.tf.log_scale = toml::find_or<bool>(sc, "log", false);
       scene.tf.n_lut     = m_n_lut;
       const auto colormap = toml::find_or<std::string>(sc, "colormap", "viridis");
-      scene.tf.colormap   = colormap;
+      scene.tf.colormap    = colormap;
       // alpha control points: array of [position, alpha] pairs
       const auto alpha_raw = toml::find_or<std::vector<std::vector<real_t>>>(
         sc,
@@ -514,11 +548,14 @@ namespace out {
           alpha_pts.push_back({ p[0], p[1] });
         }
       }
-      scene.tf.lut = buildLUT(colormap, m_n_lut, alpha_pts);
+      scene.tf.lut        = buildLUT(colormap, m_n_lut, alpha_pts);
       // opaque companion LUT (alpha == 1) for the flat 2D slice rasterizer
       scene.tf.lut_opaque = buildLUT(colormap,
                                      m_n_lut,
-                                     { { ZERO, ONE }, { ONE, ONE } });
+                                     {
+                                       { ZERO, ONE },
+                                       {  ONE, ONE }
+      });
       m_scenes.push_back(std::move(scene));
     }
 
@@ -535,32 +572,50 @@ namespace out {
     for (const auto& s : m_scenes) {
       any_fl = any_fl or s.show_fieldlines;
     }
-    m_fieldlines.enable = toml::find_or<bool>(td, "output", "render",
-                                              "fieldlines", "enable", false) or
-                          any_fl;
+    m_fieldlines.enable =
+      toml::find_or<bool>(td, "output", "render", "fieldlines", "enable", false) or
+      any_fl;
     if (m_fieldlines.enable) {
       if (m_global_extent.size() != 2 and m_global_extent.size() != 3) {
-        raise::Warning("output.render.fieldlines needs a 2D or 3D run; ignoring",
-                       HERE);
+        raise::Warning(
+          "output.render.fieldlines needs a 2D or 3D run; ignoring",
+          HERE);
         m_fieldlines.enable = false;
       } else {
         // 3D -> traced tubes inside the volume; 2D -> flux-function contours
-        auto& fl   = m_fieldlines;
-        fl.field   = toml::find_or<std::string>(td, "output", "render",
-                                                "fieldlines", "field", "B");
-        fl.bin     = toml::find_or<int>(td, "output", "render", "fieldlines",
-                                        "bin", 4);
-        fl.bin     = (fl.bin < 1) ? 1 : ((fl.bin > 16) ? 16 : fl.bin);
-        fl.seed_px = toml::find_or<real_t>(td, "output", "render", "fieldlines",
-                                           "seed_px", static_cast<real_t>(8));
-        fl.tube_px = toml::find_or<real_t>(td, "output", "render", "fieldlines",
-                                           "tube_px", static_cast<real_t>(2));
-        fl.colormap = toml::find_or<std::string>(td, "output", "render",
-                                                 "fieldlines", "colormap",
+        auto& fl = m_fieldlines;
+        fl.field = toml::find_or<std::string>(td,
+                                              "output",
+                                              "render",
+                                              "fieldlines",
+                                              "field",
+                                              "B");
+        fl.bin = toml::find_or<int>(td, "output", "render", "fieldlines", "bin", 4);
+        fl.bin      = (fl.bin < 1) ? 1 : ((fl.bin > 16) ? 16 : fl.bin);
+        fl.seed_px  = toml::find_or<real_t>(td,
+                                           "output",
+                                           "render",
+                                           "fieldlines",
+                                           "seed_px",
+                                           static_cast<real_t>(8));
+        fl.tube_px  = toml::find_or<real_t>(td,
+                                           "output",
+                                           "render",
+                                           "fieldlines",
+                                           "tube_px",
+                                           static_cast<real_t>(2));
+        fl.colormap = toml::find_or<std::string>(td,
+                                                 "output",
+                                                 "render",
+                                                 "fieldlines",
+                                                 "colormap",
                                                  "inferno");
         // optional monochrome color [r,g,b]; overrides the colormap when set
-        fl.color = toml::find_or<std::vector<real_t>>(td, "output", "render",
-                                                      "fieldlines", "color",
+        fl.color    = toml::find_or<std::vector<real_t>>(td,
+                                                      "output",
+                                                      "render",
+                                                      "fieldlines",
+                                                      "color",
                                                       std::vector<real_t> {});
         if (not fl.color.empty() and fl.color.size() != 3) {
           raise::Warning("output.render.fieldlines.color must have 3 entries "
@@ -568,23 +623,36 @@ namespace out {
                          HERE);
           fl.color.clear();
         }
-        fl.log_scale = toml::find_or<bool>(td, "output", "render", "fieldlines",
-                                           "log", false);
-        fl.vmin = toml::find_or<real_t>(td, "output", "render", "fieldlines",
-                                        "min", ZERO);
-        fl.vmax = toml::find_or<real_t>(td, "output", "render", "fieldlines",
-                                        "max", ZERO);
-        fl.step_frac = toml::find_or<real_t>(td, "output", "render", "fieldlines",
-                                             "step_frac", static_cast<real_t>(0.5));
-        fl.max_steps = toml::find_or<int>(td, "output", "render", "fieldlines",
-                                          "max_steps", 4000);
-        fl.max_len_frac = toml::find_or<real_t>(td, "output", "render",
-                                                "fieldlines", "max_length",
+        fl.log_scale =
+          toml::find_or<bool>(td, "output", "render", "fieldlines", "log", false);
+        fl.vmin = toml::find_or<real_t>(td, "output", "render", "fieldlines", "min", ZERO);
+        fl.vmax = toml::find_or<real_t>(td, "output", "render", "fieldlines", "max", ZERO);
+        fl.step_frac    = toml::find_or<real_t>(td,
+                                             "output",
+                                             "render",
+                                             "fieldlines",
+                                             "step_frac",
+                                             static_cast<real_t>(0.5));
+        fl.max_steps    = toml::find_or<int>(td,
+                                          "output",
+                                          "render",
+                                          "fieldlines",
+                                          "max_steps",
+                                          4000);
+        fl.max_len_frac = toml::find_or<real_t>(td,
+                                                "output",
+                                                "render",
+                                                "fieldlines",
+                                                "max_length",
                                                 static_cast<real_t>(3));
-        fl.seed_max = toml::find_or<int>(td, "output", "render", "fieldlines",
-                                         "seed_max", 4096);
-        fl.levels   = toml::find_or<int>(td, "output", "render", "fieldlines",
-                                         "levels", 16);
+        fl.seed_max     = toml::find_or<int>(td,
+                                         "output",
+                                         "render",
+                                         "fieldlines",
+                                         "seed_max",
+                                         4096);
+        fl.levels =
+          toml::find_or<int>(td, "output", "render", "fieldlines", "levels", 16);
       }
     }
 
@@ -598,10 +666,11 @@ namespace out {
     }
     const real_t dt = static_cast<real_t>(
       (time > m_cam_t0) ? (time - m_cam_t0) : static_cast<simtime_t>(0));
-    const real_t shift[3] = { m_cam_vel[0] * dt, m_cam_vel[1] * dt,
+    const real_t shift[3] = { m_cam_vel[0] * dt,
+                              m_cam_vel[1] * dt,
                               m_cam_vel[2] * dt };
     // translate the render region (its width is preserved)
-    for (std::size_t d = 0; d < m_region.size() and d < 3; ++d) {
+    for (size_t d = 0; d < m_region.size() and d < 3; ++d) {
       m_region[d] = { m_region_base[d].first + shift[d],
                       m_region_base[d].second + shift[d] };
     }
@@ -616,11 +685,11 @@ namespace out {
                             const Scene&               scene,
                             timestep_t                 step,
                             simtime_t                  time) const {
-    const std::size_t npix = static_cast<std::size_t>(m_width) *
-                             static_cast<std::size_t>(m_height);
-    const std::size_t n = npix * 4;
+    const size_t npix = static_cast<size_t>(m_width) *
+                        static_cast<size_t>(m_height);
+    const size_t n   = npix * 4;
     // ensure <name>/renders/ exists
-    const auto dir = m_root / path_t("renders");
+    const auto   dir = m_root / path_t("renders");
     try {
       if (not std::filesystem::exists(m_root)) {
         std::filesystem::create_directory(m_root);
@@ -634,13 +703,13 @@ namespace out {
     // composite the premultiplied image over the opaque background:
     // out = src_premult + (1 - src_alpha) * background, alpha = opaque.
     std::vector<uint8_t> data(n);
-    for (std::size_t p = 0; p < npix; ++p) {
+    for (size_t p = 0; p < npix; ++p) {
       const real_t a   = img[p * 4 + 3];
       const real_t inv = ONE - a;
-      data[p * 4 + 0] = quantize(img[p * 4 + 0] + inv * m_background[0]);
-      data[p * 4 + 1] = quantize(img[p * 4 + 1] + inv * m_background[1]);
-      data[p * 4 + 2] = quantize(img[p * 4 + 2] + inv * m_background[2]);
-      data[p * 4 + 3] = 255;
+      data[p * 4 + 0]  = quantize(img[p * 4 + 0] + inv * m_background[0]);
+      data[p * 4 + 1]  = quantize(img[p * 4 + 1] + inv * m_background[1]);
+      data[p * 4 + 2]  = quantize(img[p * 4 + 2] + inv * m_background[2]);
+      data[p * 4 + 3]  = 255;
     }
     const auto fname = dir / fmt::format("%s%08lu.png",
                                          scene.prefix.c_str(),
@@ -648,9 +717,18 @@ namespace out {
 
     auto drawBar = [&](uint8_t* buf, int bw, int bh, int span_top, int span_bot) {
       if (m_colorbar) {
-        drawColorbar(buf, bw, bh, scene.tf.colormap, scene.tf.vmin,
-                     scene.tf.vmax, scene.tf.log_scale, scene.label,
-                     m_background, scene.ticks, span_top, span_bot);
+        drawColorbar(buf,
+                     bw,
+                     bh,
+                     scene.tf.colormap,
+                     scene.tf.vmin,
+                     scene.tf.vmax,
+                     scene.tf.log_scale,
+                     scene.label,
+                     m_background,
+                     scene.ticks,
+                     span_top,
+                     span_bot);
       }
     };
 
@@ -658,32 +736,32 @@ namespace out {
     // centered in the band [0, top_limit] -- i.e. OUTSIDE the plotted data:
     // above the colorbar (3D / disk) or, for a 2D slice, in the aspect-pad
     // above the data box (so it never sits inside the simulation axes).
-    auto drawTimeLabel = [&](uint8_t* buf, int cw, int ch, int right_x,
-                             int top_limit) {
-      if (not m_time_label) {
-        return;
-      }
-      const int s = cbar_hidden::scale(m_height);
-      char      tbuf[48];
-      // fixed-point so it reads e.g. "T = 12345.67" (up to 5 integer digits
-      // and 2 decimals; more integer digits still print, never truncated)
-      std::snprintf(tbuf, sizeof(tbuf), "T = %.2f", static_cast<double>(time));
-      const std::string str(tbuf);
-      const int         tw     = static_cast<int>(str.size()) * 6 * s;
-      const int         pad    = 3 * s;
-      const int         tx     = right_x - tw - pad;
-      const int         text_h = 7 * s;
-      int               ty     = (top_limit - text_h) / 2;
-      if (ty < pad) {
-        ty = pad;
-      }
-      // contrasting text color (white on a dark background, black on light)
-      const real_t lum = static_cast<real_t>(0.299) * m_background[0] +
-                         static_cast<real_t>(0.587) * m_background[1] +
-                         static_cast<real_t>(0.114) * m_background[2];
-      const uint8_t tc = (lum < HALF) ? 255 : 0;
-      cbar_hidden::drawText(buf, cw, ch, tx, ty, str, s, tc, tc, tc);
-    };
+    auto drawTimeLabel =
+      [&](uint8_t* buf, int cw, int ch, int right_x, int top_limit) {
+        if (not m_time_label) {
+          return;
+        }
+        const int s = cbar_hidden::scale(m_height);
+        char      tbuf[48];
+        // fixed-point so it reads e.g. "T = 12345.67" (up to 5 integer digits
+        // and 2 decimals; more integer digits still print, never truncated)
+        std::snprintf(tbuf, sizeof(tbuf), "T = %.2f", static_cast<double>(time));
+        const std::string str(tbuf);
+        const int         tw     = static_cast<int>(str.size()) * 6 * s;
+        const int         pad    = 3 * s;
+        const int         tx     = right_x - tw - pad;
+        const int         text_h = 7 * s;
+        int               ty     = (top_limit - text_h) / 2;
+        if (ty < pad) {
+          ty = pad;
+        }
+        // contrasting text color (white on a dark background, black on light)
+        const real_t lum = static_cast<real_t>(0.299) * m_background[0] +
+                           static_cast<real_t>(0.587) * m_background[1] +
+                           static_cast<real_t>(0.114) * m_background[2];
+        const uint8_t tc = (lum < HALF) ? 255 : 0;
+        cbar_hidden::drawText(buf, cw, ch, tx, ty, str, s, tc, tc, tc);
+      };
 
     // canvas margins: axes (left + bottom) and the colorbar strip (right).
     // The data region sits at (ml, 0); margins/strip are background-filled.
@@ -692,24 +770,23 @@ namespace out {
     const bool polar = (m_global_extent.size() == 2) and m_slice_polar;
     // a fisheye dome master (2D or 3D) must stay exactly W x H (its inscribed
     // circle is the dome), so it takes no axes margins and no outside colorbar.
-    const bool dome = m_dome_active;
+    const bool dome  = m_dome_active;
     int        ml = 0, mb = 0;
     out::axesMargins(m_axes and not polar and not dome, m_height, ml, mb);
     const int strip = (m_colorbar and m_colorbar_outside and not dome)
                         ? colorbarBlockWidth(m_height)
                         : 0;
-    const int CW = ml + m_width + strip;
-    const int CH = m_height + mb;
+    const int CW    = ml + m_width + strip;
+    const int CH    = m_height + mb;
 
     // 2D-Cartesian data box (== the render region, before the aspect-expansion
     // that pads the window with background): its top & right edges in
     // data-region pixels. The axes/spine clamp to it and the time label sits
     // in the pad above it, so neither includes the empty aspect padding.
-    const bool cart2d     = (m_global_extent.size() == 2) and not polar and
-                        not dome;
-    int        dbox_top   = 0;         // data box top edge (px from data top)
-    int        dbox_bot   = m_height;  // data box bottom edge (px)
-    int        dbox_right = m_width;   // data box right edge (px from data left)
+    const bool cart2d = (m_global_extent.size() == 2) and not polar and not dome;
+    int dbox_top   = 0;        // data box top edge (px from data top)
+    int dbox_bot   = m_height; // data box bottom edge (px)
+    int dbox_right = m_width;  // data box right edge (px from data left)
     if (cart2d and m_region.size() >= 2) {
       const real_t u0 = m_slice_win[0], u1 = m_slice_win[1];
       const real_t v0 = m_slice_win[2], v1 = m_slice_win[3];
@@ -717,14 +794,14 @@ namespace out {
       const real_t dv0 = m_region[1].first;  // data box bottom in world (x2)
       const real_t dv1 = m_region[1].second; // data box top in world   (x2)
       if (u1 > u0) {
-        int r = static_cast<int>(std::lround(
+        int r      = static_cast<int>(std::lround(
           static_cast<double>((du1 - u0) / (u1 - u0)) * (m_width - 1)));
         dbox_right = (r < 0) ? 0 : ((r > m_width) ? m_width : r);
       }
       if (v1 > v0) {
-        int t = static_cast<int>(std::lround(
+        int t    = static_cast<int>(std::lround(
           static_cast<double>((v1 - dv1) / (v1 - v0)) * (m_height - 1)));
-        int b = static_cast<int>(std::lround(
+        int b    = static_cast<int>(std::lround(
           static_cast<double>((v1 - dv0) / (v1 - v0)) * (m_height - 1)));
         dbox_top = (t < 0) ? 0 : ((t > m_height) ? m_height : t);
         dbox_bot = (b < 0) ? 0 : ((b > m_height) ? m_height : b);
@@ -732,9 +809,9 @@ namespace out {
     }
     // time-label anchor: for a 2D slice, the top-right of the data box (label
     // goes in the pad above it); otherwise the top-right above the colorbar.
-    const int cbar_top   = m_colorbar ? (CH - CH / 2) / 2 : (CH / 4);
-    const int tl_right   = cart2d ? (ml + dbox_right) : (ml + m_width);
-    const int tl_top     = cart2d ? dbox_top : cbar_top;
+    const int cbar_top      = m_colorbar ? (CH - CH / 2) / 2 : (CH / 4);
+    const int tl_right      = cart2d ? (ml + dbox_right) : (ml + m_width);
+    const int tl_top        = cart2d ? dbox_top : cbar_top;
     // colorbar vertical span: aligned to the actual data domain for a 2D slice
     // (so it's centered on the data, not the aspect-padded canvas); sentinel
     // (-1) elsewhere -> drawColorbar centers it on the canvas as before.
@@ -748,41 +825,77 @@ namespace out {
       drawTimeLabel(data.data(), m_width, m_height, tl_right, tl_top);
       ok = write_png(fname, m_width, m_height, data.data());
     } else {
-      const uint8_t bR = quantize(m_background[0]);
-      const uint8_t bG = quantize(m_background[1]);
-      const uint8_t bB = quantize(m_background[2]);
-      std::vector<uint8_t> canvas(static_cast<std::size_t>(CW) * CH * 4);
-      for (std::size_t i = 0; i < canvas.size(); i += 4) {
+      const uint8_t        bR = quantize(m_background[0]);
+      const uint8_t        bG = quantize(m_background[1]);
+      const uint8_t        bB = quantize(m_background[2]);
+      std::vector<uint8_t> canvas(static_cast<size_t>(CW) * CH * 4);
+      for (size_t i = 0; i < canvas.size(); i += 4) {
         canvas[i + 0] = bR;
         canvas[i + 1] = bG;
         canvas[i + 2] = bB;
         canvas[i + 3] = 255;
       }
       for (int y = 0; y < m_height; ++y) {
-        std::copy_n(&data[static_cast<std::size_t>(y) * m_width * 4],
-                    static_cast<std::size_t>(m_width) * 4,
-                    &canvas[(static_cast<std::size_t>(y) * CW + ml) * 4]);
+        std::copy_n(&data[static_cast<size_t>(y) * m_width * 4],
+                    static_cast<size_t>(m_width) * 4,
+                    &canvas[(static_cast<size_t>(y) * CW + ml) * 4]);
       }
       if (m_axes and not dome) {
         if (m_global_extent.size() == 3) {
-          out::drawAxes3D(canvas.data(), CW, CH, ml, m_width, m_height,
-                          m_camera_dev, m_region, m_axis_labels, m_background,
+          out::drawAxes3D(canvas.data(),
+                          CW,
+                          CH,
+                          ml,
+                          m_width,
+                          m_height,
+                          m_camera_dev,
+                          m_region,
+                          m_axis_labels,
+                          m_background,
                           m_axis_nticks);
         } else if (polar) {
-          out::drawAxesPolar(canvas.data(), CW, CH, ml, m_width, m_height,
-                             m_slice_win[0], m_slice_win[1], m_slice_win[2],
-                             m_slice_win[3], m_slice_rmin, m_slice_rmax,
-                             m_slice_tmin, m_slice_tmax, m_slice_pmirror, "R",
-                             "Theta", m_background, m_axis_nticks);
+          out::drawAxesPolar(canvas.data(),
+                             CW,
+                             CH,
+                             ml,
+                             m_width,
+                             m_height,
+                             m_slice_win[0],
+                             m_slice_win[1],
+                             m_slice_win[2],
+                             m_slice_win[3],
+                             m_slice_rmin,
+                             m_slice_rmax,
+                             m_slice_tmin,
+                             m_slice_tmax,
+                             m_slice_pmirror,
+                             "R",
+                             "Theta",
+                             m_background,
+                             m_axis_nticks);
         } else {
           // data box (== region, un-expanded) so the spine hugs the domain,
           // not the aspect-padded window
           const real_t du0 = m_region[0].first, du1 = m_region[0].second;
           const real_t dv0 = m_region[1].first, dv1 = m_region[1].second;
-          out::drawAxes2D(canvas.data(), CW, CH, ml, m_width, m_height,
-                          m_slice_win[0], m_slice_win[1], m_slice_win[2],
-                          m_slice_win[3], du0, du1, dv0, dv1, m_slice_xlabel,
-                          m_slice_ylabel, m_background, m_axis_nticks);
+          out::drawAxes2D(canvas.data(),
+                          CW,
+                          CH,
+                          ml,
+                          m_width,
+                          m_height,
+                          m_slice_win[0],
+                          m_slice_win[1],
+                          m_slice_win[2],
+                          m_slice_win[3],
+                          du0,
+                          du1,
+                          dv0,
+                          dv1,
+                          m_slice_xlabel,
+                          m_slice_ylabel,
+                          m_background,
+                          m_axis_nticks);
         }
       }
       drawBar(canvas.data(), CW, CH, cbar_span_top, cbar_span_bot);
@@ -800,9 +913,9 @@ namespace out {
                                    const Scene&    scene,
                                    timestep_t      step,
                                    simtime_t       time) const {
-    const std::size_t npix = static_cast<std::size_t>(m_width) *
-                             static_cast<std::size_t>(m_height);
-    const std::size_t n = npix * 4;
+    const size_t npix = static_cast<size_t>(m_width) *
+                        static_cast<size_t>(m_height);
+    const size_t n = npix * 4;
 
     // expand a sparse sub-image into a full transparent frame (premultiplied)
     auto subToFull = [&](const SubImage& s) -> std::vector<real_t> {
@@ -814,12 +927,12 @@ namespace out {
           if (fx < 0 or fx >= m_width or fy < 0 or fy >= m_height) {
             continue;
           }
-          const std::size_t fi = (static_cast<std::size_t>(fy) * m_width + fx) * 4;
-          const std::size_t si = (static_cast<std::size_t>(y) * s.w + x) * 4;
-          full[fi + 0] = s.rgba[si + 0];
-          full[fi + 1] = s.rgba[si + 1];
-          full[fi + 2] = s.rgba[si + 2];
-          full[fi + 3] = s.rgba[si + 3];
+          const size_t fi = (static_cast<size_t>(fy) * m_width + fx) * 4;
+          const size_t si = (static_cast<size_t>(y) * s.w + x) * 4;
+          full[fi + 0]    = s.rgba[si + 0];
+          full[fi + 1]    = s.rgba[si + 1];
+          full[fi + 2]    = s.rgba[si + 2];
+          full[fi + 3]    = s.rgba[si + 3];
         }
       }
       return full;
@@ -851,7 +964,7 @@ namespace out {
       MPI_Send(hdr, 4, MPI_INT, dest, TAG_HDR, MPI_COMM_WORLD);
       const int cnt = s.w * s.h * 4;
       if (cnt > 0) {
-        std::vector<uint8_t> bytes(static_cast<std::size_t>(cnt));
+        std::vector<uint8_t> bytes(static_cast<size_t>(cnt));
         for (int i = 0; i < cnt; ++i) {
           bytes[i] = quantize(s.rgba[i]);
         }
@@ -868,7 +981,7 @@ namespace out {
       s.h           = hdr[3];
       const int cnt = s.w * s.h * 4;
       if (cnt > 0) {
-        std::vector<uint8_t> bytes(static_cast<std::size_t>(cnt));
+        std::vector<uint8_t> bytes(static_cast<size_t>(cnt));
         MPI_Recv(bytes.data(),
                  cnt,
                  MPI_UNSIGNED_CHAR,
@@ -876,7 +989,7 @@ namespace out {
                  TAG_DATA,
                  MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
-        s.rgba.resize(static_cast<std::size_t>(cnt));
+        s.rgba.resize(static_cast<size_t>(cnt));
         const real_t inv255 = ONE / static_cast<real_t>(255);
         for (int i = 0; i < cnt; ++i) {
           s.rgba[i] = static_cast<real_t>(bytes[i]) * inv255;
@@ -889,7 +1002,7 @@ namespace out {
     // derives the same global front-to-back order, so no rank needs the others'
     // images to agree on the composite order.
     const unsigned long long my_key = static_cast<unsigned long long>(order_key);
-    std::vector<unsigned long long> keys(static_cast<std::size_t>(size));
+    std::vector<unsigned long long> keys(static_cast<size_t>(size));
     MPI_Allgather(&my_key,
                   1,
                   MPI_UNSIGNED_LONG_LONG,
@@ -953,8 +1066,8 @@ namespace out {
 
     // collapse a merged fragment image into a full premultiplied float frame
     auto fragToFull = [&](const FragImage& f) -> std::vector<real_t> {
-      const std::size_t   npix = static_cast<std::size_t>(m_width) *
-                               static_cast<std::size_t>(m_height);
+      const size_t npix = static_cast<size_t>(m_width) *
+                          static_cast<size_t>(m_height);
       std::vector<real_t> full(npix * 4, ZERO);
       for (int y = 0; y < f.h; ++y) {
         for (int x = 0; x < f.w; ++x) {
@@ -962,18 +1075,18 @@ namespace out {
           if (fx < 0 or fx >= m_width or fy < 0 or fy >= m_height) {
             continue;
           }
-          const std::size_t p  = static_cast<std::size_t>(y) * f.w + x;
-          const uint32_t    k0 = f.offs[p], k1 = f.offs[p + 1];
+          const size_t   p  = static_cast<size_t>(y) * f.w + x;
+          const uint32_t k0 = f.offs[p], k1 = f.offs[p + 1];
           if (k1 <= k0) {
             continue;
           }
           real_t out[4];
           out::fragOver(f.depth, f.rgba, k0, k1, out);
-          const std::size_t fi = (static_cast<std::size_t>(fy) * m_width + fx) * 4;
-          full[fi + 0] = out[0];
-          full[fi + 1] = out[1];
-          full[fi + 2] = out[2];
-          full[fi + 3] = out[3];
+          const size_t fi = (static_cast<size_t>(fy) * m_width + fx) * 4;
+          full[fi + 0]    = out[0];
+          full[fi + 1]    = out[1];
+          full[fi + 2]    = out[2];
+          full[fi + 3]    = out[3];
         }
       }
       return full;
@@ -998,38 +1111,44 @@ namespace out {
     // per-fragment depth (full real_t, so the cross-rank ordering key is exact)
     // and premultiplied RGBA (uint8; only this adds ~1 LSB through the tree).
     auto sendFrag = [&](const FragImage& s, int dest) {
-      const uint32_t nfrag = s.offs.empty()
-                               ? 0u
-                               : s.offs.back();
-      // MPI counts are `int`; the RGBA payload has nfrag*4 elements, so a single
-      // message overflows int once nfrag > INT_MAX/4. That regime (a 4096^2
-      // near-opaque-free dome on many ranks) needs the band-tiling optimization;
-      // fail loudly here rather than send a negative count.
-      raise::ErrorIf(nfrag > 536870911u,
-                     "dome A-buffer: per-message fragment count exceeds the MPI "
-                     "int limit (nfrag*4 > INT_MAX). Lower render.resolution "
-                     "(frame-band tiling is a pending optimization).",
-                     HERE);
+      const uint32_t nfrag = s.offs.empty() ? 0u : s.offs.back();
+      // MPI counts are `int`; the RGBA payload has nfrag*4 elements, so a
+      // single message overflows int once nfrag > INT_MAX/4. That regime (a
+      // 4096^2 near-opaque-free dome on many ranks) needs the band-tiling
+      // optimization; fail loudly here rather than send a negative count.
+      raise::ErrorIf(
+        nfrag > 536870911u,
+        "dome A-buffer: per-message fragment count exceeds the MPI "
+        "int limit (nfrag*4 > INT_MAX). Lower render.resolution "
+        "(frame-band tiling is a pending optimization).",
+        HERE);
       int hdr[5] = { s.x0, s.y0, s.w, s.h, static_cast<int>(nfrag) };
       MPI_Send(hdr, 5, MPI_INT, dest, TAG_HDR, MPI_COMM_WORLD);
       const int np = s.w * s.h;
       if (np > 0) {
-        MPI_Send(s.offs.data(), np + 1, MPI_UINT32_T, dest, TAG_OFFS,
-                 MPI_COMM_WORLD);
+        MPI_Send(s.offs.data(), np + 1, MPI_UINT32_T, dest, TAG_OFFS, MPI_COMM_WORLD);
       }
       if (nfrag > 0) {
         // depth is sent at full real_t precision (NOT downcast to float): the
         // depth key orders fragments across ranks, and local fragments keep
         // real_t, so a float round-trip would make cross-rank vs within-rank
         // ordering disagree at close depths -> a seam at the domain boundary.
-        MPI_Send(s.depth.data(), static_cast<int>(nfrag),
-                 mpi::get_type<real_t>(), dest, TAG_DEPTH, MPI_COMM_WORLD);
-        std::vector<uint8_t> bytes(static_cast<std::size_t>(nfrag) * 4);
-        for (std::size_t i = 0; i < bytes.size(); ++i) {
+        MPI_Send(s.depth.data(),
+                 static_cast<int>(nfrag),
+                 mpi::get_type<real_t>(),
+                 dest,
+                 TAG_DEPTH,
+                 MPI_COMM_WORLD);
+        std::vector<uint8_t> bytes(static_cast<size_t>(nfrag) * 4);
+        for (size_t i = 0; i < bytes.size(); ++i) {
           bytes[i] = quantize(s.rgba[i]);
         }
-        MPI_Send(bytes.data(), static_cast<int>(bytes.size()),
-                 MPI_UNSIGNED_CHAR, dest, TAG_RGBA, MPI_COMM_WORLD);
+        MPI_Send(bytes.data(),
+                 static_cast<int>(bytes.size()),
+                 MPI_UNSIGNED_CHAR,
+                 dest,
+                 TAG_RGBA,
+                 MPI_COMM_WORLD);
       }
     };
     auto recvFrag = [&](int src) -> FragImage {
@@ -1043,21 +1162,35 @@ namespace out {
       const uint32_t nfrag = static_cast<uint32_t>(hdr[4]);
       const int      np    = s.w * s.h;
       if (np > 0) {
-        s.offs.resize(static_cast<std::size_t>(np) + 1);
-        MPI_Recv(s.offs.data(), np + 1, MPI_UINT32_T, src, TAG_OFFS,
-                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        s.offs.resize(static_cast<size_t>(np) + 1);
+        MPI_Recv(s.offs.data(),
+                 np + 1,
+                 MPI_UINT32_T,
+                 src,
+                 TAG_OFFS,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
       }
       if (nfrag > 0) {
         s.depth.resize(nfrag);
-        MPI_Recv(s.depth.data(), static_cast<int>(nfrag), mpi::get_type<real_t>(),
-                 src, TAG_DEPTH, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        std::vector<uint8_t> bytes(static_cast<std::size_t>(nfrag) * 4);
-        MPI_Recv(bytes.data(), static_cast<int>(bytes.size()),
-                 MPI_UNSIGNED_CHAR, src, TAG_RGBA, MPI_COMM_WORLD,
+        MPI_Recv(s.depth.data(),
+                 static_cast<int>(nfrag),
+                 mpi::get_type<real_t>(),
+                 src,
+                 TAG_DEPTH,
+                 MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
-        s.rgba.resize(static_cast<std::size_t>(nfrag) * 4);
+        std::vector<uint8_t> bytes(static_cast<size_t>(nfrag) * 4);
+        MPI_Recv(bytes.data(),
+                 static_cast<int>(bytes.size()),
+                 MPI_UNSIGNED_CHAR,
+                 src,
+                 TAG_RGBA,
+                 MPI_COMM_WORLD,
+                 MPI_STATUS_IGNORE);
+        s.rgba.resize(static_cast<size_t>(nfrag) * 4);
         const real_t inv255 = ONE / static_cast<real_t>(255);
-        for (std::size_t i = 0; i < s.rgba.size(); ++i) {
+        for (size_t i = 0; i < s.rgba.size(); ++i) {
           s.rgba[i] = static_cast<real_t>(bytes[i]) * inv255;
         }
       }

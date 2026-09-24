@@ -1,5 +1,5 @@
 /**
- * @file framework/domain/metadomain_render.cpp
+ * @file framework/domain/io/render.cpp
  * @brief Metadomain driver for the in-situ volume renderer
  * @implements
  *   - ntt::Metadomain<S, M>::InitRenderer
@@ -8,7 +8,6 @@
  *   - ntt::
  * @macros:
  *   - MPI_ENABLED
- *   - OUTPUT_ENABLED
  * @note
  * This is the templated counterpart of the (plain) out::Renderer: it owns the
  * per-(engine, metric, dim) field preparation, the device ray-march kernel
@@ -37,6 +36,7 @@
 #include "kernels/particle_moments.hpp"
 #include "output/render/composite.h"
 #include "output/render/fieldlines.h"
+
 #include "output/render/raymarch.hpp"
 #include "output/render/reduce.hpp"
 #include "output/render/slice2d.hpp"
@@ -87,9 +87,9 @@ namespace ntt {
                        HERE);
       }
       auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
-      const auto use_weights = params.get<bool>("particles.use_weights");
-      const auto ni2         = mesh.n_active(in::x2);
-      const auto inv_n0      = ONE / params.get<real_t>("scales.n0");
+      const auto use_weights  = params.get<bool>("particles.use_weights");
+      const auto ni2          = mesh.n_active(in::x2);
+      const auto inv_n0       = ONE / params.get<real_t>("scales.n0");
       const auto smooth_order = params.get<unsigned short>(
         "output.fields.smoothing.order");
       const auto smooth_method = OutputSmoothingType::from_string(
@@ -122,9 +122,8 @@ namespace ntt {
                         const cell_range_t&       from) {
       const cell_range_t to { 0, 3 };
       if constexpr (D == Dim::_2D) {
-        Kokkos::deep_copy(
-          Kokkos::subview(dst, Kokkos::ALL, Kokkos::ALL, to),
-          Kokkos::subview(src, Kokkos::ALL, Kokkos::ALL, from));
+        Kokkos::deep_copy(Kokkos::subview(dst, Kokkos::ALL, Kokkos::ALL, to),
+                          Kokkos::subview(src, Kokkos::ALL, Kokkos::ALL, from));
       } else if constexpr (D == Dim::_3D) {
         Kokkos::deep_copy(
           Kokkos::subview(dst, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, to),
@@ -137,17 +136,17 @@ namespace ntt {
     // field and can trace identical global field lines locally. `bckp` is used
     // as scratch (overwritten). 3D only (the field-line renderer is Cartesian).
     template <SimEngine::type S, MetricClass M>
-    auto buildCoarseFieldVec(const Mesh<M>&            mesh,
-                             const Fields<M::Dim, S>&  fields,
-                             ndfield_t<M::Dim, 6>&     bckp,
-                             char                      fbase,
-                             const real_t              gorigin[3],
-                             const int                 gnc[3],
-                             const real_t              gdx[3]) -> out::CoarseField {
-      const auto metric = mesh.metric;
+    auto buildCoarseFieldVec(const Mesh<M>&           mesh,
+                             const Fields<M::Dim, S>& fields,
+                             ndfield_t<M::Dim, 6>&    bckp,
+                             char                     fbase,
+                             const real_t             gorigin[3],
+                             const int                gnc[3],
+                             const real_t gdx[3]) -> out::CoarseField {
+      const auto         metric   = mesh.metric;
       // raw vector components -> bckp(0,1,2)
       uint8_t            src_base = em::bx1;
-      PrepareOutputFlags interp = PrepareOutput::InterpToCellCenterFromFaces;
+      PrepareOutputFlags interp   = PrepareOutput::InterpToCellCenterFromFaces;
       bool               is_current = false;
       if (fbase == 'E') {
         src_base = em::ex1;
@@ -158,23 +157,28 @@ namespace ntt {
         interp     = PrepareOutput::InterpToCellCenterFromEdges;
       }
       if (is_current) {
-        copyVec3ToBckp<M::Dim, 3>(fields.cur, bckp,
+        copyVec3ToBckp<M::Dim, 3>(fields.cur,
+                                  bckp,
                                   cell_range_t(cur::jx1, cur::jx3 + 1));
       } else {
-        copyVec3ToBckp<M::Dim, 6>(fields.em, bckp,
+        copyVec3ToBckp<M::Dim, 6>(fields.em,
+                                  bckp,
                                   cell_range_t(src_base, src_base + 3));
       }
       // interpolate to cell centers + convert to physical basis -> bckp(3,4,5)
-      const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
-                                           ? PrepareOutput::ConvertToHat
-                                           : PrepareOutput::ConvertToPhysCntrv;
+      const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+                                             ? PrepareOutput::ConvertToHat
+                                             : PrepareOutput::ConvertToPhysCntrv;
       list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
       list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
-      Kokkos::parallel_for(
-        "RenderFLFieldsToPhys",
-        mesh.rangeActiveCells(),
-        kernel::FieldsToPhys_kernel<M, 6, 6>(bckp, bckp, comp_from, comp_to,
-                                             interp | prepare, metric));
+      Kokkos::parallel_for("RenderFLFieldsToPhys",
+                           mesh.rangeActiveCells(),
+                           kernel::FieldsToPhys_kernel<M, 6, 6>(bckp,
+                                                                bckp,
+                                                                comp_from,
+                                                                comp_to,
+                                                                interp | prepare,
+                                                                metric));
       Kokkos::fence();
 
       // pull the physical components to host and bin into the coarse grid
@@ -187,7 +191,7 @@ namespace ntt {
       std::vector<real_t> sum(ncell * 3, ZERO);
       std::vector<real_t> cnt(ncell, ZERO);
 
-      const auto   le = mesh.extent();
+      const auto   le     = mesh.extent();
       const real_t llo[3] = { le[0].first, le[1].first, le[2].first };
       const real_t lsz[3] = { le[0].second - le[0].first,
                               le[1].second - le[1].first,
@@ -200,9 +204,12 @@ namespace ntt {
         for (int j = 0; j < nl[1]; ++j) {
           for (int i = 0; i < nl[0]; ++i) {
             const real_t world[3] = {
-              llo[0] + (static_cast<real_t>(i) + HALF) * lsz[0] / nl[0],
-              llo[1] + (static_cast<real_t>(j) + HALF) * lsz[1] / nl[1],
-              llo[2] + (static_cast<real_t>(k) + HALF) * lsz[2] / nl[2]
+              llo[0] + (static_cast<real_t>(i) + HALF) * lsz[0] /
+                         static_cast<real_t>(nl[0]),
+              llo[1] + (static_cast<real_t>(j) + HALF) * lsz[1] /
+                         static_cast<real_t>(nl[1]),
+              llo[2] + (static_cast<real_t>(k) + HALF) * lsz[2] /
+                         static_cast<real_t>(nl[2])
             };
             int c[3];
             for (int d = 0; d < 3; ++d) {
@@ -223,10 +230,18 @@ namespace ntt {
         }
       }
 #if defined(MPI_ENABLED)
-      MPI_Allreduce(MPI_IN_PLACE, sum.data(), static_cast<int>(ncell * 3),
-                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, cnt.data(), static_cast<int>(ncell),
-                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,
+                    sum.data(),
+                    static_cast<int>(ncell * 3),
+                    mpi::get_type<real_t>(),
+                    MPI_SUM,
+                    MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,
+                    cnt.data(),
+                    static_cast<int>(ncell),
+                    mpi::get_type<real_t>(),
+                    MPI_SUM,
+                    MPI_COMM_WORLD);
 #endif
       out::CoarseField cf;
       cf.B.assign(ncell * 3, ZERO);
@@ -237,10 +252,10 @@ namespace ntt {
       }
       for (std::size_t c = 0; c < ncell; ++c) {
         if (cnt[c] > ZERO) {
-          const real_t inv  = ONE / cnt[c];
-          cf.B[c * 3 + 0]   = sum[c * 3 + 0] * inv;
-          cf.B[c * 3 + 1]   = sum[c * 3 + 1] * inv;
-          cf.B[c * 3 + 2]   = sum[c * 3 + 2] * inv;
+          const real_t inv = ONE / cnt[c];
+          cf.B[c * 3 + 0]  = sum[c * 3 + 0] * inv;
+          cf.B[c * 3 + 1]  = sum[c * 3 + 1] * inv;
+          cf.B[c * 3 + 2]  = sum[c * 3 + 2] * inv;
         }
       }
       return cf;
@@ -256,10 +271,10 @@ namespace ntt {
                             char                     fbase,
                             const real_t             gorigin[2],
                             const int                gnc[2],
-                            const real_t             gdx[2]) -> out::CoarseField2D {
-      const auto metric = mesh.metric;
+                            const real_t gdx[2]) -> out::CoarseField2D {
+      const auto         metric   = mesh.metric;
       uint8_t            src_base = em::bx1;
-      PrepareOutputFlags interp = PrepareOutput::InterpToCellCenterFromFaces;
+      PrepareOutputFlags interp   = PrepareOutput::InterpToCellCenterFromFaces;
       bool               is_current = false;
       if (fbase == 'E') {
         src_base = em::ex1;
@@ -270,22 +285,27 @@ namespace ntt {
         interp     = PrepareOutput::InterpToCellCenterFromEdges;
       }
       if (is_current) {
-        copyVec3ToBckp<M::Dim, 3>(fields.cur, bckp,
+        copyVec3ToBckp<M::Dim, 3>(fields.cur,
+                                  bckp,
                                   cell_range_t(cur::jx1, cur::jx3 + 1));
       } else {
-        copyVec3ToBckp<M::Dim, 6>(fields.em, bckp,
+        copyVec3ToBckp<M::Dim, 6>(fields.em,
+                                  bckp,
                                   cell_range_t(src_base, src_base + 3));
       }
-      const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
-                                           ? PrepareOutput::ConvertToHat
-                                           : PrepareOutput::ConvertToPhysCntrv;
+      const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+                                             ? PrepareOutput::ConvertToHat
+                                             : PrepareOutput::ConvertToPhysCntrv;
       list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
       list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
-      Kokkos::parallel_for(
-        "RenderFL2DFieldsToPhys",
-        mesh.rangeActiveCells(),
-        kernel::FieldsToPhys_kernel<M, 6, 6>(bckp, bckp, comp_from, comp_to,
-                                             interp | prepare, metric));
+      Kokkos::parallel_for("RenderFL2DFieldsToPhys",
+                           mesh.rangeActiveCells(),
+                           kernel::FieldsToPhys_kernel<M, 6, 6>(bckp,
+                                                                bckp,
+                                                                comp_from,
+                                                                comp_to,
+                                                                interp | prepare,
+                                                                metric));
       Kokkos::fence();
 
       auto bckp_h = Kokkos::create_mirror_view(bckp);
@@ -294,7 +314,7 @@ namespace ntt {
       const std::size_t   ncell = static_cast<std::size_t>(gnc[0]) * gnc[1];
       std::vector<real_t> sum(ncell * 2, ZERO);
       std::vector<real_t> cnt(ncell, ZERO);
-      const auto          le = mesh.extent();
+      const auto          le     = mesh.extent();
       const real_t        llo[2] = { le[0].first, le[1].first };
       const real_t        lsz[2] = { le[0].second - le[0].first,
                                      le[1].second - le[1].first };
@@ -303,14 +323,14 @@ namespace ntt {
       const int           NG     = static_cast<int>(N_GHOSTS);
       for (int j = 0; j < nl[1]; ++j) {
         for (int i = 0; i < nl[0]; ++i) {
-          const real_t world[2] = {
-            llo[0] + (static_cast<real_t>(i) + HALF) * lsz[0] / nl[0],
-            llo[1] + (static_cast<real_t>(j) + HALF) * lsz[1] / nl[1]
-          };
-          int c[2];
+          const real_t world[2] = { llo[0] + (static_cast<real_t>(i) + HALF) *
+                                               lsz[0] / static_cast<real_t>(nl[0]),
+                                    llo[1] + (static_cast<real_t>(j) + HALF) *
+                                               lsz[1] /
+                                               static_cast<real_t>(nl[1]) };
+          int          c[2];
           for (int d = 0; d < 2; ++d) {
-            int cc = static_cast<int>(
-              std::floor((world[d] - gorigin[d]) / gdx[d]));
+            int cc = static_cast<int>(std::floor((world[d] - gorigin[d]) / gdx[d]));
             cc   = (cc < 0) ? 0 : ((cc > gnc[d] - 1) ? gnc[d] - 1 : cc);
             c[d] = cc;
           }
@@ -321,10 +341,18 @@ namespace ntt {
         }
       }
 #if defined(MPI_ENABLED)
-      MPI_Allreduce(MPI_IN_PLACE, sum.data(), static_cast<int>(ncell * 2),
-                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE, cnt.data(), static_cast<int>(ncell),
-                    mpi::get_type<real_t>(), MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,
+                    sum.data(),
+                    static_cast<int>(ncell * 2),
+                    mpi::get_type<real_t>(),
+                    MPI_SUM,
+                    MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,
+                    cnt.data(),
+                    static_cast<int>(ncell),
+                    mpi::get_type<real_t>(),
+                    MPI_SUM,
+                    MPI_COMM_WORLD);
 #endif
       out::CoarseField2D cf;
       cf.B.assign(ncell * 2, ZERO);
@@ -349,7 +377,7 @@ namespace ntt {
   auto Metadomain<S, M>::prepareRenderScalar(const SimulationParams& params,
                                              Domain<S, M>&           domain,
                                              const std::string&      field_name,
-                                             ndfield_t<M::Dim, 6>& bckp) const
+                                             ndfield_t<M::Dim, 6>&   bckp) const
     -> bool {
     // Parse an optional trailing per-species suffix "<base>_<s1>_<s2>...";
     // species apply to particle moments only (N, Nppc, Rho, Charge, T, V).
@@ -390,9 +418,9 @@ namespace ntt {
       }
     }
     if (bad_species) {
-      raise::Warning("output.render: invalid species in '" + field_name +
-                       "', skipping",
-                     HERE);
+      raise::Warning(
+        "output.render: invalid species in '" + field_name + "', skipping",
+        HERE);
       return false;
     }
 
@@ -422,17 +450,31 @@ namespace ntt {
     if (base == "N" or base == "Nppc" or base == "Rho" or base == "Charge") {
       // scalar particle moments
       if (base == "N") {
-        renderMoment<S, M, FldsID::N>(params, mesh, domain.species, species, {},
-                                      bckp, 0u);
+        renderMoment<S, M, FldsID::N>(params, mesh, domain.species, species, {}, bckp, 0u);
       } else if (base == "Nppc") {
-        renderMoment<S, M, FldsID::Nppc>(params, mesh, domain.species, species,
-                                         {}, bckp, 0u);
+        renderMoment<S, M, FldsID::Nppc>(params,
+                                         mesh,
+                                         domain.species,
+                                         species,
+                                         {},
+                                         bckp,
+                                         0u);
       } else if (base == "Rho") {
-        renderMoment<S, M, FldsID::Rho>(params, mesh, domain.species, species,
-                                        {}, bckp, 0u);
+        renderMoment<S, M, FldsID::Rho>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        {},
+                                        bckp,
+                                        0u);
       } else {
-        renderMoment<S, M, FldsID::Charge>(params, mesh, domain.species, species,
-                                           {}, bckp, 0u);
+        renderMoment<S, M, FldsID::Charge>(params,
+                                           mesh,
+                                           domain.species,
+                                           species,
+                                           {},
+                                           bckp,
+                                           0u);
       }
       // sum boundary-crossing particle deposits back into active cells
       SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
@@ -445,8 +487,13 @@ namespace ntt {
       if (i >= 0 and j >= 0) {
         const std::vector<uint8_t> comps { static_cast<uint8_t>(i),
                                            static_cast<uint8_t>(j) };
-        renderMoment<S, M, FldsID::T>(params, mesh, domain.species, species,
-                                      comps, bckp, 0u);
+        renderMoment<S, M, FldsID::T>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      comps,
+                                      bckp,
+                                      0u);
         SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
         return true;
       }
@@ -454,45 +501,93 @@ namespace ntt {
       // bulk-velocity magnitude |V| = sqrt(V1^2 + V2^2 + V3^2)
       if constexpr (S == SimEngine::GRPIC) {
         // GR: Eckart-frame 4-velocity; need all 4 components for the norm
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 0u }, bckp, 0u);
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 1u }, bckp, 1u);
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 2u }, bckp, 2u);
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 3u }, bckp, 3u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 0u },
+                                      bckp,
+                                      0u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 1u },
+                                      bckp,
+                                      1u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 2u },
+                                      bckp,
+                                      2u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 3u },
+                                      bckp,
+                                      3u);
         SynchronizeFields(domain, Comm::Bckp, { 0, 4 });
         Kokkos::parallel_for(
           "RenderNormalize4Vel",
           mesh.rangeActiveCells(),
-          kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(
-            bckp, bckp, 0, 1, 2, 3, metric));
+          kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(bckp,
+                                                                bckp,
+                                                                0,
+                                                                1,
+                                                                2,
+                                                                3,
+                                                                metric));
         Kokkos::parallel_for(
           "RenderTransform4Vel",
           mesh.rangeActiveCells(),
-          kernel::Transform4VelocitySpatialToPhysical_kernel<M::Dim, M, 6>(
-            bckp, 1, 2, 3, metric));
+          kernel::Transform4VelocitySpatialToPhysical_kernel<M::Dim, M, 6>(bckp,
+                                                                           1,
+                                                                           2,
+                                                                           3,
+                                                                           metric));
         // |spatial physical 4-velocity| -> bckp(0)
-        Kokkos::parallel_for("RenderVmagGR",
-                             mesh.rangeActiveCells(),
-                             kernel::RenderMagnitude3_kernel<M::Dim, 6>(bckp, 1,
-                                                                        2, 3, 0));
+        Kokkos::parallel_for(
+          "RenderVmagGR",
+          mesh.rangeActiveCells(),
+          render::RenderMagnitude3_kernel<M::Dim, 6>(bckp, 1, 2, 3, 0));
       } else {
         // SR: mass-weighted bulk 3-velocity, normalized by Rho
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 1u }, bckp, 0u);
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 2u }, bckp, 1u);
-        renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                      { 3u }, bckp, 2u);
-        renderMoment<S, M, FldsID::Rho>(params, mesh, domain.species, species,
-                                        {}, bckp, 3u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 1u },
+                                      bckp,
+                                      0u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 2u },
+                                      bckp,
+                                      1u);
+        renderMoment<S, M, FldsID::V>(params,
+                                      mesh,
+                                      domain.species,
+                                      species,
+                                      { 3u },
+                                      bckp,
+                                      2u);
+        renderMoment<S, M, FldsID::Rho>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        {},
+                                        bckp,
+                                        3u);
         SynchronizeFields(domain, Comm::Bckp, { 0, 4 });
-        Kokkos::parallel_for("RenderVmagSR",
-                             mesh.rangeActiveCells(),
-                             kernel::RenderVmagByRho_kernel<M::Dim, 6>(bckp, 0, 1,
-                                                                       2, 3, 0));
+        Kokkos::parallel_for(
+          "RenderVmagSR",
+          mesh.rangeActiveCells(),
+          render::RenderVmagByRho_kernel<M::Dim, 6>(bckp, 0, 1, 2, 3, 0));
       }
       return true;
     } else if (base.size() == 2 and base[0] == 'V') {
@@ -501,46 +596,86 @@ namespace ntt {
       if constexpr (S == SimEngine::GRPIC) {
         // GR: 4-velocity component (t/0 = u^0 = Gamma/alpha; x,y,z spatial)
         if (c >= 0 and c <= 3) {
-          renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                        { 0u }, bckp, 0u);
-          renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                        { 1u }, bckp, 1u);
-          renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                        { 2u }, bckp, 2u);
-          renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                        { 3u }, bckp, 3u);
+          renderMoment<S, M, FldsID::V>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        { 0u },
+                                        bckp,
+                                        0u);
+          renderMoment<S, M, FldsID::V>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        { 1u },
+                                        bckp,
+                                        1u);
+          renderMoment<S, M, FldsID::V>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        { 2u },
+                                        bckp,
+                                        2u);
+          renderMoment<S, M, FldsID::V>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        { 3u },
+                                        bckp,
+                                        3u);
           SynchronizeFields(domain, Comm::Bckp, { 0, 4 });
           Kokkos::parallel_for(
             "RenderNormalize4Vel",
             mesh.rangeActiveCells(),
-            kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(
-              bckp, bckp, 0, 1, 2, 3, metric));
+            kernel::Normalize4VelocityByNorm_kernel<M::Dim, M, 6>(bckp,
+                                                                  bckp,
+                                                                  0,
+                                                                  1,
+                                                                  2,
+                                                                  3,
+                                                                  metric));
           Kokkos::parallel_for(
             "RenderTransform4Vel",
             mesh.rangeActiveCells(),
             kernel::Transform4VelocitySpatialToPhysical_kernel<M::Dim, M, 6>(
-              bckp, 1, 2, 3, metric));
+              bckp,
+              1,
+              2,
+              3,
+              metric));
           if (c != 0) {
             Kokkos::parallel_for(
               "RenderPickV",
               mesh.rangeActiveCells(),
-              kernel::RenderPickComp_kernel<M::Dim, 6>(
-                bckp, static_cast<uint8_t>(c), 0));
+              render::RenderPickComp_kernel<M::Dim, 6>(bckp,
+                                                       static_cast<uint8_t>(c),
+                                                       0));
           }
           return true;
         }
       } else {
         // SR: spatial bulk velocity (x,y,z), normalized by Rho
         if (c >= 1 and c <= 3) {
-          renderMoment<S, M, FldsID::V>(params, mesh, domain.species, species,
-                                        { static_cast<uint8_t>(c) }, bckp, 0u);
-          renderMoment<S, M, FldsID::Rho>(params, mesh, domain.species, species,
-                                          {}, bckp, 1u);
+          renderMoment<S, M, FldsID::V>(params,
+                                        mesh,
+                                        domain.species,
+                                        species,
+                                        { static_cast<uint8_t>(c) },
+                                        bckp,
+                                        0u);
+          renderMoment<S, M, FldsID::Rho>(params,
+                                          mesh,
+                                          domain.species,
+                                          species,
+                                          {},
+                                          bckp,
+                                          1u);
           SynchronizeFields(domain, Comm::Bckp, { 0, 2 });
-          Kokkos::parallel_for("RenderNormalizeV",
-                               mesh.rangeActiveCells(),
-                               kernel::RenderDivideComp_kernel<M::Dim, 6>(bckp, 0,
-                                                                          1));
+          Kokkos::parallel_for(
+            "RenderNormalizeV",
+            mesh.rangeActiveCells(),
+            render::RenderDivideComp_kernel<M::Dim, 6>(bckp, 0, 1));
           return true;
         }
       }
@@ -548,10 +683,8 @@ namespace ntt {
       // Vector field as a scalar: "<base><selector>" with base in {E, B, J}
       // and selector in {mag, 1/2/3, x/y/z}. A component (e.g. "B1"/"Bx") is
       // signed; a magnitude (e.g. "Bmag") is non-negative.
-      const std::string& f     = base;
-      const char         fbase = f.empty()
-                                   ? '?'
-                                   : static_cast<char>(std::toupper(f[0]));
+      const std::string& f = base;
+      const char fbase = f.empty() ? '?' : static_cast<char>(std::toupper(f[0]));
       bool               ok         = true;
       bool               is_current = false;
       uint8_t            src_base   = 0; // first component of the source field
@@ -586,39 +719,41 @@ namespace ntt {
       if (ok) {
         // raw vector components into bckp(:, 0..2)
         if (is_current) {
-          copyVec3ToBckp<M::Dim, 3>(domain.fields.cur, bckp,
+          copyVec3ToBckp<M::Dim, 3>(domain.fields.cur,
+                                    bckp,
                                     cell_range_t(cur::jx1, cur::jx3 + 1));
         } else {
-          copyVec3ToBckp<M::Dim, 6>(domain.fields.em, bckp,
+          copyVec3ToBckp<M::Dim, 6>(domain.fields.em,
+                                    bckp,
                                     cell_range_t(src_base, src_base + 3));
         }
         // interpolate to cell centers + convert to physical basis -> (3,4,5)
-        const PrepareOutputFlags prepare = (S == SimEngine::SRPIC)
-                                             ? PrepareOutput::ConvertToHat
-                                             : PrepareOutput::ConvertToPhysCntrv;
+        const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+                                               ? PrepareOutput::ConvertToHat
+                                               : PrepareOutput::ConvertToPhysCntrv;
         list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
         list_t<uint8_t, 3>       comp_to   = { 3, 4, 5 };
-        Kokkos::parallel_for(
-          "RenderFieldsToPhys",
-          mesh.rangeActiveCells(),
-          kernel::FieldsToPhys_kernel<M, 6, 6>(bckp,
-                                               bckp,
-                                               comp_from,
-                                               comp_to,
-                                               interp | prepare,
-                                               metric));
+        Kokkos::parallel_for("RenderFieldsToPhys",
+                             mesh.rangeActiveCells(),
+                             kernel::FieldsToPhys_kernel<M, 6, 6>(bckp,
+                                                                  bckp,
+                                                                  comp_from,
+                                                                  comp_to,
+                                                                  interp | prepare,
+                                                                  metric));
         // reduce to the scalar to render -> bckp(:, 0)
         if (comp == -1) {
           Kokkos::parallel_for(
             "RenderVectorMagnitude",
             mesh.rangeActiveCells(),
-            kernel::RenderMagnitude3_kernel<M::Dim, 6>(bckp, 3, 4, 5, 0));
+            render::RenderMagnitude3_kernel<M::Dim, 6>(bckp, 3, 4, 5, 0));
         } else {
-          Kokkos::parallel_for(
-            "RenderVectorComponent",
-            mesh.rangeActiveCells(),
-            kernel::RenderPickComp_kernel<M::Dim, 6>(
-              bckp, static_cast<uint8_t>(3 + comp), 0));
+          Kokkos::parallel_for("RenderVectorComponent",
+                               mesh.rangeActiveCells(),
+                               render::RenderPickComp_kernel<M::Dim, 6>(
+                                 bckp,
+                                 static_cast<uint8_t>(3 + comp),
+                                 0));
         }
         return true;
       }
@@ -629,11 +764,6 @@ namespace ntt {
                      "{E,B,J}{mag,1,2,3,x,y,z}); skipping",
                    HERE);
     return false;
-  }
-
-  template <SimEngine::type S, MetricClass M>
-  void Metadomain<S, M>::InitRenderer(const SimulationParams& params) {
-    g_renderer.init(params, mesh().extent());
   }
 
   template <SimEngine::type S, MetricClass M>
@@ -675,44 +805,46 @@ namespace ntt {
       g_renderer.setDomeActive(is_dome);
 
       // optional axis-aligned render region (== full extent when uncropped)
-      const real_t rlo[3] = { g_renderer.regionLo(0), g_renderer.regionLo(1),
-                              g_renderer.regionLo(2) };
-      const real_t rhi[3] = { g_renderer.regionHi(0), g_renderer.regionHi(1),
-                              g_renderer.regionHi(2) };
+      const real_t rlo[3]    = { g_renderer.regionLo(0),
+                                 g_renderer.regionLo(1),
+                                 g_renderer.regionLo(2) };
+      const real_t rhi[3]    = { g_renderer.regionHi(0),
+                                 g_renderer.regionHi(1),
+                                 g_renderer.regionHi(2) };
       // per-domain world AABB, clipped to the region
-      const auto loc_ext = local_domain->mesh.extent();
-      real_t     lo[3]   = { math::max(loc_ext[0].first, rlo[0]),
-                             math::max(loc_ext[1].first, rlo[1]),
-                             math::max(loc_ext[2].first, rlo[2]) };
-      real_t     hi[3]   = { math::min(loc_ext[0].second, rhi[0]),
-                             math::min(loc_ext[1].second, rhi[1]),
-                             math::min(loc_ext[2].second, rhi[2]) };
-      // does this domain intersect the region? if not, render nothing (but still
-      // join the collective composite / field-line reduce below).
-      const bool in_region = (lo[0] < hi[0]) and (lo[1] < hi[1]) and
+      const auto   loc_ext   = local_domain->mesh.extent();
+      real_t       lo[3]     = { math::max(loc_ext[0].first, rlo[0]),
+                                 math::max(loc_ext[1].first, rlo[1]),
+                                 math::max(loc_ext[2].first, rlo[2]) };
+      real_t       hi[3]     = { math::min(loc_ext[0].second, rhi[0]),
+                                 math::min(loc_ext[1].second, rhi[1]),
+                                 math::min(loc_ext[2].second, rhi[2]) };
+      // does this domain intersect the region? if not, render nothing (but
+      // still join the collective composite / field-line reduce below).
+      const bool   in_region = (lo[0] < hi[0]) and (lo[1] < hi[1]) and
                              (lo[2] < hi[2]);
 
       // global extent (drives the field-line coarse grid, which spans the full
       // field regardless of the crop)
       const auto glob_ext = mesh().extent();
-      // fixed world step, identical on all ranks -> seamless. Sized to the region
-      // diagonal so `samples` spans the (possibly cropped) view.
-      real_t gdiag = ZERO;
+      // fixed world step, identical on all ranks -> seamless. Sized to the
+      // region diagonal so `samples` spans the (possibly cropped) view.
+      real_t     gdiag    = ZERO;
       for (auto d { 0 }; d < 3; ++d) {
-        const real_t s = rhi[d] - rlo[d];
+        const real_t s  = rhi[d] - rlo[d];
         gdiag          += s * s;
       }
-      gdiag = math::sqrt(gdiag);
-      // marched extent per ray: the dome clips each ray to `dome_radius`, so size
-      // the step by the radius (== `samples` steps across the hemisphere) rather
-      // than the box diagonal. Identical on all ranks -> seamless.
+      gdiag                  = math::sqrt(gdiag);
+      // marched extent per ray: the dome clips each ray to `dome_radius`, so
+      // size the step by the radius (== `samples` steps across the hemisphere)
+      // rather than the box diagonal. Identical on all ranks -> seamless.
       const real_t march_len = (is_dome and cam.dome_radius > ZERO)
                                  ? cam.dome_radius
                                  : gdiag;
-      const real_t ds = (g_renderer.stepSize() > ZERO)
-                          ? g_renderer.stepSize()
-                          : march_len / static_cast<real_t>(g_renderer.samples());
-      const int max_steps = 2 * g_renderer.samples() + 16;
+      const real_t ds        = (g_renderer.stepSize() > ZERO)
+                                 ? g_renderer.stepSize()
+                                 : march_len / static_cast<real_t>(g_renderer.samples());
+      const int    max_steps = 2 * g_renderer.samples() + 16;
 
       // region box + depth-occluded spine (opaque box wireframe rendered inline
       // in the march so the volume covers its far edges). The visual width is
@@ -722,16 +854,15 @@ namespace ntt {
       real_t       ghi[3] = { rhi[0], rhi[1], rhi[2] };
       const real_t px_w   = (cam.half_h * static_cast<real_t>(2)) /
                           static_cast<real_t>(H);
-      const real_t spine_radius =
-        g_renderer.axes()
-          ? math::max(static_cast<real_t>(0.55) * ds,
-                      HALF * g_renderer.spineWidth() * px_w)
-          : ZERO;
+      const real_t spine_radius = g_renderer.axes()
+                                    ? math::max(static_cast<real_t>(0.55) * ds,
+                                                HALF * g_renderer.spineWidth() * px_w)
+                                    : ZERO;
       // contrasting opaque spine color (white on dark bg, black on light)
       const real_t bg_lum = static_cast<real_t>(0.299) * g_renderer.background(0) +
                             static_cast<real_t>(0.587) * g_renderer.background(1) +
                             static_cast<real_t>(0.114) * g_renderer.background(2);
-      const real_t sc        = (bg_lum < HALF) ? ONE : ZERO;
+      const real_t sc           = (bg_lum < HALF) ? ONE : ZERO;
       const real_t spine_rgb[3] = { sc, sc, sc };
 
       // composite order key (depends on the current decomposition offsets)
@@ -751,13 +882,12 @@ namespace ntt {
       // scenes); we only ray-march and composite within it.
       int        bx0 = 0, by0 = 0, bw = 0, bh = 0;
       const bool on_screen =
-        in_region and (is_dome ? out::screenBBoxDome(cam, W, H, lo, hi, bx0, by0,
-                                                     bw, bh)
-                               : out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw,
-                                                 bh));
+        in_region and
+        (is_dome ? out::screenBBoxDome(cam, W, H, lo, hi, bx0, by0, bw, bh)
+                 : out::screenBBox(cam, W, H, lo, hi, bx0, by0, bw, bh));
 
-      // ---- magnetic-field-line tubes (built once, shared by every scene) --- //
-      // Every rank coarsens + replicates the field, traces the SAME global
+      // ---- magnetic-field-line tubes (built once, shared by every scene) ---
+      // // Every rank coarsens + replicates the field, traces the SAME global
       // polylines, and keeps only the segments inside its own domain; the
       // ordered cross-domain composite stitches them. Built before the scene
       // loop so an overlay and a standalone tube scene share one geometry pass.
@@ -780,22 +910,25 @@ namespace ntt {
         }
         const char fb = static_cast<char>(
           std::toupper(flc.field.empty() ? 'B' : flc.field[0]));
-        out::CoarseField cf = buildCoarseFieldVec<S, M>(
-          local_domain->mesh, local_domain->fields, bckp, fb, gorigin, gnc, gdx);
+        out::CoarseField cf  = buildCoarseFieldVec<S, M>(local_domain->mesh,
+                                                        local_domain->fields,
+                                                        bckp,
+                                                        fb,
+                                                        gorigin,
+                                                        gnc,
+                                                        gdx);
         // seed/tube scale: world units per screen pixel (orthographic frame)
-        const real_t wpp = (cam.half_h * TWO) / static_cast<real_t>(H);
-        real_t       vlo, vhi;
-        auto         lines = out::traceFieldLines(cf, flc, wpp, vlo, vhi);
+        const real_t     wpp = (cam.half_h * TWO) / static_cast<real_t>(H);
+        real_t           vlo, vhi;
+        auto             lines = out::traceFieldLines(cf, flc, wpp, vlo, vhi);
         if (flc.vmax > flc.vmin) { // explicit color range overrides auto
           vlo = flc.vmin;
           vhi = flc.vmax;
         }
         const real_t tube_world = math::max(flc.tube_px, ONE) * wpp;
-        const real_t eff_r = math::max(tube_world,
-                                       static_cast<real_t>(0.55) * ds);
+        const real_t eff_r = math::max(tube_world, static_cast<real_t>(0.55) * ds);
         std::size_t n_kept = 0;
-        tubes      = out::buildTubeSet(lines, eff_r, flc, vlo, vhi, lo, hi, cf,
-                                       n_kept);
+        tubes = out::buildTubeSet(lines, eff_r, flc, vlo, vhi, lo, hi, cf, n_kept);
         have_tubes = true;
         logger::Checkpoint("field lines: " + std::to_string(lines.size()) +
                              " global lines, " + std::to_string(n_kept) +
@@ -826,10 +959,10 @@ namespace ntt {
                          HERE);
           continue;
         }
-        const out::TubeSet& kt = show_tubes ? tubes : empty;
+        const out::TubeSet& kt       = show_tubes ? tubes : empty;
         // a standalone tube scene colors its colorbar by |field|, not by the
         // (unused) volume transfer function
-        out::Scene scene_cb = scene;
+        out::Scene          scene_cb = scene;
         if (fl_only) {
           scene_cb.tf.vmin      = tubes.vmin;
           scene_cb.tf.vmax      = tubes.vmax;
@@ -854,10 +987,10 @@ namespace ntt {
           randacc_ndfield_t<M::Dim, 6> Fld { bckp };
           Kokkos::parallel_for(
             "VolumeRayMarch",
-            CreateRangePolicy<Dim::_2D>({ 0, 0 },
-                                        { static_cast<ncells_t>(bw),
-                                          static_cast<ncells_t>(bh) }),
-            kernel::VolumeRayMarch_kernel<M>(Fld,
+            CreateRangePolicy<Dim::_2D>(
+              { 0, 0 },
+              { static_cast<ncells_t>(bw), static_cast<ncells_t>(bh) }),
+            render::VolumeRayMarch_kernel<M>(Fld,
                                              0u,
                                              metric,
                                              cam,
@@ -913,7 +1046,7 @@ namespace ntt {
             std::size_t o = 0;
             for (std::size_t p = 0; p < bnpix; ++p) {
               if (image_h(p, 3) > ZERO) {
-                frag.depth[o]      = depth_h(p);
+                frag.depth[o]        = depth_h(p);
                 frag.rgba[o * 4 + 0] = image_h(p, 0);
                 frag.rgba[o * 4 + 1] = image_h(p, 1);
                 frag.rgba[o * 4 + 2] = image_h(p, 2);
@@ -936,10 +1069,15 @@ namespace ntt {
           }
         }
         if (is_dome) {
-          g_renderer.compositeFragAndWrite(std::move(frag), scene_cb,
-                                           current_step, current_time);
+          g_renderer.compositeFragAndWrite(std::move(frag),
+                                           scene_cb,
+                                           current_step,
+                                           current_time);
         } else {
-          g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
+          g_renderer.compositeAndWrite(sub,
+                                       order_key,
+                                       scene_cb,
+                                       current_step,
                                        current_time);
         }
         rendered_any = true;
@@ -973,13 +1111,13 @@ namespace ntt {
 
       // fulldome fisheye ("dome master"). Cartesian slices are a flat plane, so
       // the kernel warps each pixel radially (fisheye). Curvilinear slices
-      // (spherical / GR Kerr-Schild) are ALREADY a meridional disk, so dome mode
-      // there is only a framing change: mirror to a full disk (the `mirror`
-      // default) and fit that disk to the frame's inscribed circle (the pad skip
-      // below), while the kernel keeps its native (X, Z) meridional map. Reported
-      // back so the (metric-agnostic) compositor keeps the frame a clean square.
-      // All ranks take the same branch (M is fixed per run), so it stays seamless
-      // across tiles.
+      // (spherical / GR Kerr-Schild) are ALREADY a meridional disk, so dome
+      // mode there is only a framing change: mirror to a full disk (the
+      // `mirror` default) and fit that disk to the frame's inscribed circle
+      // (the pad skip below), while the kernel keeps its native (X, Z)
+      // meridional map. Reported back so the (metric-agnostic) compositor keeps
+      // the frame a clean square. All ranks take the same branch (M is fixed
+      // per run), so it stays seamless across tiles.
       const out::DomeMap dome = g_renderer.dome();
       g_renderer.setDomeActive(dome.enabled);
 
@@ -999,11 +1137,11 @@ namespace ntt {
         // meridional (X = r sin th, Z = r cos th) bounding box of the cropped
         // annular wedge r in [x1lo, x1hi], theta in [x2lo, x2hi]. Sample the
         // boundary (arcs + rays) so the bbox is correct for any theta range.
-        umin = static_cast<real_t>(1e30);
-        umax = static_cast<real_t>(-1e30);
-        vmin = static_cast<real_t>(1e30);
-        vmax = static_cast<real_t>(-1e30);
-        const int NB = 65;
+        umin            = static_cast<real_t>(1e30);
+        umax            = static_cast<real_t>(-1e30);
+        vmin            = static_cast<real_t>(1e30);
+        vmax            = static_cast<real_t>(-1e30);
+        const int NB    = 65;
         auto      accXZ = [&](real_t r, real_t th) {
           const real_t X = r * math::sin(th), Z = r * math::cos(th);
           umin = std::min(umin, X);
@@ -1016,7 +1154,7 @@ namespace ntt {
           }
         };
         for (int k = 0; k < NB; ++k) {
-          const real_t t  = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
+          const real_t t = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
           const real_t th = x2lo + (x2hi - x2lo) * t;
           const real_t rr = x1lo + (x1hi - x1lo) * t;
           accXZ(x1lo, th);
@@ -1033,20 +1171,20 @@ namespace ntt {
         if (iaspect > waspect) {
           const real_t cu = HALF * (umin + umax);
           const real_t hu = HALF * (vmax - vmin) * iaspect;
-          umin = cu - hu;
-          umax = cu + hu;
+          umin            = cu - hu;
+          umax            = cu + hu;
         } else {
           const real_t cv = HALF * (vmin + vmax);
           const real_t hv = HALF * (umax - umin) / iaspect;
-          vmin = cv - hv;
-          vmax = cv + hv;
+          vmin            = cv - hv;
+          vmax            = cv + hv;
         }
       }
       // spherical slices get a background border so the round outline and its
       // R/theta labels are not clipped at the frame edges (Cartesian fills the
-      // frame and draws its ticks in dedicated margins, so it needs none). A dome
-      // master skips it: the disk must reach the frame's inscribed circle (which
-      // the projector maps to the dome horizon), and it draws no axes.
+      // frame and draws its ticks in dedicated margins, so it needs none). A
+      // dome master skips it: the disk must reach the frame's inscribed circle
+      // (which the projector maps to the dome horizon), and it draws no axes.
       if constexpr (M::CoordType != Coord::type::Cartesian) {
         if (not dome.enabled) {
           const real_t pad = static_cast<real_t>(1.12);
@@ -1083,13 +1221,13 @@ namespace ntt {
       const int  ext0   = static_cast<int>(bckp.extent(0));
       const int  ext1   = static_cast<int>(bckp.extent(1));
       const auto metric = local_domain->mesh.metric;
-      const int  n1 = static_cast<int>(local_domain->mesh.n_active(in::x1));
-      const int  n2 = static_cast<int>(local_domain->mesh.n_active(in::x2));
+      const int  n1     = static_cast<int>(local_domain->mesh.n_active(in::x1));
+      const int  n2     = static_cast<int>(local_domain->mesh.n_active(in::x2));
 
       // screen-space bbox of this domain's footprint (host projection of the
       // boundary; an arc for spherical, a box for Cartesian)
-      const auto   le    = local_domain->mesh.extent();
-      auto         toPix = [&](real_t u, real_t v, real_t& px, real_t& py) {
+      const auto le    = local_domain->mesh.extent();
+      auto       toPix = [&](real_t u, real_t v, real_t& px, real_t& py) {
         if (dome.enabled and M::CoordType == Coord::type::Cartesian) {
           // forward fisheye projection (inverse of the kernel's radial map),
           // used to bound this domain's footprint on the dome disk. Cartesian
@@ -1098,9 +1236,9 @@ namespace ntt {
           const real_t cxp = HALF * static_cast<real_t>(W);
           const real_t cyp = HALF * static_cast<real_t>(H);
           const real_t Rpx = HALF * static_cast<real_t>(std::min(W, H));
-          const real_t dx  = u - dome.cx, dy = v - dome.cy;
-          const real_t rw  = std::sqrt(dx * dx + dy * dy);
-          real_t       fr  = (dome.R > ZERO) ? (rw / dome.R) : ZERO;
+          const real_t dx = u - dome.cx, dy = v - dome.cy;
+          const real_t rw = std::sqrt(dx * dx + dy * dy);
+          real_t       fr = (dome.R > ZERO) ? (rw / dome.R) : ZERO;
           if (fr > ONE) {
             fr = ONE; // clamp onto the rim (conservative for the bbox)
           }
@@ -1116,10 +1254,10 @@ namespace ntt {
             theta = fr * dome.theta_max;
           }
           const real_t rho = (dome.theta_max > ZERO) ? (theta / dome.theta_max)
-                                                     : fr;
+                                                           : fr;
           const real_t phi = std::atan2(dy, dx);
-          px = cxp + rho * Rpx * std::cos(phi) - HALF;
-          py = cyp - rho * Rpx * std::sin(phi) - HALF;
+          px               = cxp + rho * Rpx * std::cos(phi) - HALF;
+          py               = cyp - rho * Rpx * std::sin(phi) - HALF;
         } else {
           px = (u - umin) / (umax - umin) * static_cast<real_t>(W) - HALF;
           py = (vmax - v) / (vmax - vmin) * static_cast<real_t>(H) - HALF;
@@ -1127,7 +1265,7 @@ namespace ntt {
       };
       real_t minx = static_cast<real_t>(1e30), miny = static_cast<real_t>(1e30);
       real_t maxx = static_cast<real_t>(-1e30), maxy = static_cast<real_t>(-1e30);
-      auto   acc = [&](real_t u, real_t v) {
+      auto acc = [&](real_t u, real_t v) {
         real_t px, py;
         toPix(u, v, px, py);
         minx = std::min(minx, px);
@@ -1144,7 +1282,7 @@ namespace ntt {
           const real_t x0 = le[0].first, x1 = le[0].second;
           const real_t y0 = le[1].first, y1 = le[1].second;
           for (int k = 0; k < NB; ++k) {
-            const real_t t  = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
+            const real_t t = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
             const real_t xx = x0 + (x1 - x0) * t;
             const real_t yy = y0 + (y1 - y0) * t;
             acc(xx, y0);
@@ -1164,13 +1302,15 @@ namespace ntt {
         const real_t a0 = le[1].first, a1 = le[1].second;
         for (int k = 0; k < NB; ++k) {
           const real_t t = static_cast<real_t>(k) / static_cast<real_t>(NB - 1);
-          const real_t rr = r0 + (r1 - r0) * t;
-          const real_t aa = a0 + (a1 - a0) * t;
+          const real_t rr        = r0 + (r1 - r0) * t;
+          const real_t aa        = a0 + (a1 - a0) * t;
           // r-arcs at a0, a1 and theta-rays at r0, r1
-          const real_t pts[4][2] = { { r0 * math::sin(aa), r0 * math::cos(aa) },
-                                     { r1 * math::sin(aa), r1 * math::cos(aa) },
-                                     { rr * math::sin(a0), rr * math::cos(a0) },
-                                     { rr * math::sin(a1), rr * math::cos(a1) } };
+          const real_t pts[4][2] = {
+            { r0 * math::sin(aa), r0 * math::cos(aa) },
+            { r1 * math::sin(aa), r1 * math::cos(aa) },
+            { rr * math::sin(a0), rr * math::cos(a0) },
+            { rr * math::sin(a1), rr * math::cos(a1) }
+          };
           for (auto& p : pts) {
             acc(p[0], p[1]);
             if (mirror) {
@@ -1198,20 +1338,20 @@ namespace ntt {
         ndomains_per_dim(),
         fwd2d);
 
-      // ---- 2D field lines (built once) ------------------------------------ //
-      // Cartesian: iso-contours of the flux function psi. Spherical/Kerr: traced
-      // meridional streamlines (nt2py style). Both come from a coarse, MPI-
-      // replicated copy of the in-plane field, so the geometry is global and
-      // seamless across the disjoint tiles. All ranks reach buildCoarseField2D
-      // together (collective Allreduce); M is fixed per run, so every rank takes
-      // the same Cartesian/spherical branch.
-      const auto&     flc         = g_renderer.fieldlines();
-      out::ContourSet contours    = out::emptyContourSet();
-      out::ContourSet emptyc      = out::emptyContourSet();
-      out::TubeSet    lines2d     = out::emptyTubeSet();
-      out::TubeSet    emptyl      = out::emptyTubeSet();
-      bool            have_fl     = false;
-      real_t          fl_vmin     = ZERO, fl_vmax = ONE;
+      // ---- 2D field lines (built once) ------------------------------------
+      // // Cartesian: iso-contours of the flux function psi. Spherical/Kerr:
+      // traced meridional streamlines (nt2py style). Both come from a coarse,
+      // MPI- replicated copy of the in-plane field, so the geometry is global
+      // and seamless across the disjoint tiles. All ranks reach
+      // buildCoarseField2D together (collective Allreduce); M is fixed per run,
+      // so every rank takes the same Cartesian/spherical branch.
+      const auto&     flc      = g_renderer.fieldlines();
+      out::ContourSet contours = out::emptyContourSet();
+      out::ContourSet emptyc   = out::emptyContourSet();
+      out::TubeSet    lines2d  = out::emptyTubeSet();
+      out::TubeSet    emptyl   = out::emptyTubeSet();
+      bool            have_fl  = false;
+      real_t          fl_vmin = ZERO, fl_vmax = ONE;
       std::string     fl_colormap = flc.colormap;
       if (flc.enable) {
         const int gN[2] = { static_cast<int>(mesh().n_active(in::x1)),
@@ -1227,16 +1367,21 @@ namespace ntt {
           std::toupper(flc.field.empty() ? 'B' : flc.field[0]));
         // coarse, replicated in-plane field: (Bx,By) for Cartesian, (Br,Bth) for
         // spherical (FieldsToPhys writes the physical components in axis order)
-        out::CoarseField2D cf = buildCoarseField2D<S, M>(
-          local_domain->mesh, local_domain->fields, bckp, fb, gorigin, gnc, gdx);
-        const real_t wpp = (umax - umin) / static_cast<real_t>(W);
+        out::CoarseField2D cf  = buildCoarseField2D<S, M>(local_domain->mesh,
+                                                         local_domain->fields,
+                                                         bckp,
+                                                         fb,
+                                                         gorigin,
+                                                         gnc,
+                                                         gdx);
+        const real_t       wpp = (umax - umin) / static_cast<real_t>(W);
         if constexpr (M::CoordType == Coord::type::Cartesian) {
           std::vector<real_t> psi;
           real_t              pmin, pmax, bmin, bmax;
           out::computeFlux2D(cf, psi, pmin, pmax, bmin, bmax);
           const real_t line_half = HALF * math::max(flc.tube_px, ONE);
-          contours    = out::buildContourSet(cf, psi, pmin, pmax, bmin, bmax, flc,
-                                             line_half, wpp);
+          contours =
+            out::buildContourSet(cf, psi, pmin, pmax, bmin, bmax, flc, line_half, wpp);
           fl_vmin     = contours.vmin;
           fl_vmax     = contours.vmax;
           fl_colormap = contours.colormap;
@@ -1247,32 +1392,30 @@ namespace ntt {
         } else {
           // traced meridional streamlines through the coarse (r, theta) field
           real_t vlo, vhi;
-          auto   poly = out::traceFieldLinesMeridional(cf, flc, wpp, mirror, vlo,
-                                                       vhi);
+          auto poly = out::traceFieldLinesMeridional(cf, flc, wpp, mirror, vlo, vhi);
           if (flc.vmax > flc.vmin) { // explicit |B| range overrides auto
             vlo = flc.vmin;
             vhi = flc.vmax;
           }
-          const real_t eff_r = math::max(flc.tube_px, ONE) * wpp;
+          const real_t     eff_r = math::max(flc.tube_px, ONE) * wpp;
           // bucket grid for buildTubeSet: cell ~ a coarse dr (a length), AABB
           // spans the (mirrored) meridional disk, z is a single thin slab at 0
           out::CoarseField bucket_cf;
-          bucket_cf.dx[0]    = cf.dx[0];
-          bucket_cf.dx[1]    = cf.dx[0];
-          bucket_cf.dx[2]    = cf.dx[0];
-          const real_t rmax  = gext[0].second;
-          const real_t lo[3] = { mirror ? -rmax : ZERO, -rmax, -cf.dx[0] };
-          const real_t hi[3] = { rmax, rmax, cf.dx[0] };
+          bucket_cf.dx[0]     = cf.dx[0];
+          bucket_cf.dx[1]     = cf.dx[0];
+          bucket_cf.dx[2]     = cf.dx[0];
+          const real_t rmax   = gext[0].second;
+          const real_t lo[3]  = { mirror ? -rmax : ZERO, -rmax, -cf.dx[0] };
+          const real_t hi[3]  = { rmax, rmax, cf.dx[0] };
           std::size_t  n_kept = 0;
-          lines2d     = out::buildTubeSet(poly, eff_r, flc, vlo, vhi, lo, hi,
-                                          bucket_cf, n_kept);
+          lines2d = out::buildTubeSet(poly, eff_r, flc, vlo, vhi, lo, hi, bucket_cf, n_kept);
           fl_vmin     = lines2d.vmin;
           fl_vmax     = lines2d.vmax;
           fl_colormap = lines2d.colormap;
-          logger::Checkpoint("field lines (2D meridional): " +
-                               std::to_string(poly.size()) + " lines, " +
-                               std::to_string(n_kept) + " segments",
-                             HERE);
+          logger::Checkpoint(
+            "field lines (2D meridional): " + std::to_string(poly.size()) +
+              " lines, " + std::to_string(n_kept) + " segments",
+            HERE);
         }
         have_fl = true;
       }
@@ -1291,15 +1434,16 @@ namespace ntt {
           }
           CommunicateBckp(*local_domain, { 0, 1 });
         } else if (not have_fl) {
-          raise::Warning("output.render: 'fieldlines' scene needs a 2D run with "
-                         "[output.render.fieldlines]; skipping",
-                         HERE);
+          raise::Warning(
+            "output.render: 'fieldlines' scene needs a 2D run with "
+            "[output.render.fieldlines]; skipping",
+            HERE);
           continue;
         }
-        const out::ContourSet& kc = show_lines ? contours : emptyc;
-        const out::TubeSet&    kt = show_lines ? lines2d : emptyl;
+        const out::ContourSet& kc       = show_lines ? contours : emptyc;
+        const out::TubeSet&    kt       = show_lines ? lines2d : emptyl;
         // a standalone field-line scene colors its colorbar by |B|
-        out::Scene scene_cb = scene;
+        out::Scene             scene_cb = scene;
         if (fl_only) {
           scene_cb.tf.vmin      = fl_vmin;
           scene_cb.tf.vmax      = fl_vmax;
@@ -1312,20 +1456,20 @@ namespace ntt {
 
         out::SubImage sub;
         if (bw > 0 and bh > 0) {
-          sub.x0 = bx0;
-          sub.y0 = by0;
-          sub.w  = bw;
-          sub.h  = bh;
+          sub.x0                  = bx0;
+          sub.y0                  = by0;
+          sub.w                   = bw;
+          sub.h                   = bh;
           const std::size_t bnpix = static_cast<std::size_t>(bw) *
                                     static_cast<std::size_t>(bh);
           array_t<real_t* [4]>         image { "render_img", bnpix };
           randacc_ndfield_t<M::Dim, 6> Fld { bckp };
           Kokkos::parallel_for(
             "Slice2DRaster",
-            CreateRangePolicy<Dim::_2D>({ 0, 0 },
-                                        { static_cast<ncells_t>(bw),
-                                          static_cast<ncells_t>(bh) }),
-            kernel::SliceRaster_kernel<M>(Fld,
+            CreateRangePolicy<Dim::_2D>(
+              { 0, 0 },
+              { static_cast<ncells_t>(bw), static_cast<ncells_t>(bh) }),
+            render::SliceRaster_kernel<M>(Fld,
                                           0u,
                                           metric,
                                           umin,
@@ -1369,8 +1513,7 @@ namespace ntt {
             sub.rgba[p * 4 + 3] = image_h(p, 3);
           }
         }
-        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step,
-                                     current_time);
+        g_renderer.compositeAndWrite(sub, order_key, scene_cb, current_step, current_time);
         rendered_any = true;
       }
       return rendered_any;
@@ -1385,7 +1528,6 @@ namespace ntt {
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_RENDER(S, M, D)                                             \
-  template void Metadomain<S, M<D>>::InitRenderer(const SimulationParams&);    \
   template auto Metadomain<S, M<D>>::Render(const SimulationParams&,           \
                                             timestep_t,                        \
                                             timestep_t,                        \

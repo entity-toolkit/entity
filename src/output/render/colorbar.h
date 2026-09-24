@@ -40,67 +40,256 @@ namespace out {
         c = static_cast<char>(c - 'a' + 'A');
       }
       switch (c) {
-        case '0': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110 }; return g; }
-        case '1': { static const uint8_t g[7] = { 0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110 }; return g; }
-        case '2': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111 }; return g; }
-        case '3': { static const uint8_t g[7] = { 0b11111, 0b00010, 0b00100, 0b00010, 0b00001, 0b10001, 0b01110 }; return g; }
-        case '4': { static const uint8_t g[7] = { 0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010 }; return g; }
-        case '5': { static const uint8_t g[7] = { 0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110 }; return g; }
-        case '6': { static const uint8_t g[7] = { 0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110 }; return g; }
-        case '7': { static const uint8_t g[7] = { 0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000 }; return g; }
-        case '8': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110 }; return g; }
-        case '9': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100 }; return g; }
-        case '.': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00110, 0b00110 }; return g; }
-        case '-': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000 }; return g; }
-        case '+': { static const uint8_t g[7] = { 0b00000, 0b00100, 0b00100, 0b11111, 0b00100, 0b00100, 0b00000 }; return g; }
-        case '=': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b11111, 0b00000, 0b11111, 0b00000, 0b00000 }; return g; }
-        case '_': { static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111 }; return g; }
-        case ':': { static const uint8_t g[7] = { 0b00000, 0b00110, 0b00110, 0b00000, 0b00110, 0b00110, 0b00000 }; return g; }
-        case '/': { static const uint8_t g[7] = { 0b00001, 0b00010, 0b00010, 0b00100, 0b01000, 0b01000, 0b10000 }; return g; }
-        case 'A': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001 }; return g; }
-        case 'B': { static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110 }; return g; }
-        case 'C': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110 }; return g; }
-        case 'D': { static const uint8_t g[7] = { 0b11100, 0b10010, 0b10001, 0b10001, 0b10001, 0b10010, 0b11100 }; return g; }
-        case 'E': { static const uint8_t g[7] = { 0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111 }; return g; }
-        case 'F': { static const uint8_t g[7] = { 0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000 }; return g; }
-        case 'G': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01111 }; return g; }
-        case 'H': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001 }; return g; }
-        case 'I': { static const uint8_t g[7] = { 0b01110, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110 }; return g; }
-        case 'J': { static const uint8_t g[7] = { 0b00111, 0b00010, 0b00010, 0b00010, 0b10010, 0b10010, 0b01100 }; return g; }
-        case 'K': { static const uint8_t g[7] = { 0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001 }; return g; }
-        case 'L': { static const uint8_t g[7] = { 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111 }; return g; }
-        case 'M': { static const uint8_t g[7] = { 0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001 }; return g; }
-        case 'N': { static const uint8_t g[7] = { 0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001 }; return g; }
-        case 'O': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110 }; return g; }
-        case 'P': { static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000 }; return g; }
-        case 'Q': { static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101 }; return g; }
-        case 'R': { static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001 }; return g; }
-        case 'S': { static const uint8_t g[7] = { 0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110 }; return g; }
-        case 'T': { static const uint8_t g[7] = { 0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100 }; return g; }
-        case 'U': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110 }; return g; }
-        case 'V': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100 }; return g; }
-        case 'W': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001 }; return g; }
-        case 'X': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001 }; return g; }
-        case 'Y': { static const uint8_t g[7] = { 0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100 }; return g; }
-        case 'Z': { static const uint8_t g[7] = { 0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111 }; return g; }
-        default:  { static const uint8_t g[7] = { 0, 0, 0, 0, 0, 0, 0 }; return g; } // blank
+        case '0': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10011, 0b10101,
+                                        0b11001, 0b10001, 0b01110 };
+          return g;
+        }
+        case '1': {
+          static const uint8_t g[7] = { 0b00100, 0b01100, 0b00100, 0b00100,
+                                        0b00100, 0b00100, 0b01110 };
+          return g;
+        }
+        case '2': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b00001, 0b00010,
+                                        0b00100, 0b01000, 0b11111 };
+          return g;
+        }
+        case '3': {
+          static const uint8_t g[7] = { 0b11111, 0b00010, 0b00100, 0b00010,
+                                        0b00001, 0b10001, 0b01110 };
+          return g;
+        }
+        case '4': {
+          static const uint8_t g[7] = { 0b00010, 0b00110, 0b01010, 0b10010,
+                                        0b11111, 0b00010, 0b00010 };
+          return g;
+        }
+        case '5': {
+          static const uint8_t g[7] = { 0b11111, 0b10000, 0b11110, 0b00001,
+                                        0b00001, 0b10001, 0b01110 };
+          return g;
+        }
+        case '6': {
+          static const uint8_t g[7] = { 0b00110, 0b01000, 0b10000, 0b11110,
+                                        0b10001, 0b10001, 0b01110 };
+          return g;
+        }
+        case '7': {
+          static const uint8_t g[7] = { 0b11111, 0b00001, 0b00010, 0b00100,
+                                        0b01000, 0b01000, 0b01000 };
+          return g;
+        }
+        case '8': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b01110,
+                                        0b10001, 0b10001, 0b01110 };
+          return g;
+        }
+        case '9': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b01111,
+                                        0b00001, 0b00010, 0b01100 };
+          return g;
+        }
+        case '.': {
+          static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000,
+                                        0b00000, 0b00110, 0b00110 };
+          return g;
+        }
+        case '-': {
+          static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b11111,
+                                        0b00000, 0b00000, 0b00000 };
+          return g;
+        }
+        case '+': {
+          static const uint8_t g[7] = { 0b00000, 0b00100, 0b00100, 0b11111,
+                                        0b00100, 0b00100, 0b00000 };
+          return g;
+        }
+        case '=': {
+          static const uint8_t g[7] = { 0b00000, 0b00000, 0b11111, 0b00000,
+                                        0b11111, 0b00000, 0b00000 };
+          return g;
+        }
+        case '_': {
+          static const uint8_t g[7] = { 0b00000, 0b00000, 0b00000, 0b00000,
+                                        0b00000, 0b00000, 0b11111 };
+          return g;
+        }
+        case ':': {
+          static const uint8_t g[7] = { 0b00000, 0b00110, 0b00110, 0b00000,
+                                        0b00110, 0b00110, 0b00000 };
+          return g;
+        }
+        case '/': {
+          static const uint8_t g[7] = { 0b00001, 0b00010, 0b00010, 0b00100,
+                                        0b01000, 0b01000, 0b10000 };
+          return g;
+        }
+        case 'A': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b11111,
+                                        0b10001, 0b10001, 0b10001 };
+          return g;
+        }
+        case 'B': {
+          static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110,
+                                        0b10001, 0b10001, 0b11110 };
+          return g;
+        }
+        case 'C': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10000, 0b10000,
+                                        0b10000, 0b10001, 0b01110 };
+          return g;
+        }
+        case 'D': {
+          static const uint8_t g[7] = { 0b11100, 0b10010, 0b10001, 0b10001,
+                                        0b10001, 0b10010, 0b11100 };
+          return g;
+        }
+        case 'E': {
+          static const uint8_t g[7] = { 0b11111, 0b10000, 0b10000, 0b11110,
+                                        0b10000, 0b10000, 0b11111 };
+          return g;
+        }
+        case 'F': {
+          static const uint8_t g[7] = { 0b11111, 0b10000, 0b10000, 0b11110,
+                                        0b10000, 0b10000, 0b10000 };
+          return g;
+        }
+        case 'G': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10000, 0b10111,
+                                        0b10001, 0b10001, 0b01111 };
+          return g;
+        }
+        case 'H': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b11111,
+                                        0b10001, 0b10001, 0b10001 };
+          return g;
+        }
+        case 'I': {
+          static const uint8_t g[7] = { 0b01110, 0b00100, 0b00100, 0b00100,
+                                        0b00100, 0b00100, 0b01110 };
+          return g;
+        }
+        case 'J': {
+          static const uint8_t g[7] = { 0b00111, 0b00010, 0b00010, 0b00010,
+                                        0b10010, 0b10010, 0b01100 };
+          return g;
+        }
+        case 'K': {
+          static const uint8_t g[7] = { 0b10001, 0b10010, 0b10100, 0b11000,
+                                        0b10100, 0b10010, 0b10001 };
+          return g;
+        }
+        case 'L': {
+          static const uint8_t g[7] = { 0b10000, 0b10000, 0b10000, 0b10000,
+                                        0b10000, 0b10000, 0b11111 };
+          return g;
+        }
+        case 'M': {
+          static const uint8_t g[7] = { 0b10001, 0b11011, 0b10101, 0b10101,
+                                        0b10001, 0b10001, 0b10001 };
+          return g;
+        }
+        case 'N': {
+          static const uint8_t g[7] = { 0b10001, 0b11001, 0b10101, 0b10011,
+                                        0b10001, 0b10001, 0b10001 };
+          return g;
+        }
+        case 'O': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b10001,
+                                        0b10001, 0b10001, 0b01110 };
+          return g;
+        }
+        case 'P': {
+          static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110,
+                                        0b10000, 0b10000, 0b10000 };
+          return g;
+        }
+        case 'Q': {
+          static const uint8_t g[7] = { 0b01110, 0b10001, 0b10001, 0b10001,
+                                        0b10101, 0b10010, 0b01101 };
+          return g;
+        }
+        case 'R': {
+          static const uint8_t g[7] = { 0b11110, 0b10001, 0b10001, 0b11110,
+                                        0b10100, 0b10010, 0b10001 };
+          return g;
+        }
+        case 'S': {
+          static const uint8_t g[7] = { 0b01111, 0b10000, 0b10000, 0b01110,
+                                        0b00001, 0b00001, 0b11110 };
+          return g;
+        }
+        case 'T': {
+          static const uint8_t g[7] = { 0b11111, 0b00100, 0b00100, 0b00100,
+                                        0b00100, 0b00100, 0b00100 };
+          return g;
+        }
+        case 'U': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10001,
+                                        0b10001, 0b10001, 0b01110 };
+          return g;
+        }
+        case 'V': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10001,
+                                        0b10001, 0b01010, 0b00100 };
+          return g;
+        }
+        case 'W': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b10001, 0b10101,
+                                        0b10101, 0b11011, 0b10001 };
+          return g;
+        }
+        case 'X': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b01010, 0b00100,
+                                        0b01010, 0b10001, 0b10001 };
+          return g;
+        }
+        case 'Y': {
+          static const uint8_t g[7] = { 0b10001, 0b10001, 0b01010, 0b00100,
+                                        0b00100, 0b00100, 0b00100 };
+          return g;
+        }
+        case 'Z': {
+          static const uint8_t g[7] = { 0b11111, 0b00001, 0b00010, 0b00100,
+                                        0b01000, 0b10000, 0b11111 };
+          return g;
+        }
+        default: {
+          static const uint8_t g[7] = { 0, 0, 0, 0, 0, 0, 0 };
+          return g;
+        } // blank
       }
     }
 
-    inline void setPx(uint8_t* rgba, int W, int H, int x, int y, uint8_t r,
-                      uint8_t g, uint8_t b) {
+    inline void setPx(uint8_t* rgba,
+                      int      W,
+                      int      H,
+                      int      x,
+                      int      y,
+                      uint8_t  r,
+                      uint8_t  g,
+                      uint8_t  b) {
       if (x < 0 or x >= W or y < 0 or y >= H) {
         return;
       }
       const std::size_t i = (static_cast<std::size_t>(y) * W + x) * 4;
-      rgba[i + 0] = r;
-      rgba[i + 1] = g;
-      rgba[i + 2] = b;
-      rgba[i + 3] = 255;
+      rgba[i + 0]         = r;
+      rgba[i + 1]         = g;
+      rgba[i + 2]         = b;
+      rgba[i + 3]         = 255;
     }
 
-    inline void drawChar(uint8_t* rgba, int W, int H, int x, int y, char c,
-                         int s, uint8_t r, uint8_t g, uint8_t b) {
+    inline void drawChar(uint8_t* rgba,
+                         int      W,
+                         int      H,
+                         int      x,
+                         int      y,
+                         char     c,
+                         int      s,
+                         uint8_t  r,
+                         uint8_t  g,
+                         uint8_t  b) {
       const uint8_t* gl = glyph(c);
       for (int row = 0; row < 7; ++row) {
         for (int col = 0; col < 5; ++col) {
@@ -115,9 +304,16 @@ namespace out {
       }
     }
 
-    inline void drawText(uint8_t* rgba, int W, int H, int x, int y,
-                         const std::string& str, int s, uint8_t r, uint8_t g,
-                         uint8_t b) {
+    inline void drawText(uint8_t*           rgba,
+                         int                W,
+                         int                H,
+                         int                x,
+                         int                y,
+                         const std::string& str,
+                         int                s,
+                         uint8_t            r,
+                         uint8_t            g,
+                         uint8_t            b) {
       int cx = x;
       for (const char c : str) {
         drawChar(rgba, W, H, cx, y, c, s, r, g, b);
@@ -204,18 +400,17 @@ namespace out {
     const int bar_y = aligned ? span_top : ((H - bar_h) / 2);
 
     // contrasting monochrome for text / frame / ticks
-    const real_t  lum = static_cast<real_t>(0.299) * bg[0] +
+    const real_t lum = static_cast<real_t>(0.299) * bg[0] +
                        static_cast<real_t>(0.587) * bg[1] +
                        static_cast<real_t>(0.114) * bg[2];
-    const uint8_t tc  = (lum < HALF) ? 255 : 0;
+    const uint8_t tc = (lum < HALF) ? 255 : 0;
 
     // gradient strip (top = vmax, bottom = vmin)
     for (int j = 0; j < bar_h; ++j) {
-      const real_t u = (bar_h > 1)
-                         ? ONE - static_cast<real_t>(j) /
-                                   static_cast<real_t>(bar_h - 1)
-                         : ZERO;
-      real_t cr, cg, cb;
+      const real_t u = (bar_h > 1) ? ONE - static_cast<real_t>(j) /
+                                             static_cast<real_t>(bar_h - 1)
+                                   : ZERO;
+      real_t       cr, cg, cb;
       colormapRGB(colormap, u, cr, cg, cb);
       const uint8_t R = quant(cr), G = quant(cg), B = quant(cb);
       for (int i = 0; i < bar_w; ++i) {
@@ -243,12 +438,10 @@ namespace out {
     if (ticks.empty()) {
       const int nticks = 5;
       for (int t = 0; t < nticks; ++t) {
-        const real_t u   = static_cast<real_t>(t) /
-                         static_cast<real_t>(nticks - 1);
-        const real_t val = can_log
-                             ? math::pow(static_cast<real_t>(10),
-                                         lvmin + (lvmax - lvmin) * u)
-                             : (vmin + (vmax - vmin) * u);
+        const real_t u = static_cast<real_t>(t) / static_cast<real_t>(nticks - 1);
+        const real_t val = can_log ? math::pow(static_cast<real_t>(10),
+                                               lvmin + (lvmax - lvmin) * u)
+                                   : (vmin + (vmax - vmin) * u);
         tk.emplace_back(u, val);
       }
     } else {
@@ -258,8 +451,7 @@ namespace out {
           continue;
         }
         const real_t u = (span != ZERO)
-                           ? ((can_log ? (math::log10(v) - lvmin) : (v - vmin)) /
-                              span)
+                           ? ((can_log ? (math::log10(v) - lvmin) : (v - vmin)) / span)
                            : ZERO;
         if (u < static_cast<real_t>(-1e-4) or u > ONE + static_cast<real_t>(1e-4)) {
           continue; // outside the colorbar range
@@ -269,8 +461,7 @@ namespace out {
     }
     for (const auto& [u, val] : tk) {
       const int ty = bar_y +
-                     static_cast<int>((ONE - u) *
-                                      static_cast<real_t>(bar_h - 1));
+                     static_cast<int>((ONE - u) * static_cast<real_t>(bar_h - 1));
       // tick line
       for (int i = 0; i < gap; ++i) {
         for (int w = 0; w < std::max(1, s / 2); ++w) {

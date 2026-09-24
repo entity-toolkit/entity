@@ -47,15 +47,13 @@ namespace out {
    */
   inline auto compositeOrderKey(const std::vector<unsigned int>& offset,
                                 const std::vector<unsigned int>& ndoms,
-                                const real_t                     forward[3])
-    -> uint64_t {
+                                const real_t forward[3]) -> uint64_t {
     uint64_t key = 0;
-    for (std::size_t d = 0; d < ndoms.size(); ++d) {
-      const unsigned int Dd  = ndoms[d];
-      const unsigned int od  = offset[d];
-      const unsigned int kd  = (forward[d] >= ZERO) ? od : (Dd - 1u - od);
-      key                    = key * static_cast<uint64_t>(Dd) +
-            static_cast<uint64_t>(kd);
+    for (size_t d = 0; d < ndoms.size(); ++d) {
+      const unsigned int Dd = ndoms[d];
+      const unsigned int od = offset[d];
+      const unsigned int kd = (forward[d] >= ZERO) ? od : (Dd - 1u - od);
+      key = key * static_cast<uint64_t>(Dd) + static_cast<uint64_t>(kd);
     }
     return key;
   }
@@ -70,11 +68,11 @@ namespace out {
    * Associative with identity (0,0,0,0); segments must be supplied front first.
    */
   inline void overComposite(real_t acc[4], const real_t seg[4]) {
-    const real_t one_minus_a = ONE - acc[3];
-    acc[0] += one_minus_a * seg[0];
-    acc[1] += one_minus_a * seg[1];
-    acc[2] += one_minus_a * seg[2];
-    acc[3] += one_minus_a * seg[3];
+    const real_t one_minus_a  = ONE - acc[3];
+    acc[0]                   += one_minus_a * seg[0];
+    acc[1]                   += one_minus_a * seg[1];
+    acc[2]                   += one_minus_a * seg[2];
+    acc[3]                   += one_minus_a * seg[3];
   }
 
   /**
@@ -133,7 +131,7 @@ namespace out {
       const real_t p[3] = { (c & 1) ? hi[0] : lo[0],
                             (c & 2) ? hi[1] : lo[1],
                             (c & 4) ? hi[2] : lo[2] };
-      real_t       sx, sy;
+      real_t sx, sy;
       if (not projectToScreen(cam, W, H, p, sx, sy)) {
         bx0 = 0;
         by0 = 0;
@@ -151,14 +149,14 @@ namespace out {
     int       x1  = static_cast<int>(std::ceil(maxx)) + pad;
     int       y0  = static_cast<int>(std::floor(miny)) - pad;
     int       y1  = static_cast<int>(std::ceil(maxy)) + pad;
-    x0 = std::max(0, std::min(W, x0));
-    x1 = std::max(0, std::min(W, x1));
-    y0 = std::max(0, std::min(H, y0));
-    y1 = std::max(0, std::min(H, y1));
-    bx0 = x0;
-    by0 = y0;
-    bw  = x1 - x0;
-    bh  = y1 - y0;
+    x0            = std::max(0, std::min(W, x0));
+    x1            = std::max(0, std::min(W, x1));
+    y0            = std::max(0, std::min(H, y0));
+    y1            = std::max(0, std::min(H, y1));
+    bx0           = x0;
+    by0           = y0;
+    bw            = x1 - x0;
+    bh            = y1 - y0;
     return (bw > 0 and bh > 0);
   }
 
@@ -184,32 +182,32 @@ namespace out {
     r.y0 = uy0;
     r.w  = ux1 - ux0;
     r.h  = uy1 - uy0;
-    r.rgba.assign(static_cast<std::size_t>(r.w) * r.h * 4, ZERO);
+    r.rgba.assign(static_cast<size_t>(r.w) * r.h * 4, ZERO);
     // place `back`
     for (int y = 0; y < b.h; ++y) {
       for (int x = 0; x < b.w; ++x) {
-        const std::size_t ri = (static_cast<std::size_t>(b.y0 + y - uy0) * r.w +
-                                (b.x0 + x - ux0)) *
-                               4;
-        const std::size_t bi = (static_cast<std::size_t>(y) * b.w + x) * 4;
-        r.rgba[ri + 0] = b.rgba[bi + 0];
-        r.rgba[ri + 1] = b.rgba[bi + 1];
-        r.rgba[ri + 2] = b.rgba[bi + 2];
-        r.rgba[ri + 3] = b.rgba[bi + 3];
+        const size_t ri = (static_cast<size_t>(b.y0 + y - uy0) * r.w +
+                           (b.x0 + x - ux0)) *
+                          4;
+        const size_t bi = (static_cast<size_t>(y) * b.w + x) * 4;
+        r.rgba[ri + 0]  = b.rgba[bi + 0];
+        r.rgba[ri + 1]  = b.rgba[bi + 1];
+        r.rgba[ri + 2]  = b.rgba[bi + 2];
+        r.rgba[ri + 3]  = b.rgba[bi + 3];
       }
     }
     // `front` OVER the (back-filled) result
     for (int y = 0; y < f.h; ++y) {
       for (int x = 0; x < f.w; ++x) {
-        const std::size_t ri = (static_cast<std::size_t>(f.y0 + y - uy0) * r.w +
-                                (f.x0 + x - ux0)) *
-                               4;
-        const std::size_t fi  = (static_cast<std::size_t>(y) * f.w + x) * 4;
-        const real_t      inv = ONE - f.rgba[fi + 3];
-        r.rgba[ri + 0] = f.rgba[fi + 0] + inv * r.rgba[ri + 0];
-        r.rgba[ri + 1] = f.rgba[fi + 1] + inv * r.rgba[ri + 1];
-        r.rgba[ri + 2] = f.rgba[fi + 2] + inv * r.rgba[ri + 2];
-        r.rgba[ri + 3] = f.rgba[fi + 3] + inv * r.rgba[ri + 3];
+        const size_t ri = (static_cast<size_t>(f.y0 + y - uy0) * r.w +
+                           (f.x0 + x - ux0)) *
+                          4;
+        const size_t fi  = (static_cast<size_t>(y) * f.w + x) * 4;
+        const real_t inv = ONE - f.rgba[fi + 3];
+        r.rgba[ri + 0]   = f.rgba[fi + 0] + inv * r.rgba[ri + 0];
+        r.rgba[ri + 1]   = f.rgba[fi + 1] + inv * r.rgba[ri + 1];
+        r.rgba[ri + 2]   = f.rgba[fi + 2] + inv * r.rgba[ri + 2];
+        r.rgba[ri + 3]   = f.rgba[fi + 3] + inv * r.rgba[ri + 3];
       }
     }
     return r;
@@ -234,18 +232,18 @@ namespace out {
                                   const real_t        p[3],
                                   real_t&             outx,
                                   real_t&             outy) -> bool {
-    real_t       v[3] = { p[0] - cam.eye[0], p[1] - cam.eye[1], p[2] - cam.eye[2] };
+    real_t v[3] = { p[0] - cam.eye[0], p[1] - cam.eye[1], p[2] - cam.eye[2] };
     const real_t n = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
     if (n < static_cast<real_t>(1e-20)) {
       outx = HALF * static_cast<real_t>(W) - HALF; // eye itself -> disk center
       outy = HALF * static_cast<real_t>(H) - HALF;
       return true;
     }
-    const real_t inv = ONE / n;
-    v[0] *= inv;
-    v[1] *= inv;
-    v[2] *= inv;
-    real_t cz = v[0] * cam.forward[0] + v[1] * cam.forward[1] +
+    const real_t inv  = ONE / n;
+    v[0]             *= inv;
+    v[1]             *= inv;
+    v[2]             *= inv;
+    real_t cz         = v[0] * cam.forward[0] + v[1] * cam.forward[1] +
                 v[2] * cam.forward[2];
     cz                 = (cz < -ONE) ? -ONE : ((cz > ONE) ? ONE : cz);
     const real_t theta = std::acos(cz);
@@ -255,9 +253,9 @@ namespace out {
     const real_t r  = theta / cam.dome_half_fov; // 0..1 image radius
     const real_t cx = v[0] * cam.right[0] + v[1] * cam.right[1] +
                       v[2] * cam.right[2];
-    const real_t cy = v[0] * cam.up[0] + v[1] * cam.up[1] + v[2] * cam.up[2];
+    const real_t cy  = v[0] * cam.up[0] + v[1] * cam.up[1] + v[2] * cam.up[2];
     const real_t phi = std::atan2(cy, cx);
-    const real_t fx  = r * std::cos(phi), fy = r * std::sin(phi);
+    const real_t fx = r * std::cos(phi), fy = r * std::sin(phi);
     outx = (fx + ONE) * HALF * static_cast<real_t>(W) - HALF;
     outy = (ONE - fy) * HALF * static_cast<real_t>(H) - HALF;
     return true;
@@ -326,14 +324,14 @@ namespace out {
         return fullFrame();
       }
     }
-    real_t      minx = static_cast<real_t>(1e30), miny = static_cast<real_t>(1e30);
-    real_t      maxx = static_cast<real_t>(-1e30), maxy = static_cast<real_t>(-1e30);
-    real_t      minr = static_cast<real_t>(1e30);
-    int         n_in = 0, n_out = 0;
+    real_t minx = static_cast<real_t>(1e30), miny = static_cast<real_t>(1e30);
+    real_t maxx = static_cast<real_t>(-1e30), maxy = static_cast<real_t>(-1e30);
+    real_t minr = static_cast<real_t>(1e30);
+    int    n_in = 0, n_out = 0;
     // azimuths of in-FOV samples, for the "wraps the center" (largest-gap) test
     std::vector<real_t> phis;
-    phis.reserve(12 * 17);
-    const int NS = 48; // samples per AABB edge (a straight edge maps to a
+    phis.reserve(12ul * 17ul);
+    const int NS       = 48; // samples per AABB edge (a straight edge maps to a
                        // curved fisheye arc, so sample densely to bound it)
     auto      addPoint = [&](const real_t p[3]) {
       real_t sx, sy;
@@ -342,13 +340,13 @@ namespace out {
         return;
       }
       ++n_in;
-      minx        = std::min(minx, sx);
-      maxx        = std::max(maxx, sx);
-      miny        = std::min(miny, sy);
-      maxy        = std::max(maxy, sy);
+      minx            = std::min(minx, sx);
+      maxx            = std::max(maxx, sx);
+      miny            = std::min(miny, sy);
+      maxy            = std::max(maxy, sy);
       const real_t fx = TWO * (sx + HALF) / static_cast<real_t>(W) - ONE;
       const real_t fy = ONE - TWO * (sy + HALF) / static_cast<real_t>(H);
-      minr        = std::min(minr, std::sqrt(fx * fx + fy * fy));
+      minr            = std::min(minr, std::sqrt(fx * fx + fy * fy));
       phis.push_back(std::atan2(fy, fx));
     };
     // sample all 12 edges of the AABB
@@ -382,7 +380,7 @@ namespace out {
     std::sort(phis.begin(), phis.end());
     real_t       maxgap = ZERO;
     const real_t twopi  = static_cast<real_t>(2.0 * 3.14159265358979323846);
-    for (std::size_t i = 0; i + 1 < phis.size(); ++i) {
+    for (size_t i = 0; i + 1 < phis.size(); ++i) {
       maxgap = std::max(maxgap, phis[i + 1] - phis[i]);
     }
     if (not phis.empty()) {
@@ -398,14 +396,14 @@ namespace out {
     int       x1  = static_cast<int>(std::ceil(maxx)) + pad;
     int       y0  = static_cast<int>(std::floor(miny)) - pad;
     int       y1  = static_cast<int>(std::ceil(maxy)) + pad;
-    x0  = std::max(0, std::min(W, x0));
-    x1  = std::max(0, std::min(W, x1));
-    y0  = std::max(0, std::min(H, y0));
-    y1  = std::max(0, std::min(H, y1));
-    bx0 = x0;
-    by0 = y0;
-    bw  = x1 - x0;
-    bh  = y1 - y0;
+    x0            = std::max(0, std::min(W, x0));
+    x1            = std::max(0, std::min(W, x1));
+    y0            = std::max(0, std::min(H, y0));
+    y1            = std::max(0, std::min(H, y1));
+    bx0           = x0;
+    by0           = y0;
+    bw            = x1 - x0;
+    bh            = y1 - y0;
     return (bw > 0 and bh > 0);
   }
 
@@ -421,7 +419,7 @@ namespace out {
     (void)depth; // fragments are already ascending in depth
     real_t acc[4] = { ZERO, ZERO, ZERO, ZERO };
     for (uint32_t k = k0; k < k1; ++k) {
-      overComposite(acc, &rgba[static_cast<std::size_t>(k) * 4]);
+      overComposite(acc, &rgba[static_cast<size_t>(k) * 4]);
       if (acc[3] >= ONE) {
         break;
       }
@@ -435,9 +433,9 @@ namespace out {
   /**
    * @brief Merge two depth-sorted fragment images: union the bboxes and, per
    * pixel, merge the two ascending fragment lists by depth, then drop fragments
-   * once the accumulated alpha reaches `cull_alpha` (exact when cull_alpha == 1:
-   * only provably-occluded fragments are removed, so the result is independent
-   * of how the tree is grouped -> associative + commutative).
+   * once the accumulated alpha reaches `cull_alpha` (exact when cull_alpha ==
+   * 1: only provably-occluded fragments are removed, so the result is
+   * independent of how the tree is grouped -> associative + commutative).
    */
   inline auto mergeFrag(const FragImage& a, const FragImage& b, real_t cull_alpha)
     -> FragImage {
@@ -452,11 +450,11 @@ namespace out {
     const int ux1 = std::max(a.x0 + a.w, b.x0 + b.w);
     const int uy1 = std::max(a.y0 + a.h, b.y0 + b.h);
     FragImage r;
-    r.x0 = ux0;
-    r.y0 = uy0;
-    r.w  = ux1 - ux0;
-    r.h  = uy1 - uy0;
-    const std::size_t np = static_cast<std::size_t>(r.w) * r.h;
+    r.x0            = ux0;
+    r.y0            = uy0;
+    r.w             = ux1 - ux0;
+    r.h             = uy1 - uy0;
+    const size_t np = static_cast<size_t>(r.w) * r.h;
     r.offs.assign(np + 1, 0u);
 
     // fetch a source image's fragment range at global pixel (gx, gy)
@@ -467,9 +465,9 @@ namespace out {
         k1 = 0;
         return;
       }
-      const std::size_t p = static_cast<std::size_t>(ly) * s.w + lx;
-      k0                  = s.offs[p];
-      k1                  = s.offs[p + 1];
+      const size_t p = static_cast<size_t>(ly) * s.w + lx;
+      k0             = s.offs[p];
+      k1             = s.offs[p + 1];
     };
 
     // pass 1: per-pixel surviving-fragment count (merge + occlusion cull)
@@ -479,13 +477,13 @@ namespace out {
         range(a, gx, gy, ak0, ak1);
         range(b, gx, gy, bk0, bk1);
         uint32_t ia = ak0, ib = bk0, cnt = 0;
-        real_t   A  = ZERO;
+        real_t   A = ZERO;
         while ((ia < ak1 or ib < bk1) and A < cull_alpha) {
           const bool takeA = (ib >= bk1) or
                              (ia < ak1 and a.depth[ia] <= b.depth[ib]);
-          const real_t al = takeA ? a.rgba[static_cast<std::size_t>(ia) * 4 + 3]
-                                  : b.rgba[static_cast<std::size_t>(ib) * 4 + 3];
-          A += (ONE - A) * al;
+          const real_t al  = takeA ? a.rgba[static_cast<size_t>(ia) * 4 + 3]
+                                   : b.rgba[static_cast<size_t>(ib) * 4 + 3];
+          A               += (ONE - A) * al;
           ++cnt;
           if (takeA) {
             ++ia;
@@ -493,16 +491,15 @@ namespace out {
             ++ib;
           }
         }
-        const std::size_t pix = static_cast<std::size_t>(gy - uy0) * r.w +
-                                (gx - ux0);
-        r.offs[pix + 1] = cnt;
+        const size_t pix = static_cast<size_t>(gy - uy0) * r.w + (gx - ux0);
+        r.offs[pix + 1]  = cnt;
       }
     }
     // prefix-sum to offsets
-    for (std::size_t p = 0; p < np; ++p) {
+    for (size_t p = 0; p < np; ++p) {
       r.offs[p + 1] += r.offs[p];
     }
-    const std::size_t nfrag = r.offs[np];
+    const size_t nfrag = r.offs[np];
     r.depth.assign(nfrag, ZERO);
     r.rgba.assign(nfrag * 4, ZERO);
 
@@ -512,30 +509,29 @@ namespace out {
         uint32_t ak0, ak1, bk0, bk1;
         range(a, gx, gy, ak0, ak1);
         range(b, gx, gy, bk0, bk1);
-        const std::size_t pix = static_cast<std::size_t>(gy - uy0) * r.w +
-                                (gx - ux0);
-        uint32_t ia = ak0, ib = bk0, o = r.offs[pix];
+        const size_t   pix = static_cast<size_t>(gy - uy0) * r.w + (gx - ux0);
+        uint32_t       ia = ak0, ib = bk0, o = r.offs[pix];
         const uint32_t oend = r.offs[pix + 1];
         while (o < oend) {
           const bool takeA = (ib >= bk1) or
                              (ia < ak1 and a.depth[ia] <= b.depth[ib]);
           if (takeA) {
-            r.depth[o]         = a.depth[ia];
-            const std::size_t s = static_cast<std::size_t>(ia) * 4;
-            const std::size_t d = static_cast<std::size_t>(o) * 4;
-            r.rgba[d + 0]      = a.rgba[s + 0];
-            r.rgba[d + 1]      = a.rgba[s + 1];
-            r.rgba[d + 2]      = a.rgba[s + 2];
-            r.rgba[d + 3]      = a.rgba[s + 3];
+            r.depth[o]     = a.depth[ia];
+            const size_t s = static_cast<size_t>(ia) * 4;
+            const size_t d = static_cast<size_t>(o) * 4;
+            r.rgba[d + 0]  = a.rgba[s + 0];
+            r.rgba[d + 1]  = a.rgba[s + 1];
+            r.rgba[d + 2]  = a.rgba[s + 2];
+            r.rgba[d + 3]  = a.rgba[s + 3];
             ++ia;
           } else {
-            r.depth[o]         = b.depth[ib];
-            const std::size_t s = static_cast<std::size_t>(ib) * 4;
-            const std::size_t d = static_cast<std::size_t>(o) * 4;
-            r.rgba[d + 0]      = b.rgba[s + 0];
-            r.rgba[d + 1]      = b.rgba[s + 1];
-            r.rgba[d + 2]      = b.rgba[s + 2];
-            r.rgba[d + 3]      = b.rgba[s + 3];
+            r.depth[o]     = b.depth[ib];
+            const size_t s = static_cast<size_t>(ib) * 4;
+            const size_t d = static_cast<size_t>(o) * 4;
+            r.rgba[d + 0]  = b.rgba[s + 0];
+            r.rgba[d + 1]  = b.rgba[s + 1];
+            r.rgba[d + 2]  = b.rgba[s + 2];
+            r.rgba[d + 3]  = b.rgba[s + 3];
             ++ib;
           }
           ++o;

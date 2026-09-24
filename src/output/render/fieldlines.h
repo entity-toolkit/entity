@@ -8,8 +8,6 @@
  *   - out::emptyTubeSet
  * @namespaces:
  *   - out::
- * @macros:
- *   - OUTPUT_ENABLED
  * @note
  * Field lines are intrinsically non-local (a streamline wanders across MPI
  * domains), which would normally demand parallel particle advection. We sidestep
@@ -53,7 +51,7 @@ namespace out {
    * ((c2*n1 + c1)*n0 + c0)*3 + comp, with c0 the fastest spatial axis.
    */
   struct CoarseField {
-    std::vector<real_t> B;                 // n0*n1*n2*3
+    std::vector<real_t> B; // n0*n1*n2*3
     int                 n[3] { 0, 0, 0 };
     real_t              origin[3] { ZERO, ZERO, ZERO };
     real_t              dx[3] { ONE, ONE, ONE };
@@ -68,13 +66,13 @@ namespace out {
   namespace fl_hidden {
 
     inline auto cellLinear(const CoarseField& cf, int c0, int c1, int c2)
-      -> std::size_t {
-      return (static_cast<std::size_t>(c2) * cf.n[1] + c1) * cf.n[0] + c0;
+      -> size_t {
+      return (static_cast<size_t>(c2) * cf.n[1] + c1) * cf.n[0] + c0;
     }
 
     // trilinear sample of the coarse field at world point p -> B[3], |B|.
-    // Clamps to the grid (so a sample just outside a face still returns the edge
-    // value); membership in the global box is the caller's stop test.
+    // Clamps to the grid (so a sample just outside a face still returns the
+    // edge value); membership in the global box is the caller's stop test.
     inline auto sampleCoarse(const CoarseField& cf, const real_t p[3], real_t B[3])
       -> real_t {
       int    i0[3], i1[3];
@@ -110,20 +108,20 @@ namespace out {
         const real_t c101 = cf.B[cellLinear(cf, i1[0], i0[1], i1[2]) * 3 + comp];
         const real_t c011 = cf.B[cellLinear(cf, i0[0], i1[1], i1[2]) * 3 + comp];
         const real_t c111 = cf.B[cellLinear(cf, i1[0], i1[1], i1[2]) * 3 + comp];
-        const real_t c00  = c000 * (ONE - fr[0]) + c100 * fr[0];
-        const real_t c10  = c010 * (ONE - fr[0]) + c110 * fr[0];
-        const real_t c01  = c001 * (ONE - fr[0]) + c101 * fr[0];
-        const real_t c11  = c011 * (ONE - fr[0]) + c111 * fr[0];
-        const real_t c0   = c00 * (ONE - fr[1]) + c10 * fr[1];
-        const real_t c1   = c01 * (ONE - fr[1]) + c11 * fr[1];
-        B[comp]           = c0 * (ONE - fr[2]) + c1 * fr[2];
+        const real_t c00 = c000 * (ONE - fr[0]) + c100 * fr[0];
+        const real_t c10 = c010 * (ONE - fr[0]) + c110 * fr[0];
+        const real_t c01 = c001 * (ONE - fr[0]) + c101 * fr[0];
+        const real_t c11 = c011 * (ONE - fr[0]) + c111 * fr[0];
+        const real_t c0  = c00 * (ONE - fr[1]) + c10 * fr[1];
+        const real_t c1  = c01 * (ONE - fr[1]) + c11 * fr[1];
+        B[comp]          = c0 * (ONE - fr[2]) + c1 * fr[2];
       }
       return std::sqrt(B[0] * B[0] + B[1] * B[1] + B[2] * B[2]);
     }
 
     inline auto insideBox(const CoarseField& cf, const real_t p[3]) -> bool {
       for (int d = 0; d < 3; ++d) {
-        const real_t hi = cf.origin[d] + cf.n[d] * cf.dx[d];
+        const real_t hi = cf.origin[d] + static_cast<real_t>(cf.n[d]) * cf.dx[d];
         if (p[d] < cf.origin[d] or p[d] > hi) {
           return false;
         }
@@ -136,7 +134,7 @@ namespace out {
   /** @brief A constant-color opaque LUT (monochrome field lines). */
   inline auto buildSolidLUT(real_t r, real_t g, real_t b, int n_lut)
     -> array_t<real_t* [4]> {
-    array_t<real_t* [4]> lut { "fl_solid_lut", static_cast<std::size_t>(n_lut) };
+    array_t<real_t* [4]> lut { "fl_solid_lut", static_cast<size_t>(n_lut) };
     auto                 h = Kokkos::create_mirror_view(lut);
     for (int i = 0; i < n_lut; ++i) {
       h(i, 0) = r; // opaque -> premultiplied == straight RGB
@@ -154,7 +152,12 @@ namespace out {
     if (cfg.color.size() == 3) {
       return buildSolidLUT(cfg.color[0], cfg.color[1], cfg.color[2], n_lut);
     }
-    return buildLUT(cfg.colormap, n_lut, { { ZERO, ONE }, { ONE, ONE } });
+    return buildLUT(cfg.colormap,
+                    n_lut,
+                    {
+                      { ZERO, ONE },
+                      {  ONE, ONE }
+    });
   }
 
   /**
@@ -169,8 +172,7 @@ namespace out {
                               const FieldLineConfig& cfg,
                               real_t                 world_per_pixel,
                               real_t&                out_vmin,
-                              real_t&                out_vmax)
-    -> std::vector<Polyline> {
+                              real_t& out_vmax) -> std::vector<Polyline> {
     using fl_hidden::insideBox;
     using fl_hidden::sampleCoarse;
 
@@ -180,17 +182,16 @@ namespace out {
     }
 
     real_t size[3];
-    real_t diag2 = ZERO;
+    real_t diag2  = ZERO;
     real_t min_dx = static_cast<real_t>(1e30);
     for (int d = 0; d < 3; ++d) {
-      size[d] = cf.n[d] * cf.dx[d];
+      size[d]  = static_cast<real_t>(cf.n[d]) * cf.dx[d];
       diag2   += size[d] * size[d];
-      min_dx  = std::min(min_dx, cf.dx[d]);
+      min_dx   = std::min(min_dx, cf.dx[d]);
     }
     const real_t box_diag = std::sqrt(diag2);
     const real_t max_len  = cfg.max_len_frac * box_diag;
-    const real_t h        = std::max(cfg.step_frac, static_cast<real_t>(1e-3)) *
-                     min_dx;
+    const real_t h = std::max(cfg.step_frac, static_cast<real_t>(1e-3)) * min_dx;
     const real_t eps = static_cast<real_t>(1e-20);
 
     // seed lattice: spacing ~ seed_px screen pixels, grown to respect seed_max
@@ -206,8 +207,8 @@ namespace out {
     };
     long n_seed = countSeeds(spacing);
     if (n_seed > cfg.seed_max and cfg.seed_max > 0) {
-      const real_t grow = std::cbrt(static_cast<real_t>(n_seed) /
-                                    static_cast<real_t>(cfg.seed_max));
+      const real_t grow = std::cbrt(
+        static_cast<real_t>(n_seed) / static_cast<real_t>(cfg.seed_max));
       spacing *= grow;
       countSeeds(spacing); // recompute ns[] for the grown spacing
     }
@@ -226,8 +227,8 @@ namespace out {
       return true;
     };
 
-    out_vmin = static_cast<real_t>(1e30);
-    out_vmax = static_cast<real_t>(-1e30);
+    out_vmin   = static_cast<real_t>(1e30);
+    out_vmax   = static_cast<real_t>(-1e30);
     auto track = [&](real_t m) {
       out_vmin = std::min(out_vmin, m);
       out_vmax = std::max(out_vmax, m);
@@ -236,7 +237,7 @@ namespace out {
     // integrate one direction (dir = +1 forward, -1 backward) from a seed
     auto integrate = [&](const real_t seed[3], real_t dir) {
       Polyline pl;
-      real_t   p[3]   = { seed[0], seed[1], seed[2] };
+      real_t   p[3] = { seed[0], seed[1], seed[2] };
       real_t   B0[3];
       real_t   m0 = sampleCoarse(cf, p, B0);
       if (m0 < eps) {
@@ -293,9 +294,12 @@ namespace out {
       for (int j = 0; j < ns[1]; ++j) {
         for (int i = 0; i < ns[0]; ++i) {
           const real_t seed[3] = {
-            cf.origin[0] + (static_cast<real_t>(i) + HALF) * size[0] / ns[0],
-            cf.origin[1] + (static_cast<real_t>(j) + HALF) * size[1] / ns[1],
-            cf.origin[2] + (static_cast<real_t>(k) + HALF) * size[2] / ns[2]
+            cf.origin[0] + (static_cast<real_t>(i) + HALF) * size[0] /
+                             static_cast<real_t>(ns[0]),
+            cf.origin[1] + (static_cast<real_t>(j) + HALF) * size[1] /
+                             static_cast<real_t>(ns[1]),
+            cf.origin[2] + (static_cast<real_t>(k) + HALF) * size[2] /
+                             static_cast<real_t>(ns[2])
           };
           integrate(seed, ONE);
           integrate(seed, -ONE);
@@ -328,7 +332,7 @@ namespace out {
                            const real_t                 lo[3],
                            const real_t                 hi[3],
                            const CoarseField&           cf,
-                           std::size_t&                 n_kept) -> TubeSet {
+                           size_t&                      n_kept) -> TubeSet {
     TubeSet ts;
     ts.radius    = radius;
     ts.vmin      = vmin;
@@ -346,8 +350,8 @@ namespace out {
       const real_t span = hi[d] - lo[d];
       ts.gnc[d] = std::max(1, static_cast<int>(std::ceil(span / ts.gdx[d])));
     }
-    auto lin = [&](int c0, int c1, int c2) -> std::size_t {
-      return (static_cast<std::size_t>(c2) * ts.gnc[1] + c1) * ts.gnc[0] + c0;
+    auto lin = [&](int c0, int c1, int c2) -> size_t {
+      return (static_cast<size_t>(c2) * ts.gnc[1] + c1) * ts.gnc[0] + c0;
     };
     // opaque LUT: a tube sample paints a solid color (alpha==1), by |B| or a
     // single monochrome color when cfg.color is set
@@ -359,10 +363,10 @@ namespace out {
     //    the correct domain's depth range -- no double-draw.)
     std::vector<std::array<real_t, 8>> kept;
     for (const auto& pl : lines) {
-      for (std::size_t i = 0; i + 1 < pl.pts.size(); ++i) {
-        const auto&  a = pl.pts[i];
-        const auto&  b = pl.pts[i + 1];
-        bool         overlap = true;
+      for (size_t i = 0; i + 1 < pl.pts.size(); ++i) {
+        const auto& a       = pl.pts[i];
+        const auto& b       = pl.pts[i + 1];
+        bool        overlap = true;
         for (int d = 0; d < 3; ++d) {
           const real_t smin = std::min(a[d], b[d]) - radius;
           const real_t smax = std::max(a[d], b[d]) + radius;
@@ -372,15 +376,14 @@ namespace out {
           }
         }
         if (overlap) {
-          kept.push_back({ a[0], a[1], a[2], b[0], b[1], b[2], pl.scal[i],
-                           pl.scal[i + 1] });
+          kept.push_back(
+            { a[0], a[1], a[2], b[0], b[1], b[2], pl.scal[i], pl.scal[i + 1] });
         }
       }
     }
-    n_kept       = kept.size();
-    ts.n_seg     = static_cast<int>(kept.size());
-    const std::size_t ncell = static_cast<std::size_t>(ts.gnc[0]) * ts.gnc[1] *
-                              ts.gnc[2];
+    n_kept             = kept.size();
+    ts.n_seg           = static_cast<int>(kept.size());
+    const size_t ncell = static_cast<size_t>(ts.gnc[0]) * ts.gnc[1] * ts.gnc[2];
 
     // 2) CSR bucketing on the coarse grid: count, prefix-sum, scatter. Each
     //    segment is registered in every cell its radius-padded AABB overlaps.
@@ -396,8 +399,8 @@ namespace out {
     auto cellRange = [&](const std::array<real_t, 8>& s, int d, int& c0, int& c1) {
       const real_t smin = std::min(s[d], s[3 + d]) - radius;
       const real_t smax = std::max(s[d], s[3 + d]) + radius;
-      c0 = cellOf(smin, d);
-      c1 = cellOf(smax, d);
+      c0                = cellOf(smin, d);
+      c1                = cellOf(smax, d);
     };
 
     std::vector<int> count(ncell + 1, 0);
@@ -415,13 +418,13 @@ namespace out {
       }
     }
     std::vector<int> start(ncell + 1, 0);
-    for (std::size_t c = 0; c < ncell; ++c) {
+    for (size_t c = 0; c < ncell; ++c) {
       start[c + 1] = start[c] + count[c];
     }
-    const std::size_t n_insert = static_cast<std::size_t>(start[ncell]);
-    std::vector<int>  idx(n_insert, 0);
-    std::vector<int>  cursor(start.begin(), start.end()); // running write head
-    for (std::size_t si = 0; si < kept.size(); ++si) {
+    const size_t     n_insert = static_cast<size_t>(start[ncell]);
+    std::vector<int> idx(n_insert, 0);
+    std::vector<int> cursor(start.begin(), start.end()); // running write head
+    for (size_t si = 0; si < kept.size(); ++si) {
       int a0, a1, b0, b1, d0, d1;
       cellRange(kept[si], 0, a0, a1);
       cellRange(kept[si], 1, b0, b1);
@@ -429,20 +432,20 @@ namespace out {
       for (int c2 = d0; c2 <= d1; ++c2) {
         for (int c1 = b0; c1 <= b1; ++c1) {
           for (int c0 = a0; c0 <= a1; ++c0) {
-            const std::size_t cl = lin(c0, c1, c2);
-            idx[static_cast<std::size_t>(cursor[cl]++)] = static_cast<int>(si);
+            const size_t cl                        = lin(c0, c1, c2);
+            idx[static_cast<size_t>(cursor[cl]++)] = static_cast<int>(si);
           }
         }
       }
     }
 
     // 3) upload to device
-    ts.seg = array_t<real_t* [8]>("fl_seg", static_cast<std::size_t>(ts.n_seg));
+    ts.seg = array_t<real_t* [8]>("fl_seg", static_cast<size_t>(ts.n_seg));
     if (ts.n_seg > 0) {
       auto seg_h = Kokkos::create_mirror_view(ts.seg);
       for (int s = 0; s < ts.n_seg; ++s) {
         for (int c = 0; c < 8; ++c) {
-          seg_h(s, c) = kept[static_cast<std::size_t>(s)][static_cast<std::size_t>(c)];
+          seg_h(s, c) = kept[static_cast<size_t>(s)][static_cast<size_t>(c)];
         }
       }
       Kokkos::deep_copy(ts.seg, seg_h);
@@ -450,15 +453,15 @@ namespace out {
     ts.cell_start = array_t<int*>("fl_cell_start", ncell + 1);
     {
       auto h = Kokkos::create_mirror_view(ts.cell_start);
-      for (std::size_t c = 0; c <= ncell; ++c) {
+      for (size_t c = 0; c <= ncell; ++c) {
         h(c) = start[c];
       }
       Kokkos::deep_copy(ts.cell_start, h);
     }
-    ts.seg_idx = array_t<int*>("fl_seg_idx", std::max<std::size_t>(n_insert, 1));
+    ts.seg_idx = array_t<int*>("fl_seg_idx", std::max<size_t>(n_insert, 1));
     if (n_insert > 0) {
       auto h = Kokkos::create_mirror_view(ts.seg_idx);
-      for (std::size_t k = 0; k < n_insert; ++k) {
+      for (size_t k = 0; k < n_insert; ++k) {
         h(k) = idx[k];
       }
       Kokkos::deep_copy(ts.seg_idx, h);
@@ -473,7 +476,12 @@ namespace out {
     ts.seg        = array_t<real_t* [8]>("fl_seg_empty", 0);
     ts.cell_start = array_t<int*>("fl_cell_start_empty", 1);
     ts.seg_idx    = array_t<int*>("fl_seg_idx_empty", 1);
-    ts.lut        = buildLUT("inferno", 2, { { ZERO, ONE }, { ONE, ONE } });
+    ts.lut        = buildLUT("inferno",
+                      2,
+                             {
+                        { ZERO, ONE },
+                        {  ONE, ONE }
+    });
     return ts;
   }
 
@@ -486,7 +494,7 @@ namespace out {
    * @note Component-fastest: (c0,c1,comp) lives at (c1*n0 + c0)*2 + comp.
    */
   struct CoarseField2D {
-    std::vector<real_t> B;                 // n0*n1*2
+    std::vector<real_t> B; // n0*n1*2
     int                 n[2] { 0, 0 };
     real_t              origin[2] { ZERO, ZERO };
     real_t              dx[2] { ONE, ONE };
@@ -509,12 +517,12 @@ namespace out {
                             real_t&              bmin,
                             real_t&              bmax) {
     const int nx = cf.n[0], ny = cf.n[1];
-    psi.assign(static_cast<std::size_t>(nx) * ny, ZERO);
+    psi.assign(static_cast<size_t>(nx) * ny, ZERO);
     auto B = [&](int i, int j, int c) -> real_t {
-      return cf.B[(static_cast<std::size_t>(j) * nx + i) * 2 + c];
+      return cf.B[(static_cast<size_t>(j) * nx + i) * 2 + c];
     };
     auto P = [&](int i, int j) -> real_t& {
-      return psi[static_cast<std::size_t>(j) * nx + i];
+      return psi[static_cast<size_t>(j) * nx + i];
     };
     // bottom row (j = 0): d psi/dx = -By, trapezoidal in x
     for (int i = 1; i < nx; ++i) {
@@ -532,13 +540,13 @@ namespace out {
     bmax    = static_cast<real_t>(-1e30);
     for (int j = 0; j < ny; ++j) {
       for (int i = 0; i < nx; ++i) {
-        const real_t p = P(i, j);
-        psi_min        = std::min(psi_min, p);
-        psi_max        = std::max(psi_max, p);
+        const real_t p  = P(i, j);
+        psi_min         = std::min(psi_min, p);
+        psi_max         = std::max(psi_max, p);
         const real_t bx = B(i, j, 0), by = B(i, j, 1);
-        const real_t b  = std::sqrt(bx * bx + by * by);
-        bmin            = std::min(bmin, b);
-        bmax            = std::max(bmax, b);
+        const real_t b = std::sqrt(bx * bx + by * by);
+        bmin           = std::min(bmin, b);
+        bmax           = std::max(bmax, b);
       }
     }
     if (psi_min > psi_max) {
@@ -589,11 +597,11 @@ namespace out {
     cs.vmin = vlo;
     cs.vmax = (vhi > vlo) ? vhi : (vlo + ONE);
     cs.lut  = buildLineLUT(cfg, cs.n_lut); // by |B| or monochrome (cfg.color)
-    const std::size_t n = static_cast<std::size_t>(cs.n0) * cs.n1;
-    cs.psi = array_t<real_t*>("fl_psi", std::max<std::size_t>(n, 1));
+    const size_t n = static_cast<size_t>(cs.n0) * cs.n1;
+    cs.psi         = array_t<real_t*>("fl_psi", std::max<size_t>(n, 1));
     if (n > 0) {
       auto h = Kokkos::create_mirror_view(cs.psi);
-      for (std::size_t k = 0; k < n; ++k) {
+      for (size_t k = 0; k < n; ++k) {
         h(k) = psi[k];
       }
       Kokkos::deep_copy(cs.psi, h);
@@ -607,7 +615,12 @@ namespace out {
     ContourSet cs;
     cs.enabled = false;
     cs.psi     = array_t<real_t*>("fl_psi_empty", 1);
-    cs.lut     = buildLUT("inferno", 2, { { ZERO, ONE }, { ONE, ONE } });
+    cs.lut     = buildLUT("inferno",
+                      2,
+                          {
+                        { ZERO, ONE },
+                        {  ONE, ONE }
+    });
     return cs;
   }
 
@@ -621,8 +634,8 @@ namespace out {
     inline auto sampleRTh(const CoarseField2D& cf, real_t r, real_t th, real_t B[2])
       -> bool {
       const real_t rmin = cf.origin[0], thmin = cf.origin[1];
-      const real_t rmax = rmin + cf.n[0] * cf.dx[0];
-      const real_t thmax = thmin + cf.n[1] * cf.dx[1];
+      const real_t rmax  = rmin + static_cast<real_t>(cf.n[0]) * cf.dx[0];
+      const real_t thmax = thmin + static_cast<real_t>(cf.n[1]) * cf.dx[1];
       const real_t tr = HALF * cf.dx[0], tt = HALF * cf.dx[1];
       if (r < rmin - tr or r > rmax + tr or th < thmin - tt or th > thmax + tt) {
         return false;
@@ -666,13 +679,13 @@ namespace out {
         j1 = b + 1;
       }
       for (int c = 0; c < 2; ++c) {
-        const real_t c00 = cf.B[(static_cast<std::size_t>(j0) * cf.n[0] + i0) * 2 + c];
-        const real_t c10 = cf.B[(static_cast<std::size_t>(j0) * cf.n[0] + i1) * 2 + c];
-        const real_t c01 = cf.B[(static_cast<std::size_t>(j1) * cf.n[0] + i0) * 2 + c];
-        const real_t c11 = cf.B[(static_cast<std::size_t>(j1) * cf.n[0] + i1) * 2 + c];
-        const real_t e0  = c00 * (ONE - a0) + c10 * a0;
-        const real_t e1  = c01 * (ONE - a0) + c11 * a0;
-        B[c]             = e0 * (ONE - a1) + e1 * a1;
+        const real_t c00 = cf.B[(static_cast<size_t>(j0) * cf.n[0] + i0) * 2 + c];
+        const real_t c10 = cf.B[(static_cast<size_t>(j0) * cf.n[0] + i1) * 2 + c];
+        const real_t c01 = cf.B[(static_cast<size_t>(j1) * cf.n[0] + i0) * 2 + c];
+        const real_t c11 = cf.B[(static_cast<size_t>(j1) * cf.n[0] + i1) * 2 + c];
+        const real_t e0 = c00 * (ONE - a0) + c10 * a0;
+        const real_t e1 = c01 * (ONE - a0) + c11 * a0;
+        B[c]            = e0 * (ONE - a1) + e1 * a1;
       }
       return true;
     }
@@ -680,8 +693,8 @@ namespace out {
 
   /**
    * @brief Trace poloidal field lines in the meridional (X, Z) plane (nt2py
-   * style): integrate (Fx, Fz) = (Br sin th + Bth cos th, Br cos th - Bth sin th)
-   * by bidirectional RK4 through the coarse (r, theta) field. Polylines are
+   * style): integrate (Fx, Fz) = (Br sin th + Bth cos th, Br cos th - Bth sin
+   * th) by bidirectional RK4 through the coarse (r, theta) field. Polylines are
    * returned in meridional world coords (z = 0 so they reuse the 3D tube
    * builder); with `mirror` the X<0 half is added as the theta-reflected copy.
    * @param cf coarse field: component 0 = Br, 1 = Btheta, grid in (r, theta)
@@ -692,23 +705,22 @@ namespace out {
                                         real_t                 world_per_pixel,
                                         bool                   mirror,
                                         real_t&                out_vmin,
-                                        real_t&                out_vmax)
-    -> std::vector<Polyline> {
+                                        real_t& out_vmax) -> std::vector<Polyline> {
     using fl_hidden::sampleRTh;
     std::vector<Polyline> lines;
     if (cf.n[0] < 1 or cf.n[1] < 1) {
       return lines;
     }
     const real_t rmin = cf.origin[0], thmin = cf.origin[1];
-    const real_t rmax = rmin + cf.n[0] * cf.dx[0];
-    const real_t thmax = thmin + cf.n[1] * cf.dx[1];
-    const real_t h   = std::max(cfg.step_frac, static_cast<real_t>(1e-3)) *
+    const real_t rmax  = rmin + static_cast<real_t>(cf.n[0]) * cf.dx[0];
+    const real_t thmax = thmin + static_cast<real_t>(cf.n[1]) * cf.dx[1];
+    const real_t h     = std::max(cfg.step_frac, static_cast<real_t>(1e-3)) *
                      cf.dx[0]; // step ~ a coarse dr (a length)
     const real_t max_len = cfg.max_len_frac * rmax * static_cast<real_t>(2);
     const real_t eps     = static_cast<real_t>(1e-20);
 
     auto bmag = [&](real_t X, real_t Z) -> real_t {
-      const real_t r = std::sqrt(X * X + Z * Z);
+      const real_t r  = std::sqrt(X * X + Z * Z);
       const real_t th = std::atan2(std::abs(X), Z);
       real_t       B[2];
       if (not sampleRTh(cf, r, th, B)) {
@@ -719,7 +731,7 @@ namespace out {
     // unit meridional direction (x dir); false if |F| ~ 0 or outside the grid
     auto deriv = [&](const real_t p[2], real_t dir, real_t out[2]) -> bool {
       const real_t X = p[0], Z = p[1];
-      const real_t r = std::sqrt(X * X + Z * Z);
+      const real_t r  = std::sqrt(X * X + Z * Z);
       const real_t th = std::atan2(std::abs(X), Z);
       real_t       B[2];
       if (not sampleRTh(cf, r, th, B)) {
@@ -741,14 +753,14 @@ namespace out {
       return true;
     };
 
-    out_vmin = static_cast<real_t>(1e30);
-    out_vmax = static_cast<real_t>(-1e30);
+    out_vmin   = static_cast<real_t>(1e30);
+    out_vmax   = static_cast<real_t>(-1e30);
     auto track = [&](real_t m) {
       out_vmin = std::min(out_vmin, m);
       out_vmax = std::max(out_vmax, m);
     };
     auto inDomain = [&](real_t X, real_t Z) -> bool {
-      const real_t r = std::sqrt(X * X + Z * Z);
+      const real_t r  = std::sqrt(X * X + Z * Z);
       const real_t th = std::atan2(std::abs(X), Z);
       return (r >= rmin and r <= rmax and th >= thmin and th <= thmax);
     };
@@ -806,7 +818,7 @@ namespace out {
 
     // seed lattice over the X>=0 meridional half, keeping in-domain seeds
     const real_t Xhi = rmax, Zlo = -rmax, Zhi = rmax;
-    real_t       spacing = std::max(cfg.seed_px, ONE) * world_per_pixel;
+    real_t       spacing   = std::max(cfg.seed_px, ONE) * world_per_pixel;
     auto         gridCount = [&](real_t s) -> long {
       const long nx = std::max(1L, static_cast<long>(std::floor(Xhi / s)));
       const long nz = std::max(1L, static_cast<long>(std::floor((Zhi - Zlo) / s)));
@@ -839,8 +851,8 @@ namespace out {
     }
     // mirror the traced (X>=0) lines into the X<0 half for a full disk
     if (mirror) {
-      const std::size_t n0 = lines.size();
-      for (std::size_t i = 0; i < n0; ++i) {
+      const size_t n0 = lines.size();
+      for (size_t i = 0; i < n0; ++i) {
         Polyline m = lines[i];
         for (auto& q : m.pts) {
           q[0] = -q[0];

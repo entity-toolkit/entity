@@ -2,14 +2,12 @@
  * @file output/render/reduce.hpp
  * @brief Small dimension-generic cell reductions used by the in-situ renderer
  * @implements
- *   - kernel::RenderMagnitude3_kernel<D, N>
- *   - kernel::RenderPickComp_kernel<D, N>
- *   - kernel::RenderDivideComp_kernel<D, N>
- *   - kernel::RenderVmagByRho_kernel<D, N>
+ *   - render::RenderMagnitude3_kernel<D, N>
+ *   - render::RenderPickComp_kernel<D, N>
+ *   - render::RenderDivideComp_kernel<D, N>
+ *   - render::RenderVmagByRho_kernel<D, N>
  * @namespaces:
- *   - kernel::
- * @macros:
- *   - OUTPUT_ENABLED
+ *   - render::
  * @note
  * Each functor provides 1D/2D/3D operator() overloads so the same object works
  * with `mesh.rangeActiveCells()` of any dimension (the range policy selects the
@@ -24,26 +22,27 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "utils/numeric.h"
 
 #include <cstdint>
 
-namespace kernel {
+namespace render {
   using namespace ntt;
 
   /**
    * @brief F(.., co) = sqrt(F(.., c0)^2 + F(.., c1)^2 + F(.., c2)^2)
    */
-  template <Dimension D, std::uint8_t N>
+  template <Dimension D, uint8_t N>
   class RenderMagnitude3_kernel {
-    ndfield_t<D, N>     F;
-    const std::uint8_t  c0, c1, c2, co;
+    ndfield_t<D, N> F;
+    const uint8_t   c0, c1, c2, co;
 
   public:
     RenderMagnitude3_kernel(const ndfield_t<D, N>& f,
-                            std::uint8_t           a,
-                            std::uint8_t           b,
-                            std::uint8_t           c,
-                            std::uint8_t           o)
+                            uint8_t                a,
+                            uint8_t                b,
+                            uint8_t                c,
+                            uint8_t                o)
       : F { f }
       , c0 { a }
       , c1 { b }
@@ -62,7 +61,7 @@ namespace kernel {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       const real_t v0 = F(i1, i2, i3, c0), v1 = F(i1, i2, i3, c1),
-                   v2 = F(i1, i2, i3, c2);
+                   v2   = F(i1, i2, i3, c2);
       F(i1, i2, i3, co) = math::sqrt(v0 * v0 + v1 * v1 + v2 * v2);
     }
   };
@@ -70,13 +69,13 @@ namespace kernel {
   /**
    * @brief F(.., co) = F(.., ci)  (move one component into the render slot)
    */
-  template <Dimension D, std::uint8_t N>
+  template <Dimension D, uint8_t N>
   class RenderPickComp_kernel {
-    ndfield_t<D, N>    F;
-    const std::uint8_t ci, co;
+    ndfield_t<D, N> F;
+    const uint8_t   ci, co;
 
   public:
-    RenderPickComp_kernel(const ndfield_t<D, N>& f, std::uint8_t i, std::uint8_t o)
+    RenderPickComp_kernel(const ndfield_t<D, N>& f, uint8_t i, uint8_t o)
       : F { f }
       , ci { i }
       , co { o } {}
@@ -97,15 +96,13 @@ namespace kernel {
   /**
    * @brief F(.., cnum) = (F(.., cden) != 0) ? F(.., cnum) / F(.., cden) : 0
    */
-  template <Dimension D, std::uint8_t N>
+  template <Dimension D, uint8_t N>
   class RenderDivideComp_kernel {
-    ndfield_t<D, N>    F;
-    const std::uint8_t cnum, cden;
+    ndfield_t<D, N> F;
+    const uint8_t   cnum, cden;
 
   public:
-    RenderDivideComp_kernel(const ndfield_t<D, N>& f,
-                            std::uint8_t           num,
-                            std::uint8_t           den)
+    RenderDivideComp_kernel(const ndfield_t<D, N>& f, uint8_t num, uint8_t den)
       : F { f }
       , cnum { num }
       , cden { den } {}
@@ -131,18 +128,18 @@ namespace kernel {
    * @note SR bulk-speed magnitude: the three mass-weighted flux components are
    * each normalized by Rho before the Euclidean norm, in one pass.
    */
-  template <Dimension D, std::uint8_t N>
+  template <Dimension D, uint8_t N>
   class RenderVmagByRho_kernel {
-    ndfield_t<D, N>    F;
-    const std::uint8_t c0, c1, c2, crho, co;
+    ndfield_t<D, N> F;
+    const uint8_t   c0, c1, c2, crho, co;
 
   public:
     RenderVmagByRho_kernel(const ndfield_t<D, N>& f,
-                           std::uint8_t           a,
-                           std::uint8_t           b,
-                           std::uint8_t           c,
-                           std::uint8_t           rho,
-                           std::uint8_t           o)
+                           uint8_t                a,
+                           uint8_t                b,
+                           uint8_t                c,
+                           uint8_t                rho,
+                           uint8_t                o)
       : F { f }
       , c0 { a }
       , c1 { b }
@@ -163,16 +160,19 @@ namespace kernel {
     }
 
     Inline void operator()(cellidx_t i1, cellidx_t i2) const {
-      F(i1, i2, co) = mag(F(i1, i2, c0), F(i1, i2, c1), F(i1, i2, c2),
-                          F(i1, i2, crho));
+      F(i1,
+        i2,
+        co) = mag(F(i1, i2, c0), F(i1, i2, c1), F(i1, i2, c2), F(i1, i2, crho));
     }
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
-      F(i1, i2, i3, co) = mag(F(i1, i2, i3, c0), F(i1, i2, i3, c1),
-                              F(i1, i2, i3, c2), F(i1, i2, i3, crho));
+      F(i1, i2, i3, co) = mag(F(i1, i2, i3, c0),
+                              F(i1, i2, i3, c1),
+                              F(i1, i2, i3, c2),
+                              F(i1, i2, i3, crho));
     }
   };
 
-} // namespace kernel
+} // namespace render
 
 #endif // OUTPUT_RENDER_REDUCE_HPP

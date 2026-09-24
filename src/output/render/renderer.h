@@ -12,7 +12,6 @@
  *   - out::
  * @macros:
  *   - MPI_ENABLED
- *   - OUTPUT_ENABLED
  * @note
  * The Renderer is intentionally NOT templated on the engine/metric: it owns
  * only metric-agnostic, host-side work (config parsing, cadence tracking, the
@@ -45,7 +44,12 @@ namespace out {
     // projection: 0 orthographic, 1 perspective (pinhole), 2 dome (fulldome
     // azimuthal-equidistant fisheye from an interior eye). `orthographic` is
     // kept for back-compat (== projection 0); the kernel branches on `projection`.
-    enum Projection { Ortho = 0, Perspective = 1, Dome = 2 };
+    enum Projection : uint8_t {
+      Ortho       = 0,
+      Perspective = 1,
+      Dome        = 2
+    };
+
     real_t eye[3] { ZERO, ZERO, ZERO };
     real_t right[3] { ONE, ZERO, ZERO };
     real_t up[3] { ZERO, ONE, ZERO };
@@ -57,7 +61,8 @@ namespace out {
     real_t half_w { ONE };
     real_t half_h { ONE };
     int    projection { Ortho };
-    real_t dome_half_fov { static_cast<real_t>(1.5707963267948966) }; // rad; 180 deg dome => PI/2
+    real_t dome_half_fov { static_cast<real_t>(
+      1.5707963267948966) }; // rad; 180 deg dome => PI/2
     // dome far-clip: rays stop at this world distance from the eye, so the
     // sampled region is a half-ball (hemisphere) of this radius instead of the
     // whole box -> no box corner/edge path-length artifacts. 0 => no clip.
@@ -68,7 +73,7 @@ namespace out {
    * @brief Per-scene transfer function: premultiplied RGBA device LUT + range.
    */
   struct TransferFunction {
-    array_t<real_t* [4]> lut;          // device, (n_lut, 4), premultiplied RGBA
+    array_t<real_t* [4]> lut; // device, (n_lut, 4), premultiplied RGBA
     // opaque variant (alpha == 1 everywhere, so the premultiplied entries are
     // straight RGB) used by the flat 2D slice rasterizer, where a single
     // per-pixel sample should paint a solid heatmap rather than fade by opacity.
@@ -90,26 +95,26 @@ namespace out {
    * advection. See output/render/fieldlines.h.
    */
   struct FieldLineConfig {
-    bool        enable { false };     // build the geometry this run
-    std::string field { "B" };        // vector field to trace: "B" | "E" | "J"
-    int         bin { 4 };            // coarsening factor (cells/coarse cell), 2..8
-    real_t      seed_px { 8 };        // seed lattice spacing in screen pixels
-    real_t      tube_px { 2 };        // tube radius in screen pixels
+    bool        enable { false }; // build the geometry this run
+    std::string field { "B" };    // vector field to trace: "B" | "E" | "J"
+    int         bin { 4 };        // coarsening factor (cells/coarse cell), 2..8
+    real_t      seed_px { 8 };    // seed lattice spacing in screen pixels
+    real_t      tube_px { 2 };    // tube radius in screen pixels
     std::string colormap { "inferno" };
     // monochrome override: when this holds 3 entries [r,g,b] in [0,1] the lines
     // are drawn in that single color instead of the |B| colormap (reads well as
     // an overlay on a density/other volume). Empty => color by |B|.
-    std::vector<real_t> color {};
-    bool        log_scale { false };
-    real_t      vmin { ZERO };        // tube color range; vmin>=vmax => auto |B|
-    real_t      vmax { ZERO };
-    real_t      step_frac { static_cast<real_t>(0.5) }; // RK4 step / coarse cell
-    int         max_steps { 4000 };   // per-direction integration cap
-    real_t      max_len_frac { static_cast<real_t>(3) }; // x global box diagonal
-    int         seed_max { 4096 };    // hard cap on seed count (spacing grows to fit)
-    // 2D only: number of evenly-spaced flux-function contour levels (field lines
-    // in 2D are iso-contours of the out-of-plane vector potential psi)
-    int         levels { 16 };
+    std::vector<real_t> color;
+    bool                log_scale { false };
+    real_t vmin { ZERO }; // tube color range; vmin>=vmax => auto |B|
+    real_t vmax { ZERO };
+    real_t step_frac { static_cast<real_t>(0.5) }; // RK4 step / coarse cell
+    int    max_steps { 4000 }; // per-direction integration cap
+    real_t max_len_frac { static_cast<real_t>(3) }; // x global box diagonal
+    int    seed_max { 4096 }; // hard cap on seed count (spacing grows to fit)
+    // 2D only: number of evenly-spaced flux-function contour levels (field
+    // lines in 2D are iso-contours of the out-of-plane vector potential psi)
+    int    levels { 16 };
   };
 
   /**
@@ -122,15 +127,15 @@ namespace out {
    * within a (screen-space) line width of a level, colored by |B| = |grad psi|.
    */
   struct ContourSet {
-    array_t<real_t*>     psi;           // (n0*n1) flux function, c0-fastest
-    int                  n0 { 0 }, n1 { 0 };
-    real_t               origin0 { ZERO }, origin1 { ZERO };
-    real_t               dx0 { ONE }, dx1 { ONE };
-    real_t               dlevel { ONE };   // contour spacing in flux units
-    real_t               psi_ref { ZERO }; // reference (zeroth) level
-    real_t               line_half_px { ONE }; // half contour-line width, pixels
-    real_t               wpp { ONE };    // world units per screen pixel
-    array_t<real_t* [4]> lut;            // opaque colormap, by |B| = |grad psi|
+    array_t<real_t*> psi; // (n0*n1) flux function, c0-fastest
+    int              n0 { 0 }, n1 { 0 };
+    real_t           origin0 { ZERO }, origin1 { ZERO };
+    real_t           dx0 { ONE }, dx1 { ONE };
+    real_t           dlevel { ONE };       // contour spacing in flux units
+    real_t           psi_ref { ZERO };     // reference (zeroth) level
+    real_t           line_half_px { ONE }; // half contour-line width, pixels
+    real_t           wpp { ONE };          // world units per screen pixel
+    array_t<real_t* [4]> lut; // opaque colormap, by |B| = |grad psi|
     int                  n_lut { 256 };
     real_t               vmin { ZERO }, vmax { ONE }; // |B| color range
     bool                 enabled { false };
@@ -145,10 +150,10 @@ namespace out {
    * the box spine. Empty (n_seg==0) on ranks no line touches.
    */
   struct TubeSet {
-    array_t<real_t* [8]> seg;            // (n_seg, 8): p0, p1, s0, s1 in world coords
+    array_t<real_t* [8]> seg; // (n_seg, 8): p0, p1, s0, s1 in world coords
     int                  n_seg { 0 };
-    real_t               radius { ZERO }; // world-space tube radius (ds floor applied)
-    array_t<real_t* [4]> lut;             // premultiplied RGBA, opaque (alpha==1)
+    real_t radius { ZERO };   // world-space tube radius (ds floor applied)
+    array_t<real_t* [4]> lut; // premultiplied RGBA, opaque (alpha==1)
     int                  n_lut { 256 };
     real_t               vmin { ZERO }, vmax { ONE };
     bool                 log_scale { false };
@@ -157,8 +162,8 @@ namespace out {
     // segments in its cell instead of all of them. Bucketing on the coarse
     // grid is exact because the tube radius is << one coarse cell; a segment is
     // registered in every cell its radius-padded AABB overlaps.
-    array_t<int*>        cell_start;      // (ncell+1) prefix offsets into seg_idx
-    array_t<int*>        seg_idx;         // segment indices, grouped by cell
+    array_t<int*>        cell_start; // (ncell+1) prefix offsets into seg_idx
+    array_t<int*>        seg_idx;    // segment indices, grouped by cell
     int                  gnc[3] { 1, 1, 1 };
     real_t               gorigin[3] { ZERO, ZERO, ZERO };
     real_t               gdx[3] { ONE, ONE, ONE };
@@ -171,31 +176,38 @@ namespace out {
    * field with `show_fieldlines` true overlays the tubes inside its volume.
    */
   struct Scene {
-    std::string         field;     // "N" | "Bmag" | "Vmag" | "Txy" | "B1" | "fieldlines" ...
-    std::string         prefix;    // PNG filename prefix, e.g. "Bmag_"
-    std::string         label;     // colorbar title (defaults to field)
-    std::vector<real_t> ticks;     // explicit colorbar tick values (optional)
-    bool                show_fieldlines { false }; // overlay B-field tubes in the volume
-    TransferFunction    tf;
+    std::string field; // "N" | "Bmag" | "Vmag" | "Txy" | "B1" | "fieldlines" ...
+    std::string         prefix;     // PNG filename prefix, e.g. "Bmag_"
+    std::string         label;      // colorbar title (defaults to field)
+    std::vector<real_t> ticks;      // explicit colorbar tick values (optional)
+    bool show_fieldlines { false }; // overlay B-field tubes in the volume
+    TransferFunction tf;
   };
 
   /**
    * @brief Fulldome fisheye ("planetarium dome master") projection parameters.
    * @note When `enabled`, the 2D slice rasterizer ignores the linear world
-   * window and instead maps each pixel radially: the frame's inscribed circle is
-   * the dome, a pixel at normalized image radius rho in [0,1] is the dome zenith
-   * angle theta = rho * theta_max (azimuthal-equidistant image law -- the
-   * fulldome standard), and `law` picks how theta maps to a world radius r in a
-   * disk of radius `R` centered at (cx, cy). Pixels outside the inscribed circle
-   * are left transparent, so the corners are the dome master's black border.
-   * Cartesian 2D only (see Metadomain::Render); a metric-agnostic POD so the
-   * (templated) Render can copy it by value into the device kernel.
+   * window and instead maps each pixel radially: the frame's inscribed circle
+   * is the dome, a pixel at normalized image radius rho in [0,1] is the dome
+   * zenith angle theta = rho * theta_max (azimuthal-equidistant image law --
+   * the fulldome standard), and `law` picks how theta maps to a world radius r
+   * in a disk of radius `R` centered at (cx, cy). Pixels outside the inscribed
+   * circle are left transparent, so the corners are the dome master's black
+   * border. Cartesian 2D only (see Metadomain::Render); a metric-agnostic POD
+   * so the (templated) Render can copy it by value into the device kernel.
    */
   struct DomeMap {
-    enum Law { Equidistant = 0, Gnomonic = 1, Stereographic = 2, Orthographic = 3 };
+    enum Law : uint8_t {
+      Equidistant   = 0,
+      Gnomonic      = 1,
+      Stereographic = 2,
+      Orthographic  = 3
+    };
+
     bool   enabled { false };
     int    law { Equidistant };
-    real_t theta_max { static_cast<real_t>(1.5707963267948966) }; // dome half-FOV (rad)
+    real_t theta_max { static_cast<real_t>(
+      1.5707963267948966) };         // dome half-FOV (rad)
     real_t cx { ZERO }, cy { ZERO }; // world center of the cutout
     real_t R { ONE };                // world radius of the cutout
   };
@@ -210,7 +222,7 @@ namespace out {
   struct SubImage {
     int                 x0 { 0 }, y0 { 0 }; // top-left pixel in the full frame
     int                 w { 0 }, h { 0 };   // bbox size in pixels (0 => empty)
-    std::vector<real_t> rgba;                // w*h*4 premultiplied, pixel-major
+    std::vector<real_t> rgba;               // w*h*4 premultiplied, pixel-major
   };
 
   /**
@@ -226,8 +238,8 @@ namespace out {
    * fragment per covered pixel. See composite.h::mergeFrag / fragOver.
    */
   struct FragImage {
-    int                   x0 { 0 }, y0 { 0 }; // top-left pixel in the full frame
-    int                   w { 0 }, h { 0 };   // bbox size in pixels (0 => empty)
+    int x0 { 0 }, y0 { 0 }; // top-left pixel in the full frame
+    int w { 0 }, h { 0 };   // bbox size in pixels (0 => empty)
     // per-pixel prefix offsets into depth/rgba, length w*h+1 (offs[0] == 0).
     std::vector<uint32_t> offs;
     std::vector<real_t>   depth; // n_frag entries, ascending within each pixel
@@ -281,14 +293,14 @@ namespace out {
                            simtime_t       time) const;
 
     /**
-     * @brief Depth-resolved (A-buffer) composite for the interior-eye dome, then
-     * write the PNG.
+     * @brief Depth-resolved (A-buffer) composite for the interior-eye dome,
+     * then write the PNG.
      * @param frag this rank's sparse screen-space fragment image (depth + RGBA)
      * @param scene the scene being written
      * @param step current timestep (for the filename cycle number)
      * @param time current simulation time (drawn as a corner label if enabled)
-     * @note Order-independent: the tree reduce merges depth-sorted fragment lists
-     *       (associative + commutative), so no global rank order is needed. The
+     * @note Order-independent: the tree reduce merges depth-sorted fragment
+     * lists (associative + commutative), so no global rank order is needed. The
      *       root collapses each pixel's list front-to-back and writes the file.
      */
     void compositeFragAndWrite(FragImage&&  frag,
@@ -333,8 +345,8 @@ namespace out {
     }
 
     // Optional axis-aligned render region in physical/world coords. Always
-    // resolved (unset axes default to the full global extent), so the driver can
-    // use these unconditionally. `hasRegion()` reports whether any axis was
+    // resolved (unset axes default to the full global extent), so the driver
+    // can use these unconditionally. `hasRegion()` reports whether any axis was
     // overridden (e.g. to know a crop is active). `d` in {0,1,2} == {x1,x2,x3}.
     [[nodiscard]]
     auto hasRegion() const -> bool {
@@ -404,12 +416,12 @@ namespace out {
                        real_t             v1,
                        const std::string& xlabel,
                        const std::string& ylabel) {
-      m_slice_win[0]  = u0;
-      m_slice_win[1]  = u1;
-      m_slice_win[2]  = v0;
-      m_slice_win[3]  = v1;
-      m_slice_xlabel  = xlabel;
-      m_slice_ylabel  = ylabel;
+      m_slice_win[0] = u0;
+      m_slice_win[1] = u1;
+      m_slice_win[2] = v0;
+      m_slice_win[3] = v1;
+      m_slice_xlabel = xlabel;
+      m_slice_ylabel = ylabel;
     }
 
     // Mark the 2D slice as curvilinear (spherical) so the axes are drawn polar:
@@ -467,28 +479,28 @@ namespace out {
     int    m_width { 1024 };
     int    m_height { 1024 };
     int    m_samples { 400 };
-    real_t m_step_size { ZERO };  // world units/step; 0 => derive from samples
+    real_t m_step_size { ZERO }; // world units/step; 0 => derive from samples
     real_t m_early_alpha { static_cast<real_t>(0.99) };
     int    m_n_lut { 256 };
     // opaque background composited under the final image (shows through
     // low-alpha pixels); defaults to black.
     real_t m_background[3] { ZERO, ZERO, ZERO };
     // draw a colorbar (gradient + value ticks + label) on each PNG
-    bool m_colorbar { true };
+    bool   m_colorbar { true };
     // draw the colorbar in an extended right margin (outside the render region)
     // rather than overlaying it on top of the rendered volume
-    bool m_colorbar_outside { true };
+    bool   m_colorbar_outside { true };
     // 2D slice mode (spherical): mirror the meridional half-plane across the
     // symmetry axis to render a full disk from one axisymmetric half
-    bool m_mirror { true };
+    bool   m_mirror { true };
     // draw the current simulation time as a label in the upper-right corner
-    bool        m_time_label { false };
+    bool   m_time_label { false };
     // draw a spine (frame) + axis ticks/labels around the rendered region
-    bool        m_axes { false };
-    bool        m_axis_labels_set { false };
-    int         m_axis_nticks { 5 };
-    real_t      m_spine_width { static_cast<real_t>(2) }; // 3D spine width (px)
-    std::string m_axis_labels[3] { "x", "y", "z" };
+    bool   m_axes { false };
+    bool   m_axis_labels_set { false };
+    int    m_axis_nticks { 5 };
+    real_t m_spine_width { static_cast<real_t>(2) }; // 3D spine width (px)
+    std::string          m_axis_labels[3] { "x", "y", "z" };
     // global world box (2 or 3 axes); used to project the 3D axes box and to
     // know the render mode (size 2 => 2D slice, size 3 => 3D volume).
     boundaries_t<real_t> m_global_extent;
@@ -504,19 +516,19 @@ namespace out {
     // translate at `m_cam_vel` (world units per unit sim-time) to keep a
     // propagating feature (e.g. a shock) in frame. `m_eye_base` is the static
     // camera eye. See updateForTime().
-    real_t    m_cam_vel[3] { ZERO, ZERO, ZERO };
-    simtime_t m_cam_t0 { 0 };
-    bool      m_cam_moving { false };
-    real_t    m_eye_base[3] { ZERO, ZERO, ZERO };
+    real_t      m_cam_vel[3] { ZERO, ZERO, ZERO };
+    simtime_t   m_cam_t0 { 0 };
+    bool        m_cam_moving { false };
+    real_t      m_eye_base[3] { ZERO, ZERO, ZERO };
     // 2D slice world window + axis names, set per-frame by the templated Render
     real_t      m_slice_win[4] { ZERO, ONE, ZERO, ONE };
     std::string m_slice_xlabel { "x" };
     std::string m_slice_ylabel { "y" };
     // 2D curvilinear (spherical) slice: draw polar axes instead of Cartesian
-    bool   m_slice_polar { false };
-    real_t m_slice_rmin { ZERO }, m_slice_rmax { ONE };
-    real_t m_slice_tmin { ZERO }, m_slice_tmax { ONE };
-    bool   m_slice_pmirror { false };
+    bool        m_slice_polar { false };
+    real_t      m_slice_rmin { ZERO }, m_slice_rmax { ONE };
+    real_t      m_slice_tmin { ZERO }, m_slice_tmax { ONE };
+    bool        m_slice_pmirror { false };
 
     CameraDevice       m_camera_dev;
     std::vector<Scene> m_scenes;

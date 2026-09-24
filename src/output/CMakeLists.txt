@@ -8,6 +8,10 @@
 # * fields.cpp
 # * stats.cpp
 # * utils/interpret_prompt.cpp
+# * utils/writers.cpp
+# * utils/readers.cpp
+# * utils/tuning.cpp
+# * render/renderer.cpp
 #
 # @includes:
 #
@@ -26,15 +30,18 @@
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(SOURCES ${SRC_DIR}/stats.cpp ${SRC_DIR}/fields.cpp
-            ${SRC_DIR}/utils/interpret_prompt.cpp)
+set(SOURCES
+    ${SRC_DIR}/stats.cpp ${SRC_DIR}/fields.cpp
+    ${SRC_DIR}/utils/interpret_prompt.cpp ${SRC_DIR}/render/renderer.cpp)
 if(${output})
-  list(APPEND SOURCES ${SRC_DIR}/writer.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/checkpoint.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/render/renderer.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/utils/writers.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/utils/readers.cpp)
-  list(APPEND SOURCES ${SRC_DIR}/utils/tuning.cpp)
+  list(
+    APPEND
+    SOURCES
+    ${SRC_DIR}/writer.cpp
+    ${SRC_DIR}/checkpoint.cpp
+    ${SRC_DIR}/utils/writers.cpp
+    ${SRC_DIR}/utils/readers.cpp
+    ${SRC_DIR}/utils/tuning.cpp)
 endif()
 add_library(ntt_output ${SOURCES})
 

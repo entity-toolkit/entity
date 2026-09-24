@@ -2,11 +2,9 @@
  * @file output/render/slice2d.hpp
  * @brief Header-only Kokkos 2D slice rasterizer (one parallel_for over pixels)
  * @implements
- *   - kernel::SliceRaster_kernel<M>
+ *   - render::SliceRaster_kernel<M>
  * @namespaces:
- *   - kernel::
- * @macros:
- *   - OUTPUT_ENABLED
+ *   - render::
  * @note
  * The 2D counterpart of the volume ray-march: a 2D simulation has no depth to
  * integrate, so each screen pixel is a single inverse-mapped sample of the
@@ -34,11 +32,10 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
-#include "traits/metric.h"
 
 #include "output/render/renderer.h"
 
-namespace kernel {
+namespace render {
   using namespace ntt;
 
   template <class M>
@@ -106,7 +103,7 @@ namespace kernel {
     const real_t         line_vmin, line_vmax;
     const bool           line_on;
 
-    const bool           heatmap_on;
+    const bool heatmap_on;
 
     array_t<real_t* [4]> image; // output, (bw*bh, 4) premultiplied RGBA
 
@@ -212,16 +209,16 @@ namespace kernel {
     // bilinear sample of the prepared scalar at continuous code coords
     // (cc1, cc2), reading the ghost halo for corners just outside the box.
     Inline auto sample(real_t cc1, real_t cc2) const -> real_t {
-      const real_t g0 = cc1 - HALF; // cell-center continuous index
-      const real_t g1 = cc2 - HALF;
-      const real_t f0 = math::floor(g0);
-      const real_t f1 = math::floor(g1);
-      const real_t t0 = g0 - f0;
-      const real_t t1 = g1 - f1;
-      int          b0 = static_cast<int>(f0) + static_cast<int>(N_GHOSTS);
-      int          b1 = static_cast<int>(f1) + static_cast<int>(N_GHOSTS);
-      b0 = (b0 < 0) ? 0 : ((b0 > ext0 - 2) ? ext0 - 2 : b0);
-      b1 = (b1 < 0) ? 0 : ((b1 > ext1 - 2) ? ext1 - 2 : b1);
+      const real_t g0  = cc1 - HALF; // cell-center continuous index
+      const real_t g1  = cc2 - HALF;
+      const real_t f0  = math::floor(g0);
+      const real_t f1  = math::floor(g1);
+      const real_t t0  = g0 - f0;
+      const real_t t1  = g1 - f1;
+      int          b0  = static_cast<int>(f0) + static_cast<int>(N_GHOSTS);
+      int          b1  = static_cast<int>(f1) + static_cast<int>(N_GHOSTS);
+      b0               = (b0 < 0) ? 0 : ((b0 > ext0 - 2) ? ext0 - 2 : b0);
+      b1               = (b1 < 0) ? 0 : ((b1 > ext1 - 2) ? ext1 - 2 : b1);
       const real_t c00 = Fld(b0, b1, comp);
       const real_t c10 = Fld(b0 + 1, b1, comp);
       const real_t c01 = Fld(b0, b1 + 1, comp);
@@ -293,15 +290,14 @@ namespace kernel {
       const int c0 = static_cast<int>(math::floor((x - lg0) / ldx0));
       const int c1 = static_cast<int>(math::floor((z - lg1) / ldx1));
       const int c2 = static_cast<int>(math::floor((ZERO - lg2) / ldx2));
-      if (c0 < 0 or c0 >= lgnc0 or c1 < 0 or c1 >= lgnc1 or c2 < 0 or
-          c2 >= lgnc2) {
+      if (c0 < 0 or c0 >= lgnc0 or c1 < 0 or c1 >= lgnc1 or c2 < 0 or c2 >= lgnc2) {
         return false;
       }
-      const int    lin  = (c2 * lgnc1 + c1) * lgnc0 + c0;
-      const int    kb   = lcell_start(lin);
-      const int    ke   = lcell_start(lin + 1);
-      real_t       best = line_r2;
-      bool         hit  = false;
+      const int lin  = (c2 * lgnc1 + c1) * lgnc0 + c0;
+      const int kb   = lcell_start(lin);
+      const int ke   = lcell_start(lin + 1);
+      real_t    best = line_r2;
+      bool      hit  = false;
       for (int k = kb; k < ke; ++k) {
         const int    s  = lseg_idx(k);
         const real_t ax = lseg(s, 0), az = lseg(s, 1); // (X, Z) in slots 0,1
@@ -324,9 +320,8 @@ namespace kernel {
     }
 
     Inline void operator()(cellidx_t lpx, cellidx_t lpy) const {
-      const auto pix = static_cast<std::size_t>(lpy) *
-                         static_cast<std::size_t>(bw) +
-                       static_cast<std::size_t>(lpx);
+      const auto pix = static_cast<size_t>(lpy) * static_cast<size_t>(bw) +
+                       static_cast<size_t>(lpx);
       const int gpx = bx0 + static_cast<int>(lpx);
       const int gpy = by0 + static_cast<int>(lpy);
       // default transparent
@@ -358,27 +353,27 @@ namespace kernel {
         const real_t phi   = math::atan2(dyp, dxp);
         const real_t theta = rho * dome.theta_max; // dome zenith angle
         // normalized world radius fr = r / R for the chosen plane<->dome law
-        real_t fr;
+        real_t       fr;
         if (dome.law == out::DomeMap::Gnomonic) {
           const real_t tm = math::tan(dome.theta_max);
-          fr = (tm > ZERO) ? (math::tan(theta) / tm) : rho;
+          fr              = (tm > ZERO) ? (math::tan(theta) / tm) : rho;
         } else if (dome.law == out::DomeMap::Stereographic) {
           const real_t tm = math::tan(HALF * dome.theta_max);
-          fr = (tm > ZERO) ? (math::tan(HALF * theta) / tm) : rho;
+          fr              = (tm > ZERO) ? (math::tan(HALF * theta) / tm) : rho;
         } else if (dome.law == out::DomeMap::Orthographic) {
           const real_t sm = math::sin(dome.theta_max);
-          fr = (sm > ZERO) ? (math::sin(theta) / sm) : rho;
+          fr              = (sm > ZERO) ? (math::sin(theta) / sm) : rho;
         } else { // Equidistant (fulldome standard): r = R * theta/theta_max
           fr = rho;
         }
         const real_t r = dome.R * fr;
-        u = dome.cx + r * math::cos(phi);
-        v = dome.cy + r * math::sin(phi);
+        u              = dome.cx + r * math::cos(phi);
+        v              = dome.cy + r * math::sin(phi);
       } else {
-        u = umin + (static_cast<real_t>(gpx) + HALF) /
-                     static_cast<real_t>(W) * (umax - umin);
-        v = vmax - (static_cast<real_t>(gpy) + HALF) /
-                     static_cast<real_t>(H) * (vmax - vmin);
+        u = umin + (static_cast<real_t>(gpx) + HALF) / static_cast<real_t>(W) *
+                     (umax - umin);
+        v = vmax - (static_cast<real_t>(gpy) + HALF) / static_cast<real_t>(H) *
+                     (vmax - vmin);
       }
 
       // world -> continuous local code coords, with an optional physical
@@ -399,8 +394,7 @@ namespace kernel {
         }
         const real_t r  = math::sqrt(u * u + v * v);
         const real_t th = math::atan2(math::abs(u), v); // in [0, pi]
-        if (region_clip and
-            (r < rx1lo or r > rx1hi or th < rx2lo or th > rx2hi)) {
+        if (region_clip and (r < rx1lo or r > rx1hi or th < rx2lo or th > rx2hi)) {
           return;
         }
         cc1 = metric.template convert<1, Crd::Ph, Crd::Cd>(r);
@@ -415,7 +409,7 @@ namespace kernel {
       real_t cr = ZERO, cg = ZERO, cb = ZERO;
       bool   painted = false;
       if (heatmap_on) {
-        const real_t s = sample(cc1, cc2);
+        const real_t s         = sample(cc1, cc2);
         // normalize through the transfer-function range
         const real_t inv_range = (vhi > vlo) ? (ONE / (vhi - vlo)) : ZERO;
         real_t       uu;
@@ -456,23 +450,21 @@ namespace kernel {
           const real_t gx   = (pr - pl) / (TWO * cwpp);
           const real_t gy   = (pup - pd) / (TWO * cwpp);
           const real_t g    = math::sqrt(gx * gx + gy * gy); // |B|
-          const real_t tlev = (cdlevel > ZERO) ? (psi0 - cpsi_ref) / cdlevel
-                                               : ZERO;
+          const real_t tlev = (cdlevel > ZERO) ? (psi0 - cpsi_ref) / cdlevel : ZERO;
           const real_t nlev = math::floor(tlev + HALF); // nearest level index
-          const real_t d_world = math::abs(psi0 - (cpsi_ref + nlev * cdlevel));
-          const real_t eps     = static_cast<real_t>(1e-30);
+          const real_t d_world  = math::abs(psi0 - (cpsi_ref + nlev * cdlevel));
+          const real_t eps      = static_cast<real_t>(1e-30);
           const real_t d_screen = (g > eps) ? (d_world / (g * cwpp))
                                             : static_cast<real_t>(1e30);
           if (d_screen <= cline_half_px) {
             const real_t invr = (cvmax > cvmin) ? (ONE / (cvmax - cvmin)) : ZERO;
-            real_t       uu   = (g - cvmin) * invr;
+            real_t uu = (g - cvmin) * invr;
             if (uu < ZERO) {
               uu = ZERO;
             } else if (uu > ONE) {
               uu = ONE;
             }
-            int idx = static_cast<int>(uu * static_cast<real_t>(cn_lut - 1) +
-                                       HALF);
+            int idx = static_cast<int>(uu * static_cast<real_t>(cn_lut - 1) + HALF);
             if (idx < 0) {
               idx = 0;
             } else if (idx > cn_lut - 1) {
@@ -493,14 +485,14 @@ namespace kernel {
             const real_t invr = (line_vmax > line_vmin)
                                   ? (ONE / (line_vmax - line_vmin))
                                   : ZERO;
-            real_t uu = (sB - line_vmin) * invr;
+            real_t       uu   = (sB - line_vmin) * invr;
             if (uu < ZERO) {
               uu = ZERO;
             } else if (uu > ONE) {
               uu = ONE;
             }
-            int idx = static_cast<int>(uu * static_cast<real_t>(line_n_lut - 1) +
-                                       HALF);
+            int idx = static_cast<int>(
+              uu * static_cast<real_t>(line_n_lut - 1) + HALF);
             if (idx < 0) {
               idx = 0;
             } else if (idx > line_n_lut - 1) {
@@ -522,6 +514,6 @@ namespace kernel {
     }
   };
 
-} // namespace kernel
+} // namespace render
 
 #endif // OUTPUT_RENDER_SLICE2D_HPP
