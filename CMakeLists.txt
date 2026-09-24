@@ -58,27 +58,6 @@ set(gpu_aware_mpi
     ${default_gpu_aware_mpi}
     CACHE BOOL "Enable GPU-aware MPI")
 
-# deprecated `team_policy*` options (renamed to `tiled_deposit*`); forward them
-# unless the new name was given explicitly, and drop the stale cache entries
-foreach(_suffix "" "_tile_size" "_drift")
-  if(DEFINED team_policy${_suffix})
-    if(NOT DEFINED tiled_deposit${_suffix})
-      message(WARNING "`team_policy${_suffix}` is deprecated, "
-                      "use `tiled_deposit${_suffix}` instead")
-      if("${_suffix}" STREQUAL "")
-        set(_type BOOL)
-      else()
-        set(_type STRING)
-      endif()
-      set(tiled_deposit${_suffix}
-          ${team_policy${_suffix}}
-          CACHE ${_type} "")
-    endif()
-    unset(team_policy${_suffix} CACHE)
-  endif()
-endforeach()
-unset(team_policy_tile_sizes CACHE)
-
 set(tiled_deposit
     ${default_tiled_deposit}
     CACHE BOOL "Enable tile-blocked deposit/pusher kernels")
