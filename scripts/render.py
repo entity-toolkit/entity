@@ -1,43 +1,9 @@
 #!/usr/bin/env python3
 """
-render_preview.py -- fast, data-free preview of the entity in-situ renderer's
-SCENE GEOMETRY.
-
-Purpose
--------
 Reads a simulation `.toml` and draws the domain box / camera framing / axes /
 region crop / field-line seed lattice, WITHOUT any simulation data or
 ray-marching. It lets you iterate on camera orientation (e.g. the domain cube of
 a 3D turbulence run) and framing without relaunching the simulation.
-
-It reproduces the SAME camera / projection the C++ renderer uses, so the preview
-is trustworthy: the box you see here is the box the renderer will draw.
-
-  IMPORTANT: the camera / projection / region / field-line-lattice math below is
-  a faithful port of the C++ renderer. If the C++ changes, THIS MUST BE UPDATED
-  IN SYNC. The controlling C++ sources (verified line-by-line while writing this)
-  are:
-    - src/output/render/renderer.cpp
-        Renderer::init  -> toml parse, region resolution, default camera,
-                           ortho/persp basis, ortho_height default = box diag,
-                           eye = center + 1.7*diag*(1,1,1)/sqrt3, fov 35 deg
-        Renderer::updateForTime -> moving view (pure pan of region + eye)
-    - src/output/render/composite.h
-        projectToScreen (~L85-112) -> world -> pixel, ortho & perspective
-        screenBBox      (~L121-163)
-    - src/output/render/raymarch.hpp
-        ray generation (~L308-335) -- the inverse of projectToScreen
-    - src/output/render/axes.h
-        drawAxes3D / drawAxes2D / drawAxesPolar, niceTicks / niceNum tick style
-    - src/framework/domain/metadomain_render.cpp
-        2D window derivation (Cartesian window vs. spherical meridional wedge,
-        X = r sin th, Z = r cos th, aspect expansion, mirror), field-line setup
-    - src/framework/parameters/grid.cpp (~L470-497)
-        extent parse + theta,phi auto-fill for non-Cartesian metrics
-    - src/output/render/fieldlines.h
-        3D seed lattice: spacing = max(seed_px,1)*wpp, grown by
-        cbrt(n_seed/seed_max) if over seed_max, ns[d]=floor(size[d]/spacing),
-        seeds at cell centers.
 
 Modes
 -----
@@ -48,18 +14,12 @@ Modes
   * 2D spherical/GR: meridional wedge (arcs at r in {rmin,rmax}, rays at
     theta in {tmin,tmax}), mirrored into a full disk if `mirror`.
   * 1D: nothing to render (warns).
-
-Usage
------
-  module load python/3.13.0
-  python render_preview.py <toml> [--out preview.png] [--time T] [--scene N]
-
-If --out is omitted, saves to <toml_dir>/<simname>_preview.png.
 """
 
 import argparse
 import math
 import os
+import subprocess
 import sys
 
 try:
@@ -67,9 +27,9 @@ try:
 except ModuleNotFoundError:  # Python 3.10 and older (e.g. the miniforge3 module)
     import tomli as tomllib  # same load() API
 
+import matplotlib
 import numpy as np
 
-import matplotlib
 matplotlib.use("Agg")  # headless cluster: no interactive display
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -91,6 +51,8 @@ def find_or(d, default, *keys):
 #  metric / extent handling (grid.cpp ~L416-497)                              #
 # --------------------------------------------------------------------------- #
 CARTESIAN_METRICS = {"minkowski"}
+
+
 # everything else that entity supports is curvilinear (r-first extent):
 #   spherical, qspherical, kerr_schild, kerr_schild_0, qkerr_schild
 def is_cartesian(metric_name):
@@ -125,7 +87,7 @@ def global_extent(td):
         # (grid.cpp errors if >1 row is supplied for non-cartesian; we just
         #  keep the r-row and append.)
         ext = [ext[0]]
-        ext.append([0.0, math.pi])            # theta in [0, pi]  (2D and 3D)
+        ext.append([0.0, math.pi])  # theta in [0, pi]  (2D and 3D)
         if dim == 3:
             ext.append([0.0, 2.0 * math.pi])  # phi in [0, 2pi]   (3D only)
 
@@ -147,9 +109,11 @@ def _norm3(a):
 
 
 def _cross3(a, b):
-    return (a[1] * b[2] - a[2] * b[1],
-            a[2] * b[0] - a[0] * b[2],
-            a[0] * b[1] - a[1] * b[0])
+    return (
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    )
 
 
 def _dot3(a, b):
@@ -177,7 +141,8 @@ class Camera:
         fov = float(find_or(td, 35.0, "output", "render", "camera", "fov"))
         # default ortho_height covers the box from any view -> == box diagonal
         ortho_height = float(
-            find_or(td, diag, "output", "render", "camera", "ortho_height"))
+            find_or(td, diag, "output", "render", "camera", "ortho_height")
+        )
 
         # default eye: box center pushed back along (1,1,1) by ~1.7 diagonals
         eye = [0.0, 0.0, 0.0]
@@ -193,8 +158,7 @@ class Camera:
         else:
             upv = [0.0, 0.0, 1.0]
 
-        forward = _norm3([lookat[0] - eye[0], lookat[1] - eye[1],
-                          lookat[2] - eye[2]])
+        forward = _norm3([lookat[0] - eye[0], lookat[1] - eye[1], lookat[2] - eye[2]])
         right = _norm3(_cross3(forward, upv))
         up_cam = _cross3(right, forward)  # already unit (right,forward unit & perp)
 
@@ -253,7 +217,9 @@ def resolve_region(td, ext):
         if not lim:
             continue
         if len(lim) != 2 or lim[1] <= lim[0]:
-            print(f"  warning: output.render.{keys[d]} must be [lo,hi] with hi>lo; ignoring")
+            print(
+                f"  warning: output.render.{keys[d]} must be [lo,hi] with hi>lo; ignoring"
+            )
             continue
         lo = max(float(lim[0]), ext[d][0])
         hi = min(float(lim[1]), ext[d][1])
@@ -261,7 +227,9 @@ def resolve_region(td, ext):
             region[d] = [lo, hi]
             has_region = True
         else:
-            print(f"  warning: output.render.{keys[d]} does not overlap the domain; ignoring")
+            print(
+                f"  warning: output.render.{keys[d]} does not overlap the domain; ignoring"
+            )
     return [tuple(p) for p in region], has_region
 
 
@@ -293,12 +261,12 @@ def _nice_num(x, do_round):
     if x <= 0.0:
         return 1.0
     e = math.floor(math.log10(x))
-    f = x / (10.0 ** e)
+    f = x / (10.0**e)
     if do_round:
         nf = 1.0 if f < 1.5 else (2.0 if f < 3.0 else (5.0 if f < 7.0 else 10.0))
     else:
         nf = 1.0 if f <= 1.0 else (2.0 if f <= 2.0 else (5.0 if f <= 5.0 else 10.0))
-    return nf * (10.0 ** e)
+    return nf * (10.0**e)
 
 
 def nice_ticks(lo, hi, n):
@@ -355,13 +323,13 @@ def field_line_seeds_3d(td, region, cam, H):
         ns = []
         tot = 1
         for d in range(3):
-            n = max(1, int(math.floor(size[d] / sp))) if sp > 0 else 1
+            n = max(1, math.floor(size[d] / sp)) if sp > 0 else 1
             ns.append(n)
             tot *= n
         return tot, ns
 
     n_seed, ns = count_seeds(spacing)
-    if n_seed > seed_max and seed_max > 0:
+    if n_seed > seed_max > 0:
         grow = (float(n_seed) / float(seed_max)) ** (1.0 / 3.0)
         spacing *= grow
         n_seed, ns = count_seeds(spacing)
@@ -370,11 +338,13 @@ def field_line_seeds_3d(td, region, cam, H):
     for k in range(ns[2]):
         for j in range(ns[1]):
             for i in range(ns[0]):
-                seeds.append((
-                    origin[0] + (i + 0.5) * size[0] / ns[0],
-                    origin[1] + (j + 0.5) * size[1] / ns[1],
-                    origin[2] + (k + 0.5) * size[2] / ns[2],
-                ))
+                seeds.append(
+                    (
+                        origin[0] + (i + 0.5) * size[0] / ns[0],
+                        origin[1] + (j + 0.5) * size[1] / ns[1],
+                        origin[2] + (k + 0.5) * size[2] / ns[2],
+                    )
+                )
     return seeds, ns
 
 
@@ -386,19 +356,30 @@ def cube_corners(box):
     (matches the C++ corner() ordering in axes.h / screenBBox)."""
     corners = []
     for m in range(8):
-        corners.append((
-            box[0][1] if (m & 1) else box[0][0],
-            box[1][1] if (m & 2) else box[1][0],
-            box[2][1] if (m & 4) else box[2][0],
-        ))
+        corners.append(
+            (
+                box[0][1] if (m & 1) else box[0][0],
+                box[1][1] if (m & 2) else box[1][0],
+                box[2][1] if (m & 4) else box[2][0],
+            )
+        )
     return corners
 
 
 # the 12 edges as (corner_i, corner_j) index pairs
 CUBE_EDGES = [
-    (0, 1), (2, 3), (4, 5), (6, 7),   # x-parallel
-    (0, 2), (1, 3), (4, 6), (5, 7),   # y-parallel
-    (0, 4), (1, 5), (2, 6), (3, 7),   # z-parallel
+    (0, 1),
+    (2, 3),
+    (4, 5),
+    (6, 7),  # x-parallel
+    (0, 2),
+    (1, 3),
+    (4, 6),
+    (5, 7),  # y-parallel
+    (0, 4),
+    (1, 5),
+    (2, 6),
+    (3, 7),  # z-parallel
 ]
 
 
@@ -430,7 +411,7 @@ def select_axis_edge_3d(cam, d, cx, cy, ccx, ccy):
     the projected box centroid. Returns (m0, m1, pxd, pyd): the edge's two corner
     indices (m0 has axis d at its low end) and the unit screen-space OUTWARD push
     direction (perpendicular to the edge, pointing away from the centroid)."""
-    e1 = 1 if d == 0 else 0            # the two perpendicular axes
+    e1 = 1 if d == 0 else 0  # the two perpendicular axes
     e2 = 1 if d == 2 else 2
     best = None
     for s1 in (0, 1):
@@ -448,17 +429,14 @@ def select_axis_edge_3d(cam, d, cx, cy, ccx, ccy):
     ex, ey = cx[m1] - cx[m0], cy[m1] - cy[m0]
     el = math.hypot(ex, ey) or 1.0
     ex, ey = ex / el, ey / el
-    pxd, pyd = -ey, ex                 # screen-perpendicular to the edge
+    pxd, pyd = -ey, ex  # screen-perpendicular to the edge
     mxv = 0.5 * (cx[m0] + cx[m1]) - ccx
     myv = 0.5 * (cy[m0] + cy[m1]) - ccy
-    if pxd * mxv + pyd * myv < 0.0:    # flip to point away from the box centroid
+    if pxd * mxv + pyd * myv < 0.0:  # flip to point away from the box centroid
         pxd, pyd = -pxd, -pyd
     return m0, m1, pxd, pyd
 
 
-# --------------------------------------------------------------------------- #
-#  3D preview                                                                  #
-# --------------------------------------------------------------------------- #
 def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
     fig, ax = plt.subplots(figsize=(W / 100.0, H / 100.0), dpi=100)
 
@@ -466,21 +444,31 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
         corners = cube_corners(box)
         proj = [cam.project(c, W, H) for c in corners]
         first = True
-        for (a, b) in CUBE_EDGES:
+        for a, b in CUBE_EDGES:
             pa, pb = proj[a], proj[b]
             if pa is None or pb is None:
                 continue  # edge with a corner behind a perspective camera
-            ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color=color, lw=lw, ls=ls,
-                    label=(label if first else None), zorder=3)
+            ax.plot(
+                [pa[0], pb[0]],
+                [pa[1], pb[1]],
+                color=color,
+                lw=lw,
+                ls=ls,
+                label=(label if first else None),
+                zorder=3,
+            )
             first = False
 
     # full extent (light gray)
-    project_box([ext[0], ext[1], ext[2]], color="0.6", lw=1.2,
-                label="full extent")
+    project_box([ext[0], ext[1], ext[2]], color="0.6", lw=1.2, label="full extent")
     # region crop, if distinct
     if has_region:
-        project_box([region[0], region[1], region[2]], color="tab:blue",
-                    lw=2.0, label="region crop")
+        project_box(
+            [region[0], region[1], region[2]],
+            color="tab:blue",
+            lw=2.0,
+            label="region crop",
+        )
 
     # axes tick labels: for each axis, pick the FOREGROUND (silhouette) edge of
     # the framed box and annotate along it, exactly as out::drawAxes3D does, so
@@ -503,12 +491,12 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
         ccx = prc[0] if prc is not None else 0.0
         ccy = prc[1] if prc is not None else 0.0
 
-        tl = 8.0            # tick-mark length [px]
-        num_off = tl + 10.0   # numeric-label center offset from the edge [px]
+        tl = 8.0  # tick-mark length [px]
+        num_off = tl + 10.0  # numeric-label center offset from the edge [px]
         name_off = tl + 30.0  # axis-name center offset from the edge [px]
         for d in range(3):
             name = axis_names[d] if d < len(axis_names) else default_names[d]
-            m0, m1, pxd, pyd = select_axis_edge_3d(cam, d, cx, cy, ccx, ccy)
+            m0, _, pxd, pyd = select_axis_edge_3d(cam, d, cx, cy, ccx, ccy)
             # o = corner(m0): perpendicular coords fixed, axis d swept for ticks
             o = list(corners[m0])
             lo_d, hi_d = frame_box[d][0], frame_box[d][1]
@@ -519,19 +507,32 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
                 if pr is None:
                     continue
                 a, b = pr
-                ax.plot([a, a + pxd * tl], [b, b + pyd * tl],
-                        color="0.35", lw=1.0, zorder=4)
-                ax.annotate(f"{tv:g}", (a + pxd * num_off, b + pyd * num_off),
-                            fontsize=6, color="0.25", ha="center", va="center")
+                ax.plot(
+                    [a, a + pxd * tl], [b, b + pyd * tl], color="0.35", lw=1.0, zorder=4
+                )
+                ax.annotate(
+                    f"{tv:g}",
+                    (a + pxd * num_off, b + pyd * num_off),
+                    fontsize=6,
+                    color="0.25",
+                    ha="center",
+                    va="center",
+                )
             # axis name at the MIDDLE of the chosen edge, pushed further outward
             mid = list(o)
             mid[d] = 0.5 * (lo_d + hi_d)
             pr = cam.project(mid, W, H)
             if pr is not None:
                 a, b = pr
-                ax.annotate(name, (a + pxd * name_off, b + pyd * name_off),
-                            fontsize=9, color="k", fontweight="bold",
-                            ha="center", va="center")
+                ax.annotate(
+                    name,
+                    (a + pxd * name_off, b + pyd * name_off),
+                    fontsize=9,
+                    color="k",
+                    fontweight="bold",
+                    ha="center",
+                    va="center",
+                )
 
     # field-line SEED lattice (schematic scatter, NOT traced lines)
     fl = field_line_seeds_3d(td, frame_box, cam, H)
@@ -544,9 +545,17 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
                 pxs.append(pr[0])
                 pys.append(pr[1])
         if pxs:
-            ax.scatter(pxs, pys, s=8, c="tab:red", marker="o", alpha=0.6,
-                       edgecolors="none", zorder=2,
-                       label=f"field-line seeds (schematic, {ns[0]}x{ns[1]}x{ns[2]})")
+            ax.scatter(
+                pxs,
+                pys,
+                s=8,
+                c="tab:red",
+                marker="o",
+                alpha=0.6,
+                edgecolors="none",
+                zorder=2,
+                label=f"field-line seeds (schematic, {ns[0]}x{ns[1]}x{ns[2]})",
+            )
 
     ax.set_xlim(0, W)
     ax.set_ylim(H, 0)  # inverted y: origin upper-left, matches the PNG
@@ -561,9 +570,6 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
-#  2D window derivation (metadomain_render.cpp 2D branch)                       #
-# --------------------------------------------------------------------------- #
 def derive_2d_window(td, ext, region, cartesian, mirror, W, H):
     """Return (umin,umax,vmin,vmax) -- the aspect-expanded world window mapped
     onto the WxH image, exactly as metadomain_render.cpp derives it."""
@@ -582,17 +588,22 @@ def derive_2d_window(td, ext, region, cartesian, mirror, W, H):
             nonlocal umin, umax, vmin, vmax
             X = r * math.sin(th)
             Z = r * math.cos(th)
-            umin = min(umin, X); umax = max(umax, X)
-            vmin = min(vmin, Z); vmax = max(vmax, Z)
+            umin = min(umin, X)
+            umax = max(umax, X)
+            vmin = min(vmin, Z)
+            vmax = max(vmax, Z)
             if mirror:
-                umin = min(umin, -X); umax = max(umax, -X)
+                umin = min(umin, -X)
+                umax = max(umax, -X)
 
         for k in range(NB):
             t = k / (NB - 1)
             th = x2lo + (x2hi - x2lo) * t
             rr = x1lo + (x1hi - x1lo) * t
-            accXZ(x1lo, th); accXZ(x1hi, th)
-            accXZ(rr, x2lo); accXZ(rr, x2hi)
+            accXZ(x1lo, th)
+            accXZ(x1hi, th)
+            accXZ(rr, x2lo)
+            accXZ(rr, x2hi)
 
     # expand the window to the image aspect (centered) so geometry isn't stretched
     waspect = (umax - umin) / (vmax - vmin)
@@ -610,8 +621,10 @@ def derive_2d_window(td, ext, region, cartesian, mirror, W, H):
     # are not clipped (Cartesian fills the frame and needs none).
     if not cartesian:
         pad = 1.12
-        cu = 0.5 * (umin + umax); hu = 0.5 * (umax - umin) * pad
-        cv = 0.5 * (vmin + vmax); hv = 0.5 * (vmax - vmin) * pad
+        cu = 0.5 * (umin + umax)
+        hu = 0.5 * (umax - umin) * pad
+        cv = 0.5 * (vmin + vmax)
+        hv = 0.5 * (vmax - vmin) * pad
         umin, umax = cu - hu, cu + hu
         vmin, vmax = cv - hv, cv + hv
 
@@ -623,20 +636,43 @@ def draw_2d_cartesian(td, ext, region, has_region, W, H, out_path, sim_name):
     fig, ax = plt.subplots(figsize=(W / 100.0, H / 100.0), dpi=100)
 
     # aspect-expanded slice window (the background-padded frame)
-    ax.add_patch(Rectangle((umin, vmin), umax - umin, vmax - vmin,
-                           fill=False, ec="0.7", lw=1.0, ls="--",
-                           label="slice window (aspect-expanded)"))
+    ax.add_patch(
+        Rectangle(
+            (umin, vmin),
+            umax - umin,
+            vmax - vmin,
+            fill=False,
+            ec="0.7",
+            lw=1.0,
+            ls="--",
+            label="slice window (aspect-expanded)",
+        )
+    )
     # full domain box
-    ax.add_patch(Rectangle((ext[0][0], ext[1][0]),
-                           ext[0][1] - ext[0][0], ext[1][1] - ext[1][0],
-                           fill=False, ec="0.4", lw=1.5, label="domain"))
+    ax.add_patch(
+        Rectangle(
+            (ext[0][0], ext[1][0]),
+            ext[0][1] - ext[0][0],
+            ext[1][1] - ext[1][0],
+            fill=False,
+            ec="0.4",
+            lw=1.5,
+            label="domain",
+        )
+    )
     # region crop
     if has_region:
-        ax.add_patch(Rectangle((region[0][0], region[1][0]),
-                               region[0][1] - region[0][0],
-                               region[1][1] - region[1][0],
-                               fill=False, ec="tab:blue", lw=2.0,
-                               label="region crop"))
+        ax.add_patch(
+            Rectangle(
+                (region[0][0], region[1][0]),
+                region[0][1] - region[0][0],
+                region[1][1] - region[1][0],
+                fill=False,
+                ec="tab:blue",
+                lw=2.0,
+                label="region crop",
+            )
+        )
 
     # ticks (nice numbers over the data box == region)
     axes_on = find_or(td, False, "output", "render", "axes")
@@ -671,25 +707,32 @@ def draw_2d_spherical(td, ext, region, has_region, mirror, W, H, out_path, sim_n
         # outer + inner arcs and two rays, in meridional (X=r sin th, Z=r cos th)
         th = np.linspace(tmn, tmx, 200)
         # outer arc
-        ax.plot(sign * rmx * np.sin(th), rmx * np.cos(th), color=color, lw=lw,
-                label=label)
+        ax.plot(
+            sign * rmx * np.sin(th), rmx * np.cos(th), color=color, lw=lw, label=label
+        )
         # inner arc
         ax.plot(sign * rmn * np.sin(th), rmn * np.cos(th), color=color, lw=lw)
         # rays at tmin, tmax
         for tt in (tmn, tmx):
-            ax.plot([sign * rmn * math.sin(tt), sign * rmx * math.sin(tt)],
-                    [rmn * math.cos(tt), rmx * math.cos(tt)], color=color, lw=lw)
+            ax.plot(
+                [sign * rmn * math.sin(tt), sign * rmx * math.sin(tt)],
+                [rmn * math.cos(tt), rmx * math.cos(tt)],
+                color=color,
+                lw=lw,
+            )
 
     # full extent wedge (light gray)
-    wedge_boundary(ext[0][0], ext[0][1], ext[1][0], ext[1][1], 1.0, "0.6", 1.2,
-                   label="full extent")
+    wedge_boundary(
+        ext[0][0], ext[0][1], ext[1][0], ext[1][1], 1.0, "0.6", 1.2, label="full extent"
+    )
     if mirror:
         wedge_boundary(ext[0][0], ext[0][1], ext[1][0], ext[1][1], -1.0, "0.6", 1.2)
 
     # region wedge (colored) if cropped
     if has_region:
-        wedge_boundary(rmin, rmax, tmin, tmax, 1.0, "tab:blue", 2.0,
-                       label="region crop")
+        wedge_boundary(
+            rmin, rmax, tmin, tmax, 1.0, "tab:blue", 2.0, label="region crop"
+        )
         if mirror:
             wedge_boundary(rmin, rmax, tmin, tmax, -1.0, "tab:blue", 2.0)
 
@@ -699,9 +742,16 @@ def draw_2d_spherical(td, ext, region, has_region, mirror, W, H, out_path, sim_n
     if axes_on:
         for Rv in nice_ticks(0.0, ext[0][1], nticks):
             ax.plot(0.0, Rv, marker="+", color="0.3", ms=6)
-            ax.annotate(f"{Rv:g}", (0.0, Rv), fontsize=6, color="0.25",
-                        xytext=(-8, 0), textcoords="offset points", ha="right",
-                        va="center")
+            ax.annotate(
+                f"{Rv:g}",
+                (0.0, Rv),
+                fontsize=6,
+                color="0.25",
+                xytext=(-8, 0),
+                textcoords="offset points",
+                ha="right",
+                va="center",
+            )
 
     ax.set_xlim(umin, umax)
     ax.set_ylim(vmin, vmax)
@@ -716,22 +766,7 @@ def draw_2d_spherical(td, ext, region, has_region, mirror, W, H, out_path, sim_n
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
-#  main                                                                        #
-# --------------------------------------------------------------------------- #
-def main():
-    ap = argparse.ArgumentParser(
-        description="Data-free preview of the entity in-situ renderer scene geometry.")
-    ap.add_argument("toml", help="simulation .toml file")
-    ap.add_argument("--out", default=None,
-                    help="output PNG (default: <toml_dir>/<simname>_preview.png)")
-    ap.add_argument("--time", type=float, default=0.0,
-                    help="sim time T for the moving-view pan (default 0)")
-    ap.add_argument("--scene", type=int, default=None,
-                    help="scene index (accepted for parity; geometry is scene-"
-                         "independent, so it only affects the reported label)")
-    args = ap.parse_args()
-
+def preview(args):
     if not os.path.isfile(args.toml):
         print(f"error: no such file: {args.toml}", file=sys.stderr)
         return 2
@@ -782,8 +817,10 @@ def main():
         mode = "1D (nothing to render)"
 
     eye_str = f"({cam.eye[0]:g},{cam.eye[1]:g},{cam.eye[2]:g})"
-    print(f"mode={mode} | metric={metric_name} | eye={eye_str} | "
-          f"ortho_height={cam.ortho_height:g} | region={fmt_pairs(region)}")
+    print(
+        f"mode={mode} | metric={metric_name} | eye={eye_str} | "
+        f"ortho_height={cam.ortho_height:g} | region={fmt_pairs(region)}"
+    )
     if args.scene is not None:
         print(f"  (scene index {args.scene} requested; geometry is scene-independent)")
 
@@ -791,21 +828,199 @@ def main():
     if dim == 3 and cartesian:
         draw_3d(td, ext, region, has_region, cam, width, height, out_path, sim_name)
     elif dim == 3:
-        print("warning: 3D non-Cartesian is not a renderer mode (3D is Cartesian-"
-              "only); nothing drawn.")
+        print(
+            "warning: 3D non-Cartesian is not a renderer mode (3D is Cartesian-"
+            "only); nothing drawn."
+        )
         return 1
     elif dim == 2 and cartesian:
-        draw_2d_cartesian(td, ext, region, has_region, width, height, out_path,
-                          sim_name)
+        draw_2d_cartesian(
+            td, ext, region, has_region, width, height, out_path, sim_name
+        )
     elif dim == 2:
-        draw_2d_spherical(td, ext, region, has_region, mirror, width, height,
-                          out_path, sim_name)
+        draw_2d_spherical(
+            td, ext, region, has_region, mirror, width, height, out_path, sim_name
+        )
     else:
         print("warning: 1D run -- the renderer is inactive; nothing to preview.")
         return 1
 
     print(f"wrote {out_path}")
     return 0
+
+
+# ffmpeg -nostdin -framerate $framerate $inputspec -c:v libx264 -crf $compression -filter_complex \"[0:v]format=yuv420p,pad=ceil(iw/2)*2:ceil(ih/2)*2\" $output"
+
+
+def merge(args):
+    try:
+        subprocess.run(["ffmpeg", "-version"], check=True, stdout=subprocess.DEVNULL)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print(
+            "error: ffmpeg not found or not executable; cannot merge PNGs into a movie"
+        )
+        return 1
+    png_dir = os.path.abspath(args.path)
+    png_files = {f.split("_")[0] for f in os.listdir(png_dir) if f.endswith(".png")}
+    print(png_files, png_dir)
+
+    ffmpeg_prekwargs = [
+        "ffmpeg",
+        "-nostdin",
+        "-framerate",
+        str(args.framerate),
+    ]
+    ffmpeg_postkwargs = [
+        "-c:v",
+        "libx264",
+        "-crf",
+        str(args.compression),
+        "-filter_complex",
+        "[0:v]format=yuv420p,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+    ]
+
+    if args.prefix:
+        if args.prefix not in png_files:
+            print(f"error: prefix '{args.prefix}' not found in {png_dir}")
+            return 1
+        prefixes = [args.prefix]
+    else:
+        prefixes = sorted(png_files)
+    if args.merge and len(prefixes) > 1:
+        # arrange prefixes on a grid with args.cols columns (empty cells are black)
+        n = len(prefixes)
+        cols = max(1, min(args.cols, n))
+        rows = (n + cols - 1) // cols
+        inputs = []
+        for prefix in prefixes:
+            # -framerate/-pattern_type are per-input options: repeat before every -i
+            inputs += [
+                "-framerate",
+                str(args.framerate),
+                "-pattern_type",
+                "glob",
+                "-i",
+                os.path.join(png_dir, f"{prefix}_*.png"),
+            ]
+        layout = []
+        for i in range(n):
+            r, c = divmod(i, cols)
+            x = "+".join(f"w{j}" for j in range(c)) or "0"
+            y = "+".join(f"h{k * cols}" for k in range(r)) or "0"
+            layout.append(f"{x}_{y}")
+        filter_complex = (
+            "".join(f"[{i}:v]" for i in range(n))
+            + f"xstack=inputs={n}:layout={'|'.join(layout)}:fill=black:shortest=1,"
+            + "format=yuv420p,pad=ceil(iw/2)*2:ceil(ih/2)*2"
+        )
+        print(f"merging {n} scenes into a {rows}x{cols} grid")
+        kwargs = (
+            ["ffmpeg", "-nostdin"]
+            + inputs
+            + ["-c:v", "libx264", "-crf", str(args.compression)]
+            + ["-filter_complex", filter_complex]
+            + ["merged_render.mp4"]
+        )
+        subprocess.run(kwargs, check=True)
+
+    else:
+        extra_kwargs = ["-pattern_type", "glob"]
+        for prefix in prefixes:
+            kwargs = (
+                ffmpeg_prekwargs
+                + extra_kwargs
+                + ["-i", os.path.join(png_dir, f"{prefix}_*.png")]
+                + ffmpeg_postkwargs
+                + [prefix + "_render.mp4"]
+            )
+            subprocess.run(kwargs, check=True)
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Helper tools for the Entity on-the-fly renderer"
+    )
+    sp = ap.add_subparsers(help="commands", required=True)
+    preview_sp = sp.add_parser(
+        "preview",
+        help="draw a preview of the simulation domain",
+    )
+    movie_sp = sp.add_parser(
+        "movie",
+        help="merge the rendered .png into a movie",
+    )
+
+    preview_sp.add_argument("toml", help="simulation .toml file")
+    preview_sp.add_argument(
+        "-o",
+        "--out",
+        default=None,
+        help="output PNG (default: <toml_dir>/<simname>_preview.png)",
+    )
+    preview_sp.add_argument(
+        "-t",
+        "--time",
+        type=float,
+        default=0.0,
+        help="sim time T for the moving-view pan (default 0)",
+    )
+    preview_sp.add_argument(
+        "-s",
+        "--scene",
+        type=int,
+        default=None,
+        help="scene index (accepted for parity; geometry is scene-"
+        "independent, so it only affects the reported label)",
+    )
+
+    movie_sp.add_argument(
+        "path",
+        help="path to the rendered PNGs",
+    )
+    movie_sp.add_argument(
+        "-p",
+        "--prefix",
+        type=str,
+        help="prefix for the scene (when rendering only one scene without -m | --merge flag)",
+    )
+    movie_sp.add_argument(
+        "-c",
+        "--cols",
+        type=int,
+        default=1,
+        help="number of columns for combining multiple scenes (default: 1)",
+    )
+    movie_sp.add_argument(
+        "-m",
+        "--merge",
+        action="store_true",
+        help="merge multiple scenes into a single movie (default: false)",
+    )
+    movie_sp.add_argument(
+        "-r",
+        "--framerate",
+        type=int,
+        default=30,
+        help="framerate for the output movie (default: 30)",
+    )
+    movie_sp.add_argument(
+        "-z",
+        "--compression",
+        type=int,
+        default=30,
+        help="compression level (default: 1)",
+    )
+
+    preview_sp.set_defaults(func=preview)
+    movie_sp.set_defaults(func=merge)
+
+    args = ap.parse_args()
+    args.func(args)
+
+    if len(sys.argv) == 1:
+        ap.print_help()
+        return 1
 
 
 if __name__ == "__main__":
