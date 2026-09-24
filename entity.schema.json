@@ -119,7 +119,7 @@
               }
             },
             "load_balance": {
-              "description": "Diffusion-style dynamic load balancing (Cartesian metrics only). Domain boundaries between MPI neighbors are nudged to equalize the active-particle count per rank. All inter-rank traffic uses only the existing nearest-neighbor field/particle communication paths.",
+              "description": "Diffusion-style dynamic load balancing. Domain boundaries between MPI neighbors are nudged to equalize the active-particle count per rank. All inter-rank traffic uses only the existing nearest-neighbor field/particle communication paths.",
               "type": "object",
               "additionalProperties": false,
               "properties": {
@@ -921,14 +921,25 @@
               }
             },
             "team_policy_team_size": {
-              "description": "team_policy tiled-deposit work-group (team) size",
+              "description": "Tiled-deposit work-group (team) size",
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "deprecated": true,
+              "x-entity": {
+                "type": "uint [>= 0]",
+                "deprecated": "removed in 1.6+, use `tiled_deposit_team_size` instead"
+              }
+            },
+            "tiled_deposit_team_size": {
+              "description": "Tiled-deposit work-group (team) size",
               "type": "integer",
               "minimum": 0,
               "default": 0,
               "x-entity": {
                 "type": "uint [>= 0]",
                 "notes": [
-                  "0 keeps Kokkos::AUTO (backend occupancy heuristic); a positive value overrides it, clamped to the backend/scratch maximum at launch. Only used in `team_policy=ON` builds. Pick a multiple of the device subgroup width for best occupancy (see ideal_tile_size.py)"
+                  "0 keeps Kokkos::AUTO (backend occupancy heuristic); a positive value overrides it, clamped to the backend/scratch maximum at launch. Only used in `tiled_deposit=ON` builds. Pick a multiple of the device subgroup width for best occupancy (see ideal_tile_size.py)"
                 ]
               }
             }

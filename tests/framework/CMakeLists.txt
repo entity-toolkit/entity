@@ -44,9 +44,9 @@ else()
   gen_test(particles_sort false)
 endif()
 
-# team_policy X-3: per-backend sort_by_key permutation test (only built when the
-# compile-time team_policy toggle is on).
-if(${team_policy})
+# tiled_deposit X-3: per-backend sort_by_key permutation test (only built when
+# the compile-time tiled_deposit toggle is on).
+if(${tiled_deposit})
   gen_test(sort_by_key false)
 endif()
 

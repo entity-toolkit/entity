@@ -1,12 +1,12 @@
 /**
  * @file utils/sort_dispatch.h
- * @brief Backend-dispatched sort_by_key for team_policy SortSpatially.
+ * @brief Backend-dispatched sort_by_key for tiled_deposit SortSpatially.
  * @implements
  *   - sort_helpers::sort_by_key_dispatch -> void  (BinSort, OneDPL, Thrust, StdSort)
  * @namespaces:
  *   - ntt::sort_helpers::
  * @macros:
- *   - TEAM_POLICY
+ *   - TILED_DEPOSIT
  *   - SYCL_ENABLED, ONEDPL_ENABLED  (oneDPL overload)
  *   - CUDA_ENABLED, THRUST_ENABLED  (Thrust overload)
  *
@@ -26,8 +26,8 @@
 #ifndef GLOBAL_UTILS_SORT_DISPATCH_H
 #define GLOBAL_UTILS_SORT_DISPATCH_H
 
-#if !defined(TEAM_POLICY)
-  #error "sort_dispatch.h is only meaningful when TEAM_POLICY is defined"
+#if !defined(TILED_DEPOSIT)
+  #error "sort_dispatch.h is only meaningful when TILED_DEPOSIT is defined"
 #endif
 
 #include "global.h"

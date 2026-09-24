@@ -364,7 +364,7 @@ template <Dimension D>
 auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
-// --------------------------- team_policy types ---------------------------- //
+// ------------------------- tiled_deposit types --------------------------- //
 // Particle permutation index: maps a sorted-position p in [0, npart) to a
 // pre-sort particle index. Produced by SortSpatially, consumed by tiled
 // pusher and deposit kernels to walk particles tile-by-tile without

@@ -81,7 +81,7 @@ namespace ntt {
     const bool        is_resuming;
     const simtime_t   runtime;
     const real_t      dt;
-    const std::size_t team_policy_team_size;
+    const std::size_t tiled_deposit_team_size;
     const timestep_t  max_steps;
     const timestep_t  start_step;
     const simtime_t   start_time;
@@ -110,8 +110,8 @@ namespace ntt {
       , is_resuming { m_params.get<bool>("checkpoint.is_resuming") }
       , runtime { m_params.get<simtime_t>("simulation.runtime") }
       , dt { m_params.get<real_t>("algorithms.timestep.dt") }
-      , team_policy_team_size { m_params.get<std::size_t>(
-          "algorithms.deposit.team_policy_team_size") }
+      , tiled_deposit_team_size { m_params.get<std::size_t>(
+          "algorithms.deposit.tiled_deposit_team_size") }
       , max_steps { static_cast<timestep_t>(runtime / dt) }
       , start_step { m_params.get<timestep_t>("checkpoint.start_step") }
       , start_time { m_params.get<simtime_t>("checkpoint.start_time") }
@@ -130,8 +130,8 @@ namespace ntt {
       auto parameters = prm::Parameters {};
       parameters.set("dt", static_cast<real_t>(dt));
       parameters.set("time", static_cast<simtime_t>(time));
-      parameters.set("team_policy_team_size",
-                     static_cast<std::size_t>(team_policy_team_size));
+      parameters.set("tiled_deposit_team_size",
+                     static_cast<std::size_t>(tiled_deposit_team_size));
       return parameters;
     }
   };
@@ -142,8 +142,8 @@ namespace ntt {
 #if defined(OUTPUT_ENABLED)
     m_metadomain.InitWriter(&m_adios, m_params);
     m_metadomain.InitCheckpointWriter(&m_adios, m_params);
-    m_metadomain.InitRenderer(m_params);
 #endif
+    m_metadomain.InitRenderer(m_params);
     logger::Checkpoint("Initializing Engine", HERE);
     if (not is_resuming) {
       // start a new simulation with initial conditions
@@ -369,11 +369,13 @@ namespace ntt {
                                                 time - dt);
       }
       timers.stop("Output");
+#endif
 
       timers.start("Render");
       print_render = m_metadomain.Render(m_params, step, step - 1, time, time - dt);
       timers.stop("Render");
 
+#if defined(OUTPUT_ENABLED)
       timers.start("Checkpoint");
       print_checkpoint = m_metadomain.WriteCheckpoint(m_params,
                                                       step,

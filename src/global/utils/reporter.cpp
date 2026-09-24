@@ -251,8 +251,8 @@ namespace reporter {
     AddParam(report, 4, "GPU_AWARE_MPI", "%s", "OFF");
 #endif
 
-#if defined(TEAM_POLICY)
-    AddParam(report, 4, "TEAM_POLICY", "%s", "ON");
+#if defined(TILED_DEPOSIT)
+    AddParam(report, 4, "TILED_DEPOSIT", "%s", "ON");
   #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                    \
     (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                      \
     (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
@@ -261,7 +261,7 @@ namespace reporter {
     AddParam(report, 4, "VENDOR_SORT", "%s", "OFF (BinSort)");
   #endif
 #else
-    AddParam(report, 4, "TEAM_POLICY", "%s", "OFF");
+    AddParam(report, 4, "TILED_DEPOSIT", "%s", "OFF");
 #endif
     report += "\n";
     return report;

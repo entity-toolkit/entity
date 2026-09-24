@@ -91,7 +91,7 @@ namespace ntt {
     const uint8_t m_ntags { (uint8_t)(2 + math::pow(3, (int)D) - 1) };
 #endif
 
-    // team_policy: tile metadata produced by SortSpatially
+    // tiled_deposit: tile metadata produced by SortSpatially
     // and consumed by the tiled deposit / pusher kernels. Lazily
     // allocated on first sort. The sort backend itself (oneDPL on SYCL,
     // Thrust on CUDA, std::sort on Host, Kokkos::BinSort otherwise) is
@@ -99,7 +99,7 @@ namespace ntt {
     // vendor libraries detected by CMake.
     TileLayout<D> m_tile_layout {};
 
-#if defined(TEAM_POLICY) &&                                                    \
+#if defined(TILED_DEPOSIT) &&                                                  \
   ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
    (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
@@ -234,7 +234,7 @@ namespace ntt {
       return m_ntags;
     }
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
     // Build m_tile_layout.tile_offsets / npart_partitioned from the
     // already-sorted tile-index keys. A separate member function (not a
     // lambda local to SortSpatially) so the inner device kernel is not an
@@ -326,14 +326,14 @@ namespace ntt {
     /**
      * @brief Sort particles spatially by their cell indices
      * @param grid The grid object to get the cell information for sorting
-     * @note In team_policy mode (compile-time `team_policy=ON`), also
+     * @note In tiled_deposit mode (compile-time `tiled_deposit=ON`), also
      *       populates `m_tile_layout` with tile-offset and per-tile
      *       permutation metadata that the tiled deposit/pusher kernels
      *       consume.
      */
     void SortSpatially(const Grid<D>&);
 
-#if defined(TEAM_POLICY) &&                                                    \
+#if defined(TILED_DEPOSIT) &&                                                  \
   ((defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                       \
    (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                       \
    (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)))
