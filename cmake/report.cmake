@@ -121,22 +121,22 @@ printchoices(
   GPU_AWARE_MPI_REPORT
   44)
 printchoices(
-  "Team Policy"
-  "team_policy"
+  "Tiled Deposit"
+  "tiled_deposit"
   "${ON_OFF_VALUES}"
-  ${team_policy}
+  ${tiled_deposit}
   OFF
   "${Green}"
-  TEAM_POLICY_REPORT
+  TILED_DEPOSIT_REPORT
   44)
 printchoices(
   "Tile Size"
-  "team_policy_tile_size"
-  "${team_policy_tile_sizes}"
-  ${team_policy_tile_size}
-  ${default_team_policy_tile_size}
+  "tiled_deposit_tile_size"
+  "${tiled_deposit_tile_sizes}"
+  ${tiled_deposit_tile_size}
+  ${default_tiled_deposit_tile_size}
   "${Blue}"
-  TEAM_POLICY_TILE_SIZE_REPORT
+  TILED_DEPOSIT_TILE_SIZE_REPORT
   44)
 printchoices(
   "Vendor sort"
@@ -246,18 +246,18 @@ string(
   "    "
   ${GPU_AWARE_MPI_REPORT}
   "\n"
-  "  > Team-policy specs"
-  " ${Dim}[requires team_policy=ON]${ColorReset}"
+  "  > Tiled-deposit specs"
+  " ${Dim}[requires tiled_deposit=ON]${ColorReset}"
   "\n"
   "    "
-  ${TEAM_POLICY_REPORT}
+  ${TILED_DEPOSIT_REPORT}
   "\n"
   "    "
-  ${TEAM_POLICY_TILE_SIZE_REPORT}
+  ${TILED_DEPOSIT_TILE_SIZE_REPORT}
   "\n"
   "    "
-  "- Deposit drift [${Magenta}team_policy_drift${ColorReset}]:      "
-  ${team_policy_drift}
+  "- Deposit drift [${Magenta}tiled_deposit_drift${ColorReset}]:    "
+  ${tiled_deposit_drift}
   "\n")
 
 string(
