@@ -36,7 +36,7 @@ entity
 │   ├── dependencies.py          #   deployment scripts on various machines
 │   ├── generate_template.py     #   renders `input.default.toml` from `entity.schema.json`
 │   ├── ideal_tile_size.py       #   recommends the team tile size for the tiled deposit
-│   └── render_preview.py        #   previews the in-situ renderer geometry from an input file
+│   └── render.py                #   helper tools for the on-the-fly rendering routine
 ├── src                          # main code containing all separate submodules
 │   ├── archetypes               #   archetypes which can be used by the user in problem generators
 │   ├── engines                  #   simulation engines
@@ -188,4 +188,4 @@ Best practices are also enforced using `clang-tidy`; to generate recommendations
 
 * There is no difference between `.h` and `.hpp` files as both indicate C++ header files. As a consistency convention, we use `.h` for common headers which may be included from multiple `.cpp` files (e.g., metrics), while `.hpp` are very specific headers for only a single (or a couple of) .cpp file (e.g. kernels).
 
-* Do assertions on parameters and quantities whenever possible. Outside the kernels, use `raise::Error(message, HERE)` and `raise::ErrorIf(condition, message, HERE)` to throw exceptions. Inside the kernels, use `raise::KernelError(HERE, message, **args)`. To enable compile-time errors, use `static_assert(condition, message)`. The `HERE` keyword is macro that includes the filename and line number in the error message.
+* Do assertions on parameters and quantities whenever possible. Outside the kernels, use `raise::Error(message, HERE)` and `raise::ErrorIf(condition, message, HERE)` to throw exceptions. Inside the kernels, use `raise::KernelError(HERE, message)`. To enable compile-time errors, use `static_assert(condition, message)`. The `HERE` keyword is macro that includes the filename and line number in the error message.

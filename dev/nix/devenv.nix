@@ -18,6 +18,10 @@ let
   gpu = lib.toUpper cfg.gpu;
   arch = lib.toUpper cfg.arch;
 
+  # override with
+  #   devenv shell -O languages.python.package:pkg python312
+  py = "314";
+
   # `shell.nix` imports nixpkgs with `allowUnfree`/`cudaSupport` decided by the
   # requested backend. devenv instantiates its own `pkgs` before this module is
   # evaluated, so it cannot be reconfigured from here -- import the same input
@@ -127,6 +131,22 @@ in
       };
     };
 
+    languages.python = {
+      enable = true;
+      package = pkgs."python${py}";
+
+      venv = {
+        enable = true;
+        requirements = ''
+          ipykernel
+          jupyterlab
+          nt2py
+          ruff
+          pyright
+        '';
+      };
+    };
+
     packages =
       (with nixpkgs; [
         zlib
@@ -134,8 +154,6 @@ in
 
         adios2Pkg
         kokkosPkg
-
-        python314
 
         cmake-format
         cmake-lint
