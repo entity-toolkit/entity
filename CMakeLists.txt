@@ -1,6 +1,6 @@
 # cmake-lint: disable=C0103,C0111,E1120,R0913,R0915
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 cmake_policy(SET CMP0110 NEW)
 
 set(PROJECT_NAME entity)
@@ -58,27 +58,42 @@ set(gpu_aware_mpi
     ${default_gpu_aware_mpi}
     CACHE BOOL "Enable GPU-aware MPI")
 
-set(team_policy
-    ${default_team_policy}
-    CACHE BOOL "Enable team_policy tile-blocked deposit/pusher kernels")
-set(team_policy_tile_size
-    ${default_team_policy_tile_size}
-    CACHE STRING "team_policy tile edge length in cells")
-set(team_policy_tile_sizes
+# deprecated `team_policy*` options (renamed to `tiled_deposit*`); forward them
+# unless the new name was given explicitly, and drop the stale cache entries
+foreach(_suffix "" "_tile_size" "_drift")
+  if(DEFINED team_policy${_suffix})
+    if(NOT DEFINED tiled_deposit${_suffix})
+      message(WARNING "`team_policy${_suffix}` is deprecated, "
+                      "use `tiled_deposit${_suffix}` instead")
+      if("${_suffix}" STREQUAL "")
+        set(_type BOOL)
+      else()
+        set(_type STRING)
+      endif()
+      set(tiled_deposit${_suffix}
+          ${team_policy${_suffix}}
+          CACHE ${_type} "")
+    endif()
+    unset(team_policy${_suffix} CACHE)
+  endif()
+endforeach()
+unset(team_policy_tile_sizes CACHE)
+
+set(tiled_deposit
+    ${default_tiled_deposit}
+    CACHE BOOL "Enable tile-blocked deposit/pusher kernels")
+set(tiled_deposit_tile_size
+    ${default_tiled_deposit_tile_size}
+    CACHE STRING "tiled deposit tile edge length in cells")
+set(tiled_deposit_tile_sizes
     "4;6;8;10;12;14;16"
-    CACHE STRING "team_policy tile-size choices")
-set(team_policy_drift
-    ${default_team_policy_drift}
-    CACHE
-      STRING
-      "team_policy tiled-deposit scratch halo drift in cells (max cells a particle may move between two sorts). Sizes the deposit scratch halo only; the sort cadence is set at runtime via spatial_sorting_interval. Default 1."
-)
+    CACHE STRING "tiled deposit tile-size choices")
+set(tiled_deposit_drift
+    ${default_tiled_deposit_drift}
+    CACHE STRING "tiled deposit scratch halo drift in cells")
 set(vendor_sort
     ${default_vendor_sort}
-    CACHE
-      BOOL
-      "Use the vendor sort_by_key (oneDPL/Thrust/rocThrust) for the team_policy spatial sort when available. OFF forces the Kokkos::BinSort fallback, which sorts each SoA member in place (lower peak memory, no maxnpart gather buffer) at the cost of sort speed."
-)
+    CACHE BOOL "Use the vendor sort_by_key")
 
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
@@ -158,9 +173,25 @@ else()
   set(DEVICE_ENABLED OFF)
 endif()
 
-# ------------------------------ team_policy wiring ------------------------ #
-if(${team_policy})
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/team_policy.cmake)
+if(NOT ${DEVICE_ENABLED})
+  set(vendor_sort OFF)
+  set(gpu_aware_mpi OFF)
+endif()
+
+# tiled deposit
+if(${tiled_deposit})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tiled_deposit.cmake)
+else()
+  message(
+    STATUS "tiled_deposit=OFF; using global deposit scheme with ScatterViews")
+endif()
+
+# vendor-specific sorting routines
+if(${vendor_sort})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/vendor_sort.cmake)
+else()
+  message(STATUS "vendor_sort=OFF; forcing Kokkos::BinSort "
+                 "fallback for spatial sort_by_key")
 endif()
 
 # MPI
