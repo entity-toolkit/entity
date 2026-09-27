@@ -8,7 +8,7 @@ flushes once to global memory.  With
     TE   = T_TILE + 2*HALO
     HALO = stencil_reach + drift   (stencil_reach = shape_order for Esirkepov, 2 for the
                                     O==0 zigzag deposit; drift = the compile-time
-                                    `team_policy_drift` CMake knob, NOT the runtime
+                                    `tiled_deposit_drift` CMake knob, NOT the runtime
                                     spatial_sorting_interval -- see kernels/deposition/currents/tiled.hpp)
 
 the tile size is squeezed by three competing pressures:
@@ -25,9 +25,9 @@ the tile size is squeezed by three competing pressures:
 Recommendation = the largest tile that respects the particle budget and shared-memory
 residency; if that tile would be mostly halo, it is grown (toward lower halo) up to the
 shared-memory limit.  This is a first-order model -- confirm by sweeping the entity knobs
-  -D team_policy_tile_size=<T> -D team_policy_drift=<D>  and re-profiling (see roofline/).
+  -D tiled_deposit_tile_size=<T> -D tiled_deposit_drift=<D>  and re-profiling (see roofline/).
 The team (work-group) size defaults to Kokkos::AUTO; override it at runtime with the
-  [algorithms.deposit] team_policy_team_size = <N>   (0 = AUTO)
+  [algorithms.deposit] tiled_deposit_team_size = <N>   (0 = AUTO)
 toml knob -- clamped to the backend maximum at launch (engines/srpic/currents.h).
 
 Two ways to drive it:
@@ -99,14 +99,14 @@ class Settings:
         self.shape_order = 2       # entity shape_order
         self.precision = "single"  # single / double
         self.components = 3        # current-field components (J has 3)
-        self.drift = 1             # team_policy_drift: cells of drift the scratch halo absorbs
+        self.drift = 1             # tiled_deposit_drift: cells of drift the scratch halo absorbs
                                    # (compile-time CMake knob, independent of spatial_sorting_interval)
         self.target_resident = 2   # work-groups resident per compute unit
         self.npart_cap = 1600.0    # particle-per-tile budget (contention / load-balance proxy)
         self.halo_max = 0.70       # halo fraction above which the tile is grown
         self.grid = 0              # cells per dim (0 disables the GPU-fill check)
         self.balance_factor = 4    # min tiles per compute unit
-        self.min_tile = 4          # entity's team_policy_tile_sizes list starts at 4
+        self.min_tile = 4          # entity's tiled_deposit_tile_sizes list starts at 4
         self.max_tile = 64
 
 
@@ -121,7 +121,7 @@ def resolve_arch(name):
 def recommend(hw, p):
     """p: Settings or argparse namespace. Returns dict with rows, chosen row, binding."""
     # Matches DepositCurrentsTiled_kernel: STENCIL_REACH = O for Esirkepov (O>=1),
-    # 2 for the O==0 zigzag deposit; HALO = STENCIL_REACH + TEAM_POLICY_DRIFT.
+    # 2 for the O==0 zigzag deposit; HALO = STENCIL_REACH + TILED_DEPOSIT_DRIFT.
     stencil_reach = 2 if p.shape_order == 0 else p.shape_order
     halo = stencil_reach + p.drift
     real = PRECISION[p.precision]
@@ -198,7 +198,7 @@ def report_lines(name, key, hw, p, res):
     reach = 2 if p.shape_order == 0 else p.shape_order
     reach_kind = "zigzag" if p.shape_order == 0 else "Esirkepov O"
     L.append("  HALO = stencil_reach + drift = %d + %d = %d   ->   TE = T_TILE + %d"
-             "   (reach %d = %s; drift = team_policy_drift)"
+             "   (reach %d = %s; drift = tiled_deposit_drift)"
              % (reach, p.drift, res["halo"], 2 * res["halo"], reach, reach_kind))
     L.append("  shared mem %s KiB/%s (budget %s KiB for %d resident WGs); subgroup=%d, n_cu=%d"
              % (kib(hw["smem_cu"]), hw["cu"], kib(hw["smem_cu"] / p.target_resident),
@@ -228,17 +228,17 @@ def report_lines(name, key, hw, p, res):
     L.append("    %.1f KiB scratch/team, %d work-groups resident/%s, %.0f particles/team, %.0f%% halo"
              % (c["scratch"] / 1024.0, c["resident"], hw["cu"], c["npart"], 100 * c["halo_frac"]))
     team = min(hw["max_wg"], 256 - 256 % hw["subgroup"])
-    extra = "" if c["T"] <= 16 else "   (entity's team_policy_tile_sizes list stops at 16; extend it)"
-    L.append("    entity build:  -D team_policy=ON -D team_policy_tile_size=%d -D team_policy_drift=%d%s"
+    extra = "" if c["T"] <= 16 else "   (entity's tiled_deposit_tile_sizes list stops at 16; extend it)"
+    L.append("    entity build:  -D tiled_deposit=ON -D tiled_deposit_tile_size=%d -D tiled_deposit_drift=%d%s"
              % (min(c["T"], 16), p.drift, extra))
     L.append("    team (work-group) size: Kokkos::AUTO by default; to override, set in the toml")
-    L.append("    [algorithms.deposit] team_policy_team_size = %d   (0 = AUTO; keep a multiple of"
+    L.append("    [algorithms.deposit] tiled_deposit_team_size = %d   (0 = AUTO; keep a multiple of"
              % team)
     L.append("    subgroup=%d), then sweep around it and re-profile" % hw["subgroup"])
     # contextual guidance
     if c["halo_frac"] > p.halo_max:
         if p.drift > 1:
-            L.append("    !! %.0f%% of the tile is halo, inflated by team_policy_drift=%d; lower it "
+            L.append("    !! %.0f%% of the tile is halo, inflated by tiled_deposit_drift=%d; lower it "
                      "(and sort at least that often via spatial_sorting_interval)"
                      % (100 * c["halo_frac"], p.drift))
         else:
@@ -775,7 +775,7 @@ class App:
                 ),
                 MenuItem(
                     "drift",
-                    "team_policy_drift CMake knob: cells the scratch halo absorbs (>= spatial_sorting_interval)",
+                    "tiled_deposit_drift CMake knob: cells the scratch halo absorbs (>= spatial_sorting_interval)",
                     right=lambda: str(self.s.drift),
                     on_enter=lambda: self.edit_int("drift", "drift", minv=0),
                 ),
@@ -926,7 +926,7 @@ def run_cli(argv) -> int:
     ap.add_argument("--precision", choices=("single", "double"), default="single")
     ap.add_argument("--components", type=int, default=3, help="current-field components (J has 3)")
     ap.add_argument("--drift", type=int, default=1,
-                    help="team_policy_drift CMake knob (compile-time): cells of drift the scratch "
+                    help="tiled_deposit_drift CMake knob (compile-time): cells of drift the scratch "
                          "halo absorbs; size it >= spatial_sorting_interval")
     ap.add_argument("--target-resident", type=int, default=2, help="work-groups resident per compute unit")
     ap.add_argument("--npart-cap", type=float, default=1600,
@@ -935,7 +935,7 @@ def run_cli(argv) -> int:
     ap.add_argument("--grid", type=int, default=0, help="cells per dim (optional; enables a GPU-fill check)")
     ap.add_argument("--balance-factor", type=int, default=4, help="min tiles per compute unit")
     ap.add_argument("--min-tile", type=int, default=4,
-                    help="smallest T_TILE to consider (entity's team_policy_tile_sizes starts at 4)")
+                    help="smallest T_TILE to consider (entity's tiled_deposit_tile_sizes starts at 4)")
     ap.add_argument("--max-tile", type=int, default=64)
     p = ap.parse_args(argv)
 

@@ -191,10 +191,44 @@ namespace ntt {
     }
   }
 
+  template <SimEngine::type S, MetricClass M>
+  void Metadomain<S, M>::CommunicateBckp(Domain<S, M>&       domain,
+                                         const cell_range_t& components) const {
+    // Halo FILL of the bckp buffer: copy each neighbor's active boundary cells
+    // into this domain's ghost zones (additive=false). This is distinct from
+    // SynchronizeFields, which sums ghost-deposited values back into active
+    // cells. The renderer needs the ghost halo populated so trilinear sampling
+    // near a domain face reads valid neighbor values (C0 across the face).
+    for (auto& direction : dir::Directions<M::Dim>::all) {
+      const auto [send_params,
+                  recv_params] = GetSendRecvParams(this, domain, direction, false);
+      const auto [send_indrank, send_slice] = send_params;
+      const auto [recv_indrank, recv_slice] = recv_params;
+      const auto [send_ind, send_rank]      = send_indrank;
+      const auto [recv_ind, recv_rank]      = recv_indrank;
+      if (send_rank < 0 and recv_rank < 0) {
+        continue;
+      }
+      comm::CommunicateField<M::Dim, 6>(domain.index(),
+                                        domain.fields.bckp,
+                                        domain.fields.bckp,
+                                        send_ind,
+                                        recv_ind,
+                                        send_rank,
+                                        recv_rank,
+                                        send_slice,
+                                        recv_slice,
+                                        components,
+                                        false);
+    }
+  }
+
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_COMM(S, M, D)                                               \
   template void Metadomain<S, M<D>>::CommunicateFields(Domain<S, M<D>>&,       \
-                                                       CommTags) const;
+                                                       CommTags) const;        \
+  template void Metadomain<S, M<D>>::CommunicateBckp(Domain<S, M<D>>&,         \
+                                                     const cell_range_t&) const;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_COMM)
 #undef METADOMAIN_COMM

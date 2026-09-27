@@ -10,7 +10,7 @@ set(adios2_REPOSITORY
     https://github.com/ornladios/ADIOS2.git
     CACHE STRING "ADIOS2 repository")
 set(adios2_TAG
-    v2.11.0
+    v2.12.1
     CACHE STRING "ADIOS2 tag")
 
 set(CONNECTION_CHECKED

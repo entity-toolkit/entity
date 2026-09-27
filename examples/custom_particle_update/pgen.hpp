@@ -116,7 +116,8 @@ namespace user {
       arch::InjectGlobally<S, M>(metadomain, local_domain, (spidx_t)2, data_i);
     }
 
-    auto FixFieldsConst(const bc_in&, const em&) const -> std::pair<real_t, bool> {
+    auto FixFieldsConst(simtime_t, const bc_in&, const em&) const
+      -> std::pair<real_t, bool> {
       return { ZERO, false };
     }
 
