@@ -10,6 +10,7 @@
 # * parameters/output.cpp
 # * parameters/algorithms.cpp
 # * parameters/extra.cpp
+# * parameters/render.cpp
 # * simulation.cpp
 # * domain/grid.cpp
 # * domain/metadomain.cpp
@@ -65,6 +66,7 @@ set(SOURCES
     ${SRC_DIR}/parameters/output.cpp
     ${SRC_DIR}/parameters/algorithms.cpp
     ${SRC_DIR}/parameters/extra.cpp
+    ${SRC_DIR}/parameters/render.cpp
     ${SRC_DIR}/domain/grid.cpp
     ${SRC_DIR}/domain/metadomain.cpp
     ${SRC_DIR}/domain/metadomain_sort.cpp

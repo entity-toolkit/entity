@@ -122,7 +122,7 @@ Three things to keep in mind:
 
 * **String enums are matched case-insensitively by the code** (`fmt::toLower` is applied to `engine`, `metric`, the boundary lists, `pusher`, `log_level`, ...), so a bare `"enum"` would reject perfectly valid input. The convention is `anyOf: [{"enum": [<canonical>]}, {"type": "string", "pattern": "(?i)^(<canonical>|...)$"}]` -- the enum branch drives completion and hover, the pattern branch keeps any casing legal. Note `(?i)` is a Rust/Python regex extension: tombi honours it, JS-based validators do not.
 * **Every table is closed.** Set `additionalProperties: false` so typos are caught; tombi's `strict = true` closes objects that omit it anyway. `[setup]` is the one deliberate exception (`additionalProperties: true`), since its keys belong to the problem generator.
-* **If a key's documented default is `[]`, the empty array must validate**, which `minItems` would otherwise forbid -- use `anyOf: [{"maxItems": 0}, {<the real shape>}]` (see `output.render.x1_lim`).
+* **If a key's documented default is `[]`, the empty array must validate**, which `minItems` would otherwise forbid -- use `anyOf: [{"maxItems": 0}, {<the real shape>}]` (see `render.extent.x1`).
 
 ## Code guidelines
 

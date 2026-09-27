@@ -134,14 +134,16 @@ class Camera:
             size[d] = region[d][1] - region[d][0]
         diag = math.sqrt(size[0] ** 2 + size[1] ** 2 + size[2] ** 2)
 
-        cam_ortho = find_or(td, True, "output", "render", "camera", "orthographic")
-        pos = find_or(td, [], "output", "render", "camera", "position")
-        look = find_or(td, [], "output", "render", "camera", "look_at")
-        up = find_or(td, [], "output", "render", "camera", "up")
-        fov = float(find_or(td, 35.0, "output", "render", "camera", "fov"))
+        cam_ortho = (
+            find_or(td, "orthographic", "render", "camera", "mode") != "perspective"
+        )
+        pos = find_or(td, [], "render", "camera", "position")
+        look = find_or(td, [], "render", "camera", "look_at")
+        up = find_or(td, [], "render", "camera", "up")
+        fov = float(find_or(td, 35.0, "render", "camera", "fov"))
         # default ortho_height covers the box from any view -> == box diagonal
         ortho_height = float(
-            find_or(td, diag, "output", "render", "camera", "ortho_height")
+            find_or(td, diag, "render", "camera", "ortho_height")
         )
 
         # default eye: box center pushed back along (1,1,1) by ~1.7 diagonals
@@ -207,18 +209,18 @@ class Camera:
 #  region resolution (renderer.cpp Renderer::init ~L128-158)                  #
 # --------------------------------------------------------------------------- #
 def resolve_region(td, ext):
-    """m_region starts as the global extent; x{d+1}_lim clamps axis d to the box
+    """m_region starts as the global extent; extent.x{d+1} clamps axis d to the box
     if it is a valid [lo,hi] with hi>lo that overlaps. Returns (region, has_region)."""
     region = [list(p) for p in ext]
     has_region = False
-    keys = ["x1_lim", "x2_lim", "x3_lim"]
+    keys = ["x1", "x2", "x3"]
     for d in range(min(len(ext), 3)):
-        lim = find_or(td, [], "output", "render", keys[d])
+        lim = find_or(td, [], "render", "extent", keys[d])
         if not lim:
             continue
         if len(lim) != 2 or lim[1] <= lim[0]:
             print(
-                f"  warning: output.render.{keys[d]} must be [lo,hi] with hi>lo; ignoring"
+                f"  warning: render.extent.{keys[d]} must be [lo,hi] with hi>lo; ignoring"
             )
             continue
         lo = max(float(lim[0]), ext[d][0])
@@ -228,14 +230,14 @@ def resolve_region(td, ext):
             has_region = True
         else:
             print(
-                f"  warning: output.render.{keys[d]} does not overlap the domain; ignoring"
+                f"  warning: render.extent.{keys[d]} does not overlap the domain; ignoring"
             )
     return [tuple(p) for p in region], has_region
 
 
 def apply_moving_view(td, region, ext, cam, time, dim):
     """Renderer::updateForTime: dt=max(0, t-t0); shift=vel*dt; pan region+eye."""
-    vel = find_or(td, [], "output", "render", "camera_velocity")
+    vel = find_or(td, [], "render", "moving_view", "velocity")
     if not vel:
         return region
     v = [0.0, 0.0, 0.0]
@@ -243,7 +245,7 @@ def apply_moving_view(td, region, ext, cam, time, dim):
         v[d] = float(vel[d])
     if v == [0.0, 0.0, 0.0]:
         return region
-    t0 = float(find_or(td, 0.0, "output", "render", "camera_start_time"))
+    t0 = float(find_or(td, 0.0, "render", "moving_view", "start_time"))
     dt = max(0.0, time - t0)
     shift = [v[0] * dt, v[1] * dt, v[2] * dt]
     new_region = []
@@ -300,9 +302,9 @@ def field_line_seeds_3d(td, region, cam, H):
     coarse grid origin=extent.first in the uncropped case. We use the region box
     the camera frames so the schematic overlays the drawn cube.
     """
-    fl_enable = find_or(td, False, "output", "render", "fieldlines", "enable")
+    fl_enable = find_or(td, False, "render", "fieldlines", "enable")
     # any scene may also request the overlay
-    scenes = find_or(td, [], "output", "render", "scenes")
+    scenes = find_or(td, [], "render", "scene")
     any_fl = any(
         (find_or(sc, False, "fieldlines") or find_or(sc, "", "field") == "fieldlines")
         for sc in scenes
@@ -310,8 +312,8 @@ def field_line_seeds_3d(td, region, cam, H):
     if not (fl_enable or any_fl):
         return None
 
-    seed_px = float(find_or(td, 8.0, "output", "render", "fieldlines", "seed_px"))
-    seed_max = int(find_or(td, 4096, "output", "render", "fieldlines", "seed_max"))
+    seed_px = float(find_or(td, 8.0, "render", "fieldlines", "seed_px"))
+    seed_max = int(find_or(td, 4096, "render", "fieldlines", "seed_max"))
 
     wpp = (cam.half_h * 2.0) / float(H)
     size = [region[d][1] - region[d][0] for d in range(3)]
@@ -473,10 +475,10 @@ def draw_3d(td, ext, region, has_region, cam, W, H, out_path, sim_name):
     # axes tick labels: for each axis, pick the FOREGROUND (silhouette) edge of
     # the framed box and annotate along it, exactly as out::drawAxes3D does, so
     # the labels never end up on an edge hidden behind the volume.
-    axes_on = find_or(td, False, "output", "render", "axes")
-    nticks = int(find_or(td, 5, "output", "render", "axis_ticks"))
+    axes_on = find_or(td, False, "render", "axes")
+    nticks = int(find_or(td, 5, "render", "axis_ticks"))
     frame_box = region if has_region else ext
-    axis_names = find_or(td, [], "output", "render", "axis_labels")
+    axis_names = find_or(td, [], "render", "axis_labels")
     default_names = ["x", "y", "z"]
     if axes_on:
         corners = cube_corners([frame_box[0], frame_box[1], frame_box[2]])
@@ -675,8 +677,8 @@ def draw_2d_cartesian(td, ext, region, has_region, W, H, out_path, sim_name):
         )
 
     # ticks (nice numbers over the data box == region)
-    axes_on = find_or(td, False, "output", "render", "axes")
-    nticks = int(find_or(td, 5, "output", "render", "axis_ticks"))
+    axes_on = find_or(td, False, "render", "axes")
+    nticks = int(find_or(td, 5, "render", "axis_ticks"))
     if axes_on:
         for tv in nice_ticks(region[0][0], region[0][1], nticks):
             ax.axvline(tv, color="0.85", lw=0.5, zorder=0)
@@ -737,8 +739,8 @@ def draw_2d_spherical(td, ext, region, has_region, mirror, W, H, out_path, sim_n
             wedge_boundary(rmin, rmax, tmin, tmax, -1.0, "tab:blue", 2.0)
 
     # radial ticks along the symmetry axis (X=0)
-    axes_on = find_or(td, False, "output", "render", "axes")
-    nticks = int(find_or(td, 5, "output", "render", "axis_ticks"))
+    axes_on = find_or(td, False, "render", "axes")
+    nticks = int(find_or(td, 5, "render", "axis_ticks"))
     if axes_on:
         for Rv in nice_ticks(0.0, ext[0][1], nticks):
             ax.plot(0.0, Rv, marker="+", color="0.3", ms=6)
@@ -775,13 +777,13 @@ def preview(args):
         td = tomllib.load(f)
 
     # renderer enabled?
-    if not find_or(td, False, "output", "render", "enable"):
-        print("note: [output.render].enable is false in this toml; previewing anyway.")
+    if not find_or(td, False, "render", "enable"):
+        print("note: [render].enable is false in this toml; previewing anyway.")
 
     sim_name = find_or(td, "sim", "simulation", "name")
-    width = int(find_or(td, 1024, "output", "render", "width"))
-    height = int(find_or(td, 1024, "output", "render", "height"))
-    mirror = bool(find_or(td, True, "output", "render", "mirror"))
+    width = int(find_or(td, 1024, "render", "width"))
+    height = int(find_or(td, 1024, "render", "height"))
+    mirror = bool(find_or(td, True, "render", "mirror"))
 
     ext, dim, cartesian, metric_name = global_extent(td)
 

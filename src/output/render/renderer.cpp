@@ -14,8 +14,6 @@
 #include "output/render/png.h"
 #include "output/render/transfer_fn.h"
 
-#include <toml11/toml.hpp>
-
 #if defined(MPI_ENABLED)
   #include "arch/mpi_aliases.h"
 
@@ -65,17 +63,15 @@ namespace out {
 
   void Renderer::init(const ntt::SimulationParams& params,
                       const boundaries_t<real_t>&  global_extent) {
-    m_enabled      = false;
-    const auto& td = params.data();
+    m_enabled = false;
 
-    const bool enable = toml::find_or(td, "output", "render", "enable", false);
-    if (not enable) {
+    if (not params.get<bool>("render.enable")) {
       return;
     }
     // 2D (slice rasterizer) and 3D Cartesian (volume ray-march) are supported;
     // 1D has nothing to render.
     if (global_extent.size() != 2 and global_extent.size() != 3) {
-      raise::Warning("output.render enabled but simulation is 1D; "
+      raise::Warning("render enabled but simulation is 1D; "
                      "the renderer will be inactive",
                      HERE);
       return;
@@ -83,78 +79,44 @@ namespace out {
 
     m_root = path_t(params.get<std::string>("simulation.name"));
 
-    m_width  = toml::find_or<int>(td, "output", "render", "width", 1024);
-    m_height = toml::find_or<int>(td, "output", "render", "height", 1024);
-    // `resolution` is a convenience that forces a square frame (width ==
-    // height), the natural shape for a dome master.
-    const int resolution = toml::find_or<int>(td, "output", "render", "resolution", 0);
-    if (resolution > 0) {
-      m_width  = resolution;
-      m_height = resolution;
-    }
-    m_samples = toml::find_or<int>(td, "output", "render", "samples", 400);
-    m_step_size = toml::find_or<real_t>(td, "output", "render", "step_size", ZERO);
-    m_early_alpha = toml::find_or<real_t>(td,
-                                          "output",
-                                          "render",
-                                          "early_term_alpha",
-                                          static_cast<real_t>(0.99));
-    m_n_lut       = toml::find_or<int>(td, "output", "render", "n_lut", 256);
+    m_width       = params.get<int>("render.width");
+    m_height      = params.get<int>("render.height");
+    m_samples     = params.get<int>("render.volume.samples");
+    m_step_size   = params.get<real_t>("render.volume.step_size");
+    m_early_alpha = params.get<real_t>("render.volume.early_term_alpha");
+    m_n_lut       = params.get<int>("render.n_lut");
 
-    // opaque background color (shows through low-alpha pixels); default black
-    const auto bg = toml::find_or<std::vector<real_t>>(td,
-                                                       "output",
-                                                       "render",
-                                                       "background",
-                                                       std::vector<real_t> {});
-    if (bg.size() == 3) {
-      m_background[0] = bg[0];
-      m_background[1] = bg[1];
-      m_background[2] = bg[2];
+    // opaque background color (shows through low-alpha pixels)
+    const auto bg = params.get<std::vector<real_t>>("render.background");
+    for (auto i = 0u; i < 3; ++i) {
+      m_background[i] = bg[i];
     }
 
-    m_colorbar = toml::find_or<bool>(td, "output", "render", "colorbar", true);
-    m_colorbar_outside = toml::find_or<bool>(td,
-                                             "output",
-                                             "render",
-                                             "colorbar_outside",
-                                             true);
+    m_colorbar         = params.get<bool>("render.colorbar");
+    m_colorbar_outside = params.get<bool>("render.colorbar_outside");
     // 2D slice mode (spherical only): mirror the half-plane into a full disk
-    m_mirror = toml::find_or<bool>(td, "output", "render", "mirror", true);
+    m_mirror           = params.get<bool>("render.mirror");
 
     // draw the current simulation time in the upper-right corner
-    m_time_label = toml::find_or<bool>(td, "output", "render", "time_label", false);
+    m_time_label = params.get<bool>("render.time_label");
 
     // axes: spine + ticks + labels around the rendered region
-    m_axes        = toml::find_or<bool>(td, "output", "render", "axes", false);
-    m_axis_nticks = toml::find_or<int>(td, "output", "render", "axis_ticks", 5);
-    m_spine_width = toml::find_or<real_t>(td,
-                                          "output",
-                                          "render",
-                                          "spine_width",
-                                          static_cast<real_t>(2));
+    m_axes          = params.get<bool>("render.axes");
+    m_axis_nticks   = params.get<int>("render.axis_ticks");
+    m_spine_width   = params.get<real_t>("render.spine_width");
     m_global_extent = global_extent;
 
     // optional axis-aligned render region (physical coords). Unset axes default
     // to the full extent; user limits are clamped to the box (nothing to render
-    // outside it). x{1,2,3}_lim -> axes {0,1,2} (r/theta for spherical 2D).
+    // outside it). extent.x{1,2,3} -> axes {0,1,2} (r/theta for spherical 2D).
     m_region     = global_extent;
     m_has_region = false;
     {
-      const char* keys[3] = { "x1_lim", "x2_lim", "x3_lim" };
+      const char* keys[3] = { "x1", "x2", "x3" };
       for (size_t d = 0; d < global_extent.size() and d < 3; ++d) {
-        const auto lim = toml::find_or<std::vector<real_t>>(td,
-                                                            "output",
-                                                            "render",
-                                                            keys[d],
-                                                            std::vector<real_t> {});
+        const auto lim = params.get<std::vector<real_t>>(
+          "render.extent." + std::string(keys[d]));
         if (lim.empty()) {
-          continue;
-        }
-        if (lim.size() != 2 or lim[1] <= lim[0]) {
-          raise::Warning("output.render." + std::string(keys[d]) +
-                           " must be [lo, hi] with hi > lo; ignoring",
-                         HERE);
           continue;
         }
         const real_t lo = std::max(lim[0], global_extent[d].first);
@@ -163,7 +125,7 @@ namespace out {
           m_region[d]  = { lo, hi };
           m_has_region = true;
         } else {
-          raise::Warning("output.render." + std::string(keys[d]) +
+          raise::Warning("render.extent." + std::string(keys[d]) +
                            " does not overlap the domain; ignoring",
                          HERE);
         }
@@ -176,98 +138,66 @@ namespace out {
     // background border -> a valid dome master). The 3D dome is a separate
     // workstream; warn if asked for here so it does not silently fall back to
     // the volume camera.
-    {
-      const bool dome_enable =
-        toml::find_or(td, "output", "render", "dome", "enable", false);
-      if (dome_enable) {
-        if (global_extent.size() != 2) {
-          raise::Warning("output.render.dome is 2D-only for now; ignoring", HERE);
+    if (params.get<bool>("render.dome.enable")) {
+      if (global_extent.size() != 2) {
+        raise::Warning("render.dome is 2D-only for now; ignoring", HERE);
+      } else {
+        m_dome.enabled   = true;
+        const real_t fov = params.get<real_t>("render.dome.fov");
+        m_dome.theta_max = HALF * fov * static_cast<real_t>(constant::PI) /
+                           static_cast<real_t>(180);
+        const auto proj = params.get<std::string>("render.dome.projection");
+        if (proj == "gnomonic") {
+          m_dome.law = DomeMap::Gnomonic;
+        } else if (proj == "stereographic") {
+          m_dome.law = DomeMap::Stereographic;
+        } else if (proj == "orthographic") {
+          m_dome.law = DomeMap::Orthographic;
         } else {
-          m_dome.enabled   = true;
-          const real_t fov = toml::find_or<real_t>(td,
-                                                   "output",
-                                                   "render",
-                                                   "dome",
-                                                   "fov",
-                                                   static_cast<real_t>(180));
-          m_dome.theta_max = HALF * fov * static_cast<real_t>(constant::PI) /
-                             static_cast<real_t>(180);
-          const auto proj = toml::find_or<std::string>(td,
-                                                       "output",
-                                                       "render",
-                                                       "dome",
-                                                       "projection",
-                                                       "equidistant");
-          if (proj == "gnomonic") {
-            m_dome.law = DomeMap::Gnomonic;
-          } else if (proj == "stereographic") {
-            m_dome.law = DomeMap::Stereographic;
-          } else if (proj == "orthographic") {
-            m_dome.law = DomeMap::Orthographic;
-          } else {
-            if (proj != "equidistant") {
-              raise::Warning("output.render.dome.projection '" + proj +
-                               "' unknown; using 'equidistant'",
-                             HERE);
-            }
-            m_dome.law = DomeMap::Equidistant;
-          }
-          // the gnomonic (flat-tangent) law diverges as the dome half-FOV -> 90
-          // deg (a flat plane never reaches the horizon), so cap it below that.
-          if (m_dome.law == DomeMap::Gnomonic) {
-            const real_t cap = static_cast<real_t>(89.0 * constant::PI / 180.0);
-            if (m_dome.theta_max >= cap) {
-              raise::Warning(
-                "output.render.dome: 'gnomonic' needs fov < 180 deg "
-                "(a flat plane cannot reach the dome horizon); "
-                "capping the half-FOV at 89 deg",
-                HERE);
-              m_dome.theta_max = cap;
-            }
-          }
-          // default center = domain center; default radius = the largest disk
-          // that fits inside the (rectangular) domain (half the shorter side).
-          const real_t Lx = global_extent[0].second - global_extent[0].first;
-          const real_t Ly = global_extent[1].second - global_extent[1].first;
-          m_dome.cx = HALF * (global_extent[0].first + global_extent[0].second);
-          m_dome.cy = HALF * (global_extent[1].first + global_extent[1].second);
-          const auto ctr = toml::find_or<std::vector<real_t>>(
-            td,
-            "output",
-            "render",
-            "dome",
-            "center",
-            std::vector<real_t> {});
-          if (ctr.size() == 2) {
-            m_dome.cx = ctr[0];
-            m_dome.cy = ctr[1];
-          } else if (not ctr.empty()) {
-            raise::Warning("output.render.dome.center must have 2 entries "
-                           "[x, y]; using the domain center",
+          m_dome.law = DomeMap::Equidistant;
+        }
+        // the gnomonic (flat-tangent) law diverges as the dome half-FOV -> 90
+        // deg (a flat plane never reaches the horizon), so cap it below that.
+        if (m_dome.law == DomeMap::Gnomonic) {
+          const real_t cap = static_cast<real_t>(89.0 * constant::PI / 180.0);
+          if (m_dome.theta_max >= cap) {
+            raise::Warning("render.dome: 'gnomonic' needs fov < 180 deg "
+                           "(a flat plane cannot reach the dome horizon); "
+                           "capping the half-FOV at 89 deg",
                            HERE);
+            m_dome.theta_max = cap;
           }
-          const real_t rdef = HALF * std::min(Lx, Ly);
-          m_dome.R = toml::find_or<real_t>(td, "output", "render", "dome", "radius", rdef);
-          if (m_dome.R <= ZERO) {
-            m_dome.R = rdef;
-          }
-          if (m_width != m_height) {
-            raise::Warning("output.render.dome: width != height; the fisheye "
-                           "disk is centered on the shorter side and the frame "
-                           "is not a square dome master",
-                           HERE);
-          }
+        }
+        // default center = domain center; default radius = the largest disk
+        // that fits inside the (rectangular) domain (half the shorter side).
+        const real_t Lx = global_extent[0].second - global_extent[0].first;
+        const real_t Ly = global_extent[1].second - global_extent[1].first;
+        m_dome.cx = HALF * (global_extent[0].first + global_extent[0].second);
+        m_dome.cy = HALF * (global_extent[1].first + global_extent[1].second);
+        const auto ctr = params.get<std::vector<real_t>>("render.dome.center");
+        if (ctr.size() == 2) {
+          m_dome.cx = ctr[0];
+          m_dome.cy = ctr[1];
+        }
+        const real_t rdef = HALF * std::min(Lx, Ly);
+        m_dome.R          = params.contains("render.dome.radius")
+                              ? params.get<real_t>("render.dome.radius")
+                              : rdef;
+        if (m_dome.R <= ZERO) {
+          m_dome.R = rdef;
+        }
+        if (m_width != m_height) {
+          raise::Warning("render.dome: width != height; the fisheye "
+                         "disk is centered on the shorter side and the frame "
+                         "is not a square dome master",
+                         HERE);
         }
       }
     }
 
     {
-      const auto al = toml::find_or<std::vector<std::string>>(
-        td,
-        "output",
-        "render",
-        "axis_labels",
-        std::vector<std::string> {});
+      const auto al = params.get<std::vector<std::string>>(
+        "render.axis_labels");
       m_axis_labels_set = not al.empty();
       for (size_t d = 0; d < al.size() and d < 3; ++d) {
         m_axis_labels[d] = al[d];
@@ -277,92 +207,45 @@ namespace out {
       m_slice_ylabel = m_axis_labels[1];
     }
 
-    // cadence: mirror output.* (interval in steps; interval_time in sim time)
-    auto interval = toml::find_or<timestep_t>(td, "output", "render", "interval", 0u);
-    auto interval_time = toml::find_or<simtime_t>(td,
-                                                  "output",
-                                                  "render",
-                                                  "interval_time",
-                                                  -1.0);
-    if ((interval == 0) and (interval_time == -1.0)) {
-      interval      = params.template get<timestep_t>("output.interval");
-      interval_time = params.template get<timestep_t>("output.interval_time");
-    }
-    m_tracker.init("render", interval, interval_time);
+    // cadence (falls back to output.interval{,_time}; see params::Render)
+    m_tracker.init("render",
+                   params.get<timestep_t>("render.interval"),
+                   params.get<simtime_t>("render.interval_time"));
 
     /* ---- camera (used by the 3D volume mode; the 2D slice path frames itself
      * and ignores this, so a missing 3rd axis is zero-filled harmlessly) ---- */
     // frame the camera on the render region (== the full extent when uncropped)
     real_t center[3] = { ZERO, ZERO, ZERO }, size[3] = { ZERO, ZERO, ZERO };
-    real_t maxext = ZERO;
     for (size_t d = 0; d < m_region.size() and d < 3; ++d) {
       center[d] = static_cast<real_t>(0.5) *
                   (m_region[d].first + m_region[d].second);
       size[d] = m_region[d].second - m_region[d].first;
-      maxext  = (size[d] > maxext) ? size[d] : maxext;
     }
     const real_t diag = std::sqrt(
       size[0] * size[0] + size[1] * size[1] + size[2] * size[2]);
 
-    const auto cam_mode   = toml::find_or<std::string>(td,
-                                                     "output",
-                                                     "render",
-                                                     "camera",
-                                                     "mode",
-                                                     std::string {});
+    // "orthographic" | "perspective" | "dome". The dome is a fulldome
+    // azimuthal-equidistant fisheye from an INTERIOR eye (the box center by
+    // default) -- see Metadomain::Render (3D).
+    const auto cam_mode   = params.get<std::string>("render.camera.mode");
     auto       projection = CameraDevice::Ortho;
     if (cam_mode == "dome") {
       projection = CameraDevice::Dome;
     } else if (cam_mode == "perspective") {
       projection = CameraDevice::Perspective;
-    } else if (cam_mode == "orthographic") {
-      projection = CameraDevice::Ortho;
-    } else if (not cam_mode.empty()) {
-      raise::Warning("output.render.camera.mode '" + cam_mode +
-                       "' unknown (want orthographic/perspective/dome); using "
-                       "orthographic projection",
-                     HERE);
     }
     const bool   is_dome  = (projection == CameraDevice::Dome);
-    const real_t dome_fov = toml::find_or<real_t>(td,
-                                                  "output",
-                                                  "render",
-                                                  "camera",
-                                                  "dome_fov",
-                                                  static_cast<real_t>(180));
-    auto         pos      = toml::find_or<std::vector<real_t>>(td,
-                                                  "output",
-                                                  "render",
-                                                  "camera",
-                                                  "position",
-                                                  std::vector<real_t> {});
-    auto         look     = toml::find_or<std::vector<real_t>>(td,
-                                                   "output",
-                                                   "render",
-                                                   "camera",
-                                                   "look_at",
-                                                   std::vector<real_t> {});
-    auto         up       = toml::find_or<std::vector<real_t>>(td,
-                                                 "output",
-                                                 "render",
-                                                 "camera",
-                                                 "up",
-                                                 std::vector<real_t> {});
-    const real_t fov      = toml::find_or<real_t>(td,
-                                             "output",
-                                             "render",
-                                             "camera",
-                                             "fov",
-                                             static_cast<real_t>(35.0));
+    const real_t dome_fov = params.get<real_t>("render.camera.dome_fov");
+    const auto pos  = params.get<std::vector<real_t>>("render.camera.position");
+    const auto look = params.get<std::vector<real_t>>("render.camera.look_at");
+    const auto up   = params.get<std::vector<real_t>>("render.camera.up");
+    const real_t fov          = params.get<real_t>("render.camera.fov");
     // default covers the box from any view direction (default camera looks
     // down the diagonal), so nothing is clipped without explicit framing.
-    (void)maxext;
-    const real_t ortho_height = toml::find_or<real_t>(td,
-                                                      "output",
-                                                      "render",
-                                                      "camera",
-                                                      "ortho_height",
-                                                      diag);
+    const real_t ortho_height = params.contains("render.camera.ortho_height")
+                                  ? params.get<real_t>(
+                                      "render.camera.ortho_height")
+                                  : diag;
 
     real_t eye[3], lookat[3], upv[3];
     for (int d = 0; d < 3; ++d) {
@@ -422,11 +305,8 @@ namespace out {
     m_camera_dev.tan_half_fov = std::tan(static_cast<real_t>(0.5) * fov *
                                          static_cast<real_t>(constant::PI) /
                                          static_cast<real_t>(180.0));
-    // keep `orthographic` consistent with the resolved projection so that
-    // `mode` actually overrides the flag: the kernel/screenBBox pick ortho vs
-    // perspective from `orthographic`, and only Dome is read off `projection`.
-    // (When `mode` is unset, `projection` was derived from `ortho`, so this
-    // round-trips to the original flag -- back-compatible.)
+    // the kernel/screenBBox pick ortho vs perspective from `orthographic`, and
+    // only Dome is read off `projection`.
     m_camera_dev.orthographic = (projection == CameraDevice::Ortho);
     m_camera_dev.half_h       = static_cast<real_t>(0.5) * ortho_height;
     m_camera_dev.half_w       = m_camera_dev.half_h * m_camera_dev.aspect;
@@ -445,7 +325,7 @@ namespace out {
       m_camera_dev.aspect        = ONE;
       m_camera_dev.half_w        = m_camera_dev.half_h;
       if (m_width != m_height) {
-        raise::Warning("output.render.camera.mode='dome' wants width == height "
+        raise::Warning("render.camera.mode='dome' wants width == height "
                        "for a circular dome master; the fisheye disk will be "
                        "elliptical otherwise",
                        HERE);
@@ -461,12 +341,9 @@ namespace out {
         insc = (size[d] < insc) ? size[d] : insc;
       }
       insc         *= HALF;
-      real_t domeR  = toml::find_or<real_t>(td,
-                                           "output",
-                                           "render",
-                                           "camera",
-                                           "dome_radius",
-                                           insc);
+      real_t domeR  = params.contains("render.camera.dome_radius")
+                        ? params.get<real_t>("render.camera.dome_radius")
+                        : insc;
       if (domeR < ZERO) {
         domeR = insc;
       }
@@ -480,63 +357,42 @@ namespace out {
       m_eye_base[d] = m_camera_dev.eye[d];
     }
     {
-      const auto vel = toml::find_or<std::vector<real_t>>(td,
-                                                          "output",
-                                                          "render",
-                                                          "camera_velocity",
-                                                          std::vector<real_t> {});
+      const auto vel = params.get<std::vector<real_t>>(
+        "render.moving_view.velocity");
       for (size_t d = 0; d < vel.size() and d < 3; ++d) {
         m_cam_vel[d] = vel[d];
       }
       m_cam_moving = (m_cam_vel[0] != ZERO) or (m_cam_vel[1] != ZERO) or
                      (m_cam_vel[2] != ZERO);
-      m_cam_t0 = toml::find_or<simtime_t>(td,
-                                          "output",
-                                          "render",
-                                          "camera_start_time",
-                                          0.0);
+      m_cam_t0 = params.get<simtime_t>("render.moving_view.start_time");
       if (m_cam_moving and not m_has_region and global_extent.size() == 2) {
-        raise::Warning("output.render.camera_velocity set without x{1,2}_lim: "
-                       "the 2D window will pan off the domain. Set a region to "
-                       "track a feature within it.",
+        raise::Warning("render.moving_view.velocity set without "
+                       "render.extent.x{1,2}: the 2D window will pan off the "
+                       "domain. Set a region to track a feature within it.",
                        HERE);
       }
     }
 
     /* ---- scenes --------------------------------------------------------- */
     m_scenes.clear();
-    const auto scenes_arr = toml::find_or<toml::array>(td,
-                                                       "output",
-                                                       "render",
-                                                       "scenes",
-                                                       toml::array {});
-    for (const auto& sc : scenes_arr) {
-      Scene scene;
-      scene.field = toml::find_or<std::string>(sc, "field", "");
-      scene.prefix = toml::find_or<std::string>(sc, "prefix", scene.field + "_");
-      if (scene.field.empty()) {
-        raise::Warning("output.render scene with no field; skipping", HERE);
-        continue;
-      }
-      scene.label = toml::find_or<std::string>(sc, "label", scene.field);
-      scene.ticks = toml::find_or<std::vector<real_t>>(sc,
-                                                       "colorbar_ticks",
-                                                       std::vector<real_t> {});
-      // overlay the B-field-line tubes inside this scene's volume; a dedicated
-      // `field = "fieldlines"` scene renders the tubes standalone (no volume).
-      scene.show_fieldlines = toml::find_or<bool>(sc, "fieldlines", false) or
-                              (scene.field == "fieldlines");
-      scene.tf.vmin      = toml::find_or<real_t>(sc, "min", ZERO);
-      scene.tf.vmax      = toml::find_or<real_t>(sc, "max", ONE);
-      scene.tf.log_scale = toml::find_or<bool>(sc, "log", false);
-      scene.tf.n_lut     = m_n_lut;
-      const auto colormap = toml::find_or<std::string>(sc, "colormap", "viridis");
-      scene.tf.colormap    = colormap;
+    const auto nscenes = params.get<std::size_t>("render.nscenes");
+    for (std::size_t i = 0; i < nscenes; ++i) {
+      const auto pfx = "render.scene." + std::to_string(i) + ".";
+      Scene      scene;
+      scene.field  = params.get<std::string>(pfx + "field");
+      scene.prefix = params.get<std::string>(pfx + "prefix");
+      scene.label  = params.get<std::string>(pfx + "label");
+      scene.ticks  = params.get<std::vector<real_t>>(pfx + "colorbar_ticks");
+      scene.show_fieldlines = params.get<bool>(pfx + "fieldlines");
+      scene.tf.vmin         = params.get<real_t>(pfx + "min");
+      scene.tf.vmax         = params.get<real_t>(pfx + "max");
+      scene.tf.log_scale    = params.get<bool>(pfx + "log");
+      scene.tf.n_lut        = m_n_lut;
+      const auto colormap   = params.get<std::string>(pfx + "colormap");
+      scene.tf.colormap     = colormap;
       // alpha control points: array of [position, alpha] pairs
-      const auto alpha_raw = toml::find_or<std::vector<std::vector<real_t>>>(
-        sc,
-        "alpha",
-        std::vector<std::vector<real_t>> {});
+      const auto alpha_raw  = params.get<std::vector<std::vector<real_t>>>(
+        pfx + "alpha");
       std::vector<std::array<real_t, 2>> alpha_pts;
       for (const auto& p : alpha_raw) {
         if (p.size() >= 2) {
@@ -554,101 +410,28 @@ namespace out {
       m_scenes.push_back(std::move(scene));
     }
 
-    if (m_scenes.empty()) {
-      raise::Warning("output.render enabled but no valid scenes; disabling", HERE);
-      return;
-    }
-
     /* ---- magnetic-field-line tube overlay ------------------------------- */
-    // The tubes are built whenever the [output.render.fieldlines] section asks
-    // for them OR any scene requests the overlay (so a bare `field =
-    // "fieldlines"` scene works without a separate enable flag).
-    bool any_fl = false;
-    for (const auto& s : m_scenes) {
-      any_fl = any_fl or s.show_fieldlines;
-    }
-    m_fieldlines.enable =
-      toml::find_or<bool>(td, "output", "render", "fieldlines", "enable", false) or
-      any_fl;
+    // enabled by [render.fieldlines] OR by any scene requesting the overlay
+    // (resolved in params::Render)
+    m_fieldlines.enable = params.get<bool>("render.fieldlines.enable");
     if (m_fieldlines.enable) {
-      if (m_global_extent.size() != 2 and m_global_extent.size() != 3) {
-        raise::Warning(
-          "output.render.fieldlines needs a 2D or 3D run; ignoring",
-          HERE);
-        m_fieldlines.enable = false;
-      } else {
-        // 3D -> traced tubes inside the volume; 2D -> flux-function contours
-        auto& fl = m_fieldlines;
-        fl.field = toml::find_or<std::string>(td,
-                                              "output",
-                                              "render",
-                                              "fieldlines",
-                                              "field",
-                                              "B");
-        fl.bin = toml::find_or<int>(td, "output", "render", "fieldlines", "bin", 4);
-        fl.bin      = (fl.bin < 1) ? 1 : ((fl.bin > 16) ? 16 : fl.bin);
-        fl.seed_px  = toml::find_or<real_t>(td,
-                                           "output",
-                                           "render",
-                                           "fieldlines",
-                                           "seed_px",
-                                           static_cast<real_t>(8));
-        fl.tube_px  = toml::find_or<real_t>(td,
-                                           "output",
-                                           "render",
-                                           "fieldlines",
-                                           "tube_px",
-                                           static_cast<real_t>(2));
-        fl.colormap = toml::find_or<std::string>(td,
-                                                 "output",
-                                                 "render",
-                                                 "fieldlines",
-                                                 "colormap",
-                                                 "inferno");
-        // optional monochrome color [r,g,b]; overrides the colormap when set
-        fl.color    = toml::find_or<std::vector<real_t>>(td,
-                                                      "output",
-                                                      "render",
-                                                      "fieldlines",
-                                                      "color",
-                                                      std::vector<real_t> {});
-        if (not fl.color.empty() and fl.color.size() != 3) {
-          raise::Warning("output.render.fieldlines.color must have 3 entries "
-                         "[r,g,b]; ignoring",
-                         HERE);
-          fl.color.clear();
-        }
-        fl.log_scale =
-          toml::find_or<bool>(td, "output", "render", "fieldlines", "log", false);
-        fl.vmin = toml::find_or<real_t>(td, "output", "render", "fieldlines", "min", ZERO);
-        fl.vmax = toml::find_or<real_t>(td, "output", "render", "fieldlines", "max", ZERO);
-        fl.step_frac    = toml::find_or<real_t>(td,
-                                             "output",
-                                             "render",
-                                             "fieldlines",
-                                             "step_frac",
-                                             static_cast<real_t>(0.5));
-        fl.max_steps    = toml::find_or<int>(td,
-                                          "output",
-                                          "render",
-                                          "fieldlines",
-                                          "max_steps",
-                                          4000);
-        fl.max_len_frac = toml::find_or<real_t>(td,
-                                                "output",
-                                                "render",
-                                                "fieldlines",
-                                                "max_length",
-                                                static_cast<real_t>(3));
-        fl.seed_max     = toml::find_or<int>(td,
-                                         "output",
-                                         "render",
-                                         "fieldlines",
-                                         "seed_max",
-                                         4096);
-        fl.levels =
-          toml::find_or<int>(td, "output", "render", "fieldlines", "levels", 16);
-      }
+      // 3D -> traced tubes inside the volume; 2D -> flux-function contours
+      auto& fl     = m_fieldlines;
+      fl.field     = params.get<std::string>("render.fieldlines.field");
+      fl.bin       = params.get<int>("render.fieldlines.bin");
+      fl.seed_px   = params.get<real_t>("render.fieldlines.seed_px");
+      fl.tube_px   = params.get<real_t>("render.fieldlines.tube_px");
+      fl.colormap  = params.get<std::string>("render.fieldlines.colormap");
+      // optional monochrome color [r,g,b]; overrides the colormap when set
+      fl.color     = params.get<std::vector<real_t>>("render.fieldlines.color");
+      fl.log_scale = params.get<bool>("render.fieldlines.log");
+      fl.vmin      = params.get<real_t>("render.fieldlines.min");
+      fl.vmax      = params.get<real_t>("render.fieldlines.max");
+      fl.step_frac = params.get<real_t>("render.fieldlines.step_frac");
+      fl.max_steps = params.get<int>("render.fieldlines.max_steps");
+      fl.max_len_frac = params.get<real_t>("render.fieldlines.max_length");
+      fl.seed_max     = params.get<int>("render.fieldlines.seed_max");
+      fl.levels       = params.get<int>("render.fieldlines.levels");
     }
 
     m_enabled = true;

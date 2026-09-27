@@ -255,8 +255,8 @@ namespace out {
     Renderer(Renderer&&) = default;
 
     /**
-     * @brief Parse `[output.render.*]` and build the camera + per-scene LUTs.
-     * @param params simulation parameters (raw toml read via params.data())
+     * @brief Build the camera + per-scene LUTs from the `render.*` parameters.
+     * @param params simulation parameters (see ntt::params::Render)
      * @param global_extent global physical box, for default camera framing
      */
     void init(const ntt::SimulationParams& params,
@@ -269,8 +269,8 @@ namespace out {
 
     /**
      * @brief Advance the moving view to `time`: translate the render region (and
-     * the 3D camera) by `camera_velocity * max(0, time - camera_start_time)`.
-     * @note A no-op unless `camera_velocity` was set. Call once per frame, before
+     * the 3D camera) by `moving_view.velocity * max(0, time - moving_view.start_time)`.
+     * @note A no-op unless `moving_view.velocity` was set. Call once per frame, before
      *       reading region()/camera(). All ranks pass the same time, so the
      *       shifted view is identical everywhere (the composite stays seamless).
      */
@@ -395,7 +395,7 @@ namespace out {
       return m_spine_width;
     }
 
-    // whether `output.render.axis_labels` was set in the toml (so the 2D path
+    // whether `render.axis_labels` was set (so the 2D path
     // honors it instead of substituting per-metric defaults)
     [[nodiscard]]
     auto axisLabelsSet() const -> bool {
@@ -505,7 +505,7 @@ namespace out {
     // know the render mode (size 2 => 2D slice, size 3 => 3D volume).
     boundaries_t<real_t> m_global_extent;
     // resolved render region [lo, hi] per axis (== global extent unless the
-    // user set x{1,2,3}_lim); the volume is clipped / the slice window is framed
+    // user set render.extent.x{1,2,3}); the volume is clipped / the slice window is framed
     // to this, and the default camera frames it. `m_region` is the CURRENT region
     // (shifted by the moving view below); `m_region_base` is the static toml one.
     boundaries_t<real_t> m_region;

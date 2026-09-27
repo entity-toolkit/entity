@@ -418,9 +418,8 @@ namespace ntt {
       }
     }
     if (bad_species) {
-      raise::Warning(
-        "output.render: invalid species in '" + field_name + "', skipping",
-        HERE);
+      raise::Warning("render: invalid species in '" + field_name + "', skipping",
+                     HERE);
       return false;
     }
 
@@ -759,7 +758,7 @@ namespace ntt {
       }
     }
 
-    raise::Warning("output.render: unknown field '" + field_name +
+    raise::Warning("render: unknown field '" + field_name +
                      "' (expected N/Nppc/Rho/Charge, T{i}{j}, V{i}/Vmag, or "
                      "{E,B,J}{mag,1,2,3,x,y,z}); skipping",
                    HERE);
@@ -954,7 +953,7 @@ namespace ntt {
           CommunicateBckp(*local_domain, { 0, 1 });
         } else if (not have_tubes) {
           // standalone field-line scene but tracing produced nothing/disabled
-          raise::Warning("output.render: 'fieldlines' scene but no field-line "
+          raise::Warning("render: 'fieldlines' scene but no field-line "
                          "geometry; skipping",
                          HERE);
           continue;
@@ -1434,10 +1433,9 @@ namespace ntt {
           }
           CommunicateBckp(*local_domain, { 0, 1 });
         } else if (not have_fl) {
-          raise::Warning(
-            "output.render: 'fieldlines' scene needs a 2D run with "
-            "[output.render.fieldlines]; skipping",
-            HERE);
+          raise::Warning("render: 'fieldlines' scene needs a 2D run with "
+                         "[render.fieldlines]; skipping",
+                         HERE);
           continue;
         }
         const out::ContourSet& kc       = show_lines ? contours : emptyc;
