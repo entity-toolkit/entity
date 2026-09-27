@@ -1417,16 +1417,6 @@
             ]
           }
         },
-        "separate_files": {
-          "description": "Whether to output each timestep into separate files",
-          "type": "boolean",
-          "default": true,
-          "deprecated": true,
-          "x-entity": {
-            "type": "bool",
-            "deprecated": "starting v1.3.0"
-          }
-        },
         "fields": {
           "description": "Field output parameters",
           "type": "object",
@@ -1854,883 +1844,6 @@
               }
             }
           }
-        },
-        "render": {
-          "description": "In-situ renderer. Renders scalar fields on the GPU and writes PNG images directly to `<simname>/renders/` each cadence -- no field data is written to storage, and the result is seamless across MPI domain boundaries.",
-          "type": "object",
-          "additionalProperties": false,
-          "x-entity": {
-            "notes": [
-              "two modes, selected automatically by the simulation dimension:\n- 3D Cartesian (Minkowski): volume ray-march (uses `samples`, `step_size`, `early_term_alpha`, and the [camera] table)\n- 2D (Minkowski, Spherical/QSpherical, and all GR Kerr-Schild): flat slice rasterizer. Cartesian shows the (x, y) plane; spherical shows the meridional (r, theta) half-plane mapped to Cartesian (X = r sin th, Z = r cos th), optionally mirrored (see `mirror`). The `samples`/`step_size`/`early_term_alpha`/[camera] keys are ignored in 2D (one opaque sample per pixel).",
-              "1D (and 3D non-Cartesian, which does not exist) is a no-op",
-              "One PNG stream per scene (e.g. a density/|B|/|J| triptych)"
-            ]
-          },
-          "properties": {
-            "enable": {
-              "description": "Toggle for the volume renderer",
-              "type": "boolean",
-              "default": false,
-              "x-entity": {
-                "type": "bool"
-              }
-            },
-            "interval": {
-              "description": "Number of timesteps between renders",
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "x-entity": {
-                "type": "uint",
-                "notes": [
-                  "When `!= 0`, overrides `output.interval`",
-                  "When `== 0`, `interval_time` (or `output.interval`) is used"
-                ]
-              }
-            },
-            "interval_time": {
-              "description": "Physical (code) time interval between renders",
-              "type": "number",
-              "default": -1.0,
-              "x-entity": {
-                "type": "float",
-                "notes": [
-                  "When `< 0`, the output is controlled by `interval`"
-                ]
-              }
-            },
-            "width": {
-              "description": "Image width in pixels (the rendered region; the PNG is wider if a colorbar margin is added, see `colorbar_outside`)",
-              "type": "integer",
-              "minimum": 1,
-              "default": 1024,
-              "x-entity": {
-                "type": "int [> 0]"
-              }
-            },
-            "height": {
-              "description": "Image height in pixels",
-              "type": "integer",
-              "minimum": 1,
-              "default": 1024,
-              "x-entity": {
-                "type": "int [> 0]"
-              }
-            },
-            "resolution": {
-              "description": "Convenience: force a square frame (sets width == height == resolution), the natural shape for a dome master. Overrides `width`/`height` when > 0.",
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "x-entity": {
-                "type": "int [> 0]",
-                "default": "0 (use width/height)"
-              }
-            },
-            "x1_lim": {
-              "description": "Axis-aligned render region [lo, hi] along x1, in physical/world coords. Left unset it spans the full domain. Clamped to the box.",
-              "anyOf": [
-                {
-                  "type": "array",
-                  "maxItems": 0
-                },
-                {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "prefixItems": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                }
-              ],
-              "default": [],
-              "x-entity": {
-                "type": "array<float> [size 2]",
-                "default": "[] (full extent)",
-                "notes": [
-                  "3D -> the volume is depth-clipped to this box, the wireframe/axes frame it, and the default camera zooms to it; 2D -> the slice window is framed to it. For a spherical 2D slice, x1_lim crops the radius r and x2_lim crops the polar angle theta."
-                ],
-                "examples": [
-                  "x1_lim = [-64.0, 64.0]"
-                ]
-              }
-            },
-            "x2_lim": {
-              "description": "Axis-aligned render region [lo, hi] along x2, in physical/world coords. Left unset it spans the full domain. Clamped to the box.",
-              "anyOf": [
-                {
-                  "type": "array",
-                  "maxItems": 0
-                },
-                {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "prefixItems": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                }
-              ],
-              "default": [],
-              "x-entity": {
-                "type": "array<float> [size 2]",
-                "default": "[] (full extent)",
-                "notes": [
-                  "For a spherical 2D slice, x2_lim crops the polar angle theta"
-                ]
-              }
-            },
-            "x3_lim": {
-              "description": "Axis-aligned render region [lo, hi] along x3, in physical/world coords. Left unset it spans the full domain. Clamped to the box.",
-              "anyOf": [
-                {
-                  "type": "array",
-                  "maxItems": 0
-                },
-                {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "prefixItems": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "number"
-                    }
-                  ]
-                }
-              ],
-              "default": [],
-              "x-entity": {
-                "type": "array<float> [size 2]",
-                "default": "[] (full extent)"
-              }
-            },
-            "camera_velocity": {
-              "description": "Moving view: translate the render region (and, in 3D, the camera) at this velocity in world-units-per-sim-time, to keep a propagating feature (e.g. a shock) in frame. Pair with x{1,2,3}_lim (the moving window). 2D uses the first two components; the motion starts at `camera_start_time`.",
-              "anyOf": [
-                {
-                  "type": "array",
-                  "maxItems": 0
-                },
-                {
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 3,
-                  "items": {
-                    "type": "number"
-                  }
-                }
-              ],
-              "default": [],
-              "x-entity": {
-                "type": "array<float> [size 2 or 3]",
-                "default": "[] (static view)",
-                "examples": [
-                  "camera_velocity = [0.9, 0.0]   # pan along +x1 at 0.9 c"
-                ]
-              }
-            },
-            "camera_start_time": {
-              "description": "Sim time at which the view starts moving (static before it, e.g. to let an initial ramp-up finish)",
-              "type": "number",
-              "default": 0.0,
-              "x-entity": {
-                "type": "float"
-              }
-            },
-            "samples": {
-              "description": "Number of ray-march steps across the global box diagonal",
-              "type": "integer",
-              "minimum": 1,
-              "default": 400,
-              "x-entity": {
-                "type": "int [> 0]",
-                "notes": [
-                  "The world-space step is `box_diagonal / samples` unless `step_size` is set. Higher = better quality, slower."
-                ]
-              }
-            },
-            "step_size": {
-              "description": "Fixed world-space step between ray samples",
-              "type": "number",
-              "minimum": 0.0,
-              "default": 0.0,
-              "x-entity": {
-                "type": "float [>= 0.0]",
-                "notes": [
-                  "0 derives the step from `samples`. The step is identical on all ranks, which is what makes the multi-domain composite seamless."
-                ]
-              }
-            },
-            "early_term_alpha": {
-              "description": "Stop marching a ray once its accumulated opacity reaches this value",
-              "type": "number",
-              "minimum": 0.0,
-              "maximum": 1.0,
-              "default": 0.99,
-              "x-entity": {
-                "type": "float [0.0 -> 1.0]",
-                "notes": [
-                  "Pure speed optimization; set to 1.0 to disable early termination"
-                ]
-              }
-            },
-            "n_lut": {
-              "description": "Number of entries in the color/opacity lookup table",
-              "type": "integer",
-              "exclusiveMinimum": 1,
-              "default": 256,
-              "x-entity": {
-                "type": "int [> 1]"
-              }
-            },
-            "background": {
-              "description": "Opaque background RGB (each channel 0..1) shown through transparent/low-opacity pixels; also fills the colorbar margin",
-              "type": "array",
-              "minItems": 3,
-              "maxItems": 3,
-              "items": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0
-              },
-              "default": [
-                0.0,
-                0.0,
-                0.0
-              ],
-              "x-entity": {
-                "type": "array<float> [size 3]"
-              }
-            },
-            "colorbar": {
-              "description": "Draw a colorbar (gradient + value ticks + label) on each PNG",
-              "type": "boolean",
-              "default": true,
-              "x-entity": {
-                "type": "bool"
-              }
-            },
-            "colorbar_outside": {
-              "description": "Draw the colorbar in an added right margin (the PNG becomes wider by a fixed strip) instead of overlaying it on the rendered volume",
-              "type": "boolean",
-              "default": true,
-              "x-entity": {
-                "type": "bool"
-              }
-            },
-            "mirror": {
-              "description": "2D spherical slice only: mirror the meridional half-plane across the symmetry axis to render a full disk from one axisymmetric half. No effect on Cartesian or 3D rendering.",
-              "type": "boolean",
-              "default": true,
-              "x-entity": {
-                "type": "bool"
-              }
-            },
-            "time_label": {
-              "description": "Draw the current simulation time as a label (\"T = <value>\", fixed to 2 decimals) in the upper-right corner of the render region, in a contrasting color, vertically centered between the frame top and the colorbar.",
-              "type": "boolean",
-              "default": false,
-              "x-entity": {
-                "type": "bool"
-              }
-            },
-            "axes": {
-              "description": "Draw a spine (frame) + axis ticks + labels around the rendered region. The PNG gains left/bottom margins (background-filled) for the tick labels and axis names, so they never overlap the data.",
-              "type": "boolean",
-              "default": false,
-              "x-entity": {
-                "type": "bool",
-                "notes": [
-                  "2D Cartesian = a rectangular frame with linear spatial ticks;\n2D spherical = polar axes (an \"R\" radial axis on the symmetry axis with R=0 centered, and a \"Theta\" axis along the curved outline / spine);\n3D = the global box projected to a wireframe with ticks on the three silhouette edges (x bottom, y & z on the left)"
-                ]
-              }
-            },
-            "axis_labels": {
-              "description": "Axis names. 3D uses all three; the 2D slice uses the first two. When unset, the 2D slice defaults to \"x\",\"y\" (Cartesian) or \"X\",\"Z\" (spherical).",
-              "type": "array",
-              "maxItems": 3,
-              "items": {
-                "type": "string"
-              },
-              "default": [
-                "x",
-                "y",
-                "z"
-              ],
-              "x-entity": {
-                "type": "array<string> [size <= 3]"
-              }
-            },
-            "axis_ticks": {
-              "description": "Target number of ticks per axis (actual count is rounded to nice values)",
-              "type": "integer",
-              "minimum": 2,
-              "default": 5,
-              "x-entity": {
-                "type": "int [>= 2]"
-              }
-            },
-            "spine_width": {
-              "description": "3D only: target width (pixels) of the box wireframe \"spine\". The spine is drawn inside the ray-march (opaque, depth-occluded by the volume); its width is floored by the ray step, so for a crisper thin line raise `samples` as well.",
-              "type": "number",
-              "exclusiveMinimum": 0.0,
-              "default": 2.0,
-              "x-entity": {
-                "type": "float [> 0.0]"
-              }
-            },
-            "camera": {
-              "description": "Camera (3D volume mode only; ignored by the 2D slice rasterizer). Defaults frame the whole global box from outside, looking down the (1,1,1) diagonal -- the production setup for which the structured composite is provably seamless.",
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "mode": {
-                  "description": "Projection mode. Overrides `orthographic` below when set.",
-                  "anyOf": [
-                    {
-                      "enum": [
-                        "orthographic",
-                        "perspective",
-                        "dome"
-                      ]
-                    },
-                    {
-                      "type": "string",
-                      "pattern": "(?i)^(orthographic|perspective|dome)$"
-                    }
-                  ],
-                  "x-entity": {
-                    "type": "string",
-                    "default": "(unset -> use `orthographic`)",
-                    "notes": [
-                      "\"dome\" is a fulldome azimuthal-equidistant fisheye rendered from an INTERIOR eye (the domain center by default), i.e. a 3D planetarium dome master. It uses a depth-resolved (A-buffer) composite that is seamless across a full 3D domain decomposition (unlike ortho/perspective, which need the eye outside the box). Set a square frame (`resolution`, or width == height). `forward` is the dome ZENITH (screen-up defaults to +y for a +z zenith)."
-                    ]
-                  }
-                },
-                "orthographic": {
-                  "description": "Orthographic (true) or perspective (false) projection",
-                  "type": "boolean",
-                  "default": true,
-                  "x-entity": {
-                    "type": "bool",
-                    "notes": [
-                      "Orthographic is recommended; the seamless composite is always valid for it. Perspective is only seamless with the eye outside the box."
-                    ]
-                  }
-                },
-                "position": {
-                  "description": "Camera (eye) position in world (physical) coordinates",
-                  "type": "array",
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "items": {
-                    "type": "number"
-                  },
-                  "x-entity": {
-                    "type": "array<float> [size 3]",
-                    "default": "box center pushed back ~1.7 box-diagonals along (1, 1, 1);\nfor `mode = \"dome\"`, the domain center (interior eye)"
-                  }
-                },
-                "look_at": {
-                  "description": "Point the camera looks at, in world coordinates (the dome ZENITH target)",
-                  "type": "array",
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "items": {
-                    "type": "number"
-                  },
-                  "x-entity": {
-                    "type": "array<float> [size 3]",
-                    "default": "box center; for `mode = \"dome\"`, the zenith defaults to +z"
-                  }
-                },
-                "up": {
-                  "description": "Camera up vector (dome: the disk's screen-up)",
-                  "type": "array",
-                  "minItems": 3,
-                  "maxItems": 3,
-                  "items": {
-                    "type": "number"
-                  },
-                  "default": [
-                    0.0,
-                    0.0,
-                    1.0
-                  ],
-                  "x-entity": {
-                    "type": "array<float> [size 3]",
-                    "default": "[0.0, 0.0, 1.0]; for `mode = \"dome\"`, [0.0, 1.0, 0.0]"
-                  }
-                },
-                "fov": {
-                  "description": "Vertical field of view in degrees (perspective only)",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "default": 35.0,
-                  "x-entity": {
-                    "type": "float [> 0.0]"
-                  }
-                },
-                "dome_fov": {
-                  "description": "Full dome field of view in degrees (dome mode only): the image rim is at dome_fov/2 from the zenith (180 = a full hemisphere down to the horizon).",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "maximum": 360.0,
-                  "default": 180.0,
-                  "x-entity": {
-                    "type": "float [> 0.0, <= 360.0]"
-                  }
-                },
-                "dome_radius": {
-                  "description": "Dome far-clip radius in world units (dome mode only): each ray stops this far from the eye, so the sampled region is a half-ball (hemisphere) of this radius rather than the whole box -> uniform path length and no box corner/edge projection artifacts. `samples` then counts steps across this radius.",
-                  "type": "number",
-                  "minimum": 0.0,
-                  "x-entity": {
-                    "type": "float [>= 0.0]",
-                    "default": "the largest sphere centered in the box (half the shortest side), so it touches the face centers and never a corner",
-                    "notes": [
-                      "0 disables the clip (rays march to the box boundary)"
-                    ]
-                  }
-                },
-                "ortho_height": {
-                  "description": "Vertical extent of the view in world units (orthographic only)",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "x-entity": {
-                    "type": "float [> 0.0]",
-                    "default": "the global box diagonal (the whole box fits from any angle)"
-                  }
-                }
-              }
-            },
-            "dome": {
-              "description": "Fulldome fisheye (\"planetarium dome master\"). 2D only; a circular image is centered in the frame's inscribed circle with the corners left as the background (the dome master's black border). Set `width == height` (e.g. 4096) for a square master. When enabled, the axes and the outside colorbar strip are suppressed so the PNG stays exactly width x height. Seamless across MPI domains (the pixel->world map is a shared, deterministic function and the tiles stay disjoint). Ignored (with a warning) for 3D.",
-              "type": "object",
-              "additionalProperties": false,
-              "x-entity": {
-                "notes": [
-                  "CARTESIAN -- the flat plane is warped radially into the disk; use `fov`/`radius`/`center`/`projection` below.",
-                  "SPHERICAL / GR Kerr-Schild -- the meridional slice is ALREADY a disk, so dome mode only mirrors it to a full disk (see `mirror` above; keep it true) and fits it to the inscribed circle. The `fov`/`radius`/`center`/`projection` keys are ignored (the native (X, Z) meridional map is used, with image radius proportional to the physical radius r, r=0 at the disk center)."
-                ]
-              },
-              "properties": {
-                "enable": {
-                  "description": "Build the fisheye dome master instead of the plain slice",
-                  "type": "boolean",
-                  "default": false,
-                  "x-entity": {
-                    "type": "bool"
-                  }
-                },
-                "fov": {
-                  "description": "(Cartesian only) Full dome field of view in degrees (image radius maps linearly to the dome zenith angle: the rim is at fov/2)",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "maximum": 180.0,
-                  "default": 180.0,
-                  "x-entity": {
-                    "type": "float [> 0.0, <= 180.0]",
-                    "default": "180.0   # a full hemisphere"
-                  }
-                },
-                "radius": {
-                  "description": "(Cartesian only) World radius of the circular cutout mapped onto the dome",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "x-entity": {
-                    "type": "float [> 0.0]",
-                    "default": "half the shorter domain side (the largest centered disk that fits inside the box)"
-                  }
-                },
-                "center": {
-                  "description": "(Cartesian only) World-space center of the cutout",
-                  "type": "array",
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "items": {
-                    "type": "number"
-                  },
-                  "x-entity": {
-                    "type": "array<float> [size 2]",
-                    "default": "the domain center"
-                  }
-                },
-                "projection": {
-                  "description": "(Cartesian only) How the dome zenith angle maps to a world radius on the flat slice",
-                  "anyOf": [
-                    {
-                      "enum": [
-                        "equidistant",
-                        "gnomonic",
-                        "stereographic",
-                        "orthographic"
-                      ]
-                    },
-                    {
-                      "type": "string",
-                      "pattern": "(?i)^(equidistant|gnomonic|stereographic|orthographic)$"
-                    }
-                  ],
-                  "default": "equidistant",
-                  "x-entity": {
-                    "type": "string",
-                    "enum": [
-                      "\"equidistant\"  (r proportional to angle; the fulldome image standard -- a straight radial scaling of the cutout)",
-                      "\"gnomonic\"     (r ~ tan(angle); the slice as a flat \"ceiling\" tangent to the dome -- straight sim lines stay straight)",
-                      "\"stereographic\" (r ~ tan(angle/2); conformal, preserves shapes)",
-                      "\"orthographic\" (r ~ sin(angle); the slice as seen face-on)"
-                    ]
-                  }
-                }
-              }
-            },
-            "scenes": {
-              "description": "One scene per scalar field -> one PNG stream. Repeat the table for each.",
-              "type": "array",
-              "x-entity": {
-                "array_of_tables": true
-              },
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ],
-                "properties": {
-                  "field": {
-                    "description": "Scalar field to render (a volume render needs a scalar, so vectors are given as a magnitude or a single component)",
-                    "type": "string",
-                    "x-entity": {
-                      "type": "string",
-                      "enum": [
-                        "(fields): \"{E,B,J}mag\"; \"{E,B,J}{1,2,3}\" or \"{E,B,J}{x,y,z}\"",
-                        "(moments): \"N\", \"Nppc\", \"Rho\", \"Charge\"; \"T{i}{j}\"; \"V{i}\"; \"Vmag\""
-                      ],
-                      "notes": [
-                        "\"{E,B,J}mag\" = vector magnitude |.|; \"B1\"/\"Bx\", \"J3\"/\"Jz\", ... = a single (signed) physical component",
-                        "a bare vector (\"E\"/\"B\"/\"J\") is not renderable -- choose a component or the magnitude",
-                        "\"N\"/\"Nppc\" = number / per-cell count, \"Rho\" = mass density, \"Charge\" = charge density",
-                        "\"T{i}{j}\" = one stress-energy component, i,j in {t,x,y,z} or {0,1,2,3} (e.g. \"Txx\", \"Ttt\", \"T0x\"); \"V{i}\" = one bulk-velocity component, i in {x,y,z} or {1,2,3} (e.g. \"Vx\", \"V1\"); \"Vmag\" = bulk-velocity magnitude sqrt(V1^2+V2^2+V3^2)",
-                        "moments follow the engine: SRPIC = tetrad-basis bulk 3-velocity and stress-energy; GRPIC = Eckart-frame 4-velocity (so \"Vt\"/\"V0\" = u^0 = Gamma/alpha is also valid) and contravariant T",
-                        "per-species selection with a \"_<id>\" suffix on moments, e.g. \"N_1\", \"Rho_2\", \"Txy_1_2\", \"V1_3\"; default = all massive species",
-                        "components are signed; pair a symmetric `min`/`max` with a diverging colormap (\"cool2warm\") to center zero",
-                        "\"fieldlines\" renders the magnetic field-line tubes on their own (no scalar volume sampled); see [output.render.fieldlines] below"
-                      ]
-                    }
-                  },
-                  "prefix": {
-                    "description": "PNG filename prefix; files are `<prefix><cycle>.png`",
-                    "type": "string",
-                    "x-entity": {
-                      "type": "string",
-                      "default": "\"<field>_\""
-                    }
-                  },
-                  "label": {
-                    "description": "Colorbar title",
-                    "type": "string",
-                    "x-entity": {
-                      "type": "string",
-                      "default": "`field`"
-                    }
-                  },
-                  "min": {
-                    "description": "Lower bound of the value range mapped onto the colormap/opacity",
-                    "type": "number",
-                    "default": 0.0,
-                    "x-entity": {
-                      "type": "float"
-                    }
-                  },
-                  "max": {
-                    "description": "Upper bound of the value range",
-                    "type": "number",
-                    "default": 1.0,
-                    "x-entity": {
-                      "type": "float"
-                    }
-                  },
-                  "log": {
-                    "description": "Map the value range logarithmically",
-                    "type": "boolean",
-                    "default": false,
-                    "x-entity": {
-                      "type": "bool",
-                      "notes": [
-                        "Requires min > 0 and max > 0"
-                      ]
-                    }
-                  },
-                  "colormap": {
-                    "description": "Colormap name",
-                    "$ref": "#/$defs/colormap",
-                    "default": "viridis"
-                  },
-                  "alpha": {
-                    "description": "Opacity transfer function: [position, opacity] control points, both in [0, 1], piecewise-linear in the normalized value",
-                    "type": "array",
-                    "items": {
-                      "type": "array",
-                      "minItems": 2,
-                      "maxItems": 2,
-                      "prefixItems": [
-                        {
-                          "type": "number",
-                          "minimum": 0.0,
-                          "maximum": 1.0
-                        },
-                        {
-                          "type": "number",
-                          "minimum": 0.0,
-                          "maximum": 1.0
-                        }
-                      ]
-                    },
-                    "x-entity": {
-                      "type": "array<tuple<float>>",
-                      "default": "linear ramp (opacity = normalized value)",
-                      "notes": [
-                        "Keep the low end near 0 so empty regions stay transparent"
-                      ],
-                      "examples": [
-                        "[[0.0, 0.0], [0.3, 0.1], [1.0, 0.7]]"
-                      ]
-                    }
-                  },
-                  "colorbar_ticks": {
-                    "description": "Explicit value(s) to label on the colorbar",
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    },
-                    "x-entity": {
-                      "type": "array<float>",
-                      "default": "5 evenly-spaced ticks between min and max",
-                      "notes": [
-                        "Values outside [min, max] are skipped"
-                      ],
-                      "examples": [
-                        "[0.0, 0.5, 1.0]"
-                      ]
-                    }
-                  },
-                  "fieldlines": {
-                    "description": "Overlay the magnetic field-line tubes inside this scene's volume",
-                    "type": "boolean",
-                    "default": false,
-                    "x-entity": {
-                      "type": "bool",
-                      "notes": [
-                        "requires the [output.render.fieldlines] table below (3D only). A scene with field = \"fieldlines\" instead renders them alone."
-                      ]
-                    }
-                  }
-                }
-              }
-            },
-            "fieldlines": {
-              "description": "Magnetic field lines, drawn from a coarse, MPI-replicated copy of the field so the geometry is global and seamless across domains (the coarsening is what makes this cheap -- no parallel particle advection / flux scan).\n- 3D (Cartesian): traced as solid tubes, colored by |field|, composited inside the volume ray-march so the volume correctly occludes them.\n- 2D (Cartesian): iso-contours of the flux function psi (Bx = d psi/dy, By = -d psi/dx), i.e. the in-plane field lines, colored by |B|.\n- 2D (spherical / Kerr-Schild): traced meridional streamlines of the poloidal (Br, Btheta) field (nt2py style).\nBuilt once per frame and shared by every scene that opts in (per-scene `fieldlines = true`) and by any standalone `field = \"fieldlines\"` scene.",
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "enable": {
-                  "description": "Build the field-line geometry this run",
-                  "type": "boolean",
-                  "default": false,
-                  "x-entity": {
-                    "type": "bool",
-                    "notes": [
-                      "implied true if any scene sets `fieldlines = true` or uses `field = \"fieldlines\"`"
-                    ]
-                  }
-                },
-                "field": {
-                  "description": "Vector field to trace",
-                  "anyOf": [
-                    {
-                      "enum": [
-                        "B",
-                        "E",
-                        "J"
-                      ]
-                    },
-                    {
-                      "type": "string",
-                      "pattern": "(?i)^(B|E|J)$"
-                    }
-                  ],
-                  "default": "B",
-                  "x-entity": {
-                    "type": "string"
-                  }
-                },
-                "bin": {
-                  "description": "Field coarsening factor (simulation cells per coarse cell, per axis)",
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 16,
-                  "default": 4,
-                  "x-entity": {
-                    "type": "int [1..16]",
-                    "notes": [
-                      "larger = smoother \"morphology\" lines + cheaper replication (the coarse field is ~ N_cells / bin^D floats/rank; D = sim dimension)"
-                    ]
-                  }
-                },
-                "seed_px": {
-                  "description": "(3D tubes) Seed-lattice spacing in screen pixels (sets line density)",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "default": 8,
-                  "x-entity": {
-                    "type": "float [> 0]",
-                    "notes": [
-                      "capped by `seed_max`; if seed_px asks for more seeds than that, the spacing grows to fit and seed_px no longer governs"
-                    ]
-                  }
-                },
-                "seed_max": {
-                  "description": "(3D tubes) Hard cap on the seed count (lattice is n^3, 2 lines per seed)",
-                  "type": "integer",
-                  "minimum": 1,
-                  "default": 4096,
-                  "x-entity": {
-                    "type": "int [> 0]",
-                    "notes": [
-                      "lower this for fewer / more widely spaced lines"
-                    ]
-                  }
-                },
-                "levels": {
-                  "description": "(2D contours) Number of evenly-spaced flux-function contour levels",
-                  "type": "integer",
-                  "minimum": 1,
-                  "default": 16,
-                  "x-entity": {
-                    "type": "int [> 0]",
-                    "notes": [
-                      "evenly-spaced psi levels => line density tracks |B| automatically"
-                    ]
-                  }
-                },
-                "tube_px": {
-                  "description": "Tube radius (3D) / contour line width (2D), in screen pixels",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "default": 2,
-                  "x-entity": {
-                    "type": "float [> 0]"
-                  }
-                },
-                "colormap": {
-                  "description": "Colormap for the field lines (mapped by |B| along each line)",
-                  "$ref": "#/$defs/colormap",
-                  "default": "inferno"
-                },
-                "color": {
-                  "description": "Monochrome override: draw the lines in a single [r,g,b] color (each 0..1) instead of the |B| colormap -- reads well as an overlay on another volume",
-                  "anyOf": [
-                    {
-                      "type": "array",
-                      "maxItems": 0
-                    },
-                    {
-                      "type": "array",
-                      "minItems": 3,
-                      "maxItems": 3,
-                      "items": {
-                        "type": "number",
-                        "minimum": 0.0,
-                        "maximum": 1.0
-                      }
-                    }
-                  ],
-                  "default": [],
-                  "x-entity": {
-                    "type": "array<float> [size 3]",
-                    "default": "[] (empty => color by |B|)",
-                    "examples": [
-                      "[1.0, 1.0, 1.0]   # white field lines"
-                    ]
-                  }
-                },
-                "log": {
-                  "description": "Map the tube color range logarithmically",
-                  "type": "boolean",
-                  "default": false,
-                  "x-entity": {
-                    "type": "bool",
-                    "notes": [
-                      "requires min > 0"
-                    ]
-                  }
-                },
-                "min": {
-                  "description": "Tube color range: lower bound on |field|",
-                  "type": "number",
-                  "default": 0.0,
-                  "x-entity": {
-                    "type": "float",
-                    "notes": [
-                      "when min >= max, the range is auto-set from |field| along the lines"
-                    ]
-                  }
-                },
-                "max": {
-                  "description": "Tube color range: upper bound on |field|",
-                  "type": "number",
-                  "default": 0.0,
-                  "x-entity": {
-                    "type": "float",
-                    "notes": [
-                      "when min >= max, the range is auto-set from |field| along the lines"
-                    ]
-                  }
-                },
-                "step_frac": {
-                  "description": "(3D tubes) RK4 integration step as a fraction of one coarse cell",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "default": 0.5,
-                  "x-entity": {
-                    "type": "float [> 0]"
-                  }
-                },
-                "max_steps": {
-                  "description": "(3D tubes) Per-direction integration-step cap",
-                  "type": "integer",
-                  "minimum": 1,
-                  "default": 4000,
-                  "x-entity": {
-                    "type": "int [> 0]"
-                  }
-                },
-                "max_length": {
-                  "description": "(3D tubes) Maximum line length, in global box diagonals (per direction)",
-                  "type": "number",
-                  "exclusiveMinimum": 0.0,
-                  "default": 3.0,
-                  "x-entity": {
-                    "type": "float [> 0]"
-                  }
-                }
-              }
-            }
-          }
         }
       }
     },
@@ -2868,6 +1981,898 @@
             "notes": [
               "Scales with per-rank output volume; matches ADIOS2's default"
             ]
+          }
+        }
+      }
+    },
+    "render": {
+      "description": "In-situ renderer. Renders scalar fields on the GPU and writes PNG images directly to `<simname>/renders/` each cadence -- no field data is written to storage, and the result is seamless across MPI domain boundaries.",
+      "type": "object",
+      "additionalProperties": false,
+      "x-entity": {
+        "notes": [
+          "two modes, selected automatically by the simulation dimension:\n- 3D Cartesian (Minkowski): volume ray-march (uses `samples`, `step_size`, `early_term_alpha`, and the [camera] table)\n- 2D (Minkowski, Spherical/QSpherical, and all GR Kerr-Schild): flat slice rasterizer. Cartesian shows the (x, y) plane; spherical shows the meridional (r, theta) half-plane mapped to Cartesian (X = r sin th, Z = r cos th), optionally mirrored (see `mirror`). The `samples`/`step_size`/`early_term_alpha`/[camera] keys are ignored in 2D (one opaque sample per pixel).",
+          "1D (and 3D non-Cartesian, which does not exist) is a no-op",
+          "One PNG stream per scene (e.g. a density/|B|/|J| triptych)"
+        ]
+      },
+      "properties": {
+        "enable": {
+          "description": "Toggle for the on-the-fly renderer",
+          "type": "boolean",
+          "default": false,
+          "x-entity": {
+            "type": "bool"
+          }
+        },
+        "interval": {
+          "description": "Number of timesteps between renders",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "x-entity": {
+            "type": "uint",
+            "notes": [
+              "When `!= 0`, overrides `output.interval`",
+              "When `== 0`, `interval_time` (or `output.interval`) is used"
+            ]
+          }
+        },
+        "interval_time": {
+          "description": "Physical (code) time interval between renders",
+          "type": "number",
+          "default": -1.0,
+          "x-entity": {
+            "type": "float",
+            "notes": [
+              "When `< 0`, the output is controlled by `interval`"
+            ]
+          }
+        },
+        "width": {
+          "description": "Image width in pixels (the rendered region; the PNG is wider if a colorbar margin is added, see `colorbar_outside`)",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1024,
+          "x-entity": {
+            "type": "int [> 0]"
+          }
+        },
+        "height": {
+          "description": "Image height in pixels",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1024,
+          "x-entity": {
+            "type": "int [> 0]"
+          }
+        },
+        "resolution": {
+          "description": "Convenience: force a square frame (sets width == height == resolution), the natural shape for a dome master. Overrides `width`/`height` when > 0.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "x-entity": {
+            "type": "int [> 0]",
+            "default": "0 (use width/height)"
+          }
+        },
+        "extent": {
+          "description": "Limit the render region to axis-aligned box in physical/world coordinates. Left unset it spans the full domain. Clamped to the box.",
+          "type": "object",
+          "additionalProperties": false,
+          "x-entity": {
+            "notes": [
+              "3D -> the volume is depth-clipped to this box, the wireframe/axes frame it, and the default camera zooms to it; 2D -> the slice window is framed to it"
+            ]
+          },
+          "properties": {
+            "x1": {
+              "description": "Axis-aligned render region [lo, hi] along x1, in physical/world coords. Left unset it spans the full domain. Clamped to the box.",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              ],
+              "default": [],
+              "x-entity": {
+                "type": "array<float> [size 2]",
+                "default": "[] (full extent)",
+                "notes": [
+                  "For a spherical 2D slice, x1 crops the radius r."
+                ],
+                "examples": [
+                  "x1 = [-64.0, 64.0]"
+                ]
+              }
+            },
+            "x2": {
+              "description": "Render region [lo, hi] along x2.",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              ],
+              "default": [],
+              "x-entity": {
+                "type": "array<float> [size 2]",
+                "default": "[] (full extent)",
+                "notes": [
+                  "For a spherical 2D slice, x2 crops the polar angle theta."
+                ]
+              }
+            },
+            "x3": {
+              "description": "Render region [lo, hi] along x3.",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              ],
+              "default": [],
+              "x-entity": {
+                "type": "array<float> [size 2]",
+                "default": "[] (full extent)"
+              }
+            }
+          }
+        },
+        "volume": {
+          "description": "Volume rendering parameters (3D Cartesian only)",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "samples": {
+              "description": "Number of ray-march steps across the global box diagonal",
+              "type": "integer",
+              "minimum": 1,
+              "default": 400,
+              "x-entity": {
+                "type": "int [> 0]",
+                "notes": [
+                  "The world-space step is `box_diagonal / samples` unless `step_size` is set. Higher = better quality, slower."
+                ]
+              }
+            },
+            "step_size": {
+              "description": "Fixed world-space step between ray samples",
+              "type": "number",
+              "minimum": 0.0,
+              "default": 0.0,
+              "x-entity": {
+                "type": "float [>= 0.0]",
+                "notes": [
+                  "0 derives the step from `samples`. The step is identical on all ranks, which is what makes the multi-domain composite seamless."
+                ]
+              }
+            },
+            "early_term_alpha": {
+              "description": "Stop marching a ray once its accumulated opacity reaches this value",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.99,
+              "x-entity": {
+                "type": "float [0.0 -> 1.0]",
+                "notes": [
+                  "Pure speed optimization; set to 1.0 to disable early termination"
+                ]
+              }
+            }
+          }
+        },
+        "n_lut": {
+          "description": "Number of entries in the color/opacity lookup table",
+          "type": "integer",
+          "exclusiveMinimum": 1,
+          "default": 256,
+          "x-entity": {
+            "type": "int [> 1]"
+          }
+        },
+        "background": {
+          "description": "Opaque background RGB (each channel 0..1) shown through transparent/low-opacity pixels; also fills the colorbar margin",
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "default": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "x-entity": {
+            "type": "array<float> [size 3]"
+          }
+        },
+        "colorbar": {
+          "description": "Draw a colorbar (gradient + value ticks + label) on each PNG",
+          "type": "boolean",
+          "default": true,
+          "x-entity": {
+            "type": "bool"
+          }
+        },
+        "colorbar_outside": {
+          "description": "Draw the colorbar in an added right margin (the PNG becomes wider by a fixed strip) instead of overlaying it on the rendered volume",
+          "type": "boolean",
+          "default": true,
+          "x-entity": {
+            "type": "bool"
+          }
+        },
+        "mirror": {
+          "description": "2D spherical slice only: mirror the meridional half-plane across the symmetry axis to render a full disk from one axisymmetric half. No effect on Cartesian or 3D rendering.",
+          "type": "boolean",
+          "default": true,
+          "x-entity": {
+            "type": "bool"
+          }
+        },
+        "time_label": {
+          "description": "Draw the current simulation time as a label (\"T = <value>\", fixed to 2 decimals) in the upper-right corner of the render region, in a contrasting color, vertically centered between the frame top and the colorbar.",
+          "type": "boolean",
+          "default": false,
+          "x-entity": {
+            "type": "bool"
+          }
+        },
+        "axes": {
+          "description": "Draw a spine (frame) + axis ticks + labels around the rendered region. The PNG gains left/bottom margins (background-filled) for the tick labels and axis names, so they never overlap the data.",
+          "type": "boolean",
+          "default": false,
+          "x-entity": {
+            "type": "bool",
+            "notes": [
+              "2D Cartesian = a rectangular frame with linear spatial ticks;\n2D spherical = polar axes (an \"R\" radial axis on the symmetry axis with R=0 centered, and a \"Theta\" axis along the curved outline / spine);\n3D = the global box projected to a wireframe with ticks on the three silhouette edges (x bottom, y & z on the left)"
+            ]
+          }
+        },
+        "axis_labels": {
+          "description": "Axis names. 3D uses all three; the 2D slice uses the first two. When unset, the 2D slice defaults to \"x\",\"y\" (Cartesian) or \"X\",\"Z\" (spherical).",
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "x",
+            "y",
+            "z"
+          ],
+          "x-entity": {
+            "type": "array<string> [size <= 3]"
+          }
+        },
+        "axis_ticks": {
+          "description": "Target number of ticks per axis (actual count is rounded to nice values)",
+          "type": "integer",
+          "minimum": 2,
+          "default": 5,
+          "x-entity": {
+            "type": "int [>= 2]"
+          }
+        },
+        "spine_width": {
+          "description": "3D only: target width (pixels) of the box wireframe \"spine\". The spine is drawn inside the ray-march (opaque, depth-occluded by the volume); its width is floored by the ray step, so for a crisper thin line raise `samples` as well.",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 2.0,
+          "x-entity": {
+            "type": "float [> 0.0]"
+          }
+        },
+        "moving_view": {
+          "description": "Translate the render region (and, in 3D, the camera), to keep a propagating feature (e.g. a shock) in frame. Pair with x{1,2,3} extent to crop the moving window.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "velocity": {
+              "description": "Velocity of the moving camera in world units.",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ],
+              "default": [],
+              "x-entity": {
+                "type": "array<float> [size 2 or 3]",
+                "default": "[] (static view)",
+                "examples": [
+                  "velocity = [0.9, 0.0]   # pan along +x1 at 0.9 c"
+                ]
+              }
+            },
+            "start_time": {
+              "description": "Sim time at which the view starts moving (static before it, e.g. to let an initial ramp-up finish)",
+              "type": "number",
+              "default": 0.0,
+              "x-entity": {
+                "type": "float"
+              }
+            }
+          }
+        },
+        "camera": {
+          "description": "Camera (3D volume mode only; ignored by the 2D slice rasterizer). Defaults frame the whole global box from outside, looking down the (1,1,1) diagonal -- the production setup for which the structured composite is provably seamless.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "description": "Projection mode. Overrides `orthographic` below when set.",
+              "anyOf": [
+                {
+                  "enum": [
+                    "orthographic",
+                    "perspective",
+                    "dome"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "(?i)^(orthographic|perspective|dome)$"
+                }
+              ],
+              "x-entity": {
+                "type": "string",
+                "default": "(unset -> use `orthographic`)",
+                "notes": [
+                  "\"dome\" is a fulldome azimuthal-equidistant fisheye rendered from an INTERIOR eye (the domain center by default), i.e. a 3D planetarium dome master. It uses a depth-resolved (A-buffer) composite that is seamless across a full 3D domain decomposition (unlike ortho/perspective, which need the eye outside the box). Set a square frame (`resolution`, or width == height). `forward` is the dome ZENITH (screen-up defaults to +y for a +z zenith)."
+                ]
+              }
+            },
+            "position": {
+              "description": "Camera (eye) position in world (physical) coordinates",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              },
+              "x-entity": {
+                "type": "array<float> [size 3]",
+                "default": "box center pushed back ~1.7 box-diagonals along (1, 1, 1);\nfor `mode = \"dome\"`, the domain center (interior eye)"
+              }
+            },
+            "look_at": {
+              "description": "Point the camera looks at, in world coordinates (the dome ZENITH target)",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              },
+              "x-entity": {
+                "type": "array<float> [size 3]",
+                "default": "box center; for `mode = \"dome\"`, the zenith defaults to +z"
+              }
+            },
+            "up": {
+              "description": "Camera up vector (dome: the disk's screen-up)",
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              },
+              "default": [
+                0.0,
+                0.0,
+                1.0
+              ],
+              "x-entity": {
+                "type": "array<float> [size 3]",
+                "default": "[0.0, 0.0, 1.0]; for `mode = \"dome\"`, [0.0, 1.0, 0.0]"
+              }
+            },
+            "fov": {
+              "description": "Vertical field of view in degrees (perspective only)",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "default": 35.0,
+              "x-entity": {
+                "type": "float [> 0.0]"
+              }
+            },
+            "dome_fov": {
+              "description": "Full dome field of view in degrees (dome mode only): the image rim is at dome_fov/2 from the zenith (180 = a full hemisphere down to the horizon).",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "maximum": 360.0,
+              "default": 180.0,
+              "x-entity": {
+                "type": "float [> 0.0, <= 360.0]"
+              }
+            },
+            "dome_radius": {
+              "description": "Dome far-clip radius in world units (dome mode only): each ray stops this far from the eye, so the sampled region is a half-ball (hemisphere) of this radius rather than the whole box -> uniform path length and no box corner/edge projection artifacts. `samples` then counts steps across this radius.",
+              "type": "number",
+              "minimum": 0.0,
+              "x-entity": {
+                "type": "float [>= 0.0]",
+                "default": "the largest sphere centered in the box (half the shortest side), so it touches the face centers and never a corner",
+                "notes": [
+                  "0 disables the clip (rays march to the box boundary)"
+                ]
+              }
+            },
+            "ortho_height": {
+              "description": "Vertical extent of the view in world units (orthographic only)",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "x-entity": {
+                "type": "float [> 0.0]",
+                "default": "the global box diagonal (the whole box fits from any angle)"
+              }
+            }
+          }
+        },
+        "dome": {
+          "description": "Fulldome fisheye (\"planetarium dome master\"). 2D only; a circular image is centered in the frame's inscribed circle with the corners left as the background (the dome master's black border). Set `width == height` (e.g. 4096) for a square master. When enabled, the axes and the outside colorbar strip are suppressed so the PNG stays exactly width x height. Seamless across MPI domains (the pixel->world map is a shared, deterministic function and the tiles stay disjoint). Ignored (with a warning) for 3D.",
+          "type": "object",
+          "additionalProperties": false,
+          "x-entity": {
+            "notes": [
+              "CARTESIAN -- the flat plane is warped radially into the disk; use `fov`/`radius`/`center`/`projection` below.",
+              "SPHERICAL / GR Kerr-Schild -- the meridional slice is ALREADY a disk, so dome mode only mirrors it to a full disk (see `mirror` above; keep it true) and fits it to the inscribed circle. The `fov`/`radius`/`center`/`projection` keys are ignored (the native (X, Z) meridional map is used, with image radius proportional to the physical radius r, r=0 at the disk center)."
+            ]
+          },
+          "properties": {
+            "enable": {
+              "description": "Build the fisheye dome master instead of the plain slice",
+              "type": "boolean",
+              "default": false,
+              "x-entity": {
+                "type": "bool"
+              }
+            },
+            "fov": {
+              "description": "(Cartesian only) Full dome field of view in degrees (image radius maps linearly to the dome zenith angle: the rim is at fov/2)",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "maximum": 180.0,
+              "default": 180.0,
+              "x-entity": {
+                "type": "float [> 0.0, <= 180.0]",
+                "default": "180.0   # a full hemisphere"
+              }
+            },
+            "radius": {
+              "description": "(Cartesian only) World radius of the circular cutout mapped onto the dome",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "x-entity": {
+                "type": "float [> 0.0]",
+                "default": "half the shorter domain side (the largest centered disk that fits inside the box)"
+              }
+            },
+            "center": {
+              "description": "(Cartesian only) World-space center of the cutout",
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": {
+                "type": "number"
+              },
+              "x-entity": {
+                "type": "array<float> [size 2]",
+                "default": "the domain center"
+              }
+            },
+            "projection": {
+              "description": "(Cartesian only) How the dome zenith angle maps to a world radius on the flat slice",
+              "anyOf": [
+                {
+                  "enum": [
+                    "equidistant",
+                    "gnomonic",
+                    "stereographic",
+                    "orthographic"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "(?i)^(equidistant|gnomonic|stereographic|orthographic)$"
+                }
+              ],
+              "default": "equidistant",
+              "x-entity": {
+                "type": "string",
+                "enum": [
+                  "\"equidistant\"  (r proportional to angle; the fulldome image standard -- a straight radial scaling of the cutout)",
+                  "\"gnomonic\"     (r ~ tan(angle); the slice as a flat \"ceiling\" tangent to the dome -- straight sim lines stay straight)",
+                  "\"stereographic\" (r ~ tan(angle/2); conformal, preserves shapes)",
+                  "\"orthographic\" (r ~ sin(angle); the slice as seen face-on)"
+                ]
+              }
+            }
+          }
+        },
+        "fieldlines": {
+          "description": "Magnetic field lines, drawn from a coarse, MPI-replicated copy of the field so the geometry is global and seamless across domains (the coarsening is what makes this cheap -- no parallel particle advection / flux scan).\n- 3D (Cartesian): traced as solid tubes, colored by |field|, composited inside the volume ray-march so the volume correctly occludes them.\n- 2D (Cartesian): iso-contours of the flux function psi (Bx = d psi/dy, By = -d psi/dx), i.e. the in-plane field lines, colored by |B|.\n- 2D (spherical / Kerr-Schild): traced meridional streamlines of the poloidal (Br, Btheta) field (nt2py style).\nBuilt once per frame and shared by every scene that opts in (per-scene `fieldlines = true`) and by any standalone `field = \"fieldlines\"` scene.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enable": {
+              "description": "Build the field-line geometry this run",
+              "type": "boolean",
+              "default": false,
+              "x-entity": {
+                "type": "bool",
+                "notes": [
+                  "implied true if any scene sets `fieldlines = true` or uses `field = \"fieldlines\"`"
+                ]
+              }
+            },
+            "field": {
+              "description": "Vector field to trace",
+              "anyOf": [
+                {
+                  "enum": [
+                    "B",
+                    "E",
+                    "J"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "(?i)^(B|E|J)$"
+                }
+              ],
+              "default": "B",
+              "x-entity": {
+                "type": "string"
+              }
+            },
+            "bin": {
+              "description": "Field coarsening factor (simulation cells per coarse cell, per axis)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16,
+              "default": 4,
+              "x-entity": {
+                "type": "int [1..16]",
+                "notes": [
+                  "larger = smoother \"morphology\" lines + cheaper replication (the coarse field is ~ N_cells / bin^D floats/rank; D = sim dimension)"
+                ]
+              }
+            },
+            "seed_px": {
+              "description": "(3D tubes) Seed-lattice spacing in screen pixels (sets line density)",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "default": 8,
+              "x-entity": {
+                "type": "float [> 0]",
+                "notes": [
+                  "capped by `seed_max`; if seed_px asks for more seeds than that, the spacing grows to fit and seed_px no longer governs"
+                ]
+              }
+            },
+            "seed_max": {
+              "description": "(3D tubes) Hard cap on the seed count (lattice is n^3, 2 lines per seed)",
+              "type": "integer",
+              "minimum": 1,
+              "default": 4096,
+              "x-entity": {
+                "type": "int [> 0]",
+                "notes": [
+                  "lower this for fewer / more widely spaced lines"
+                ]
+              }
+            },
+            "levels": {
+              "description": "(2D contours) Number of evenly-spaced flux-function contour levels",
+              "type": "integer",
+              "minimum": 1,
+              "default": 16,
+              "x-entity": {
+                "type": "int [> 0]",
+                "notes": [
+                  "evenly-spaced psi levels => line density tracks |B| automatically"
+                ]
+              }
+            },
+            "tube_px": {
+              "description": "Tube radius (3D) / contour line width (2D), in screen pixels",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "default": 2,
+              "x-entity": {
+                "type": "float [> 0]"
+              }
+            },
+            "colormap": {
+              "description": "Colormap for the field lines (mapped by |B| along each line)",
+              "$ref": "#/$defs/colormap",
+              "default": "inferno"
+            },
+            "color": {
+              "description": "Monochrome override: draw the lines in a single [r,g,b] color (each 0..1) instead of the |B| colormap -- reads well as an overlay on another volume",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "maxItems": 0
+                },
+                {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                  }
+                }
+              ],
+              "default": [],
+              "x-entity": {
+                "type": "array<float> [size 3]",
+                "default": "[] (empty => color by |B|)",
+                "examples": [
+                  "[1.0, 1.0, 1.0]   # white field lines"
+                ]
+              }
+            },
+            "log": {
+              "description": "Map the tube color range logarithmically",
+              "type": "boolean",
+              "default": false,
+              "x-entity": {
+                "type": "bool",
+                "notes": [
+                  "requires min > 0"
+                ]
+              }
+            },
+            "min": {
+              "description": "Tube color range: lower bound on |field|",
+              "type": "number",
+              "default": 0.0,
+              "x-entity": {
+                "type": "float",
+                "notes": [
+                  "when min >= max, the range is auto-set from |field| along the lines"
+                ]
+              }
+            },
+            "max": {
+              "description": "Tube color range: upper bound on |field|",
+              "type": "number",
+              "default": 0.0,
+              "x-entity": {
+                "type": "float",
+                "notes": [
+                  "when min >= max, the range is auto-set from |field| along the lines"
+                ]
+              }
+            },
+            "step_frac": {
+              "description": "(3D tubes) RK4 integration step as a fraction of one coarse cell",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "default": 0.5,
+              "x-entity": {
+                "type": "float [> 0]"
+              }
+            },
+            "max_steps": {
+              "description": "(3D tubes) Per-direction integration-step cap",
+              "type": "integer",
+              "minimum": 1,
+              "default": 4000,
+              "x-entity": {
+                "type": "int [> 0]"
+              }
+            },
+            "max_length": {
+              "description": "(3D tubes) Maximum line length, in global box diagonals (per direction)",
+              "type": "number",
+              "exclusiveMinimum": 0.0,
+              "default": 3.0,
+              "x-entity": {
+                "type": "float [> 0]"
+              }
+            }
+          }
+        },
+        "scene": {
+          "description": "One scene per scalar field -> one PNG stream. Repeat the table for each.",
+          "type": "array",
+          "x-entity": {
+            "array_of_tables": true
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field"
+            ],
+            "properties": {
+              "field": {
+                "description": "Scalar field to render (a volume render needs a scalar, so vectors are given as a magnitude or a single component)",
+                "type": "string",
+                "x-entity": {
+                  "type": "string",
+                  "enum": [
+                    "(fields): \"{E,B,J}mag\"; \"{E,B,J}{1,2,3}\" or \"{E,B,J}{x,y,z}\"",
+                    "(moments): \"N\", \"Nppc\", \"Rho\", \"Charge\"; \"T{i}{j}\"; \"V{i}\"; \"Vmag\""
+                  ],
+                  "notes": [
+                    "\"{E,B,J}mag\" = vector magnitude |.|; \"B1\"/\"Bx\", \"J3\"/\"Jz\", ... = a single (signed) physical component",
+                    "a bare vector (\"E\"/\"B\"/\"J\") is not renderable -- choose a component or the magnitude",
+                    "\"N\"/\"Nppc\" = number / per-cell count, \"Rho\" = mass density, \"Charge\" = charge density",
+                    "\"T{i}{j}\" = one stress-energy component, i,j in {t,x,y,z} or {0,1,2,3} (e.g. \"Txx\", \"Ttt\", \"T0x\"); \"V{i}\" = one bulk-velocity component, i in {x,y,z} or {1,2,3} (e.g. \"Vx\", \"V1\"); \"Vmag\" = bulk-velocity magnitude sqrt(V1^2+V2^2+V3^2)",
+                    "moments follow the engine: SRPIC = tetrad-basis bulk 3-velocity and stress-energy; GRPIC = Eckart-frame 4-velocity (so \"Vt\"/\"V0\" = u^0 = Gamma/alpha is also valid) and contravariant T",
+                    "per-species selection with a \"_<id>\" suffix on moments, e.g. \"N_1\", \"Rho_2\", \"Txy_1_2\", \"V1_3\"; default = all massive species",
+                    "components are signed; pair a symmetric `min`/`max` with a diverging colormap (\"cool2warm\") to center zero",
+                    "\"fieldlines\" renders the magnetic field-line tubes on their own (no scalar volume sampled); see [render.fieldlines] below"
+                  ]
+                }
+              },
+              "prefix": {
+                "description": "PNG filename prefix; files are `<prefix><cycle>.png`",
+                "type": "string",
+                "x-entity": {
+                  "type": "string",
+                  "default": "\"<field>_\""
+                }
+              },
+              "label": {
+                "description": "Colorbar title",
+                "type": "string",
+                "x-entity": {
+                  "type": "string",
+                  "default": "`field`"
+                }
+              },
+              "min": {
+                "description": "Lower bound of the value range mapped onto the colormap/opacity",
+                "type": "number",
+                "default": 0.0,
+                "x-entity": {
+                  "type": "float"
+                }
+              },
+              "max": {
+                "description": "Upper bound of the value range",
+                "type": "number",
+                "default": 1.0,
+                "x-entity": {
+                  "type": "float"
+                }
+              },
+              "log": {
+                "description": "Map the value range logarithmically",
+                "type": "boolean",
+                "default": false,
+                "x-entity": {
+                  "type": "bool",
+                  "notes": [
+                    "Requires min > 0 and max > 0"
+                  ]
+                }
+              },
+              "colormap": {
+                "description": "Colormap name",
+                "$ref": "#/$defs/colormap",
+                "default": "viridis"
+              },
+              "alpha": {
+                "description": "Opacity transfer function: [position, opacity] control points, both in [0, 1], piecewise-linear in the normalized value",
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    }
+                  ]
+                },
+                "x-entity": {
+                  "type": "array<tuple<float>>",
+                  "default": "linear ramp (opacity = normalized value)",
+                  "notes": [
+                    "Keep the low end near 0 so empty regions stay transparent"
+                  ],
+                  "examples": [
+                    "[[0.0, 0.0], [0.3, 0.1], [1.0, 0.7]]"
+                  ]
+                }
+              },
+              "colorbar_ticks": {
+                "description": "Explicit value(s) to label on the colorbar",
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "x-entity": {
+                  "type": "array<float>",
+                  "default": "5 evenly-spaced ticks between min and max",
+                  "notes": [
+                    "Values outside [min, max] are skipped"
+                  ],
+                  "examples": [
+                    "[0.0, 0.5, 1.0]"
+                  ]
+                }
+              },
+              "fieldlines": {
+                "description": "Overlay the magnetic field-line tubes inside this scene's volume",
+                "type": "boolean",
+                "default": false,
+                "x-entity": {
+                  "type": "bool",
+                  "notes": [
+                    "requires the [render.fieldlines] enabled (3D only). A scene with field = \"fieldlines\" instead renders them alone."
+                  ]
+                }
+              }
+            }
           }
         }
       }

@@ -304,18 +304,13 @@ namespace out {
     const real_t diag = std::sqrt(
       size[0] * size[0] + size[1] * size[1] + size[2] * size[2]);
 
-    const bool ortho =
-      toml::find_or(td, "output", "render", "camera", "orthographic", true);
-    // `mode` overrides the `orthographic` flag: "orthographic" | "perspective" |
-    // "dome". The dome is a fulldome azimuthal-equidistant fisheye from an
-    // INTERIOR eye (the box center by default) -- see Metadomain::Render (3D).
-    const auto cam_mode = toml::find_or<std::string>(td,
+    const auto cam_mode   = toml::find_or<std::string>(td,
                                                      "output",
                                                      "render",
                                                      "camera",
                                                      "mode",
                                                      std::string {});
-    int projection = ortho ? CameraDevice::Ortho : CameraDevice::Perspective;
+    auto       projection = CameraDevice::Ortho;
     if (cam_mode == "dome") {
       projection = CameraDevice::Dome;
     } else if (cam_mode == "perspective") {
@@ -325,7 +320,7 @@ namespace out {
     } else if (not cam_mode.empty()) {
       raise::Warning("output.render.camera.mode '" + cam_mode +
                        "' unknown (want orthographic/perspective/dome); using "
-                       "the 'orthographic' flag",
+                       "orthographic projection",
                      HERE);
     }
     const bool   is_dome  = (projection == CameraDevice::Dome);

@@ -148,7 +148,6 @@ In the editor, point it at the `tombi lsp` language server. For VSCode, the exte
 #:schema ./entity.schema.json
 ```
 
-> [!NOTE]
 > `tombi` replaces `taplo`, which the project used previously and which is no longer maintained.
 
 Best practices are also enforced using `clang-tidy`; to generate recommendations for all the files, run `./dev/scripts/tidy.sh --build build_dir` where `build_dir` is the directory where the code was built, or for specific files: `./dev/scripts/tidy.sh --build build_dir --files "(file1|file2).cpp"` or only for the changed files: `./dev/scripts/tidy.sh --build build_dir --changed`. The recommendations will be in the `tidy/` directory.

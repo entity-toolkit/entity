@@ -27,10 +27,6 @@ namespace ntt {
                                                       "output",
                                                       "interval_time",
                                                       -1.0);
-      raise::ErrorIf(
-        not toml::find_or<bool>(toml_data, "output", "separate_files", true),
-        "separate_files=false is deprecated",
-        HERE);
 
       categories.emplace();
       for (const auto& category : { "fields", "particles", "spectra", "stats" }) {
