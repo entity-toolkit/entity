@@ -4,6 +4,7 @@ toml-version = "v1.0.0"
   [format.rules]
     indent-sub-tables = true
     indent-table-key-value-pairs = true
+    key-value-equals-sign-alignment = true
     trailing-comment-alignment = true
 
 [schema]
@@ -15,8 +16,8 @@ toml-version = "v1.0.0"
   include = ["**/*.toml"]
   exclude = [
     ".tombi.toml",
-    "extern/**",               # submodules: adios2's pyproject/REUSE, entity-pgens' own configs
+    "extern/**",
     ".venv/**",
     "build/**",
-    "**/*.ckpt/**",            # checkpoint metadata dumps carry a [metadata] table, not input
+    "**/*.ckpt/**",
   ]

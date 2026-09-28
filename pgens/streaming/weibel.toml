@@ -55,13 +55,13 @@
   # Drift 4-velocities for each species in all 3 directions
   #   @type: array of floats (length = nspec)
   #   @default: [ 0.0, ... ]
-  drifts_in_x = [0.0, 0.0, 0.0, 0.0]
-  drifts_in_y = [0.0, 0.0, 0.0, 0.0]
-  drifts_in_z = [0.3, 0.3, -0.3, -0.3]
+  drifts_in_x  = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_y  = [0.0, 0.0, 0.0, 0.0]
+  drifts_in_z  = [0.3, 0.3, -0.3, -0.3]
   # Pair-wise species densities in units of n0
   #   @type: array of floats (length = nspec/2)
   #   @default: [ 2 / nspec, ... ]
-  densities = [0.5, 0.5]
+  densities    = [0.5, 0.5]
   # Species temperatures in units of m0 (c^2)
   #   @type: array of floats (length = nspec)
   #   @default: [ 0.0, ... ]

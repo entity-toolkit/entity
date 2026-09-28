@@ -4,12 +4,12 @@
   #   @required
   #   @type: string
   #   @note: The name is used for the output files
-  name = ""
+  name    = ""
   # Simulation engine to use
   #   @required
   #   @type: string
   #   @enum: "SRPIC", "GRPIC"
-  engine = "SRPIC"
+  engine  = "SRPIC"
   # Max runtime in physical (code) units
   #   @required
   #   @type: float [> 0]
@@ -21,7 +21,7 @@
     # Number of domains
     #   @type: int
     #   @default: 1 [no MPI]; MPI_SIZE [MPI]
-    number = 1
+    number        = 1
     # Decomposition of the domain (for MPI) in each of the directions
     #   @type: array<int> [size 1 :->: 3]
     #   @default: [-1, -1, -1]
@@ -40,11 +40,11 @@
       # Enable dynamic load balancing
       #   @type: bool
       #   @default: false
-      enable = false
+      enable     = false
       # Run the rebalancer every `interval` timesteps (0 disables)
       #   @type: int
       #   @default: 0
-      interval = 0
+      interval   = 0
       # Dimensions along which load is redistributed (1 = x1, 2 = x2, 3 = x3)
       #   @type: array<int> [subset of {1, 2, 3}]
       #   @default: [1]
@@ -54,13 +54,13 @@
       # particle count is below this fraction
       #   @type: float
       #   @default: 0.1
-      tolerance = 0.1
+      tolerance  = 0.1
       # Maximum cell-shift per interior boundary per event; clamped at compile
       # time to N_GHOSTS so the migrating field strip is already cached in the
       # rank's ghost zone.
       #   @type: int
       #   @default: N_GHOSTS
-      max_shift = 0
+      max_shift  = 0
 
 # Parameters specific to grid geometry
 [grid]
@@ -77,7 +77,7 @@
   #          are set automatically
   #   @note: For cartesian geometry, cell aspect ratio has to be 1: `dx=dy=dz`
   #   @example: [[0.0, 1.0], [-1.0, 1.0]]
-  extent = [[0.0, 0.0]]
+  extent     = [[0.0, 0.0]]
 
   # @inferred:
   # - dim
@@ -93,7 +93,7 @@
     #   @type: string
     #   @enum: "Minkowski", "Spherical", "QSpherical", "Kerr_Schild",
     #          "QKerr_Schild", "Kerr_Schild_0"
-    metric = "Minkowski"
+    metric  = "Minkowski"
     # `r0` paramter for the QSpherical metric `x1 = log(r-r0)`
     #   @type: float [-inf -> rmin]
     #   @default: 0.0
@@ -103,11 +103,11 @@
     # (pi-2*x2)*(pi-x2)/pi^2`
     #   @type: float [-1 :->: 1]
     #   @default: 0.0
-    qsph_h = 0.0
+    qsph_h  = 0.0
     # Spin parameter for the Kerr Schild metric
     #   @type: float [0 :-> 1]
     #   @default: 0.0
-    ks_a = 0.0
+    ks_a    = 0.0
 
     # @inferred:
     # - coord
@@ -139,7 +139,7 @@
     #   @note: In GR, the horizon boundary is set automatically (only specify bc
     #          @ rmax): [["MATCH"]]
     #   @example: [["CUSTOM", "MATCH"]] (for 2D spherical `[[rmin, rmax]]`)
-    fields = [["PERIODIC"]]
+    fields    = [["PERIODIC"]]
     # Boundary conditions for particles
     #   @required
     #   @type: array<tuple<string>> [size 1 :->: 3]
@@ -187,18 +187,18 @@
       temperature = 0.0
       # Peak number density of the atmosphere at base in units of `n0`
       #   @type: float
-      density = 0.0
+      density     = 0.0
       # Pressure scale-height in physical units
       #   @type: float
-      height = 1.0
+      height      = 1.0
       # Species indices of particles that populate the atmosphere
       #   @type: array<int> [size 2]
-      species = [1, 1]
+      species     = [1, 1]
       # Distance from the edge to which the gravity is imposed in physical units
       #   @type: float
       #   @default: 0.0
       #   @note: 0.0 means no limit
-      ds = 0.0
+      ds          = 0.0
 
       # @inferred:
       # - g
@@ -213,7 +213,7 @@
   # Fiducial larmor radius
   #   @required
   #   @type: float [> 0.0]
-  larmor0 = 1.0
+  larmor0    = 1.0
   # Fiducial plasma skin depth
   #   @required
   #   @type: float [> 0.0]
@@ -287,7 +287,7 @@
       # c^2` in fiducial magnetic field `B0`
       #   @type: float [> 1.0]
       #   @default: 10.0
-      gamma_qed = 10.0
+      gamma_qed         = 10.0
       # Minimum photon energy for synchrotron emission (units of `m0 c^2`)
       #   @type: float [> 0.0]
       #   @default: 1e-3
@@ -295,11 +295,11 @@
       # Weights for the emitted synchrotron photons
       #   @type: float [> 0.0]
       #   @default: 1.0
-      photon_weight = 1.0
+      photon_weight     = 1.0
       # Index of species for the emitted photon
       #   @required
       #   @type: ushort [> 0]
-      photon_species = 1
+      photon_species    = 1
 
       # @inferred:
       # - nominal_probability
@@ -324,7 +324,7 @@
       # `m0 c^2` in fiducial magnetic field `B0`
       #   @type: float [> 1.0]
       #   @default: 10.0
-      gamma_qed = 10.0
+      gamma_qed         = 10.0
       # Minimum photon energy for inverse Compton emission (units of `m0 c^2`)
       #   @type: float [> 0.0]
       #   @default: 1e-3
@@ -332,11 +332,11 @@
       # Weights for the emitted inverse Compton photons
       #   @type: float [> 0.0]
       #   @default: 1.0
-      photon_weight = 1.0
+      photon_weight     = 1.0
       # Index of species for the emitted photon
       #   @required
       #   @type: ushort [> 0]
-      photon_species = 1
+      photon_species    = 1
 
       # @inferred:
       # - nominal_probability
@@ -367,7 +367,7 @@
     #   @type: float [0.0 -> 1.0]
     #   @default: 0.95
     #   @note: CFL number determines the timestep duration
-    CFL = 0.95
+    CFL        = 0.95
     # Correction factor for the speed of light used in field solver
     #   @type: float
     #   @default: 1.0
@@ -385,12 +385,12 @@
     # Enable the current deposition
     #   @type: bool
     #   @default: true
-    enable = true
+    enable                  = true
     # Tiled-deposit work-group (team) size
     #   @type: uint [>= 0]
     #   @default: 0
     #   @deprecated: removed in 1.6+, use `tiled_deposit_team_size` instead
-    team_policy_team_size = 0
+    team_policy_team_size   = 0
     # Tiled-deposit work-group (team) size
     #   @type: uint [>= 0]
     #   @default: 0
@@ -412,7 +412,7 @@
     # Stepsize for numerical differentiation in GR pusher
     #   @type: float [> 0.0]
     #   @default: 1e-6
-    pusher_eps = 1e-6
+    pusher_eps   = 1e-6
     # Number of iterations for the Newton-Raphson method in GR pusher
     #   @type: ushort [> 0]
     #   @default: 10
@@ -428,7 +428,7 @@
     #   @type: float
     #   @default: 0.0
     #   @note: When `larmor_max` == 0, the limit is disabled
-    larmor_max = 0.0
+    larmor_max  = 0.0
 
   # Stencil coefficients for the field solver [notation as in Blinne+ (2018)]
   #   @note: Standard Yee solver: `delta_i = beta_ij = 0.0`
@@ -436,7 +436,7 @@
     # Enable the fieldsolver
     #   @type: bool
     #   @default: true
-    enable = true
+    enable  = true
     # delta_x coefficient (for `F_{i +/- 3/2, j, k}`)
     #   @type: float
     #   @default: 0.0
@@ -487,16 +487,16 @@
   # Fiducial number of particles per cell
   #   @required
   #   @type: float [> 0.0]
-  ppc0 = 1.0
+  ppc0                     = 1.0
   # Toggle for using particle weights
   #   @type: bool
   #   @default: false
-  use_weights = false
+  use_weights              = false
   # Timesteps between particle re-sorting by tags (removing dead particles)
   #   @type: uint
   #   @default: 100
   #   @note: Set to 0 to disable re-sorting
-  clear_interval = 100
+  clear_interval           = 100
   # Timesteps between spatial sorting of particles (for better cache
   # performance)
   #   @type: uint
@@ -517,41 +517,41 @@
     #   @default: "s<INDEX>"
     #   @note: `<INDEX>` is the index of the species in the list starting from 1
     #   @example: "e-"
-    label = "s<INDEX>"
+    label                    = "s<INDEX>"
     # Mass of the species (in units of fiducial mass)
     #   @required
     #   @type: float [>= 0.0]
-    mass = 0.0
+    mass                     = 0.0
     # Charge of the species (in units of fiducial charge)
     #   @required
     #   @type: float
-    charge = 0.0
+    charge                   = 0.0
     # Maximum number of particles per task
     #   @required
     #   @type: uint [> 0]
     #   @note: Read as a float, so exponential notation is fine (e.g. `1e8`)
-    maxnpart = 1.0
+    maxnpart                 = 1.0
     # Pusher algorithm for the species
     #   @type: string
     #   @default: "Boris" [massive]; "Photon" [massless]
     #   @enum: "Boris", "Vay", "Boris,GCA", "Vay,GCA", "Photon", "None"
-    pusher = "Boris"
+    pusher                   = "Boris"
     # Number of additional real-valued variables (payloads) for each particle of
     # the given species
     #   @type: ushort
     #   @default: 0
-    n_payloads_real = 0
+    n_payloads_real          = 0
     # Number of additional integer-valued variables (payloads) for each particle
     # of the given species
     #   @type: ushort
     #   @default: 0
     #   @note: If tracking is enabled, one or two extra integer payloads are
     #          reserved (depending on whether MPI is enabled)
-    n_payloads_int = 0
+    n_payloads_int           = 0
     # Enable tracking of particles using indices for the given species
     #   @type: bool
     #   @default: false
-    tracking = false
+    tracking                 = false
     # Radiation reaction to use for the species
     #   @type: string
     #   @default: "None"
@@ -559,7 +559,7 @@
     #   @note: Can also be coma-separated combination, e.g.,
     #          "Synchrotron,Compton"
     #   @note: Relevant radiation.drag parameters should also be provided
-    radiative_drag = "None"
+    radiative_drag           = "None"
     # Particle emission policy for the species
     #   @type: string
     #   @default: "None"
@@ -567,7 +567,7 @@
     #   @note: Only one emission mechanism allowed
     #   @note: Appropriate radiation drag flag will be applied automatically
     #          (unless explicitly set to "None")
-    emission = "None"
+    emission                 = "None"
     # Timesteps between spatial sorting of particles for given species
     #   @type: uint
     #   @default: 0
@@ -580,7 +580,7 @@
     #   @default: 100
     #   @note: Set to 0 to disable re-sorting
     #   @note: Overrides `particles.clear_interval` for the given species
-    clear_interval = 100
+    clear_interval           = 100
 
 # Parameters for specific problem generators and setups
 #   @note: Free-form: keys are defined by the problem generator, so nothing here
@@ -593,12 +593,12 @@
   #   @type: string
   #   @default: "bpfile"
   #   @enum: "disabled", "hdf5", "BPFile"
-  format = "bpfile"
+  format        = "bpfile"
   # Number of timesteps between all outputs
   #   @type: uint [> 0]
   #   @default: 100
   #   @note: Value is overriden by output intervals for specific outputs
-  interval = 100
+  interval      = 100
   # Physical (code) time interval between all outputs
   #   @type: float
   #   @default: -1.0
@@ -612,7 +612,7 @@
     # Toggle for the field output
     #   @type: bool
     #   @default: true
-    enable = true
+    enable        = true
     # Field quantities to output
     #   @type: array<string>
     #   @default: []
@@ -624,17 +624,17 @@
     #          "3"
     #   @note: By default, we accumulate moments from all massive species, one
     #          can specify only specific species: `Ttt_1_2`, `Rho_1`, `Rho_3_4`
-    quantities = []
+    quantities    = []
     # Custom (user-defined) field quantities
     #   @type: array<string>
     #   @default: []
-    custom = []
+    custom        = []
     # Number of timesteps between field outputs
     #   @type: uint
     #   @default: 0
     #   @note: When `!= 0`, overrides `output.interval`
     #   @note: When `== 0`, `output.interval` is used
-    interval = 0
+    interval      = 0
     # Physical (code) time interval between field outputs
     #   @type: float
     #   @default: -1.0
@@ -646,14 +646,14 @@
     #   @default: [1, 1, 1]
     #   @note: The output is downsampled by the given factors in each direction
     #   @note: If a scalar is given, it is applied to all directions
-    downsampling = [1, 1, 1]
+    downsampling  = [1, 1, 1]
 
     # Smoothing of the output moments
     [output.fields.smoothing]
       # Smoothing order for the output of moments ("Rho", "Charge", "T", ...)
       #   @type: ushort
       #   @default: 0
-      order = 0
+      order  = 0
       # Smoothing algorithm
       #   @type: string
       #   @default: "spline"
@@ -669,22 +669,22 @@
     # Toggle for the particles output
     #   @type: bool
     #   @default: true
-    enable = true
+    enable        = true
     # Particle species indices to output
     #   @type: array<int>
     #   @default: []
     #   @note: If empty, all species are output
-    species = []
+    species       = []
     # Stride for the output of particles
     #   @type: uint [>= 1]
     #   @default: 100
-    stride = 100
+    stride        = 100
     # Number of timesteps between particle outputs
     #   @type: uint
     #   @default: 0
     #   @note: When `!= 0`, overrides `output.interval`
     #   @note: When `== 0`, `output.interval` is used
-    interval = 0
+    interval      = 0
     # Physical (code) time interval between particle outputs
     #   @type: float
     #   @default: -1.0
@@ -697,28 +697,28 @@
     # Toggle for the spectra output
     #   @type: bool
     #   @default: true
-    enable = true
+    enable           = true
     # Minimum energy for the spectra output
     #   @type: float
     #   @default: 1e-3
-    e_min = 1e-3
+    e_min            = 1e-3
     # Maximum energy for the spectra output
     #   @type: float
     #   @default: 1e3
-    e_max = 1e3
+    e_max            = 1e3
     # Whether to use logarithmic bins for energy
     #   @type: bool
     #   @default: true
-    log_bins = true
+    log_bins         = true
     # Number of energy bins for the spectra output
     #   @type: uint [> 0]
     #   @default: 200
     #   @deprecated: removed in 1.6+, use `num_energy_bins` instead
-    n_bins = 200
+    n_bins           = 200
     # Number of energy bins for the spectra output
     #   @type: uint [> 0]
     #   @default: 200
-    num_energy_bins = 200
+    num_energy_bins  = 200
     # Number of spatial bins for the spectra output
     #   @type: array<uint> [size 1 :->: 3]
     #   @default: [1, 1, 1]
@@ -728,20 +728,20 @@
     #   @default: 0
     #   @note: When `!= 0`, overrides `output.interval`
     #   @note: When `== 0`, `output.interval` is used
-    interval = 0
+    interval         = 0
     # Physical (code) time interval between spectra outputs
     #   @type: float
     #   @default: -1.0
     #   @note: When `< 0`, the output is controlled by `interval`
     #   @note: When specified, overrides `output.interval_time`
-    interval_time = -1.0
+    interval_time    = -1.0
 
   # Debug output parameters
   [output.debug]
     # Output fields "as is" without conversions
     #   @type: bool
     #   @default: false
-    as_is = false
+    as_is  = false
     # Output fields with values in ghost cells
     #   @type: bool
     #   @default: false
@@ -752,12 +752,12 @@
     # Toggle for the stats output
     #   @type: bool
     #   @default: true
-    enable = true
+    enable        = true
     # Number of timesteps between stat outputs
     #   @type: uint [> 0]
     #   @default: 100
     #   @note: Overriden if `output.stats.interval_time != -1`
-    interval = 100
+    interval      = 100
     # Physical (code) time interval between stat outputs
     #   @type: float
     #   @default: -1.0
@@ -770,18 +770,18 @@
     #          "Tij"
     #   @note: For particle moments, ...
     #   @note: ... same notation is used as for `output.fields.quantities`
-    quantities = ["B^2", "E^2", "ExB", "Rho", "T00"]
+    quantities    = ["B^2", "E^2", "ExB", "Rho", "T00"]
     # Custom (user-defined) stats
     #   @type: array<string>
     #   @default: []
-    custom = []
+    custom        = []
 
 # Checkpointing parameters
 [checkpoint]
   # Number of timesteps between checkpoints
   #   @type: uint [> 0]
   #   @default: 1000
-  interval = 1000
+  interval      = 1000
   # Physical (code) time interval between checkpoints
   #   @type: float [> 0]
   #   @default: -1.0
@@ -792,23 +792,23 @@
   #   @default: 2
   #   @note: 0 = disable checkpointing
   #   @note: -1 = keep all checkpoints
-  keep = 2
+  keep          = 2
   # Write a checkpoint once after a fixed walltime
   #   @type: string
   #   @default: "00:00:00"
   #   @note: The format is "HH:MM:SS"
   #   @note: Empty string or "00:00:00" disables this functionality
   #   @note: Writing checkpoint at walltime does not stop the simulation
-  walltime = "00:00:00"
+  walltime      = "00:00:00"
   # Parent directory to write checkpoints to
   #   @type: string
   #   @default: `<simname>.ckpt`
   #   @note: The directory is created if it does not exist
-  write_path = ""
+  write_path    = ""
   # Parent directory to use when resuming from a checkpoint
   #   @type: string
   #   @default: inherit `write_path`
-  read_path = ""
+  read_path     = ""
 
   # @inferred:
   # - is_resuming
@@ -836,12 +836,12 @@
   #   @type: uint
   #   @default: 4294967296
   #   @note: Lower this on memory-constrained nodes; matches ADIOS2's default
-  max_shm_size = 4294967296
+  max_shm_size         = 4294967296
   # Internal serialization buffer chunk size, in bytes (BP5 BufferChunkSize)
   #   @type: uint
   #   @default: 16777216
   #   @note: Scales with per-rank output volume; matches ADIOS2's default
-  buffer_chunk_size = 16777216
+  buffer_chunk_size    = 16777216
 
 # In-situ renderer. Renders scalar fields on the GPU and writes PNG images
 # directly to `<simname>/renders/` each cadence -- no field data is written to
@@ -861,45 +861,45 @@
   # Toggle for the on-the-fly renderer
   #   @type: bool
   #   @default: false
-  enable = false
+  enable           = false
   # Number of timesteps between renders
   #   @type: uint
   #   @default: 0
   #   @note: When `!= 0`, overrides `output.interval`
   #   @note: When `== 0`, `interval_time` (or `output.interval`) is used
-  interval = 0
+  interval         = 0
   # Physical (code) time interval between renders
   #   @type: float
   #   @default: -1.0
   #   @note: When `< 0`, the output is controlled by `interval`
-  interval_time = -1.0
+  interval_time    = -1.0
   # Image width in pixels (the rendered region; the PNG is wider if a colorbar
   # margin is added, see `colorbar_outside`)
   #   @type: int [> 0]
   #   @default: 1024
-  width = 1024
+  width            = 1024
   # Image height in pixels
   #   @type: int [> 0]
   #   @default: 1024
-  height = 1024
+  height           = 1024
   # Convenience: force a square frame (sets width == height == resolution), the
   # natural shape for a dome master. Overrides `width`/`height` when > 0.
   #   @type: int [> 0]
   #   @default: 0 (use width/height)
-  resolution = 0
+  resolution       = 0
   # Number of entries in the color/opacity lookup table
   #   @type: int [> 1]
   #   @default: 256
-  n_lut = 256
+  n_lut            = 256
   # Opaque background RGB (each channel 0..1) shown through
   # transparent/low-opacity pixels; also fills the colorbar margin
   #   @type: array<float> [size 3]
   #   @default: [0.0, 0.0, 0.0]
-  background = [0.0, 0.0, 0.0]
+  background       = [0.0, 0.0, 0.0]
   # Draw a colorbar (gradient + value ticks + label) on each PNG
   #   @type: bool
   #   @default: true
-  colorbar = true
+  colorbar         = true
   # Draw the colorbar in an added right margin (the PNG becomes wider by a fixed
   # strip) instead of overlaying it on the rendered volume
   #   @type: bool
@@ -910,13 +910,13 @@
   # Cartesian or 3D rendering.
   #   @type: bool
   #   @default: true
-  mirror = true
+  mirror           = true
   # Draw the current simulation time as a label ("T = <value>", fixed to 2
   # decimals) in the upper-right corner of the render region, in a contrasting
   # color, vertically centered between the frame top and the colorbar.
   #   @type: bool
   #   @default: false
-  time_label = false
+  time_label       = false
   # Draw a spine (frame) + axis ticks + labels around the rendered region. The
   # PNG gains left/bottom margins (background-filled) for the tick labels and
   # axis names, so they never overlap the data.
@@ -928,23 +928,23 @@
   #          spine);
   #          3D = the global box projected to a wireframe with ticks on the
   #          three silhouette edges (x bottom, y & z on the left)
-  axes = false
+  axes             = false
   # Axis names. 3D uses all three; the 2D slice uses the first two. When unset,
   # the 2D slice defaults to "x","y" (Cartesian) or "X","Z" (spherical).
   #   @type: array<string> [size <= 3]
   #   @default: ["x", "y", "z"]
-  axis_labels = ["x", "y", "z"]
+  axis_labels      = ["x", "y", "z"]
   # Target number of ticks per axis (actual count is rounded to nice values)
   #   @type: int [>= 2]
   #   @default: 5
-  axis_ticks = 5
+  axis_ticks       = 5
   # 3D only: target width (pixels) of the box wireframe "spine". The spine is
   # drawn inside the ray-march (opaque, depth-occluded by the volume); its width
   # is floored by the ray step, so for a crisper thin line raise `samples` as
   # well.
   #   @type: float [> 0.0]
   #   @default: 2.0
-  spine_width = 2.0
+  spine_width      = 2.0
 
   # Limit the render region to axis-aligned box in physical/world coordinates.
   # Left unset it spans the full domain. Clamped to the box.
@@ -976,13 +976,13 @@
     #   @default: 400
     #   @note: The world-space step is `box_diagonal / samples` unless
     #          `step_size` is set. Higher = better quality, slower.
-    samples = 400
+    samples          = 400
     # Fixed world-space step between ray samples
     #   @type: float [>= 0.0]
     #   @default: 0.0
     #   @note: 0 derives the step from `samples`. The step is identical on all
     #          ranks, which is what makes the multi-domain composite seamless.
-    step_size = 0.0
+    step_size        = 0.0
     # Stop marching a ray once its accumulated opacity reaches this value
     #   @type: float [0.0 -> 1.0]
     #   @default: 0.99
@@ -997,7 +997,7 @@
     #   @type: array<float> [size 2 or 3]
     #   @default: [] (static view)
     #   @example: velocity = [0.9, 0.0]   # pan along +x1 at 0.9 c
-    velocity = []
+    velocity   = []
     # Sim time at which the view starts moving (static before it, e.g. to let an
     # initial ramp-up finish)
     #   @type: float
@@ -1020,29 +1020,29 @@
     #          (unlike ortho/perspective, which need the eye outside the box).
     #          Set a square frame (`resolution`, or width == height). `forward`
     #          is the dome ZENITH (screen-up defaults to +y for a +z zenith).
-    mode = "orthographic"
+    mode         = "orthographic"
     # Camera (eye) position in world (physical) coordinates
     #   @type: array<float> [size 3]
     #   @default: box center pushed back ~1.7 box-diagonals along (1, 1, 1);
     #             for `mode = "dome"`, the domain center (interior eye)
-    position = [0.0, 0.0, 0.0]
+    position     = [0.0, 0.0, 0.0]
     # Point the camera looks at, in world coordinates (the dome ZENITH target)
     #   @type: array<float> [size 3]
     #   @default: box center; for `mode = "dome"`, the zenith defaults to +z
-    look_at = [0.0, 0.0, 0.0]
+    look_at      = [0.0, 0.0, 0.0]
     # Camera up vector (dome: the disk's screen-up)
     #   @type: array<float> [size 3]
     #   @default: [0.0, 0.0, 1.0]; for `mode = "dome"`, [0.0, 1.0, 0.0]
-    up = [0.0, 0.0, 1.0]
+    up           = [0.0, 0.0, 1.0]
     # Vertical field of view in degrees (perspective only)
     #   @type: float [> 0.0]
     #   @default: 35.0
-    fov = 35.0
+    fov          = 35.0
     # Full dome field of view in degrees (dome mode only): the image rim is at
     # dome_fov/2 from the zenith (180 = a full hemisphere down to the horizon).
     #   @type: float [> 0.0, <= 360.0]
     #   @default: 180.0
-    dome_fov = 180.0
+    dome_fov     = 180.0
     # Dome far-clip radius in world units (dome mode only): each ray stops this
     # far from the eye, so the sampled region is a half-ball (hemisphere) of
     # this radius rather than the whole box -> uniform path length and no box
@@ -1052,7 +1052,7 @@
     #   @default: the largest sphere centered in the box (half the shortest
     #             side), so it touches the face centers and never a corner
     #   @note: 0 disables the clip (rays march to the box boundary)
-    dome_radius = 0.0
+    dome_radius  = 0.0
     # Vertical extent of the view in world units (orthographic only)
     #   @type: float [> 0.0]
     #   @default: the global box diagonal (the whole box fits from any angle)
@@ -1077,21 +1077,21 @@
     # Build the fisheye dome master instead of the plain slice
     #   @type: bool
     #   @default: false
-    enable = false
+    enable     = false
     # (Cartesian only) Full dome field of view in degrees (image radius maps
     # linearly to the dome zenith angle: the rim is at fov/2)
     #   @type: float [> 0.0, <= 180.0]
     #   @default: 180.0   # a full hemisphere
-    fov = 180.0
+    fov        = 180.0
     # (Cartesian only) World radius of the circular cutout mapped onto the dome
     #   @type: float [> 0.0]
     #   @default: half the shorter domain side (the largest centered disk that
     #             fits inside the box)
-    radius = 1.0
+    radius     = 1.0
     # (Cartesian only) World-space center of the cutout
     #   @type: array<float> [size 2]
     #   @default: the domain center
-    center = [0.0, 0.0]
+    center     = [0.0, 0.0]
     # (Cartesian only) How the dome zenith angle maps to a world radius on the
     # flat slice
     #   @type: string
@@ -1121,38 +1121,38 @@
     #   @default: false
     #   @note: implied true if any scene sets `fieldlines = true` or uses `field
     #          = "fieldlines"`
-    enable = false
+    enable     = false
     # Vector field to trace
     #   @type: string
     #   @default: "B"
     #   @enum: "B", "E", "J"
-    field = "B"
+    field      = "B"
     # Field coarsening factor (simulation cells per coarse cell, per axis)
     #   @type: int [1..16]
     #   @default: 4
     #   @note: larger = smoother "morphology" lines + cheaper replication (the
     #          coarse field is ~ N_cells / bin^D floats/rank; D = sim dimension)
-    bin = 4
+    bin        = 4
     # (3D tubes) Seed-lattice spacing in screen pixels (sets line density)
     #   @type: float [> 0]
     #   @default: 8
     #   @note: capped by `seed_max`; if seed_px asks for more seeds than that,
     #          the spacing grows to fit and seed_px no longer governs
-    seed_px = 8
+    seed_px    = 8
     # (3D tubes) Hard cap on the seed count (lattice is n^3, 2 lines per seed)
     #   @type: int [> 0]
     #   @default: 4096
     #   @note: lower this for fewer / more widely spaced lines
-    seed_max = 4096
+    seed_max   = 4096
     # (2D contours) Number of evenly-spaced flux-function contour levels
     #   @type: int [> 0]
     #   @default: 16
     #   @note: evenly-spaced psi levels => line density tracks |B| automatically
-    levels = 16
+    levels     = 16
     # Tube radius (3D) / contour line width (2D), in screen pixels
     #   @type: float [> 0]
     #   @default: 2
-    tube_px = 2
+    tube_px    = 2
     # Colormap for the field lines (mapped by |B| along each line)
     #   @type: string
     #   @default: "inferno"
@@ -1161,38 +1161,38 @@
     #          "dusk", "cosmic", "freeze", "apple", "gothic", "sunburst",
     #          "voltage", "ocean", "fusion", "prinsenvlag" (an optional "cmr."
     #          prefix is ok)
-    colormap = "inferno"
+    colormap   = "inferno"
     # Monochrome override: draw the lines in a single [r,g,b] color (each 0..1)
     # instead of the |B| colormap -- reads well as an overlay on another volume
     #   @type: array<float> [size 3]
     #   @default: [] (empty => color by |B|)
     #   @example: [1.0, 1.0, 1.0]   # white field lines
-    color = []
+    color      = []
     # Map the tube color range logarithmically
     #   @type: bool
     #   @default: false
     #   @note: requires min > 0
-    log = false
+    log        = false
     # Tube color range: lower bound on |field|
     #   @type: float
     #   @default: 0.0
     #   @note: when min >= max, the range is auto-set from |field| along the
     #          lines
-    min = 0.0
+    min        = 0.0
     # Tube color range: upper bound on |field|
     #   @type: float
     #   @default: 0.0
     #   @note: when min >= max, the range is auto-set from |field| along the
     #          lines
-    max = 0.0
+    max        = 0.0
     # (3D tubes) RK4 integration step as a fraction of one coarse cell
     #   @type: float [> 0]
     #   @default: 0.5
-    step_frac = 0.5
+    step_frac  = 0.5
     # (3D tubes) Per-direction integration-step cap
     #   @type: int [> 0]
     #   @default: 4000
-    max_steps = 4000
+    max_steps  = 4000
     # (3D tubes) Maximum line length, in global box diagonals (per direction)
     #   @type: float [> 0]
     #   @default: 3.0
@@ -1226,28 +1226,28 @@
     #          diverging colormap ("cool2warm") to center zero
     #   @note: "fieldlines" renders the magnetic field-line tubes on their own
     #          (no scalar volume sampled); see [render.fieldlines] below
-    field = ""
+    field          = ""
     # PNG filename prefix; files are `<prefix><cycle>.png`
     #   @type: string
     #   @default: "<field>_"
-    prefix = "<field>_"
+    prefix         = "<field>_"
     # Colorbar title
     #   @type: string
     #   @default: `field`
-    label = ""
+    label          = ""
     # Lower bound of the value range mapped onto the colormap/opacity
     #   @type: float
     #   @default: 0.0
-    min = 0.0
+    min            = 0.0
     # Upper bound of the value range
     #   @type: float
     #   @default: 1.0
-    max = 1.0
+    max            = 1.0
     # Map the value range logarithmically
     #   @type: bool
     #   @default: false
     #   @note: Requires min > 0 and max > 0
-    log = false
+    log            = false
     # Colormap name
     #   @type: string
     #   @default: "viridis"
@@ -1256,14 +1256,14 @@
     #          "dusk", "cosmic", "freeze", "apple", "gothic", "sunburst",
     #          "voltage", "ocean", "fusion", "prinsenvlag" (an optional "cmr."
     #          prefix is ok)
-    colormap = "viridis"
+    colormap       = "viridis"
     # Opacity transfer function: [position, opacity] control points, both in [0,
     # 1], piecewise-linear in the normalized value
     #   @type: array<tuple<float>>
     #   @default: linear ramp (opacity = normalized value)
     #   @note: Keep the low end near 0 so empty regions stay transparent
     #   @example: [[0.0, 0.0], [0.3, 0.1], [1.0, 0.7]]
-    alpha = []
+    alpha          = []
     # Explicit value(s) to label on the colorbar
     #   @type: array<float>
     #   @default: 5 evenly-spaced ticks between min and max
@@ -1275,14 +1275,14 @@
     #   @default: false
     #   @note: requires the [render.fieldlines] enabled (3D only). A scene with
     #          field = "fieldlines" instead renders them alone.
-    fieldlines = false
+    fieldlines     = false
 
 # Diagnostic logging parameters
 [diagnostics]
   # Number of timesteps between diagnostic logs
   #   @type: int [> 0]
   #   @default: 1
-  interval = 1
+  interval        = 1
   # Blocking timers between successive algorithms
   #   @type: bool
   #   @default: false
@@ -1290,11 +1290,11 @@
   # Enable colored stdout
   #   @type: bool
   #   @default: true
-  colored_stdout = true
+  colored_stdout  = true
   # Specify the log level
   #   @type: string
   #   @default: "VERBOSE"
   #   @enum: "VERBOSE", "WARNING", "ERROR"
   #   @note: "VERBOSE" prints all messages, "WARNING" prints only warnings and
   #          errors, "ERROR" prints only errors
-  log_level = "VERBOSE"
+  log_level       = "VERBOSE"
