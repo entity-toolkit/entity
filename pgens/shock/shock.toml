@@ -40,15 +40,15 @@
     maxnpart = 2e7
 
 [setup]
-  drift_ux            = 0.15  # speed towards the wall [c]
-  temperature         = 0.168 # temperature of maxwell distribution [kB T / (m_i c^2)]
-  temperature_ratio   = 1.0   # temperature ratio of electrons to protons
-  Bmag                = 1.0   # magnetic field strength as fraction of magnetisation
-  Btheta              = 63.0  # magnetic field angle in the plane
-  Bphi                = 0.0   # magnetic field angle out of plane
-  filling_fraction    = 0.99  # fraction of the shock piston filled with plasma
-  injector_velocity   = 0.0   # speed of injector [c]
-  injection_start     = 0.0   # start time of moving injector
+  drift_ux            = 0.15   # speed towards the wall [c]
+  temperature         = 0.168  # temperature of maxwell distribution [kB T / (m_i c^2)]
+  temperature_ratio   = 1.0    # temperature ratio of electrons to protons
+  Bmag                = 1.0    # magnetic field strength as fraction of magnetisation
+  Btheta              = 63.0   # magnetic field angle in the plane
+  Bphi                = 0.0    # magnetic field angle out of plane
+  filling_fraction    = 0.99   # fraction of the shock piston filled with plasma
+  injector_velocity   = 0.0    # speed of injector [c]
+  injection_start     = 0.0    # start time of moving injector
   injection_frequency = 100
 
 [output]

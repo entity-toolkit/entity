@@ -55,14 +55,14 @@ pkgs.mkShell {
     neocmakelsp
     black
     pyright
-    taplo
+    tombi
     vscode-langservers-extracted
   ];
 
-  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath ([
+  LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
     pkgs.stdenv.cc.cc
     pkgs.zlib
-  ]);
+  ];
 
   shellHook = ''
     BLUE='\033[0;34m'
