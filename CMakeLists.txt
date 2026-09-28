@@ -154,6 +154,9 @@ endif()
 
 if(NOT ${DEVICE_ENABLED})
   set(vendor_sort OFF)
+endif()
+
+if(NOT ${DEVICE_ENABLED} OR NOT ${mpi})
   set(gpu_aware_mpi OFF)
 endif()
 
