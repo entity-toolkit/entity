@@ -7,7 +7,7 @@
  * for shape orders O = 1..11 and asserts that the resulting J array is
  * identical cell-by-cell within a small floating-point tolerance.
  *
- * Built only when `team_policy=ON` (`-D TEAM_POLICY` defined). The test
+ * Built only when `tiled_deposit=ON` (`-D TILED_DEPOSIT` defined). The test
  * matches the per-particle setup used in `deposit.cpp` so that any
  * regression in the shared `kernel::deposit::deposit_one_particle` body
  * is caught by both tests.

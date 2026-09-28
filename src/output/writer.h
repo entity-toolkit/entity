@@ -121,7 +121,8 @@ namespace out {
                         const std::vector<ncells_t>& loc_shape);
 
     void defineFieldOutputs(const SimEngine&, const std::vector<std::string>&);
-    void defineSpectraOutputs(const std::vector<spidx_t>&);
+    void defineSpectraOutputs(const std::vector<spidx_t>&,
+                              const std::vector<size_t>&);
 
     void writeMesh(unsigned short,
                    const array_t<real_t*>&,
@@ -138,6 +139,11 @@ namespace out {
                                npart_t,
                                const std::string&);
     void writeSpectrum(const array_t<real_t*>&, const std::string&);
+
+    template <uint8_t N>
+    void writeSpectrumSpatial(const nddata_t<N, real_t>&,
+                              const std::string&); // @TODO implement for N = 2, 3, 4
+
     void writeSpectrumBins(const array_t<real_t*>&, const std::string&);
 
     void beginWriting(WriteModeTags, timestep_t, simtime_t);

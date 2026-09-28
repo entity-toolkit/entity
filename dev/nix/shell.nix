@@ -7,7 +7,6 @@
   arch ? "NATIVE",
   hdf5 ? false,
   mpi ? false,
-  extra ? "",
 }:
 
 let
@@ -22,9 +21,6 @@ let
       arch = archUpper;
       gpu = gpuUpper;
     }
-  );
-  extraPkgs = map (name: pkgs.${name}) (
-    pkgs.lib.filter (s: s != "") (pkgs.lib.splitString "," extra)
   );
   envVars = {
     compiler = {
@@ -45,26 +41,23 @@ pkgs.mkShell {
     "${name}"
     + (if gpu != "NONE" then "-${pkgs.lib.toLower gpu}" else "")
     + (if mpi then "-mpi" else "");
-  nativeBuildInputs =
-    with pkgs;
-    [
-      zlib
-      cmake
+  nativeBuildInputs = with pkgs; [
+    zlib
+    cmake
 
-      adios2Pkg
-      kokkosPkg
+    adios2Pkg
+    kokkosPkg
 
-      python314
+    python314
 
-      cmake-format
-      cmake-lint
-      neocmakelsp
-      black
-      pyright
-      taplo
-      vscode-langservers-extracted
-    ]
-    ++ extraPkgs;
+    cmake-format
+    cmake-lint
+    neocmakelsp
+    black
+    pyright
+    tombi
+    vscode-langservers-extracted
+  ];
 
   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
     pkgs.stdenv.cc.cc

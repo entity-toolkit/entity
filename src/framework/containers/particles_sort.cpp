@@ -8,11 +8,11 @@
 #include "framework/containers/particles.h"
 #include "framework/domain/grid.h"
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
   #if (defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)) ||                    \
     (defined(CUDA_ENABLED) && defined(THRUST_ENABLED)) ||                      \
     (defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED))
-    #define TEAM_POLICY_USE_VENDOR_SORT
+    #define TILED_DEPOSIT_USE_VENDOR_SORT
     #include "utils/sort_dispatch.h"
   #endif
 #endif
@@ -231,7 +231,7 @@ namespace ntt {
     }
   } // namespace
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
   template <Dimension D, Coord::type C>
   void Particles<D, C>::compute_tile_offsets(const array_t<ncells_t*>& tile_indices,
                                              ncells_t total_tiles,
@@ -283,12 +283,12 @@ namespace ntt {
     // separately deposit) particles appended since this sort.
     m_tile_layout.npart_partitioned = h_offsets(total_tiles);
   }
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
 
   template <Dimension D, Coord::type C>
   void Particles<D, C>::SortSpatially(const Grid<D>& grid) {
-#if defined(TEAM_POLICY)
-    // ---------------------- team_policy: tile-based sort ------------------ //
+#if defined(TILED_DEPOSIT)
+    // ---------------------- tiled_deposit: tile-based sort ------------------ //
     const auto npart_local = npart();
     if (npart_local == 0u) {
       m_tile_layout = TileLayout<D> {};
@@ -296,8 +296,9 @@ namespace ntt {
       return;
     }
 
-    constexpr unsigned short T = static_cast<unsigned short>(TEAM_POLICY_TILE_SIZE);
-    static_assert(T > 0u, "TEAM_POLICY_TILE_SIZE must be > 0");
+    constexpr unsigned short T = static_cast<unsigned short>(
+      TILED_DEPOSIT_TILE_SIZE);
+    static_assert(T > 0u, "TILED_DEPOSIT_TILE_SIZE must be > 0");
 
     // 1. Compute per-axis tile counts and total_tiles.
     const auto ncells_active = grid.n_active();
@@ -320,7 +321,7 @@ namespace ntt {
     }
 
     // 2. Compute per-particle tile key (with min(i, i_prev)).
-  #if defined(TEAM_POLICY_USE_VENDOR_SORT) && defined(SYCL_ENABLED) &&         \
+  #if defined(TILED_DEPOSIT_USE_VENDOR_SORT) && defined(SYCL_ENABLED) &&       \
     defined(ONEDPL_ENABLED)
     // oneDPL sorts the keys in place, so reuse a persistent, grow-only keys
     // buffer instead of allocating a fresh one every sort. `tile_indices`
@@ -353,7 +354,7 @@ namespace ntt {
     const ncells_t n_bins = total_tiles + 2u;
     const auto     slice  = prtl_slice_t(0, npart_local);
 
-  #if defined(TEAM_POLICY_USE_VENDOR_SORT)
+  #if defined(TILED_DEPOSIT_USE_VENDOR_SORT)
     // Vendor path: produce an explicit permutation via sort_by_key, then
     // apply it to each SoA member by gathering the alive prefix through a
     // reusable scratch buffer (one per member type, copied back in place).
@@ -451,7 +452,7 @@ namespace ntt {
     // gather to hoist this ahead of).
     sorter.sort(tile_indices);
     compute_tile_offsets(tile_indices, total_tiles, npart_local);
-  #endif // TEAM_POLICY_USE_VENDOR_SORT
+  #endif // TILED_DEPOSIT_USE_VENDOR_SORT
 
     // Populate `m_tile_layout` size/shape. `tile_perm` is not used in the
     // current design — the SoA arrays are physically permuted into tile
@@ -475,8 +476,8 @@ namespace ntt {
     // (RemoveDead remains the compactor when spatial sorting is disabled.)
     set_npart(m_tile_layout.npart_partitioned);
 
-    Kokkos::fence("SortSpatially: end of team_policy path");
-#else  // !TEAM_POLICY — legacy in-place BinSort by global cell index
+    Kokkos::fence("SortSpatially: end of tiled_deposit path");
+#else  // !TILED_DEPOSIT — legacy in-place BinSort by global cell index
     const auto nx2         = grid.n_active(in::x2);
     const auto nx3         = grid.n_active(in::x3);
     const auto total_cells = grid.num_active();
@@ -532,10 +533,10 @@ namespace ntt {
     for (auto pldi { 0u }; pldi < npld_i(); ++pldi) {
       sorter.sort(Kokkos::subview(pld_i, slice, pldi));
     }
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
   }
 
-#if defined(TEAM_POLICY_USE_VENDOR_SORT)
+#if defined(TILED_DEPOSIT_USE_VENDOR_SORT)
   namespace permute_helpers {
 
     // Permute a 1D SoA member `arr` by `perm` in place, using a
@@ -694,9 +695,9 @@ namespace ntt {
       permute_2d_into(pld_i, m_sort_scratch_pld_i, perm, n, ncols);
     }
   }
-#endif // TEAM_POLICY_USE_VENDOR_SORT
+#endif // TILED_DEPOSIT_USE_VENDOR_SORT
 
-#if defined(TEAM_POLICY_USE_VENDOR_SORT)
+#if defined(TILED_DEPOSIT_USE_VENDOR_SORT)
   #define APPLY_PERM_INSTANTIATE(D, C)                                          \
     template void Particles<D, C>::apply_permutation_to_soa(const prtl_perm_t&, \
                                                             npart_t);

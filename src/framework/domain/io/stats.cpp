@@ -20,52 +20,10 @@
 #include <Kokkos_StdAlgorithms.hpp>
 
 #include <cstdint>
-#include <filesystem>
-#include <functional>
 #include <string>
 #include <vector>
 
 namespace ntt {
-
-  template <SimEngine::type S, MetricClass M>
-  void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
-                                         bool                    is_resuming) {
-    raise::ErrorIf(
-      l_subdomain_indices().size() != 1,
-      "StatsWriter for now is only supported for one subdomain per rank",
-      HERE);
-    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
-    raise::ErrorIf(local_domain->is_placeholder(),
-                   "local_domain is a placeholder",
-                   HERE);
-    const auto simname  = params.template get<std::string>("simulation.name");
-    const auto filename = std::filesystem::path(simname) /
-                          (simname + "_stats.csv");
-    const auto enable_stats = params.template get<bool>("output.stats.enable");
-    if (enable_stats and (not is_resuming)) {
-      CallOnce(
-        [](auto& filename) {
-          if (std::filesystem::exists(filename)) {
-            std::filesystem::remove(filename);
-          }
-        },
-        filename);
-    }
-    const auto stats_to_write = params.template get<std::vector<std::string>>(
-      "output.stats.quantities");
-    const auto custom_stats_to_write = params.template get<std::vector<std::string>>(
-      "output.stats.custom");
-    g_stats_writer.init(
-      params.template get<timestep_t>("output.stats.interval"),
-      params.template get<simtime_t>("output.stats.interval_time"));
-    g_stats_writer.defineStatsFilename(filename);
-    g_stats_writer.defineStatsOutputs(stats_to_write, false);
-    g_stats_writer.defineStatsOutputs(custom_stats_to_write, true);
-
-    if (not std::filesystem::exists(filename)) {
-      g_stats_writer.writeHeader();
-    }
-  }
 
   template <SimEngine::type S, MetricClass M, StatsID::type P>
   auto ComputeMoments(const SimulationParams& params,
@@ -182,14 +140,12 @@ namespace ntt {
   }
 
   template <SimEngine::type S, MetricClass M>
-  auto Metadomain<S, M>::WriteStats(
-    const SimulationParams& params,
-    timestep_t              current_step,
-    timestep_t              finished_step,
-    simtime_t               current_time,
-    simtime_t               finished_time,
-    const std::function<
-      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& CustomStat)
+  auto Metadomain<S, M>::WriteStats(const SimulationParams&      params,
+                                    timestep_t                   current_step,
+                                    timestep_t                   finished_step,
+                                    simtime_t                    current_time,
+                                    simtime_t                    finished_time,
+                                    const custom_stats_output_t& CustomStat)
     -> bool {
     if (not(params.template get<bool>("output.stats.enable") and
             g_stats_writer.shouldWrite(finished_step, finished_time))) {
@@ -281,17 +237,13 @@ namespace ntt {
   }
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
-#define METADOMAIN_STATS(S, M, D)                                                  \
-  template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,      \
-                                                     bool);                        \
-  template auto Metadomain<S, M<D>>::WriteStats(                                   \
-    const SimulationParams&,                                                       \
-    timestep_t,                                                                    \
-    timestep_t,                                                                    \
-    simtime_t,                                                                     \
-    simtime_t,                                                                     \
-    const std::function<                                                           \
-      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M<D>>&)>&) \
+#define METADOMAIN_STATS(S, M, D)                                              \
+  template auto Metadomain<S, M<D>>::WriteStats(const SimulationParams&,       \
+                                                timestep_t,                    \
+                                                timestep_t,                    \
+                                                simtime_t,                     \
+                                                simtime_t,                     \
+                                                const custom_stats_output_t&)  \
     -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_STATS)

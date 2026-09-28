@@ -1,3 +1,5 @@
+#include "framework/containers/particles.h"
+
 #include "enums.h"
 #include "global.h"
 
@@ -9,7 +11,7 @@
 #include "utils/formatting.h"
 #include "utils/log.h"
 
-#include "framework/containers/particles.h"
+#include "framework/specialization_registry.h"
 #include "kernels/comm.hpp"
 
 #include <mpi.h>
@@ -398,13 +400,7 @@ namespace ntt {
                                              const dir::map_t<D, int>&,        \
                                              const dir::map_t<D, int>&);
 
-  PARTICLES_COMM(Dim::_1D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_2D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_3D, Coord::Cartesian)
-  PARTICLES_COMM(Dim::_2D, Coord::Spherical)
-  PARTICLES_COMM(Dim::_2D, Coord::Qspherical)
-  PARTICLES_COMM(Dim::_3D, Coord::Spherical)
-  PARTICLES_COMM(Dim::_3D, Coord::Qspherical)
+  NTT_FOREACH_COORDINATE(PARTICLES_COMM)
 #undef PARTICLES_COMM
 
 } // namespace ntt

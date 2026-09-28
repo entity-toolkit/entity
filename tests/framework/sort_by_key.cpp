@@ -1,5 +1,5 @@
 /**
- * @brief X-3 (team_policy) — sort_by_key permutation test.
+ * @brief X-3 (tiled_deposit) — sort_by_key permutation test.
  *
  * Exercises every backend overload of `ntt::sort_helpers::sort_by_key_dispatch`
  * that is compiled in for the current Kokkos device. For each backend:
@@ -11,7 +11,7 @@
  * promise stability per their documentation but we don't bake that into
  * the test).
  *
- * Built only when `team_policy=ON` at CMake time.
+ * Built only when `tiled_deposit=ON` at CMake time.
  */
 #include "enums.h"
 #include "global.h"
