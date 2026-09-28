@@ -15,6 +15,8 @@
 #include "output/utils/writers.h"
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
 #endif
 
@@ -268,22 +270,76 @@ namespace ntt {
 #if !defined(MPI_ENABLED)
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
 #else
-    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
+    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_WORLD);
 #endif
 
     reader.BeginStep();
 
-    // Phase 1: read all subdomain metadata to detect size changes
+    // Phase 1: read the saved subdomain metadata (extent + ncells per domain).
     std::vector<std::vector<ncells_t>> saved_ncells(g_ndomains,
                                                     std::vector<ncells_t>(M::Dim));
     std::vector<boundaries_t<real_t>>  saved_extents(g_ndomains);
-    boundaries_t<real_t>               global_extent;
-    for (auto d { 0u }; d < M::Dim; ++d) {
-      global_extent.emplace_back(std::numeric_limits<real_t>::max(),
-                                 std::numeric_limits<real_t>::lowest());
-    }
 
-    bool needs_reconstruction = false;
+#if defined(MPI_ENABLED)
+    // Each rank reads only its own entry and all-gathers, instead of every rank
+    // looping over all g_ndomains. The all-domains loop is an O(g_ndomains^2)
+    // storm of tiny synchronous reads at large rank counts.
+    {
+      std::vector<ncells_t> loc_ncells(M::Dim);
+      std::vector<real_t>   loc_xmin(M::Dim), loc_xmax(M::Dim);
+      const auto local_off = static_cast<std::size_t>(g_mpi_rank);
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        out::ReadVariable<real_t>(io,
+                                  reader,
+                                  fmt::format("subdomain_x%d_min", d + 1),
+                                  loc_xmin[d],
+                                  local_off);
+        out::ReadVariable<real_t>(io,
+                                  reader,
+                                  fmt::format("subdomain_x%d_max", d + 1),
+                                  loc_xmax[d],
+                                  local_off);
+        out::ReadVariable<ncells_t>(io,
+                                    reader,
+                                    fmt::format("subdomain_nx%d", d + 1),
+                                    loc_ncells[d],
+                                    local_off);
+      }
+
+      std::vector<ncells_t> all_ncells(g_ndomains * M::Dim);
+      std::vector<real_t>   all_xmin(g_ndomains * M::Dim);
+      std::vector<real_t>   all_xmax(g_ndomains * M::Dim);
+      MPI_Allgather(loc_ncells.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<ncells_t>(),
+                    all_ncells.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<ncells_t>(),
+                    MPI_COMM_WORLD);
+      MPI_Allgather(loc_xmin.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    all_xmin.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    MPI_COMM_WORLD);
+      MPI_Allgather(loc_xmax.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    all_xmax.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    MPI_COMM_WORLD);
+
+      for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
+          saved_ncells[dom_idx][d] = all_ncells[dom_idx * M::Dim + d];
+          saved_extents[dom_idx].emplace_back(all_xmin[dom_idx * M::Dim + d],
+                                              all_xmax[dom_idx * M::Dim + d]);
+        }
+      }
+    }
+#else
     for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
       for (auto d { 0u }; d < M::Dim; ++d) {
         real_t x_min, x_max;
@@ -298,8 +354,6 @@ namespace ntt {
                                   x_max,
                                   dom_idx);
         saved_extents[dom_idx].emplace_back(x_min, x_max);
-        global_extent[d].first  = std::min(global_extent[d].first, x_min);
-        global_extent[d].second = std::max(global_extent[d].second, x_max);
 
         ncells_t nx;
         out::ReadVariable<ncells_t>(io,
@@ -308,8 +362,26 @@ namespace ntt {
                                     nx,
                                     dom_idx);
         saved_ncells[dom_idx][d] = nx;
+      }
+    }
+#endif
 
-        if (nx != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
+    // Reduce the gathered layout into the global extent and detect whether the
+    // domain decomposition changed since the checkpoint was written.
+    boundaries_t<real_t> global_extent;
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      global_extent.emplace_back(std::numeric_limits<real_t>::max(),
+                                 std::numeric_limits<real_t>::lowest());
+    }
+
+    bool needs_reconstruction = false;
+    for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        global_extent[d].first  = std::min(global_extent[d].first,
+                                          saved_extents[dom_idx][d].first);
+        global_extent[d].second = std::max(global_extent[d].second,
+                                           saved_extents[dom_idx][d].second);
+        if (saved_ncells[dom_idx][d] != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
           needs_reconstruction = true;
         }
       }
