@@ -3,7 +3,7 @@
  * @brief Current deposition and filtering routines for the GRPIC engine
  * @implements
  *   - ntt::grpic::CallDepositKernel<> -> void                 (flat path)
- *   - ntt::grpic::CallDepositKernelTiled<> -> void            (TEAM_POLICY)
+ *   - ntt::grpic::CallDepositKernelTiled<> -> void            (TILED_DEPOSIT)
  *   - ntt::grpic::CurrentsDeposit<> -> void
  *   - ntt::grpic::CurrentsFilter<> -> void
  * @namespaces:
@@ -47,7 +47,7 @@ namespace ntt {
                              dt));
     }
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
@@ -56,7 +56,7 @@ namespace ntt {
      * teams; each team accumulates its tile's particle contributions in SLM
      * scratch and atomically flushes to the global J (here `cur0`, the GRPIC
      * half-step current). Requires the species to have been sorted with
-     * `team_policy` enabled (`tile_layout` populated by `SortSpatially`).
+     * `tiled_deposit` enabled (`tile_layout` populated by `SortSpatially`).
      *
      * The deposit body (`kernel::DepositOneParticle<SimEngine::GRPIC, M, O>`)
      * is the same shared math used by the flat path — it already carries the GR
@@ -75,7 +75,7 @@ namespace ntt {
                                 int                         team_size_req) {
       static_assert(O <= 11u, "Shape order must be <= 11");
       constexpr unsigned short T = static_cast<unsigned short>(
-        TEAM_POLICY_TILE_SIZE);
+        TILED_DEPOSIT_TILE_SIZE);
       const auto& layout = species.tile_layout();
       raise::ErrorIf(layout.ntiles_total == 0u,
                      "CallDepositKernelTiled: tile_layout has 0 tiles — call "
@@ -97,7 +97,7 @@ namespace ntt {
 
       // Team (work-group) size. The default (team_size_req == 0) leaves
       // Kokkos::AUTO, which sizes the team from the backend occupancy
-      // heuristic. A positive `algorithms.deposit.team_policy_team_size`
+      // heuristic. A positive `algorithms.deposit.tiled_deposit_team_size`
       // overrides it, clamped to the scratch/backend-feasible maximum so an
       // over-large request cannot abort the launch (Kokkos errors when
       // team_size > team_size_max). No portable subgroup rounding is applied;
@@ -113,7 +113,7 @@ namespace ntt {
         if (ts > ts_max) {
           raise::Warning(
             fmt::format(
-              "algorithms.deposit.team_policy_team_size = %d exceeds "
+              "algorithms.deposit.tiled_deposit_team_size = %d exceeds "
               "the tiled-deposit maximum %d on this backend; clamping "
               "to %d",
               team_size_req,
@@ -153,7 +153,7 @@ namespace ntt {
         Kokkos::Experimental::contribute(cur_nc, scatter_cur);
       }
     }
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
 
     template <GRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::GRPIC, M>& domain,
@@ -163,12 +163,12 @@ namespace ntt {
       // pre-zeros it — this is the single source of truth, matching SRPIC).
       Kokkos::deep_copy(domain.fields.cur0, ZERO);
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       // Optional runtime override for the tiled-deposit team (work-group) size;
       // 0 (default) keeps Kokkos::AUTO. Clamped to the backend max in the
       // launcher (see CallDepositKernelTiled).
       const auto team_size_req = static_cast<int>(
-        engine_params.get<std::size_t>("team_policy_team_size",
+        engine_params.get<std::size_t>("tiled_deposit_team_size",
                                        std::optional<std::size_t> { 0u }));
 
       // Tiled deposit. Correctness no longer depends on the SoA being in a

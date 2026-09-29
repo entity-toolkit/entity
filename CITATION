@@ -26,7 +26,7 @@ For the general relativistic module, please cite the following paper:
 ```latex
 @ARTICLE{EntityGR_2025,
        author = {{Galishnikova}, Alisa and {Hakobyan}, Hayk and {Philippov}, Alexander and {Crinquand}, Benjamin},
-        title = "{$\mathtt{Entity}$ -- Hardware-agnostic Particle-in-Cell Code for Plasma Astrophysics. II: General Relativistic Module}",
+        title = "{Entity -- Hardware-agnostic Particle-in-Cell Code for Plasma Astrophysics. II: General Relativistic Module}",
       journal = {arXiv e-prints},
      keywords = {High Energy Astrophysical Phenomena},
          year = 2025,

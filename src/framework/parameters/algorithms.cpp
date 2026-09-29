@@ -3,6 +3,7 @@
 #include "defaults.h"
 #include "global.h"
 
+#include "utils/log.h"
 #include "utils/numeric.h"
 
 #include "framework/parameters/parameters.h"
@@ -32,12 +33,28 @@ namespace ntt {
                                                 defaults::current_filters);
 
       deposit_enable = toml::find_or(toml_data, "algorithms", "deposit", "enable", true);
-      deposit_order                 = static_cast<unsigned short>(SHAPE_ORDER);
-      deposit_team_policy_team_size = toml::find_or(toml_data,
-                                                    "algorithms",
-                                                    "deposit",
-                                                    "team_policy_team_size",
-                                                    defaults::team_policy_team_size);
+      deposit_order = static_cast<unsigned short>(SHAPE_ORDER);
+      if (
+        toml_data.contains("algorithms") and
+        toml_data.at("algorithms").contains("deposit") and
+        toml_data.at("algorithms").at("deposit").contains("team_policy_team_size") and
+        not toml_data.at("algorithms").at("deposit").contains("tiled_deposit_team_size")) {
+        deposit_tiled_team_size = toml::find<std::size_t>(
+          toml_data,
+          "algorithms",
+          "deposit",
+          "team_policy_team_size");
+        raise::Warning("`algorithms.deposit.team_policy_team_size` is "
+                       "deprecated and will be removed in 1.6+ versions, use "
+                       "`algorithms.deposit.tiled_deposit_team_size` instead",
+                       HERE);
+      } else {
+        deposit_tiled_team_size = toml::find_or(toml_data,
+                                                "algorithms",
+                                                "deposit",
+                                                "tiled_deposit_team_size",
+                                                defaults::tiled_deposit_team_size);
+      }
 
       fieldsolver_enable = toml::find_or(toml_data,
                                          "algorithms",
@@ -145,8 +162,8 @@ namespace ntt {
 
       params->set("algorithms.deposit.enable", deposit_enable.value());
       params->set("algorithms.deposit.order", deposit_order.value());
-      params->set("algorithms.deposit.team_policy_team_size",
-                  deposit_team_policy_team_size.value());
+      params->set("algorithms.deposit.tiled_deposit_team_size",
+                  deposit_tiled_team_size.value());
 
       params->set("algorithms.fieldsolver.enable", fieldsolver_enable.value());
       for (const auto& [key, value] : fieldsolver_stencil_coeffs.value()) {

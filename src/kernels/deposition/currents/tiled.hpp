@@ -3,8 +3,8 @@
  * @brief Tiled current deposition kernel with per-team SLM scratch.
  *
  * @note Team-policy (one team per spatial tile, accumulates into team SLM scratch with
- *     atomic adds, then flushes to global J). Available when `team_policy=ON`
- *     (`#if defined(TEAM_POLICY)`). Stream 2 of the Pattern A plan.
+ *     atomic adds, then flushes to global J). Available when `tiled_deposit=ON`
+ *     (`#if defined(TILED_DEPOSIT)`). Stream 2 of the Pattern A plan.
  *
  * @implements
  *   - kernel::DepositCurrentsTiled_kernel<>
@@ -51,8 +51,8 @@ namespace kernel {
    * regression there, but it's good to be able to measure the
    * crossover. To revert and use flat for zigzag-only builds, change
    * the dispatch in `engines/srpic/currents.h` from
-   * `#if defined(TEAM_POLICY)` to
-   * `#if defined(TEAM_POLICY) && (SHAPE_ORDER > 0)`.
+   * `#if defined(TILED_DEPOSIT)` to
+   * `#if defined(TILED_DEPOSIT) && (SHAPE_ORDER > 0)`.
    *
    * Particle iteration order is governed by `tile_offsets`: tile `t`
    * owns particles `[tile_offsets(t), tile_offsets(t+1))`, post-sort.
@@ -65,8 +65,8 @@ namespace kernel {
    * per step elapsed since the last sort. The scratch HALO is
    * `STENCIL_REACH(O) + DRIFT`, where `STENCIL_REACH = 2` for zigzag
    * (writes `{i_prev, i_prev+1, i, i+1}` ⇒ +2 above `min(i, i_prev)` with
-   * `|Δi|=1`) and `O` for Esirkepov. `DRIFT` is the `team_policy_drift`
-   * CMake knob (macro TEAM_POLICY_DRIFT) — the number of cells a particle
+   * `|Δi|=1`) and `O` for Esirkepov. `DRIFT` is the `tiled_deposit_drift`
+   * CMake knob (macro TILED_DEPOSIT_DRIFT) — the number of cells a particle
    * may drift between two sorts that the halo is sized to absorb — and `1`
    * by default (the every-step-sorted common case). It is independent of
    * the sort cadence, which is set at runtime via `spatial_sorting_interval`;
@@ -118,8 +118,8 @@ namespace kernel {
      * pushed once per step between its last sort and a given deposit. With
      * a runtime sort interval of `K` (spatial_sorting_interval), a particle
      * drifts at most `K` cells (CFL |v dt/dx| <= 1/2 ⇒ |Δi| <= 1 per step)
-     * before the next sort. The `team_policy_drift` CMake knob (macro
-     * TEAM_POLICY_DRIFT) sets DRIFT independently of `K`, sizing the halo so
+     * before the next sort. The `tiled_deposit_drift` CMake knob (macro
+     * TILED_DEPOSIT_DRIFT) sets DRIFT independently of `K`, sizing the halo so
      * a particle that drifts up to DRIFT cells still deposits inside its
      * tile scratch. DRIFT defaults to 1 (the sorted-every-step common case);
      * any particle that drifts past the halo (e.g. a larger sort interval,
@@ -134,8 +134,8 @@ namespace kernel {
     // coords conservatively bounds every deposited cell for any order
     // (Esirkepov reaches max+O; O=0 zigzag reaches max+1).
     static constexpr int FOOTPRINT_REACH = (O == 0u) ? 1 : static_cast<int>(O);
-#if defined(TEAM_POLICY_DRIFT)
-    static constexpr int DRIFT = static_cast<int>(TEAM_POLICY_DRIFT);
+#if defined(TILED_DEPOSIT_DRIFT)
+    static constexpr int DRIFT = static_cast<int>(TILED_DEPOSIT_DRIFT);
 #else
     static constexpr int DRIFT = 1;
 #endif

@@ -15,6 +15,7 @@
 #include "framework/parameters/grid.h"
 #include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
+#include "framework/parameters/render.h"
 
 #include <toml11/toml.hpp>
 
@@ -164,6 +165,11 @@ namespace ntt {
     params::Output output_params;
     output_params.read(dim, get<std::size_t>("particles.nspec"), toml_data);
     output_params.setParams(this);
+
+    /* [render] ------------------------------------------------------------- */
+    params::Render render_params;
+    render_params.read(toml_data, this);
+    render_params.setParams(this);
 
     /* [checkpoint] --------------------------------------------------------- */
     set("checkpoint.interval",

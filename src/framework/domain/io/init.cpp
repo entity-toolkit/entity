@@ -1,4 +1,3 @@
-#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -6,7 +5,6 @@
 #include "utils/error.h"
 
 #include "framework/domain/domain.h"
-#include "framework/domain/mesh.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
@@ -15,14 +13,23 @@
 #include <Kokkos_ScatterView.hpp>
 #include <Kokkos_StdAlgorithms.hpp>
 
-#include <algorithm>
-#include <cstddef>
-#include <iterator>
+#if defined(OUTPUT_ENABLED)
+  #include "defaults.h"
+
+  #include <adios2.h>
+  #include <adios2/cxx/KokkosView.h>
+
+  #include <algorithm>
+  #include <cstddef>
+  #include <iterator>
+#endif // OUTPUT_ENABLED
+
 #include <string>
 #include <vector>
 
 namespace ntt {
 
+#if defined(OUTPUT_ENABLED)
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitWriter(adios2::ADIOS*          ptr_adios,
                                     const SimulationParams& params) {
@@ -105,6 +112,7 @@ namespace ntt {
     }
     g_writer.writeAttrs(params);
   }
+#endif
 
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::InitStatsWriter(const SimulationParams& params,
@@ -146,16 +154,30 @@ namespace ntt {
     }
   }
 
+  template <SimEngine::type S, MetricClass M>
+  void Metadomain<S, M>::InitRenderer(const SimulationParams& params) {
+    g_renderer.init(params, mesh().extent());
+  }
+
+#if defined(OUTPUT_ENABLED)
   // NOLINTBEGIN(bugprone-macro-parentheses)
-#define METADOMAIN_OUTPUT(S, M, D)                                             \
-  template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,                \
-                                                const SimulationParams&);      \
+  #define METADOMAIN_OUTPUT_INIT(S, M, D)                                      \
+    template void Metadomain<S, M<D>>::InitWriter(adios2::ADIOS*,              \
+                                                  const SimulationParams&);
+
+  NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT_INIT)
+
+  #undef METADOMAIN_OUTPUT_INIT
+  // NOLINTEND(bugprone-macro-parentheses)
+#endif
+
+  // NOLINTBEGIN(bugprone-macro-parentheses)
+#define METADOMAIN_OUTPUT_INIT(S, M, D)                                        \
   template void Metadomain<S, M<D>>::InitStatsWriter(const SimulationParams&,  \
-                                                     bool);
-
-  NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT)
-
-#undef METADOMAIN_OUTPUT
+                                                     bool);                    \
+  template void Metadomain<S, M<D>>::InitRenderer(const SimulationParams&);
+  NTT_FOREACH_SPECIALIZATION(METADOMAIN_OUTPUT_INIT)
+#undef METADOMAIN_OUTPUT_INIT
   // NOLINTEND(bugprone-macro-parentheses)
 
 } // namespace ntt
