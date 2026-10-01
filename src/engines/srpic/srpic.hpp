@@ -182,9 +182,10 @@ namespace ntt {
         timers.stop("Injector");
       }
 
-      timers.start("ParticleSort");
-      m_metadomain.SortParticles(time, step, m_params, dom);
-      timers.stop("ParticleSort");
+      // NOTE: particle sorting is intentionally NOT done here. It runs once per
+      // step in the engine loop (Engine::run) after CustomPostStep and
+      // LoadBalance, so the layout the next deposit uses reflects window
+      // shifts/injection and dead-tagging performed in CustomPostStep.
     }
   };
 

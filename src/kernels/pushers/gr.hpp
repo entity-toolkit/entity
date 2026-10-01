@@ -168,13 +168,18 @@ namespace kernel::gr {
 
     /**
      * @brief EM pusher (Boris) substep.
-     * @param xp coordinate of the particle.
+     * @param alpha_xp lapse function at the particle position.
+     * @param h11_xp h^11(xp) (contravariant); h13_xp, h22_xp, h33_xp = h_13(xp), h_22(xp), h_33(xp) (covariant).
      * @param vp covariant velocity of the particle.
      * @param Dp_hat hatted electric field at the particle position.
      * @param Bp_hat hatted magnetic field at the particle position.
      * @param v_upd updated covarient velocity of the particle [return].
      */
-    Inline void EMHalfPush(const coord_t<D>&      xp,
+    Inline void EMHalfPush(real_t                 alpha_xp,
+                           real_t                 h11_xp,
+                           real_t                 h13_xp,
+                           real_t                 h22_xp,
+                           real_t                 h33_xp,
                            const vec_t<Dim::_3D>& vp,
                            const vec_t<Dim::_3D>& Dp_hat,
                            const vec_t<Dim::_3D>& Bp_hat,
@@ -182,10 +187,16 @@ namespace kernel::gr {
       vec_t<Dim::_3D> D0 { Dp_hat[0], Dp_hat[1], Dp_hat[2] };
       vec_t<Dim::_3D> B0 { Bp_hat[0], Bp_hat[1], Bp_hat[2] };
       vec_t<Dim::_3D> vp_hat { ZERO }, vp_upd_hat { ZERO };
-      metric.template transform<Idx::D, Idx::T>(xp, vp, vp_upd_hat);
+      // == transform<Idx::D, Idx::T>(xp, vp, vp_upd_hat)
+      const real_t A0 { math::sqrt(h11_xp) };
+      const real_t sqrt_h22_xp { math::sqrt(h22_xp) };
+      const real_t sqrt_h33_xp { math::sqrt(h33_xp) };
+      vp_upd_hat[0] = vp[0] * A0 - vp[2] * A0 * h13_xp / h33_xp;
+      vp_upd_hat[1] = vp[1] / sqrt_h22_xp;
+      vp_upd_hat[2] = vp[2] / sqrt_h33_xp;
 
       // this is a half-push
-      real_t COEFF { normalized_dt_half * HALF * metric.alpha(xp) };
+      real_t COEFF { normalized_dt_half * HALF * alpha_xp };
 
       D0[0] *= COEFF;
       D0[1] *= COEFF;
@@ -213,7 +224,10 @@ namespace kernel::gr {
       vp_upd_hat[1] += vp_hat[2] * B0[0] - vp_hat[0] * B0[2] + D0[1];
       vp_upd_hat[2] += vp_hat[0] * B0[1] - vp_hat[1] * B0[0] + D0[2];
 
-      metric.template transform<Idx::T, Idx::D>(xp, vp_upd_hat, vp_upd);
+      // == transform<Idx::T, Idx::D>(xp, vp_upd_hat, vp_upd)
+      vp_upd[0] = vp_upd_hat[0] / A0 + vp_upd_hat[2] * h13_xp / sqrt_h33_xp;
+      vp_upd[1] = vp_upd_hat[1] * sqrt_h22_xp;
+      vp_upd[2] = vp_upd_hat[2] * sqrt_h33_xp;
     }
 
     // Helper functions
@@ -266,6 +280,26 @@ namespace kernel::gr {
     if constexpr (D == Dim::_1D) {
       raise::KernelError(HERE, "1D not applicable");
     } else if constexpr (D == Dim::_2D) {
+      // evaluate the metric-derivative quantities once at `xp`
+      const real_t h11_xp { metric.template h<1, 1>(xp) };
+      const real_t h13_xp { metric.template h<1, 3>(xp) };
+      const real_t h22_xp { metric.template h<2, 2>(xp) };
+      const real_t h33_xp { metric.template h<3, 3>(xp) };
+
+      const real_t alpha_xp { metric.alpha(xp) };
+      const real_t dr_alpha_xp { metric.dr_alpha(xp) };
+      const real_t dt_alpha_xp { metric.dt_alpha(xp) };
+      const real_t dr_beta1_xp { metric.dr_beta1(xp) };
+      const real_t dt_beta1_xp { metric.dt_beta1(xp) };
+      const real_t dr_h11_xp { metric.dr_h11(xp) };
+      const real_t dr_h22_xp { metric.dr_h22(xp) };
+      const real_t dr_h33_xp { metric.dr_h33(xp) };
+      const real_t dr_h13_xp { metric.dr_h13(xp) };
+      const real_t dt_h11_xp { metric.dt_h11(xp) };
+      const real_t dt_h22_xp { metric.dt_h22(xp) };
+      const real_t dt_h33_xp { metric.dt_h33(xp) };
+      const real_t dt_h13_xp { metric.dt_h13(xp) };
+
       // initialize midpoint values & updated values
       vec_t<Dim::_3D> vp_mid { ZERO };
       vec_t<Dim::_3D> vp_mid_cntrv { ZERO };
@@ -279,51 +313,31 @@ namespace kernel::gr {
         vp_mid[1] = HALF * (vp[1] + vp_upd[1]);
         vp_mid[2] = vp[2];
 
-        // find contravariant midpoint velocity
-        metric.template transform<Idx::D, Idx::U>(xp, vp_mid, vp_mid_cntrv);
+        // find contravariant midpoint velocity (== transform<Idx::D, Idx::U>(xp, vp_mid, ...))
+        vp_mid_cntrv[0] = vp_mid[0] * h11_xp + vp_mid[2] * h13_xp;
+        vp_mid_cntrv[1] = vp_mid[1] * h22_xp;
+        vp_mid_cntrv[2] = vp_mid[0] * h13_xp + vp_mid[2] * h33_xp;
 
-        // find Gamma / alpha at midpointы
-        real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / metric.alpha(xp) };
+        // find Gamma / alpha at midpoint
+        real_t u0 { computeGamma(T {}, vp_mid, vp_mid_cntrv) / alpha_xp };
 
         // find updated velocity
-        // vp_upd[0] =
-        //   vp[0] +
-        //   dt *
-        //     (-metric.alpha(xp) * u0 * DERIVATIVE_IN_R(metric.alpha, xp) +
-        //      vp_mid[0] * DERIVATIVE_IN_R(metric.beta1, xp) -
-        //      (HALF / u0) *
-        //        (DERIVATIVE_IN_R((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
-        //         DERIVATIVE_IN_R((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
-        //         DERIVATIVE_IN_R((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
-        //         TWO * DERIVATIVE_IN_R((metric.template h<1, 3>), xp) *
-        //           vp_mid[0] * vp_mid[2]));
-        // vp_upd[1] =
-        //   vp[1] +
-        //   dt *
-        //     (-metric.alpha(xp) * u0 * DERIVATIVE_IN_TH(metric.alpha, xp) +
-        //      vp_mid[0] * DERIVATIVE_IN_TH(metric.beta1, xp) -
-        //      (HALF / u0) *
-        //        (DERIVATIVE_IN_TH((metric.template h<1, 1>), xp) * SQR(vp_mid[0]) +
-        //         DERIVATIVE_IN_TH((metric.template h<2, 2>), xp) * SQR(vp_mid[1]) +
-        //         DERIVATIVE_IN_TH((metric.template h<3, 3>), xp) * SQR(vp_mid[2]) +
-        //         TWO * DERIVATIVE_IN_TH((metric.template h<1, 3>), xp) *
-        //           vp_mid[0] * vp_mid[2]));
         vp_upd[0] = vp[0] +
-                    ctx.dt * (-metric.alpha(xp) * u0 * metric.dr_alpha(xp) +
-                              vp_mid[0] * metric.dr_beta1(xp) -
+                    ctx.dt * (-alpha_xp * u0 * dr_alpha_xp +
+                              vp_mid[0] * dr_beta1_xp -
                               (HALF / u0) *
-                                (metric.dr_h11(xp) * SQR(vp_mid[0]) +
-                                 metric.dr_h22(xp) * SQR(vp_mid[1]) +
-                                 metric.dr_h33(xp) * SQR(vp_mid[2]) +
-                                 TWO * metric.dr_h13(xp) * vp_mid[0] * vp_mid[2]));
+                                (dr_h11_xp * SQR(vp_mid[0]) +
+                                 dr_h22_xp * SQR(vp_mid[1]) +
+                                 dr_h33_xp * SQR(vp_mid[2]) +
+                                 TWO * dr_h13_xp * vp_mid[0] * vp_mid[2]));
         vp_upd[1] = vp[1] +
-                    ctx.dt * (-metric.alpha(xp) * u0 * metric.dt_alpha(xp) +
-                              vp_mid[0] * metric.dt_beta1(xp) -
+                    ctx.dt * (-alpha_xp * u0 * dt_alpha_xp +
+                              vp_mid[0] * dt_beta1_xp -
                               (HALF / u0) *
-                                (metric.dt_h11(xp) * SQR(vp_mid[0]) +
-                                 metric.dt_h22(xp) * SQR(vp_mid[1]) +
-                                 metric.dt_h33(xp) * SQR(vp_mid[2]) +
-                                 TWO * metric.dt_h13(xp) * vp_mid[0] * vp_mid[2]));
+                                (dt_h11_xp * SQR(vp_mid[0]) +
+                                 dt_h22_xp * SQR(vp_mid[1]) +
+                                 dt_h33_xp * SQR(vp_mid[2]) +
+                                 TWO * dt_h13_xp * vp_mid[0] * vp_mid[2]));
       }
     } else if constexpr (D == Dim::_3D) {
       raise::KernelNotImplementedError(HERE);
@@ -760,18 +774,37 @@ namespace kernel::gr {
       }
       xp_[1] = theta_Cd;
 
+      // h^11/h_13/h_22/h_33(xp) and alpha(xp) are fixed for this whole
+      // substep (only used at `xp`, never at `xp_`) -- evaluate once and
+      // reuse across interpolateFields' U->T transform and both EMHalfPush
+      // calls instead of re-deriving them from scratch at each of those 4
+      // call sites
+      const real_t h11_xp { metric.template h<1, 1>(xp) };
+      const real_t h13_xp { metric.template h_<1, 3>(xp) };
+      const real_t h22_xp { metric.template h_<2, 2>(xp) };
+      const real_t h33_xp { metric.template h_<3, 3>(xp) };
+      const real_t alpha_xp { metric.alpha(xp) };
+      const real_t sqrt_h11_xp { math::sqrt(h11_xp) };
+      const real_t sqrt_h22_xp { math::sqrt(h22_xp) };
+      const real_t sqrt_h33_xp { math::sqrt(h33_xp) };
+
       vec_t<Dim::_3D> Dp_cntrv { ZERO }, Bp_cntrv { ZERO }, Dp_hat { ZERO },
         Bp_hat { ZERO };
       interpolateFields<SHAPE_ORDER>(p, Dp_cntrv, Bp_cntrv);
-      metric.template transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat);
-      metric.template transform<Idx::U, Idx::T>(xp, Bp_cntrv, Bp_hat);
+      // == transform<Idx::U, Idx::T>(xp, Dp_cntrv, Dp_hat) / (xp, Bp_cntrv, Bp_hat)
+      Dp_hat[0] = Dp_cntrv[0] / sqrt_h11_xp;
+      Dp_hat[1] = Dp_cntrv[1] * sqrt_h22_xp;
+      Dp_hat[2] = Dp_cntrv[2] * sqrt_h33_xp + Dp_cntrv[0] * h13_xp / sqrt_h33_xp;
+      Bp_hat[0] = Bp_cntrv[0] / sqrt_h11_xp;
+      Bp_hat[1] = Bp_cntrv[1] * sqrt_h22_xp;
+      Bp_hat[2] = Bp_cntrv[2] * sqrt_h33_xp + Bp_cntrv[0] * h13_xp / sqrt_h33_xp;
 
       vec_t<Dim::_3D> vp { particles.ux1(p), particles.ux2(p), particles.ux3(p) };
 
       /* -------------------------------- Leapfrog -------------------------------- */
       /* u_i(n - 1/2) -> u*_i(n) */
       vec_t<Dim::_3D> vp_upd { ZERO };
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      EMHalfPush(alpha_xp, h11_xp, h13_xp, h22_xp, h33_xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* u*_i(n) -> u**_i(n) */
       vp[0] = vp_upd[0];
       vp[1] = vp_upd[1];
@@ -781,7 +814,7 @@ namespace kernel::gr {
       vp[0] = vp_upd[0];
       vp[1] = vp_upd[1];
       vp[2] = vp_upd[2];
-      EMHalfPush(xp, vp, Dp_hat, Bp_hat, vp_upd);
+      EMHalfPush(alpha_xp, h11_xp, h13_xp, h22_xp, h33_xp, vp, Dp_hat, Bp_hat, vp_upd);
       /* x^i(n) -> x^i(n + 1) */
       coord_t<Dim::_2D> xp_upd { ZERO };
       GeodesicCoordinatePush<Massive_t>(Massive_t {}, xp, vp_upd, xp_upd);

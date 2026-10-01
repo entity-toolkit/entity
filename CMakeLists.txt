@@ -1,13 +1,13 @@
 # cmake-lint: disable=C0103,C0111,E1120,R0913,R0915
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22)
 cmake_policy(SET CMP0110 NEW)
 
 set(PROJECT_NAME entity)
 
 project(
   ${PROJECT_NAME}
-  VERSION 1.4.4
+  VERSION 1.5.0
   LANGUAGES CXX C)
 add_compile_options("-D ENTITY_VERSION=\"${PROJECT_VERSION}\"")
 set(hash_cmd "git diff --quiet src/ && echo $(git rev-parse HEAD) ")
@@ -57,6 +57,22 @@ set(mpi
 set(gpu_aware_mpi
     ${default_gpu_aware_mpi}
     CACHE BOOL "Enable GPU-aware MPI")
+
+set(tiled_deposit
+    ${default_tiled_deposit}
+    CACHE BOOL "Enable tile-blocked deposit/pusher kernels")
+set(tiled_deposit_tile_size
+    ${default_tiled_deposit_tile_size}
+    CACHE STRING "tiled deposit tile edge length in cells")
+set(tiled_deposit_tile_sizes
+    "4;6;8;10;12;14;16"
+    CACHE STRING "tiled deposit tile-size choices")
+set(tiled_deposit_drift
+    ${default_tiled_deposit_drift}
+    CACHE STRING "tiled deposit scratch halo drift in cells")
+set(vendor_sort
+    ${default_vendor_sort}
+    CACHE BOOL "Use the vendor sort_by_key")
 
 # -------------------------- Compilation settings -------------------------- #
 set(CMAKE_CXX_STANDARD 20)
@@ -136,21 +152,33 @@ else()
   set(DEVICE_ENABLED OFF)
 endif()
 
+if(NOT ${DEVICE_ENABLED})
+  set(vendor_sort OFF)
+endif()
+
+if(NOT ${DEVICE_ENABLED} OR NOT ${mpi})
+  set(gpu_aware_mpi OFF)
+endif()
+
+# tiled deposit
+if(${tiled_deposit})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/tiled_deposit.cmake)
+else()
+  message(
+    STATUS "tiled_deposit=OFF; using global deposit scheme with ScatterViews")
+endif()
+
+# vendor-specific sorting routines
+if(${vendor_sort})
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/vendor_sort.cmake)
+else()
+  message(STATUS "vendor_sort=OFF; forcing Kokkos::BinSort "
+                 "fallback for spatial sort_by_key")
+endif()
+
 # MPI
 if(${mpi})
-  find_or_fetch_dependency(MPI FALSE REQUIRED)
-  include_directories(${MPI_CXX_INCLUDE_PATH})
-  add_compile_options("-D MPI_ENABLED")
-  set(DEPENDENCIES ${DEPENDENCIES} MPI::MPI_CXX)
-  if(${DEVICE_ENABLED})
-    if(${gpu_aware_mpi})
-      add_compile_options("-D GPU_AWARE_MPI")
-    endif()
-  else()
-    set(gpu_aware_mpi
-        OFF
-        CACHE BOOL "Use explicit copy when using MPI + GPU")
-  endif()
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/mpi.cmake)
 endif()
 
 # Output

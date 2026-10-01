@@ -5,6 +5,7 @@
  *   - ntt::Fields
  * @cpp:
  *   - fields.cpp
+ *   - checkpoint/fields.cpp
  * @namespaces:
  *   - ntt::
  * @note SRPIC engine allocates em(6), bckp(6), cur(3), buff(3)
@@ -175,7 +176,10 @@ namespace ntt {
     void CheckpointRead(adios2::IO&,
                         adios2::Engine&,
                         const adios2::Box<adios2::Dims>&);
-    void CheckpointWrite(adios2::IO&, adios2::Engine&) const;
+    void CheckpointWrite(adios2::IO&,
+                         adios2::Engine&,
+                         const std::vector<ncells_t>&,
+                         const std::vector<ncells_t>&) const;
 #endif
   };
 
