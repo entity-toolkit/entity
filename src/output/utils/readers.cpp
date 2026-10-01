@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace out {
 
@@ -26,6 +27,22 @@ namespace out {
       var.SetSelection(adios2::Box<adios2::Dims>({ local_offset }, { 1 }));
       reader.Get(var, &read_data, adios2::Mode::Sync);
       data = read_data;
+    } else {
+      raise::Error(fmt::format("Variable: %s not found", quantity.c_str()), HERE);
+    }
+  }
+
+  template <typename T>
+  void ReadVariableAll(adios2::IO&        io,
+                       adios2::Engine&    reader,
+                       const std::string& quantity,
+                       std::vector<T>&    data,
+                       std::size_t        count) {
+    auto var = io.InquireVariable<T>(quantity);
+    if (var) {
+      data.resize(count);
+      var.SetSelection(adios2::Box<adios2::Dims>({ 0 }, { count }));
+      reader.Get(var, data.data(), adios2::Mode::Sync);
     } else {
       raise::Error(fmt::format("Variable: %s not found", quantity.c_str()), HERE);
     }
@@ -110,6 +127,11 @@ namespace out {
                              const std::string&,                               \
                              T&,                                               \
                              std::size_t);                                     \
+  template void ReadVariableAll<T>(adios2::IO&,                                \
+                                   adios2::Engine&,                            \
+                                   const std::string&,                         \
+                                   std::vector<T>&,                            \
+                                   std::size_t);                               \
   template void Read1DArray<T>(adios2::IO&,                                    \
                                adios2::Engine&,                                \
                                const std::string&,                             \

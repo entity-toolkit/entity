@@ -4,6 +4,7 @@
  * Defines generic reader functions.
  * @implements
  *   - out::ReadVariable<> -> void
+ *   - out::ReadVariableAll<> -> void
  *   - out::Read1DArray<> -> void
  *   - out::Read2DArray<> -> void
  *   - out::ReadNDField<> -> void
@@ -21,11 +22,25 @@
 #include <adios2.h>
 
 #include <string>
+#include <vector>
 
 namespace out {
 
   template <typename T>
   void ReadVariable(adios2::IO&, adios2::Engine&, const std::string&, T&, std::size_t);
+
+  /**
+   * @brief Read the first `count` elements of a per-domain variable at once.
+   * @note One selection instead of `count` single-element reads: each read
+   *       lands in a different writer's block, so per-element reads cost a
+   *       separate filesystem round-trip apiece.
+   */
+  template <typename T>
+  void ReadVariableAll(adios2::IO&,
+                       adios2::Engine&,
+                       const std::string&,
+                       std::vector<T>&,
+                       std::size_t);
 
   template <typename T>
   void Read1DArray(adios2::IO&,

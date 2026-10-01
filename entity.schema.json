@@ -1943,7 +1943,7 @@
       }
     },
     "adios2": {
-      "description": "ADIOS2 BP5 tuning, applied to both [output] and [checkpoint] writers",
+      "description": "ADIOS2 BP5 tuning, applied to both [output] and [checkpoint] writers; the read_* keys tune the checkpoint reader on restart",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -1981,6 +1981,39 @@
             "notes": [
               "Scales with per-rank output volume; matches ADIOS2's default"
             ]
+          }
+        },
+        "read_threads": {
+          "description": "Size of the BP5 reader thread pool used when resuming (BP5 Threads)",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "x-entity": {
+            "type": "uint",
+            "notes": [
+              "0 lets ADIOS2 size the pool itself. The best value depends on how many ranks share a node, so tune it per machine if restarts are slow"
+            ]
+          }
+        },
+        "read_open_timeout_secs": {
+          "description": "How long to wait for the checkpoint file to appear, in seconds (BP5 OpenTimeoutSecs)",
+          "type": "integer",
+          "minimum": 0,
+          "default": 600,
+          "x-entity": {
+            "type": "uint",
+            "notes": [
+              "Guards against a checkpoint directory that is slow to become visible on a shared filesystem"
+            ]
+          }
+        },
+        "read_poll_secs": {
+          "description": "Polling interval while waiting for the checkpoint file, in seconds (BP5 BeginStepPollingFrequencySecs)",
+          "type": "integer",
+          "minimum": 0,
+          "default": 1,
+          "x-entity": {
+            "type": "uint"
           }
         }
       }

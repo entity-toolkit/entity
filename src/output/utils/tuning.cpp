@@ -51,4 +51,21 @@ namespace out {
     io.SetParameter("OpenTimeoutSecs", "600");
   }
 
+  void ApplyBp5ReadTuning(adios2::IO&          io,
+                          const std::string&   engine,
+                          const Bp5ReadTuning& bp5) {
+    const auto eng = fmt::toLower(engine);
+    if (eng != "bpfile" && eng != "bp5") {
+      return;
+    }
+    // Tolerate a checkpoint directory that is slow to become visible on a
+    // shared filesystem instead of failing the restart outright.
+    io.SetParameter("OpenTimeoutSecs", std::to_string(bp5.open_timeout_secs));
+    io.SetParameter("BeginStepPollingFrequencySecs",
+                    std::to_string(bp5.poll_secs));
+    if (bp5.threads > 0) {
+      io.SetParameter("Threads", std::to_string(bp5.threads));
+    }
+  }
+
 } // namespace out

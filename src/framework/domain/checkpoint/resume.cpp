@@ -1,3 +1,4 @@
+#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -10,6 +11,7 @@
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
 #include "output/utils/readers.h"
+#include "output/utils/tuning.h"
 
 #if defined(MPI_ENABLED)
   #include <mpi.h>
@@ -122,11 +124,17 @@ namespace ntt {
 
     adios2::IO io = ptr_adios->DeclareIO("Entity::CheckpointRead");
     io.SetEngine("BPFile");
-#if !defined(MPI_ENABLED)
+    out::ApplyBp5ReadTuning(
+      io,
+      "BPFile",
+      { params.template get<int>("adios2.read_threads",
+                                 defaults::adios2::read_threads),
+        params.template get<int>("adios2.read_open_timeout_secs",
+                                 defaults::adios2::read_open_timeout_secs),
+        params.template get<int>("adios2.read_poll_secs",
+                                 defaults::adios2::read_poll_secs) });
+
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
-#else
-    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
-#endif
 
     reader.BeginStep();
 
@@ -140,33 +148,36 @@ namespace ntt {
                                  std::numeric_limits<real_t>::lowest());
     }
 
+    // Each subdomain_* variable is read whole, once. Per-domain reads would
+    // cost one filesystem round-trip per domain per rank, since consecutive
+    // entries live in different writers' blocks.
     bool needs_reconstruction = false;
-    for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
-      for (auto d { 0u }; d < M::Dim; ++d) {
-        real_t x_min, x_max;
-        out::ReadVariable<real_t>(io,
-                                  reader,
-                                  fmt::format("subdomain_x%d_min", d + 1),
-                                  x_min,
-                                  dom_idx);
-        out::ReadVariable<real_t>(io,
-                                  reader,
-                                  fmt::format("subdomain_x%d_max", d + 1),
-                                  x_max,
-                                  dom_idx);
-        saved_extents[dom_idx].emplace_back(x_min, x_max);
-        global_extent[d].first  = std::min(global_extent[d].first, x_min);
-        global_extent[d].second = std::max(global_extent[d].second, x_max);
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      std::vector<real_t>   x_min, x_max;
+      std::vector<ncells_t> nx;
+      out::ReadVariableAll<real_t>(io,
+                                   reader,
+                                   fmt::format("subdomain_x%d_min", d + 1),
+                                   x_min,
+                                   g_ndomains);
+      out::ReadVariableAll<real_t>(io,
+                                   reader,
+                                   fmt::format("subdomain_x%d_max", d + 1),
+                                   x_max,
+                                   g_ndomains);
+      out::ReadVariableAll<ncells_t>(io,
+                                     reader,
+                                     fmt::format("subdomain_nx%d", d + 1),
+                                     nx,
+                                     g_ndomains);
 
-        ncells_t nx;
-        out::ReadVariable<ncells_t>(io,
-                                    reader,
-                                    fmt::format("subdomain_nx%d", d + 1),
-                                    nx,
-                                    dom_idx);
-        saved_ncells[dom_idx][d] = nx;
+      for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
+        saved_extents[dom_idx].emplace_back(x_min[dom_idx], x_max[dom_idx]);
+        global_extent[d].first  = std::min(global_extent[d].first, x_min[dom_idx]);
+        global_extent[d].second = std::max(global_extent[d].second, x_max[dom_idx]);
 
-        if (nx != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
+        saved_ncells[dom_idx][d] = nx[dom_idx];
+        if (nx[dom_idx] != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
           needs_reconstruction = true;
         }
       }

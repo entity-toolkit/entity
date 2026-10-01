@@ -102,6 +102,12 @@ namespace ntt::defaults {
     const int    aggregators_per_node = 0;
     const size_t max_shm_size         = 4294967296ull; // 4 GiB
     const size_t buffer_chunk_size    = 16777216ull;   // 16 MiB
+    // Checkpoint-read knobs. read_threads == 0 leaves ADIOS2 auto-sizing its
+    // reader thread pool; the best value depends on the ranks-per-node layout,
+    // so it is left to the input file rather than fixed here.
+    const int    read_threads           = 0;
+    const int    read_open_timeout_secs = 600;
+    const int    read_poll_secs         = 1;
   } // namespace adios2
 
   namespace gca {
