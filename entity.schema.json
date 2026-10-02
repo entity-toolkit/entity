@@ -3,7 +3,7 @@
   "$id": "https://entity-toolkit.github.io/schema/entity.schema.json",
   "title": "entity",
   "description": "Entity simulation input file",
-  "$comment": "GENERATOR CONVENTION -- this schema is the single source of truth for `input.template.toml`. Standard keywords carry the machine-checkable part (type/enum/minimum/maximum/items/prefixItems/minItems/maxItems/pattern/default/required/deprecated). The `x-entity` object carries the parts JSON Schema cannot express, all verbatim from the template comments: `type` = the literal `@type:` annotation (use it for the comment line whenever present, else derive from the standard keywords); `default` = the literal `@default:` annotation (use it whenever present, else format the standard `default`); `notes` = ordered `@note:` lines; `examples` = ordered `@example:` lines; `enum` = an illustrative, NON-exhaustive value list that must not be validated as a real `enum`; `deprecated` = the `@deprecated:` text. `x-entity.inferred` on an object lists quantities the code derives rather than reads; they are NOT valid input keys (so they are absent from `properties` and rejected by `additionalProperties: false`) and should be emitted as an `@inferred:` comment block after that table's own keys and before its sub-tables. Property order in `properties` is the emission order. Objects with `additionalProperties: true` are free-form. `$ref` is used once, for `$defs/colormap`.",
+  "$comment": "GENERATOR CONVENTION -- this schema is the single source of truth for `input.default.toml`. Standard keywords carry the machine-checkable part (type/enum/minimum/maximum/items/prefixItems/minItems/maxItems/pattern/default/required/deprecated). The `x-entity` object carries the parts JSON Schema cannot express, all verbatim from the template comments: `type` = the literal `@type:` annotation (use it for the comment line whenever present, else derive from the standard keywords); `default` = the literal `@default:` annotation (use it whenever present, else format the standard `default`); `notes` = ordered `@note:` lines; `examples` = ordered `@example:` lines; `enum` = an illustrative, NON-exhaustive value list that must not be validated as a real `enum`; `deprecated` = the `@deprecated:` text. `x-entity.inferred` on an object lists quantities the code derives rather than reads; they are NOT valid input keys (so they are absent from `properties` and rejected by `additionalProperties: false`) and should be emitted as an `@inferred:` comment block after that table's own keys and before its sub-tables. Property order in `properties` is the emission order. Objects with `additionalProperties: true` are free-form. `$ref` is used once, for `$defs/colormap`.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -838,6 +838,100 @@
                     "type": "ushort [> 0]"
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "two_body": {
+      "description": "Parameters for two-body interactions",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "thomson_optical_depth": {
+          "description": "Nominal Thomson optical depth: `tau = n0 * sigma_T * 1` over a distance of 1 in physical units (n0 = nominal density)",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0
+        },
+        "interaction": {
+          "description": "Specific interaction parameters",
+          "type": "array",
+          "minItems": 1,
+          "x-entity": {
+            "array_of_tables": true
+          },
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "group1"
+            ],
+            "properties": {
+              "type": {
+                "description": "Type of the two-body interaction",
+                "anyOf": [
+                  {
+                    "enum": [
+                      "Compton"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "(?i)^(Compton)$"
+                  }
+                ],
+                "x-entity": {
+                  "type": "string"
+                }
+              },
+              "group1": {
+                "description": "First group of species indices participating in the interaction",
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "group2": {
+                "description": "Second group of species indices participating in the interaction",
+                "type": "array",
+                "minItems": 0,
+                "default": [],
+                "x-entity": {
+                  "notes": [
+                    "For interactions between particles of the same group, leave `group2` empty"
+                  ]
+                },
+                "items": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "interval": {
+                "description": "Interval in timesteps between checking for the interaction",
+                "type": "integer",
+                "minimum": 1,
+                "default": 1
+              },
+              "tile_size": {
+                "description": "Size of interaction tile in cells",
+                "type": "integer",
+                "minimum": 1,
+                "default": 4
+              },
+              "recoil1": {
+                "description": "Whether to apply recoil to the first group of particles",
+                "type": "boolean",
+                "default": true
+              },
+              "recoil2": {
+                "description": "Whether to apply recoil to the second group of particles",
+                "type": "boolean",
+                "default": true
               }
             }
           }
