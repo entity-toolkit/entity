@@ -144,7 +144,7 @@ namespace ntt {
     {
       std::vector<ncells_t> loc_ncells(M::Dim);
       std::vector<real_t>   loc_xmin(M::Dim), loc_xmax(M::Dim);
-      const auto local_off = static_cast<std::size_t>(g_mpi_rank);
+      const auto            local_off = static_cast<std::size_t>(g_mpi_rank);
       for (auto d { 0u }; d < M::Dim; ++d) {
         out::ReadVariable<real_t>(io,
                                   reader,
