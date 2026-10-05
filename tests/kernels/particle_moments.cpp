@@ -80,8 +80,6 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
                                               0,
                                               0 };
 
-  const float  mass        = 1.0;
-  const float  charge      = 1.0;
   const bool   use_weights = false;
   const real_t inv_n0      = 1.0;
 

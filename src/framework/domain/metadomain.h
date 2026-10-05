@@ -6,11 +6,19 @@
  *   - ntt::Metadomain<>
  * @cpp:
  *   - metadomain.cpp
- *   - metadomain_comm.cpp
- *   - metadomain_chckpt.cpp
- *   - metadomain_io.cpp
  *   - metadomain_stats.cpp
  *   - metadomain_reshape.cpp
+ *   - checkpoint/init.cpp
+ *   - checkpoint/write.cpp
+ *   - checkpoint/resume.cpp
+ *   - comm/fields.cpp
+ *   - comm/fields_sync.cpp
+ *   - comm/particles.cpp
+ *   - comm/vector_potential.cpp
+ *   - io/init.cpp
+ *   - io/write.cpp
+ *   - io/fields.cpp
+ *   - io/spectra.cpp
  * @namespaces:
  *   - ntt::
  * @macros:
@@ -31,6 +39,7 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/mesh.h"
 #include "framework/parameters/parameters.h"
+#include "output/render/renderer.h"
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)
@@ -96,6 +105,9 @@ namespace ntt {
     void SynchronizeFields(Domain<S, M>&,
                            CommTags,
                            const cell_range_t& = { 0, 0 }) const;
+    // Halo-fill of the bckp buffer (neighbor active cells -> local ghosts),
+    // used by the in-situ renderer for seamless trilinear sampling.
+    void CommunicateBckp(Domain<S, M>&, const cell_range_t&) const;
 #if defined(MPI_ENABLED) && defined(OUTPUT_ENABLED)
     void CommunicateVectorPotential(unsigned short);
 #endif
@@ -132,20 +144,43 @@ namespace ntt {
     /* domain update-related ------------------------------------------------ */
     void ShiftByCells(int, in = in::x1);
 
+    /**
+     * @brief Rebalance the load (active particles) across MPI domains by
+     * shifting interior domain boundaries between neighbors.
+     * @param dim_mask bitmask: bit d (0,1,2) set => balance along dim x1/x2/x3
+     * @param tolerance skip if (max-min)/mean of the per-slice load is below
+     * this fraction
+     * @param max_shift_cells per-event cap for any single boundary movement,
+     * additionally clamped to N_GHOSTS so the field strip we need is already
+     * present in the local ghost zone
+     * @note Only neighbor communication is used (CommunicateFields ghosts +
+     * CommunicateParticles).
+     */
+    void Rebalance(unsigned int dim_mask, real_t tolerance, ncells_t max_shift_cells);
+
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
+    using custom_field_output_t = std::function<void(const std::string&,
+                                                     ndfield_t<M::Dim, 6>&,
+                                                     uint32_t,
+                                                     timestep_t,
+                                                     simtime_t,
+                                                     const Domain<S, M>&)>;
     void InitWriter(adios2::ADIOS*, const SimulationParams&);
     auto Write(const SimulationParams&,
                timestep_t,
                timestep_t,
                simtime_t,
                simtime_t,
-               const std::function<void(const std::string&,
-                                        ndfield_t<M::Dim, 6>&,
-                                        uint32_t,
-                                        timestep_t,
-                                        simtime_t,
-                                        const Domain<S, M>&)>& = nullptr) -> bool;
+               const custom_field_output_t& = nullptr) -> bool;
+    void WriteFields(const SimulationParams&,
+                     Domain<S, M>*,
+                     timestep_t,
+                     timestep_t,
+                     simtime_t,
+                     simtime_t,
+                     const custom_field_output_t&);
+    void WriteSpectra(const SimulationParams&, Domain<S, M>*, timestep_t, simtime_t);
     void InitCheckpointWriter(adios2::ADIOS*, const SimulationParams&);
     auto WriteCheckpoint(const SimulationParams&,
                          timestep_t,
@@ -158,16 +193,29 @@ namespace ntt {
                                    const std::vector<boundaries_t<real_t>>&);
 #endif
 
-    void InitStatsWriter(const SimulationParams&, bool);
-    auto WriteStats(
-      const SimulationParams&,
-      timestep_t,
-      timestep_t,
-      simtime_t,
-      simtime_t,
-      const std::function<
-        real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>& = nullptr)
+    /* in-situ renderer (3D volume ray-march & 2D slice) */
+    void InitRenderer(const SimulationParams&);
+    auto Render(const SimulationParams&, timestep_t, timestep_t, simtime_t, simtime_t)
       -> bool;
+    // Prepare the scalar named by a scene's `field` into bckp(:, 0) (active
+    // cells synced; ghosts not yet halo-filled). Shared by the 2D and 3D render
+    // paths so the field grammar (moments, T/V components, |E,B,J|, species
+    // suffix) has a single source of truth. Returns false (and warns) for an
+    // unknown field or invalid species so the caller can skip the scene.
+    auto prepareRenderScalar(const SimulationParams&,
+                             Domain<S, M>&,
+                             const std::string& field_name,
+                             ndfield_t<M::Dim, 6>&) const -> bool;
+
+    using custom_stats_output_t = std::function<
+      real_t(const std::string&, timestep_t, simtime_t, const Domain<S, M>&)>;
+    void InitStatsWriter(const SimulationParams&, bool);
+    auto WriteStats(const SimulationParams&,
+                    timestep_t,
+                    timestep_t,
+                    simtime_t,
+                    simtime_t,
+                    const custom_stats_output_t& = nullptr) -> bool;
 
     /* setters -------------------------------------------------------------- */
     void setFldsBC(const bc_in&, const FldsBC&);
@@ -289,6 +337,7 @@ namespace ntt {
     out::Writer        g_writer;
     checkpoint::Writer g_checkpoint_writer;
 #endif
+    out::Renderer g_renderer;
 
 #if defined(MPI_ENABLED)
     int g_mpi_rank { -1 }, g_mpi_size { -1 };

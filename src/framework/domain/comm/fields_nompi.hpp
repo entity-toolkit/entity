@@ -1,6 +1,6 @@
 /**
- * @file framework/domain/comm_nompi.hpp
- * @brief Communication routines without mpi
+ * @file framework/domain/comm/fields_nompi.hpp
+ * @brief Communication routines for fields without mpi
  * @implements
  *   - comm::CommunicateField<> -> void
  * @namespaces:
@@ -8,8 +8,8 @@
  * @note This should only be included if the MPI_ENABLED flag is not set
  */
 
-#ifndef FRAMEWORK_DOMAIN_COMM_NOMPI_HPP
-#define FRAMEWORK_DOMAIN_COMM_NOMPI_HPP
+#ifndef FRAMEWORK_DOMAIN_COMM_FIELDS_NOMPI_HPP
+#define FRAMEWORK_DOMAIN_COMM_FIELDS_NOMPI_HPP
 
 #include "global.h"
 
@@ -120,4 +120,4 @@ namespace comm {
 
 } // namespace comm
 
-#endif // FRAMEWORK_DOMAIN_COMM_NOMPI_HPP
+#endif // FRAMEWORK_DOMAIN_COMM_FIELDS_NOMPI_HPP

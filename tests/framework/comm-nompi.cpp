@@ -4,7 +4,7 @@
 #include "arch/kokkos_aliases.h"
 #include "utils/numeric.h"
 
-#include "framework/domain/comm_nompi.hpp"
+#include "framework/domain/comm/fields_nompi.hpp"
 
 #include <iostream>
 
