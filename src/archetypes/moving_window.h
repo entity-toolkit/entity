@@ -134,6 +134,54 @@ namespace arch {
     }
   };
 
+#if defined(MPI_ENABLED)
+  /**
+   * @brief Assigns MPI send tags from the particle cell indices.
+   * @note Particles outside the active domain get the tag of the neighbor they belong to.
+   */
+  template <Dimension D>
+  struct PrtlRetag_kernel {
+    array_t<int*>   i1, i2, i3;
+    array_t<short*> tag;
+    const int       ni1, ni2, ni3;
+
+    PrtlRetag_kernel(const array_t<int*>&   i1,
+                     const array_t<int*>&   i2,
+                     const array_t<int*>&   i3,
+                     const array_t<short*>& tag,
+                     int                    ni1,
+                     int                    ni2,
+                     int                    ni3)
+      : i1 { i1 }
+      , i2 { i2 }
+      , i3 { i3 }
+      , tag { tag }
+      , ni1 { ni1 }
+      , ni2 { ni2 }
+      , ni3 { ni3 } {}
+
+    Inline void operator()(prtlidx_t p) const {
+      if constexpr (D == Dim::_1D) {
+        tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
+      } else if constexpr (D == Dim::_2D) {
+        tag(p) = mpi::SendTag(tag(p),
+                              i1(p) < 0,
+                              i1(p) >= ni1,
+                              i2(p) < 0,
+                              i2(p) >= ni2);
+      } else if constexpr (D == Dim::_3D) {
+        tag(p) = mpi::SendTag(tag(p),
+                              i1(p) < 0,
+                              i1(p) >= ni1,
+                              i2(p) < 0,
+                              i2(p) >= ni2,
+                              i3(p) < 0,
+                              i3(p) >= ni3);
+      }
+    }
+  };
+#endif // MPI_ENABLED
+
   /**
    * @brief Updates particle position and fields in the moving window.
 
@@ -213,32 +261,15 @@ namespace arch {
                       : 0;
     for (auto s { 0u }; s < nspec; ++s) {
       auto& species = domain.species[s];
-      auto  i1      = species.i1;
-      auto  i2      = species.i2;
-      auto  i3      = species.i3;
-      auto  tag     = species.tag;
-      Kokkos::parallel_for(
-        "RetagWindowParticles",
-        species.rangeActiveParticles(),
-        Lambda(prtlidx_t p) {
-          if constexpr (M::Dim == Dim::_1D) {
-            tag(p) = mpi::SendTag(tag(p), i1(p) < 0, i1(p) >= ni1);
-          } else if constexpr (M::Dim == Dim::_2D) {
-            tag(p) = mpi::SendTag(tag(p),
-                                  i1(p) < 0,
-                                  i1(p) >= ni1,
-                                  i2(p) < 0,
-                                  i2(p) >= ni2);
-          } else if constexpr (M::Dim == Dim::_3D) {
-            tag(p) = mpi::SendTag(tag(p),
-                                  i1(p) < 0,
-                                  i1(p) >= ni1,
-                                  i2(p) < 0,
-                                  i2(p) >= ni2,
-                                  i3(p) < 0,
-                                  i3(p) >= ni3);
-          }
-        });
+      Kokkos::parallel_for("RetagWindowParticles",
+                           species.rangeActiveParticles(),
+                           PrtlRetag_kernel<M::Dim>(species.i1,
+                                                    species.i2,
+                                                    species.i3,
+                                                    species.tag,
+                                                    ni1,
+                                                    ni2,
+                                                    ni3));
     }
 
 #endif
