@@ -4,7 +4,7 @@
  * @implements
  *   - ClassLambda, Lambda, Function, Inline macros
  *   - array_t, array_mirror_t, scatter_array_t
- *   - ndarray_t, ndfield_t
+ *   - nddata_t, scatter_nddata_t, ndarray_t, ndfield_t
  *   - ndfield_mirror_t, scatter_ndfield_t
  *   - range_t, range_h_t
  *   - CreateRangePolicy, CreateRangePolicyOnHost
@@ -79,6 +79,38 @@ namespace kokkos_aliases_hidden {
 
 template <unsigned short D, typename T>
 using nddata_t = typename kokkos_aliases_hidden::nddata_impl<D, T>::type;
+
+// Scatter view for nddata
+namespace kokkos_aliases_hidden {
+  // c++ magic
+  template <unsigned short D, typename T>
+  struct scatter_nddata_impl {
+    using type = void;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<1, T> {
+    using type = scatter_array_t<T*>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<2, T> {
+    using type = scatter_array_t<T**>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<3, T> {
+    using type = scatter_array_t<T***>;
+  };
+
+  template <typename T>
+  struct scatter_nddata_impl<4, T> {
+    using type = scatter_array_t<T****>;
+  };
+} // namespace kokkos_aliases_hidden
+
+template <unsigned short D, typename T>
+using scatter_nddata_t = typename kokkos_aliases_hidden::scatter_nddata_impl<D, T>::type;
 
 template <unsigned short D>
 using ndarray_t = typename kokkos_aliases_hidden::nddata_impl<D, real_t>::type;
@@ -332,7 +364,7 @@ template <Dimension D>
 auto CreateRangePolicyOnHost(const tuple_t<ncells_t, D>&,
                              const tuple_t<ncells_t, D>&) -> range_h_t<D>;
 
-// --------------------------- team_policy types ---------------------------- //
+// ------------------------- tiled_deposit types --------------------------- //
 // Particle permutation index: maps a sorted-position p in [0, npart) to a
 // pre-sort particle index. Produced by SortSpatially, consumed by tiled
 // pusher and deposit kernels to walk particles tile-by-tile without

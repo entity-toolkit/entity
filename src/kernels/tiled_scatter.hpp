@@ -13,8 +13,8 @@
  * their body writes through.
  *
  * @implements
- *   - kernel::TiledScatter_kernel<>   (TEAM_POLICY only)
- *   - kernel::MakeTiledPolicy<>       (TEAM_POLICY only, host)
+ *   - kernel::TiledScatter_kernel<>   (TILED_DEPOSIT only)
+ *   - kernel::MakeTiledPolicy<>       (TILED_DEPOSIT only, host)
  * @namespaces:
  *   - kernel::
  */
@@ -31,7 +31,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
 
 namespace kernel {
   using namespace ntt;
@@ -54,9 +54,9 @@ namespace kernel {
    *   NC      : number of scratch components accumulated per cell
    *   NG      : component count of the global field view (NC <= NG)
    *   REACH   : one-sided stencil reach in cells, used ONLY for halo
-   *             sizing: HALO = REACH + DRIFT (DRIFT = TEAM_POLICY_DRIFT,
+   *             sizing: HALO = REACH + DRIFT (DRIFT = TILED_DEPOSIT_DRIFT,
    *             default 1)
-   *   T_TILE  : tile edge length (TEAM_POLICY_TILE_SIZE)
+   *   T_TILE  : tile edge length (TILED_DEPOSIT_TILE_SIZE)
    *   Body    : per-particle functor, see contract below
    *
    * **Body contract** (device-callable, captured by value):
@@ -76,8 +76,8 @@ namespace kernel {
    *
    * **Halo sizing and escape valve.** The scratch HALO is
    * `REACH + DRIFT`: REACH is the one-sided stencil reach the caller
-   * instantiates with, DRIFT is the `team_policy_drift` CMake knob (macro
-   * TEAM_POLICY_DRIFT) — the number of cells a particle may drift between
+   * instantiates with, DRIFT is the `tiled_deposit_drift` CMake knob (macro
+   * TILED_DEPOSIT_DRIFT) — the number of cells a particle may drift between
    * two sorts that the halo is sized to absorb — and `1` by default (the
    * every-step-sorted common case). It is independent of the sort
    * cadence, which is set at runtime via `spatial_sorting_interval`;
@@ -117,8 +117,8 @@ namespace kernel {
     static_assert(REACH >= 0, "REACH must be non-negative");
 
   public:
-#if defined(TEAM_POLICY_DRIFT)
-    static constexpr int DRIFT = static_cast<int>(TEAM_POLICY_DRIFT);
+#if defined(TILED_DEPOSIT_DRIFT)
+    static constexpr int DRIFT = static_cast<int>(TILED_DEPOSIT_DRIFT);
 #else
     static constexpr int DRIFT = 1;
 #endif
@@ -470,11 +470,11 @@ namespace kernel {
    * `Kern::scratch_bytes()`. The default (team_size_req == 0) leaves
    * Kokkos::AUTO, which sizes the team from the backend occupancy
    * heuristic. A positive request (runtime param
-   * `algorithms.deposit.team_policy_team_size`) overrides it, clamped to
+   * `algorithms.deposit.tiled_deposit_team_size`) overrides it, clamped to
    * the scratch/backend-feasible maximum so an over-large request cannot
    * abort the launch (Kokkos errors when team_size > team_size_max). No
    * portable subgroup rounding is applied; pick a multiple of the device
-   * subgroup width (printed per arch by ideal_tile_size.py) for the best
+   * subgroup width (printed per arch by scripts/ideal_tile_size.py) for the best
    * occupancy.
    *
    * The *tail pass* over `[npart_partitioned, npart)` and the *flat
@@ -493,7 +493,7 @@ namespace kernel {
       int       ts     = team_size_req;
       if (ts > ts_max) {
         raise::Warning(
-          fmt::format("algorithms.deposit.team_policy_team_size = %d exceeds "
+          fmt::format("algorithms.deposit.tiled_deposit_team_size = %d exceeds "
                       "the tiled-scatter maximum %d on this backend; clamping "
                       "to %d",
                       team_size_req,
@@ -512,6 +512,6 @@ namespace kernel {
 
 } // namespace kernel
 
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
 
 #endif // KERNELS_TILED_SCATTER_HPP

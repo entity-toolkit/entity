@@ -109,10 +109,13 @@ namespace traits::extfields {
 template <class F, Dimension D>
 concept ExtFieldsPolicyClass =
   (::traits::fieldsetter::HasFx1<F, D> or ::traits::fieldsetter::HasFx2<F, D> or
-   ::traits::fieldsetter::HasFx3<F, D> or ::traits::fieldsetter::HasEx1<F, D> or
-   ::traits::fieldsetter::HasEx2<F, D> or ::traits::fieldsetter::HasEx3<F, D> or
-   ::traits::fieldsetter::HasBx1<F, D> or ::traits::fieldsetter::HasBx2<F, D> or
-   ::traits::fieldsetter::HasBx3<F, D>) or
+   ::traits::fieldsetter::HasFx3<F, D> or
+   ::traits::fieldsetter::HasFx1WithIndex<F, D> or
+   ::traits::fieldsetter::HasFx2WithIndex<F, D> or
+   ::traits::fieldsetter::HasFx3WithIndex<F, D> or
+   ::traits::fieldsetter::HasEx1<F, D> or ::traits::fieldsetter::HasEx2<F, D> or
+   ::traits::fieldsetter::HasEx3<F, D> or ::traits::fieldsetter::HasBx1<F, D> or
+   ::traits::fieldsetter::HasBx2<F, D> or ::traits::fieldsetter::HasBx3<F, D>) or
   ::traits::extfields::IsNoPolicy<F>;
 
 namespace traits::custom_prtl_update {

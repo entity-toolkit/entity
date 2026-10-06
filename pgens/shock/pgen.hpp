@@ -120,7 +120,7 @@ namespace user {
       return init_flds;
     }
 
-    auto FixFieldsConst(const bc_in&, const em& comp) const
+    auto FixFieldsConst(simtime_t, const bc_in&, const em& comp) const
       -> std::pair<real_t, bool> {
       if (comp == em::ex1) {
         return { init_flds.ex1({ ZERO }), true };

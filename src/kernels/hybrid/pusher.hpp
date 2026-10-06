@@ -40,7 +40,7 @@
  *                   write back x^(n+1), v^(n+1) (+ i/dx_prev) and apply particle BCs.
  *
  * SINK ROUTING. The per-particle flow is shared between the flat and the tiled
- * (TEAM_POLICY) launches through a sink object (see the TiledScatter_kernel
+ * (TILED_DEPOSIT) launches through a sink object (see the TiledScatter_kernel
  * body contract in kernels/tiled_scatter.hpp): after the push, the kernel
  * `select()`s the deposit-time footprint (computed from the post-push register
  * position) on the sink and emits each stencil write through it. The flat
@@ -164,7 +164,7 @@ namespace kernel::hybrid {
       , dt_half { HALF * ctx.dt } {}
 
     /**
-     * Tiled-body constructor (TEAM_POLICY launch): the deposit goes through
+     * Tiled-body constructor (TILED_DEPOSIT launch): the deposit goes through
      * the TiledScatter_kernel sink instead of a ScatterView, so `moments`
      * stays empty and is never accessed on this path (only the sink entry
      * point below is called by the harness).
@@ -235,7 +235,7 @@ namespace kernel::hybrid {
 
     // ........................................................................
     // main per-particle update — sink entry, shared by the flat launch
-    // (FlatSink above) and the tiled TEAM_POLICY launch (harness Sink; see
+    // (FlatSink above) and the tiled TILED_DEPOSIT launch (harness Sink; see
     // the body contract in kernels/tiled_scatter.hpp)
     // ........................................................................
     template <class SinkLike>

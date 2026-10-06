@@ -21,7 +21,7 @@
  * drift by dt*v — exercising the post-push footprint select without
  * mutating the SoA, so flat and tiled share one particle set).
  *
- * Built only when `team_policy=ON` (`-D TEAM_POLICY` defined).
+ * Built only when `tiled_deposit=ON` (`-D TILED_DEPOSIT` defined).
  */
 
 #include "enums.h"

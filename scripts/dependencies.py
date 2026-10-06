@@ -5,13 +5,8 @@ from __future__ import annotations
 import curses
 import json
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional, Tuple
-
-
-# ============================
-# colors: edit these
-# ============================
 
 # foreground colors (use curses.COLOR_* or -1 for default)
 COLOR_TITLE_FG = curses.COLOR_BLUE
@@ -53,17 +48,17 @@ class Settings:
     )
 
     # versions
-    kokkos_version: str = "5.0.1"
-    adios2_version: str = "2.11.0"
+    kokkos_version: str = "5.2.1"
+    adios2_version: str = "2.12.1"
 
     # options
     kokkos_backend: str = "cpu"
     kokkos_arch: str = ""
-    extra_kokkos_flags: List[str] = field(default_factory=list)
+    extra_kokkos_flags: list[str] = field(default_factory=list)
     adios2_mpi: str = "non-mpi"
-    extra_adios2_flags: List[str] = field(default_factory=list)
+    extra_adios2_flags: list[str] = field(default_factory=list)
 
-    module_loads: List[str] = field(default_factory=list)
+    module_loads: list[str] = field(default_factory=list)
 
     def from_json(self, json_str: str) -> None:
         data = json.loads(json_str)
@@ -135,7 +130,9 @@ def InstallKokkosScriptModfile(settings: Settings) -> tuple[str, str]:
             [f"module load {module}" for module in settings.module_loads]
         )
         src_path = os.path.join(prefix, "src", "kokkos")
-        install_path = os.path.join(prefix, "kokkos", version, backend, arch.lower() if arch else "")
+        install_path = os.path.join(
+            prefix, "kokkos", version, backend, arch.lower() if arch else ""
+        )
         if os.path.exists(install_path) and not settings.overwrite:
             raise FileExistsError(
                 f"Kokkos install path {install_path} already exists and overwrite is disabled"
@@ -159,7 +156,7 @@ cmake -B build \\
     -D CMAKE_CXX_STANDARD={cxx_standard} \\
     -D CMAKE_CXX_EXTENSIONS=OFF \\
     -D CMAKE_POSITION_INDEPENDENT_CODE=TRUE \\
-    -D Kokkos_ARCH_{arch}=ON {f'-D Kokkos_ENABLE_{backend.upper()}=ON' if backend != 'cpu' else ''} \\
+    -D Kokkos_ARCH_{arch}=ON {f"-D Kokkos_ENABLE_{backend.upper()}=ON" if backend != "cpu" else ""} \\
     -D CMAKE_INSTALL_PREFIX={install_path} {extra_flags} && \\
 cmake --build build -j $(nproc) && \\
 cmake --install build"""
@@ -184,7 +181,7 @@ prepend-path       PATH         $basedir/bin
 setenv             Kokkos_DIR   $basedir
 
 setenv Kokkos_ARCH_{arch} ON
-{f'setenv Kokkos_ENABLE_{backend.upper()} ON' if backend != 'cpu' else ''}"""
+{f"setenv Kokkos_ENABLE_{backend.upper()} ON" if backend != "cpu" else ""}"""
 
         return (unindent(script), unindent(modfile))
 
@@ -300,7 +297,7 @@ PRESETS = {
     },
     "stellar": {"module_loads": []},
     "perlmutter": {
-        "module_loads": ["gpu/1.0"],
+        "module_loads": ["gpu/1.0", "python/3.14-26.8.1"],
         "kokkos_backend": "cuda",
         "kokkos_arch": "AMPERE80",
         "extra_kokkos_flags": [
@@ -313,17 +310,19 @@ PRESETS = {
         ],
     },
     "lumi": {
-        "module_loads": ["PrgEnv-cray", "cray-mpich", "craype-accel-amd-gfx90a", "rocm"],
+        "module_loads": [
+            "PrgEnv-cray",
+            "cray-mpich",
+            "craype-accel-amd-gfx90a",
+            "rocm",
+        ],
         "kokkos_backend": "hip",
         "kokkos_arch": "AMD_GFX90A",
         "extra_kokkos_flags": [
             "CMAKE_CXX_COMPILER=hipcc",
             "AMDGPU_TARGETS=gfx90a",
         ],
-        "extra_adios2_flags": [
-            "CMAKE_CXX_COMPILER=CC",
-            "CMAKE_C_COMPILER=cc"
-        ]
+        "extra_adios2_flags": ["CMAKE_CXX_COMPILER=CC", "CMAKE_C_COMPILER=cc"],
     },
     "frontier": {"module_loads": []},
     "aurora": {"module_loads": []},
@@ -366,7 +365,7 @@ def on_install_confirmed(settings: Settings) -> None:
                 "modules",
                 "kokkos",
                 settings.kokkos_version,
-                settings.kokkos_backend, 
+                settings.kokkos_backend,
             )
             if settings.kokkos_arch.strip().lower():
                 kokkos_modfile_file = os.path.join(kokkos_modfile_file, settings.kokkos_arch.strip().lower())
@@ -413,17 +412,16 @@ def on_install_confirmed(settings: Settings) -> None:
     settings_json = os.path.join(settings.install_prefix, "settings.json")
     with open(settings_json, "w") as f:
         f.write(settings.to_json())
-    return
 
 
 @dataclass
 class MenuItem:
     label: str
     hint: str = ""
-    right: Optional[Callable[[], str]] = None
-    on_enter: Optional[Callable[[], None]] = None
-    on_space: Optional[Callable[[], None]] = None
-    disabled: Optional[Callable[[], bool]] = None
+    right: Callable[[], str] | None = None
+    on_enter: Callable[[], None] | None = None
+    on_space: Callable[[], None] | None = None
+    disabled: Callable[[], bool] | None = None
 
 
 class TuiExitInstall(Exception):
@@ -440,7 +438,7 @@ class App:
             self.s.from_json(json.dumps(data))
 
         self.state = "mainmenu"
-        self.stack: List[Tuple[str, int]] = []
+        self.stack: list[tuple[str, int]] = []
         self.selected = 0
         self.scroll = 0
         self.message = "use arrows or j/k"
@@ -518,7 +516,7 @@ class App:
         except curses.error:
             pass
 
-    def draw_keybar(self, y: int, x: int, pairs: List[Tuple[str, str]]) -> None:
+    def draw_keybar(self, y: int, x: int, pairs: list[tuple[str, str]]) -> None:
         cur_x = x
         for key, action in pairs:
             self.add(y, cur_x, key, self.cp(PAIR_KEY) | curses.A_BOLD)
@@ -547,7 +545,7 @@ class App:
             return f"mainmenu › cluster-specific › {self.s.cluster}"
         return "mainmenu"
 
-    def draw_menu(self, title: str, prompt: str, items: List[MenuItem]) -> None:
+    def draw_menu(self, title: str, prompt: str, items: list[MenuItem]) -> None:
         self.stdscr.erase()
         h, w = self.stdscr.getmaxyx()
 
@@ -588,8 +586,7 @@ class App:
         else:
             self.selected = max(0, min(self.selected, n - 1))
 
-            if self.selected < self.scroll:
-                self.scroll = self.selected
+            self.scroll = min(self.scroll, self.selected)
             if self.selected >= self.scroll + view_h:
                 self.scroll = self.selected - view_h + 1
             self.scroll = max(0, min(self.scroll, max(0, n - view_h)))
@@ -638,7 +635,7 @@ class App:
 
     # ----- modals -----
 
-    def input_box(self, title: str, prompt: str, initial: str) -> Optional[str]:
+    def input_box(self, title: str, prompt: str, initial: str) -> str | None:
         h, w = self.stdscr.getmaxyx()
         win_h, win_w = 9, min(86, max(46, w - 6))
         top, left = max(0, (h - win_h) // 2), max(0, (w - win_w) // 2)
@@ -716,7 +713,7 @@ class App:
 
     # ----- helpers -----
 
-    def cycle(self, current: str, options: List[str]) -> str:
+    def cycle(self, current: str, options: list[str]) -> str:
         if current not in options:
             return options[0]
         i = options.index(current)
@@ -756,8 +753,7 @@ class App:
                 self.add(list_y, 2, "(empty) press a to add", self.cp(PAIR_HINT))
             else:
                 self.mod_sel = max(0, min(self.mod_sel, n - 1))
-                if self.mod_sel < self.mod_scroll:
-                    self.mod_scroll = self.mod_sel
+                self.mod_scroll = min(self.mod_scroll, self.mod_sel)
                 if self.mod_sel >= self.mod_scroll + view_h:
                     self.mod_scroll = self.mod_sel - view_h + 1
                 self.mod_scroll = max(0, min(self.mod_scroll, max(0, n - view_h)))
@@ -845,7 +841,7 @@ class App:
 
     # ----- menus -----
 
-    def versions_menu(self) -> Tuple[str, str, List[MenuItem]]:
+    def versions_menu(self) -> tuple[str, str, list[MenuItem]]:
         def edit_kokkos():
             val = self.input_box(
                 "kokkos version", "enter version/tag:", self.s.kokkos_version
@@ -880,7 +876,7 @@ class App:
             ],
         )
 
-    def options_menu(self) -> Tuple[str, str, List[MenuItem]]:
+    def options_menu(self) -> tuple[str, str, list[MenuItem]]:
         def cycle_kokkos():
             self.s.kokkos_backend = self.cycle(self.s.kokkos_backend, KOKKOS_BACKENDS)
 
@@ -909,7 +905,7 @@ class App:
                 MenuItem(
                     "kokkos arch",
                     "enter to edit (optional)",
-                    right=lambda: (self.s.kokkos_arch.strip() or "-"),
+                    right=lambda: self.s.kokkos_arch.strip() or "-",
                     on_enter=edit_kokkos_arch,
                     disabled=lambda: not self.s.apps.get("Kokkos", False),
                 ),
@@ -925,7 +921,7 @@ class App:
             ],
         )
 
-    def menu_main(self) -> Tuple[str, str, List[MenuItem]]:
+    def menu_main(self) -> tuple[str, str, list[MenuItem]]:
         return (
             "entity deps",
             "main menu:",
@@ -944,7 +940,7 @@ class App:
             ],
         )
 
-    def menu_custom(self) -> Tuple[str, str, List[MenuItem]]:
+    def menu_custom(self) -> tuple[str, str, list[MenuItem]]:
         def toggle_write_modulefiles():
             self.s.write_modulefiles = not self.s.write_modulefiles
 
@@ -1057,7 +1053,7 @@ class App:
             ],
         )
 
-    def menu_apps(self) -> Tuple[str, str, List[MenuItem]]:
+    def menu_apps(self) -> tuple[str, str, list[MenuItem]]:
         def toggle(k: str):
             self.s.apps[k] = not self.s.apps.get(k, False)
 
@@ -1089,19 +1085,23 @@ class App:
             ],
         )
 
-    def menu_cluster(self) -> Tuple[str, str, List[MenuItem]]:
+    def menu_cluster(self) -> tuple[str, str, list[MenuItem]]:
         def choose(name: str):
-            print ("CALLING:", name)
+            print("CALLING:", name)
             apply_preset(self.s, name)
             self.push("custom")
 
         return (
             "cluster-specific",
             "pick a preset:",
-            [MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c)) for cluster in list(PRESETS.keys())] + [MenuItem("back", "", on_enter=self.pop)],
+            [
+                MenuItem(cluster, "apply preset", on_enter=lambda c=cluster: choose(c))
+                for cluster in list(PRESETS.keys())
+            ]
+            + [MenuItem("back", "", on_enter=self.pop)],
         )
 
-    def get_menu(self) -> Tuple[str, str, List[MenuItem]]:
+    def get_menu(self) -> tuple[str, str, list[MenuItem]]:
         if self.state == "mainmenu":
             return self.menu_main()
         if self.state == "custom":
@@ -1122,7 +1122,7 @@ class App:
     def is_disabled(self, it: MenuItem) -> bool:
         return bool(it.disabled and it.disabled())
 
-    def move_sel(self, items: List[MenuItem], delta: int) -> None:
+    def move_sel(self, items: list[MenuItem], delta: int) -> None:
         if not items:
             return
         n = len(items)
@@ -1133,7 +1133,7 @@ class App:
                 return
         self.selected = start
 
-    def activate(self, items: List[MenuItem], enter: bool) -> None:
+    def activate(self, items: list[MenuItem], enter: bool) -> None:
         if not items:
             return
         it = items[self.selected]
@@ -1183,10 +1183,7 @@ class App:
 
 def _wrapper_capture(stdscr) -> None:
     app = App(stdscr)
-    try:
-        app.run()
-    except TuiExitInstall:
-        raise
+    app.run()
 
 
 if __name__ == "__main__":

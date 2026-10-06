@@ -63,7 +63,7 @@ namespace diag {
     const std::size_t tot_npart = std::accumulate(mpi_npart.begin(),
                                                   mpi_npart.end(),
                                                   static_cast<std::size_t>(0));
-    const npart_t max_idx   = std::distance(
+    const npart_t     max_idx   = std::distance(
       mpi_npart.begin(),
       std::max_element(mpi_npart.begin(), mpi_npart.end()));
     const npart_t min_idx = std::distance(
@@ -90,6 +90,7 @@ namespace diag {
                         const std::vector<npart_t>&     species_maxnpart,
                         bool                            print_prtl_clear,
                         bool                            print_output,
+                        bool                            print_render,
                         bool                            print_checkpoint,
                         bool                            print_colors) {
     DiagFlags  diag_flags  = Diag::Default;
@@ -105,6 +106,9 @@ namespace diag {
     }
     if (print_output) {
       timer_flags |= Timer::PrintOutput;
+    }
+    if (print_render) {
+      timer_flags |= Timer::PrintRender;
     }
     if (print_checkpoint) {
       timer_flags |= Timer::PrintCheckpoint;

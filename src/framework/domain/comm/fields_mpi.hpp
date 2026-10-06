@@ -1,6 +1,6 @@
 /**
- * @file framework/domain/comm_mpi.hpp
- * @brief MPI communication routines
+ * @file framework/domain/comm/fields_mpi.hpp
+ * @brief MPI communication routines for fields
  * @implements
  *   - comm::CommunicateField<> -> void
  * @namespaces:
@@ -8,8 +8,8 @@
  * @note This should only be included if the MPI_ENABLED flag is set
  */
 
-#ifndef FRAMEWORK_DOMAIN_COMM_MPI_HPP
-#define FRAMEWORK_DOMAIN_COMM_MPI_HPP
+#ifndef FRAMEWORK_DOMAIN_COMM_FIELDS_MPI_HPP
+#define FRAMEWORK_DOMAIN_COMM_FIELDS_MPI_HPP
 
 #include "global.h"
 
@@ -367,4 +367,4 @@ namespace comm {
 
 } // namespace comm
 
-#endif // FRAMEWORK_DOMAIN_COMM_MPI_HPP
+#endif // FRAMEWORK_DOMAIN_COMM_FIELDS_MPI_HPP

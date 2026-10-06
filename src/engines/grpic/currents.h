@@ -3,7 +3,7 @@
  * @brief Current deposition and filtering routines for the GRPIC engine
  * @implements
  *   - ntt::grpic::CallDepositKernel<> -> void                 (flat path)
- *   - ntt::grpic::CallDepositKernelTiled<> -> void            (TEAM_POLICY)
+ *   - ntt::grpic::CallDepositKernelTiled<> -> void            (TILED_DEPOSIT)
  *   - ntt::grpic::CurrentsDeposit<> -> void
  *   - ntt::grpic::CurrentsFilter<> -> void
  * @namespaces:
@@ -25,7 +25,8 @@
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
-#include "kernels/currents_deposit.hpp"
+#include "kernels/deposition/currents/global.hpp"
+#include "kernels/deposition/currents/tiled.hpp"
 #include "kernels/digital_filter.hpp"
 
 namespace ntt {
@@ -46,25 +47,25 @@ namespace ntt {
                              dt));
     }
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
-     * Identical in structure to the SRPIC launcher (`engines/srpic/currents.h`):
-     * iterates over `tile_layout.ntiles_total` teams; each team accumulates its
-     * tile's particle contributions in SLM scratch and atomically flushes to the
-     * global J (here `cur0`, the GRPIC half-step current). Requires the species
-     * to have been sorted with `team_policy` enabled (`tile_layout` populated by
-     * `SortSpatially`).
+     * Identical in structure to the SRPIC launcher
+     * (`engines/srpic/currents.h`): iterates over `tile_layout.ntiles_total`
+     * teams; each team accumulates its tile's particle contributions in SLM
+     * scratch and atomically flushes to the global J (here `cur0`, the GRPIC
+     * half-step current). Requires the species to have been sorted with
+     * `tiled_deposit` enabled (`tile_layout` populated by `SortSpatially`).
      *
-     * The deposit body (`kernel::DepositOneParticle<SimEngine::GRPIC, M, O>`) is
-     * the same shared math used by the flat path — it already carries the GR
+     * The deposit body (`kernel::DepositOneParticle<SimEngine::GRPIC, M, O>`)
+     * is the same shared math used by the flat path — it already carries the GR
      * velocity-recovery branch — so the only engine-specific differences from
      * SRPIC are the `SimEngine::GRPIC` tag and the `cur0` target.
      *
      * Falls back to the flat kernel for the tail `[npart_partitioned, npart)`
      * exactly as SRPIC does; see the per-step coverage note in
-     * `kernels/currents_deposit.hpp`.
+     * `kernels/deposition/currents/tiled.hpp`.
      */
     template <GRMetricClass M, unsigned short O>
     void CallDepositKernelTiled(const Particles<M::Dim, M::CoordType>& species,
@@ -74,7 +75,7 @@ namespace ntt {
                                 int                         team_size_req) {
       static_assert(O <= 11u, "Shape order must be <= 11");
       constexpr unsigned short T = static_cast<unsigned short>(
-        TEAM_POLICY_TILE_SIZE);
+        TILED_DEPOSIT_TILE_SIZE);
       const auto& layout = species.tile_layout();
       raise::ErrorIf(layout.ntiles_total == 0u,
                      "CallDepositKernelTiled: tile_layout has 0 tiles — call "
@@ -87,8 +88,8 @@ namespace ntt {
 
       auto deposit_kernel =
         kernel::DepositCurrentsTiled_kernel<SimEngine::GRPIC, M, O, T> {
-          cur,    species, local_metric, (real_t)(species.charge()),
-          dt,     layout,  species.npart()
+          cur, species, local_metric,   (real_t)(species.charge()),
+          dt,  layout,  species.npart()
         };
 
       // Policy boilerplate (scratch sizing, optional explicit team size with
@@ -123,7 +124,7 @@ namespace ntt {
         Kokkos::Experimental::contribute(cur_nc, scatter_cur);
       }
     }
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
 
     template <GRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::GRPIC, M>& domain,
@@ -133,12 +134,12 @@ namespace ntt {
       // pre-zeros it — this is the single source of truth, matching SRPIC).
       Kokkos::deep_copy(domain.fields.cur0, ZERO);
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       // Optional runtime override for the tiled-deposit team (work-group) size;
       // 0 (default) keeps Kokkos::AUTO. Clamped to the backend max in the
       // launcher (see CallDepositKernelTiled).
       const auto team_size_req = static_cast<int>(
-        engine_params.get<std::size_t>("team_policy_team_size",
+        engine_params.get<std::size_t>("tiled_deposit_team_size",
                                        std::optional<std::size_t> { 0u }));
 
       // Tiled deposit. Correctness no longer depends on the SoA being in a
@@ -148,7 +149,7 @@ namespace ntt {
       // only case the tiled kernel cannot serve is the very first step, before
       // any SortSpatially has populated a layout; that species takes the flat
       // scatter-view path for that step alone. See engines/srpic/currents.h and
-      // kernels/currents_deposit.hpp for the full coverage argument.
+      // kernels/deposition/currents/tiled.hpp for the full coverage argument.
       for (auto& species : domain.species) {
         if ((species.pusher() == ParticlePusher::NONE) or
             (species.npart() == 0) or cmp::AlmostZero_host(species.charge())) {

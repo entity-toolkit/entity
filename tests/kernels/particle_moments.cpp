@@ -79,6 +79,7 @@ void testParticleMoments(const std::vector<ncells_t>&         res,
                                               EmissionType::NONE,
                                               0,
                                               0 };
+
   const bool   use_weights = false;
   const real_t inv_n0      = 1.0;
 

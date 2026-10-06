@@ -3,7 +3,7 @@
  * @brief Current deposition and filtering routines for the SRPIC engine
  * @implements
  *   - ntt::srpic::CallDepositKernel<> -> void                 (flat path)
- *   - ntt::srpic::CallDepositKernelTiled<> -> void            (TEAM_POLICY)
+ *   - ntt::srpic::CallDepositKernelTiled<> -> void            (TILED_DEPOSIT)
  *   - ntt::srpic::CurrentsDeposit<> -> void
  *   - ntt::srpic::CurrentsFilter<> -> void
  * @namespaces:
@@ -24,7 +24,8 @@
 #include "engines/srpic/utils.h"
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
-#include "kernels/currents_deposit.hpp"
+#include "kernels/deposition/currents/global.hpp"
+#include "kernels/deposition/currents/tiled.hpp"
 #include "kernels/digital_filter.hpp"
 
 #include <utility>
@@ -47,14 +48,14 @@ namespace ntt {
                              dt));
     }
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
     /**
      * @brief Tiled deposit launcher (TeamPolicy + per-team scratch).
      *
      * Iterates over `tile_layout.ntiles_total` teams; each team accumulates
      * its tile's particle contributions in SLM scratch and atomically
      * flushes to the global J. Requires the species to have been sorted
-     * with `team_policy` enabled (`tile_layout` populated by
+     * with `tiled_deposit` enabled (`tile_layout` populated by
      * `SortSpatially`).
      *
      * Falls back to the flat kernel if `tile_offsets` is empty — this
@@ -70,7 +71,7 @@ namespace ntt {
                                 int                         team_size_req) {
       static_assert(O <= 11u, "Shape order must be <= 11");
       constexpr unsigned short T = static_cast<unsigned short>(
-        TEAM_POLICY_TILE_SIZE);
+        TILED_DEPOSIT_TILE_SIZE);
       const auto& layout = species.tile_layout();
       raise::ErrorIf(layout.ntiles_total == 0u,
                      "CallDepositKernelTiled: tile_layout has 0 tiles — call "
@@ -83,8 +84,8 @@ namespace ntt {
 
       auto deposit_kernel =
         kernel::DepositCurrentsTiled_kernel<SimEngine::SRPIC, M, O, T> {
-          cur,    species, local_metric, (real_t)(species.charge()),
-          dt,     layout,  species.npart()
+          cur, species, local_metric,   (real_t)(species.charge()),
+          dt,  layout,  species.npart()
         };
 
       // Policy boilerplate (scratch sizing, optional explicit team size with
@@ -119,7 +120,7 @@ namespace ntt {
         Kokkos::Experimental::contribute(cur_nc, scatter_cur);
       }
     }
-#endif // TEAM_POLICY
+#endif // TILED_DEPOSIT
 
     template <SRMetricClass M>
     void CurrentsDeposit(Domain<SimEngine::SRPIC, M>& domain,
@@ -127,12 +128,12 @@ namespace ntt {
       const auto dt = engine_params.get<real_t>("dt");
       Kokkos::deep_copy(domain.fields.cur, ZERO);
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       // Optional runtime override for the tiled-deposit team (work-group) size;
       // 0 (default) keeps Kokkos::AUTO. Clamped to the backend max in the
       // launcher (see CallDepositKernelTiled).
       const auto team_size_req = static_cast<int>(
-        engine_params.get<std::size_t>("team_policy_team_size",
+        engine_params.get<std::size_t>("tiled_deposit_team_size",
                                        std::optional<std::size_t> { 0u }));
 
       // Tiled deposit. Correctness no longer depends on the SoA being in a
@@ -140,8 +141,8 @@ namespace ntt {
       // partition per-particle:
       //   - a particle whose full stencil has drifted out of its tile is
       //     deposited straight to the global J view (the per-particle escape
-      //     valve); `team_policy_drift` sizes the scratch halo so the
-      //     common in-tile case stays in fast SLM (see currents_deposit.hpp);
+      //     valve); `tiled_deposit_drift` sizes the scratch halo so the
+      //     common in-tile case stays in fast SLM (see kernels/deposition/currents/tiled.hpp);
       //   - particles dead-tagged in place since the sort are clamped out by
       //     the kernel and skipped by the dead-tag test;
       //   - particles appended past the partition since the sort (injection /
@@ -267,7 +268,7 @@ namespace ntt {
       // to the x2 upper bound when that side is AXIS — a physical boundary, so
       // never the shrinking comm margin. This folds the old RangeWithAxisBCs
       // fixup into make_range, letting the same loop serve every CoordType.
-      const int  G = static_cast<int>(N_GHOSTS);
+      const int  G         = static_cast<int>(N_GHOSTS);
       const auto comm_side = [](FldsBC b) {
         return (b == FldsBC::PERIODIC) or (b == FldsBC::SYNC);
       };
@@ -306,8 +307,7 @@ namespace ntt {
             { domain.mesh.i_max(in::x1) + mh(0) });
         } else if constexpr (M::Dim == Dim::_2D) {
           return CreateRangePolicy<Dim::_2D>(
-            { domain.mesh.i_min(in::x1) - ml(0),
-              domain.mesh.i_min(in::x2) - ml(1) },
+            { domain.mesh.i_min(in::x1) - ml(0), domain.mesh.i_min(in::x2) - ml(1) },
             { domain.mesh.i_max(in::x1) + mh(0),
               domain.mesh.i_max(in::x2) + mh(1) });
         } else {
@@ -325,11 +325,10 @@ namespace ntt {
         Kokkos::parallel_for(
           "CurrentsFilter",
           make_range(m),
-          kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(
-            domain.fields.buff,
-            domain.fields.cur,
-            size,
-            flds_bc));
+          kernel::DigitalFilter_kernel<M::Dim, M::CoordType>(domain.fields.buff,
+                                                             domain.fields.cur,
+                                                             size,
+                                                             flds_bc));
         std::swap(domain.fields.cur, domain.fields.buff);
         --m;
         if (m < 0 or i == nfilter - 1u) {

@@ -26,10 +26,10 @@
  * and, before each push, fills the bckp (Ec/Bc) ghosts the gather reads:
  *   CommunicateFields(dom, ::Comm::Bckp)
  *
- * TEAM_POLICY: the fused deposit is launched through the generic
+ * TILED_DEPOSIT: the fused deposit is launched through the generic
  * `kernel::TiledScatter_kernel` harness instead of the flat ScatterView —
  * one team per spatial tile, per-team SLM scratch of (T + 2*HALO)^D x 4,
- * HALO = window + TEAM_POLICY_DRIFT — mirroring the tiled current deposit
+ * HALO = window + TILED_DEPOSIT_DRIFT — mirroring the tiled current deposit
  * (engines/srpic/currents.h). Coverage is identical to the tiled currents
  * launcher: flat fallback when the species has no tile layout yet (step 0 /
  * tiny species), flat tail pass over [npart_partitioned, npart) for
@@ -71,7 +71,7 @@ namespace ntt::hybrid {
    * @tparam Mode MomentsOnly (no push), Predictor (no store), Corrector (store).
    * @param dt time-step (unused for MomentsOnly).
    * @param team_size_req explicit tiled team size (0 = Kokkos::AUTO); only
-   *        read on the TEAM_POLICY path.
+   *        read on the TILED_DEPOSIT path.
    */
   template <kernel::hybrid::PushMode Mode, CartesianMetricClass M>
   void runPusher(Domain<SimEngine::HYBRID, M>& domain,
@@ -88,7 +88,7 @@ namespace ntt::hybrid {
 
     Kokkos::deep_copy(domain.fields.aux, ZERO);
 
-#if !defined(TEAM_POLICY)
+#if !defined(TILED_DEPOSIT)
     (void)team_size_req;
     auto scatter_aux = Kokkos::Experimental::create_scatter_view(domain.fields.aux);
 #endif
@@ -113,7 +113,7 @@ namespace ntt::hybrid {
         static_cast<int>(domain.mesh.n_active(in::x3))
       };
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       // Tiled push+deposit. Coverage mirrors the tiled currents launcher
       // (engines/srpic/currents.h): the harness handles a stale partition
       // per-particle (escape valve for drifted particles, dead-tag skip in
@@ -146,10 +146,10 @@ namespace ntt::hybrid {
       // the flat one with extra overhead. Each push moves ions by <= 1
       // cell (CFL), and the pusher un-sorts them anyway: keep
       // spatial_sorting_interval = 1 for ion species, or build with
-      // team_policy_drift = interval.
+      // tiled_deposit_drift = interval.
       {
-#if defined(TEAM_POLICY_DRIFT)
-        constexpr auto DRIFT = static_cast<timestep_t>(TEAM_POLICY_DRIFT);
+#if defined(TILED_DEPOSIT_DRIFT)
+        constexpr auto DRIFT = static_cast<timestep_t>(TILED_DEPOSIT_DRIFT);
 #else
         constexpr auto DRIFT = static_cast<timestep_t>(1);
 #endif
@@ -159,10 +159,10 @@ namespace ntt::hybrid {
           warned_cadence = true;
           raise::Warning(
             fmt::format("hybrid tiled deposit: spatial_sorting_interval = %d "
-                        "for species %d exceeds team_policy_drift + 1 = %d — "
+                        "for species %d exceeds tiled_deposit_drift + 1 = %d — "
                         "most particles will bypass the SLM scratch through "
                         "the escape valve; set the interval to 1 or rebuild "
-                        "with a larger team_policy_drift",
+                        "with a larger tiled_deposit_drift",
                         static_cast<int>(species.spatial_sorting_interval()),
                         species.index(),
                         static_cast<int>(DRIFT + 1u)),
@@ -176,7 +176,7 @@ namespace ntt::hybrid {
                                                   6, // NG: aux comps
                                                   body_t::window,
                                                   static_cast<unsigned short>(
-                                                    TEAM_POLICY_TILE_SIZE),
+                                                    TILED_DEPOSIT_TILE_SIZE),
                                                   body_t>;
       const body_t body { ctx,
                           pusher_boundaries,
@@ -221,7 +221,7 @@ namespace ntt::hybrid {
                                                  domain.mesh.metric });
 #endif
     }
-#if !defined(TEAM_POLICY)
+#if !defined(TILED_DEPOSIT)
     Kokkos::Experimental::contribute(domain.fields.aux, scatter_aux);
 #endif
   }
@@ -240,9 +240,9 @@ namespace ntt::hybrid {
     const auto dt = engine_params.get<real_t>("dt");
     // Optional runtime override for the tiled team (work-group) size;
     // 0 (default) keeps Kokkos::AUTO. Clamped to the backend max in
-    // kernel::MakeTiledPolicy. Ignored without TEAM_POLICY.
+    // kernel::MakeTiledPolicy. Ignored without TILED_DEPOSIT.
     const auto team_size_req = static_cast<int>(
-      engine_params.get<std::size_t>("team_policy_team_size",
+      engine_params.get<std::size_t>("tiled_deposit_team_size",
                                      std::optional<std::size_t> { 0u }));
     if (corrector) {
       runPusher<kernel::hybrid::PushMode::Corrector>(domain,

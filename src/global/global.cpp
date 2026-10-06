@@ -34,14 +34,11 @@ namespace {
       return;
     }
     hipMemPool_t pool = nullptr;
-    if (hipDeviceGetDefaultMemPool(&pool, device) != hipSuccess or
-        pool == nullptr) {
+    if (hipDeviceGetDefaultMemPool(&pool, device) != hipSuccess or pool == nullptr) {
       return;
     }
     uint64_t threshold = UINT64_MAX;
-    (void)hipMemPoolSetAttribute(pool,
-                                 hipMemPoolAttrReleaseThreshold,
-                                 &threshold);
+    (void)hipMemPoolSetAttribute(pool, hipMemPoolAttrReleaseThreshold, &threshold);
   }
 #endif // HIP_ENABLED
 } // namespace

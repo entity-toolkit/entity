@@ -99,7 +99,7 @@ namespace sort {
     // ~1.07e9, the linearised `tile_indices(p)` overflows past `n_bins`,
     // and BinSort's internal `atomic_add(&bin_count[wild_idx], 1)`
     // faults on an unmapped page.
-    int ncells1 { 1 }, ncells2 { 1 }, ncells3 { 1 };
+    int      ncells1 { 1 }, ncells2 { 1 }, ncells3 { 1 };
 
     PositionToTileIndex(const array_t<int*>&         i1_,
                         const array_t<int*>&         i2_,
@@ -109,9 +109,9 @@ namespace sort {
                         const std::vector<ncells_t>& ncells,
                         ncells_t                     tile_size_ = 1u,
                         const array_t<npart_t*>& num_ppt_ = { "num_ppt", 0u },
-                        const array_t<int*>& i1_prev_ = {},
-                        const array_t<int*>& i2_prev_ = {},
-                        const array_t<int*>& i3_prev_ = {})
+                        const array_t<int*>&     i1_prev_ = {},
+                        const array_t<int*>&     i2_prev_ = {},
+                        const array_t<int*>&     i3_prev_ = {})
       : i1 { i1_ }
       , i2 { i2_ }
       , i3 { i3_ }
@@ -238,9 +238,13 @@ namespace sort {
   // availability of the corresponding vendor library.
   namespace backend {
     struct OneDPL {};
+
     struct Thrust {};
+
     struct Rocthrust {};
+
     struct StdSort {};
+
     // Always-available legacy fallback using Kokkos::BinSort.
     struct BinSort {};
   } // namespace backend

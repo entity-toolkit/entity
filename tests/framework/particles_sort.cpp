@@ -63,7 +63,7 @@ auto main(int argc, char* argv[]) -> int {
               i2_p(p)     = 23u;
               weight_p(p) = 3.0;
             }
-            // team_policy keys on min(i, i_prev); without a meaningful
+            // tiled_deposit keys on min(i, i_prev); without a meaningful
             // i_prev every key would collapse to 0. Set i_prev = i so the
             // tile key reduces to the particle's current cell.
             i1_prev_p(p) = i1_p(p);
@@ -96,14 +96,14 @@ auto main(int argc, char* argv[]) -> int {
       Kokkos::deep_copy(pld_i_h, prtls.pld_i);
 
       // Tile geometry, mirroring sort::PositionToTileIndex. T = 1 (no
-      // team_policy) reproduces the legacy per-cell ordering.
-#if defined(TEAM_POLICY)
-      const ncells_t T = static_cast<ncells_t>(TEAM_POLICY_TILE_SIZE);
+      // tiled_deposit) reproduces the legacy per-cell ordering.
+#if defined(TILED_DEPOSIT)
+      const ncells_t T = static_cast<ncells_t>(TILED_DEPOSIT_TILE_SIZE);
 #else
       const ncells_t T = 1u;
 #endif
-      const auto     na   = grid.n_active();
-      const ncells_t ntx2 = (na[1] + T - 1u) / T;
+      const auto     na      = grid.n_active();
+      const ncells_t ntx2    = (na[1] + T - 1u) / T;
       const auto     tile_of = [&](int a, int b) -> ncells_t {
         return (static_cast<ncells_t>(a) / T) * ntx2 +
                (static_cast<ncells_t>(b) / T);
@@ -115,15 +115,15 @@ auto main(int argc, char* argv[]) -> int {
       // non-decreasing tile index; (2) every SoA member is permuted by the
       // *same* permutation, so each alive slot still satisfies
       // pld == f(weight); (3) no alive particle is lost. Only [0, npart())
-      // is defined after a sort. The team_policy path compacts — it drops
+      // is defined after a sort. The tiled_deposit path compacts — it drops
       // the dead, so npart() equals the alive count and [0, npart()) is
       // entirely alive; the legacy (non-team) path keeps the dead as a
       // weight == -1 suffix, leaving npart() unchanged. Iterating
       // [0, npart()) exercises both: the prefix-sorted / no-alive-after-dead
       // checks below hold either way.
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       raise::ErrorIf(prtls.npart() != 59u,
-                     "team_policy sort must compact: npart() should equal "
+                     "tiled_deposit sort must compact: npart() should equal "
                      "the alive count",
                      HERE);
 #else
@@ -159,11 +159,10 @@ auto main(int argc, char* argv[]) -> int {
         raise::ErrorIf(pld_r_h(p, 1) != weight_h(p) + static_cast<real_t>(10.5),
                        "error in sorting particle real payload 1",
                        HERE);
-        raise::ErrorIf(
-          pld_i_h(p, 0) !=
-            static_cast<npart_t>(weight_h(p) + static_cast<real_t>(10.0)),
-          "error in sorting particle integer payload 0",
-          HERE);
+        raise::ErrorIf(pld_i_h(p, 0) != static_cast<npart_t>(
+                                          weight_h(p) + static_cast<real_t>(10.0)),
+                       "error in sorting particle integer payload 0",
+                       HERE);
       }
       raise::ErrorIf(n_alive_obs != 59u,
                      "wrong number of alive particles after sort",
@@ -230,7 +229,7 @@ auto main(int argc, char* argv[]) -> int {
               i3_p(p)     = 7u;
               weight_p(p) = 4.0;
             }
-            // see 2D block: i_prev = i so the team_policy tile key reduces
+            // see 2D block: i_prev = i so the tiled_deposit tile key reduces
             // to the particle's current cell.
             i1_prev_p(p) = i1_p(p);
             i2_prev_p(p) = i2_p(p);
@@ -259,17 +258,17 @@ auto main(int argc, char* argv[]) -> int {
 
       // Same invariants as the 2D block (no payloads here): alive prefix
       // sorted by non-decreasing tile index, alive count preserved. The
-      // team_policy path compacts the dead away (npart() == alive count);
+      // tiled_deposit path compacts the dead away (npart() == alive count);
       // the legacy path keeps them as a weight == -1 suffix. T = 1
       // reproduces the legacy per-cell order.
-#if defined(TEAM_POLICY)
-      const ncells_t T = static_cast<ncells_t>(TEAM_POLICY_TILE_SIZE);
+#if defined(TILED_DEPOSIT)
+      const ncells_t T = static_cast<ncells_t>(TILED_DEPOSIT_TILE_SIZE);
 #else
       const ncells_t T = 1u;
 #endif
-      const auto     na   = grid.n_active();
-      const ncells_t ntx2 = (na[1] + T - 1u) / T;
-      const ncells_t ntx3 = (na[2] + T - 1u) / T;
+      const auto     na      = grid.n_active();
+      const ncells_t ntx2    = (na[1] + T - 1u) / T;
+      const ncells_t ntx3    = (na[2] + T - 1u) / T;
       const auto     tile_of = [&](int a, int b, int c) -> ncells_t {
         return ((static_cast<ncells_t>(a) / T) * ntx2 +
                 (static_cast<ncells_t>(b) / T)) *
@@ -277,9 +276,9 @@ auto main(int argc, char* argv[]) -> int {
                (static_cast<ncells_t>(c) / T);
       };
 
-#if defined(TEAM_POLICY)
+#if defined(TILED_DEPOSIT)
       raise::ErrorIf(prtls.npart() != 59u,
-                     "team_policy sort must compact: npart() should equal "
+                     "tiled_deposit sort must compact: npart() should equal "
                      "the alive count",
                      HERE);
 #else
