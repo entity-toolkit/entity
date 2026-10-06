@@ -1,0 +1,4 @@
+# devenv inputs; update the lock with `devenv update --from path:./dev/nix`
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixos-unstable

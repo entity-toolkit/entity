@@ -65,3 +65,7 @@ ignore-*
 tombi/
 tidy/
 .claude
+
+# devenv
+.devenv*
+devenv.local.nix

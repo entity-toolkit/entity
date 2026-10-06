@@ -32,6 +32,23 @@ namespace ntt {
                        "%s",
                        params.template get<std::string>("simulation.name").c_str());
     reporter::AddParam(report, 4, "Engine", "%s", SimEngine(S).to_string());
+#if defined(TILED_DEPOSIT)
+    reporter::AddParam(report, 4, "Tile size", "%d", TILED_DEPOSIT_TILE_SIZE);
+  #if defined(TILED_DEPOSIT_DRIFT)
+    reporter::AddParam(report, 4, "Halo drift", "%d", TILED_DEPOSIT_DRIFT);
+  #endif
+    if (params.template get<std::size_t>(
+          "algorithms.deposit.tiled_deposit_team_size") == 0u) {
+      reporter::AddParam(report, 4, "Team size", "%s", "AUTO (Kokkos)");
+    } else {
+      reporter::AddParam(report,
+                         4,
+                         "Team size",
+                         "%d (requested; clamped to backend max at launch)",
+                         static_cast<int>(params.template get<std::size_t>(
+                           "algorithms.deposit.tiled_deposit_team_size")));
+    }
+#endif
     reporter::AddParam(report, 4, "Metric", "%s", M.to_string());
 #if SHAPE_ORDER == 0
     reporter::AddParam(report, 4, "Deposit", "%s", "zigzag");

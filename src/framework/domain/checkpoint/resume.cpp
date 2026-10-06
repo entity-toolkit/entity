@@ -1,4 +1,3 @@
-#include "defaults.h"
 #include "enums.h"
 #include "global.h"
 
@@ -10,160 +9,20 @@
 #include "framework/domain/metadomain.h"
 #include "framework/parameters/parameters.h"
 #include "framework/specialization_registry.h"
-#include "output/checkpoint.h"
 #include "output/utils/readers.h"
-#include "output/utils/writers.h"
 
 #if defined(MPI_ENABLED)
+  #include "arch/mpi_aliases.h"
+
   #include <mpi.h>
 #endif
 
 #include <algorithm>
-#include <cstddef>
 #include <limits>
 #include <string>
 #include <vector>
 
 namespace ntt {
-
-  template <SimEngine::type S, MetricClass M>
-  void Metadomain<S, M>::InitCheckpointWriter(adios2::ADIOS*          ptr_adios,
-                                              const SimulationParams& params) {
-    raise::ErrorIf(ptr_adios == nullptr, "adios == nullptr", HERE);
-    raise::ErrorIf(
-      l_subdomain_indices().size() != 1,
-      "Checkpoint writing for now is only supported for one subdomain per rank",
-      HERE);
-    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
-    raise::ErrorIf(local_domain->is_placeholder(),
-                   "local_domain is a placeholder",
-                   HERE);
-
-    std::vector<ncells_t> glob_shape_with_ghosts, off_ncells_with_ghosts;
-    for (auto d { 0u }; d < M::Dim; ++d) {
-      off_ncells_with_ghosts.push_back(
-        local_domain->offset_ncells()[d] +
-        2 * N_GHOSTS * local_domain->offset_ndomains()[d]);
-      glob_shape_with_ghosts.push_back(
-        mesh().n_active()[d] + 2 * N_GHOSTS * ndomains_per_dim()[d]);
-    }
-    auto loc_shape_with_ghosts = local_domain->mesh.n_all();
-
-    std::vector<unsigned short> npld_r, npld_i;
-    for (auto s { 0u }; s < local_domain->species.size(); ++s) {
-      npld_r.push_back(local_domain->species[s].npld_r());
-      npld_i.push_back(local_domain->species[s].npld_i());
-    }
-
-    const path_t checkpoint_root = params.template get<std::string>(
-      "checkpoint.write_path");
-
-    g_checkpoint_writer.init(
-      ptr_adios,
-      checkpoint_root,
-      params.template get<timestep_t>("checkpoint.interval"),
-      params.template get<simtime_t>("checkpoint.interval_time"),
-      params.template get<int>("checkpoint.keep"),
-      params.template get<std::string>("checkpoint.walltime"),
-      { params.template get<int>("adios2.aggregators_per_node",
-                                 defaults::adios2::aggregators_per_node),
-        params.template get<size_t>("adios2.max_shm_size",
-                                    defaults::adios2::max_shm_size),
-        params.template get<size_t>("adios2.buffer_chunk_size",
-                                    defaults::adios2::buffer_chunk_size) });
-    if (g_checkpoint_writer.enabled()) {
-      local_domain->fields.CheckpointDeclare(g_checkpoint_writer.io(),
-                                             loc_shape_with_ghosts,
-                                             glob_shape_with_ghosts,
-                                             off_ncells_with_ghosts);
-      for (const auto& species : local_domain->species) {
-        species.CheckpointDeclare(g_checkpoint_writer.io());
-      }
-      for (auto d { 0u }; d < M::Dim; ++d) {
-        g_checkpoint_writer.io().DefineVariable<real_t>(
-          fmt::format("subdomain_x%d_min", d + 1),
-          { adios2::UnknownDim },
-          { adios2::UnknownDim },
-          { adios2::UnknownDim });
-        g_checkpoint_writer.io().DefineVariable<real_t>(
-          fmt::format("subdomain_x%d_max", d + 1),
-          { adios2::UnknownDim },
-          { adios2::UnknownDim },
-          { adios2::UnknownDim });
-        g_checkpoint_writer.io().DefineVariable<ncells_t>(
-          fmt::format("subdomain_nx%d", d + 1),
-          { adios2::UnknownDim },
-          { adios2::UnknownDim },
-          { adios2::UnknownDim });
-      }
-    }
-  }
-
-  template <SimEngine::type S, MetricClass M>
-  auto Metadomain<S, M>::WriteCheckpoint(const SimulationParams& params,
-                                         timestep_t              current_step,
-                                         timestep_t              finished_step,
-                                         simtime_t               current_time,
-                                         simtime_t finished_time) -> bool {
-    raise::ErrorIf(
-      l_subdomain_indices().size() != 1,
-      "Checkpointing for now is only supported for one subdomain per rank",
-      HERE);
-    if (not g_checkpoint_writer.shouldSave(finished_step, finished_time) or
-        finished_step <= 1) {
-      return false;
-    }
-    auto local_domain = subdomain_ptr(l_subdomain_indices()[0]);
-    raise::ErrorIf(local_domain->is_placeholder(),
-                   "local_domain is a placeholder",
-                   HERE);
-    logger::Checkpoint("Writing checkpoint", HERE);
-    g_checkpoint_writer.beginSaving(current_step, current_time);
-    {
-      if (g_checkpoint_writer.written().empty()) {
-        raise::Fatal("No checkpoint file to save metadata", HERE);
-      }
-      params.saveTOML(g_checkpoint_writer.written().back().second, current_time);
-
-      local_domain->fields.CheckpointWrite(g_checkpoint_writer.io(),
-                                           g_checkpoint_writer.writer());
-#if !defined(MPI_ENABLED)
-      const std::size_t dom_tot = 1, dom_offset = 0;
-#else
-      const std::size_t dom_tot = g_mpi_size, dom_offset = g_mpi_rank;
-#endif // MPI_ENABLED
-
-      for (const auto& species : local_domain->species) {
-        species.CheckpointWrite(g_checkpoint_writer.io(),
-                                g_checkpoint_writer.writer(),
-                                dom_tot,
-                                dom_offset);
-      }
-      for (auto d { 0u }; d < M::Dim; ++d) {
-        out::WriteVariable<real_t>(g_checkpoint_writer.io(),
-                                   g_checkpoint_writer.writer(),
-                                   fmt::format("subdomain_x%d_min", d + 1),
-                                   local_domain->mesh.extent()[d].first,
-                                   dom_tot,
-                                   dom_offset);
-        out::WriteVariable<real_t>(g_checkpoint_writer.io(),
-                                   g_checkpoint_writer.writer(),
-                                   fmt::format("subdomain_x%d_max", d + 1),
-                                   local_domain->mesh.extent()[d].second,
-                                   dom_tot,
-                                   dom_offset);
-        out::WriteVariable<ncells_t>(g_checkpoint_writer.io(),
-                                     g_checkpoint_writer.writer(),
-                                     fmt::format("subdomain_nx%d", d + 1),
-                                     local_domain->mesh.n_active()[d],
-                                     dom_tot,
-                                     dom_offset);
-      }
-    }
-    g_checkpoint_writer.endSaving();
-    logger::Checkpoint("Checkpoint written", HERE);
-    return true;
-  }
 
   template <SimEngine::type S, MetricClass M>
   void Metadomain<S, M>::redecomposeFromCheckpoint(
@@ -268,22 +127,76 @@ namespace ntt {
 #if !defined(MPI_ENABLED)
     adios2::Engine reader = io.Open(fname, adios2::Mode::Read);
 #else
-    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_SELF);
+    adios2::Engine reader = io.Open(fname, adios2::Mode::Read, MPI_COMM_WORLD);
 #endif
 
     reader.BeginStep();
 
-    // Phase 1: read all subdomain metadata to detect size changes
+    // Phase 1: read the saved subdomain metadata (extent + ncells per domain).
     std::vector<std::vector<ncells_t>> saved_ncells(g_ndomains,
                                                     std::vector<ncells_t>(M::Dim));
     std::vector<boundaries_t<real_t>>  saved_extents(g_ndomains);
-    boundaries_t<real_t>               global_extent;
-    for (auto d { 0u }; d < M::Dim; ++d) {
-      global_extent.emplace_back(std::numeric_limits<real_t>::max(),
-                                 std::numeric_limits<real_t>::lowest());
-    }
 
-    bool needs_reconstruction = false;
+#if defined(MPI_ENABLED)
+    // Each rank reads only its own entry and all-gathers, instead of every rank
+    // looping over all g_ndomains. The all-domains loop is an O(g_ndomains^2)
+    // storm of tiny synchronous reads at large rank counts.
+    {
+      std::vector<ncells_t> loc_ncells(M::Dim);
+      std::vector<real_t>   loc_xmin(M::Dim), loc_xmax(M::Dim);
+      const auto            local_off = static_cast<std::size_t>(g_mpi_rank);
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        out::ReadVariable<real_t>(io,
+                                  reader,
+                                  fmt::format("subdomain_x%d_min", d + 1),
+                                  loc_xmin[d],
+                                  local_off);
+        out::ReadVariable<real_t>(io,
+                                  reader,
+                                  fmt::format("subdomain_x%d_max", d + 1),
+                                  loc_xmax[d],
+                                  local_off);
+        out::ReadVariable<ncells_t>(io,
+                                    reader,
+                                    fmt::format("subdomain_nx%d", d + 1),
+                                    loc_ncells[d],
+                                    local_off);
+      }
+
+      std::vector<ncells_t> all_ncells(g_ndomains * M::Dim);
+      std::vector<real_t>   all_xmin(g_ndomains * M::Dim);
+      std::vector<real_t>   all_xmax(g_ndomains * M::Dim);
+      MPI_Allgather(loc_ncells.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<ncells_t>(),
+                    all_ncells.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<ncells_t>(),
+                    MPI_COMM_WORLD);
+      MPI_Allgather(loc_xmin.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    all_xmin.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    MPI_COMM_WORLD);
+      MPI_Allgather(loc_xmax.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    all_xmax.data(),
+                    static_cast<int>(M::Dim),
+                    mpi::get_type<real_t>(),
+                    MPI_COMM_WORLD);
+
+      for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
+        for (auto d { 0u }; d < M::Dim; ++d) {
+          saved_ncells[dom_idx][d] = all_ncells[dom_idx * M::Dim + d];
+          saved_extents[dom_idx].emplace_back(all_xmin[dom_idx * M::Dim + d],
+                                              all_xmax[dom_idx * M::Dim + d]);
+        }
+      }
+    }
+#else
     for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
       for (auto d { 0u }; d < M::Dim; ++d) {
         real_t x_min, x_max;
@@ -298,8 +211,6 @@ namespace ntt {
                                   x_max,
                                   dom_idx);
         saved_extents[dom_idx].emplace_back(x_min, x_max);
-        global_extent[d].first  = std::min(global_extent[d].first, x_min);
-        global_extent[d].second = std::max(global_extent[d].second, x_max);
 
         ncells_t nx;
         out::ReadVariable<ncells_t>(io,
@@ -308,8 +219,26 @@ namespace ntt {
                                     nx,
                                     dom_idx);
         saved_ncells[dom_idx][d] = nx;
+      }
+    }
+#endif
 
-        if (nx != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
+    // Reduce the gathered layout into the global extent and detect whether the
+    // domain decomposition changed since the checkpoint was written.
+    boundaries_t<real_t> global_extent;
+    for (auto d { 0u }; d < M::Dim; ++d) {
+      global_extent.emplace_back(std::numeric_limits<real_t>::max(),
+                                 std::numeric_limits<real_t>::lowest());
+    }
+
+    bool needs_reconstruction = false;
+    for (unsigned int dom_idx { 0 }; dom_idx < g_ndomains; ++dom_idx) {
+      for (auto d { 0u }; d < M::Dim; ++d) {
+        global_extent[d].first  = std::min(global_extent[d].first,
+                                          saved_extents[dom_idx][d].first);
+        global_extent[d].second = std::max(global_extent[d].second,
+                                           saved_extents[dom_idx][d].second);
+        if (saved_ncells[dom_idx][d] != subdomain_ptr(dom_idx)->mesh.n_active()[d]) {
           needs_reconstruction = true;
         }
       }
@@ -352,20 +281,13 @@ namespace ntt {
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_CHECKPOINTS(S, M, D)                                        \
-  template void Metadomain<S, M<D>>::InitCheckpointWriter(                     \
-    adios2::ADIOS*,                                                            \
-    const SimulationParams&);                                                  \
-  template auto Metadomain<S, M<D>>::WriteCheckpoint(const SimulationParams&,  \
-                                                     timestep_t,               \
-                                                     timestep_t,               \
-                                                     simtime_t,                \
-                                                     simtime_t) -> bool;       \
   template void Metadomain<S, M<D>>::ContinueFromCheckpoint(                   \
     adios2::ADIOS*,                                                            \
     const SimulationParams&);                                                  \
   template void Metadomain<S, M<D>>::redecomposeFromCheckpoint(                \
     const std::vector<std::vector<ncells_t>>&,                                 \
     const std::vector<boundaries_t<real_t>>&);
+
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_CHECKPOINTS)
 #undef METADOMAIN_CHECKPOINTS
   // NOLINTEND(bugprone-macro-parentheses)

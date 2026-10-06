@@ -4,13 +4,13 @@ set(Kokkos_REPOSITORY
     https://github.com/kokkos/kokkos.git
     CACHE STRING "Kokkos repository")
 set(Kokkos_TAG
-    5.0.1
+    5.2.1
     CACHE STRING "Kokkos tag")
 set(adios2_REPOSITORY
     https://github.com/ornladios/ADIOS2.git
     CACHE STRING "ADIOS2 repository")
 set(adios2_TAG
-    v2.11.0
+    v2.12.1
     CACHE STRING "ADIOS2 tag")
 
 set(CONNECTION_CHECKED

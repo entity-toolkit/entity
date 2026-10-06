@@ -15,6 +15,7 @@
 #include "framework/parameters/grid.h"
 #include "framework/parameters/output.h"
 #include "framework/parameters/particles.h"
+#include "framework/parameters/render.h"
 
 #include <toml11/toml.hpp>
 
@@ -165,6 +166,11 @@ namespace ntt {
     output_params.read(dim, get<std::size_t>("particles.nspec"), toml_data);
     output_params.setParams(this);
 
+    /* [render] ------------------------------------------------------------- */
+    params::Render render_params;
+    render_params.read(toml_data, this);
+    render_params.setParams(this);
+
     /* [checkpoint] --------------------------------------------------------- */
     set("checkpoint.interval",
         toml::find_or(toml_data,
@@ -238,6 +244,51 @@ namespace ntt {
     };
     alg_params.read(get<real_t>("scales.dx0"), alg_extra_flags, toml_data);
     alg_params.setParams(alg_extra_flags, this);
+
+    /* [simulation.domain.load_balance] ------------------------------------- */
+    set("simulation.domain.load_balance.enable",
+        toml::find_or(toml_data, "simulation", "domain", "load_balance", "enable", false));
+    set("simulation.domain.load_balance.interval",
+        toml::find_or<timestep_t>(toml_data,
+                                  "simulation",
+                                  "domain",
+                                  "load_balance",
+                                  "interval",
+                                  0u));
+    set("simulation.domain.load_balance.tolerance",
+        toml::find_or(toml_data,
+                      "simulation",
+                      "domain",
+                      "load_balance",
+                      "tolerance",
+                      static_cast<real_t>(0.1)));
+    set("simulation.domain.load_balance.max_shift",
+        toml::find_or<unsigned int>(toml_data,
+                                    "simulation",
+                                    "domain",
+                                    "load_balance",
+                                    "max_shift",
+                                    static_cast<unsigned int>(N_GHOSTS)));
+    {
+      // dimensions: list of 1/2/3 mapped to a bitmask
+      const auto   dim_ints = toml::find_or<std::vector<int>>(toml_data,
+                                                            "simulation",
+                                                            "domain",
+                                                            "load_balance",
+                                                            "dimensions",
+                                                            std::vector<int> { 1 });
+      unsigned int mask     = 0u;
+      for (const auto& d : dim_ints) {
+        if (d == 1 or d == 2 or d == 3) {
+          mask |= 1u << (d - 1);
+        } else {
+          raise::Error("simulation.domain.load_balance.dimensions: unknown "
+                       "dim, expected 1/2/3",
+                       HERE);
+        }
+      }
+      set("simulation.domain.load_balance.dim_mask", mask);
+    }
 
     /* extra physics ------------------------------------------------------ */
     params::Extra                     extra_params {};

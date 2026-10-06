@@ -4,7 +4,7 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
-#include "framework/domain/comm_mpi.hpp"
+#include "framework/domain/comm/fields_mpi.hpp"
 
 #include <Kokkos_Core.hpp>
 #include <mpi.h>
