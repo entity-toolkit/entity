@@ -1,5 +1,5 @@
 [simulation]
-  name    = "tutorial_cartesian_sr"
+  name    = "cartesian_sr"
   engine  = "srpic"
   runtime = 20.0
 
