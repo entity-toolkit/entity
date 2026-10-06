@@ -39,6 +39,7 @@ stdenv.mkDerivation {
   ];
 
   propagatedBuildInputs = [
+    pkgs.libgcc
     pkgs.gcc15
   ]
   ++ (

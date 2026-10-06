@@ -147,6 +147,9 @@ namespace sort {
         total_tiles *= ntx3;
       }
       if constexpr (Count) {
+        if (num_ppt.extent(0) == 0u) {
+          num_ppt = array_t<npart_t*> { "num_ppt", total_tiles };
+        }
         raise::ErrorIf(num_ppt.extent(0) != total_tiles,
                        "num_ppt must have extent equal to total tiles",
                        HERE);

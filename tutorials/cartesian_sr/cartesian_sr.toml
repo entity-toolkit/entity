@@ -1,5 +1,5 @@
 [simulation]
-  name    = "tutorial_cartesian_sr"
+  name    = "cartesian_sr"
   engine  = "srpic"
   runtime = 20.0
 
@@ -60,5 +60,18 @@
     enable = false
 
 [checkpoint]
-  interval = 1.0
-  keep     = 1
+  interval_time = 1.0
+  keep          = 1
+
+[render]
+  enable        = true
+  interval_time = 1.0
+  resolution    = 2048
+  axes          = true
+
+  [[render.scene]]
+    field    = "N_1_2"
+    label    = "N / n0"
+    min      = 0.0
+    max      = 20.0
+    colormap = "inferno"

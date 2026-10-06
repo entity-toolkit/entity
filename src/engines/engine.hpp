@@ -130,6 +130,7 @@ namespace ntt {
       auto parameters = prm::Parameters {};
       parameters.set("dt", static_cast<real_t>(dt));
       parameters.set("time", static_cast<simtime_t>(time));
+      parameters.set("step", static_cast<timestep_t>(step));
       parameters.set("tiled_deposit_team_size",
                      static_cast<std::size_t>(tiled_deposit_team_size));
       return parameters;
@@ -254,6 +255,7 @@ namespace ntt {
        "ParticlePusher", "FieldBoundaries",
        "ParticleBoundaries", "Communications",
        "Injector", "Custom",
+       "TwoBodyInteractions", "ParticleSort",
        "LoadBalance", "ParticleSort",
        "Output", "Render",
        "Checkpoint" },
