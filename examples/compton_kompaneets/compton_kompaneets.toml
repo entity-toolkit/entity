@@ -1,7 +1,7 @@
 [simulation]
   name    = "compton_kompaneets"
   engine  = "srpic"
-  runtime = 5.0
+  runtime = 10.0
 
 [grid]
   resolution = [128, 128]
@@ -75,10 +75,10 @@
     enable = false
 
   [output.spectra]
-    log_bins = false
-    e_min    = 0.0
-    e_max    = 1.0
-    n_bins   = 500
+    log_bins        = false
+    e_min           = 0.0
+    e_max           = 1.0
+    num_energy_bins = 500
 
   [output.stats]
     quantities = ["T00_3"]

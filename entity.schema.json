@@ -1744,7 +1744,7 @@
             "e_min": {
               "description": "Minimum energy for the spectra output",
               "type": "number",
-              "exclusiveMinimum": 0.0,
+              "minimum": 0.0,
               "default": 0.001,
               "x-entity": {
                 "type": "float",
