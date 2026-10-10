@@ -335,6 +335,37 @@ namespace kernel::hybrid {
       return (n_raw < dens_min) ? (n_raw / dens_min) : ONE;
     }
 
+    /**
+     * @brief vac / N at a face, N the mean of the two cells that share it,
+     *        floored at dens_min as the edge densities of compute_Ee.
+     */
+    Inline auto face_w(real_t na, real_t nb) const -> real_t {
+      const real_t n { INV_2 * (na + nb) };
+      return vac_factor(n) / math::max(n, dens_min);
+    }
+
+    /**
+     * @brief 3D current J = curl B on the x1-, x2-, x3-edge with index
+     *        (a, b, c), the Ee locations (U basis: differences of b are
+     *        physical). Each difference is formed first, so that in single
+     *        precision a large uniform component does not swamp the
+     *        derivative of another.
+     */
+    Inline auto edge_j1(ncells_t a, ncells_t b, ncells_t c) const -> real_t {
+      return (Bfs(a, b, c, comp_Bfs + 2) - Bfs(a, b - 1, c, comp_Bfs + 2)) -
+             (Bfs(a, b, c, comp_Bfs + 1) - Bfs(a, b, c - 1, comp_Bfs + 1));
+    }
+
+    Inline auto edge_j2(ncells_t a, ncells_t b, ncells_t c) const -> real_t {
+      return (Bfs(a, b, c, comp_Bfs + 0) - Bfs(a, b, c - 1, comp_Bfs + 0)) -
+             (Bfs(a, b, c, comp_Bfs + 2) - Bfs(a - 1, b, c, comp_Bfs + 2));
+    }
+
+    Inline auto edge_j3(ncells_t a, ncells_t b, ncells_t c) const -> real_t {
+      return (Bfs(a, b, c, comp_Bfs + 1) - Bfs(a - 1, b, c, comp_Bfs + 1)) -
+             (Bfs(a, b, c, comp_Bfs + 0) - Bfs(a, b - 1, c, comp_Bfs + 0));
+    }
+
     Inline void compute_Ee(const tuple_t<ncells_t, D>& i,
                            real_t&                     E0,
                            real_t&                     E1,
@@ -635,88 +666,6 @@ namespace kernel::hybrid {
                 PP(i1 - 1, i2, i3, comp_PP + 0) +
                 PP(i1 - 1, i2 - 1, i3, comp_PP + 0));
 
-        E0 +=
-          coeff *
-          (INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1, i2, i3 - 1, comp_Bfs + 1)) *
-             (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) +
-              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2 - 1, i3 - 1, comp_Bfs + 0) +
-              Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2, i3, comp_Bfs + 1) -
-              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1)) +
-           INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1, i2 - 1, i3, comp_Bfs + 2)) *
-             (Bfs(i1 + 1, i2, i3, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2, i3 - 1, comp_Bfs + 0) +
-              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2 - 1, i3 - 1, comp_Bfs + 0) +
-              Bfs(i1, i2, i3, comp_Bfs + 0) - Bfs(i1, i2, i3 - 1, comp_Bfs + 0) +
-              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2, i3, comp_Bfs + 2) -
-              Bfs(i1 + 1, i2 - 1, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
-        E1 +=
-          coeff *
-          (-INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2, i3 - 1, comp_Bfs + 0)) *
-             (Bfs(i1, i2 + 1, i3, comp_Bfs + 0) +
-              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1, i2 + 1, i3, comp_Bfs + 1) -
-              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) -
-              Bfs(i1, i2, i3, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2 + 1, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1)) +
-           INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 2) + Bfs(i1 - 1, i2, i3, comp_Bfs + 2)) *
-             (Bfs(i1, i2 + 1, i3, comp_Bfs + 1) -
-              Bfs(i1, i2 + 1, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1, i2, i3, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 1) -
-              Bfs(i1 - 1, i2 + 1, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 1) -
-              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1) -
-              Bfs(i1, i2 + 1, i3, comp_Bfs + 2) + Bfs(i1, i2 - 1, i3, comp_Bfs + 2) -
-              Bfs(i1 - 1, i2 + 1, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
-        E2 +=
-          coeff *
-          (-INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 0) + Bfs(i1, i2 - 1, i3, comp_Bfs + 0)) *
-             (Bfs(i1, i2, i3 + 1, comp_Bfs + 0) - Bfs(i1, i2, i3 - 1, comp_Bfs + 0) +
-              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 0) -
-              Bfs(i1, i2 - 1, i3 - 1, comp_Bfs + 0) -
-              Bfs(i1, i2, i3 + 1, comp_Bfs + 2) - Bfs(i1, i2, i3, comp_Bfs + 2) -
-              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) -
-              Bfs(i1, i2 - 1, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)) -
-           INV_8 *
-             (Bfs(i1, i2, i3, comp_Bfs + 1) + Bfs(i1 - 1, i2, i3, comp_Bfs + 1)) *
-             (Bfs(i1, i2, i3 + 1, comp_Bfs + 1) - Bfs(i1, i2, i3 - 1, comp_Bfs + 1) +
-              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 1) -
-              Bfs(i1 - 1, i2, i3 - 1, comp_Bfs + 1) -
-              Bfs(i1, i2, i3 + 1, comp_Bfs + 2) - Bfs(i1, i2, i3, comp_Bfs + 2) +
-              Bfs(i1, i2 - 1, i3 + 1, comp_Bfs + 2) +
-              Bfs(i1, i2 - 1, i3, comp_Bfs + 2) -
-              Bfs(i1 - 1, i2, i3 + 1, comp_Bfs + 2) -
-              Bfs(i1 - 1, i2, i3, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3 + 1, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2 - 1, i3, comp_Bfs + 2)));
-
         {
           const real_t vac0 { vac_factor(N0r) };
           const real_t vac1 { vac_factor(N1r) };
@@ -724,6 +673,73 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
+          // Hall E = (J x B) / N summed over faces: each B_c is paired with the
+          // face averages of the two currents on the edges of its face, over
+          // the face N, and each product is shared by the two face edges that
+          // carry its E component. Each face then adds +J_a J_b B_c / N and
+          // -J_b J_a B_c / N to the work, so that the Hall field does no work
+          // for any N, as (J x B) . J = 0 in the continuum. On x3-independent
+          // states this gives the cell-N self-term of the 2D block but the
+          // edge (not node) N on its J_3 terms: the work stays zero, while
+          // sum N A_3^2 is conserved only for uniform N.
+          {
+            // vac / N on the faces next to the edges of this index, the face
+            // N being the mean of the two cells that share the face (suffixes:
+            // index offsets, m = -1 and p = +1 along x1, x2, x3)
+            const real_t n_c { NN(i1, i2, i3, comp_NN) };
+            const real_t n_m1 { NN(i1 - 1, i2, i3, comp_NN) };
+            const real_t n_m2 { NN(i1, i2 - 1, i3, comp_NN) };
+            const real_t n_m3 { NN(i1, i2, i3 - 1, comp_NN) };
+            const real_t n_m1m2 { NN(i1 - 1, i2 - 1, i3, comp_NN) };
+            const real_t n_m1m3 { NN(i1 - 1, i2, i3 - 1, comp_NN) };
+            const real_t n_m2m3 { NN(i1, i2 - 1, i3 - 1, comp_NN) };
+            const real_t w1_c { face_w(n_c, n_m1) };
+            const real_t w1_m2 { face_w(n_m2, n_m1m2) };
+            const real_t w1_m3 { face_w(n_m3, n_m1m3) };
+            const real_t w2_c { face_w(n_c, n_m2) };
+            const real_t w2_m1 { face_w(n_m1, n_m1m2) };
+            const real_t w2_m3 { face_w(n_m3, n_m2m3) };
+            const real_t w3_c { face_w(n_c, n_m3) };
+            const real_t w3_m1 { face_w(n_m1, n_m1m3) };
+            const real_t w3_m2 { face_w(n_m2, n_m2m3) };
+            // J on the edges of those faces
+            const real_t j1_c { edge_j1(i1, i2, i3) };
+            const real_t j1_p2 { edge_j1(i1, i2 + 1, i3) };
+            const real_t j1_p3 { edge_j1(i1, i2, i3 + 1) };
+            const real_t j1_m1 { edge_j1(i1 - 1, i2, i3) };
+            const real_t j1_m1p2 { edge_j1(i1 - 1, i2 + 1, i3) };
+            const real_t j1_m1p3 { edge_j1(i1 - 1, i2, i3 + 1) };
+            const real_t j2_c { edge_j2(i1, i2, i3) };
+            const real_t j2_p1 { edge_j2(i1 + 1, i2, i3) };
+            const real_t j2_p3 { edge_j2(i1, i2, i3 + 1) };
+            const real_t j2_m2 { edge_j2(i1, i2 - 1, i3) };
+            const real_t j2_p1m2 { edge_j2(i1 + 1, i2 - 1, i3) };
+            const real_t j2_m2p3 { edge_j2(i1, i2 - 1, i3 + 1) };
+            const real_t j3_c { edge_j3(i1, i2, i3) };
+            const real_t j3_p1 { edge_j3(i1 + 1, i2, i3) };
+            const real_t j3_p2 { edge_j3(i1, i2 + 1, i3) };
+            const real_t j3_m3 { edge_j3(i1, i2, i3 - 1) };
+            const real_t j3_p1m3 { edge_j3(i1 + 1, i2, i3 - 1) };
+            const real_t j3_p2m3 { edge_j3(i1, i2 + 1, i3 - 1) };
+            // (J x B)_1 / N = (J_2 B_3 - J_3 B_2) / N from the x2-faces
+            // (i1, i2, i3), (i1, i2, i3 - 1) and the x3-faces (i1, i2, i3),
+            // (i1, i2 - 1, i3) of the x1-edge; likewise for E_2, E_3
+            E0 += coeff * INV_4 *
+                  (w2_c * Bfs(i1, i2, i3, comp_Bfs + 1) * (j3_c + j3_p1) +
+                   w2_m3 * Bfs(i1, i2, i3 - 1, comp_Bfs + 1) * (j3_m3 + j3_p1m3) -
+                   w3_c * Bfs(i1, i2, i3, comp_Bfs + 2) * (j2_c + j2_p1) -
+                   w3_m2 * Bfs(i1, i2 - 1, i3, comp_Bfs + 2) * (j2_m2 + j2_p1m2));
+            E1 += coeff * INV_4 *
+                  (w3_c * Bfs(i1, i2, i3, comp_Bfs + 2) * (j1_c + j1_p2) +
+                   w3_m1 * Bfs(i1 - 1, i2, i3, comp_Bfs + 2) * (j1_m1 + j1_m1p2) -
+                   w1_c * Bfs(i1, i2, i3, comp_Bfs + 0) * (j3_c + j3_p2) -
+                   w1_m3 * Bfs(i1, i2, i3 - 1, comp_Bfs + 0) * (j3_m3 + j3_p2m3));
+            E2 += coeff * INV_4 *
+                  (w1_c * Bfs(i1, i2, i3, comp_Bfs + 0) * (j2_c + j2_p3) +
+                   w1_m2 * Bfs(i1, i2 - 1, i3, comp_Bfs + 0) * (j2_m2 + j2_m2p3) -
+                   w2_c * Bfs(i1, i2, i3, comp_Bfs + 1) * (j1_c + j1_p3) -
+                   w2_m1 * Bfs(i1 - 1, i2, i3, comp_Bfs + 1) * (j1_m1 + j1_m1p3));
+          }
           if (resist_vac > ZERO or resist_hyper > ZERO or resist > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
