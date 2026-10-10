@@ -453,29 +453,6 @@ namespace kernel::hybrid {
                 (PP(i1, i2, comp_PP + 0) + PP(i1, i2 - 1, comp_PP + 0) +
                  PP(i1 - 1, i2, comp_PP + 0) + PP(i1 - 1, i2 - 1, comp_PP + 0)));
 
-        E0 +=
-          coeff *
-          (-SQR(dx_inv) * INV_8 *
-             (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2)) *
-             (Bfs(i1 + 1, i2, comp_Bfs + 2) + Bfs(i1 + 1, i2 - 1, comp_Bfs + 2) -
-              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
-           (INV_2) *
-             (Bfs(i1 + 1, i2, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0) +
-              Bfs(i1, i2, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
-              Bfs(i1 + 1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
-             Bfs(i1, i2, comp_Bfs + 1));
-        E1 += coeff *
-              (-SQR(dx_inv) * INV_8 *
-                 (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1 - 1, i2, comp_Bfs + 2)) *
-                 (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
-                  Bfs(i1 - 1, i2 + 1, comp_Bfs + 2) -
-                  Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) -
-               INV_2 *
-                 (Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0) -
-                  Bfs(i1, i2 + 1, comp_Bfs + 1) - Bfs(i1, i2, comp_Bfs + 1) +
-                  Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) +
-                  Bfs(i1 - 1, i2, comp_Bfs + 1)) *
-                 Bfs(i1, i2, comp_Bfs + 0));
         // (J x B)_z as the node average of the edge products: B_x dBz/dx on
         // the two adjacent y-edges and B_y dBz/dy on the two adjacent x-edges,
         // where each J component and its B factor are co-located. With
@@ -483,10 +460,11 @@ namespace kernel::hybrid {
         // A_z is then skew-symmetric (the discrete divergence of the discrete
         // curl of B_z vanishes), so after the division by the node N it
         // conserves sum N A_z^2 exactly, as the continuum Hall drift conserves
-        // its integral, and for uniform N the J_z terms of the Hall E_x, E_y
-        // above exchange magnetic energy with it exactly. A product of the
-        // node-averaged factors has neither property and amplifies A_z where
-        // B_z has grid-scale structure; both agree when B_perp is uniform.
+        // its integral, and the J_z terms of the Hall E_x, E_y (after the
+        // density division below) exchange magnetic energy with it exactly.
+        // A product of the node-averaged factors has neither property and
+        // amplifies A_z where B_z has grid-scale structure; both agree when
+        // B_perp is uniform.
         E2 += coeff * INV_2 *
               (Bfs(i1, i2, comp_Bfs + 0) *
                  (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) +
@@ -504,6 +482,72 @@ namespace kernel::hybrid {
           E0 *= -vac0 / N0;
           E1 *= -vac1 / N1;
           E2 *= -vac2 / N2;
+          // Hall E_x, E_y, with each 1/N applied where its factors are
+          // co-located, so that the 2D Hall field does no work for any N, as
+          // (J x B) . J = 0 in the continuum:
+          //  - B_z self-term -B_z grad B_z / N: average over the two cells next
+          //    to the edge of the cell products B_z grad_c B_z (centred
+          //    differences) over the cell N; the cell average of the edge J is
+          //    perpendicular to grad_c B_z, so the term does no work;
+          //  - J_z B_perp terms: J_z / N formed at the two nodes of the edge,
+          //    with the node density and vacuum factor of the Hall E_z, then
+          //    averaged; their work cancels that of the J_x B_y, J_y B_x
+          //    products of the Hall E_z.
+          // Dividing averaged factors by the edge N instead leaves work set by
+          // the density gradient. All forms agree at linear order around a
+          // uniform state.
+          {
+            // vac / N in the cells (i1, i2), (i1, i2 - 1), (i1 - 1, i2)
+            const real_t Ncc { NN(i1, i2, comp_NN) };
+            const real_t Ncy { NN(i1, i2 - 1, comp_NN) };
+            const real_t Ncx { NN(i1 - 1, i2, comp_NN) };
+            const real_t vcc { vac_factor(Ncc) / math::max(Ncc, dens_min) };
+            const real_t vcy { vac_factor(Ncy) / math::max(Ncy, dens_min) };
+            const real_t vcx { vac_factor(Ncx) / math::max(Ncx, dens_min) };
+            E0 += coeff * SQR(dx_inv) * INV_4 *
+                  (vcc * Bfs(i1, i2, comp_Bfs + 2) *
+                     (Bfs(i1 + 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) +
+                   vcy * Bfs(i1, i2 - 1, comp_Bfs + 2) *
+                     (Bfs(i1 + 1, i2 - 1, comp_Bfs + 2) -
+                      Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
+            E1 += coeff * SQR(dx_inv) * INV_4 *
+                  (vcc * Bfs(i1, i2, comp_Bfs + 2) *
+                     (Bfs(i1, i2 + 1, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)) +
+                   vcx * Bfs(i1 - 1, i2, comp_Bfs + 2) *
+                     (Bfs(i1 - 1, i2 + 1, comp_Bfs + 2) -
+                      Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
+            const real_t Nxr {
+              INV_4 * (NN(i1 + 1, i2, comp_NN) + NN(i1 + 1, i2 - 1, comp_NN) +
+                       NN(i1, i2, comp_NN) + NN(i1, i2 - 1, comp_NN))
+            };
+            const real_t Nyr {
+              INV_4 * (NN(i1, i2 + 1, comp_NN) + NN(i1 - 1, i2 + 1, comp_NN) +
+                       NN(i1, i2, comp_NN) + NN(i1 - 1, i2, comp_NN))
+            };
+            // vac / N at the nodes (i1, i2), (i1 + 1, i2), (i1, i2 + 1)
+            const real_t wc { vac2 / N2 };
+            const real_t wx { vac_factor(Nxr) / math::max(Nxr, dens_min) };
+            const real_t wy { vac_factor(Nyr) / math::max(Nyr, dens_min) };
+            // J_z = d_x B_y - d_y B_x at the same nodes (U basis: differences
+            // of b1, b2 are physical); each difference is formed first, so that
+            // in single precision a large uniform b1 or b2 does not swamp the
+            // derivative of the other component
+            const real_t jzc {
+              (Bfs(i1, i2, comp_Bfs + 1) - Bfs(i1 - 1, i2, comp_Bfs + 1)) -
+              (Bfs(i1, i2, comp_Bfs + 0) - Bfs(i1, i2 - 1, comp_Bfs + 0))
+            };
+            const real_t jzx {
+              (Bfs(i1 + 1, i2, comp_Bfs + 1) - Bfs(i1, i2, comp_Bfs + 1)) -
+              (Bfs(i1 + 1, i2, comp_Bfs + 0) - Bfs(i1 + 1, i2 - 1, comp_Bfs + 0))
+            };
+            const real_t jzy {
+              (Bfs(i1, i2 + 1, comp_Bfs + 1) - Bfs(i1 - 1, i2 + 1, comp_Bfs + 1)) -
+              (Bfs(i1, i2 + 1, comp_Bfs + 0) - Bfs(i1, i2, comp_Bfs + 0))
+            };
+            // (J x B)_x / N = -J_z B_y / N,  (J x B)_y / N = J_z B_x / N
+            E0 += coeff * INV_2 * (jzc * wc + jzx * wx) * Bfs(i1, i2, comp_Bfs + 1);
+            E1 -= coeff * INV_2 * (jzc * wc + jzy * wy) * Bfs(i1, i2, comp_Bfs + 0);
+          }
           if (resist_vac > ZERO or resist_hyper > ZERO or resist > ZERO) {
             real_t c0, c1, c2;
             res_curl(i, c0, c1, c2);
