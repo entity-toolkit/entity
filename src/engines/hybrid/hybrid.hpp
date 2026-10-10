@@ -90,12 +90,18 @@ namespace ntt {
 
         timers.start("Communications");
         m_metadomain.SynchronizeFields(dom, ::Comm::AUX); // additive remap of deposit tails
-        m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
         timers.stop("Communications");
         // reflecting wall: fold the wall-ghost deposit tails back (image plasma)
-        // + mirror-fill the wall ghosts for the EMF stencils
+        // before the ghost fill, so the halo copies carry the folded values
         timers.start("FieldBoundaries");
         hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+        timers.stop("FieldBoundaries");
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF reads
+        timers.stop("Communications");
+        // mirror-fill the wall ghosts again, now that the transverse halo is filled
+        timers.start("FieldBoundaries");
+        hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ false);
         timers.stop("FieldBoundaries");
         // smooth N^(0),V^(0) (kills grid-scale shot noise before the field solve)
         timers.start("MomentFiltering");
@@ -210,11 +216,18 @@ namespace ntt {
       timers.start("Communications");
       m_metadomain.SynchronizeFields(dom,
                                      ::Comm::AUX); // additive remap of deposit tails
-      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
       timers.stop("Communications");
-      // reflecting wall: image-plasma fold + ghost fill of the predicted moments
+      // reflecting wall: image-plasma fold of the predicted moments, before the
+      // ghost fill so the halo copies carry the folded values
       timers.start("FieldBoundaries");
       hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+      timers.stop("FieldBoundaries");
+      timers.start("Communications");
+      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for EMF #2
+      timers.stop("Communications");
+      // mirror-fill the wall ghosts again, now that the transverse halo is filled
+      timers.start("FieldBoundaries");
+      hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ false);
       timers.stop("FieldBoundaries");
       // smooth predicted N',V' before EMF #2
       timers.start("MomentFiltering");
@@ -341,11 +354,18 @@ namespace ntt {
 
       timers.start("Communications");
       m_metadomain.SynchronizeFields(dom, ::Comm::AUX);
-      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
       timers.stop("Communications");
-      // reflecting wall: image-plasma fold + ghost fill of the final moments
+      // reflecting wall: image-plasma fold of the final moments, before the
+      // ghost fill so the halo copies carry the folded values
       timers.start("FieldBoundaries");
       hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ true);
+      timers.stop("FieldBoundaries");
+      timers.start("Communications");
+      m_metadomain.CommunicateFields(dom, ::Comm::AUX); // fill ghosts for next step's EMF
+      timers.stop("Communications");
+      // mirror-fill the wall ghosts again, now that the transverse halo is filled
+      timers.start("FieldBoundaries");
+      hybrid::MomentsWallBC(dom, m_metadomain.mesh(), /* fold */ false);
       timers.stop("FieldBoundaries");
       // smooth final N^(n+1),V^(n+1) for next step's EMF #0/#1
       timers.start("MomentFiltering");

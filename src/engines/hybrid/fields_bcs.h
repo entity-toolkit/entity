@@ -320,9 +320,10 @@ namespace ntt {
      * @brief Image-plasma wall treatment of the deposited moments (aux).
      * @param fold also fold the ghost deposit tails back into the active cells
      *        (V_x sign-flipped) -- exactly once per deposit, after
-     *        SynchronizeFields(AUX) + CommunicateFields(AUX). With
-     *        fold = false only the (idempotent) ghost mirror fill runs, e.g.
-     *        to re-fill after a filter pass.
+     *        SynchronizeFields(AUX) and before CommunicateFields(AUX), so the
+     *        transverse halo copies of the near-wall cells carry the folded
+     *        values. With fold = false only the (idempotent) ghost mirror fill
+     *        runs, e.g. to re-fill after the halo exchange or a filter pass.
      */
     template <Dimension D>
     void MomentsWallBC(Domain<SimEngine::HYBRID, metric::Minkowski<D>>& domain,
