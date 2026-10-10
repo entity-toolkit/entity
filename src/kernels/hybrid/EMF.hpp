@@ -476,14 +476,26 @@ namespace kernel::hybrid {
                   Bfs(i1 - 1, i2 + 1, comp_Bfs + 1) +
                   Bfs(i1 - 1, i2, comp_Bfs + 1)) *
                  Bfs(i1, i2, comp_Bfs + 0));
-        E2 +=
-          coeff *
-          ((INV_4) * (Bfs(i1, i2, comp_Bfs + 0) + Bfs(i1, i2 - 1, comp_Bfs + 0)) *
-             (Bfs(i1, i2, comp_Bfs + 2) + Bfs(i1, i2 - 1, comp_Bfs + 2) -
-              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
-           (INV_4) * (Bfs(i1, i2, comp_Bfs + 1) + Bfs(i1 - 1, i2, comp_Bfs + 1)) *
-             (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2) +
-              Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
+        // (J x B)_z as the node average of the edge products: B_x dBz/dx on
+        // the two adjacent y-edges and B_y dBz/dy on the two adjacent x-edges,
+        // where each J component and its B factor are co-located. With
+        // B_x = dA_z/dy, B_y = -dA_z/dx the Hall drift of the in-plane flux
+        // A_z is then skew-symmetric (the discrete divergence of the discrete
+        // curl of B_z vanishes), so after the division by the node N it
+        // conserves sum N A_z^2 exactly, as the continuum Hall drift conserves
+        // its integral, and for uniform N the J_z terms of the Hall E_x, E_y
+        // above exchange magnetic energy with it exactly. A product of the
+        // node-averaged factors has neither property and amplifies A_z where
+        // B_z has grid-scale structure; both agree when B_perp is uniform.
+        E2 += coeff * INV_2 *
+              (Bfs(i1, i2, comp_Bfs + 0) *
+                 (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2, comp_Bfs + 2)) +
+               Bfs(i1, i2 - 1, comp_Bfs + 0) *
+                 (Bfs(i1, i2 - 1, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)) +
+               Bfs(i1, i2, comp_Bfs + 1) *
+                 (Bfs(i1, i2, comp_Bfs + 2) - Bfs(i1, i2 - 1, comp_Bfs + 2)) +
+               Bfs(i1 - 1, i2, comp_Bfs + 1) *
+                 (Bfs(i1 - 1, i2, comp_Bfs + 2) - Bfs(i1 - 1, i2 - 1, comp_Bfs + 2)));
 
         {
           const real_t vac0 { vac_factor(N0r) };
