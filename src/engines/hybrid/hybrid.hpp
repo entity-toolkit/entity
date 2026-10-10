@@ -30,8 +30,12 @@ namespace ntt {
     using base_t::dt;
     using base_t::max_steps;
     using base_t::runtime;
+    using base_t::start_step;
     using base_t::step;
     using base_t::time;
+
+    // time-centered moments for the corrector field advance (subcycle_centered)
+    ndfield_t<M::Dim, 6> m_moments_half;
 
   public:
     static constexpr auto S { SimEngine::HYBRID };
@@ -48,8 +52,8 @@ namespace ntt {
        *            em0::012   --
        *            em0::345   --
        *
-       *            aux::012   V^(n) (except step 0)
-       *            aux::3     N^(n) (except step 0)
+       *            aux::012   V^(n) (except at the first step of a run)
+       *            aux::3     N^(n) (except at the first step of a run)
        *
        *            bckp::012  --
        *            bckp::345  --
@@ -64,8 +68,14 @@ namespace ntt {
       // SSP-RK3 sub-steps at its own CFL instead of single full-dt Euler pushes.
       // false -> the legacy 3-push scheme.
       const bool subcycle = m_params.template get<bool>("hybrid.subcycle");
+      // corrector field advance driven by the time-centered moments
+      // (M^(n) + M') / 2 instead of the predicted M' (subcycled mode only)
+      const bool centered = subcycle and
+                            m_params.template get<bool>("hybrid.subcycle_centered");
 
-      if (step == 0) {
+      // first step of this run (step 0, or the first step after resuming from a
+      // checkpoint, which stores neither the moments nor the field ghosts)
+      if (step == start_step) {
         // fill Bf^(n) ghosts (periodic / MPI) so the field-solver stencils are valid
         timers.start("Communications");
         m_metadomain.CommunicateFields(dom, ::Comm::EM_345);
@@ -122,7 +132,11 @@ namespace ntt {
       // Now: cur::012 <-- Bf*
       timers.start("FieldSolver");
       if (subcycle) {
-        hybrid::SubcycledFaraday(m_metadomain, dom, this->engineParams(), m_params);
+        hybrid::SubcycledFaraday(m_metadomain,
+                                 dom,
+                                 this->engineParams(),
+                                 m_params,
+                                 dom.fields.aux);
       } else {
         hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push1);
       }
@@ -178,6 +192,18 @@ namespace ntt {
       hybrid::WallEPrime(dom, m_metadomain.mesh());
       hybrid::WallBckpFill(dom, m_metadomain.mesh());
       timers.stop("FieldBoundaries");
+      if (centered) {
+        // keep M^(n) (aux, valid ghosts) before the predictor overwrites it
+        timers.start("FieldSolver");
+        if (m_moments_half.span() != dom.fields.aux.span()) {
+          m_moments_half = ndfield_t<M::Dim, 6> {
+            Kokkos::view_alloc("moments_half", Kokkos::WithoutInitializing),
+            dom.fields.aux.layout()
+          };
+        }
+        Kokkos::deep_copy(m_moments_half, dom.fields.aux);
+        timers.stop("FieldSolver");
+      }
       timers.start("ParticlePusher");
       hybrid::ParticlePush(dom, this->engineParams(), m_params, /* corrector */ false);
       timers.stop("ParticlePusher");
@@ -194,20 +220,41 @@ namespace ntt {
       timers.start("MomentFiltering");
       hybrid::MomentsFilter(m_metadomain, dom, m_params);
       timers.stop("MomentFiltering");
+      if (centered) {
+        // M^(n+1/2) = (M^(n) + M') / 2 over the full extent (ghosts of both valid)
+        timers.start("FieldSolver");
+        for (const uint8_t c : { 0u, 3u }) {
+          Kokkos::parallel_for(
+            "FieldCombine",
+            dom.mesh.rangeAllCells(),
+            kernel::hybrid::FieldCombine_kernel<M::Dim, 6, 6>(m_moments_half,
+                                                              dom.fields.aux,
+                                                              HALF,
+                                                              HALF,
+                                                              c,
+                                                              c));
+        }
+        timers.stop("FieldSolver");
+      }
 
       // Faraday push #2 (corrector field advance)
       // Using: em::345 [Bf^(n)] + em0::345 [Ee'] (legacy) / aux [N', V'] (subcycled)
       //
       // legacy:    Bf** = Bf^(n) + dt * curl Ee'
       // subcycled: Bf** = integrate dB/dt = -curl EMF(N', V', B) over dt
-      //            (E refreshed from the PREDICTED moments every sub-step;
+      //            (E refreshed from the PREDICTED moments every sub-step, or
+      //            from (M^(n) + M') / 2 with hybrid.subcycle_centered;
       //            this advance IS the full-interval B^(n) -> B^(n+1)
       //            integration, accepted as Bf^(n+1) below)
       //
       // Now: cur::012 <-- Bf**
       timers.start("FieldSolver");
       if (subcycle) {
-        hybrid::SubcycledFaraday(m_metadomain, dom, this->engineParams(), m_params);
+        hybrid::SubcycledFaraday(m_metadomain,
+                                 dom,
+                                 this->engineParams(),
+                                 m_params,
+                                 centered ? m_moments_half : dom.fields.aux);
       } else {
         hybrid::Faraday(dom, this->engineParams(), hybrid::faraday::push2);
       }

@@ -69,6 +69,7 @@ namespace ntt {
        *   subcycle         - Pegasus-style sub-cycled field advance (default on)
        *   subcycle_courant - target whistler Courant per field sub-step
        *   subcycle_max     - cap on the number of field sub-steps per advance
+       *   subcycle_centered - corrector field advance with time-centered moments
        *   v_max    - characteristic flow speed for the hybrid CFL (code units)
        */
       set("hybrid.gamma_ad",
@@ -143,6 +144,10 @@ namespace ntt {
                                 static_cast<real_t>(0.5)));
       set("hybrid.subcycle_max",
           toml::find_or<int>(toml_data, "hybrid", "subcycle_max", 64));
+      // drive the corrector (second) sub-cycled field advance with the
+      // time-centered moments (M^(n) + M') / 2 instead of the predicted M'
+      set("hybrid.subcycle_centered",
+          toml::find_or<bool>(toml_data, "hybrid", "subcycle_centered", false));
       // optional user-set characteristic flow speed for the hybrid CFL (code
       // units); 0 -> dt set purely by the Alfven + whistler signal speeds.
       set("hybrid.v_max",

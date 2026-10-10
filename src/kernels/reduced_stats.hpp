@@ -456,11 +456,31 @@ namespace kernel {
                       static_cast<real_t>(particles.dx3(p));
         }
         dV = metric.sqrt_det_h(x_Code);
+        const real_t weight { use_weights ? particles.weight(p) : ONE };
         if constexpr (P == StatsID::N or P == StatsID::Rho or P == StatsID::Charge) {
-          buff += dV * (use_weights ? particles.weight(p) : contrib);
+          buff += dV * contrib * weight;
+        } else if constexpr (S == SimEngine::HYBRID) {
+          // hybrid ions are non-relativistic (ux holds the Cartesian 3-velocity):
+          // Newtonian limit of m u^mu u^nu / u^0, i.e.
+          // T^00 = m (1 + v^2/2), T^0i = m v^i, T^ij = m v^i v^j
+          const vec_t<Dim::_3D> v { particles.ux1(p),
+                                    particles.ux2(p),
+                                    particles.ux3(p) };
+          real_t                coeff = mass;
+          if (c1 == 0 and c2 == 0) {
+            coeff *= ONE + HALF * NORM_SQR(v[0], v[1], v[2]);
+          } else {
+            for (const auto& c : { c1, c2 }) {
+              if (c > 0) {
+                coeff *= v[c - 1];
+              }
+            }
+          }
+          buff += dV * coeff * weight;
         } else {
-          // for stress-energy tensor
-          real_t          energy { ZERO };
+          // stress-energy tensor m u^c1 u^c2 / u^0, with u^0 the Lorentz factor
+          // (|u| for massless particles, which count with unit mass)
+          real_t          u0 { ZERO };
           vec_t<Dim::_3D> u_Phys { ZERO };
           if constexpr (::traits::engine::StressEnergyInTetradBasis<S>) {
             // SR
@@ -489,10 +509,9 @@ namespace kernel {
                 u_Phys);
             }
             if (mass == ZERO) {
-              energy = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+              u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
             } else {
-              energy = mass * math::sqrt(
-                                ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+              u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
             }
           } else if constexpr (
             ::traits::engine::StressEnergyInContravariantBasis<S>) {
@@ -514,28 +533,29 @@ namespace kernel {
               x_Code,
               { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
               u_Cntrv);
-            energy = u_Cntrv[0] * particles.ux1(p) +
-                     u_Cntrv[1] * particles.ux2(p) + u_Cntrv[2] * particles.ux3(p);
+            const real_t uu { u_Cntrv[0] * particles.ux1(p) +
+                              u_Cntrv[1] * particles.ux2(p) +
+                              u_Cntrv[2] * particles.ux3(p) };
             if (mass == ZERO) {
-              energy = math::sqrt(energy);
+              u0 = math::sqrt(uu);
             } else {
-              energy = mass * math::sqrt(ONE + energy);
+              u0 = math::sqrt(ONE + uu);
             }
             metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
           } else {
             raise::KernelError(HERE, "Unsupported engine for stress-energy tensor");
           }
           // compute the corresponding moment
-          real_t coeff = ONE;
+          real_t coeff = (mass == ZERO ? ONE : mass) / u0;
 #pragma unroll
           for (const auto& c : { c1, c2 }) {
             if (c == 0) {
-              coeff *= energy;
+              coeff *= u0;
             } else {
               coeff *= u_Phys[c - 1];
             }
           }
-          buff += dV * coeff / energy;
+          buff += dV * coeff * weight;
         }
       }
     }

@@ -6,7 +6,8 @@
  *   - kernel::hybrid::WallEdgeE_kernel<>  -> edge-E: E_tan = 0 on the wall
  *     plane + odd/even mirror into the ghosts
  *   - kernel::hybrid::WallFaceB_kernel<>  -> face-B: even (zero-gradient)
- *     mirror into the ghosts; the wall-plane B_n is NOT touched
+ *     mirror into the ghosts; the wall-plane B_n is left to Faraday at -x1 and
+ *     set from div B = 0 at +x1 (where it lies outside the active range)
  *   - kernel::hybrid::WallMoments_kernel<> -> cell-centered moments (aux):
  *     additive fold of the ghost deposit tails (image plasma) + mirror fill
  *   - kernel::hybrid::WallBckp_kernel<>   -> cell-centered Ec/Bc gather
@@ -145,13 +146,17 @@ namespace kernel::hybrid {
   };
 
   /**
-   * @brief Even (zero-gradient) mirror of face-B into the wall ghosts; the
-   *        wall-plane B_n is left untouched (frozen by Faraday + E_tan = 0).
+   * @brief Even (zero-gradient) mirror of face-B into the wall ghosts, and the
+   *        wall-plane B_n at the +x1 wall.
    * @tparam D dimension
    * @tparam P true for the +x1 wall
    * @tparam N number of components of the field array (6 for em, 3 for cur)
-   * Launch range: as WallEdgeE_kernel (i1 == 0 is a no-op kept for range
-   * symmetry).
+   * Launch range: as WallEdgeE_kernel.
+   * @note At the -x1 wall the wall-plane B_n is an active node, advanced by
+   *       Faraday with E_tan = 0 (i.e. frozen), and is left untouched. At the
+   *       +x1 wall the wall-plane node lies outside the active range (neither
+   *       initialized nor advanced); i1 == 0 sets it from div B = 0 in the last
+   *       active cell, which keeps it at the frozen interior value.
    */
   template <Dimension D, bool P, uint8_t N>
   struct WallFaceB_kernel {
@@ -166,6 +171,11 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
+        if constexpr (P) {
+          if (i1 == 0) {
+            Fld(i_edge, c0 + 0) = Fld(i_edge - 1, c0 + 0);
+          }
+        }
         if (i1 != 0) {
           if constexpr (not P) {
             Fld(i_edge - i1, c0 + 0) = Fld(i_edge + i1, c0 + 0);
@@ -185,6 +195,16 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
+        if constexpr (P) {
+          if (i1 == 0) {
+            // stored in-plane components are B/dx: div B dx = sum of differences
+            const real_t db2 = (i2 + 1 < Fld.extent(1))
+                                 ? Fld(i_edge - 1, i2 + 1, c0 + 1) -
+                                     Fld(i_edge - 1, i2, c0 + 1)
+                                 : ZERO;
+            Fld(i_edge, i2, c0 + 0) = Fld(i_edge - 1, i2, c0 + 0) - db2;
+          }
+        }
         if (i1 != 0) {
           if constexpr (not P) {
             Fld(i_edge - i1, i2, c0 + 0) = Fld(i_edge + i1, i2, c0 + 0);
@@ -204,6 +224,20 @@ namespace kernel::hybrid {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
+        if constexpr (P) {
+          if (i1 == 0) {
+            // all stored components are B/dx: div B dx = sum of differences
+            const real_t db2 = (i2 + 1 < Fld.extent(1))
+                                 ? Fld(i_edge - 1, i2 + 1, i3, c0 + 1) -
+                                     Fld(i_edge - 1, i2, i3, c0 + 1)
+                                 : ZERO;
+            const real_t db3 = (i3 + 1 < Fld.extent(2))
+                                 ? Fld(i_edge - 1, i2, i3 + 1, c0 + 2) -
+                                     Fld(i_edge - 1, i2, i3, c0 + 2)
+                                 : ZERO;
+            Fld(i_edge, i2, i3, c0 + 0) = Fld(i_edge - 1, i2, i3, c0 + 0) - db2 - db3;
+          }
+        }
         if (i1 != 0) {
           if constexpr (not P) {
             Fld(i_edge - i1, i2, i3, c0 + 0) = Fld(i_edge + i1, i2, i3, c0 + 0);

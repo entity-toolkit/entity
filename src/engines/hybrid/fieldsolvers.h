@@ -97,7 +97,14 @@ namespace ntt {
       const auto d0       = params.get<real_t>("scales.skindepth0");
       const auto rho0     = params.get<real_t>("scales.larmor0");
       const auto dens_min = params.get<real_t>("hybrid.dens_min");
-      const auto hall_lim = params.get<real_t>("hybrid.hall_lim");
+      // The Hall limiter bounds the whistler Courant number of the explicit field
+      // advance that consumes this E. With hybrid.subcycle, B is advanced by
+      // SubcycledFaraday (which applies the limiter at the sub-step dt) and these
+      // full-step fields only feed the particle pusher and the output, so the
+      // limiter is off here.
+      const auto hall_lim = params.get<bool>("hybrid.subcycle")
+                              ? ZERO
+                              : params.get<real_t>("hybrid.hall_lim");
       const auto res_vac  = params.get<real_t>("hybrid.resist_vac");
       const auto res_hyp  = params.get<real_t>("hybrid.resist_hyper");
       const auto res_uni  = params.get<real_t>("hybrid.resist");
@@ -150,14 +157,15 @@ namespace ntt {
      *        the whistler-stiff part of hybrid Ohm's law is integrated at its
      *        own CFL instead of the particle dt.
      *
-     * Reads Bf^(n) from em::345 and the frozen moments from aux; leaves the
+     * Reads Bf^(n) from em::345 and the frozen moments (V in comps 0..2, N in
+     * comp 3, valid ghosts) from `moments`; leaves the
      * advanced B (with valid ghosts) in `cur` -- the same contract as the
      * single-Euler Faraday push #1/#2 it replaces. The third (accepting)
      * Faraday push is redundant here: this advance already integrates the full
      * interval, so the caller accepts `cur` as B^(n+1) (AcceptSubcycledB).
      *
      * Number of sub-steps m: adaptive from the GLOBAL max of the local whistler
-     * speed v_w = d0^2 pi |B| / (dx max(N, dens_min)), targeting a per-sub-step
+     * speed v_w = (d0^2/rho0) pi |B| / (dx max(N, dens_min)), targeting a per-sub-step
      * whistler Courant `hybrid.subcycle_courant`, capped at `hybrid.subcycle_max`
      * (beyond the cap the per-cell Hall limiter, which here receives the
      * SUB-step dt, takes over). The max is MPI-allreduced so every rank runs the
@@ -176,7 +184,8 @@ namespace ntt {
     auto SubcycledFaraday(Metadomain<SimEngine::HYBRID, metric::Minkowski<D>>& metadomain,
                           Domain<SimEngine::HYBRID, metric::Minkowski<D>>& domain,
                           const prm::Parameters&  engine_params,
-                          const SimulationParams& params) -> int {
+                          const SimulationParams& params,
+                          const ndfield_t<D, 6>&  moments) -> int {
       const auto dt       = engine_params.get<real_t>("dt");
       const auto dx       = domain.mesh.metric.get_dx();
       const auto gamma_ad = params.get<real_t>("hybrid.gamma_ad");
@@ -202,10 +211,11 @@ namespace ntt {
       Kokkos::parallel_reduce("VwMax",
                               domain.mesh.rangeActiveCells(),
                               kernel::hybrid::VwMax_kernel<D>(domain.fields.em,
-                                                              domain.fields.aux,
+                                                              moments,
                                                               3,
                                                               3,
                                                               d0,
+                                                              rho0,
                                                               dens_min,
                                                               dx),
                               Kokkos::Max<real_t>(vw_max));
@@ -246,8 +256,8 @@ namespace ntt {
         Kokkos::parallel_for(
           "EMFSub",
           range_act,
-          kernel::hybrid::EMF_kernel<D, true, true>(domain.fields.aux,  // P
-                                                    domain.fields.aux,  // N
+          kernel::hybrid::EMF_kernel<D, true, true>(moments,            // P
+                                                    moments,            // N
                                                     domain.fields.em0,  // Ee_in (unused)
                                                     domain.fields.cur,  // Bf (unused)
                                                     domain.fields.em0,  // Ec (unused)

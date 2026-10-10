@@ -149,6 +149,24 @@ namespace kernel {
     }
 
     Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
+      if constexpr (S == SimEngine::HYBRID) {
+        // hybrid ions are non-relativistic (ux holds the Cartesian 3-velocity):
+        // Newtonian limit of m u^mu u^nu / u^0, i.e.
+        // T^00 = m (1 + v^2/2), T^0i = m v^i, T^ij = m v^i v^j
+        const vec_t<Dim::_3D> v { particles.ux1(p),
+                                  particles.ux2(p),
+                                  particles.ux3(p) };
+        if (c1 == 0 and c2 == 0) {
+          return mass * (ONE + HALF * NORM_SQR(v[0], v[1], v[2]));
+        }
+        real_t T_component = mass;
+        for (const auto& c : { c1, c2 }) {
+          if (c > 0) {
+            T_component *= v[c - 1];
+          }
+        }
+        return T_component;
+      }
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
       if constexpr (::traits::engine::StressEnergyInTetradBasis<S>) {

@@ -25,8 +25,9 @@
  * with the SAME shape function used by the deposit (paper §3.2).
  *
  * FUSED DEPOSIT. Immediately after advancing a particle, the kernel deposits the
- * ion number density N -> aux comp 3 and momentum density V = sum(w*m*v) ->
- * aux comps 0..2, with NO Lorentz factor (non-relativistic). This avoids a second
+ * ion charge density N = sum(w*q) -> aux comp 3 and current density
+ * V = sum(w*q*v) -> aux comps 0..2, with NO Lorentz factor (non-relativistic);
+ * N equals the electron density by quasi-neutrality. This avoids a second
  * pass through the particle table and lets the transient predictor produce its
  * predicted moments WITHOUT writing the particle arrays (so no save/restore of
  * x^(n), v^(n) is needed — both pushes start from the stored state).
@@ -139,7 +140,7 @@ namespace kernel::hybrid {
     // read-only, cell-centered, time-centered (n+1/2) fields:
     //   Ec -> comps 0..2,  Bc -> comps 3..5   (the `bckp` buffer); unused in MomentsOnly
     const randacc_ndfield_t<D, 6> EB;
-    // scatter view over `aux`:  V -> comps 0..2,  N -> comp 3
+    // scatter view over `aux`:  V = sum q w v -> comps 0..2,  N = sum q w -> comp 3
     scatter_ndfield_t<D, 6>       moments;
 
     const M metric;
@@ -524,7 +525,7 @@ namespace kernel::hybrid {
     }
 
     // ........................................................................
-    // fused moment deposit:  N -> comp 3,  V = m*v -> comps 0..2
+    // fused moment deposit:  N = q -> comp 3,  V = q*v -> comps 0..2
     // (non-relativistic). Cell-centered, shape-weighted, transpose of
     // `gather`. Writes go through the sink's emit(c..., comp, val); bounds
     // handling lives in the sink (FlatSink clips per write, the tiled sink
@@ -555,10 +556,13 @@ namespace kernel::hybrid {
       if (ctx.use_weights) {
         w *= particles.weight(p);
       }
-      const real_t cN { w };
-      const real_t cV0 { w * ctx.mass * v[0] };
-      const real_t cV1 { w * ctx.mass * v[1] };
-      const real_t cV2 { w * ctx.mass * v[2] };
+      // charge-weighted moments for the Ohm's law: N = sum q w (the electron
+      // density by quasi-neutrality), V = sum q w v (the ion current density),
+      // so V/N is the charge-weighted ion bulk velocity
+      const real_t cN { w * static_cast<real_t>(ctx.charge) };
+      const real_t cV0 { cN * v[0] };
+      const real_t cV1 { cN * v[1] };
+      const real_t cV2 { cN * v[2] };
 
       if constexpr (D == Dim::_1D) {
         for (int di1 { -window }; di1 <= window; ++di1) {

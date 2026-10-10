@@ -66,7 +66,7 @@ namespace ntt::hybrid {
 
   /**
    * @brief Run the fused push+deposit kernel over all ion species into `aux`.
-   *        Zeroes aux, deposits N -> aux::3 and V = Σ m v -> aux::0..2.
+   *        Zeroes aux, deposits N = Σ q w -> aux::3 and V = Σ q w v -> aux::0..2.
    *        Caller handles the subsequent ghost sync/comm.
    * @tparam Mode MomentsOnly (no push), Predictor (no store), Corrector (store).
    * @param dt time-step (unused for MomentsOnly).

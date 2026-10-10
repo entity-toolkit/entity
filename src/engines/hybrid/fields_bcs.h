@@ -165,8 +165,8 @@ namespace ntt {
      * @brief Apply the perfect-conductor wall condition on `em` along one
      *        orthogonal direction: BC::E -> Ee (comps 0..2): E_tan = 0 on the
      *        wall plane + mirror ghosts; BC::B -> Bf (comps 3..5): even mirror
-     *        ghosts (the wall-plane B_n is left to Faraday, which freezes it
-     *        because of E_tan = 0).
+     *        ghosts; the wall-plane B_n is left to Faraday (frozen by E_tan = 0)
+     *        at -x1 and set from div B = 0 of the last active cell at +x1.
      */
     template <Dimension D>
     void PerfectConductorFieldsIn(

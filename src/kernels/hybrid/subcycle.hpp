@@ -8,8 +8,8 @@
  *     extent so valid ghosts stay valid.
  *   - kernel::hybrid::VwMax_kernel<>        -> parallel_reduce functor for
  *     max over active cells of the local whistler speed at the grid cutoff,
- *     v_w = d0^2 pi |B| / (dx max(N, dens_min)) -- used to pick the number of
- *     field sub-steps each advance needs.
+ *     v_w = (d0^2/rho0) pi |B| / (dx max(N, dens_min)) -- used to pick the
+ *     number of field sub-steps each advance needs.
  * @namespaces:
  *   - kernel::hybrid::
  */
@@ -85,9 +85,10 @@ namespace kernel::hybrid {
   };
 
   /**
-   * @brief max-reduce of v_w(B, N) = d0^2 pi |B|_phys / (dx max(N, dens_min))
-   *        over active cells. B is read from a 6-component field (em) at
-   *        comp_B (U-basis: in-plane comps are physical/dx); N from aux comp 3.
+   * @brief max-reduce of v_w(B, N) = (d0^2/rho0) pi |B|_phys / (dx max(N, dens_min))
+   *        over active cells (d0^2/rho0 is the Hall coefficient of EMF_kernel).
+   *        B is read from a 6-component field (em) at comp_B (U-basis:
+   *        in-plane comps are physical/dx); N from aux comp 3.
    *        STENCIL-AWARE like EMF_kernel::hall_limiter: |B| and N are taken
    *        from the worst cells of the +/-1 neighborhood -- at a void /
    *        overshoot interface the large B and the small N sit in DIFFERENT
@@ -100,13 +101,14 @@ namespace kernel::hybrid {
     ndfield_t<D, 6> NN;
     const uint8_t   comp_B;
     const uint8_t   comp_NN;
-    const real_t    d0, dens_min, dx;
+    const real_t    d0, rho0, dens_min, dx;
 
     VwMax_kernel(const ndfield_t<D, 6>& Bfld,
                  const ndfield_t<D, 6>& NN,
                  uint8_t                comp_B,
                  uint8_t                comp_NN,
                  real_t                 d0,
+                 real_t                 rho0,
                  real_t                 dens_min,
                  real_t                 dx)
       : Bfld { Bfld }
@@ -114,6 +116,7 @@ namespace kernel::hybrid {
       , comp_B { comp_B }
       , comp_NN { comp_NN }
       , d0 { d0 }
+      , rho0 { rho0 }
       , dens_min { dens_min }
       , dx { dx } {}
 
@@ -131,7 +134,7 @@ namespace kernel::hybrid {
           nn  = math::min(nn, NN(ii, comp_NN));
         }
         const real_t vw = SQR(d0) * static_cast<real_t>(constant::PI) *
-                          math::sqrt(bsq) / (dx * math::max(nn, dens_min));
+                          math::sqrt(bsq) / (rho0 * dx * math::max(nn, dens_min));
         lmax = math::max(lmax, vw);
       } else {
         raise::KernelError(HERE,
@@ -156,7 +159,7 @@ namespace kernel::hybrid {
           }
         }
         const real_t vw = SQR(d0) * static_cast<real_t>(constant::PI) *
-                          math::sqrt(bsq) / (dx * math::max(nn, dens_min));
+                          math::sqrt(bsq) / (rho0 * dx * math::max(nn, dens_min));
         lmax = math::max(lmax, vw);
       } else {
         raise::KernelError(HERE,
@@ -184,7 +187,7 @@ namespace kernel::hybrid {
           }
         }
         const real_t vw = SQR(d0) * static_cast<real_t>(constant::PI) *
-                          math::sqrt(bsq) / (dx * math::max(nn, dens_min));
+                          math::sqrt(bsq) / (rho0 * dx * math::max(nn, dens_min));
         lmax = math::max(lmax, vw);
       } else {
         raise::KernelError(HERE,

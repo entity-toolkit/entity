@@ -342,6 +342,14 @@
   #   @default: 64
   #   @note: Beyond the cap the per-cell Hall limiter (`hall_lim`) takes over
   subcycle_max     = 64
+  # Drive the corrector sub-cycled field advance with time-centered moments
+  #   @type: bool
+  #   @default: false
+  #   @note: Only read when `subcycle = true`
+  #   @note: `true` integrates B over the step with `(M^n + M')/2`, the mean of
+  #          the start-of-step and predicted ion moments; `false` uses the
+  #          predicted moments `M'` alone
+  subcycle_centered = false
   # Characteristic flow speed for the hybrid CFL, in physical (code) units
   #   @type: float [>= 0.0]
   #   @default: 0.0

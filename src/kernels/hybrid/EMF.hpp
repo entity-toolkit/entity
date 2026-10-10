@@ -15,8 +15,9 @@ namespace kernel::hybrid {
    * Fields are stored in the contravariant (Idx::U) code basis of the Minkowski
    * metric (cell size dx): components with index i <= D are physical/dx
    * (h_ii = dx^2), out-of-plane components are physical (h_ii = 1). The
-   * deposited moments (PP = V, NN = N in `aux`) are physical (Cartesian XYZ
-   * velocity moments; N in units of n0).
+   * deposited moments (PP = V, NN = N in `aux`) are physical: the ion charge
+   * density N = sum q w (= electron density, units of e n0) and current density
+   * V = sum q w v (Cartesian XYZ).
    *
    * Inputs (Bf, Bfs, Ee_in) are U-basis. The outputs follow two conventions:
    *   - Ee_out (edge E, consumed by the Faraday curl and the trapezoidal
@@ -238,7 +239,7 @@ namespace kernel::hybrid {
 
     /**
      * @brief Per-cell limiter on the Hall term. The whistler speed implied at
-     *        the grid cutoff, v_w = d0^2 pi |B| / (dx N), scales with the local
+     *        the grid cutoff, v_w = (d0^2/rho0) pi |B| / (dx N), scales with the local
      *        |B|/N and can exceed the resolvable dx/dt at shock overshoots or
      *        magnetic cavities (large |B|, small N), where an explicit advance
      *        is unstable. The limiter scales the Hall term so the implied
@@ -303,10 +304,12 @@ namespace kernel::hybrid {
           }
         }
       }
-      // v_w(B, N) = d0^2 pi |B| / (dx N); reduces to the hybrid-CFL formula
-      // (d0^2/rho0) pi / dx at B = B0 = 1/larmor0, N = 1
+      // v_w(B, N) = (d0^2/rho0) pi |B| / (dx N): the Hall coefficient d0^2/rho0
+      // times the grid-cutoff wavenumber pi/dx. Reduces to the hybrid-CFL
+      // formula (d0^2/rho0) pi / dx at |B| = 1 (the stored unit), N = 1
       const real_t v_w = SQR(d0) * static_cast<real_t>(constant::PI) *
-                         math::sqrt(bsq) / (dx * math::max(nn, dens_min));
+                         math::sqrt(bsq) /
+                         (rho0 * dx * math::max(nn, dens_min));
       // branch instead of min(1, x/y): avoids the 0/0 when B = 0
       return (v_w * dt > hall_lim * dx) ? (hall_lim * dx / (dt * v_w)) : ONE;
     }

@@ -57,7 +57,11 @@ namespace kernel {
 
     Inline auto EnergyBinIndex(prtlidx_t p) const -> size_t {
       real_t en;
-      if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
+      if constexpr (S == SimEngine::HYBRID) {
+        // non-relativistic hybrid ions (ux holds the 3-velocity): kinetic
+        // energy per unit mass v^2/2, the Newtonian limit of gamma - 1
+        en = HALF * NORM_SQR(particles.ux1(p), particles.ux2(p), particles.ux3(p));
+      } else if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
         if (is_massive) {
           en = U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)) - ONE;
         } else {

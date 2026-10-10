@@ -796,6 +796,18 @@
             ]
           }
         },
+        "subcycle_centered": {
+          "description": "Drive the corrector sub-cycled field advance with time-centered moments",
+          "type": "boolean",
+          "default": false,
+          "x-entity": {
+            "type": "bool",
+            "notes": [
+              "Only read when `subcycle = true`",
+              "`true` integrates B over the step with `(M^n + M')/2`, the mean of the start-of-step and predicted ion moments; `false` uses the predicted moments `M'` alone"
+            ]
+          }
+        },
         "v_max": {
           "description": "Characteristic flow speed for the hybrid CFL, in physical (code) units",
           "type": "number",

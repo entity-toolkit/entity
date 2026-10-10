@@ -145,13 +145,13 @@ namespace {
 
   // Conservation: the shape function partitions unity for particles whose
   // full stencil lies inside the storage array, so
-  //   sum_cells N   = sum_p inv_n0 / sqrt_det_h * w_p
-  //   sum_cells V_c = sum_p inv_n0 / sqrt_det_h * w_p * mass * v_c(p)
+  //   sum_cells N   = sum_p inv_n0 / sqrt_det_h * w_p * charge
+  //   sum_cells V_c = sum_p inv_n0 / sqrt_det_h * w_p * charge * v_c(p)
   // (sqrt_det_h is uniform for Minkowski). Accumulated in double.
   void check_conservation(const ndfield_t<Dim::_2D, 6>& aux,
                           const std::vector<TestPrtl>&  prtls,
                           double                        w_norm, // inv_n0/sqrt_det_h
-                          double                        mass,
+                          double                        charge,
                           unsigned short                T_TILE,
                           const char*                   label) {
     auto h = Kokkos::create_mirror_view(aux);
@@ -168,10 +168,10 @@ namespace {
     double expect[4] = { 0.0, 0.0, 0.0, 0.0 };
     for (const auto& p : prtls) {
       const double w = w_norm * static_cast<double>(p.weight);
-      expect[0] += w * mass * static_cast<double>(p.ux1);
-      expect[1] += w * mass * static_cast<double>(p.ux2);
-      expect[2] += w * mass * static_cast<double>(p.ux3);
-      expect[3] += w;
+      expect[0] += w * charge * static_cast<double>(p.ux1);
+      expect[1] += w * charge * static_cast<double>(p.ux2);
+      expect[2] += w * charge * static_cast<double>(p.ux3);
+      expect[3] += w * charge;
     }
     bool failed = false;
     for (int c = 0; c < 4; ++c) {
@@ -298,7 +298,7 @@ namespace {
 
     // context: non-trivial mass / inv_n0 / weights; dt small enough that a
     // Predictor push drifts every particle by << 1 cell (stays interior)
-    const float  mass = 1.5f, charge = 1.0f;
+    const float  mass = 1.5f, charge = 2.0f;
     const real_t dt = 0.01, omegaB0 = 0.8, inv_n0 = 0.7;
     const kernel::hybrid::PusherContext ctx { mass,
                                               charge,
@@ -410,7 +410,7 @@ namespace {
     check_conservation(aux_tiled,
                        prtls,
                        static_cast<double>(inv_n0) / sqrt_det_h,
-                       static_cast<double>(mass),
+                       static_cast<double>(charge),
                        T_TILE,
                        label);
   }
