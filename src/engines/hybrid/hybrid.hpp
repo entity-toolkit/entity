@@ -107,6 +107,18 @@ namespace ntt {
         timers.start("MomentFiltering");
         hybrid::MomentsFilter(m_metadomain, dom, m_params);
         timers.stop("MomentFiltering");
+      } else if constexpr (
+        ::traits::pgen::HasCustomPostStep<decltype(m_pgen), domain_t>) {
+        // the problem generator's post-step runs after the last B ghost fill
+        // of the previous step and may edit Bf^(n) (e.g. a sponge layer):
+        // refill the Bf^(n) ghosts (periodic / MPI) and the wall conditions, so
+        // every ghost holds the current value of the cell it copies
+        timers.start("Communications");
+        m_metadomain.CommunicateFields(dom, ::Comm::EM_345);
+        timers.stop("Communications");
+        timers.start("FieldBoundaries");
+        hybrid::FieldBoundaries<M::Dim>(dom, m_metadomain.mesh(), BC::B);
+        timers.stop("FieldBoundaries");
       }
 
       // EMF calculation #0 — the un-averaged field E^(n).
