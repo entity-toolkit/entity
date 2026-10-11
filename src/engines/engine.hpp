@@ -87,6 +87,9 @@ namespace ntt {
     const simtime_t   start_time;
     simtime_t         time;
     timestep_t        step;
+    // true for the step after a load-balance remap, which reallocates the
+    // fields and keeps only em (and em0, cur0 for GRPIC)
+    bool              domains_remapped { false };
 
   public:
     static constexpr Dimension D { M::Dim };
@@ -305,6 +308,7 @@ namespace ntt {
       m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
         step_forward(timers, dom);
       });
+      domains_remapped = false;
       // poststep (if defined)
       if constexpr (
         ::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
@@ -318,9 +322,10 @@ namespace ntt {
         if (lb_enable and lb_interval > 0 and (step + 1) % lb_interval == 0 and
             lb_dim_mask != 0u) {
           timers.start("LoadBalance");
-          m_metadomain.Rebalance(lb_dim_mask,
-                                 lb_tolerance,
-                                 static_cast<ncells_t>(lb_max_shift));
+          domains_remapped = m_metadomain.Rebalance(
+            lb_dim_mask,
+            lb_tolerance,
+            static_cast<ncells_t>(lb_max_shift));
           timers.stop("LoadBalance");
         }
       }

@@ -183,14 +183,14 @@ namespace ntt {
 #endif // MPI_ENABLED
 
   template <SimEngine::type S, MetricClass M>
-  void Metadomain<S, M>::Rebalance(unsigned int dim_mask,
+  auto Metadomain<S, M>::Rebalance(unsigned int dim_mask,
                                    real_t       tolerance,
-                                   ncells_t     max_shift_cells) {
+                                   ncells_t     max_shift_cells) -> bool {
 #if !defined(MPI_ENABLED)
     (void)dim_mask;
     (void)tolerance;
     (void)max_shift_cells;
-    return;
+    return false;
 #else
     raise::ErrorIf(l_subdomain_indices().size() != 1,
                    "Rebalance assumes one local subdomain per rank",
@@ -210,7 +210,7 @@ namespace ntt {
       max_shift_cells = static_cast<ncells_t>(N_GHOSTS);
     }
     if (max_shift_cells == 0 or dim_mask == 0) {
-      return;
+      return false;
     }
 
     const auto local_idx = l_subdomain_indices()[0];
@@ -316,7 +316,7 @@ namespace ntt {
     }
 
     if (not any_shift) {
-      return;
+      return false;
     }
 
     /* --- 4. Per-position prefix sums (offset and physical extent) -------- */
@@ -458,12 +458,14 @@ namespace ntt {
     logger::Checkpoint(
       "Rebalance: domains shifted, fields and particles redistributed",
       HERE);
+    return true;
 #endif // MPI_ENABLED
   }
 
   // NOLINTBEGIN(bugprone-macro-parentheses)
 #define METADOMAIN_REBAL(S, M, D)                                              \
-  template void Metadomain<S, M<D>>::Rebalance(unsigned int, real_t, ncells_t);
+  template auto Metadomain<S, M<D>>::Rebalance(unsigned int, real_t, ncells_t) \
+    -> bool;
 
   NTT_FOREACH_SPECIALIZATION(METADOMAIN_REBAL)
 #undef METADOMAIN_REBAL

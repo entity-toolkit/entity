@@ -30,6 +30,7 @@ namespace ntt {
     using base_t::dt;
     using base_t::max_steps;
     using base_t::runtime;
+    using base_t::domains_remapped;
     using base_t::start_step;
     using base_t::step;
     using base_t::time;
@@ -52,8 +53,9 @@ namespace ntt {
        *            em0::012   --
        *            em0::345   --
        *
-       *            aux::012   V^(n) (except at the first step of a run)
-       *            aux::3     N^(n) (except at the first step of a run)
+       *            aux::012   V^(n) (except at the first step of a run and
+       *                       after a load-balance remap)
+       *            aux::3     N^(n) (likewise)
        *
        *            bckp::012  --
        *            bckp::345  --
@@ -74,8 +76,10 @@ namespace ntt {
                             m_params.template get<bool>("hybrid.subcycle_centered");
 
       // first step of this run (step 0, or the first step after resuming from a
-      // checkpoint, which stores neither the moments nor the field ghosts)
-      if (step == start_step) {
+      // checkpoint, which stores neither the moments nor the field ghosts), or
+      // the first step after a load-balance remap, which reallocates the fields
+      // with only Bf^(n) carried over
+      if (step == start_step or domains_remapped) {
         // fill Bf^(n) ghosts (periodic / MPI) so the field-solver stencils are valid
         timers.start("Communications");
         m_metadomain.CommunicateFields(dom, ::Comm::EM_345);
@@ -214,7 +218,13 @@ namespace ntt {
       if (centered) {
         // keep M^(n) (aux, valid ghosts) before the predictor overwrites it
         timers.start("FieldSolver");
-        if (m_moments_half.span() != dom.fields.aux.span()) {
+        // (re)allocate when the domain shape changes (first use, load-balance
+        // remap): deep_copy needs equal extents, not only an equal span
+        bool reshape = (m_moments_half.span() != dom.fields.aux.span());
+        for (auto r { 0u }; r < static_cast<unsigned>(M::Dim); ++r) {
+          reshape = reshape or (m_moments_half.extent(r) != dom.fields.aux.extent(r));
+        }
+        if (reshape) {
           m_moments_half = ndfield_t<M::Dim, 6> {
             Kokkos::view_alloc("moments_half", Kokkos::WithoutInitializing),
             dom.fields.aux.layout()
