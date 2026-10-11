@@ -8,6 +8,7 @@
  *   - ntt::hybrid::WallEPrime<>               -> void   (em0::345 = Ee'/Ee'')
  *   - ntt::hybrid::WallScratchB<>             -> void   (cur = Bf*, Bf**)
  *   - ntt::hybrid::WallBckpFill<>             -> void   (bckp = Ec'/Bc')
+ *   - ntt::hybrid::MomentsWallFill<>          -> void   (any moments buffer)
  *   - ntt::hybrid::MomentsWallBC<>            -> void   (aux = V, N)
  * @namespaces:
  *   - ntt::hybrid::
@@ -312,6 +313,31 @@ namespace ntt {
             "WallBckp",
             range,
             kernel::hybrid::WallBckp_kernel<D, false>(domain.fields.bckp, i_edge));
+        }
+      });
+    }
+
+    /**
+     * @brief Mirror fill of the wall ghosts of a 6-component moments buffer
+     *        (V_x odd, V_y/V_z/N even) from its active cells, over the full
+     *        transverse extent: the fill half of MomentsWallBC for any buffer.
+     */
+    template <Dimension D>
+    void MomentsWallFill(Domain<SimEngine::HYBRID, metric::Minkowski<D>>& domain,
+                         const Grid<D>&                                   global_grid,
+                         ndfield_t<D, 6>&                                 fld) {
+      wall::ForEachX1Wall<D>(domain, global_grid, [&](short sign, ncells_t i_edge) {
+        const auto fill_range = wall::CellRange<D>(domain, false);
+        if (sign > 0) {
+          Kokkos::parallel_for(
+            "WallMomentsFill",
+            fill_range,
+            kernel::hybrid::WallMoments_kernel<D, true, false>(fld, i_edge));
+        } else {
+          Kokkos::parallel_for(
+            "WallMomentsFill",
+            fill_range,
+            kernel::hybrid::WallMoments_kernel<D, false, false>(fld, i_edge));
         }
       });
     }
