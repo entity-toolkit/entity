@@ -123,6 +123,48 @@ namespace ntt {
     }
     logger::Checkpoint(fmt::format("Synchronizing %s\n", comms.c_str()), HERE);
 
+#if defined(MPI_ENABLED)
+    // deposit tails of all fields of the call in one message per direction,
+    // all directions in flight at once; contributions are summed into the
+    // accumulators one direction at a time, in direction order
+    ndfield_t<M::Dim, 6>         bckp_recv;
+    ndfield_t<M::Dim, 6>         aux_recv;
+    ndfield_t<M::Dim, 3>         buff_recv;
+    std::vector<comm::HaloField> flds;
+    // buff accumulates the received deposit tails of cur/cur0 and is added
+    // into cur/cur0 once after the exchange, so it is zeroed exactly once here
+    if (comm_cur or comm_cur0) {
+      Kokkos::deep_copy(Kokkos::DefaultExecutionSpace {}, domain.fields.buff, ZERO);
+    }
+    if (comm_cur) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 3>(domain.fields.cur,
+                                                    domain.fields.buff,
+                                                    { 0, 3 }));
+    } else if (comm_cur0) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 3>(domain.fields.cur0,
+                                                    domain.fields.buff,
+                                                    { 0, 3 }));
+    }
+    if (comm_bckp) {
+      bckp_recv = g_halo.template Accumulator<6>(0, domain.fields.bckp);
+      flds.push_back(
+        comm::MakeHaloField<M::Dim, 6>(domain.fields.bckp, bckp_recv, components));
+    }
+    if (comm_aux) {
+      aux_recv = g_halo.template Accumulator<6>(1, domain.fields.aux);
+      flds.push_back(
+        comm::MakeHaloField<M::Dim, 6>(domain.fields.aux, aux_recv, { 0, 6 }));
+    }
+    if (comm_buff) {
+      buff_recv = g_halo.template Accumulator<3>(0, domain.fields.buff);
+      flds.push_back(
+        comm::MakeHaloField<M::Dim, 3>(domain.fields.buff, buff_recv, components));
+    }
+    g_halo.Exchange(static_cast<int>(tags) | (1 << 16),
+                    HaloDirections(this, domain, g_mpi_rank, SYNCHRONIZE),
+                    flds,
+                    true);
+#else
     ndfield_t<M::Dim, 6> bckp_recv;
     ndfield_t<M::Dim, 6> aux_recv;
     ndfield_t<M::Dim, 3> buff_recv;
@@ -256,6 +298,7 @@ namespace ntt {
                                           SYNCHRONIZE);
       }
     }
+#endif
     if (comm_cur) {
       AddBufferedFields<M::Dim, 3>(domain.fields.cur,
                                    domain.fields.buff,

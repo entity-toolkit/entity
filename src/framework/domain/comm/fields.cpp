@@ -90,6 +90,57 @@ namespace ntt {
     }
     logger::Checkpoint(fmt::format("Communicating %s\n", comms.c_str()), HERE);
 
+#if defined(MPI_ENABLED)
+    // all fields of the call in one message per direction, all directions
+    // in flight at once (field order fixes the message layout)
+    const auto split_range = [](bool lo, bool hi) -> cell_range_t {
+      if (lo and hi) {
+        return { 0, 6 };
+      } else if (lo) {
+        return { 0, 3 };
+      } else {
+        return { 3, 6 };
+      }
+    };
+    std::vector<comm::HaloField> flds;
+    if (comm_em) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 6>(
+        domain.fields.em,
+        domain.fields.em,
+        split_range(tags & Comm::EM_012, tags & Comm::EM_345)));
+    }
+    if (comm_aux) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 6>(
+        domain.fields.aux,
+        domain.fields.aux,
+        split_range(tags & Comm::AUX_012, tags & Comm::AUX_345)));
+    }
+    if (comm_em0) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 6>(
+        domain.fields.em0,
+        domain.fields.em0,
+        split_range(tags & Comm::EM0_012, tags & Comm::EM0_345)));
+    }
+    if (comm_cur0) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 3>(domain.fields.cur0,
+                                                    domain.fields.cur0,
+                                                    { 0, 3 }));
+    }
+    if (comm_cur) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 3>(domain.fields.cur,
+                                                    domain.fields.cur,
+                                                    { 0, 3 }));
+    }
+    if (comm_bckp) {
+      flds.push_back(comm::MakeHaloField<M::Dim, 6>(domain.fields.bckp,
+                                                    domain.fields.bckp,
+                                                    { 0, 6 }));
+    }
+    g_halo.Exchange(static_cast<int>(tags),
+                    HaloDirections(this, domain, g_mpi_rank, false),
+                    flds,
+                    false);
+#else
     // traverse in all directions and send/recv the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
@@ -212,6 +263,7 @@ namespace ntt {
                                           false);
       }
     }
+#endif
   }
 
   template <SimEngine::type S, MetricClass M>

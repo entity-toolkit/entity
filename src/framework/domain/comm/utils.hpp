@@ -4,6 +4,7 @@
  * @implements
  *  - ntt::GetSendRecvRanks<> -> std::pair<address_t, address_t>
  *  - ntt::GetSendRecvParams<> -> std::pair<comm_params_t, comm_params_t>
+ *  - ntt::HaloDirections<> -> std::vector<comm::HaloDirection> [if MPI_ENABLED]
  * @namespaces:
  *  - ntt::
  * @macros:
@@ -24,6 +25,10 @@
 
 #include "framework/domain/domain.h"
 #include "framework/domain/metadomain.h"
+
+#if defined(MPI_ENABLED)
+  #include "framework/domain/comm/halo_exchange.hpp"
+#endif
 
 #include <Kokkos_Core.hpp>
 
@@ -203,6 +208,57 @@ namespace ntt {
       { { recv_ind, recv_rank }, recv_slice },
     };
   }
+
+#if defined(MPI_ENABLED)
+  /**
+   * @brief Neighbor directions of `domain` that take part in a halo exchange,
+   *        in the order of dir::Directions<D>::all, with the direction index
+   *        as the message tag. A direction whose send and receive partner is
+   *        the domain itself (periodic self-wrap) is marked local.
+   * @param synchronize false: active -> ghost slices (fill);
+   *        true: active + ghost slices (additive deposit remap)
+   */
+  template <SimEngine::type S, MetricClass M>
+  auto HaloDirections(const Metadomain<S, M>* const metadomain,
+                      Domain<S, M>&                 domain,
+                      int                           mpi_rank,
+                      bool synchronize) -> std::vector<comm::HaloDirection> {
+    std::vector<comm::HaloDirection> dirs;
+    int                              tag = 0;
+    for (const auto& direction : dir::Directions<M::Dim>::all) {
+      const auto [send_params,
+                  recv_params] = GetSendRecvParams(metadomain,
+                                                   domain,
+                                                   direction,
+                                                   synchronize);
+      const auto [send_indrank, send_slice] = send_params;
+      const auto [recv_indrank, recv_slice] = recv_params;
+      const auto [send_ind, send_rank]      = send_indrank;
+      const auto [recv_ind, recv_rank]      = recv_indrank;
+      if (send_rank >= 0 or recv_rank >= 0) {
+        raise::ErrorIf(
+          (send_rank == mpi_rank and send_ind != domain.index()) or
+            (recv_rank == mpi_rank and recv_ind != domain.index()),
+          "Multiple-domain single-rank communication not yet implemented",
+          HERE);
+        comm::HaloDirection dr;
+        dr.tag       = tag;
+        dr.local     = (send_ind == domain.index()) and
+                   (recv_ind == domain.index());
+        dr.send_rank = send_rank;
+        dr.recv_rank = recv_rank;
+        raise::ErrorIf(dr.local and (send_rank < 0 or recv_rank < 0),
+                       "HaloDirections: one-sided self communication",
+                       HERE);
+        dr.send_slice = send_slice;
+        dr.recv_slice = recv_slice;
+        dirs.push_back(std::move(dr));
+      }
+      ++tag;
+    }
+    return dirs;
+  }
+#endif
 
 } // namespace ntt
 
