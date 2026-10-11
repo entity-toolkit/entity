@@ -86,6 +86,48 @@ namespace ntt {
       }
     }
 
+    /**
+     * @brief Active cells extended by one ghost layer on every upper side whose
+     *        ghosts are refreshed by the halo exchange (periodic or
+     *        inter-domain); physical-boundary sides are not extended.
+     *
+     * The Faraday update of the active cells reads the edge-E only at i and
+     * i + 1 (forward differences). The EMF stencil reads B, N, V at most one
+     * cell above its own index, so the edge-E of the first upper ghost layer
+     * needs only the two ghost layers of its inputs; every input there is a
+     * ghost copy of the neighbor's data, so it equals the value the neighbor
+     * computes in its first active layer, and E needs no halo exchange before
+     * that update. This requires the B, N, V ghosts to hold the current values
+     * of the cells they copy whenever the EMF runs (hybrid.hpp refills the B
+     * ghosts after a problem-generator post-step).
+     */
+    template <Dimension D>
+    auto ActiveWithUpperHalo(const Domain<SimEngine::HYBRID, metric::Minkowski<D>>& domain)
+      -> range_t<D> {
+      static_assert(N_GHOSTS >= 2, "ActiveWithUpperHalo needs two ghost layers");
+      const auto  flds_bc = domain.mesh.flds_bc();
+      const auto  hi      = [&](unsigned short d) -> ncells_t {
+        const auto bc = flds_bc[d].second;
+        return ((bc == FldsBC::PERIODIC) or (bc == FldsBC::SYNC)) ? 1u : 0u;
+      };
+      if constexpr (D == Dim::_1D) {
+        return CreateRangePolicy<Dim::_1D>({ domain.mesh.i_min(in::x1) },
+                                           { domain.mesh.i_max(in::x1) + hi(0) });
+      } else if constexpr (D == Dim::_2D) {
+        return CreateRangePolicy<Dim::_2D>(
+          { domain.mesh.i_min(in::x1), domain.mesh.i_min(in::x2) },
+          { domain.mesh.i_max(in::x1) + hi(0), domain.mesh.i_max(in::x2) + hi(1) });
+      } else {
+        return CreateRangePolicy<Dim::_3D>(
+          { domain.mesh.i_min(in::x1),
+            domain.mesh.i_min(in::x2),
+            domain.mesh.i_min(in::x3) },
+          { domain.mesh.i_max(in::x1) + hi(0),
+            domain.mesh.i_max(in::x2) + hi(1),
+            domain.mesh.i_max(in::x3) + hi(2) });
+      }
+    }
+
     template <Dimension D>
     void EMF(Domain<SimEngine::HYBRID, metric::Minkowski<D>>& domain,
              const prm::Parameters&                           engine_params,
@@ -109,11 +151,14 @@ namespace ntt {
       const auto res_hyp  = params.get<real_t>("hybrid.resist_hyper");
       const auto res_uni  = params.get<real_t>("hybrid.resist");
       const auto dx       = domain.mesh.metric.get_dx();
+      // the edge-E outputs are read on the active cells and the first upper
+      // ghost layer, so both are computed here (see ActiveWithUpperHalo)
+      const auto range    = ActiveWithUpperHalo(domain);
       if (flag == emf::push0) {
         // clang-format off
         Kokkos::parallel_for(
           "EMFPush",
-          domain.mesh.rangeActiveCells(),
+          range,
           kernel::hybrid::EMF_kernel<D, true>(domain.fields.aux,  // P
                                               domain.fields.aux,  // N
                                               domain.fields.em0,  // Ee_in
@@ -132,7 +177,7 @@ namespace ntt {
         // clang-format off
         Kokkos::parallel_for(
           "EMFPush",
-          domain.mesh.rangeActiveCells(),
+          range,
           kernel::hybrid::EMF_kernel<D, false>(domain.fields.aux,  // P
                                                domain.fields.aux,  // N
                                                domain.fields.em,   // Ee_in
@@ -177,8 +222,9 @@ namespace ntt {
      *
      * Scratch usage: cur = running B (in place), buff = sub-step base for the
      * RK3 combinations, em0::345 = stage E. Combines run over the FULL extent so
-     * valid ghosts stay valid; E/B halo exchanges + wall conditions run after
-     * every stage.
+     * valid ghosts stay valid. Each stage computes E on the active cells and the
+     * upper halo layer (no E exchange, see ActiveWithUpperHalo), then the B
+     * halo exchange + wall conditions run after the Faraday update.
      */
     template <Dimension D>
     auto SubcycledFaraday(Metadomain<SimEngine::HYBRID, metric::Minkowski<D>>& metadomain,
@@ -247,15 +293,17 @@ namespace ntt {
 
       const auto range_act = domain.mesh.rangeActiveCells();
       const auto range_all = domain.mesh.rangeAllCells();
+      const auto range_emf = ActiveWithUpperHalo(domain);
 
       // stage E from frozen moments and the current sub-stepped B (cur):
-      // raw edge-E only -> em0::345 (+ halo + wall condition). The Hall limiter
-      // inside receives the SUB-step dt.
+      // raw edge-E only -> em0::345 on the active cells and the upper halo
+      // layer the Faraday stage reads (see ActiveWithUpperHalo), + wall
+      // condition. The Hall limiter inside receives the SUB-step dt.
       auto emf_stage = [&]() {
         // clang-format off
         Kokkos::parallel_for(
           "EMFSub",
-          range_act,
+          range_emf,
           kernel::hybrid::EMF_kernel<D, true, true>(moments,            // P
                                                     moments,            // N
                                                     domain.fields.em0,  // Ee_in (unused)
@@ -270,7 +318,6 @@ namespace ntt {
                                                     3, 0, 0,            // Ee_out, Ec_out, Bc_out
                                                     dt_sub, gamma_ad, theta, d0, rho0, dens_min, hall_lim, res_vac, res_hyp, res_uni, dx));
         // clang-format on
-        metadomain.CommunicateFields(domain, ::Comm::EM0_345);
         WallEPrime(domain, metadomain.mesh());
       };
       // cur += dt_sub * curl(em0::345), in place (+ halo + wall condition)

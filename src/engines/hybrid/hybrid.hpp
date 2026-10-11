@@ -127,12 +127,12 @@ namespace ntt {
       // Ee^(n) = EMF(N^(n), V^(n), Bf^(n))           -> em::012
       // Ec^(n) = EMF(N^(n), V^(n), Bc^(n)=interp Bf) -> em0::012
       // (these seed the trapezoidal average E' = 1/2(E* + E^(n)) in EMF #1/#2)
+      // (computed on the active cells and the upper halo layer read by
+      // Faraday push #1 and the field output, so no E halo exchange follows;
+      // Ec^(n) is read only at its own cell)
       timers.start("FieldSolver");
       hybrid::EMF(dom, this->engineParams(), m_params, hybrid::emf::push0);
       timers.stop("FieldSolver");
-      timers.start("Communications");
-      m_metadomain.CommunicateFields(dom, ::Comm::EM_012 | ::Comm::EM0_012);
-      timers.stop("Communications");
       // reflecting wall: E_tan = 0 on the wall plane of Ee^(n) before Faraday #1
       // (this is what freezes the wall-plane B_n for an oblique background field)
       timers.start("FieldBoundaries");
@@ -201,8 +201,9 @@ namespace ntt {
       // Using: bckp::012 [Ec'], bckp::345 [Bc']; transient (no store, no particle BCs).
       // Pushes in registers and deposits predicted moments: aux::012 <-- V', aux::3 <-- N'
       timers.start("Communications");
-      // Ee' (em0::345) ghosts for Faraday push #2; Ec'/Bc' (bckp) ghosts for the gather
-      m_metadomain.CommunicateFields(dom, ::Comm::EM0_345 | ::Comm::Bckp);
+      // Ec'/Bc' (bckp) ghosts for the gather; Ee' (em0::345) was computed on
+      // the upper halo layer Faraday push #2 reads
+      m_metadomain.CommunicateFields(dom, ::Comm::Bckp);
       timers.stop("Communications");
       // reflecting wall: E_tan = 0 on the wall plane of Ee' (consumed by
       // Faraday #2) + conductor-mirror the bckp wall ghosts for the gather
@@ -320,8 +321,9 @@ namespace ntt {
       hybrid::EMF(dom, this->engineParams(), m_params, hybrid::emf::push12);
       timers.stop("FieldSolver");
       timers.start("Communications");
-      // Ee'' (em0::345) ghosts for Faraday push #3; Ec''/Bc'' (bckp) ghosts for the gather
-      m_metadomain.CommunicateFields(dom, ::Comm::EM0_345 | ::Comm::Bckp);
+      // Ec''/Bc'' (bckp) ghosts for the gather; Ee'' (em0::345) was computed
+      // on the upper halo layer Faraday push #3 reads
+      m_metadomain.CommunicateFields(dom, ::Comm::Bckp);
       timers.stop("Communications");
       // reflecting wall: E_tan = 0 on the wall plane of Ee'' (consumed by
       // Faraday #3) + conductor-mirror the bckp wall ghosts for the corrector
