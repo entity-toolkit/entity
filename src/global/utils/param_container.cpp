@@ -12,6 +12,7 @@
 
   #include <any>
   #include <cstddef>
+  #include <cstdint>
   #include <exception>
   #include <functional>
   #include <map>
@@ -220,6 +221,7 @@ namespace prm {
 
   void Parameters::write(adios2::IO& io) const {
     register_write_function<bool>();
+    register_write_function<uint8_t>();
     register_write_function<float>();
     register_write_function<double>();
     register_write_function<long double>();
@@ -239,6 +241,7 @@ namespace prm {
     register_write_function<ntt::Metric>();
     register_write_function<ntt::SimEngine>();
 
+    register_write_function_for_pair<uint8_t>();
     register_write_function_for_pair<float>();
     register_write_function_for_pair<double>();
     register_write_function_for_pair<long double>();
@@ -257,6 +260,7 @@ namespace prm {
     register_write_function_for_pair<ntt::Metric>();
     register_write_function_for_pair<ntt::SimEngine>();
 
+    register_write_function_for_vector<uint8_t>();
     register_write_function_for_vector<float>();
     register_write_function_for_vector<double>();
     register_write_function_for_vector<long double>();
@@ -275,6 +279,7 @@ namespace prm {
     register_write_function_for_vector<ntt::Metric>();
     register_write_function_for_vector<ntt::SimEngine>();
 
+    register_write_function_for_vector_of_pair<uint8_t>();
     register_write_function_for_vector_of_pair<float>();
     register_write_function_for_vector_of_pair<double>();
     register_write_function_for_vector_of_pair<long double>();
@@ -293,6 +298,7 @@ namespace prm {
     register_write_function_for_vector_of_pair<ntt::Metric>();
     register_write_function_for_vector_of_pair<ntt::SimEngine>();
 
+    register_write_function_for_vector_of_vector<uint8_t>();
     register_write_function_for_vector_of_vector<float>();
     register_write_function_for_vector_of_vector<double>();
     register_write_function_for_vector_of_vector<long double>();
@@ -311,6 +317,7 @@ namespace prm {
     register_write_function_for_vector_of_vector<ntt::Metric>();
     register_write_function_for_vector_of_vector<ntt::SimEngine>();
 
+    register_write_function_for_dict<uint8_t>();
     register_write_function_for_dict<float>();
     register_write_function_for_dict<double>();
     register_write_function_for_dict<long double>();

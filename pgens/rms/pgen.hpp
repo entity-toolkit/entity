@@ -582,37 +582,37 @@ namespace user {
                             : xmax - injection_interval * dt * beta_injector -
                                 (injection_interval + 1) * dt * beta_upstream;
 
-        // define indice range to reset fields
-        boundaries_t<bool> incl_ghosts;
-        for (auto d = 0; d < M::Dim; ++d) {
-          incl_ghosts.emplace_back(false, false);
-        }
+        // // define indice range to reset fields
+        // boundaries_t<bool> incl_ghosts;
+        // for (auto d = 0; d < M::Dim; ++d) {
+        //   incl_ghosts.emplace_back(false, false);
+        // }
 
-        // define box to reset fields
-        boundaries_t<real_t> purge_box;
-        // loop over all dimension
-        for (auto d = 0u; d < M::Dim; ++d) {
-          if (d == 0) {
-            purge_box.emplace_back(xmin, global_xmax);
-          } else {
-            purge_box.push_back(Range::All);
-          }
-        }
+        // // define box to reset fields
+        // boundaries_t<real_t> purge_box;
+        // // loop over all dimension
+        // for (auto d = 0u; d < M::Dim; ++d) {
+        //   if (d == 0) {
+        //     purge_box.emplace_back(xmin, global_xmax);
+        //   } else {
+        //     purge_box.push_back(Range::All);
+        //   }
+        // }
 
-        const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
-        tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
-        for (auto d = 0; d < M::Dim; ++d) {
-          x_min[d] = extent[d].first;
-          x_max[d] = extent[d].second;
-        }
+        // const auto extent = domain.mesh.ExtentToRange(purge_box, incl_ghosts);
+        // tuple_t<ncells_t, M::Dim> x_min { 0 }, x_max { 0 };
+        // for (auto d = 0; d < M::Dim; ++d) {
+        //   x_min[d] = extent[d].first;
+        //   x_max[d] = extent[d].second;
+        // }
 
-        Kokkos::parallel_for("ResetFields",
-                             CreateRangePolicy<M::Dim>(x_min, x_max),
-                             arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
-                               domain.fields.em,
-                               init_flds,
-                               domain.mesh.metric });
-        metadomain.CommunicateFields(domain, Comm::E | Comm::B);
+        // Kokkos::parallel_for("ResetFields",
+        //                      CreateRangePolicy<M::Dim>(x_min, x_max),
+        //                      arch::SetEMFields_kernel<S, M, decltype(init_flds)> {
+        //                        domain.fields.em,
+        //                        init_flds,
+        //                        domain.mesh.metric });
+        // metadomain.CommunicateFields(domain, Comm::E | Comm::B);
 
         /*
           tag particles inside the injection zone as dead
