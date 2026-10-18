@@ -31,10 +31,70 @@
 
 #include <Kokkos_Core.hpp>
 
+#if defined(TILED_DEPOSIT) && defined(KOKKOS_ENABLE_SYCL)
+  #include <sycl/ext/oneapi/experimental/address_cast.hpp>
+#endif
+
 #if defined(TILED_DEPOSIT)
 
 namespace kernel {
   using namespace ntt;
+
+  /**
+   * @brief Per-team deposit scratch, addressed by a flat index (the
+   *        harness uses the LayoutLeft order k = cell + ncells * comp).
+   *
+   * On SYCL the scratch is held as a local-address-space pointer. Kokkos
+   * hands out team scratch as a generic pointer; while a generic pointer
+   * into SLM exists in a kernel, the Intel GPU compiler resolves the address
+   * space of every generic load, store and atomic of that kernel (particle
+   * arrays, fields, scratch) at run time, i.e. a tag test and a branch per
+   * access. With the scratch addressed only through the local pointer, the
+   * remaining generic accesses resolve to global memory at compile time.
+   */
+  struct TileScratch {
+  #if defined(KOKKOS_ENABLE_SYCL)
+    using ptr_t = sycl::multi_ptr<real_t,
+                                  sycl::access::address_space::local_space,
+                                  sycl::access::decorated::yes>;
+  #else
+    using ptr_t = real_t*;
+  #endif
+    ptr_t p;
+
+    // `base` must point into the team's level-0 scratch
+    Inline explicit TileScratch(void* base)
+    #if defined(KOKKOS_ENABLE_SYCL)
+      : p { sycl::ext::oneapi::experimental::static_address_cast<
+              sycl::access::address_space::local_space>(static_cast<real_t*>(base))
+              .get_decorated() } {
+    }
+    #else
+      : p { static_cast<real_t*>(base) } {
+    }
+    #endif
+
+    Inline void add(int k, real_t v) const {
+  #if defined(KOKKOS_ENABLE_SYCL)
+      sycl::atomic_ref<real_t,
+                       sycl::memory_order::relaxed,
+                       sycl::memory_scope::work_group,
+                       sycl::access::address_space::local_space>
+        ref { p[k] };
+      ref.fetch_add(v);
+  #else
+      Kokkos::atomic_add(p + k, v);
+  #endif
+    }
+
+    Inline auto get(int k) const -> real_t {
+      return p[k];
+    }
+
+    Inline void set(int k, real_t v) const {
+      p[k] = v;
+    }
+  };
 
   /**
    * @brief Generic tiled particle->grid scatter harness.
@@ -181,7 +241,7 @@ namespace kernel {
      * particle's stencil reaches past the extent).
      */
     struct Sink {
-      scratch_t        scr;
+      TileScratch      scr;
       ndfield_t<D, NG> F;
       int              o1, o2, o3; // global coord of scratch index 0 per axis
       int              e1, e2, e3; // global storage extents
@@ -205,7 +265,7 @@ namespace kernel {
 
       Inline void operator()(int g_i1, int c, real_t v) const {
         if (to_scratch) {
-          Kokkos::atomic_add(&scr(g_i1 - o1, c), v);
+          scr.add((g_i1 - o1) + TE * c, v);
         } else if (g_i1 >= 0 and g_i1 < e1) {
           Kokkos::atomic_add(&F(g_i1, comp_offset + c), v);
         }
@@ -213,7 +273,7 @@ namespace kernel {
 
       Inline void operator()(int g_i1, int g_i2, int c, real_t v) const {
         if (to_scratch) {
-          Kokkos::atomic_add(&scr(g_i1 - o1, g_i2 - o2, c), v);
+          scr.add((g_i1 - o1) + TE * ((g_i2 - o2) + TE * c), v);
         } else if (g_i1 >= 0 and g_i1 < e1 and g_i2 >= 0 and g_i2 < e2) {
           Kokkos::atomic_add(&F(g_i1, g_i2, comp_offset + c), v);
         }
@@ -221,7 +281,9 @@ namespace kernel {
 
       Inline void operator()(int g_i1, int g_i2, int g_i3, int c, real_t v) const {
         if (to_scratch) {
-          Kokkos::atomic_add(&scr(g_i1 - o1, g_i2 - o2, g_i3 - o3, c), v);
+          scr.add((g_i1 - o1) +
+                    TE * ((g_i2 - o2) + TE * ((g_i3 - o3) + TE * c)),
+                  v);
         } else if (g_i1 >= 0 and g_i1 < e1 and g_i2 >= 0 and g_i2 < e2 and
                    g_i3 >= 0 and g_i3 < e3) {
           Kokkos::atomic_add(&F(g_i1, g_i2, g_i3, comp_offset + c), v);
@@ -336,12 +398,12 @@ namespace kernel {
       // own Sink), then cooperatively flush scratch to the global field
       // with a bounds clip against the storage extent.
       if constexpr (D == Dim::_1D) {
-        scratch_t scr { team.team_scratch(0), TE };
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, TE * NCi),
                              [&](const int idx) {
                                const int li = idx / NCi;
                                const int c  = idx - li * NCi;
-                               scr(li, c)   = ZERO;
+                               scr.set(li + TE * c, ZERO);
                              });
         team.team_barrier();
 
@@ -364,20 +426,20 @@ namespace kernel {
                                if (gi < 0 or gi >= ext1) {
                                  return;
                                }
-                               const real_t v = scr(li, c);
+                               const real_t v = scr.get(li + TE * c);
                                if (v != ZERO) {
                                  Kokkos::atomic_add(&F(gi, comp_offset + c), v);
                                }
                              });
       } else if constexpr (D == Dim::_2D) {
-        scratch_t scr { team.team_scratch(0), TE, TE };
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, SQR(TE) * NCi),
                              [&](const int idx) {
                                const int lij  = idx / NCi;
                                const int c    = idx - lij * NCi;
                                const int li   = lij / TE;
                                const int lj   = lij - li * TE;
-                               scr(li, lj, c) = ZERO;
+                               scr.set(li + TE * (lj + TE * c), ZERO);
                              });
         team.team_barrier();
 
@@ -404,14 +466,14 @@ namespace kernel {
                                    (gj < 0 or gj >= ext2)) {
                                  return;
                                }
-                               const real_t v = scr(li, lj, c);
+                               const real_t v = scr.get(li + TE * (lj + TE * c));
                                if (v != ZERO) {
                                  Kokkos::atomic_add(&F(gi, gj, comp_offset + c),
                                                     v);
                                }
                              });
       } else if constexpr (D == Dim::_3D) {
-        scratch_t scr { team.team_scratch(0), TE, TE, TE };
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, CUBE(TE) * NCi),
                              [&](const int idx) {
                                const int lijk     = idx / NCi;
@@ -420,7 +482,7 @@ namespace kernel {
                                const int rem      = lijk - li * TE * TE;
                                const int lj       = rem / TE;
                                const int lk       = rem - lj * TE;
-                               scr(li, lj, lk, c) = ZERO;
+                               scr.set(li + TE * (lj + TE * (lk + TE * c)), ZERO);
                              });
         team.team_barrier();
 
@@ -451,7 +513,8 @@ namespace kernel {
                                    (gk < 0 or gk >= ext3)) {
                                  return;
                                }
-                               const real_t v = scr(li, lj, lk, c);
+                               const real_t v = scr.get(
+                                 li + TE * (lj + TE * (lk + TE * c)));
                                if (v != ZERO) {
                                  Kokkos::atomic_add(
                                    &F(gi, gj, gk, comp_offset + c),
