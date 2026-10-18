@@ -16,6 +16,10 @@
  *     partitioned-prefix + flat-tail composition both reproduce the flat
  *     reference.
  *
+ * Every case runs with the real_t scratch and with the two-word fixed-point
+ * scratch (FIXED; bounds from the largest weight and speed of the test
+ * particles).
+ *
  * Modes covered: MomentsOnly (stored positions, no push) and Predictor
  * (in-register push with zero E/B — velocities unchanged, positions
  * drift by dt*v — exercising the post-push footprint select without
@@ -37,6 +41,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_ScatterView.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -196,6 +201,7 @@ namespace {
    *
    * @tparam T_TILE tile edge length
    * @tparam Mode   MomentsOnly or Predictor
+   * @tparam FIXED  fixed-point tile scratch instead of real_t atomic adds
    * @param stale_layout  bucket ALL partitioned particles into tile 0 (the
    *                      maximally-stale layout): every particle off tile 0
    *                      must take the per-particle escape valve.
@@ -204,7 +210,7 @@ namespace {
    *                      is deposited by the flat tail pass, emulating the
    *                      launcher's appended-particles handling.
    */
-  template <unsigned short T_TILE, kernel::hybrid::PushMode Mode>
+  template <unsigned short T_TILE, kernel::hybrid::PushMode Mode, bool FIXED>
   void run_case(bool stale_layout, int n_partitioned, const char* label) {
     using metric_t = metric::Minkowski<Dim::_2D>;
     using kernel_t = kernel::hybrid::Pusher_kernel<metric_t, Mode>;
@@ -382,12 +388,32 @@ namespace {
                                                   6,
                                                   kernel_t::window,
                                                   T_TILE,
-                                                  kernel_t>;
+                                                  kernel_t,
+                                                  FIXED>;
+      // bound on |value| of one write: w q (N), w q |v| (V), largest w and |v|
+      Kokkos::Array<real_t, 4> bound {};
+      if constexpr (FIXED) {
+        double wmax = 0.0, vmax = 0.0;
+        for (const auto& tp : prtls) {
+          wmax = std::max(wmax, std::fabs(static_cast<double>(tp.weight)));
+          vmax = std::max({ vmax,
+                            std::fabs(static_cast<double>(tp.ux1)),
+                            std::fabs(static_cast<double>(tp.ux2)),
+                            std::fabs(static_cast<double>(tp.ux3)) });
+        }
+        const auto bN = static_cast<real_t>(
+          static_cast<double>(inv_n0) / sqrt_det_h * wmax *
+          std::fabs(static_cast<double>(charge)));
+        const auto bV = static_cast<real_t>(static_cast<double>(bN) * 2.0 * vmax);
+        bound = Kokkos::Array<real_t, 4> { bV, bV, bV, bN };
+      }
       const kernel_t body { ctx, bc, arrays, EB, metric };
       const tiled_t  kern { aux_tiled,
                             body,
                             layout,
-                            static_cast<npart_t>(n_alive) };
+                            static_cast<npart_t>(n_alive),
+                            0,
+                            bound };
       const auto     policy = kernel::MakeTiledPolicy(kern, total_tiles, 0);
       Kokkos::parallel_for("TiledPushDeposit", policy, kern);
       Kokkos::fence("tiled done");
@@ -415,19 +441,20 @@ namespace {
                        label);
   }
 
-  template <unsigned short T_TILE>
+  template <unsigned short T_TILE, bool FIXED>
   void run_all() {
+    std::cerr << "--- scratch: " << (FIXED ? "fixed point" : "real_t") << "\n";
     constexpr int n_alive = 25;
     using kernel::hybrid::PushMode;
     // in-tile fast path
-    run_case<T_TILE, PushMode::MomentsOnly>(false, n_alive, "moments");
-    run_case<T_TILE, PushMode::Predictor>(false, n_alive, "predictor");
+    run_case<T_TILE, PushMode::MomentsOnly, FIXED>(false, n_alive, "moments");
+    run_case<T_TILE, PushMode::Predictor, FIXED>(false, n_alive, "predictor");
     // per-particle escape valve (maximally-stale layout)
-    run_case<T_TILE, PushMode::MomentsOnly>(true, n_alive, "moments/stale");
-    run_case<T_TILE, PushMode::Predictor>(true, n_alive, "predictor/stale");
+    run_case<T_TILE, PushMode::MomentsOnly, FIXED>(true, n_alive, "moments/stale");
+    run_case<T_TILE, PushMode::Predictor, FIXED>(true, n_alive, "predictor/stale");
     // appended-particles tail: tiled prefix + flat tail == flat all
-    run_case<T_TILE, PushMode::MomentsOnly>(false, 15, "moments/tail");
-    run_case<T_TILE, PushMode::Predictor>(false, 15, "predictor/tail");
+    run_case<T_TILE, PushMode::MomentsOnly, FIXED>(false, 15, "moments/tail");
+    run_case<T_TILE, PushMode::Predictor, FIXED>(false, 15, "predictor/tail");
   }
 
 } // namespace
@@ -435,9 +462,12 @@ namespace {
 auto main(int argc, char* argv[]) -> int {
   Kokkos::initialize(argc, argv);
   try {
-    run_all<4u>();
-    run_all<8u>();
-    run_all<16u>();
+    run_all<4u, false>();
+    run_all<8u, false>();
+    run_all<16u, false>();
+    run_all<4u, true>();
+    run_all<8u, true>();
+    run_all<16u, true>();
   } catch (std::exception& e) {
     std::cerr << e.what() << '\n';
     Kokkos::finalize();

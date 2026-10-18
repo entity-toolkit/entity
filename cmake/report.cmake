@@ -258,6 +258,10 @@ string(
   "    "
   "- Deposit drift [${Magenta}tiled_deposit_drift${ColorReset}]:    "
   ${tiled_deposit_drift}
+  "\n"
+  "    "
+  "- Fixed-point moments [${Magenta}tiled_deposit_fixed_point${ColorReset}]:    "
+  ${tiled_deposit_fixed_point}
   "\n")
 
 string(

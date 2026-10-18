@@ -131,3 +131,9 @@ set(default_tiled_deposit_drift
     1
     CACHE INTERNAL
           "Default tiled-deposit scratch halo drift (cells between sorts)")
+
+set(default_tiled_deposit_fixed_point
+    OFF
+    CACHE INTERNAL
+          "Default flag for the fixed-point tile scratch of the hybrid deposit")
+set_property(CACHE default_tiled_deposit_fixed_point PROPERTY TYPE BOOL)

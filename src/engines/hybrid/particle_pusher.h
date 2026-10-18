@@ -64,6 +64,69 @@
 
 namespace ntt::hybrid {
 
+#if defined(TILED_DEPOSIT) && defined(TILED_DEPOSIT_FIXED_POINT)
+  /**
+   * @brief Bounds on |value| of one write of the fused moment deposit per
+   *        component (V 0..2, N 3), for the fixed-point tile scratch.
+   *
+   * A write is w q S (N) or w q v_i S (V), with the shape weight S <= 1 and
+   * w = 1 / (n0 sqrt_det_h), times the particle weight with use_weights. For
+   * a push the speed is bounded by 2 dx / dt, the largest displacement the
+   * single-cell rebucket of each half drift represents (a faster particle is
+   * not advanced correctly in any case); for the moments-only deposit the
+   * bound is twice the largest stored speed. A write above its bound goes to
+   * the global field instead of the scratch, so the bounds affect only speed
+   * and rounding, never the sum.
+   */
+  template <kernel::hybrid::PushMode Mode, CartesianMetricClass M>
+  auto DepositWriteBound(const Domain<SimEngine::HYBRID, M>&    domain,
+                         const Particles<M::Dim, M::CoordType>& species,
+                         const kernel::hybrid::PusherContext&   ctx,
+                         real_t dt) -> Kokkos::Array<real_t, 4> {
+    // Minkowski: sqrt_det_h is uniform
+    coord_t<M::Dim> xc { ZERO };
+    for (auto d = 0u; d < static_cast<unsigned int>(M::Dim); ++d) {
+      xc[d] = HALF;
+    }
+    real_t w = ctx.inv_n0 / domain.mesh.metric.sqrt_det_h(xc);
+    if (ctx.use_weights) {
+      real_t     wmax   = ZERO;
+      const auto weight = species.weight;
+      Kokkos::parallel_reduce(
+        "DepositWriteBoundW",
+        species.rangeActiveParticles(),
+        Lambda(prtlidx_t p, real_t & m) {
+          m = math::max(m, math::abs(weight(p)));
+        },
+        Kokkos::Max<real_t>(wmax));
+      w *= wmax;
+    }
+    const real_t bN = w * math::abs(static_cast<real_t>(ctx.charge));
+    real_t       vmax;
+    if constexpr (Mode == kernel::hybrid::PushMode::MomentsOnly) {
+      real_t     vm  = ZERO;
+      const auto ux1 = species.ux1;
+      const auto ux2 = species.ux2;
+      const auto ux3 = species.ux3;
+      Kokkos::parallel_reduce(
+        "DepositWriteBoundV",
+        species.rangeActiveParticles(),
+        Lambda(prtlidx_t p, real_t & m) {
+          m = math::max(m,
+                        math::max(math::abs(ux1(p)),
+                                  math::max(math::abs(ux2(p)), math::abs(ux3(p)))));
+        },
+        Kokkos::Max<real_t>(vm));
+      vmax = TWO * vm;
+    } else {
+      vmax = TWO * domain.mesh.metric.get_dx() / dt;
+    }
+    // at rest every V write is zero: any positive bound will do
+    const real_t bV = bN * math::max(vmax, static_cast<real_t>(1e-6));
+    return Kokkos::Array<real_t, 4> { bV, bV, bV, bN };
+  }
+#endif
+
   /**
    * @brief Run the fused push+deposit kernel over all ion species into `aux`.
    *        Zeroes aux, deposits N = Σ q w -> aux::3 and V = Σ q w v -> aux::0..2.
@@ -170,20 +233,31 @@ namespace ntt::hybrid {
         }
       }
 
-      using body_t  = kernel::hybrid::Pusher_kernel<M, Mode>;
+      using body_t = kernel::hybrid::Pusher_kernel<M, Mode>;
+#if defined(TILED_DEPOSIT_FIXED_POINT)
+      constexpr bool fixed_point = true;
+#else
+      constexpr bool fixed_point = false;
+#endif
       using tiled_t = kernel::TiledScatter_kernel<M::Dim,
                                                   4, // NC: V (0..2) + N (3)
                                                   6, // NG: aux comps
                                                   body_t::window,
                                                   static_cast<unsigned short>(
                                                     TILED_DEPOSIT_TILE_SIZE),
-                                                  body_t>;
+                                                  body_t,
+                                                  fixed_point>;
       const body_t body { ctx,
                           pusher_boundaries,
                           species,
                           domain.fields.bckp,
                           domain.mesh.metric };
-      const tiled_t kern { domain.fields.aux, body, layout, species.npart() };
+      Kokkos::Array<real_t, 4> write_bound {};
+      if constexpr (fixed_point) {
+        write_bound = DepositWriteBound<Mode>(domain, species, ctx, dt);
+      }
+      const tiled_t kern { domain.fields.aux, body, layout,
+                           species.npart(),   0,    write_bound };
       const auto    policy = kernel::MakeTiledPolicy(kern,
                                                      layout.ntiles_total,
                                                      team_size_req);

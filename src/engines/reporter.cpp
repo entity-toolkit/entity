@@ -37,6 +37,9 @@ namespace ntt {
   #if defined(TILED_DEPOSIT_DRIFT)
     reporter::AddParam(report, 4, "Halo drift", "%d", TILED_DEPOSIT_DRIFT);
   #endif
+  #if defined(TILED_DEPOSIT_FIXED_POINT)
+    reporter::AddParam(report, 4, "Moment scratch", "%s", "fixed point");
+  #endif
     if (params.template get<std::size_t>(
           "algorithms.deposit.tiled_deposit_team_size") == 0u) {
       reporter::AddParam(report, 4, "Team size", "%s", "AUTO (Kokkos)");
