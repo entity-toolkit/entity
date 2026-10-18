@@ -72,6 +72,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
+#include <type_traits>
 
 namespace ntt::sort_helpers {
 
@@ -119,11 +120,15 @@ namespace ntt::sort_helpers {
   // over-capacity buffer whose extent is the reserved capacity, not the count
   // to sort. oneDPL's sort_by_key is in place, so no output/scratch buffers
   // are allocated here and `perm` may safely be a reused persistent buffer.
-  inline void sort_by_key_dispatch(const array_t<ncells_t*>& keys,
-                                   prtl_perm_t&              perm,
+  // The radix sort makes one pass per 4 bits of the key type, so callers may
+  // pass the keys in the narrowest unsigned type that holds n_bins.
+  template <typename K>
+  inline void sort_by_key_dispatch(const array_t<K*>& keys,
+                                   prtl_perm_t&       perm,
                                    ncells_t /*n_bins*/,
                                    npart_t n,
                                    ::sort::backend::OneDPL) {
+    static_assert(std::is_unsigned_v<K>, "sort keys must be unsigned");
     if (n == 0u) {
       return;
     }
