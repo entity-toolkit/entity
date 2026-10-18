@@ -160,14 +160,20 @@ namespace comm {
       }
       const HaloSegment& g   = seg(lo);
       const int64_t      loc = e - start(lo);
-      int64_t            r   = loc;
-      const int64_t      i1  = r % g.n[0];
-      r                     /= g.n[0];
-      const int64_t i2       = r % g.n[1];
-      r                     /= g.n[1];
-      const int64_t i3       = r % g.n[2];
-      r                     /= g.n[2];
-      const int64_t c        = g.c0 + r;
+      // block-local index decomposition in 32 bit (a halo block holds far
+      // fewer than 2^32 elements; 64-bit integer division is emulated on
+      // GPUs)
+      const auto     n0  = static_cast<uint32_t>(g.n[0]);
+      const auto     n1  = static_cast<uint32_t>(g.n[1]);
+      const auto     n2  = static_cast<uint32_t>(g.n[2]);
+      const auto     r   = static_cast<uint32_t>(loc);
+      const uint32_t q1  = r / n0;
+      const int64_t  i1  = r - q1 * n0;
+      const uint32_t q2  = q1 / n1;
+      const int64_t  i2  = q1 - q2 * n1;
+      const uint32_t q3  = q2 / n2;
+      const int64_t  i3  = q2 - q3 * n2;
+      const int64_t  c   = g.c0 + static_cast<int64_t>(q3);
       const int64_t a_src    = (g.src_lo[0] + i1) * g.st[0] +
                             (g.src_lo[1] + i2) * g.st[1] +
                             (g.src_lo[2] + i3) * g.st[2] + c * g.st[3];
