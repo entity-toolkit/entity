@@ -26,6 +26,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace ntt {
 
@@ -65,6 +66,42 @@ namespace ntt {
         });
     } else {
       raise::Error("Wrong Dimension", HERE);
+    }
+  }
+
+  /**
+   * @brief Active cells plus the ghost layers on every side without a halo
+   *        exchange (a physical wall): those ghosts hold deposit tails that
+   *        the wall condition folds back afterwards, and the transverse halo
+   *        sync delivers the neighbors' tails into the same ghost cells.
+   */
+  template <SimEngine::type S, MetricClass M>
+  auto ActiveAndWallGhostCells(const Domain<S, M>& domain) -> range_t<M::Dim> {
+    constexpr auto        D = M::Dim;
+    std::vector<ncells_t> lo, hi;
+    const in              axes[3] { in::x1, in::x2, in::x3 };
+    for (auto d { 0u }; d < static_cast<unsigned>(D); ++d) {
+      lo.push_back(domain.mesh.i_min(axes[d]));
+      hi.push_back(domain.mesh.i_max(axes[d]));
+    }
+    for (const auto& direction : dir::Directions<D>::orth) {
+      const auto bc = domain.mesh.flds_bc_in(direction);
+      if (bc == FldsBC::SYNC or bc == FldsBC::PERIODIC) {
+        continue;
+      }
+      const auto d = static_cast<unsigned>(direction.get_dim());
+      if (direction.get_sign() < 0) {
+        lo[d] -= N_GHOSTS;
+      } else {
+        hi[d] += N_GHOSTS;
+      }
+    }
+    if constexpr (D == Dim::_1D) {
+      return CreateRangePolicy<D>({ lo[0] }, { hi[0] });
+    } else if constexpr (D == Dim::_2D) {
+      return CreateRangePolicy<D>({ lo[0], lo[1] }, { hi[0], hi[1] });
+    } else {
+      return CreateRangePolicy<D>({ lo[0], lo[1], lo[2] }, { hi[0], hi[1], hi[2] });
     }
   }
 
@@ -317,9 +354,12 @@ namespace ntt {
                                    components);
     }
     if (comm_aux) {
+      // the hybrid moments: the wall ghosts receive the transverse
+      // neighbors' tails here, so that the image-plasma fold that follows
+      // carries them into the active cells
       AddBufferedFields<M::Dim, 6>(domain.fields.aux,
                                    aux_recv,
-                                   domain.mesh.rangeActiveCells(),
+                                   ActiveAndWallGhostCells(domain),
                                    { 0, 6 });
     }
     if (comm_buff) {
