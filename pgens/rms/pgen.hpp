@@ -552,35 +552,21 @@ namespace user {
       const auto dt = params.template get<real_t>("algorithms.timestep.dt");
 
       if (step % injection_interval == 0) {
-        /*
-         *  Replenish plasma in a moving injector
-         *
-         *  Injector setup:
-         *
-         * global_xmin           purge/replenish  global_xmax
-         * |         x_init            |          |
-         * V           v               V          V
-         * |:::::::::::;::::::::::|\\\\\\\\|......|
-         *                       xmin    xmax
-         *                                 ^
-         *                                 |
-         *                           moving injector
-         */
-
         // initial position of injector
+
         const auto x_init = global_xmin +
                             filling_fraction * (global_xmax - global_xmin);
-
-        // compute the position of the injector after the current timestep
-        const auto xmax = std::min<real_t>(x_init + beta_injector * (step + 1) * dt,
-                                           global_xmax);
-
-        // compute the beginning of the injected region
+        const auto front = [&](timestep_t s) {
+          // injector position at time (s + 1) * dt
+          return std::min<real_t>(x_init + beta_injector * (s + 1) * dt,
+                                  global_xmax);
+        };
+        const auto xmax = front(step);
         const auto xmin = (step == 0)
                             ? std::max<real_t>(x_init - beta_upstream * dt,
                                                global_xmin)
-                            : xmax - injection_interval * dt * beta_injector -
-                                (injection_interval + 1) * dt * beta_upstream;
+                            : front(step - injection_interval) -
+                                injection_interval * dt * beta_upstream;
 
         // // define indice range to reset fields
         // boundaries_t<bool> incl_ghosts;
