@@ -29,11 +29,7 @@
 #include "utils/log.h"
 #include "utils/numeric.h"
 
-#include <Kokkos_BitManipulation.hpp>
 #include <Kokkos_Core.hpp>
-
-#include <cstdint>
-#include <type_traits>
 
 #if defined(TILED_DEPOSIT) && defined(KOKKOS_ENABLE_SYCL)
   #include <sycl/ext/oneapi/experimental/address_cast.hpp>
@@ -44,78 +40,9 @@
 namespace kernel {
   using namespace ntt;
 
-  // team-scratch access through local-address-space pointers (SYCL) or
-  // plain pointers, and the power-of-two helpers of the fixed-point scratch
-  namespace tiled {
-  #if defined(KOKKOS_ENABLE_SYCL)
-    template <typename T>
-    using slm_ptr_t = sycl::multi_ptr<T,
-                                      sycl::access::address_space::local_space,
-                                      sycl::access::decorated::yes>;
-
-    // unchecked cast of a pointer into the team scratch to the local space
-    template <typename T>
-    Inline auto to_slm(T* p) -> slm_ptr_t<T> {
-      return slm_ptr_t<T> {
-        sycl::ext::oneapi::experimental::static_address_cast<
-          sycl::access::address_space::local_space>(p)
-          .get_decorated()
-      };
-    }
-
-    template <typename T>
-    Inline void slm_atomic_add(slm_ptr_t<T> p, int k, T v) {
-      sycl::atomic_ref<T,
-                       sycl::memory_order::relaxed,
-                       sycl::memory_scope::work_group,
-                       sycl::access::address_space::local_space>
-        ref { p[k] };
-      ref.fetch_add(v);
-    }
-  #else
-    template <typename T>
-    using slm_ptr_t = T*;
-
-    template <typename T>
-    Inline auto to_slm(T* p) -> slm_ptr_t<T> {
-      return p;
-    }
-
-    template <typename T>
-    Inline void slm_atomic_add(slm_ptr_t<T> p, int k, T v) {
-      Kokkos::atomic_add(p + k, v);
-    }
-  #endif
-
-    // floor(log2(y)) of a positive normal y (exact, from the exponent bits)
-    template <typename T>
-    Inline auto ilog2(T y) -> int {
-      if constexpr (sizeof(T) == 4) {
-        return static_cast<int>((Kokkos::bit_cast<std::uint32_t>(y) >> 23) & 0xFFu) -
-               127;
-      } else {
-        return static_cast<int>((Kokkos::bit_cast<std::uint64_t>(y) >> 52) &
-                                0x7FFu) -
-               1023;
-      }
-    }
-
-    // 2^e (exact), e clamped to the normal exponent range of float
-    template <typename T>
-    Inline auto pow2(int e) -> T {
-      e = (e < -120) ? -120 : ((e > 120) ? 120 : e);
-      if constexpr (sizeof(T) == 4) {
-        return Kokkos::bit_cast<T>(static_cast<std::uint32_t>(e + 127) << 23);
-      } else {
-        return Kokkos::bit_cast<T>(static_cast<std::uint64_t>(e + 1023) << 52);
-      }
-    }
-  } // namespace tiled
-
   /**
-   * @brief Per-team deposit scratch of real_t values with atomic adds,
-   *        addressed by a flat index (the harness uses the LayoutLeft order
-   *        k = cell + ncells * comp).
+   * @brief Per-team deposit scratch, addressed by a flat index (the
+   *        harness uses the LayoutLeft order k = cell + ncells * comp).
    *
    * On SYCL the scratch is held as a local-address-space pointer. Kokkos
    * hands out team scratch as a generic pointer; while a generic pointer
@@ -126,95 +53,46 @@ namespace kernel {
    * remaining generic accesses resolve to global memory at compile time.
    */
   struct TileScratch {
-    tiled::slm_ptr_t<real_t> p;
+  #if defined(KOKKOS_ENABLE_SYCL)
+    using ptr_t = sycl::multi_ptr<real_t,
+                                  sycl::access::address_space::local_space,
+                                  sycl::access::decorated::yes>;
+  #else
+    using ptr_t = real_t*;
+  #endif
+    ptr_t p;
 
     // `base` must point into the team's level-0 scratch
     Inline explicit TileScratch(void* base)
-      : p { tiled::to_slm(static_cast<real_t*>(base)) } {}
+    #if defined(KOKKOS_ENABLE_SYCL)
+      : p { sycl::ext::oneapi::experimental::static_address_cast<
+              sycl::access::address_space::local_space>(static_cast<real_t*>(base))
+              .get_decorated() } {
+    }
+    #else
+      : p { static_cast<real_t*>(base) } {
+    }
+    #endif
 
-    // every value can be accumulated here
-    Inline auto fits(int, real_t) const -> bool {
-      return true;
+    Inline void add(int k, real_t v) const {
+  #if defined(KOKKOS_ENABLE_SYCL)
+      sycl::atomic_ref<real_t,
+                       sycl::memory_order::relaxed,
+                       sycl::memory_scope::work_group,
+                       sycl::access::address_space::local_space>
+        ref { p[k] };
+      ref.fetch_add(v);
+  #else
+      Kokkos::atomic_add(p + k, v);
+  #endif
     }
 
-    Inline void add(int k, int, real_t v) const {
-      tiled::slm_atomic_add(p, k, v);
-    }
-
-    Inline auto get(int k, int) const -> real_t {
+    Inline auto get(int k) const -> real_t {
       return p[k];
     }
 
-    Inline void zero(int k) const {
-      p[k] = ZERO;
-    }
-  };
-
-  /**
-   * @brief Per-team deposit scratch in two-word fixed point, accumulated with
-   *        native 32-bit integer atomics (Intel PVC has no native SLM float
-   *        atomic add: a float atomic add on SLM compiles to a load, an add and
-   *        a compare-and-swap retry loop).
-   *
-   * Value v of component c is written as h = rint(v qa_c) into the coarse
-   * word and l = rint((v - h / qa_c) qb_c) into the residual word (nvals
-   * words further); the flush returns sum(h) / qa_c + sum(l) / qb_c. The
-   * scales are powers of two chosen per team from the number K of particles
-   * of the tile (at most one write per particle into a value) and the bound
-   * B_c on |v| of one write:
-   *   qa_c = 2^floor(log2(2^30 / (K B_c))),  qb_c = 2 qa_c 2^floor(log2(2^30 / K)),
-   * so that |sum h| <= K B_c qa_c + K/2 < 2^31 and |sum l| <= K (qb_c / (2 qa_c)
-   * + 1/2) < 2^31 for any set and order of writes: no sum can overflow. A
-   * write with |v| > B_c does not fit and goes to the global field (escape
-   * path of the sink). The residual v - h / qa_c is exact in floating point,
-   * so a write is rounded once, by at most 1 / (2 qb_c) <= K^2 B_c 2^-60; the
-   * integer sums are exact, i.e. independent of the order of the writes.
-   */
-  template <unsigned short NC>
-  struct TileScratchFixed {
-    tiled::slm_ptr_t<int> w;
-    int                   nvals;
-    real_t                qa[NC], qb[NC], inv_qa[NC], inv_qb[NC], bnd[NC];
-
-    // `base` must point into the team's level-0 scratch of 2 nvals ints
-    Inline TileScratchFixed(void*                            base,
-                            int                              nvals,
-                            npart_t                          K,
-                            const Kokkos::Array<real_t, NC>& bound)
-      : w { tiled::to_slm(static_cast<int*>(base)) }
-      , nvals { nvals } {
-      constexpr real_t two30 = static_cast<real_t>(1073741824.0);
-      const real_t k = static_cast<real_t>((K > 0u) ? K : static_cast<npart_t>(1));
-      const int eK = tiled::ilog2(two30 / k);
-      for (auto c = 0; c < static_cast<int>(NC); ++c) {
-        const int ea = tiled::ilog2(two30 / (k * bound[c]));
-        qa[c]        = tiled::pow2<real_t>(ea);
-        inv_qa[c]    = tiled::pow2<real_t>(-ea);
-        qb[c]        = tiled::pow2<real_t>(ea + 1 + eK);
-        inv_qb[c]    = tiled::pow2<real_t>(-(ea + 1 + eK));
-        bnd[c]       = bound[c];
-      }
-    }
-
-    Inline auto fits(int c, real_t v) const -> bool {
-      return math::abs(v) <= bnd[c];
-    }
-
-    Inline void add(int k, int c, real_t v) const {
-      const real_t h = math::rint(v * qa[c]);
-      const real_t l = math::rint((v - h * inv_qa[c]) * qb[c]);
-      tiled::slm_atomic_add(w, k, static_cast<int>(h));
-      tiled::slm_atomic_add(w, k + nvals, static_cast<int>(l));
-    }
-
-    Inline auto get(int k, int c) const -> real_t {
-      return static_cast<real_t>(static_cast<double>(w[k]) * inv_qa[c] +
-                                 static_cast<double>(w[k + nvals]) * inv_qb[c]);
-    }
-
-    Inline void zero(int k) const {
-      w[k]         = 0;
-      w[k + nvals] = 0;
+    Inline void set(int k, real_t v) const {
+      p[k] = v;
     }
   };
 
@@ -240,10 +118,6 @@ namespace kernel {
    *             default 1)
    *   T_TILE  : tile edge length (TILED_DEPOSIT_TILE_SIZE)
    *   Body    : per-particle functor, see contract below
-   *   FIXED   : accumulate the scratch in two-word fixed point with native
-   *             integer atomics (TileScratchFixed) instead of real_t atomic
-   *             adds; needs the per-component bound on |value| of a single
-   *             write (constructor argument `write_bound`)
    *
    * **Body contract** (device-callable, captured by value):
    *   `template <class Sink> Inline void operator()(prtlidx_t p, Sink& sink) const;`
@@ -295,8 +169,7 @@ namespace kernel {
             unsigned short NG,
             int            REACH,
             unsigned short T_TILE,
-            class Body,
-            bool           FIXED = false>
+            class Body>
   class TiledScatter_kernel {
     static_assert(NC > 0u and NC <= NG,
                   "TiledScatter_kernel: need 0 < NC <= NG");
@@ -311,13 +184,6 @@ namespace kernel {
 #endif
     static constexpr int HALO = REACH + DRIFT;
     static constexpr int TE   = static_cast<int>(T_TILE) + 2 * HALO;
-    // scratch cells and values (cells x components) per team
-    static constexpr int NCELLS = (D == Dim::_1D)
-                                    ? TE
-                                    : ((D == Dim::_2D) ? TE * TE : TE * TE * TE);
-    static constexpr int NVALS  = NCELLS * static_cast<int>(NC);
-
-    using tile_scratch_t = std::conditional_t<FIXED, TileScratchFixed<NC>, TileScratch>;
 
   private:
     static constexpr int NCi = static_cast<int>(NC);
@@ -356,9 +222,6 @@ namespace kernel {
     // Global component the scratch component 0 flushes into.
     int comp_offset { 0 };
 
-    // FIXED: bound on |value| of a single write, per component
-    Kokkos::Array<real_t, NC> write_bound {};
-
   public:
     /**
      * @brief Per-particle write sink handed to the body.
@@ -378,7 +241,7 @@ namespace kernel {
      * particle's stencil reaches past the extent).
      */
     struct Sink {
-      tile_scratch_t   scr;
+      TileScratch      scr;
       ndfield_t<D, NG> F;
       int              o1, o2, o3; // global coord of scratch index 0 per axis
       int              e1, e2, e3; // global storage extents
@@ -401,26 +264,25 @@ namespace kernel {
       }
 
       Inline void operator()(int g_i1, int c, real_t v) const {
-        if (to_scratch and scr.fits(c, v)) {
-          scr.add((g_i1 - o1) + TE * c, c, v);
+        if (to_scratch) {
+          scr.add((g_i1 - o1) + TE * c, v);
         } else if (g_i1 >= 0 and g_i1 < e1) {
           Kokkos::atomic_add(&F(g_i1, comp_offset + c), v);
         }
       }
 
       Inline void operator()(int g_i1, int g_i2, int c, real_t v) const {
-        if (to_scratch and scr.fits(c, v)) {
-          scr.add((g_i1 - o1) + TE * ((g_i2 - o2) + TE * c), c, v);
+        if (to_scratch) {
+          scr.add((g_i1 - o1) + TE * ((g_i2 - o2) + TE * c), v);
         } else if (g_i1 >= 0 and g_i1 < e1 and g_i2 >= 0 and g_i2 < e2) {
           Kokkos::atomic_add(&F(g_i1, g_i2, comp_offset + c), v);
         }
       }
 
       Inline void operator()(int g_i1, int g_i2, int g_i3, int c, real_t v) const {
-        if (to_scratch and scr.fits(c, v)) {
+        if (to_scratch) {
           scr.add((g_i1 - o1) +
                     TE * ((g_i2 - o2) + TE * ((g_i3 - o3) + TE * c)),
-                  c,
                   v);
         } else if (g_i1 >= 0 and g_i1 < e1 and g_i2 >= 0 and g_i2 < e2 and
                    g_i3 >= 0 and g_i3 < e3) {
@@ -433,8 +295,7 @@ namespace kernel {
                         const Body&             body,
                         const TileLayout<D>&    layout,
                         npart_t                 npart,
-                        int                     comp_offset = 0,
-                        const Kokkos::Array<real_t, NC>& write_bound = {})
+                        int                     comp_offset = 0)
       : F { F }
       , body { body }
       , tile_offsets { layout.tile_offsets }
@@ -443,8 +304,7 @@ namespace kernel {
       , ntx3 { layout.ntiles_per_axis[2] }
       , total_tiles { layout.ntiles_total }
       , npart { npart }
-      , comp_offset { comp_offset }
-      , write_bound { write_bound } {
+      , comp_offset { comp_offset } {
       raise::ErrorIf(
         layout.tile_size != T_TILE,
         "TiledScatter launched with mismatched T_TILE and runtime tile_size",
@@ -453,15 +313,6 @@ namespace kernel {
                        comp_offset + NCi > static_cast<int>(NG),
                      "TiledScatter: comp_offset + NC exceeds the field view",
                      HERE);
-      if constexpr (FIXED) {
-        for (auto c = 0; c < NCi; ++c) {
-          raise::ErrorIf(not(write_bound[c] > ZERO) or
-                           not(write_bound[c] < static_cast<real_t>(1e30)),
-                         "TiledScatter: fixed-point scratch needs a positive, "
-                         "finite bound on the written values",
-                         HERE);
-        }
-      }
       /**
        * @note: HALO is allowed to exceed N_GHOSTS. The cooperative
        * scratch→F flush and the per-particle escape valve both bounds-clip
@@ -486,10 +337,6 @@ namespace kernel {
      *        `team_policy.set_scratch_size(0, Kokkos::PerTeam(bytes))`.
      */
     static constexpr size_t scratch_bytes() {
-      if constexpr (FIXED) {
-        // two int words per value, + alignment slack as shmem_size adds
-        return 2u * static_cast<size_t>(NVALS) * sizeof(int) + 8u;
-      }
       // The component count (NC) is a *static* extent of scratch_ndfield_t
       // (View<real_t*[NC]> / **[NC] / ***[NC]), so shmem_size() takes only
       // the dynamic spatial extents — passing NC as well trips Kokkos'
@@ -501,18 +348,6 @@ namespace kernel {
         return scratch_t::shmem_size(TE, TE);
       } else {
         return scratch_t::shmem_size(TE, TE, TE);
-      }
-    }
-
-    // the team scratch for the K particles of the tile
-    Inline auto make_scratch(const member_t& team, npart_t K) const
-      -> tile_scratch_t {
-      void* base = team.team_scratch(0).get_shmem(scratch_bytes());
-      if constexpr (FIXED) {
-        return tile_scratch_t { base, NVALS, K, write_bound };
-      } else {
-        (void)K;
-        return tile_scratch_t { base };
       }
     }
 
@@ -563,12 +398,12 @@ namespace kernel {
       // own Sink), then cooperatively flush scratch to the global field
       // with a bounds clip against the storage extent.
       if constexpr (D == Dim::_1D) {
-        const auto scr = make_scratch(team, p_end - p_begin);
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, TE * NCi),
                              [&](const int idx) {
                                const int li = idx / NCi;
                                const int c  = idx - li * NCi;
-                               scr.zero(li + TE * c);
+                               scr.set(li + TE * c, ZERO);
                              });
         team.team_barrier();
 
@@ -591,20 +426,20 @@ namespace kernel {
                                if (gi < 0 or gi >= ext1) {
                                  return;
                                }
-                               const real_t v = scr.get(li + TE * c, c);
+                               const real_t v = scr.get(li + TE * c);
                                if (v != ZERO) {
                                  Kokkos::atomic_add(&F(gi, comp_offset + c), v);
                                }
                              });
       } else if constexpr (D == Dim::_2D) {
-        const auto scr = make_scratch(team, p_end - p_begin);
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, SQR(TE) * NCi),
                              [&](const int idx) {
                                const int lij  = idx / NCi;
                                const int c    = idx - lij * NCi;
                                const int li   = lij / TE;
                                const int lj   = lij - li * TE;
-                               scr.zero(li + TE * (lj + TE * c));
+                               scr.set(li + TE * (lj + TE * c), ZERO);
                              });
         team.team_barrier();
 
@@ -631,14 +466,14 @@ namespace kernel {
                                    (gj < 0 or gj >= ext2)) {
                                  return;
                                }
-                               const real_t v = scr.get(li + TE * (lj + TE * c), c);
+                               const real_t v = scr.get(li + TE * (lj + TE * c));
                                if (v != ZERO) {
                                  Kokkos::atomic_add(&F(gi, gj, comp_offset + c),
                                                     v);
                                }
                              });
       } else if constexpr (D == Dim::_3D) {
-        const auto scr = make_scratch(team, p_end - p_begin);
+        const TileScratch scr { team.team_scratch(0).get_shmem(scratch_bytes()) };
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, CUBE(TE) * NCi),
                              [&](const int idx) {
                                const int lijk     = idx / NCi;
@@ -647,7 +482,7 @@ namespace kernel {
                                const int rem      = lijk - li * TE * TE;
                                const int lj       = rem / TE;
                                const int lk       = rem - lj * TE;
-                               scr.zero(li + TE * (lj + TE * (lk + TE * c)));
+                               scr.set(li + TE * (lj + TE * (lk + TE * c)), ZERO);
                              });
         team.team_barrier();
 
@@ -679,8 +514,7 @@ namespace kernel {
                                  return;
                                }
                                const real_t v = scr.get(
-                                 li + TE * (lj + TE * (lk + TE * c)),
-                                 c);
+                                 li + TE * (lj + TE * (lk + TE * c)));
                                if (v != ZERO) {
                                  Kokkos::atomic_add(
                                    &F(gi, gj, gk, comp_offset + c),

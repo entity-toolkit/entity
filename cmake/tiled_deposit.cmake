@@ -15,11 +15,3 @@ add_compile_options("-D TILED_DEPOSIT_TILE_SIZE=${tiled_deposit_tile_size}")
 # is set at runtime via `spatial_sorting_interval`. Defaults to 1 (the
 # sorted-every-step case).
 add_compile_options("-D TILED_DEPOSIT_DRIFT=${tiled_deposit_drift}")
-
-# Accumulate the tile scratch of the hybrid moment deposit in two-word fixed
-# point with native 32-bit integer atomics instead of real_t atomic adds (on
-# Intel PVC a float atomic add on SLM is a compare-and-swap retry loop). Changes
-# the rounding of the deposited moments (see kernels/tiled_scatter.hpp).
-if(${tiled_deposit_fixed_point})
-  add_compile_options("-D TILED_DEPOSIT_FIXED_POINT")
-endif()

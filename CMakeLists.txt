@@ -70,9 +70,6 @@ set(tiled_deposit_tile_sizes
 set(tiled_deposit_drift
     ${default_tiled_deposit_drift}
     CACHE STRING "tiled deposit scratch halo drift in cells")
-set(tiled_deposit_fixed_point
-    ${default_tiled_deposit_fixed_point}
-    CACHE BOOL "Accumulate the tiled hybrid moment deposit in fixed point (native integer atomics)")
 set(vendor_sort
     ${default_vendor_sort}
     CACHE BOOL "Use the vendor sort_by_key")
