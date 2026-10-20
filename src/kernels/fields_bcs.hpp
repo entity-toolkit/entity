@@ -21,6 +21,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "traits/archetypes.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -94,7 +95,7 @@ namespace kernel::bc {
       if constexpr (M::Dim == Dim::_1D) {
         const auto i1_ = COORD(i1);
 
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
           coord_t<Dim::_1D> x_Ph_0 { ZERO };
           coord_t<Dim::_1D> x_Ph_H { ZERO };
           metric.template convert<Crd::Cd, Crd::Ph>({ i1_ }, x_Ph_0);
@@ -163,8 +164,7 @@ namespace kernel::bc {
             }
           }
         } else {
-          // GRPIC
-          raise::KernelError(HERE, "1D GRPIC not implemented");
+          raise::KernelError(HERE, "not implemented");
         }
       } else {
         raise::KernelError(
@@ -196,13 +196,15 @@ namespace kernel::bc {
 
           if constexpr (HasEx1 or HasDx1) {
             if ((tags & BC::E) or (tags & BC::D)) {
-              if constexpr (HasEx1 and S == SimEngine::SRPIC) {
+              if constexpr (HasEx1 and
+                            ::traits::engine::UserFieldsInTetradBasis<S>) {
                 Fld(i1, i2, em::ex1) = s * Fld(i1, i2, em::ex1) +
                                        (ONE - s) *
                                          metric.template transform<1, Idx::T, Idx::U>(
                                            { i1_ + HALF, i2_ },
                                            fset.ex1(x_Ph_H0));
-              } else if constexpr (HasDx1 and S == SimEngine::GRPIC) {
+              } else if constexpr (
+                HasDx1 and (not ::traits::engine::UserFieldsInTetradBasis<S>)) {
                 Fld(i1, i2, em::dx1) = s * Fld(i1, i2, em::dx1) +
                                        (ONE - s) * fset.dx1(x_Ph_H0);
               }
@@ -211,13 +213,13 @@ namespace kernel::bc {
 
           if constexpr (HasBx2) {
             if (tags & BC::B) {
-              if constexpr (S == SimEngine::SRPIC) {
+              if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
                 Fld(i1, i2, em::bx2) = s * Fld(i1, i2, em::bx2) +
                                        (ONE - s) *
                                          metric.template transform<2, Idx::T, Idx::U>(
                                            { i1_ + HALF, i2_ },
                                            fset.bx2(x_Ph_H0));
-              } else if constexpr (S == SimEngine::GRPIC) {
+              } else {
                 Fld(i1, i2, em::bx2) = s * Fld(i1, i2, em::bx2) +
                                        (ONE - s) * fset.bx2(x_Ph_H0);
               }
@@ -242,13 +244,15 @@ namespace kernel::bc {
 
           if constexpr (HasEx2 or HasDx2) {
             if ((tags & BC::E) or (tags & BC::D)) {
-              if constexpr (HasEx2 and S == SimEngine::SRPIC) {
+              if constexpr (HasEx2 and
+                            ::traits::engine::UserFieldsInTetradBasis<S>) {
                 Fld(i1, i2, em::ex2) = s * Fld(i1, i2, em::ex2) +
                                        (ONE - s) *
                                          metric.template transform<2, Idx::T, Idx::U>(
                                            { i1_, i2_ + HALF },
                                            fset.ex2(x_Ph_0H));
-              } else if constexpr (HasDx2 and S == SimEngine::GRPIC) {
+              } else if constexpr (
+                HasDx2 and (not ::traits::engine::UserFieldsInTetradBasis<S>)) {
                 Fld(i1, i2, em::dx2) = s * Fld(i1, i2, em::dx2) +
                                        (ONE - s) * fset.dx2(x_Ph_0H);
               }
@@ -257,13 +261,13 @@ namespace kernel::bc {
 
           if constexpr (HasBx1) {
             if (tags & BC::B) {
-              if constexpr (S == SimEngine::SRPIC) {
+              if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
                 Fld(i1, i2, em::bx1) = s * Fld(i1, i2, em::bx1) +
                                        (ONE - s) *
                                          metric.template transform<1, Idx::T, Idx::U>(
                                            { i1_, i2_ + HALF },
                                            fset.bx1(x_Ph_0H));
-              } else if constexpr (S == SimEngine::GRPIC) {
+              } else {
                 Fld(i1, i2, em::bx1) = s * Fld(i1, i2, em::bx1) +
                                        (ONE - s) * fset.bx1(x_Ph_0H);
               }
@@ -288,7 +292,7 @@ namespace kernel::bc {
             coord_t<Dim::_2D> x_Ph_00 { ZERO };
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_, i2_ }, x_Ph_00);
 
-            if constexpr (HasEx3 and S == SimEngine::SRPIC) {
+            if constexpr (HasEx3 and ::traits::engine::UserFieldsInTetradBasis<S>) {
               Fld(i1, i2, em::ex3) = s * Fld(i1, i2, em::ex3);
               if ((!is_axis_i2min or (i2 > N_GHOSTS)) and
                   (!is_axis_i2max or (i2 < extent_2 - N_GHOSTS))) {
@@ -297,7 +301,8 @@ namespace kernel::bc {
                                           { i1_, i2_ },
                                           fset.ex3(x_Ph_00));
               }
-            } else if constexpr (HasDx3 and S == SimEngine::GRPIC) {
+            } else if constexpr (
+              HasDx3 and (not ::traits::engine::UserFieldsInTetradBasis<S>)) {
               Fld(i1, i2, em::dx3) = s * Fld(i1, i2, em::dx3);
               if ((!is_axis_i2min or (i2 > N_GHOSTS)) and
                   (!is_axis_i2max or (i2 < extent_2 - N_GHOSTS))) {
@@ -324,13 +329,13 @@ namespace kernel::bc {
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ + HALF },
                                                       x_Ph_HH);
 
-            if constexpr (S == SimEngine::SRPIC) {
+            if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
               Fld(i1, i2, em::bx3) = s * Fld(i1, i2, em::bx3) +
                                      (ONE - s) *
                                        metric.template transform<3, Idx::T, Idx::U>(
                                          { i1_ + HALF, i2_ + HALF },
                                          fset.bx3(x_Ph_HH));
-            } else if constexpr (S == SimEngine::GRPIC) {
+            } else {
               Fld(i1, i2, em::bx3) = s * Fld(i1, i2, em::bx3) +
                                      (ONE - s) * fset.bx3(x_Ph_HH);
             }
@@ -349,7 +354,7 @@ namespace kernel::bc {
         const auto i2_ = COORD(i2);
         const auto i3_ = COORD(i3);
 
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
           // SRPIC
           if constexpr (HasEx1 or HasEx2 or HasEx3) {
             if (tags & BC::E) {
@@ -509,8 +514,7 @@ namespace kernel::bc {
             }
           }
         } else {
-          // GRPIC
-          raise::KernelError(HERE, "GRPIC not implemented");
+          raise::KernelError(HERE, "not implemented");
         }
       } else {
         raise::KernelError(

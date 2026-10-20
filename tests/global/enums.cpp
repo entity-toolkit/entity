@@ -55,7 +55,7 @@ auto main() -> int {
   enum_str_t all_coords  = { "cart", "sph", "qsph" };
   enum_str_t all_metrics = { "minkowski",   "spherical",    "qspherical",
                              "kerr_schild", "qkerr_schild", "kerr_schild_0" };
-  enum_str_t all_simulation_engines = { "srpic", "grpic" };
+  enum_str_t all_simulation_engines = { "srpic", "grpic", "hybrid" };
   enum_str_t all_particle_bcs = { "periodic", "absorb",  "atmosphere", "custom",
                                   "reflect",  "horizon", "axis",       "sync" };
   enum_str_t all_fields_bcs   = { "periodic",   "match",     "fixed",

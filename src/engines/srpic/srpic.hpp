@@ -36,6 +36,12 @@
 
 namespace ntt {
 
+  namespace srpic::Comm {
+    static constexpr auto E = ::Comm::EM_012;
+    static constexpr auto B = ::Comm::EM_345;
+    static constexpr auto J = ::Comm::CUR;
+  } // namespace srpic::Comm
+
   template <SRMetricClass M>
   class SRPICEngine : public Engine<SimEngine::SRPIC, M> {
 
@@ -70,7 +76,7 @@ namespace ntt {
 
       if (step == 0) {
         // communicate fields and apply BCs on the first timestep
-        m_metadomain.CommunicateFields(dom, Comm::B | Comm::E);
+        m_metadomain.CommunicateFields(dom, srpic::Comm::B | srpic::Comm::E);
         srpic::FieldBoundaries(dom,
                                m_metadomain.mesh().metric,
                                m_metadomain.mesh(),
@@ -87,7 +93,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, srpic::Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -118,8 +124,8 @@ namespace ntt {
           timers.stop("CurrentDeposit");
 
           timers.start("Communications");
-          m_metadomain.SynchronizeFields(dom, Comm::J);
-          m_metadomain.CommunicateFields(dom, Comm::J);
+          m_metadomain.SynchronizeFields(dom, srpic::Comm::J);
+          m_metadomain.CommunicateFields(dom, srpic::Comm::J);
           timers.stop("Communications");
 
           timers.start("CurrentFiltering");
@@ -138,7 +144,7 @@ namespace ntt {
         timers.stop("FieldSolver");
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::B);
+        m_metadomain.CommunicateFields(dom, srpic::Comm::B);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");
@@ -162,7 +168,7 @@ namespace ntt {
         }
 
         timers.start("Communications");
-        m_metadomain.CommunicateFields(dom, Comm::E | Comm::J);
+        m_metadomain.CommunicateFields(dom, srpic::Comm::E | srpic::Comm::J);
         timers.stop("Communications");
 
         timers.start("FieldBoundaries");

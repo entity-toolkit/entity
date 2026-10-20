@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -56,13 +57,17 @@ namespace kernel {
 
     Inline auto EnergyBinIndex(prtlidx_t p) const -> size_t {
       real_t en;
-      if constexpr (S == SimEngine::SRPIC) {
+      if constexpr (S == SimEngine::HYBRID) {
+        // non-relativistic hybrid ions (ux holds the 3-velocity): kinetic
+        // energy per unit mass v^2/2, the Newtonian limit of gamma - 1
+        en = HALF * NORM_SQR(particles.ux1(p), particles.ux2(p), particles.ux3(p));
+      } else if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
         if (is_massive) {
           en = U2GAMMA(particles.ux1(p), particles.ux2(p), particles.ux3(p)) - ONE;
         } else {
           en = NORM(particles.ux1(p), particles.ux2(p), particles.ux3(p));
         }
-      } else if constexpr (S == SimEngine::GRPIC) {
+      } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
         coord_t<M::Dim> x_Code { ZERO };
         x_Code[0] = static_cast<real_t>(particles.i1(p)) +
                     static_cast<real_t>(particles.dx1(p));

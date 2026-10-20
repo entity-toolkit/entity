@@ -1,0 +1,50 @@
+[simulation]
+  name    = "hybrid"
+  engine  = "hybrid"
+  runtime = 1.0
+
+[grid]
+  resolution = [512, 256]
+  extent     = [[0.0, 2.0], [0.0, 1.0]]
+
+  [grid.metric]
+    metric = "minkowski"
+
+  [grid.boundaries]
+    fields    = [["PERIODIC"], ["PERIODIC"]]
+    particles = [["PERIODIC"], ["PERIODIC"]]
+
+[scales]
+  larmor0    = 1.0
+  skindepth0 = 1.0
+
+[algorithms]
+  [algorithms.timestep]
+    CFL = 0.5
+
+[particles]
+  ppc0 = 10.0
+
+  [[particles.species]]
+    label    = "ions"
+    mass     = 1.0
+    charge   = 1.0
+    maxnpart = 1e5
+
+[setup]
+
+[output]
+  interval_time = 0.1
+
+  [output.fields]
+    quantities = ["N_1", "B"]
+
+  [output.particles]
+    species = [1]
+    stride  = 10
+
+[checkpoint]
+  keep = 0
+
+[diagnostics]
+  colored_stdout = true

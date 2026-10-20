@@ -58,6 +58,13 @@ namespace timer {
     Timers(std::initializer_list<std::string> names,
            const std::function<void(void)>&   synchronize = nullptr,
            const bool&                        blocking    = false)
+      : Timers(std::vector<std::string> { names }, synchronize, blocking) {}
+
+    // vector overload: lets the caller pick the timer set at runtime
+    // (e.g. an engine-specific list built behind `if constexpr`)
+    Timers(const std::vector<std::string>&  names,
+           const std::function<void(void)>& synchronize = nullptr,
+           const bool&                       blocking    = false)
       : m_blocking { blocking }
       , m_synchronize { synchronize } {
       raise::ErrorIf((synchronize == nullptr) && blocking,

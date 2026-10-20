@@ -17,6 +17,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
@@ -148,9 +149,27 @@ namespace kernel {
     }
 
     Inline auto computeStressEnergyComponent(prtlidx_t p) const -> real_t {
+      if constexpr (S == SimEngine::HYBRID) {
+        // hybrid ions are non-relativistic (ux holds the Cartesian 3-velocity):
+        // Newtonian limit of m u^mu u^nu / u^0, i.e.
+        // T^00 = m (1 + v^2/2), T^0i = m v^i, T^ij = m v^i v^j
+        const vec_t<Dim::_3D> v { particles.ux1(p),
+                                  particles.ux2(p),
+                                  particles.ux3(p) };
+        if (c1 == 0 and c2 == 0) {
+          return mass * (ONE + HALF * NORM_SQR(v[0], v[1], v[2]));
+        }
+        real_t T_component = mass;
+        for (const auto& c : { c1, c2 }) {
+          if (c > 0) {
+            T_component *= v[c - 1];
+          }
+        }
+        return T_component;
+      }
       real_t          u0 { ZERO };
       vec_t<Dim::_3D> u_Phys { ZERO };
-      if constexpr (S == SimEngine::SRPIC) {
+      if constexpr (::traits::engine::StressEnergyInTetradBasis<S>) {
         // stress-energy tensor for SR is computed in the tetrad (hatted) basis
         if constexpr (M::CoordType == Coord::Cartesian) {
           u_Phys[0] = particles.ux1(p);
@@ -166,7 +185,7 @@ namespace kernel {
           if constexpr (D == Dim::_3D) {
             x_Code[2] = static_cast<real_t>(particles.i3(p)) +
                         static_cast<real_t>(particles.dx3(p));
-          } else {
+          } else if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
             x_Code[2] = particles.phi(p);
           }
           metric.template transform_xyz<Idx::XYZ, Idx::T>(
@@ -177,7 +196,7 @@ namespace kernel {
         u0 = (mass == ZERO)
                ? (NORM(u_Phys[0], u_Phys[1], u_Phys[2]))
                : (math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2])));
-      } else if constexpr (S == SimEngine::GRPIC) {
+      } else if constexpr (::traits::engine::StressEnergyInContravariantBasis<S>) {
         // stress-energy tensor for GR is computed in contravariant basis
         static_assert(D != Dim::_1D, "GRPIC 1D");
         coord_t<D> x_Code { ZERO };
@@ -247,12 +266,16 @@ namespace kernel {
           { particles.ux1(p), particles.ux2(p), particles.ux3(p) },
           u_Phys);
       }
-      if (mass == ZERO) {
-        u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+      if constexpr (S == SimEngine::HYBRID) {
+        return mass * u_Phys[c1 - 1];
       } else {
-        u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+        if (mass == ZERO) {
+          u0 = NORM(u_Phys[0], u_Phys[1], u_Phys[2]);
+        } else {
+          u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
+        }
+        return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
       }
-      return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
     }
 
     Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {
@@ -295,7 +318,7 @@ namespace kernel {
       if constexpr (F == FldsID::T) {
         coeff = computeStressEnergyComponent(p);
       } else if constexpr (F == FldsID::V) {
-        if constexpr (S == SimEngine::GRPIC) {
+        if constexpr (::traits::engine::IsGR<S>) {
           coeff = computeEckartVelocityFluxComponent(p);
         } else {
           coeff = computeBulk3VelocityTimesMass(p);

@@ -343,7 +343,8 @@ namespace tools {
           return false;
         }
       } else {
-        return step % m_interval == 0;
+        // interval = 0 disables step-based writes (and avoids step % 0)
+        return (m_interval > 0) and (step % m_interval == 0);
       }
     }
   };

@@ -86,7 +86,9 @@ namespace stats {
                  << "," << std::setw(io_precision + 8) << "time"
                  << ",";
         for (const auto& stat : stat_writers) {
-          if (stat.is_vector()) {
+          // vector stats and stress-energy components (e.g. T0i, Tij) write one
+          // column per component
+          if (stat.is_vector() or stat.id() == StatsID::T) {
             for (auto i { 0u }; i < stat.comp.size(); ++i) {
               StatsOut << std::setw(io_precision + 8) << stat.name(i) << ",";
             }

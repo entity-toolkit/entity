@@ -4,6 +4,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
 #include "utils/error.h"
 #include "utils/formatting.h"
 #include "utils/numeric.h"
@@ -122,10 +123,10 @@ namespace ntt {
       std::vector<std::vector<FldsBC>> flds_bc_enum;
       std::vector<std::vector<PrtlBC>> prtl_bc_enum;
       if (coord_enum == Coord::Cartesian) {
-        raise::ErrorIf(flds_bc.size() != (std::size_t)dim,
+        raise::ErrorIf(flds_bc.size() != (size_t)dim,
                        "invalid `grid.boundaries.fields`",
                        HERE);
-        raise::ErrorIf(prtl_bc.size() != (std::size_t)dim,
+        raise::ErrorIf(prtl_bc.size() != (size_t)dim,
                        "invalid `grid.boundaries.particles`",
                        HERE);
         for (auto d { 0u }; d < (dim_t)dim; ++d) {
@@ -181,7 +182,7 @@ namespace ntt {
         raise::ErrorIf(prtl_bc.size() > 1,
                        "invalid `grid.boundaries.particles`",
                        HERE);
-        if (engine_enum == SimEngine::SRPIC) {
+        if (::traits::engine::isSR(engine_enum)) {
           raise::ErrorIf(flds_bc[0].size() != 2,
                          "invalid `grid.boundaries.fields`",
                          HERE);
@@ -224,10 +225,10 @@ namespace ntt {
         }
       }
 
-      raise::ErrorIf(flds_bc_enum.size() != (std::size_t)dim,
+      raise::ErrorIf(flds_bc_enum.size() != (size_t)dim,
                      "invalid inferred `grid.boundaries.fields`",
                      HERE);
-      raise::ErrorIf(prtl_bc_enum.size() != (std::size_t)dim,
+      raise::ErrorIf(prtl_bc_enum.size() != (size_t)dim,
                      "invalid inferred `grid.boundaries.particles`",
                      HERE);
       boundaries_t<FldsBC> flds_bc_pairwise;
@@ -421,8 +422,8 @@ namespace ntt {
       metric_params_short_.emplace();
       std::string coord;
       if (metric_enum == Metric::Minkowski) {
-        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
-                       "minkowski metric is only supported for SRPIC",
+        raise::ErrorIf(not ::traits::engine::isSR(engine_enum),
+                       "minkowski metric is only supported for SR",
                        HERE);
         coord = "cart";
       } else if (metric_enum == Metric::QKerr_Schild or
@@ -455,7 +456,7 @@ namespace ntt {
                        HERE);
         coord = "sph";
       }
-      if ((engine_enum == SimEngine::GRPIC) &&
+      if (::traits::engine::isGR(engine_enum) &&
           (metric_enum != Metric::Kerr_Schild_0)) {
         const auto ks_a           = toml::find_or(toml_data,
                                         "grid",
@@ -501,7 +502,7 @@ namespace ntt {
         (*metric_params_short_)["r0"] = (*metric_params)["qsph_r0"];
         (*metric_params_short_)["h"]  = (*metric_params)["qsph_h"];
       }
-      if ((engine_enum == SimEngine::GRPIC) &&
+      if (::traits::engine::isGR(engine_enum) &&
           (metric_enum != Metric::Kerr_Schild_0)) {
         (*metric_params_short_)["a"] = (*metric_params)["ks_a"];
       }

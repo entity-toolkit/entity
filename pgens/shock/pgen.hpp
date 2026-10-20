@@ -259,7 +259,7 @@ namespace user {
                              domain.fields.em,
                              init_flds,
                              domain.mesh.metric });
-      metadomain.CommunicateFields(domain, Comm::E | Comm::B);
+      metadomain.CommunicateFields(domain, Comm::EM);
 
       /*
         tag particles inside the injection zone as dead

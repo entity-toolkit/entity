@@ -229,6 +229,37 @@ namespace ntt {
         v = V { label, n + n / 8u, ncols };
       }
     }
+
+#if defined(TILED_DEPOSIT) && defined(TILED_DEPOSIT_USE_VENDOR_SORT) &&        \
+  defined(SYCL_ENABLED) && defined(ONEDPL_ENABLED)
+    // sort_by_key of the first n tile keys through a copy in the narrower
+    // unsigned type K (persistent `narrow` buffer); the sorted keys are
+    // written back to `keys` for the tile offsets
+    template <typename K>
+    void sort_narrow_keys(const array_t<ncells_t*>& keys,
+                          array_t<K*>&              narrow,
+                          const char*               label,
+                          prtl_perm_t&              perm,
+                          ncells_t                  n_bins,
+                          npart_t                   n) {
+      reserve_scratch_1d(narrow, label, n);
+      auto k32 = keys;
+      auto kn  = narrow;
+      Kokkos::parallel_for(
+        "NarrowTileKeys",
+        n,
+        KOKKOS_LAMBDA(const npart_t p) { kn(p) = static_cast<K>(k32(p)); });
+      sort_helpers::sort_by_key_dispatch(narrow,
+                                         perm,
+                                         n_bins,
+                                         n,
+                                         sort::backend::OneDPL {});
+      Kokkos::parallel_for(
+        "WidenTileKeys",
+        n,
+        KOKKOS_LAMBDA(const npart_t p) { k32(p) = static_cast<ncells_t>(kn(p)); });
+    }
+#endif
   } // namespace
 
 #if defined(TILED_DEPOSIT)
@@ -371,11 +402,25 @@ namespace ntt {
     // is the reserved capacity, not the count to sort.
     reserve_scratch_1d(m_sort_perm, "tile_perm", npart_local);
     prtl_perm_t perm = m_sort_perm;
-    sort_helpers::sort_by_key_dispatch(tile_indices,
-                                       perm,
-                                       n_bins,
-                                       npart_local,
-                                       sort::backend::OneDPL {});
+    // sort the keys in the narrowest unsigned type that holds n_bins (the
+    // radix sort makes one pass per 4 key bits); the sort is stable, so the
+    // permutation is that of the full-width keys
+    if (n_bins <= 256u) {
+      sort_narrow_keys(tile_indices, m_sort_keys8, "tile_indices8", perm, n_bins, npart_local);
+    } else if (n_bins <= 65536u) {
+      sort_narrow_keys(tile_indices,
+                       m_sort_keys16,
+                       "tile_indices16",
+                       perm,
+                       n_bins,
+                       npart_local);
+    } else {
+      sort_helpers::sort_by_key_dispatch(tile_indices,
+                                         perm,
+                                         n_bins,
+                                         npart_local,
+                                         sort::backend::OneDPL {});
+    }
     #elif defined(HIP_ENABLED) && defined(ROCTHRUST_ENABLED)
     prtl_perm_t perm { "tile_perm", npart_local };
     sort_helpers::sort_by_key_dispatch(tile_indices,
@@ -553,9 +598,10 @@ namespace ntt {
     // The tail `arr[n, capacity)` is left untouched (stale, never read:
     // consumers iterate `[0, npart())`). Cost vs the swap: one extra
     // copy-back pass (~2x HBM traffic), negligible when sorting is a
-    // small fraction of the step. The fences keep the shared scratch from
-    // being overwritten by the next member's gather before this member's
-    // copy-back has drained it.
+    // small fraction of the step. The gather and the copy-back are queued
+    // asynchronously on the default (in-order) execution space instance, so
+    // the copy-back of a member runs before the next member's gather reuses
+    // `scratch`; the caller fences once after the last member.
     template <typename V>
     inline void permute_1d_into(V&                 arr,
                                 const V&           scratch,
@@ -564,18 +610,19 @@ namespace ntt {
       if (n == 0u) {
         return;
       }
-      auto perm_v = perm;
-      auto arr_v  = arr;
-      auto buf_v  = scratch;
+      auto       perm_v = perm;
+      auto       arr_v  = arr;
+      auto       buf_v  = scratch;
+      const auto exec   = Kokkos::DefaultExecutionSpace {};
       Kokkos::parallel_for(
         "Permute1D",
-        n,
+        Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace,
+                            Kokkos::IndexType<npart_t>>(exec, 0, n),
         KOKKOS_LAMBDA(const npart_t p) { buf_v(p) = arr_v(perm_v(p)); });
-      Kokkos::fence("permute_1d_into: gather");
       Kokkos::deep_copy(
+        exec,
         Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n)),
         Kokkos::subview(scratch, std::make_pair(static_cast<npart_t>(0), n)));
-      Kokkos::fence("permute_1d_into: copy-back");
     }
 
     // 2D analogue for `pld_r` / `pld_i` (`scratch` is `(>= n, ncols)`).
@@ -597,13 +644,12 @@ namespace ntt {
         KOKKOS_LAMBDA(const npart_t p, const npart_t l) {
           buf_v(p, l) = arr_v(perm_v(p), l);
         });
-      Kokkos::fence("permute_2d_into: gather");
       Kokkos::deep_copy(
+        Kokkos::DefaultExecutionSpace {},
         Kokkos::subview(arr, std::make_pair(static_cast<npart_t>(0), n), Kokkos::ALL),
         Kokkos::subview(scratch,
                         std::make_pair(static_cast<npart_t>(0), n),
                         Kokkos::ALL));
-      Kokkos::fence("permute_2d_into: copy-back");
     }
 
   } // namespace permute_helpers

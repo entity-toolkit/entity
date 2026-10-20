@@ -105,7 +105,7 @@ namespace ntt {
           prtl_spec.set_unsorted();
         }
         Kokkos::Experimental::contribute(domain.fields.bckp, scatter_bckp);
-        metadomain.SynchronizeFields(domain, Comm::Bckp, { 0, 1 });
+        metadomain.SynchronizeFields(domain, ::Comm::Bckp, { 0, 1 });
       }
 
       const auto maxwellian = arch::energy_dist::Maxwellian<M::Dim, M::CoordType> {

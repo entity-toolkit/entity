@@ -43,6 +43,8 @@
 #include "output/stats.h"
 
 #if defined(MPI_ENABLED)
+  #include "framework/domain/comm/halo_exchange.hpp"
+
   #include <mpi.h>
 #endif // MPI_ENABLED
 
@@ -153,10 +155,14 @@ namespace ntt {
      * @param max_shift_cells per-event cap for any single boundary movement,
      * additionally clamped to N_GHOSTS so the field strip we need is already
      * present in the local ghost zone
+     * @returns true if any boundary moved (the same on every rank). The local
+     * fields are then reallocated and only em (and em0, cur0 for GRPIC) are
+     * carried over; every other field is zero.
      * @note Only neighbor communication is used (CommunicateFields ghosts +
      * CommunicateParticles).
      */
-    void Rebalance(unsigned int dim_mask, real_t tolerance, ncells_t max_shift_cells);
+    auto Rebalance(unsigned int dim_mask, real_t tolerance, ncells_t max_shift_cells)
+      -> bool;
 
     /* output-related ------------------------------------------------------- */
 #if defined(OUTPUT_ENABLED)
@@ -341,6 +347,10 @@ namespace ntt {
 
 #if defined(MPI_ENABLED)
     int g_mpi_rank { -1 }, g_mpi_size { -1 };
+
+    // persistent buffers and segment tables of the batched field halo
+    // exchange (CommunicateFields / SynchronizeFields)
+    mutable comm::HaloExchanger<M::Dim> g_halo;
 #endif
   };
 
