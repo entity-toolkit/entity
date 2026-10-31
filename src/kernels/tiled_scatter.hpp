@@ -336,7 +336,7 @@ namespace kernel {
      * @brief Per-team scratch size in bytes. Used by the launcher to set
      *        `team_policy.set_scratch_size(0, Kokkos::PerTeam(bytes))`.
      */
-    static constexpr size_t scratch_bytes() {
+    static KOKKOS_INLINE_FUNCTION size_t scratch_bytes() {
       // The component count (NC) is a *static* extent of scratch_ndfield_t
       // (View<real_t*[NC]> / **[NC] / ***[NC]), so shmem_size() takes only
       // the dynamic spatial extents — passing NC as well trips Kokkos'
