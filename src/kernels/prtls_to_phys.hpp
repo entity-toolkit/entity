@@ -19,6 +19,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/numeric.h"
@@ -108,7 +109,7 @@ namespace kernel {
       if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
         raise::ErrorIf(buff_x2.extent(0) == 0, "Invalid buffer size", HERE);
       }
-      if constexpr (((D == Dim::_2D) && (M::CoordType != Coord::Cartesian)) ||
+      if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M> or
                     (D == Dim::_3D)) {
         raise::ErrorIf(buff_x3.extent(0) == 0, "Invalid buffer size", HERE);
       }
@@ -132,75 +133,54 @@ namespace kernel {
     }
 
     Inline void bufferX(prtlidx_t p_from, prtlidx_t p_to) const {
-      if constexpr ((D == Dim::_1D) || (D == Dim::_2D) || (D == Dim::_3D)) {
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
         buff_x1(p_to) = metric.template convert<1, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)));
       }
-      if constexpr ((D == Dim::_2D) || (D == Dim::_3D)) {
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
         buff_x2(p_to) = metric.template convert<2, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)));
       }
-      if constexpr ((D == Dim::_2D) && (M::CoordType != Coord::Cartesian)) {
-        buff_x3(p_to) = phi(p_from);
-      } else if constexpr (D == Dim::_3D) {
+      if constexpr (D == Dim::_3D) {
         buff_x3(p_to) = metric.template convert<3, Crd::Cd, Crd::Ph>(
           static_cast<real_t>(i3(p_from)) + static_cast<real_t>(dx3(p_from)));
+      } else if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
+        buff_x3(p_to) = phi(p_from);
       }
     }
 
     Inline void bufferU(prtlidx_t p_from, prtlidx_t p_to) const {
-      vec_t<Dim::_3D> u_Phys { ZERO };
-      if constexpr (D == Dim::_1D) {
-        if constexpr (M::CoordType == Coord::Cartesian) {
-          metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else {
-          raise::KernelError(HERE, "Unsupported coordinate system in 1D");
-        }
-      } else if constexpr (D == Dim::_2D) {
-        if constexpr (M::CoordType == Coord::Cartesian) {
-          metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
-              static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else if constexpr (S == SimEngine::SRPIC) {
-          metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
-              static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)),
-              phi(p_from) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else if constexpr (S == SimEngine::GRPIC) {
-          metric.template transform<Idx::D, Idx::PD>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
-              static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else {
-          raise::KernelError(HERE, "Unrecognized simulation engine");
-        }
-      } else if constexpr (D == Dim::_3D) {
-        if constexpr (S == SimEngine::SRPIC) {
-          metric.template transform_xyz<Idx::XYZ, Idx::T>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
-              static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)),
-              static_cast<real_t>(i3(p_from)) + static_cast<real_t>(dx3(p_from)) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else if constexpr (S == SimEngine::GRPIC) {
-          metric.template transform<Idx::D, Idx::PD>(
-            { static_cast<real_t>(i1(p_from)) + static_cast<real_t>(dx1(p_from)),
-              static_cast<real_t>(i2(p_from)) + static_cast<real_t>(dx2(p_from)),
-              static_cast<real_t>(i3(p_from)) + static_cast<real_t>(dx3(p_from)) },
-            { ux1(p_from), ux2(p_from), ux3(p_from) },
-            u_Phys);
-        } else {
-          raise::KernelError(HERE, "Unrecognized simulation engine");
-        }
+      vec_t<Dim::_3D>     u_Phys { ZERO };
+      coord_t<M::PrtlDim> x_Code { ZERO };
+      if constexpr (D == Dim::_1D or D == Dim::_2D or D == Dim::_3D) {
+        x_Code[0] = static_cast<real_t>(i1(p_from)) +
+                    static_cast<real_t>(dx1(p_from));
       }
+      if constexpr (D == Dim::_2D or D == Dim::_3D) {
+        x_Code[1] = static_cast<real_t>(i2(p_from)) +
+                    static_cast<real_t>(dx2(p_from));
+      }
+      if constexpr (D == Dim::_3D) {
+        x_Code[2] = static_cast<real_t>(i3(p_from)) +
+                    static_cast<real_t>(dx3(p_from));
+      } else if constexpr (::traits::engine::HasImplicitPhiCoordinate<S, M>) {
+        x_Code[2] = phi(p_from);
+      }
+
+      if constexpr (::traits::engine::VelocitiesInCartesianBasis<S>) {
+        metric.template transform_xyz<Idx::XYZ, Idx::T>(
+          x_Code,
+          { ux1(p_from), ux2(p_from), ux3(p_from) },
+          u_Phys);
+      } else if constexpr (::traits::engine::VelocitiesInCovariantBasis<S>) {
+        metric.template transform<Idx::D, Idx::PD>(
+          x_Code,
+          { ux1(p_from), ux2(p_from), ux3(p_from) },
+          u_Phys);
+      } else {
+        raise::KernelError(HERE, "Unrecognized simulation engine");
+      }
+
       buff_ux1(p_to) = u_Phys[0];
       buff_ux2(p_to) = u_Phys[1];
       buff_ux3(p_to) = u_Phys[2];

@@ -170,7 +170,7 @@ namespace arch {
 
   template <SimEngine::type S, MetricClass M, class F>
   inline void UpdateEMFields(Domain<S, M>& domain, const F& fieldsetter) {
-    if constexpr (S == SimEngine::SRPIC) {
+    if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
       Kokkos::deep_copy(domain.fields.bckp, domain.fields.em);
       Kokkos::parallel_for(
         "UpdateEMFields",
@@ -181,7 +181,9 @@ namespace arch {
                                                 fieldsetter));
       // comm here
     } else {
-      raise::Error("Custom fieldsetter is only implemented for SRPIC", HERE);
+      raise::Error("Custom fieldsetter is only implemented for simengine which "
+                   "defines user fields in tetrad basis",
+                   HERE);
     }
   }
 

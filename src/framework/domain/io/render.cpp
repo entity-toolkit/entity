@@ -22,6 +22,7 @@
 #include "global.h"
 
 #include "arch/kokkos_aliases.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/error.h"
 #include "utils/log.h"
@@ -166,7 +167,7 @@ namespace ntt {
                                   cell_range_t(src_base, src_base + 3));
       }
       // interpolate to cell centers + convert to physical basis -> bckp(3,4,5)
-      const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+      const PrepareOutputFlags prepare   = (::traits::engine::UserFieldsInTetradBasis<S>)
                                              ? PrepareOutput::ConvertToHat
                                              : PrepareOutput::ConvertToPhysCntrv;
       list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
@@ -293,7 +294,7 @@ namespace ntt {
                                   bckp,
                                   cell_range_t(src_base, src_base + 3));
       }
-      const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+      const PrepareOutputFlags prepare   = (::traits::engine::UserFieldsInTetradBasis<S>)
                                              ? PrepareOutput::ConvertToHat
                                              : PrepareOutput::ConvertToPhysCntrv;
       list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };
@@ -498,7 +499,7 @@ namespace ntt {
       }
     } else if (base == "Vmag") {
       // bulk-velocity magnitude |V| = sqrt(V1^2 + V2^2 + V3^2)
-      if constexpr (S == SimEngine::GRPIC) {
+      if constexpr (::traits::engine::IsGR<S>) {
         // GR: Eckart-frame 4-velocity; need all 4 components for the norm
         renderMoment<S, M, FldsID::V>(params,
                                       mesh,
@@ -592,7 +593,7 @@ namespace ntt {
     } else if (base.size() == 2 and base[0] == 'V') {
       // a single bulk-velocity component "V<i>"
       const int c = axisIdx(base[1]);
-      if constexpr (S == SimEngine::GRPIC) {
+      if constexpr (::traits::engine::IsGR<S>) {
         // GR: 4-velocity component (t/0 = u^0 = Gamma/alpha; x,y,z spatial)
         if (c >= 0 and c <= 3) {
           renderMoment<S, M, FldsID::V>(params,
@@ -727,7 +728,7 @@ namespace ntt {
                                     cell_range_t(src_base, src_base + 3));
         }
         // interpolate to cell centers + convert to physical basis -> (3,4,5)
-        const PrepareOutputFlags prepare   = (S == SimEngine::SRPIC)
+        const PrepareOutputFlags prepare   = (::traits::engine::UserFieldsInTetradBasis<S>)
                                                ? PrepareOutput::ConvertToHat
                                                : PrepareOutput::ConvertToPhysCntrv;
         list_t<uint8_t, 3>       comp_from = { 0, 1, 2 };

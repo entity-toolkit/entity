@@ -25,6 +25,7 @@
 #include <vector>
 
 namespace metric {
+  using namespace ntt;
 
   template <Dimension D>
   class Spherical : public MetricBase<D> {
@@ -36,10 +37,10 @@ namespace metric {
     const bool   small_angle { false };
 
   public:
-    static constexpr const char*      Label { "spherical" };
-    static constexpr Dimension        PrtlDim { Dim::_3D };
-    static constexpr ntt::Metric      MetricType { ntt::Metric::Spherical };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
+    static constexpr const char*  Label { "spherical" };
+    static constexpr Dimension    PrtlDim { Dim::_3D };
+    static constexpr Metric::type MetricType { Metric::Spherical };
+    static constexpr Coord::type  CoordType { Coord::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

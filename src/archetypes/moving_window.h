@@ -341,7 +341,7 @@ namespace arch {
     }
 
     // synch ghost zones after moving the window
-    metadomain.CommunicateFields(domain, Comm::E | Comm::B);
+    metadomain.CommunicateFields(domain, Comm::EM);
     // communicate particles after moving
     metadomain.CommunicateParticles(domain);
 

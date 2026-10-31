@@ -55,6 +55,104 @@ namespace ntt {
     set("scales.sigma0", SQR(skindepth0 / larmor0));
     set("scales.B0", ONE / larmor0);
     set("scales.omegaB0", ONE / larmor0);
+    if (engine_enum == SimEngine::HYBRID) {
+      /**
+       * hybrid-engine parameters (read from the [hybrid] table; ignored by the
+       * SR/GR engines):
+       *   gamma_ad - adiabatic index of the massless electron fluid (1 = isothermal)
+       *   theta0   - electron temperature T_e (code units); 0 = cold electrons
+       *   dens_min - vacuum threshold for the Ohm's law; below it E ramps to 0 (units of n0)
+       *   hall_lim - cap on the local whistler Courant the Hall term may imply (<= 0 off)
+       *   resist_vac - vacuum resistivity: E -> eta curl B below dens_min (0 = off)
+       *   resist_hyper - hyper-resistivity eta_H grad^4 B, everywhere (0 = off)
+       *   resist - uniform Ohmic resistivity: E += eta curl B everywhere (0 = off)
+       *   subcycle         - Pegasus-style sub-cycled field advance (default on)
+       *   subcycle_courant - target whistler Courant per field sub-step
+       *   subcycle_max     - cap on the number of field sub-steps per advance
+       *   subcycle_centered - corrector field advance with time-centered moments
+       *   v_max    - characteristic flow speed for the hybrid CFL (code units)
+       */
+      set("hybrid.gamma_ad",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "gamma_ad",
+                                defaults::hybrid::gamma_ad));
+      set("hybrid.theta0",
+          toml::find_or<real_t>(toml_data, "hybrid", "theta0", ZERO));
+      // vacuum threshold for the hybrid Ohm's law. Above it E follows the usual
+      // [...]/N; below it E ramps continuously to zero so that plasma-free cells
+      // keep B frozen instead of amplifying the right-hand side by 1/dens_min.
+      set("hybrid.dens_min",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "dens_min",
+                                defaults::hybrid::dens_min));
+      // per-cell limiter on the Ohm's-law Hall term: caps the implied local
+      // whistler Courant (v_w ~ |B|/N, which exceeds the ambient value at shock
+      // overshoots and magnetic cavities) at hall_lim * dx/dt. Identity in
+      // resolvable cells; <= 0 disables.
+      set("hybrid.hall_lim",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "hall_lim",
+                                static_cast<real_t>(0.5)));
+      // vacuum resistivity (code units). > 0 turns the E = 0 vacuum of dens_min
+      // into a resistive vacuum: below the threshold compute_Ee crossfades E to
+      // eta * curl B, so vacuum regions diffuse toward a curl-free (potential)
+      // field instead of freezing. Needed when fast plasma sweeps along a vacuum
+      // boundary, where a hard E = 0 mask makes an artificial tangential-E jump
+      // (a surface current) that pumps B at rate ~ u/dx. Internally clamped to
+      // the explicit-diffusion stability limit (0.4 dx^2/dt at the sub-step dt),
+      // so any value is safe; eta ~ u_sweep * dx suffices.
+      set("hybrid.resist_vac",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist_vac", ZERO));
+      // hyper-resistivity (E -= eta_H grad^2 curl B => dB/dt -= eta_H grad^4 B),
+      // applied everywhere in the Faraday-side Ohm's law. The moments filter
+      // (algorithms.current_filters) attenuates the deposited N, V by
+      // cos^(2p)(k dx/2) -- near-zero for few-cell wavelengths -- so in that band
+      // the field evolves with no kinetic feedback and sustained compression or
+      // shear in the frozen moments pumps the band by induction. eta_H k^4
+      // blankets the filtered band while leaving k dx < 0.3 untouched; size so
+      // eta_H (pi/dx)^4 exceeds the drive. Internally clamped to the explicit
+      // grad^4 stability limit at the actual sub-step dt.
+      set("hybrid.resist_hyper",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist_hyper", ZERO));
+      // uniform Ohmic resistivity (code units). > 0 adds E += eta * curl B in the
+      // Faraday-side Ohm's law everywhere (=> dB/dt += eta grad^2 B), the k^2
+      // companion to resist_hyper's k^4: it damps the intermediate few-cell band
+      // (k dx ~ 0.1-0.3) that hyper-resistivity barely reaches but a strong
+      // boundary/beam drive (e.g. a high-Mach reflecting-wall shock foot) pumps.
+      // Unlike resist_vac this fires in dense plasma too. Trades against physical
+      // magnetic diffusion, so keep it as small as stability allows. Internally
+      // clamped to the explicit grad^2 diffusion limit at the actual sub-step dt,
+      // so any value is safe.
+      set("hybrid.resist",
+          toml::find_or<real_t>(toml_data, "hybrid", "resist", ZERO));
+      // Pegasus-style sub-cycled magnetic-field advance (fieldsolvers.h
+      // ::SubcycledFaraday): the whistler-stiff Ohm/Faraday loop is integrated
+      // with adaptive SSP-RK3 sub-steps at its own CFL instead of full-dt Euler
+      // pushes. The sub-step count targets `subcycle_courant` whistler Courant
+      // per sub-step (from the global max |B|/N) and is capped at `subcycle_max`;
+      // beyond the cap the per-cell Hall limiter (which then sees the SUB-step
+      // dt) takes over. subcycle = false -> legacy 3-push scheme.
+      set("hybrid.subcycle",
+          toml::find_or<bool>(toml_data, "hybrid", "subcycle", true));
+      set("hybrid.subcycle_courant",
+          toml::find_or<real_t>(toml_data,
+                                "hybrid",
+                                "subcycle_courant",
+                                static_cast<real_t>(0.5)));
+      set("hybrid.subcycle_max",
+          toml::find_or<int>(toml_data, "hybrid", "subcycle_max", 64));
+      // drive the corrector (second) sub-cycled field advance with the
+      // time-centered moments (M^(n) + M') / 2 instead of the predicted M'
+      set("hybrid.subcycle_centered",
+          toml::find_or<bool>(toml_data, "hybrid", "subcycle_centered", false));
+      // optional user-set characteristic flow speed for the hybrid CFL (code
+      // units); 0 -> dt set purely by the Alfven + whistler signal speeds.
+      set("hybrid.v_max",
+          toml::find_or<real_t>(toml_data, "hybrid", "v_max", ZERO));
+    }
 
     /* [particles] ---------------------------------------------------------- */
     const auto ppc0 = toml::find<real_t>(toml_data, "particles", "ppc0");
@@ -245,6 +343,38 @@ namespace ntt {
     alg_params.read(get<real_t>("scales.dx0"), alg_extra_flags, toml_data);
     alg_params.setParams(alg_extra_flags, this);
 
+    /* hybrid timestep — correct CFL --------------------------------------- */
+    // The default light-crossing dt = CFL * dx0 assumes the fastest signal
+    // travels at ~1 code-velocity unit (as for SR/GR, where speeds are bounded
+    // by c = 1). A hybrid plasma has no displacement current; its fastest
+    // signals are the DISPERSIVE whistler/Hall mode and the bulk ion flow, both
+    // larger than 1 in code units. Using dt = CFL * dx0 then advects particles
+    // by > 1 cell/step (Courant > 1), which breaks the single-cell rebucket and
+    // the moment deposit. Replace it with the Pegasus CFL (Kunz, Stone & Bai
+    // 2014, §3.5): dt <= CFL * min( dx0 / v_max, 2*pi/Omega ), with the
+    // ground-frame max signal speed
+    //   v_max = v_flow + v_A + v_whistler,
+    //   v_A        = d0 / rho0                      (Alfven speed, code units),
+    //   v_whistler = (d0^2 / rho0) * pi / dx0       (grid-scale Hall/whistler;
+    //                d0^2/rho0 is the EMF Hall coefficient coeff_2, k_max~pi/dx0),
+    // and v_flow an optional user-set characteristic flow speed in code units
+    // (hybrid.v_max, default 0 — set it for super-whistler flows).
+    if (engine_enum == SimEngine::HYBRID) {
+      const auto cfl        = get<real_t>("algorithms.timestep.CFL");
+      const auto dx0        = get<real_t>("scales.dx0");
+      const auto d0         = get<real_t>("scales.skindepth0");
+      const auto rho0       = get<real_t>("scales.larmor0");
+      const auto v_flow     = get<real_t>("hybrid.v_max");
+      const auto v_alfven   = d0 / rho0;
+      const auto v_whistler = (SQR(d0) / rho0) *
+                              static_cast<real_t>(constant::PI) / dx0;
+      const auto v_max  = v_flow + v_alfven + v_whistler;
+      const auto dt_adv = dx0 / v_max;
+      // gyration limit 2*pi/Omega (Omega = 1/rho0); rarely binding
+      const auto dt_gyr = static_cast<real_t>(constant::TWO_PI) * rho0;
+      const auto dt_hyb = cfl * ((dt_adv < dt_gyr) ? dt_adv : dt_gyr);
+      set("algorithms.timestep.dt", dt_hyb);
+    }
     /* [simulation.domain.load_balance] ------------------------------------- */
     set("simulation.domain.load_balance.enable",
         toml::find_or(toml_data, "simulation", "domain", "load_balance", "enable", false));

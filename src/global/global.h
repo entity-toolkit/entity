@@ -154,6 +154,15 @@ namespace ntt {
     hx3 = 5
   };
 
+  enum comp : uint8_t {
+    c0 = 0,
+    c1 = 1,
+    c2 = 2,
+    c3 = 3,
+    c4 = 4,
+    c5 = 5,
+  };
+
   enum cur : uint8_t {
     jx1 = 0,
     jx2 = 1,
@@ -277,16 +286,20 @@ using DiagFlags = uint8_t;
 
 namespace Comm {
   enum CommTags_ : uint16_t {
-    None = 0,
-    E    = 1 << 0,
-    B    = 1 << 1,
-    J    = 1 << 2,
-    D    = 1 << 3,
-    D0   = 1 << 4,
-    B0   = 1 << 5,
-    H    = 1 << 6,
-    Bckp = 1 << 7,
-    Buff = 1 << 8,
+    None    = 0,
+    EM_012  = 1 << 0,
+    EM_345  = 1 << 1,
+    CUR     = 1 << 2,
+    AUX_012 = 1 << 3,
+    AUX_345 = 1 << 4,
+    EM0_012 = 1 << 5,
+    EM0_345 = 1 << 6,
+    CUR0    = 1 << 7,
+    Bckp    = 1 << 8,
+    Buff    = 1 << 9,
+    EM      = EM_012 | EM_345,
+    AUX     = AUX_012 | AUX_345,
+    EM0     = EM0_012 | EM0_345,
   };
 } // namespace Comm
 

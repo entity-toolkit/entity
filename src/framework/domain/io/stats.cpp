@@ -1,6 +1,7 @@
 #include "enums.h"
 #include "global.h"
 
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/comparators.h"
 #include "utils/error.h"
@@ -95,7 +96,7 @@ namespace ntt {
         raise::Error("Components not supported for JdotE", HERE);
       }
     } else if constexpr (
-      (S == SimEngine::SRPIC) and
+      (::traits::engine::IsSR<S>) and
       (F == StatsID::B2 or F == StatsID::E2 or F == StatsID::ExB)) {
       raise::ErrorIf(components.size() != 1,
                      "Components must be of size 1 for B2, E2 or ExB stats",
@@ -207,7 +208,7 @@ namespace ntt {
       } else if (stat.id() == StatsID::JdotE) {
         g_stats_writer.write(
           ReduceFields<S, M, StatsID::JdotE>(local_domain, g_mesh.metric, {}));
-      } else if (S == SimEngine::SRPIC) {
+      } else if (::traits::engine::IsSR<S>) {
         if (stat.id() == StatsID::E2) {
           for (const auto& comp : stat.comp) {
             g_stats_writer.write(

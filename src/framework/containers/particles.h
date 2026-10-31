@@ -40,6 +40,7 @@
   #include <adios2.h>
 #endif
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -116,14 +117,18 @@ namespace ntt {
     // double-buffer dispatch keeps using fresh transients (it may hand back
     // a different buffer). The per-type gather scratch is reused on every
     // vendor backend.
-    array_t<ncells_t*> m_sort_keys {};
-    prtl_perm_t        m_sort_perm {};
-    array_t<int*>      m_sort_scratch_int {};
-    array_t<prtldx_t*> m_sort_scratch_prtldx {};
-    array_t<real_t*>   m_sort_scratch_real {};
-    array_t<short*>    m_sort_scratch_tag {};
-    array_t<real_t**>  m_sort_scratch_pld_r {};
-    array_t<npart_t**> m_sort_scratch_pld_i {};
+    array_t<ncells_t*>      m_sort_keys {};
+    // the tile keys in the narrowest unsigned type holding the bin count
+    // (SYCL/oneDPL: its radix sort makes one pass per 4 key bits)
+    array_t<std::uint8_t*>  m_sort_keys8 {};
+    array_t<std::uint16_t*> m_sort_keys16 {};
+    prtl_perm_t             m_sort_perm {};
+    array_t<int*>           m_sort_scratch_int {};
+    array_t<prtldx_t*>      m_sort_scratch_prtldx {};
+    array_t<real_t*>        m_sort_scratch_real {};
+    array_t<short*>         m_sort_scratch_tag {};
+    array_t<real_t**>       m_sort_scratch_pld_r {};
+    array_t<npart_t**>      m_sort_scratch_pld_i {};
 #endif
 
   public:

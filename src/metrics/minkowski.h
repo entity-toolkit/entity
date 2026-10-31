@@ -26,16 +26,17 @@
 #include <vector>
 
 namespace metric {
+  using namespace ntt;
 
   template <Dimension D>
   class Minkowski : public MetricBase<D> {
     const real_t dx, dx_inv;
 
   public:
-    static constexpr const char*      Label { "minkowski" };
-    static constexpr Dimension        PrtlDim { D };
-    static constexpr ntt::Metric      MetricType { ntt::Metric::Minkowski };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Cartesian };
+    static constexpr const char*  Label { "minkowski" };
+    static constexpr Dimension    PrtlDim { D };
+    static constexpr Metric::type MetricType { Metric::Minkowski };
+    static constexpr Coord::type  CoordType { Coord::Cartesian };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

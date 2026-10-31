@@ -58,8 +58,10 @@ endif()
 
 if(${mpi})
   gen_test(comm-mpi true)
+  gen_test(hybrid_moments_sync true)
 else()
   gen_test(comm-nompi false)
+  gen_test(hybrid_moments_sync false)
 endif()
 
 if(${output})

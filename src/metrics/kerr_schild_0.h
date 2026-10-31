@@ -27,6 +27,7 @@
 #include <vector>
 
 namespace metric {
+  using namespace ntt;
 
   template <Dimension D>
   class KerrSchild0 : public MetricBase<D> {
@@ -39,10 +40,10 @@ namespace metric {
     const real_t dr_inv, dtheta_inv, dphi_inv;
 
   public:
-    static constexpr const char*      Label { "kerr_schild_0" };
-    static constexpr Dimension        PrtlDim { D };
-    static constexpr ntt::Metric      MetricType { ntt::Metric::Kerr_Schild_0 };
-    static constexpr ntt::Coord::type CoordType { ntt::Coord::type::Spherical };
+    static constexpr const char*  Label { "kerr_schild_0" };
+    static constexpr Dimension    PrtlDim { D };
+    static constexpr Metric::type MetricType { Metric::Kerr_Schild_0 };
+    static constexpr Coord::type  CoordType { Coord::Spherical };
     using MetricBase<D>::x1_min;
     using MetricBase<D>::x1_max;
     using MetricBase<D>::x2_min;

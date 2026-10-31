@@ -37,6 +37,16 @@ namespace ntt {
     static constexpr auto dimension = D;
   };
 
+#define NTT_FOREACH_SPECIALIZATION_FIELDS(MACRO)                               \
+  MACRO(Dim::_1D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_2D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_3D, SimEngine::SRPIC)                                            \
+  MACRO(Dim::_2D, SimEngine::GRPIC)                                            \
+  MACRO(Dim::_3D, SimEngine::GRPIC)                                            \
+  MACRO(Dim::_1D, SimEngine::HYBRID)                                           \
+  MACRO(Dim::_2D, SimEngine::HYBRID)                                           \
+  MACRO(Dim::_3D, SimEngine::HYBRID)
+
 #define NTT_FOREACH_COORDINATE(MACRO)                                          \
   MACRO(Dim::_1D, Coord::Cartesian)                                            \
   MACRO(Dim::_2D, Coord::Cartesian)                                            \
@@ -54,12 +64,18 @@ namespace ntt {
   MACRO(SimEngine::SRPIC, metric::QSpherical, Dim::_2D)                        \
   MACRO(SimEngine::GRPIC, metric::KerrSchild, Dim::_2D)                        \
   MACRO(SimEngine::GRPIC, metric::QKerrSchild, Dim::_2D)                       \
-  MACRO(SimEngine::GRPIC, metric::KerrSchild0, Dim::_2D)
+  MACRO(SimEngine::GRPIC, metric::KerrSchild0, Dim::_2D)                       \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_1D)                        \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_2D)                        \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_3D)
 
 #define NTT_FOREACH_CARTESIAN_SPECIALIZATION(MACRO)                            \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_1D)                         \
   MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_2D)                         \
-  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_3D)
+  MACRO(SimEngine::SRPIC, metric::Minkowski, Dim::_3D)                         \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_1D)                        \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_2D)                        \
+  MACRO(SimEngine::HYBRID, metric::Minkowski, Dim::_3D)
 
 #define NTT_BUILD_SPECIALIZATION_ENTRY(S, M, D) SpecializationEntry<S, M, D> {},
 

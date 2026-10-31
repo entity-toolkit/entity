@@ -27,6 +27,7 @@
 
 #include "arch/kokkos_aliases.h"
 #include "traits/archetypes.h"
+#include "traits/engine.h"
 #include "traits/metric.h"
 #include "utils/numeric.h"
 
@@ -64,7 +65,7 @@ namespace arch {
       if constexpr (D == Dim::_1D) {
         const auto        i1_ = COORD(i1);
         coord_t<Dim::_1D> x_Phys { ZERO };
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
           if constexpr (HasEx1) {
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF }, x_Phys);
             EM(i1, em::ex1) = metric.template transform<1, Idx::T, Idx::U>(
@@ -114,7 +115,7 @@ namespace arch {
         const auto i1_ = COORD(i1);
         const auto i2_ = COORD(i2);
         // srpic
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
           coord_t<Dim::_2D> x_Phys { ZERO };
           if constexpr (HasEx1) {
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_ }, x_Phys);
@@ -153,7 +154,7 @@ namespace arch {
               { i1_ + HALF, i2_ + HALF },
               finit.bx3(x_Phys));
           }
-        } else if constexpr (S == SimEngine::GRPIC) {
+        } else if constexpr (::traits::engine::UserFieldsInContravariantBasis<S>) {
           // grpic
           if constexpr (HasDx1 && HasDx2 && HasDx3) {
             const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
@@ -203,7 +204,7 @@ namespace arch {
         const auto        i2_ = COORD(i2);
         const auto        i3_ = COORD(i3);
         coord_t<Dim::_3D> x_Phys { ZERO };
-        if constexpr (S == SimEngine::SRPIC) {
+        if constexpr (::traits::engine::UserFieldsInTetradBasis<S>) {
           // srpic
           if constexpr (HasEx1) {
             metric.template convert<Crd::Cd, Crd::Ph>({ i1_ + HALF, i2_, i3_ },
@@ -250,7 +251,7 @@ namespace arch {
               { i1_ + HALF, i2_ + HALF, i3_ },
               finit.bx3(x_Phys));
           }
-        } else if constexpr (S == SimEngine::GRPIC) {
+        } else if constexpr (::traits::engine::UserFieldsInContravariantBasis<S>) {
           // grpic
           const real_t x1_0 { metric.template convert<1, Crd::Cd, Crd::Ph>(i1_) };
           const real_t x1_H { metric.template convert<1, Crd::Cd, Crd::Ph>(
@@ -295,6 +296,9 @@ namespace arch {
 
   template <SimEngine::type S, SRMetricClass M, ConditionalSRFieldSetterClass<M::Dim> FS>
   struct CustomSetEMFields_kernel {
+    static_assert(::traits::engine::UserFieldsInTetradBasis<S>,
+                  "CustomSetEMFields_kernel is only implemented for SimEngines "
+                  "with user-defined fields in tetrad basis");
     static constexpr auto D = M::Dim;
     static constexpr auto HasEx1 = ::traits::fieldsetter::HasConditionalEx1<FS, D>;
     static constexpr auto HasEx2 = ::traits::fieldsetter::HasConditionalEx2<FS, D>;

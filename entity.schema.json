@@ -57,12 +57,13 @@
             {
               "enum": [
                 "SRPIC",
-                "GRPIC"
+                "GRPIC",
+                "HYBRID"
               ]
             },
             {
               "type": "string",
-              "pattern": "(?i)^(SRPIC|GRPIC)$"
+              "pattern": "(?i)^(SRPIC|GRPIC|HYBRID)$"
             }
           ],
           "x-entity": {
@@ -657,6 +658,171 @@
         }
       }
     },
+    "hybrid": {
+      "description": "Electron-fluid closure for the hybrid Ohm's law",
+      "type": "object",
+      "additionalProperties": false,
+      "x-entity": {
+        "notes": [
+          "Only read by the `HYBRID` engine (ignored by `SRPIC`/`GRPIC`)",
+          "In `tiled_deposit=ON` builds the fused ion push+moment deposit runs tiled (TeamPolicy + SLM scratch); for it to actually hit the fast path, keep `particles.spatial_sorting_interval = 1` for ion species (see the note there)"
+        ]
+      },
+      "properties": {
+        "gamma_ad": {
+          "description": "Adiabatic index of the massless electron fluid",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.6666666666666667,
+          "x-entity": {
+            "type": "float [> 0.0]",
+            "default": "5/3",
+            "notes": [
+              "`1.0` corresponds to an isothermal closure"
+            ]
+          }
+        },
+        "theta0": {
+          "description": "Electron temperature `T_e` in physical (code) units",
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-entity": {
+            "type": "float [>= 0.0]",
+            "notes": [
+              "`0.0` corresponds to cold electrons"
+            ]
+          }
+        },
+        "dens_min": {
+          "description": "Vacuum threshold for the hybrid Ohm's law, in units of `n0`",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 0.001,
+          "x-entity": {
+            "type": "float [> 0.0]",
+            "default": "1e-3",
+            "notes": [
+              "Above it `E` follows the usual `[...]/N`; below it `E` ramps continuously to zero so plasma-free cells keep `B` frozen instead of amplifying the right-hand side by `1/dens_min` (statistically-empty or unfilled ghost cells, a fraction `e^-ppc` for finite `ppc`)"
+            ]
+          }
+        },
+        "hall_lim": {
+          "description": "Cap on the local whistler Courant the Ohm's-law Hall term may imply",
+          "type": "number",
+          "default": 0.5,
+          "x-entity": {
+            "type": "float",
+            "notes": [
+              "The implied whistler speed `v_w ~ |B|/N` can outrun `dx/dt` at shock overshoots and magnetic cavities; the Hall term is scaled so its whistler Courant never exceeds this. Identity in resolvable cells",
+              "`<= 0.0` disables the limiter"
+            ]
+          }
+        },
+        "resist_vac": {
+          "description": "Vacuum resistivity, in physical (code) units",
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-entity": {
+            "type": "float [>= 0.0]",
+            "notes": [
+              "`> 0.0` makes the sub-`dens_min` vacuum resistive: `E` crossfades to `eta * curl B` below the threshold, so vacuum regions diffuse toward a curl-free field instead of freezing. Needed when fast plasma sweeps along a vacuum boundary, where a hard `E = 0` mask pumps `B` at `~ u/dx`",
+              "Internally clamped to the explicit-diffusion stability limit; any value is safe",
+              "`0.0` disables it (hard `E = 0` vacuum)"
+            ]
+          }
+        },
+        "resist_hyper": {
+          "description": "Hyper-resistivity coefficient `eta_H` (adds `-eta_H grad^4 B` to the field advance)",
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-entity": {
+            "type": "float [>= 0.0]",
+            "notes": [
+              "Damps the few-cell band the moments filter leaves without kinetic feedback, while leaving physical scales (`k dx < 0.3`) essentially untouched; size so `eta_H (pi/dx)^4` exceeds the drive",
+              "Internally clamped to the explicit `grad^4` stability limit; any value is safe",
+              "`0.0` disables it"
+            ]
+          }
+        },
+        "resist": {
+          "description": "Uniform Ohmic resistivity, in physical (code) units (adds `eta * curl B` to `E` everywhere)",
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-entity": {
+            "type": "float [>= 0.0]",
+            "notes": [
+              "The `k^2` companion to `resist_hyper`: damps the intermediate few-cell band (`k dx ~ 0.1-0.3`) that hyper-resistivity barely reaches. Unlike `resist_vac` it acts in dense plasma too and trades against physical magnetic diffusion, so keep it as small as stability allows",
+              "Internally clamped to the explicit `grad^2` diffusion stability limit; any value is safe",
+              "`0.0` disables it"
+            ]
+          }
+        },
+        "subcycle": {
+          "description": "Pegasus-style sub-cycled magnetic-field advance",
+          "type": "boolean",
+          "default": true,
+          "x-entity": {
+            "type": "bool",
+            "notes": [
+              "Integrates the whistler-stiff Ohm/Faraday loop with adaptive SSP-RK3 sub-steps at its own CFL; `false` uses the legacy 3-push scheme"
+            ]
+          }
+        },
+        "subcycle_courant": {
+          "description": "Target whistler Courant per field sub-step",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 0.5,
+          "x-entity": {
+            "type": "float [> 0.0]",
+            "notes": [
+              "Only read when `subcycle = true`"
+            ]
+          }
+        },
+        "subcycle_max": {
+          "description": "Cap on the number of field sub-steps per advance",
+          "type": "integer",
+          "minimum": 1,
+          "default": 64,
+          "x-entity": {
+            "type": "int [>= 1]",
+            "notes": [
+              "Beyond the cap the per-cell Hall limiter (`hall_lim`) takes over"
+            ]
+          }
+        },
+        "subcycle_centered": {
+          "description": "Drive the corrector sub-cycled field advance with time-centered moments",
+          "type": "boolean",
+          "default": false,
+          "x-entity": {
+            "type": "bool",
+            "notes": [
+              "Only read when `subcycle = true`",
+              "`true` integrates B over the step with `(M^n + M')/2`, the mean of the start-of-step and predicted ion moments; `false` uses the predicted moments `M'` alone"
+            ]
+          }
+        },
+        "v_max": {
+          "description": "Characteristic flow speed for the hybrid CFL, in physical (code) units",
+          "type": "number",
+          "minimum": 0.0,
+          "default": 0.0,
+          "x-entity": {
+            "type": "float [>= 0.0]",
+            "notes": [
+              "Added to the Alfven + whistler signal speeds in the Pegasus CFL `dt <= CFL * min(dx0 / v_max, 2*pi/Omega)` [Kunz, Stone & Bai (2014), §3.5]",
+              "`0.0` lets the Alfven + whistler speeds set `dt`; raise it for super-whistler flows"
+            ]
+          }
+        }
+      }
+    },
     "radiation": {
       "description": "Radiative drag and photon emission parameters",
       "type": "object",
@@ -1172,7 +1338,8 @@
           "x-entity": {
             "type": "uint",
             "notes": [
-              "Set to 0 to disable spatial sorting"
+              "Set to 0 to disable spatial sorting",
+              "In `tiled_deposit=ON` builds the tiled deposits (currents, and the HYBRID fused push+moment deposit) stay correct for any interval, but their per-tile SLM scratch is only *used* by particles that are still within `tiled_deposit_drift` (CMake, default 1) cells of their sorted tile: with an interval > tiled_deposit_drift + 1 most particles take the slower global escape valve and the tiled kernels perform like the flat ones. Keep this at 1 for HYBRID ion species (each push moves particles), or build with `tiled_deposit_drift` = interval."
             ]
           }
         },

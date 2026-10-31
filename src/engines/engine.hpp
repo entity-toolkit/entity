@@ -87,6 +87,9 @@ namespace ntt {
     const simtime_t   start_time;
     simtime_t         time;
     timestep_t        step;
+    // true for the step after a load-balance remap, which reallocates the
+    // fields and keeps only em (and em0, cur0 for GRPIC)
+    bool              domains_remapped { false };
 
   public:
     static constexpr Dimension D { M::Dim };
@@ -248,15 +251,34 @@ namespace ntt {
   void Engine<S, M>::run() {
     init();
 
+    // engine-specific timer set: PIC (SRPIC/GRPIC) and HYBRID exercise
+    // different sub-steps, so each gets only the timers it actually uses (no
+    // permanently-zero rows, no Moments leaking into PIC).
+    const auto timer_names = []() -> std::vector<std::string> {
+      // shared bookkeeping timers driven from Engine::run (all engines):
+      // Custom (post-step), LoadBalance, and the
+      // ParticleSort/Output/Render/Checkpoint "extras" that printAll() prints
+      // separately below the total.
+      if constexpr (S == SimEngine::HYBRID) {
+        return {
+          "FieldSolver",   "ParticlePusher", // field solve + push (fused deposit)
+          "MomentFiltering",                    // binomial smoothing of N,V (+ its comm)
+          "FieldBoundaries", "Communications", "Custom", "LoadBalance",
+          "ParticleSort",  "Output",         "Render",
+          "Checkpoint"
+        };
+      } else {
+        return {
+          "FieldSolver",       "CurrentFiltering", "CurrentDeposit",
+          "ParticlePusher",    "FieldBoundaries",  "ParticleBoundaries",
+          "Communications",    "Injector",         "Custom",
+          "LoadBalance",       "ParticleSort",     "Output",
+          "Render",            "Checkpoint"
+        };
+      }
+    }();
     auto timers = timer::Timers {
-      { "FieldSolver",
-       "CurrentFiltering", "CurrentDeposit",
-       "ParticlePusher", "FieldBoundaries",
-       "ParticleBoundaries", "Communications",
-       "Injector", "Custom",
-       "LoadBalance", "ParticleSort",
-       "Output", "Render",
-       "Checkpoint" },
+      timer_names,
       []() {
         Kokkos::fence();
        },
@@ -286,6 +308,7 @@ namespace ntt {
       m_metadomain.runOnLocalDomains([&timers, this](auto& dom) {
         step_forward(timers, dom);
       });
+      domains_remapped = false;
       // poststep (if defined)
       if constexpr (
         ::traits::pgen::HasCustomPostStep<decltype(m_pgen), Domain<S, M>>) {
@@ -299,9 +322,10 @@ namespace ntt {
         if (lb_enable and lb_interval > 0 and (step + 1) % lb_interval == 0 and
             lb_dim_mask != 0u) {
           timers.start("LoadBalance");
-          m_metadomain.Rebalance(lb_dim_mask,
-                                 lb_tolerance,
-                                 static_cast<ncells_t>(lb_max_shift));
+          domains_remapped = m_metadomain.Rebalance(
+            lb_dim_mask,
+            lb_tolerance,
+            static_cast<ncells_t>(lb_max_shift));
           timers.stop("LoadBalance");
         }
       }
