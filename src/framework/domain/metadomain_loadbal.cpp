@@ -410,8 +410,14 @@ namespace ntt {
     }
 
     /* --- 8. Refill ghost zones from neighbors ---------------------------- */
-    CommunicateFields(local_dom, Comm::E | Comm::B);
-
+    if constexpr (S == SimEngine::GRPIC) {
+      CommunicateFields(local_dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
+      CommunicateFields(local_dom, Comm::E | Comm::H);
+      CommunicateFields(local_dom, Comm::J);
+    }
+    else{
+      CommunicateFields(local_dom, Comm::E | Comm::B);
+    }
     /* --- 9. Shift particle indices, retag, and migrate ------------------- */
     // Particle indices i_d are in active-cell coordinates: i_d in [0, n_active)
     // for an in-domain particle. After the offset moves by delta, particles
