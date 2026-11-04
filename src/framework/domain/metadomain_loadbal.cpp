@@ -384,7 +384,8 @@ namespace ntt {
         offset_d[d] = new_offset_per_pos[d][off_ndoms[d]];
         ext_d.push_back(extent_per_pos[d][off_ndoms[d]]);
       }
-      sub.mesh.set_resolution_and_extent(ncells_d, ext_d);
+      // Don't recompute dx_min
+      sub.mesh.set_resolution_and_extent(ncells_d, ext_d, false);
       sub.set_offset_ncells(offset_d);
       if (idx == local_idx) {
         new_local_ncells = ncells_d;
@@ -414,8 +415,7 @@ namespace ntt {
       CommunicateFields(local_dom, Comm::B | Comm::B0 | Comm::D | Comm::D0);
       CommunicateFields(local_dom, Comm::E | Comm::H);
       CommunicateFields(local_dom, Comm::J);
-    }
-    else{
+    } else {
       CommunicateFields(local_dom, Comm::E | Comm::B);
     }
     /* --- 9. Shift particle indices, retag, and migrate ------------------- */
