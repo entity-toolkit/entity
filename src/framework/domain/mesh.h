@@ -23,6 +23,7 @@
 
 #include "framework/domain/grid.h"
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -66,12 +67,18 @@ namespace ntt {
     }
 
     void set_resolution_and_extent(const std::vector<ncells_t>& new_res,
-                                   const boundaries_t<real_t>&  new_extent) {
+                                   const boundaries_t<real_t>&  new_extent,
+                                   bool recompute_dxMin = true) {
       raise::ErrorIf(new_res.size() != D, "invalid resolution dim", HERE);
-      this->m_resolution = new_res;
-      m_extent           = new_extent;
+      const auto saved_dxMin = metric.dxMin();
+      this->m_resolution     = new_res;
+      m_extent               = new_extent;
       metric.~M();
-      new (&metric) M { this->m_resolution, m_extent, m_metric_params_raw };
+      new (&metric)
+        M { this->m_resolution, m_extent, m_metric_params_raw, recompute_dxMin };
+      if (not recompute_dxMin) {
+        metric.set_dxMin(saved_dxMin);
+      }
     }
 
     /**
@@ -193,13 +200,14 @@ namespace ntt {
             raise::Error("invalid dimension", HERE);
             throw;
           }
-          if (!incl_ghosts[d].first) {
-            xi_min_Cd = std::max(xi_min_Cd, static_cast<real_t>(ZERO));
-          }
-          if (!incl_ghosts[d].second) {
-            xi_max_Cd = std::min(xi_max_Cd,
+          // The physical interval was clipped to this mesh above. Roundoff
+          // in the inverse coordinate transform can still make ceil(n) > n,
+          // especially after rebalancing changes the local cell count. Clip
+          // active-cell indices before adding the requested ghost layers.
+          xi_min_Cd = std::clamp(xi_min_Cd, ZERO,
                                  static_cast<real_t>(this->n_active()[d]));
-          }
+          xi_max_Cd = std::clamp(xi_max_Cd, ZERO,
+                                 static_cast<real_t>(this->n_active()[d]));
           range.emplace_back(static_cast<ncells_t>(xi_min_Cd) +
                                (incl_ghosts[d].first ? 0 : N_GHOSTS),
                              static_cast<ncells_t>(xi_max_Cd) +

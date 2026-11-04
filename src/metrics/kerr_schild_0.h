@@ -56,7 +56,8 @@ namespace metric {
 
     KerrSchild0(const std::vector<ncells_t>& res,
                 const boundaries_t<real_t>&  ext,
-                const std::map<std::string, real_t>& = {})
+                const std::map<std::string, real_t>& = {},
+                bool compute_dxMin                   = true)
       : MetricBase<D> { res, ext }
       , dr { (x1_max - x1_min) / nx1 }
       , dtheta { (x2_max - x2_min) / nx2 }
@@ -64,7 +65,9 @@ namespace metric {
       , dr_inv { ONE / dr }
       , dtheta_inv { ONE / dtheta }
       , dphi_inv { ONE / dphi } {
-      set_dxMin(find_dxMin());
+      if (compute_dxMin) {
+        set_dxMin(find_dxMin());
+      }
     }
 
     [[nodiscard]]
