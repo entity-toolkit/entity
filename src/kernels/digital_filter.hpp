@@ -362,7 +362,7 @@ namespace kernel {
                    buffer(i1 + 1, i2 - 1, i3, comp) +
                    buffer(i1, i2 - 1, i3 - 1, comp) +
                    buffer(i1, i2 + 1, i3 + 1, comp) +
-                   buffer(i1, i2 + 1, i3 - 1, comp)·+
+                   buffer(i1, i2 + 1, i3 - 1, comp) +
                    buffer(i1, i2 - 1, i3 + 1, comp) +
                    buffer(i1 - 1, i2, i3 - 1, comp) +
                    buffer(i1 + 1, i2, i3 + 1, comp) +
