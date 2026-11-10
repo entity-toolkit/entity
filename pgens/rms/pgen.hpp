@@ -8,12 +8,17 @@
 #include "utils/error.h"
 #include "utils/numeric.h"
 
+#include "archetypes/energy_dist.h"
 #include "archetypes/utils.h"
 #include "framework/containers/particles.h"
 #include "framework/domain/metadomain.h"
+#include "kernels/injectors.hpp"
 
+#include <algorithm>
 #include <cstdint>
+#include <map>
 #include <utility>
+#include <vector>
 
 namespace user {
   using namespace ntt;
@@ -375,6 +380,105 @@ namespace user {
     }
   };
 
+  template <Dimension D, Coord::type C>
+  struct SpeciesViews {
+    array_t<int*>      i1, i2, i3;
+    array_t<prtldx_t*> dx1, dx2, dx3;
+    array_t<real_t*>   ux1, ux2, ux3, phi, weight;
+    array_t<short*>    tag;
+    array_t<npart_t**> pld_i;
+    npart_t            offset, counter;
+    bool               tracking;
+
+    SpeciesViews(Particles<D, C>& species)
+      : i1 { species.i1 }
+      , i2 { species.i2 }
+      , i3 { species.i3 }
+      , dx1 { species.dx1 }
+      , dx2 { species.dx2 }
+      , dx3 { species.dx3 }
+      , ux1 { species.ux1 }
+      , ux2 { species.ux2 }
+      , ux3 { species.ux3 }
+      , phi { species.phi }
+      , weight { species.weight }
+      , tag { species.tag }
+      , pld_i { species.pld_i }
+      , offset { species.npart() }
+      , counter { species.counter() }
+      , tracking { species.use_tracking() } {}
+
+    Inline void inject(npart_t                     p,
+                       npart_t                     domain_idx,
+                       const tuple_t<int, D>&      xi,
+                       const tuple_t<prtldx_t, D>& dxi,
+                       const vec_t<Dim::_3D>&      v) const {
+      // clang-format off
+      if (tracking) {
+        kernel::InjectParticle<D, C, true>(
+          p + offset,
+          i1, i2, i3, dx1, dx2, dx3, ux1, ux2, ux3,
+          phi, weight, tag, pld_i,
+          xi, dxi, v, ONE, ZERO, domain_idx, counter + p);
+      } else {
+        kernel::InjectParticle<D, C, false>(
+          p + offset,
+          i1, i2, i3, dx1, dx2, dx3, ux1, ux2, ux3,
+          phi, weight, tag, pld_i,
+          xi, dxi, v);
+      }
+      // clang-format on
+    }
+  };
+
+  /*
+   * Uniform injection into [x1min, x1min + x1width] (local cell units), with
+   * positions computed in double precision; if `Pair`, both species are
+   * injected at the same positions.
+   */
+  template <class M, class ED1, class ED2, bool Pair>
+  struct InjectSlab_kernel {
+    static constexpr auto D = M::Dim;
+
+    const SpeciesViews<D, M::CoordType> species1, species2;
+    const ED1                           energy_dist_1;
+    const ED2                           energy_dist_2;
+    const M                             metric;
+    const double                        x1min, x1width;
+    const Kokkos::Array<double, 3>      nlocal;
+    const npart_t                       domain_idx;
+    random_number_pool_t                random_pool;
+
+    Inline void operator()(prtlidx_t p) const {
+      tuple_t<int, D>      xi { 0 };
+      tuple_t<prtldx_t, D> dxi { static_cast<prtldx_t>(0) };
+      coord_t<D>           x_Cd { ZERO };
+      auto                 rand_gen = random_pool.get_state();
+      for (auto d { 0u }; d < static_cast<unsigned short>(D); ++d) {
+        const auto x = (d == 0) ? x1min + Random<double>(rand_gen) * x1width
+                                : Random<double>(rand_gen) * nlocal[d];
+        xi[d]  = static_cast<int>(x);
+        dxi[d] = static_cast<prtldx_t>(x - xi[d]);
+        if (dxi[d] >= static_cast<prtldx_t>(1)) {
+          xi[d]  += 1;
+          dxi[d]  = static_cast<prtldx_t>(0);
+        }
+        x_Cd[d] = static_cast<real_t>(x);
+      }
+      random_pool.free_state(rand_gen);
+
+      coord_t<D> x_Ph { ZERO };
+      metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+      vec_t<Dim::_3D> v { ZERO };
+      energy_dist_1(x_Ph, v);
+      species1.inject(p, domain_idx, xi, dxi, v);
+      if constexpr (Pair) {
+        energy_dist_2(x_Ph, v);
+        species2.inject(p, domain_idx, xi, dxi, v);
+      }
+    }
+  };
+
   template <Dimension D>
   struct InitFields {
     /*
@@ -449,6 +553,10 @@ namespace user {
     // plasma injector properties
     const real_t filling_fraction, beta_injector;
     const int    injection_interval;
+    // injection bookkeeping (global cell units, double precision)
+    const real_t                     ppc0;
+    const double                     ncells_x1;
+    std::map<unsigned int, double>   carry_plasma, carry_photons;
 
     InitFields<D> init_flds;
 
@@ -471,7 +579,108 @@ namespace user {
       , injection_interval { params.template get<int>(
           "setup.injection_interval",
           100) }
+      , ppc0 { params.template get<real_t>("particles.ppc0") }
+      , ncells_x1 { static_cast<double>(metadomain.mesh().n_active(in::x1)) }
       , init_flds { Bmag, thetaB, beta_upstream } {}
+
+    auto dt_cells() const -> double {
+      return static_cast<double>(
+               params.template get<real_t>("algorithms.timestep.dt")) *
+             ncells_x1 /
+             (static_cast<double>(global_xmax) - static_cast<double>(global_xmin));
+    }
+
+    template <class ED1, class ED2, bool Pair>
+    void InjectSlab(Domain<S, M>& domain,
+                    spidx_t       sp1,
+                    spidx_t       sp2,
+                    const ED1&    energy_dist_1,
+                    const ED2&    energy_dist_2,
+                    real_t        number_density,
+                    double        x1min,
+                    double        x1max,
+                    double&       carry) {
+      const auto offset = static_cast<double>(domain.offset_ncells()[0]);
+      const auto nlocal = domain.mesh.n_active();
+      const auto lo     = std::max(x1min - offset, 0.0);
+      const auto hi = std::min(x1max - offset, static_cast<double>(nlocal[0]));
+      if (hi <= lo) {
+        return;
+      }
+      Kokkos::Array<double, 3> nlocal_d { 0.0, 1.0, 1.0 };
+      double                   ncells { hi - lo };
+      for (auto d { 1u }; d < static_cast<unsigned short>(D); ++d) {
+        nlocal_d[d]  = static_cast<double>(nlocal[d]);
+        ncells      *= nlocal_d[d];
+      }
+      const auto nexact = static_cast<double>(ppc0) * 0.5 *
+                            static_cast<double>(number_density) * ncells +
+                          carry;
+      const auto nparticles = static_cast<npart_t>(nexact);
+      carry                 = nexact - static_cast<double>(nparticles);
+      if (nparticles == 0) {
+        return;
+      }
+      auto& species1 = domain.species[sp1 - 1];
+      auto& species2 = domain.species[sp2 - 1];
+      Kokkos::parallel_for(
+        "InjectSlab",
+        nparticles,
+        InjectSlab_kernel<M, ED1, ED2, Pair> { species1,
+                                               species2,
+                                               energy_dist_1,
+                                               energy_dist_2,
+                                               domain.mesh.metric,
+                                               lo,
+                                               hi - lo,
+                                               nlocal_d,
+                                               domain.index(),
+                                               domain.random_pool() });
+      species1.set_npart(species1.npart() + nparticles);
+      species1.set_counter(species1.counter() + nparticles);
+      if constexpr (Pair) {
+        species2.set_npart(species2.npart() + nparticles);
+        species2.set_counter(species2.counter() + nparticles);
+      }
+    }
+
+    // inject plasma + photons into [x1min, x1max] (global cell units)
+    void InjectPlasma(Domain<S, M>& domain, double x1min, double x1max) {
+      const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
+      const std::vector<real_t> drift { -gamma_upstream * beta_upstream, ZERO, ZERO };
+      const auto maxwellian_e = arch::energy_dist::Maxwellian<D, M::CoordType>(
+        domain.random_pool(),
+        Te / domain.species[0].mass(),
+        drift);
+      const auto maxwellian_i = arch::energy_dist::Maxwellian<D, M::CoordType>(
+        domain.random_pool(),
+        Te / Te_ovr_Ti / domain.species[1].mass(),
+        drift);
+      InjectSlab<decltype(maxwellian_e), decltype(maxwellian_i), true>(
+        domain,
+        1,
+        2,
+        maxwellian_e,
+        maxwellian_i,
+        TWO,
+        x1min,
+        x1max,
+        carry_plasma[domain.index()]);
+
+      const auto planck_dist = PlanckDistribution<D>(T_ph_inj,
+                                                     beta_upstream,
+                                                     domain.random_pool());
+      InjectSlab<decltype(planck_dist), decltype(planck_dist), false>(
+        domain,
+        3,
+        3,
+        planck_dist,
+        planck_dist,
+        photon_density,
+        x1min,
+        x1max,
+        carry_photons[domain.index()]);
+    }
 
     auto MatchFields(simtime_t) const -> InitFields<D> {
       return init_flds;
@@ -510,63 +719,27 @@ namespace user {
        *        filling_fraction
        */
 
-      // minimum and maximum position of particles
-      real_t xg_min = global_xmin;
-      real_t xg_max = global_xmin + filling_fraction * (global_xmax - global_xmin);
-
-      // define box to inject into
-      boundaries_t<real_t> box;
-      // loop over all dimensions
-      for (auto d { 0u }; d < (unsigned int)M::Dim; ++d) {
-        // compute the range for the x-direction
-        if (d == static_cast<decltype(d)>(in::x1)) {
-          box.emplace_back(xg_min, xg_max);
-        } else {
-          // inject into full range in other directions
-          box.push_back(Range::All);
-        }
-      }
-
-      const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
-
-      // inject particles
-      arch::InjectUniformMaxwellians<S, M>(
-        params,
-        domain,
-        TWO,
-        std::make_pair(Te, Te / Te_ovr_Ti),
-        { 1, 2 },
-        std::make_pair(
-          std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO },
-          std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
-        false,
-        box);
-
-      const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
-                                                          beta_upstream,
-                                                          domain.random_pool());
-      arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, box);
+      InjectPlasma(domain, 0.0, static_cast<double>(filling_fraction) * ncells_x1);
     }
 
     void CustomPostStep(timestep_t step, simtime_t time, Domain<S, M>& domain) {
-      const auto dt = params.template get<real_t>("algorithms.timestep.dt");
-
       if (step % injection_interval == 0) {
-        // initial position of injector
-
-        const auto x_init = global_xmin +
-                            filling_fraction * (global_xmax - global_xmin);
-        const auto front = [&](timestep_t s) {
+        // positions in global cell units (double precision)
+        const auto dtc    = dt_cells();
+        const auto x_init = static_cast<double>(filling_fraction) * ncells_x1;
+        const auto front  = [&](timestep_t s) {
           // injector position at time (s + 1) * dt
-          return std::min<real_t>(x_init + beta_injector * (s + 1) * dt,
-                                  global_xmax);
+          return std::min(x_init + static_cast<double>(beta_injector) *
+                                    static_cast<double>(s + 1) * dtc,
+                          ncells_x1);
         };
         const auto xmax = front(step);
         const auto xmin = (step == 0)
-                            ? std::max<real_t>(x_init - beta_upstream * dt,
-                                               global_xmin)
+                            ? std::max(x_init - static_cast<double>(beta_upstream) * dtc,
+                                       0.0)
                             : front(step - injection_interval) -
-                                injection_interval * dt * beta_upstream;
+                                static_cast<double>(injection_interval) * dtc *
+                                  static_cast<double>(beta_upstream);
 
         // // define indice range to reset fields
         // boundaries_t<bool> incl_ghosts;
@@ -631,37 +804,7 @@ namespace user {
         //     });
         // }
 
-        // define box to inject into
-        boundaries_t<real_t> inj_box;
-        // loop over all dimension
-        for (auto d = 0u; d < M::Dim; ++d) {
-          if (d == 0) {
-            inj_box.emplace_back(xmin, xmax);
-          } else {
-            inj_box.push_back(Range::All);
-          }
-        }
-
-        const auto gamma_upstream = ONE / math::sqrt(ONE - SQR(beta_upstream));
-
-        // same maxwell distribution as above
-        arch::InjectUniformMaxwellians<S, M>(
-          params,
-          domain,
-          TWO,
-          std::make_pair(Te, Te / Te_ovr_Ti),
-          { 1, 2 },
-          std::make_pair(
-            std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO },
-            std::vector<real_t> { -gamma_upstream * beta_upstream, ZERO, ZERO }),
-          false,
-          inj_box);
-
-        // replenish photons
-        const auto planck_dist = PlanckDistribution<M::Dim>(T_ph_inj,
-                                                            beta_upstream,
-                                                            domain.random_pool());
-        arch::InjectUniform(params, domain, 3, planck_dist, photon_density, false, inj_box);
+        InjectPlasma(domain, xmin, xmax);
       }
 
       // {
