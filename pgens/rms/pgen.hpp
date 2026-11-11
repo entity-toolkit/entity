@@ -674,7 +674,7 @@ namespace user {
         3,
         planck_dist,
         planck_dist,
-        photon_density,
+        TWO * photon_density,
         x1min,
         x1max,
         carry_photons[domain.index()]);
