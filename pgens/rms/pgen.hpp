@@ -244,24 +244,22 @@ namespace user {
       , comp_t02 { comp_t02 }
       , comp_t03 { comp_t03 } {}
 
-    Inline auto Gamma(real_t T00_Sqr, real_t T0i_Sqr) const -> real_t {
-      return HALF * math::sqrt(T0i_Sqr) *
-             math::sqrt(
-               ONE / (T0i_Sqr + math::sqrt(T00_Sqr) *
-                                  (math::sqrt(FOUR * T00_Sqr - THREE * T0i_Sqr) -
-                                   TWO * math::sqrt(T00_Sqr))));
+    Inline auto temperature(real_t n, real_t T00, real_t T0i_Sqr) const -> real_t {
+      const auto T00prime = math::sqrt(FOUR * SQR(T00) - THREE * T0i_Sqr) - T00;
+      return (n > ZERO)
+               ? T00prime *
+                   math::sqrt((THREE * T00 + T00prime) / (FOUR * T00prime)) /
+                   (n * static_cast<real_t>(2.7))
+               : ZERO;
     }
 
     Inline void operator()(cellidx_t i1) const {
       if constexpr (D == Dim::_1D) {
-        const auto T0i_Sqr  = (SQR(t_array(i1, comp_t01)) +
-                              SQR(t_array(i1, comp_t02)) +
-                              SQR(t_array(i1, comp_t03)));
-        const auto T00_Sqr  = SQR(t_array(i1, comp_t00));
-        t_array(i1, comp_t) = (math::sqrt(FOUR * T00_Sqr - THREE * T0i_Sqr) -
-                               math::sqrt(T00_Sqr)) /
-                              (t_array(i1, comp_n) * Gamma(T00_Sqr, T0i_Sqr) *
-                               static_cast<real_t>(2.7));
+        t_array(i1, comp_t) = temperature(t_array(i1, comp_n),
+                                          t_array(i1, comp_t00),
+                                          SQR(t_array(i1, comp_t01)) +
+                                            SQR(t_array(i1, comp_t02)) +
+                                            SQR(t_array(i1, comp_t03)));
       } else {
         raise::KernelError(HERE, "ComputePhotonTemperature is only implemented for 1D");
       }
@@ -269,15 +267,11 @@ namespace user {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2) const {
       if constexpr (D == Dim::_2D) {
-        const auto T0i_Sqr = (SQR(t_array(i1, i2, comp_t01)) +
-                              SQR(t_array(i1, i2, comp_t02)) +
-                              SQR(t_array(i1, i2, comp_t03)));
-        const auto T00_Sqr = SQR(t_array(i1, i2, comp_t00));
-        t_array(i1, i2, comp_t) = (math::sqrt(FOUR * T00_Sqr - THREE * T0i_Sqr) -
-                                   math::sqrt(T00_Sqr)) /
-                                  (t_array(i1, i2, comp_n) *
-                                   Gamma(T00_Sqr, T0i_Sqr) *
-                                   static_cast<real_t>(2.7));
+        t_array(i1, i2, comp_t) = temperature(t_array(i1, i2, comp_n),
+                                              t_array(i1, i2, comp_t00),
+                                              SQR(t_array(i1, i2, comp_t01)) +
+                                                SQR(t_array(i1, i2, comp_t02)) +
+                                                SQR(t_array(i1, i2, comp_t03)));
       } else {
         raise::KernelError(HERE, "ComputePhotonTemperature is only implemented for 2D");
       }
@@ -285,15 +279,11 @@ namespace user {
 
     Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
       if constexpr (D == Dim::_3D) {
-        const auto T0i_Sqr = (SQR(t_array(i1, i2, i3, comp_t01)) +
-                              SQR(t_array(i1, i2, i3, comp_t02)) +
-                              SQR(t_array(i1, i2, i3, comp_t03)));
-        const auto T00_Sqr = SQR(t_array(i1, i2, i3, comp_t00));
-        t_array(i1, i2, i3, comp_t) = (math::sqrt(FOUR * T00_Sqr - THREE * T0i_Sqr) -
-                                       math::sqrt(T00_Sqr)) /
-                                      (t_array(i1, i2, i3, comp_n) *
-                                       Gamma(T00_Sqr, T0i_Sqr) *
-                                       static_cast<real_t>(2.7));
+        t_array(i1, i2, i3, comp_t) = temperature(
+          t_array(i1, i2, i3, comp_n),
+          t_array(i1, i2, i3, comp_t00),
+          SQR(t_array(i1, i2, i3, comp_t01)) + SQR(t_array(i1, i2, i3, comp_t02)) +
+            SQR(t_array(i1, i2, i3, comp_t03)));
       } else {
         raise::KernelError(HERE, "ComputePhotonTemperature is only implemented for 3D");
       }
