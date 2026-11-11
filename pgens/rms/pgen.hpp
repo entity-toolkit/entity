@@ -345,20 +345,21 @@ namespace user {
 
     Inline void operator()(const coord_t<D>&, vec_t<Dim::_3D>& k) const {
       real_t     prob { ZERO }, n { ZERO };
-      auto       gen   = random_pool.get_state();
-      const auto rnd   = Random<real_t>(gen);
-      const auto rnd1  = Random<real_t>(gen);
-      const auto rnd2  = Random<real_t>(gen);
-      const auto rnd3  = Random<real_t>(gen);
-      const auto rndth = Random<real_t>(gen);
-      const auto rndph = Random<real_t>(gen);
+      auto       gen     = random_pool.get_state();
+      const auto rnd     = Random<real_t>(gen);
+      const auto rnd1    = Random<real_t>(gen);
+      const auto rnd2    = Random<real_t>(gen);
+      const auto rnd3    = Random<real_t>(gen);
+      const auto rndth   = Random<real_t>(gen);
+      const auto rndph   = Random<real_t>(gen);
+      const auto rndflip = Random<real_t>(gen);
       random_pool.free_state(gen);
 
       while ((prob < rnd) and (n < 40)) {
         n    += ONE;
         prob += ONE / (static_cast<real_t>(1.20206) * CUBE(n));
       }
-      const auto energy = -static_cast<real_t>(2.7) * T_ph_inj *
+      const auto energy = -T_ph_inj *
                           math::log(
                             rnd1 * rnd2 * rnd3 + static_cast<real_t>(1e-16)) /
                           n;
@@ -370,13 +371,10 @@ namespace user {
       k[2] = energy * costh;
 
       // boost the photon momentum in the -x direction
-      const auto gamma = ONE / math::sqrt(ONE - SQR(boost_beta));
-      const auto kx    = k[0];
-      const auto ky    = k[1];
-      const auto kz    = k[2];
-      k[0]             = gamma * (kx - boost_beta * energy);
-      k[1]             = ky;
-      k[2]             = kz;
+      if (boost_beta * k[0] > energy * rndflip) {
+        k[0] = -k[0];
+      }
+      k[0] = (k[0] - boost_beta * energy) / math::sqrt(ONE - SQR(boost_beta));
     }
   };
 
@@ -457,8 +455,8 @@ namespace user {
       for (auto d { 0u }; d < static_cast<unsigned short>(D); ++d) {
         const auto x = (d == 0) ? x1min + Random<double>(rand_gen) * x1width
                                 : Random<double>(rand_gen) * nlocal[d];
-        xi[d]  = static_cast<int>(x);
-        dxi[d] = static_cast<prtldx_t>(x - xi[d]);
+        xi[d]        = static_cast<int>(x);
+        dxi[d]       = static_cast<prtldx_t>(x - xi[d]);
         if (dxi[d] >= static_cast<prtldx_t>(1)) {
           xi[d]  += 1;
           dxi[d]  = static_cast<prtldx_t>(0);
@@ -541,22 +539,22 @@ namespace user {
     Metadomain<S, M>&       metadomain;
 
     // domain properties
-    const real_t global_xmin, global_xmax;
+    const real_t                   global_xmin, global_xmax;
     // gas properties
-    const real_t beta_upstream, Te, Te_ovr_Ti;
+    const real_t                   beta_upstream, Te, Te_ovr_Ti;
     // magnetic field properties
-    const real_t Bmag, thetaB;
+    const real_t                   Bmag, thetaB;
     // photon properties
     // const real_t photon_inj_rate; // units of n0 / time
-    const real_t photon_density; // units of n0
-    const real_t T_ph_inj;       // photon injection temperature
+    const real_t                   photon_density; // units of n0
+    const real_t                   T_ph_inj; // photon injection temperature
     // plasma injector properties
-    const real_t filling_fraction, beta_injector;
-    const int    injection_interval;
+    const real_t                   filling_fraction, beta_injector;
+    const int                      injection_interval;
     // injection bookkeeping (global cell units, double precision)
-    const real_t                     ppc0;
-    const double                     ncells_x1;
-    std::map<unsigned int, double>   carry_plasma, carry_photons;
+    const real_t                   ppc0;
+    const double                   ncells_x1;
+    std::map<unsigned int, double> carry_plasma, carry_photons;
 
     InitFields<D> init_flds;
 
@@ -730,13 +728,14 @@ namespace user {
         const auto front  = [&](timestep_t s) {
           // injector position at time (s + 1) * dt
           return std::min(x_init + static_cast<double>(beta_injector) *
-                                    static_cast<double>(s + 1) * dtc,
+                                     static_cast<double>(s + 1) * dtc,
                           ncells_x1);
         };
         const auto xmax = front(step);
         const auto xmin = (step == 0)
-                            ? std::max(x_init - static_cast<double>(beta_upstream) * dtc,
-                                       0.0)
+                            ? std::max(
+                                x_init - static_cast<double>(beta_upstream) * dtc,
+                                0.0)
                             : front(step - injection_interval) -
                                 static_cast<double>(injection_interval) * dtc *
                                   static_cast<double>(beta_upstream);
