@@ -855,6 +855,17 @@
           "exclusiveMinimum": 0.0,
           "default": 1.0
         },
+        "thomson_mean_free_path": {
+          "description": "Nominal Thomson mean free path: `lambda = 1 / (n0 * sigma_T)` (n0 = nominal density)",
+          "type": "number",
+          "exclusiveMinimum": 0.0,
+          "default": 1.0,
+          "x-entity": {
+            "notes": [
+              "mutually exclusive with `thomson_optical_depth`; if both are specified, `thomson_mean_free_path` takes precedence"
+            ]
+          }
+        },
         "interaction": {
           "description": "Specific interaction parameters",
           "type": "array",

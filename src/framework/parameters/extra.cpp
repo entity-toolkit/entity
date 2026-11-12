@@ -117,11 +117,23 @@ namespace ntt {
         compton_nominal_photon_energy = ONE / SQR(compton_gamma_qed.value());
       }
 
-      twobody_thomson_optical_depth = toml::find_or<real_t>(
-        toml_data,
-        "two_body",
-        "thomson_optical_depth",
-        defaults::twobody::thomson_optical_depth);
+      if (toml_data.contains("two_body") and
+          toml_data.at("two_body").contains("thomson_mean_free_path")) {
+        twobody_thomson_mean_free_path = toml::find<real_t>(
+          toml_data,
+          "two_body",
+          "thomson_mean_free_path");
+        twobody_thomson_optical_depth = ONE /
+                                        twobody_thomson_mean_free_path.value();
+      } else {
+        twobody_thomson_optical_depth = toml::find_or<real_t>(
+          toml_data,
+          "two_body",
+          "thomson_optical_depth",
+          defaults::twobody::thomson_optical_depth);
+        twobody_thomson_mean_free_path = ONE /
+                                         twobody_thomson_optical_depth.value();
+      }
 
       // find two-body interactions
       const auto twobody_tab = toml::find_or<toml::array>(toml_data,
@@ -187,6 +199,8 @@ namespace ntt {
 
       params->set("two_body.thomson_optical_depth",
                   twobody_thomson_optical_depth.value());
+      params->set("two_body.thomson_mean_free_path",
+                  twobody_thomson_mean_free_path.value());
       params->set("two_body.interaction", twobody_interactions);
     }
   } // namespace params

@@ -58,6 +58,7 @@ namespace ntt {
 
       // two-body interaction parameters
       std::optional<real_t>                 twobody_thomson_optical_depth;
+      std::optional<real_t>                 twobody_thomson_mean_free_path;
       std::vector<TwoBodyInteractionParams> twobody_interactions;
 
       void read(const std::map<std::string, bool>&,

@@ -70,3 +70,4 @@ tidy/
 # devenv
 .devenv*
 devenv.local.nix
+not-ready-to-merge/

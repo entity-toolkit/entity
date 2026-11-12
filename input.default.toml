@@ -360,7 +360,14 @@
   # in physical units (n0 = nominal density)
   #   @type: number
   #   @default: 1.0
-  thomson_optical_depth = 1.0
+  thomson_optical_depth  = 1.0
+  # Nominal Thomson mean free path: `lambda = 1 / (n0 * sigma_T)` (n0 = nominal
+  # density)
+  #   @type: number
+  #   @default: 1.0
+  #   @note: mutually exclusive with `thomson_optical_depth`; if both are
+  #          specified, `thomson_mean_free_path` takes precedence
+  thomson_mean_free_path = 1.0
 
   # Specific interaction parameters
   [[two_body.interaction]]
