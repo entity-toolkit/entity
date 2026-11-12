@@ -7,7 +7,7 @@
 
 let
   name = "kokkos";
-  pversion = "5.2.1";
+  pversion = "5.3.0";
   compilerPkgs = {
     "HIP" = with pkgs.rocmPackages; [
       clang
@@ -58,7 +58,7 @@ pkgs.stdenv.mkDerivation rec {
   src = pkgs.fetchgit {
     url = "https://github.com/kokkos/kokkos/";
     rev = "${pversion}";
-    sha256 = "sha256-9a0am5NR7WtZXA0Nn0nnCohlWlgFDbAzVcc4rvUbGZc=";
+    sha256 = "sha256-BmUM13+vxf0MAfIcCwqTBUT10hlotnSZgC0wKmoIoWc=";
   };
 
   nativeBuildInputs = with pkgs; [
