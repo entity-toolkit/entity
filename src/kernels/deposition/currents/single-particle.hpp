@@ -91,6 +91,23 @@ namespace kernel {
       }
       auto inv_energy { ZERO };
       if constexpr (S == SimEngine::SRPIC) {
+        // Use GRPIC's near-axis regularization only for the velocity
+        // transform. Rounded particle coordinates can lie exactly on an
+        // axis, where u^phi contains 1 / sin(theta). Keep the stored
+        // positions (and therefore the charge-conserving trajectory) intact.
+        if constexpr (D == Dim::_2D &&
+                      (M::CoordType == Coord::Spherical ||
+                       M::CoordType == Coord::Qspherical)) {
+          const auto theta_Ph { metric.template convert<2, Crd::Cd, Crd::Ph>(
+            xp[1]) };
+          const real_t small_angle { constant::SMALL_ANGLE_GR };
+          const real_t large_angle { constant::PI - small_angle };
+          if (theta_Ph < small_angle) {
+            xp[1] = metric.template convert<2, Crd::Ph, Crd::Cd>(small_angle);
+          } else if (theta_Ph >= large_angle) {
+            xp[1] = metric.template convert<2, Crd::Ph, Crd::Cd>(large_angle);
+          }
+        }
         metric.template transform_xyz<Idx::XYZ, Idx::U>(
           xp,
           { prtls.ux1(p), prtls.ux2(p), prtls.ux3(p) },

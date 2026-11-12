@@ -12,6 +12,9 @@ Our [detailed documentation](https://entity-toolkit.github.io/) includes everyth
 
 ## News
 
+- [Oct 2026]: spectra output now support **spatial binning** [PR #226](https://github.com/entity-toolkit/entity/pull/226)
+- [Oct 2026]: native [**on-the-fly plotter**](https://entity-toolkit.github.io/wiki/content/3-advanced/3-rendering/) is now available [PR #219](https://github.com/entity-toolkit/entity/pull/219)
+- [Oct 2026]: added [**dynamic load balancing**](https://entity-toolkit.github.io/wiki/content/3-advanced/4-load_balancing/) for multi-node runs [PR #216](https://github.com/entity-toolkit/entity/pull/216)
 - [May 2026]: our **method paper** for higher-order shape functions and generalized field stencils is [online](https://ui.adsabs.harvard.edu/abs/2026arXiv260515260B/abstract)
 - [Apr 2026]: user-defined **custom particle update** functionality [PR #198](https://github.com/entity-toolkit/entity/pull/198)
 - [Apr 2026]: **moving window** [PR #196](https://github.com/entity-toolkit/entity/pull/196)
