@@ -402,6 +402,43 @@ namespace ntt {
 
   using EmissionTypeFlag = uint8_t;
 
+  namespace TwoBodyInteraction {
+    enum TwoBodyInteractionFlag_ : uint8_t {
+      NONE    = 0,
+      COMPTON = 1,
+      CUSTOM  = 2,
+    };
+
+    inline auto to_string(uint8_t flags) -> std::string {
+      switch (flags) {
+        case NONE:
+          return "none";
+        case COMPTON:
+          return "compton";
+        case CUSTOM:
+          return "custom";
+        default:
+          return "unknown";
+      }
+    }
+
+    inline auto from_string(const std::string& s) -> uint8_t {
+      if (fmt::toLower(s) == "none") {
+        return NONE;
+      } else if (fmt::toLower(s) == "compton") {
+        return COMPTON;
+      } else if (fmt::toLower(s) == "custom") {
+        return CUSTOM;
+      } else {
+        raise::Error(fmt::format("Invalid TwoBodyInteraction type: %s", s.c_str()),
+                     HERE);
+        return NONE;
+      }
+    }
+  } // namespace TwoBodyInteraction
+
+  using TwoBodyInteractionFlag = uint8_t;
+
   namespace OutputSmoothingType {
     enum OutputSmoothingTypeFlag_ : uint8_t {
       NONE   = 0,

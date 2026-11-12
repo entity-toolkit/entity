@@ -146,7 +146,17 @@ namespace arch {
     const auto inv_n0      = ONE / params.template get<real_t>("scales.n0");
     const auto use_weights = params.template get<bool>("particles.use_weights");
 
-    Kokkos::deep_copy(buffer, ZERO);
+    if constexpr (M::Dim == Dim::_1D) {
+      Kokkos::deep_copy(Kokkos::subview(buffer, Kokkos::ALL(), buffer_idx), ZERO);
+    } else if constexpr (M::Dim == Dim::_2D) {
+      Kokkos::deep_copy(
+        Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, buffer_idx),
+        ZERO);
+    } else if constexpr (M::Dim == Dim::_3D) {
+      Kokkos::deep_copy(
+        Kokkos::subview(buffer, Kokkos::ALL, Kokkos::ALL, Kokkos::ALL, buffer_idx),
+        ZERO);
+    }
     auto scatter_buff = Kokkos::Experimental::create_scatter_view(buffer);
     for (const auto sp : species) {
       const auto& prtl_spec = domain.species[sp - 1];

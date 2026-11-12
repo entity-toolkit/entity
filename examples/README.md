@@ -40,5 +40,10 @@ Problem generators in this directory are just examples demonstrating how to use 
 
   https://github.com/user-attachments/assets/00edb648-af80-4d37-b1c2-c49872227d47
 
+- `compton_jones`: Compton scattering in deep Klein-Nishina regime -- a single relativistic electron scattering an isotropic gas of monoenergetic photons.
 
+  ![](https://github.com/user-attachments/assets/cc6fb8de-dd2f-487b-9a3a-bcefcf34f1ec)
 
+- `compton_kompaneets`: evolution of an initially monoenergetic population of photons in a pair-thermostat under the influence of Thomson scatterings.
+
+  ![](https://github.com/user-attachments/assets/0a6eef66-dee8-45ec-8dbc-3c43f0f1e140)

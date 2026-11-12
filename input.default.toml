@@ -354,6 +354,55 @@
       #     @from: `.gamma_qed`
       #     @value: `(1 / gamma_qed)^2`
 
+# Parameters for two-body interactions
+[two_body]
+  # Nominal Thomson optical depth: `tau = n0 * sigma_T * 1` over a distance of 1
+  # in physical units (n0 = nominal density)
+  #   @type: number
+  #   @default: 1.0
+  thomson_optical_depth  = 1.0
+  # Nominal Thomson mean free path: `lambda = 1 / (n0 * sigma_T)` (n0 = nominal
+  # density)
+  #   @type: number
+  #   @default: 1.0
+  #   @note: mutually exclusive with `thomson_optical_depth`; if both are
+  #          specified, `thomson_mean_free_path` takes precedence
+  thomson_mean_free_path = 1.0
+
+  # Specific interaction parameters
+  [[two_body.interaction]]
+    # Type of the two-body interaction
+    #   @required
+    #   @type: string
+    #   @enum: "Compton"
+    type      = "Compton"
+    # First group of species indices participating in the interaction
+    #   @required
+    #   @type: array<integer>
+    group1    = [1]
+    # Second group of species indices participating in the interaction
+    #   @type: array<integer>
+    #   @default: []
+    #   @note: For interactions between particles of the same group, leave
+    #          `group2` empty
+    group2    = []
+    # Interval in timesteps between checking for the interaction
+    #   @type: integer
+    #   @default: 1
+    interval  = 1
+    # Size of interaction tile in cells
+    #   @type: integer
+    #   @default: 4
+    tile_size = 4
+    # Whether to apply recoil to the first group of particles
+    #   @type: boolean
+    #   @default: true
+    recoil1   = true
+    # Whether to apply recoil to the second group of particles
+    #   @type: boolean
+    #   @default: true
+    recoil2   = true
+
 # Algorithm and solver tuning
 [algorithms]
   # Number of current smoothing passes

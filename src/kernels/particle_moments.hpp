@@ -3,6 +3,7 @@
  * @brief Algorithm for computing different moments from particle distribution
  * @implements
  *   - kernel::ParticleMoments_kernel<>
+ *   - kernel::ParticleMomentsNew_kernel<>
  *   - kernel::NormalizeVectorByRho_kernel<>
  *   - kernel::Normalize4VelocityByNorm_kernel<>
  *   - kernel::Transform4VelocitySpatialToPhysical_kernel<>
@@ -30,6 +31,29 @@
 
 namespace kernel {
   using namespace ntt;
+
+  namespace particle_moment_functor {
+
+    template <class MF>
+    concept IsValid = requires(const MF&              fm,
+                               const ParticleArrays&  prtls,
+                               float                  mass,
+                               float                  charge,
+                               prtlidx_t              p,
+                               list_t<real_t, MF::N>& buffer) {
+      { fm(prtls, mass, charge, p, buffer) } -> std::same_as<void>;
+    };
+
+    template <class MF>
+    concept HasN = requires {
+      { MF::N } -> std::convertible_to<uint8_t>;
+    };
+
+  } // namespace particle_moment_functor
+
+  template <class MF>
+  concept ParticleMomentsFunctor = particle_moment_functor::IsValid<MF> &&
+                                   particle_moment_functor::HasN<MF>;
 
   template <FldsID::type F>
   auto get_contrib(float mass, float charge) -> real_t {
@@ -252,7 +276,11 @@ namespace kernel {
       } else {
         u0 = math::sqrt(ONE + NORM_SQR(u_Phys[0], u_Phys[1], u_Phys[2]));
       }
-      return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
+      if (c1 > 0u) {
+        return (mass == ZERO ? ONE : mass) * u_Phys[c1 - 1] / u0;
+      } else {
+        return (mass == ZERO ? ONE : (mass * math::sqrt(ONE - SQR(ONE / u0))));
+      }
     }
 
     Inline auto computeEckartVelocityFluxComponent(prtlidx_t p) const -> real_t {

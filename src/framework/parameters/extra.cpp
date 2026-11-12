@@ -5,12 +5,14 @@
 
 #include "utils/numeric.h"
 
+#include "framework/parameters/extra.h"
 #include "framework/parameters/parameters.h"
 
 #include <toml11/toml.hpp>
 
 #include <map>
 #include <string>
+#include <vector>
 
 namespace ntt {
   namespace params {
@@ -114,6 +116,41 @@ namespace ntt {
           compton_photon_weight.value();
         compton_nominal_photon_energy = ONE / SQR(compton_gamma_qed.value());
       }
+
+      if (toml_data.contains("two_body") and
+          toml_data.at("two_body").contains("thomson_mean_free_path")) {
+        twobody_thomson_mean_free_path = toml::find<real_t>(
+          toml_data,
+          "two_body",
+          "thomson_mean_free_path");
+        twobody_thomson_optical_depth = ONE /
+                                        twobody_thomson_mean_free_path.value();
+      } else {
+        twobody_thomson_optical_depth = toml::find_or<real_t>(
+          toml_data,
+          "two_body",
+          "thomson_optical_depth",
+          defaults::twobody::thomson_optical_depth);
+        twobody_thomson_mean_free_path = ONE /
+                                         twobody_thomson_optical_depth.value();
+      }
+
+      // find two-body interactions
+      const auto twobody_tab = toml::find_or<toml::array>(toml_data,
+                                                          "two_body",
+                                                          "interaction",
+                                                          toml::array {});
+      for (const auto& tbint : twobody_tab) {
+        twobody_interactions.push_back(TwoBodyInteractionParams {
+          .type = TwoBodyInteraction::from_string(
+            toml::find<std::string>(tbint, "type")),
+          .group1    = toml::find<std::vector<spidx_t>>(tbint, "group1"),
+          .group2    = toml::find_or<std::vector<spidx_t>>(tbint, "group2", {}),
+          .interval  = toml::find_or<timestep_t>(tbint, "interval", 1),
+          .tile_size = toml::find_or<ncells_t>(tbint, "tile_size", 4u),
+          .recoil1   = toml::find_or<bool>(tbint, "recoil1", true),
+          .recoil2   = toml::find_or<bool>(tbint, "recoil2", true) });
+      }
     }
 
     void Extra::setParams(const std::map<std::string, bool>& extra,
@@ -159,6 +196,12 @@ namespace ntt {
         params->set("radiation.emission.compton.nominal_photon_energy",
                     compton_nominal_photon_energy.value());
       }
+
+      params->set("two_body.thomson_optical_depth",
+                  twobody_thomson_optical_depth.value());
+      params->set("two_body.thomson_mean_free_path",
+                  twobody_thomson_mean_free_path.value());
+      params->set("two_body.interaction", twobody_interactions);
     }
   } // namespace params
 } // namespace ntt
