@@ -5,6 +5,8 @@
  *   - kernel::UniformInjector_kernel<>
  *   - kernel::GlobalInjector_kernel<>
  *   - kernel::NonUniformInjector_kernel<>
+ *   - kernel::SingleSpeciesNonUniformInjector_kernel<>
+ *   - kernel::SingleSpeciesUniformInjector_kernel<>
  * @namespaces:
  *   - kernel::
  */
@@ -857,6 +859,363 @@ namespace kernel {
       }
     }
   }; // struct NonUniformInjector_kernel
+
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED, SpatialDistClass<M::Dim> SD>
+  struct SingleSpeciesNonUniformInjector_kernel {
+
+    const real_t ppc0;
+
+    ParticleArrays particles;
+
+    array_t<npart_t> idx { "idx" };
+
+    const npart_t        offset;
+    const npart_t        domain_idx, cntr;
+    const bool           use_tracking;
+    const M              metric;
+    const ED             energy_dist;
+    const SD             spatial_dist;
+    const real_t         inv_V0;
+    random_number_pool_t random_pool;
+
+    SingleSpeciesNonUniformInjector_kernel(real_t ppc0,
+                                           Particles<M::Dim, M::CoordType>& particles,
+                                           npart_t               domain_idx,
+                                           const M&              metric,
+                                           const ED&             energy_dist,
+                                           const SD&             spatial_dist,
+                                           real_t                inv_V0,
+                                           random_number_pool_t& random_pool)
+      : ppc0 { ppc0 }
+      , particles { static_cast<ParticleArrays>(particles) }
+      , offset { particles.npart() }
+      , domain_idx { domain_idx }
+      , cntr { particles.counter() }
+      , use_tracking { particles.use_tracking() }
+      , metric { metric }
+      , energy_dist { energy_dist }
+      , spatial_dist { spatial_dist }
+      , inv_V0 { inv_V0 }
+      , random_pool { random_pool } {}
+
+    auto number_injected() const -> npart_t {
+      auto idx_h = Kokkos::create_mirror_view(idx);
+      Kokkos::deep_copy(idx_h, idx);
+      return idx_h();
+    }
+
+    Inline auto injected_ppc(const coord_t<M::Dim>& x_Ph) const
+      -> Kokkos::pair<npart_t, real_t> {
+      real_t ppc_real = ppc0, weight = ONE;
+      if constexpr (SimpleSpatialDistClass<SD, M::Dim>) {
+        ppc_real *= spatial_dist(x_Ph);
+      } else {
+        const auto sp_dist  = spatial_dist(x_Ph);
+        ppc_real           *= sp_dist.first;
+        weight              = sp_dist.second;
+      }
+      auto ppc      = static_cast<npart_t>(ppc_real);
+      auto rand_gen = random_pool.get_state();
+      if (Random<real_t>(rand_gen) < (ppc_real - static_cast<real_t>(ppc))) {
+        ppc += 1;
+      }
+      random_pool.free_state(rand_gen);
+      return { ppc, weight };
+    }
+
+    Inline void inject(const prtlidx_t                  index,
+                       const tuple_t<int, M::Dim>&      xi_Cd,
+                       const tuple_t<prtldx_t, M::Dim>& dxi_Cd,
+                       const vec_t<Dim::_3D>&           v_Cd,
+                       const real_t                     weight) const {
+      // clang-format off
+      if (not use_tracking) {
+        InjectParticle<M::Dim, M::CoordType, false>(index + offset,
+                                                    particles.i1, particles.i2, particles.i3,
+                                                    particles.dx1, particles.dx2, particles.dx3,
+                                                    particles.ux1, particles.ux2, particles.ux3,
+                                                    particles.phi, particles.weight, particles.tag, particles.pld_i,
+                                                    xi_Cd, dxi_Cd, v_Cd, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(index + offset,
+                                                   particles.i1, particles.i2, particles.i3,
+                                                   particles.dx1, particles.dx2, particles.dx3,
+                                                   particles.ux1, particles.ux2, particles.ux3,
+                                                   particles.phi, particles.weight, particles.tag, particles.pld_i,
+                                                   xi_Cd, dxi_Cd, v_Cd, weight, ZERO,
+                                                   domain_idx, index + cntr);
+      }
+      // clang-format on
+    }
+
+    Inline void operator()(cellidx_t i1) const {
+      if constexpr (M::Dim == Dim::_1D) {
+        const auto              i1_ = COORD(i1);
+        const coord_t<Dim::_1D> x_Cd { i1_ + HALF };
+        coord_t<Dim::_1D>       x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+
+        auto [ppc, weight] = injected_ppc(x_Ph);
+        if (ppc == 0) {
+          return;
+        }
+
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF }) * inv_V0;
+        }
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+
+          auto       rand_gen = random_pool.get_state();
+          const auto dx1      = Random<prtldx_t>(rand_gen);
+          random_pool.free_state(rand_gen);
+
+          vec_t<Dim::_3D> v_XYZ { ZERO };
+          {
+            vec_t<Dim::_3D> v_T { ZERO };
+            energy_dist(x_Ph, v_T);
+            metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_XYZ);
+          }
+          inject(index, { static_cast<int>(i1_) }, { dx1 }, v_XYZ, weight);
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "SingleSpeciesNonUniformInjector_kernel 1D called for 2D/3D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2) const {
+      if constexpr (M::Dim == Dim::_2D) {
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const coord_t<Dim::_2D> x_Cd { i1_ + HALF, i2_ + HALF };
+        coord_t<Dim::_2D>       x_Ph { ZERO };
+        coord_t<M::PrtlDim>     x_Cd_ { ZERO };
+        x_Cd_[0] = x_Cd[0];
+        x_Cd_[1] = x_Cd[1];
+        if constexpr (S == SimEngine::SRPIC and M::CoordType != Coord::Cartesian) {
+          x_Cd_[2] = ZERO;
+        }
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+
+        auto [ppc, weight] = injected_ppc(x_Ph);
+        if (ppc == 0) {
+          return;
+        }
+
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF }) * inv_V0;
+        }
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+
+          auto       rand_gen = random_pool.get_state();
+          const auto dx1      = Random<prtldx_t>(rand_gen);
+          const auto dx2      = Random<prtldx_t>(rand_gen);
+          random_pool.free_state(rand_gen);
+
+          vec_t<Dim::_3D> v_Cd { ZERO };
+          {
+            vec_t<Dim::_3D> v_T { ZERO };
+            energy_dist(x_Ph, v_T);
+            if constexpr (S == SimEngine::SRPIC) {
+              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_T, v_Cd);
+            } else if constexpr (S == SimEngine::GRPIC) {
+              metric.template transform<Idx::T, Idx::D>(x_Cd_, v_T, v_Cd);
+            }
+          }
+          inject(index,
+                 { static_cast<int>(i1_), static_cast<int>(i2_) },
+                 { dx1, dx2 },
+                 v_Cd,
+                 weight);
+        }
+      }
+
+      else {
+        raise::KernelError(
+          HERE,
+          "SingleSpeciesNonUniformInjector_kernel 2D called for 1D/3D");
+      }
+    }
+
+    Inline void operator()(cellidx_t i1, cellidx_t i2, cellidx_t i3) const {
+      if constexpr (M::Dim == Dim::_3D) {
+        const auto              i1_ = COORD(i1);
+        const auto              i2_ = COORD(i2);
+        const auto              i3_ = COORD(i3);
+        const coord_t<Dim::_3D> x_Cd { i1_ + HALF, i2_ + HALF, i3_ + HALF };
+        coord_t<Dim::_3D>       x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+
+        auto [ppc, weight] = injected_ppc(x_Ph);
+        if (ppc == 0) {
+          return;
+        }
+
+        if constexpr (M::CoordType != Coord::Cartesian) {
+          weight *= metric.sqrt_det_h({ i1_ + HALF, i2_ + HALF, i3_ + HALF }) *
+                    inv_V0;
+        }
+        for (auto p { 0u }; p < ppc; ++p) {
+          const auto index = Kokkos::atomic_fetch_add(&idx(), 1);
+
+          auto       rand_gen = random_pool.get_state();
+          const auto dx1      = Random<prtldx_t>(rand_gen);
+          const auto dx2      = Random<prtldx_t>(rand_gen);
+          const auto dx3      = Random<prtldx_t>(rand_gen);
+          random_pool.free_state(rand_gen);
+
+          vec_t<Dim::_3D> v_Cd { ZERO };
+          {
+            vec_t<Dim::_3D> v_T { ZERO };
+            energy_dist(x_Ph, v_T);
+            if constexpr (S == SimEngine::SRPIC) {
+              metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd, v_T, v_Cd);
+            } else if constexpr (S == SimEngine::GRPIC) {
+              metric.template transform<Idx::T, Idx::D>(x_Cd, v_T, v_Cd);
+            }
+          }
+          inject(
+            index,
+            { static_cast<int>(i1_), static_cast<int>(i2_), static_cast<int>(i3_) },
+            { dx1, dx2, dx3 },
+            v_Cd,
+            weight);
+        }
+      } else {
+        raise::KernelError(
+          HERE,
+          "SingleSpeciesNonUniformInjector_kernel 3D called for 1D/2D");
+      }
+    }
+  }; // struct SingleSpeciesNonUniformInjector_kernel
+
+  template <SimEngine::type S, MetricClass M, EnrgDistClass<M::Dim> ED>
+  struct SingleSpeciesUniformInjector_kernel {
+
+    ParticleArrays particles;
+
+    const npart_t          offset;
+    const npart_t          domain_idx, cntr;
+    const bool             use_tracking;
+    const M                metric;
+    const array_t<real_t*> xi_min, xi_max;
+    const ED               energy_dist;
+    const real_t           inv_V0;
+    random_number_pool_t   random_pool;
+
+    SingleSpeciesUniformInjector_kernel(Particles<M::Dim, M::CoordType>& particles,
+                                        npart_t                 domain_idx,
+                                        const M&                metric,
+                                        const array_t<real_t*>& xi_min,
+                                        const array_t<real_t*>& xi_max,
+                                        const ED&               energy_dist,
+                                        real_t                  inv_V0,
+                                        random_number_pool_t&   random_pool)
+      : particles { particles }
+      , offset { particles.npart() }
+      , domain_idx { domain_idx }
+      , cntr { particles.counter() }
+      , use_tracking { particles.use_tracking() }
+      , metric { metric }
+      , xi_min { xi_min }
+      , xi_max { xi_max }
+      , energy_dist { energy_dist }
+      , inv_V0 { inv_V0 }
+      , random_pool { random_pool } {
+      if (use_tracking) {
+#if !defined(MPI_ENABLED)
+        raise::ErrorIf(particles.pld_i.extent(1) < 1,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 1",
+                       HERE);
+#else
+        raise::ErrorIf(particles.pld_i.extent(1) < 2,
+                       "Particle tracking is enabled but the "
+                       "particle integer payload size is less "
+                       "than 2",
+                       HERE);
+#endif
+      }
+    }
+
+    Inline void operator()(prtlidx_t p) const {
+      coord_t<M::Dim>           x_Cd { ZERO };
+      tuple_t<int, M::Dim>      xi_Cd { 0 };
+      tuple_t<prtldx_t, M::Dim> dxi_Cd { static_cast<prtldx_t>(0) };
+      vec_t<Dim::_3D>           v { ZERO, ZERO, ZERO };
+      { // generate a random coordinate
+        auto rand_gen = random_pool.get_state();
+        if constexpr (M::Dim == Dim::_1D or M::Dim == Dim::_2D or
+                      M::Dim == Dim::_3D) {
+          x_Cd[0] = xi_min(0) + Random<real_t>(rand_gen) * (xi_max(0) - xi_min(0));
+          xi_Cd[0]  = static_cast<int>(x_Cd[0]);
+          dxi_Cd[0] = static_cast<prtldx_t>(x_Cd[0] - xi_Cd[0]);
+        }
+        if constexpr (M::Dim == Dim::_2D or M::Dim == Dim::_3D) {
+          x_Cd[1] = xi_min(1) + Random<real_t>(rand_gen) * (xi_max(1) - xi_min(1));
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          xi_Cd[1]  = static_cast<int>(x_Cd[1]);
+          dxi_Cd[1] = static_cast<prtldx_t>(x_Cd[1] - xi_Cd[1]);
+        }
+        if constexpr (M::Dim == Dim::_3D) {
+          x_Cd[2] = xi_min(2) + Random<real_t>(rand_gen) * (xi_max(2) - xi_min(2));
+          xi_Cd[2]  = static_cast<int>(x_Cd[2]);
+          dxi_Cd[2] = static_cast<prtldx_t>(x_Cd[2] - xi_Cd[2]);
+        }
+        random_pool.free_state(rand_gen);
+      }
+      { // generate the velocity
+        coord_t<M::Dim> x_Ph { ZERO };
+        metric.template convert<Crd::Cd, Crd::Ph>(x_Cd, x_Ph);
+        if constexpr (M::CoordType == Coord::Cartesian) {
+          energy_dist(x_Ph, v);
+        } else if constexpr (S == SimEngine::SRPIC) {
+          coord_t<M::PrtlDim> x_Cd_ { ZERO };
+          x_Cd_[0] = x_Cd[0];
+          x_Cd_[1] = x_Cd[1];
+          x_Cd_[2] = ZERO; // phi = 0
+          vec_t<Dim::_3D> v_Ph { ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform_xyz<Idx::T, Idx::XYZ>(x_Cd_, v_Ph, v);
+        } else if constexpr (S == SimEngine::GRPIC) {
+          vec_t<Dim::_3D> v_Ph { ZERO, ZERO, ZERO };
+          energy_dist(x_Ph, v_Ph);
+          metric.template transform<Idx::T, Idx::D>(x_Cd, v_Ph, v);
+        } else {
+          raise::KernelError(HERE, "Unknown simulation engine");
+        }
+      }
+      real_t weight = ONE;
+      if constexpr (M::CoordType != Coord::Cartesian) {
+        const auto sqrt_det_h = metric.sqrt_det_h(x_Cd);
+        weight                = sqrt_det_h * inv_V0;
+      }
+      // clang-format off
+      if (not use_tracking) {
+        InjectParticle<M::Dim, M::CoordType, false>(
+          p + offset, 
+          particles.i1, particles.i2, particles.i3,
+          particles.dx1, particles.dx2, particles.dx3,
+          particles.ux1, particles.ux2, particles.ux3,
+          particles.phi, particles.weight, particles.tag, particles.pld_i,
+          xi_Cd, dxi_Cd, v, weight, ZERO);
+      } else {
+        InjectParticle<M::Dim, M::CoordType, true>(
+          p + offset, 
+          particles.i1, particles.i2, particles.i3,
+          particles.dx1, particles.dx2, particles.dx3,
+          particles.ux1, particles.ux2, particles.ux3,
+          particles.phi, particles.weight, particles.tag, particles.pld_i,
+          xi_Cd, dxi_Cd, v, weight, ZERO, 
+          domain_idx, cntr + p);
+      }
+      // clang-format on
+    }
+  }; // struct SingleSpeciesUniformInjector_kernel
 
 } // namespace kernel
 
