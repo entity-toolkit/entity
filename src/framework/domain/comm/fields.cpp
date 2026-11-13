@@ -21,6 +21,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <functional>
 #include <string>
 #include <utility>
 
@@ -97,7 +98,23 @@ namespace ntt {
     if (comm_j) {
       comp_range_cur = cell_range_t(cur::jx1, cur::jx3 + 1);
     }
-    // traverse in all directions and send/recv the fields
+    // Post every direction's send/recv up front (non-blocking) instead of
+    // completing one neighbor exchange before starting the next
+#if defined(MPI_ENABLED)
+    std::vector<MPI_Request> comm_requests;
+#endif
+    std::vector<std::function<void()>> comm_finalizers;
+    const auto                         post = [&](comm::PendingComm&& pending) {
+#if defined(MPI_ENABLED)
+      comm_requests.insert(comm_requests.end(),
+                           pending.requests.begin(),
+                           pending.requests.end());
+#endif
+      if (pending.finalize) {
+        comm_finalizers.push_back(std::move(pending.finalize));
+      }
+    };
+    // traverse in all directions and post the send/recv for the fields
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
                   recv_params] = GetSendRecvParams(this, domain, direction, false);
@@ -109,85 +126,98 @@ namespace ntt {
         continue;
       }
       if (comm_em) {
-        comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                          domain.fields.em,
-                                          domain.fields.em,
-                                          send_ind,
-                                          recv_ind,
-                                          send_rank,
-                                          recv_rank,
-                                          send_slice,
-                                          recv_slice,
-                                          comp_range_fld,
-                                          false);
+        post(comm::CommunicateField_Post<M::Dim, 6>(domain.index(),
+                                                    domain.fields.em,
+                                                    domain.fields.em,
+                                                    send_ind,
+                                                    recv_ind,
+                                                    send_rank,
+                                                    recv_rank,
+                                                    send_slice,
+                                                    recv_slice,
+                                                    comp_range_fld,
+                                                    false));
       }
       if constexpr (S == SimEngine::GRPIC) {
         if (comm_aux) {
-          comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                            domain.fields.aux,
-                                            domain.fields.aux,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_fld,
-                                            false);
+          post(comm::CommunicateField_Post<M::Dim, 6>(domain.index(),
+                                                      domain.fields.aux,
+                                                      domain.fields.aux,
+                                                      send_ind,
+                                                      recv_ind,
+                                                      send_rank,
+                                                      recv_rank,
+                                                      send_slice,
+                                                      recv_slice,
+                                                      comp_range_fld,
+                                                      false));
         }
         if (comm_em0) {
-          comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                            domain.fields.em0,
-                                            domain.fields.em0,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_fld,
-                                            false);
+          post(comm::CommunicateField_Post<M::Dim, 6>(domain.index(),
+                                                      domain.fields.em0,
+                                                      domain.fields.em0,
+                                                      send_ind,
+                                                      recv_ind,
+                                                      send_rank,
+                                                      recv_rank,
+                                                      send_slice,
+                                                      recv_slice,
+                                                      comp_range_fld,
+                                                      false));
           // @HACK_GR_1.2.0 -- this has to be done carefully
-          // comm::CommunicateField<M::Dim, 6>(domain.index(),
-          //                                   domain.fields.aux,
-          //                                   domain.fields.aux,
-          //                                   send_ind,
-          //                                   recv_ind,
-          //                                   send_rank,
-          //                                   recv_rank,
-          //                                   send_slice,
-          //                                   recv_slice,
-          //                                   comp_range_fld,
-          //                                   false);
+          // post(comm::CommunicateField_Post<M::Dim, 6>(domain.index(),
+          //                                              domain.fields.aux,
+          //                                              domain.fields.aux,
+          //                                              send_ind,
+          //                                              recv_ind,
+          //                                              send_rank,
+          //                                              recv_rank,
+          //                                              send_slice,
+          //                                              recv_slice,
+          //                                              comp_range_fld,
+          //                                              false));
         }
         if (comm_j) {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur0,
-                                            domain.fields.cur0,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            false);
+          post(comm::CommunicateField_Post<M::Dim, 3>(domain.index(),
+                                                      domain.fields.cur0,
+                                                      domain.fields.cur0,
+                                                      send_ind,
+                                                      recv_ind,
+                                                      send_rank,
+                                                      recv_rank,
+                                                      send_slice,
+                                                      recv_slice,
+                                                      comp_range_cur,
+                                                      false));
         }
       } else {
         if (comm_j) {
-          comm::CommunicateField<M::Dim, 3>(domain.index(),
-                                            domain.fields.cur,
-                                            domain.fields.cur,
-                                            send_ind,
-                                            recv_ind,
-                                            send_rank,
-                                            recv_rank,
-                                            send_slice,
-                                            recv_slice,
-                                            comp_range_cur,
-                                            false);
+          post(comm::CommunicateField_Post<M::Dim, 3>(domain.index(),
+                                                      domain.fields.cur,
+                                                      domain.fields.cur,
+                                                      send_ind,
+                                                      recv_ind,
+                                                      send_rank,
+                                                      recv_rank,
+                                                      send_slice,
+                                                      recv_slice,
+                                                      comp_range_cur,
+                                                      false));
         }
       }
+    }
+    // wait for every posted send/recv, THEN copy/accumulate the results
+    // into the destination fields -- never touch a destination field before
+    // its corresponding request(s) are known to have completed.
+#if defined(MPI_ENABLED)
+    if (not comm_requests.empty()) {
+      MPI_Waitall(static_cast<int>(comm_requests.size()),
+                  comm_requests.data(),
+                  MPI_STATUSES_IGNORE);
+    }
+#endif
+    for (auto& finalize : comm_finalizers) {
+      finalize();
     }
   }
 
@@ -199,6 +229,21 @@ namespace ntt {
     // SynchronizeFields, which sums ghost-deposited values back into active
     // cells. The renderer needs the ghost halo populated so trilinear sampling
     // near a domain face reads valid neighbor values (C0 across the face).
+    // Post every direction up front (non-blocking); see CommunicateFields.
+#if defined(MPI_ENABLED)
+    std::vector<MPI_Request> comm_requests;
+#endif
+    std::vector<std::function<void()>> comm_finalizers;
+    const auto                         post = [&](comm::PendingComm&& pending) {
+#if defined(MPI_ENABLED)
+      comm_requests.insert(comm_requests.end(),
+                           pending.requests.begin(),
+                           pending.requests.end());
+#endif
+      if (pending.finalize) {
+        comm_finalizers.push_back(std::move(pending.finalize));
+      }
+    };
     for (auto& direction : dir::Directions<M::Dim>::all) {
       const auto [send_params,
                   recv_params] = GetSendRecvParams(this, domain, direction, false);
@@ -209,17 +254,28 @@ namespace ntt {
       if (send_rank < 0 and recv_rank < 0) {
         continue;
       }
-      comm::CommunicateField<M::Dim, 6>(domain.index(),
-                                        domain.fields.bckp,
-                                        domain.fields.bckp,
-                                        send_ind,
-                                        recv_ind,
-                                        send_rank,
-                                        recv_rank,
-                                        send_slice,
-                                        recv_slice,
-                                        components,
-                                        false);
+      post(comm::CommunicateField_Post<M::Dim, 6>(domain.index(),
+                                                  domain.fields.bckp,
+                                                  domain.fields.bckp,
+                                                  send_ind,
+                                                  recv_ind,
+                                                  send_rank,
+                                                  recv_rank,
+                                                  send_slice,
+                                                  recv_slice,
+                                                  components,
+                                                  false));
+    }
+    // wait for every posted send/recv, THEN copy into the ghost cells
+#if defined(MPI_ENABLED)
+    if (not comm_requests.empty()) {
+      MPI_Waitall(static_cast<int>(comm_requests.size()),
+                  comm_requests.data(),
+                  MPI_STATUSES_IGNORE);
+    }
+#endif
+    for (auto& finalize : comm_finalizers) {
+      finalize();
     }
   }
 
