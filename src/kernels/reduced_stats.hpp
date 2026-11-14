@@ -521,7 +521,7 @@ namespace kernel {
             metric.template transform<Idx::U, Idx::PU>(x_Code, u_Cntrv, u_Phys);
           }
           // compute the corresponding moment
-          real_t coeff = ONE;
+          real_t coeff = use_weights ? particles.weight(p) : ONE;
 #pragma unroll
           for (const auto& c : { c1, c2 }) {
             if (c == 0) {
