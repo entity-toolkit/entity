@@ -48,7 +48,7 @@ class Settings:
     )
 
     # versions
-    kokkos_version: str = "5.2.1"
+    kokkos_version: str = "5.3.0"
     adios2_version: str = "2.12.1"
 
     # options

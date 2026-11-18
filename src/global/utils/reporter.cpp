@@ -181,7 +181,7 @@ namespace reporter {
     AddParam(report, 4, "CXX", "%s [%s]", ccx.c_str(), cpp_standard.c_str());
 #if defined(CUDA_ENABLED)
     AddParam(report, 4, "CUDA", "%s", cuda_version.c_str());
-#elif defined(HIP_VERSION)
+#elif defined(HIP_ENABLED)
     AddParam(report, 4, "HIP", "%s", hip_version.c_str());
 #endif
     AddParam(report, 4, "MPI", "%s", mpi_version.c_str());

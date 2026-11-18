@@ -65,7 +65,9 @@ ignore-*
 tombi/
 tidy/
 .claude
+.understand-anything
 
 # devenv
 .devenv*
 devenv.local.nix
+not-ready-to-merge/

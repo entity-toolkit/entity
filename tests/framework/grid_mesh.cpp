@@ -39,6 +39,31 @@ auto main(int argc, char* argv[]) -> int {
       not cmp::AlmostEqual(mesh.metric.dxMin(), (real_t)(0.2 / std::sqrt(3.0))),
       "dxMin wrong",
       HERE);
+
+    // A rebalanced local extent with the Harris run's grid spacing. In
+    // single precision the inverse transform gives 82.0000076 at the upper
+    // face, so an unclipped ceil would launch a boundary kernel out of bounds.
+    const real_t cell_size = static_cast<real_t>(250.0 / 512.0);
+    const std::vector<ncells_t> local_res { 82, 82 };
+    const boundaries_t<real_t> local_ext {
+      { ZERO, 82 * cell_size }, { ZERO, 82 * cell_size }
+    };
+    auto local_mesh = Mesh<Minkowski<Dim::_2D>>(local_res, local_ext, {});
+    for (const bool lower_ghosts : { false, true }) {
+      for (const bool upper_ghosts : { false, true }) {
+        const boundaries_t<bool> ghosts {
+          { lower_ghosts, upper_ghosts }, { lower_ghosts, upper_ghosts }
+        };
+        const auto range = local_mesh.ExtentToRange(local_ext, ghosts);
+        for (unsigned int d = 0; d < 2; ++d) {
+          raise::ErrorIf(range[d].first != (lower_ghosts ? 0 : N_GHOSTS),
+                         "physical lower face exceeds mesh bounds", HERE);
+          raise::ErrorIf(range[d].second !=
+                           local_res[d] + (upper_ghosts ? 2 : 1) * N_GHOSTS,
+                         "physical upper face exceeds mesh bounds", HERE);
+        }
+      }
+    }
   } catch (const std::exception& e) {
     std::cerr << e.what() << '\n';
     GlobalFinalize();

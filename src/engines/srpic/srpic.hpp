@@ -24,6 +24,7 @@
 #include "engines/srpic/fieldsolvers.h"
 #include "engines/srpic/particle_pusher.h"
 #include "engines/srpic/particles_bcs.h"
+#include "engines/srpic/twobody.h"
 #include "framework/domain/domain.h"
 #include "framework/parameters/parameters.h"
 
@@ -186,6 +187,12 @@ namespace ntt {
         timers.start("Injector");
         srpic::ParticleInjector(m_metadomain, dom, m_params);
         timers.stop("Injector");
+      }
+
+      if constexpr (CartesianMetricClass<M>) {
+        timers.start("TwoBodyInteractions");
+        srpic::TwoBodyInteractions(dom, this->engineParams(), m_params);
+        timers.stop("TwoBodyInteractions");
       }
 
       // NOTE: particle sorting is intentionally NOT done here. It runs once per

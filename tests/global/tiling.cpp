@@ -108,8 +108,10 @@ void test_tiling(const array_t<int*>&         i1,
   for (auto ts { 1u }; ts <= 11u; ++ts) {
     ncells_t nt1 = 1u, nt2 = 1u, nt3 = 1u;
 
-    nt1 = static_cast<ncells_t>(
-      math::ceil(static_cast<double>(ncells[0]) / static_cast<double>(ts)));
+    if constexpr ((D == Dim::_1D) or (D == Dim::_2D) or (D == Dim::_3D)) {
+      nt1 = static_cast<ncells_t>(
+        math::ceil(static_cast<double>(ncells[0]) / static_cast<double>(ts)));
+    }
     if constexpr ((D == Dim::_2D) or (D == Dim::_3D)) {
       nt2 = static_cast<ncells_t>(
         math::ceil(static_cast<double>(ncells[1]) / static_cast<double>(ts)));
