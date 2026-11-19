@@ -123,6 +123,15 @@ namespace ntt::defaults {
   namespace twobody {
     const real_t thomson_optical_depth = 1.0;
   } // namespace twobody
+
+  namespace bethe_heitler {
+    const real_t      mass_ratio        = 1836.15267343;
+    const real_t      pair_weight       = 1.0;
+    const real_t      max_probability   = 0.1;
+    const real_t      max_loss_fraction = 0.04;
+    const real_t      gamma_max         = 0.0;
+    const std::string photon_spectrum   = "mono";
+  } // namespace bethe_heitler
 } // namespace ntt::defaults
 
 #endif // GLOBAL_DEFAULTS_H

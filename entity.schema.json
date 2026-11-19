@@ -658,7 +658,7 @@
       }
     },
     "radiation": {
-      "description": "Radiative drag and photon emission parameters",
+      "description": "Radiative drag and emission parameters",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -708,7 +708,7 @@
           }
         },
         "emission": {
-          "description": "Photon emission parameters",
+          "description": "Photon and pair emission parameters",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -836,6 +836,180 @@
                   "minimum": 1,
                   "x-entity": {
                     "type": "ushort [> 0]"
+                  }
+                }
+              }
+            },
+            "bethe_heitler": {
+              "description": "Bethe-Heitler pair production by ions on a prescribed isotropic photon field (the photons are not simulated)",
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "electron_species",
+                "positron_species",
+                "optical_depth"
+              ],
+              "properties": {
+                "electron_species": {
+                  "description": "Index of species for the created electron (mass 1, negative charge)",
+                  "type": "integer",
+                  "minimum": 1,
+                  "x-entity": {
+                    "type": "ushort [> 0]"
+                  }
+                },
+                "positron_species": {
+                  "description": "Index of species for the created positron (mass 1, charge opposite to the electron species)",
+                  "type": "integer",
+                  "minimum": 1,
+                  "x-entity": {
+                    "type": "ushort [> 0]"
+                  }
+                },
+                "optical_depth": {
+                  "description": "Nominal Bethe-Heitler optical depth: `tau = n_ph * alpha * r_e^2 * 1` over a distance of 1 in physical units (n_ph = number density of the photons, alpha = fine-structure constant, r_e = classical electron radius)",
+                  "type": "number",
+                  "minimum": 0.0,
+                  "x-entity": {
+                    "type": "float [>= 0.0]",
+                    "notes": [
+                      "Interaction rate of a particle per unit time is `tau * J(Gamma_p)` with the tabulated dimensionless rate `J`"
+                    ]
+                  }
+                },
+                "mass_ratio": {
+                  "description": "Physical proton-to-electron mass ratio: an emitting particle of kinetic energy `K` (units of `m_e c^2`) is treated as a proton of Lorentz factor `Gamma_p = 1 + K / mass_ratio`",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "default": 1836.15267343,
+                  "x-entity": {
+                    "type": "float [> 0.0]"
+                  }
+                },
+                "pair_weight": {
+                  "description": "Weight of the created leptons relative to the emitting particle (each macro-pair stands for `pair_weight` interactions)",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "default": 1.0,
+                  "x-entity": {
+                    "type": "float [> 0.0]",
+                    "notes": [
+                      "Values other than 1 require `particles.use_weights = true`"
+                    ]
+                  }
+                },
+                "max_probability": {
+                  "description": "Largest admissible interaction probability per particle per timestep (at most one interaction per step is drawn)",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "maximum": 1.0,
+                  "default": 0.1,
+                  "x-entity": {
+                    "type": "float [0.0 -> 1.0]",
+                    "notes": [
+                      "The run stops if `tau * J * dt / pair_weight` exceeds it anywhere on the tables"
+                    ]
+                  }
+                },
+                "max_loss_fraction": {
+                  "description": "Largest fraction of its kinetic energy a particle may lose in one interaction; outcomes above it are skipped and counted",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "exclusiveMaximum": 1.0,
+                  "default": 0.04,
+                  "x-entity": {
+                    "type": "float [0.0 -> 1.0]"
+                  }
+                },
+                "gamma_max": {
+                  "description": "Upper edge in `Gamma_p` of the rate tables; particles above it do not interact (and are counted)",
+                  "type": "number",
+                  "minimum": 0.0,
+                  "default": 0.0,
+                  "x-entity": {
+                    "type": "float [>= 0.0]",
+                    "notes": [
+                      "0 = largest value for which the rest-frame photon energy stays below min(0.05 * mass_ratio, 1000) `m_e c^2`"
+                    ]
+                  }
+                },
+                "photon_spectrum": {
+                  "description": "Spectrum of the photon field in the simulation frame",
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "mono",
+                        "powerlaw",
+                        "blackbody"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "(?i)^(mono|powerlaw|blackbody)$"
+                    }
+                  ],
+                  "default": "mono",
+                  "x-entity": {
+                    "type": "string",
+                    "notes": [
+                      "Photon energies are in units of `m_e c^2` and must stay below 2"
+                    ]
+                  }
+                },
+                "photon_energy": {
+                  "description": "Photon energy for `photon_spectrum = \"mono\"`",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "exclusiveMaximum": 2.0,
+                  "x-entity": {
+                    "type": "float [0.0 -> 2.0]",
+                    "notes": [
+                      "[required] for `photon_spectrum = \"mono\"`"
+                    ]
+                  }
+                },
+                "photon_energy_min": {
+                  "description": "Lower end of the spectrum for `photon_spectrum = \"powerlaw\"` or `\"blackbody\"`",
+                  "type": "number",
+                  "minimum": 0.0,
+                  "x-entity": {
+                    "type": "float [>= 0.0]",
+                    "notes": [
+                      "[required] for `photon_spectrum = \"powerlaw\"`; defaults to 0 for `\"blackbody\"`"
+                    ]
+                  }
+                },
+                "photon_energy_max": {
+                  "description": "Upper end of the spectrum for `photon_spectrum = \"powerlaw\"` or `\"blackbody\"`",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "exclusiveMaximum": 2.0,
+                  "x-entity": {
+                    "type": "float [0.0 -> 2.0]",
+                    "notes": [
+                      "[required] for `photon_spectrum = \"powerlaw\"` and `\"blackbody\"`"
+                    ]
+                  }
+                },
+                "photon_index": {
+                  "description": "Index `p` of the number spectrum `dn / d eps ~ eps^(-p)` for `photon_spectrum = \"powerlaw\"`",
+                  "type": "number",
+                  "x-entity": {
+                    "type": "float",
+                    "notes": [
+                      "[required] for `photon_spectrum = \"powerlaw\"`"
+                    ]
+                  }
+                },
+                "photon_temperature": {
+                  "description": "Temperature `k T / m_e c^2` for `photon_spectrum = \"blackbody\"`",
+                  "type": "number",
+                  "exclusiveMinimum": 0.0,
+                  "x-entity": {
+                    "type": "float [> 0.0]",
+                    "notes": [
+                      "[required] for `photon_spectrum = \"blackbody\"`"
+                    ]
                   }
                 }
               }
@@ -1415,12 +1589,13 @@
                       "None",
                       "Synchrotron",
                       "Compton",
+                      "Bethe_Heitler",
                       "Custom"
                     ]
                   },
                   {
                     "type": "string",
-                    "pattern": "(?i)^(None|Synchrotron|Compton|Custom)$"
+                    "pattern": "(?i)^(None|Synchrotron|Compton|Bethe_Heitler|Custom)$"
                   }
                 ],
                 "default": "None",

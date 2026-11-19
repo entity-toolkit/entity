@@ -56,6 +56,21 @@ namespace ntt {
       std::optional<real_t>  compton_nominal_probability;
       std::optional<real_t>  compton_nominal_photon_energy;
 
+      std::optional<spidx_t>     bethe_heitler_electron_species;
+      std::optional<spidx_t>     bethe_heitler_positron_species;
+      std::optional<real_t>      bethe_heitler_optical_depth;
+      std::optional<real_t>      bethe_heitler_mass_ratio;
+      std::optional<real_t>      bethe_heitler_pair_weight;
+      std::optional<real_t>      bethe_heitler_max_probability;
+      std::optional<real_t>      bethe_heitler_max_loss_fraction;
+      std::optional<real_t>      bethe_heitler_gamma_max;
+      std::optional<std::string> bethe_heitler_photon_spectrum;
+      std::optional<real_t>      bethe_heitler_photon_energy;
+      std::optional<real_t>      bethe_heitler_photon_energy_min;
+      std::optional<real_t>      bethe_heitler_photon_energy_max;
+      std::optional<real_t>      bethe_heitler_photon_index;
+      std::optional<real_t>      bethe_heitler_photon_temperature;
+
       // two-body interaction parameters
       std::optional<real_t>                 twobody_thomson_optical_depth;
       std::optional<real_t>                 twobody_thomson_mean_free_path;

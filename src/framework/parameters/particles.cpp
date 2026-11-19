@@ -89,6 +89,8 @@ namespace ntt {
         return EmissionType::COMPTON;
       } else if (fmt::toLower(emission_policy_str) == "custom") {
         return EmissionType::CUSTOM;
+      } else if (fmt::toLower(emission_policy_str) == "bethe_heitler") {
+        return EmissionType::BETHE_HEITLER;
       } else {
         raise::Error(fmt::format("Invalid emission_policy value: %s",
                                  emission_policy_str.c_str()),
@@ -165,7 +167,8 @@ namespace ntt {
       auto emission_policy_flag  = getEmissionPolicyFlag(emission_policy_str);
 
       raise::ErrorIf((emission_policy_flag == EmissionType::SYNCHROTRON or
-                      emission_policy_flag == EmissionType::COMPTON) and
+                      emission_policy_flag == EmissionType::COMPTON or
+                      emission_policy_flag == EmissionType::BETHE_HEITLER) and
                        is_massless,
                      "Radiative emission policies are only applicable to "
                      "massive particles",
@@ -207,6 +210,12 @@ namespace ntt {
       } else if (emission_policy_flag == EmissionType::COMPTON) {
         params->promiseToDefine("radiation.emission.compton.photon_species");
         params->promiseToDefine("radiation.drag.compton.gamma_rad");
+      } else if (emission_policy_flag == EmissionType::BETHE_HEITLER) {
+        raise::ErrorIf(engine_enum != SimEngine::SRPIC,
+                       "Bethe-Heitler emission is only supported for SRPIC",
+                       HERE);
+        params->promiseToDefine(
+          "radiation.emission.bethe_heitler.electron_species");
       }
 
       return ParticleSpecies(idx,
