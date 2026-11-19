@@ -21,6 +21,7 @@
 #include "utils/comparators.h"
 #include "utils/param_container.h"
 
+#include "archetypes/emission/bethe_heitler.h"
 #include "archetypes/emission/compton.h"
 #include "archetypes/emission/synchrotron.h"
 #include "framework/parameters/parameters.h"
@@ -96,6 +97,50 @@ namespace kernel::sr {
                                           domain.index(),
                                           params,
                                           domain.random_pool());
+    } else if constexpr (E == ntt::EmissionType::BETHE_HEITLER) {
+      const auto electron_species = params.get<spidx_t>(
+        "radiation.emission.bethe_heitler.electron_species");
+      const auto positron_species = params.get<spidx_t>(
+        "radiation.emission.bethe_heitler.positron_species");
+      raise::ErrorIf(electron_species == 0u or positron_species == 0u or
+                       electron_species > domain.species.size() or
+                       positron_species > domain.species.size(),
+                     "Invalid electron_species or positron_species for "
+                     "Bethe-Heitler emission",
+                     HERE);
+      raise::ErrorIf(electron_species == positron_species,
+                     "Bethe-Heitler electron_species and positron_species "
+                     "must be different",
+                     HERE);
+      auto& electrons = domain.species[electron_species - 1];
+      auto& positrons = domain.species[positron_species - 1];
+      raise::ErrorIf(not(pusher_ctx.mass > 0.0f),
+                     "Species with Bethe-Heitler emission must be massive",
+                     HERE);
+      // the lepton momenta are drawn in units of m_e c
+      raise::ErrorIf(not cmp::AlmostEqual_host(electrons.mass(), 1.0f) or
+                       not cmp::AlmostEqual_host(positrons.mass(), 1.0f),
+                     "Bethe-Heitler lepton species must have mass = 1 (the "
+                     "unit of mass is the electron mass)",
+                     HERE);
+      // a pair is neutral: the charge of the emitting particle is conserved
+      raise::ErrorIf(
+        not(electrons.charge() < 0.0f) or
+          not cmp::AlmostEqual_host(positrons.charge(), -electrons.charge()),
+        "Bethe-Heitler lepton species must have opposite "
+        "charges (negative for electron_species)",
+        HERE);
+      auto& tables = ::arch::emission::bh::GetTables(params, pusher_ctx.dt);
+      return ::arch::emission::BetheHeitler<M>(electrons,
+                                               positrons,
+                                               electron_species,
+                                               positron_species,
+                                               pusher_ctx.mass,
+                                               pusher_ctx.dt,
+                                               domain.index(),
+                                               params,
+                                               tables,
+                                               domain.random_pool());
     } else {
       raise::Error("Invalid emission type for MakeEmissionPolicy", HERE);
       return ::traits::emission::NoPolicy_t {};
@@ -180,6 +225,12 @@ namespace kernel::sr {
           break;
         case ntt::EmissionType::COMPTON:
           next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::COMPTON>(
+            domain,
+            params,
+            pusher_ctx));
+          break;
+        case ntt::EmissionType::BETHE_HEITLER:
+          next(MakePusherPolicyEmission<M, DOM, ntt::EmissionType::BETHE_HEITLER>(
             domain,
             params,
             pusher_ctx));
