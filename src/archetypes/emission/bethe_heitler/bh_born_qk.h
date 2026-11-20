@@ -308,9 +308,11 @@ namespace arch::bh::born {
   /**
    * @brief The table of the process on [2, K_MAX], built on first use
    *        (thread-safe) and read by the cumulatives of bh_physics.h
+   * @param n_threads host threads of the build (0: `rf::thread_limit()`);
+   *        it matters only in the call that builds the table
    */
-  inline const Table& table() {
-    static const Table T(constants::K_MAX);
+  inline const Table& table(unsigned n_threads = 0) {
+    static const Table T(constants::K_MAX, direct_quadrature(), n_threads);
     return T;
   }
 

@@ -199,7 +199,7 @@ namespace arch::bh::rf {
      * @param n_s cells in lepton energy
      * @param n_tau cells in lepton angle
      * @param gl_cell Gauss-Legendre order per cell
-     * @param n_threads host threads (0: as many as `thread_limit()` allows)
+     * @param n_threads host threads (0: `thread_limit()`)
      */
     static RestFrameTables build(int      nodes_per_decade = 16,
                                  int      n_s              = 256,
@@ -357,7 +357,7 @@ namespace arch::bh::rf {
      * @brief Build the tables at the Gamma nodes of the rate table H
      * @param n_eps smallest number of cells in photon energy
      * @param gl_cell Gauss-Legendre order per cell
-     * @param n_threads host threads (0: as many as `thread_limit()` allows)
+     * @param n_threads host threads (0: `thread_limit()`)
      * @param h_max largest width of a cell in ln(eps) (0: no bound)
      */
     static BathEpsTables build(const PhotonBath&         bath,

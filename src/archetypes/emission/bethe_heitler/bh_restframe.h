@@ -838,34 +838,35 @@ namespace arch::bh::rf {
   // ------------------------------------------------------------------------ //
 
   /**
-   * @brief Largest number of host threads the build of the tables may start
-   * @note Initially the number of processors this process is allowed to run
-   *       on: its affinity mask where the system has one (so that an MPI rank
-   *       bound to its cores does not use those of its neighbours), the
-   *       hardware concurrency elsewhere. The caller may lower it.
+   * @brief Number of host threads the build of the tables starts by default
+   * @note The number of processors the calling thread may run on, where
+   *       that can be read (its affinity mask on Linux), so that an MPI rank
+   *       bound to its cores does not start threads for those of its
+   *       neighbours; the hardware concurrency elsewhere, or if the mask
+   *       cannot be read; at least one.
+   * @note This is a count, not a guarantee: it is read when it is called,
+   *       it does not follow a later change of the mask, and it knows
+   *       nothing of a limit on processor time that leaves the mask wide.
    */
-  inline auto thread_limit() -> unsigned& {
-    static unsigned limit = []() {
-      unsigned n = std::thread::hardware_concurrency();
+  inline auto thread_limit() -> unsigned {
+    unsigned n = std::thread::hardware_concurrency();
 #if defined(__linux__)
-      cpu_set_t mask;
-      CPU_ZERO(&mask);
-      if (sched_getaffinity(0, sizeof(mask), &mask) == 0) {
-        const auto allowed = static_cast<unsigned>(CPU_COUNT(&mask));
-        if (allowed > 0u and (n == 0u or allowed < n)) {
-          n = allowed;
-        }
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    if (sched_getaffinity(0, sizeof(mask), &mask) == 0) {
+      const auto allowed = static_cast<unsigned>(CPU_COUNT(&mask));
+      if (allowed > 0u and (n == 0u or allowed < n)) {
+        n = allowed;
       }
+    }
 #endif
-      return std::max(1u, n);
-    }();
-    return limit;
+    return std::max(1u, n);
   }
 
   /**
    * @brief Call f(i) for every i in [0, n) on host threads
-   * @param n_threads number of threads (0: as many as `thread_limit()`
-   *        allows; never more than that)
+   * @param n_threads number of threads (0: `thread_limit()`; a larger
+   *        request is reduced to it)
    * @note An exception thrown by f is rethrown in the calling thread
    * @note Every index is computed by one call of f, so the result does not
    *       depend on the number of threads

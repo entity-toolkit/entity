@@ -228,20 +228,23 @@ namespace arch::emission {
       }
 
       inline auto build(const prm::Parameters& params) -> std::unique_ptr<Tables> {
-        auto T        = std::make_unique<Tables>();
-        T->tables_key = tables_key(params);
+        auto T             = std::make_unique<Tables>();
+        T->tables_key      = tables_key(params);
+        // host threads of this build: the processors the calling thread may
+        // run on (see `thread_limit`), and with a threaded host execution
+        // space at most its threads
+        unsigned n_threads = ::arch::bh::rf::thread_limit();
 #if defined(KOKKOS_ENABLE_OPENMP) || defined(KOKKOS_ENABLE_THREADS)
-        // the tables are built on host threads: never more than the
-        // processors of this process (see `thread_limit`), and with a threaded
-        // host execution space never more than its threads
-        {
-          auto&      limit        = ::arch::bh::rf::thread_limit();
-          const auto host_threads = static_cast<unsigned>(
-            Kokkos::DefaultHostExecutionSpace().concurrency());
-          limit = std::max(1u, std::min(limit, host_threads));
-        }
+        n_threads = std::max(
+          1u,
+          std::min(n_threads,
+                   static_cast<unsigned>(
+                     Kokkos::DefaultHostExecutionSpace().concurrency())));
 #endif
         try {
+          // the table of the Born cross section is built at its first use:
+          // here, unless something has read it before
+          ::arch::bh::born::table(n_threads);
           const auto                          bath = make_bath(params);
           ::arch::bh::Quadrature              quadrature;
           const ::arch::bh::BetheHeitlerRates rates(bath, quadrature);
@@ -249,8 +252,8 @@ namespace arch::emission {
                                              get_double(params, "mass_ratio"),
                                              get_double(params, "gamma_max"));
           ::arch::bh::validate_tables(T->host);
-          T->rates   = ::arch::bh::mirror_tables_to_device(T->host);
-          T->sampler = ::arch::bh::build_sampler_tables(*bath, T->host);
+          T->rates = ::arch::bh::mirror_tables_to_device(T->host);
+          T->sampler = ::arch::bh::build_sampler_tables(*bath, T->host, n_threads);
           T->photon_energy_max = bath->eps_cut();
         } catch (const std::exception& e) {
           raise::Error(fmt::format("Bethe-Heitler tables: %s", e.what()), HERE);
