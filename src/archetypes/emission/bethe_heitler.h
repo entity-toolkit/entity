@@ -342,8 +342,16 @@ namespace arch::emission {
     /**
      * @brief Tables of the run: built on the first call, rebuilt only if the
      *        photon spectrum, the mass ratio or the range have changed
+     * @note Raises if the timestep is not finite, or if the probability of
+     *       an interaction per step exceeds `max_probability` somewhere on
+     *       the tables
      */
     inline auto GetTables(const prm::Parameters& params, real_t dt) -> Tables& {
+      // a NaN would pass the bound on the probability (comparisons with a NaN
+      // are false), and so would minus infinity
+      raise::ErrorIf(not std::isfinite(dt),
+                     "Bethe-Heitler: the timestep must be finite",
+                     HERE);
       static bool hook_registered { false };
       if (not hook_registered) {
         // the device views must be released before Kokkos finalizes
@@ -446,6 +454,11 @@ namespace arch::emission {
 
     random_number_pool_t random_pool;
 
+    /**
+     * @note `sp_mass` and `dt` are taken as given: the timestep is checked in
+     *       `bh::GetTables` and the mass of the emitting species by the
+     *       factory of the policy (`kernel::sr::MakePusherPolicyEmission`)
+     */
     BetheHeitler(Particles<M::Dim, M::CoordType>& electron_species,
                  Particles<M::Dim, M::CoordType>& positron_species,
                  spidx_t                          electron_index,

@@ -847,8 +847,10 @@ namespace {
    *   - a probability above `max_probability` raises, at startup from the
    *     tables and at runtime from the kernel;
    *   - `pair_weight != 1` without `particles.use_weights` raises;
-   *   - a NaN optical depth or probability bound raises;
-   *   - lepton species whose charges do not cancel exactly are refused.
+   *   - a NaN optical depth or probability bound raises, and so does a
+   *     timestep that is not finite;
+   *   - lepton species whose charges do not cancel exactly are refused, and
+   *     so is an emitting species of infinite mass.
    */
   void test_refusals_and_capacity() {
     const metric_t metric {
@@ -981,14 +983,24 @@ namespace {
               dt);
           }),
           "refusal: NaN max_probability accepted");
+    // ... and so is a timestep that is not finite: a NaN and minus infinity
+    // would pass the bound on the probability
+    const auto infinity = std::numeric_limits<real_t>::infinity();
+    for (const auto bad_dt : { not_a_number, infinity, -infinity }) {
+      check(raises([&]() {
+              arch::emission::bh::GetTables(params, bad_dt);
+            }),
+            fmt::format("refusal: timestep %g accepted",
+                        static_cast<double>(bad_dt)));
+    }
 
     // the charges of the two lepton species must cancel exactly: a positron
     // charge one unit in the last place above that is refused by the factory
-    const auto make_policy = [&](float positron_charge) {
+    const auto make_policy = [&](float positron_charge, float emitter_mass = 1.0f) {
       MockDomain domain;
       domain.add_species(1.0f, -1.0f);
       domain.add_species(1.0f, positron_charge);
-      domain.add_species(1.0f, 1.0f);
+      domain.add_species(emitter_mass, 1.0f);
       kernel::sr::MakePusherPolicyEmission<metric_t, MockDomain, EmissionType::BETHE_HEITLER>(
         domain,
         params,
@@ -1002,6 +1014,11 @@ namespace {
             make_policy(std::nextafter(1.0f, 2.0f));
           }),
           "refusal: lepton charges that do not cancel exactly accepted");
+    // the mass of the emitting species must be finite
+    check(raises([&]() {
+            make_policy(1.0f, std::numeric_limits<float>::infinity());
+          }),
+          "refusal: emitting species of infinite mass accepted");
     std::cout << "refusals: raised as expected" << std::endl;
 #endif
   }

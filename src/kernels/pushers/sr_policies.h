@@ -116,8 +116,12 @@ namespace kernel::sr {
                      HERE);
       auto& electrons = domain.species[electron_species - 1];
       auto& positrons = domain.species[positron_species - 1];
-      raise::ErrorIf(not(pusher_ctx.mass > 0.0f),
-                     "Species with Bethe-Heitler emission must be massive",
+      // the mass sets the energy of the particle: an infinite one passes
+      // `mass > 0`
+      raise::ErrorIf(not(pusher_ctx.mass > 0.0f) or
+                       not std::isfinite(pusher_ctx.mass),
+                     "Species with Bethe-Heitler emission must have a finite, "
+                     "positive mass",
                      HERE);
       // the lepton momenta are drawn in units of m_e c
       raise::ErrorIf(not cmp::AlmostEqual_host(electrons.mass(), 1.0f) or
