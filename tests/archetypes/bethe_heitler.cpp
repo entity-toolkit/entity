@@ -22,6 +22,7 @@
 #include <Kokkos_ScatterView.hpp>
 
 #include <cmath>
+#include <deque>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -426,6 +427,37 @@ namespace {
     return K;
   }
 
+  // the part of a domain that the factory of the policy uses
+  struct MockDomain {
+    std::deque<species_t> species;
+    random_number_pool_t  pool { 1 };
+
+    void add_species(float mass, float charge) {
+      const auto index = static_cast<spidx_t>(species.size() + 1u);
+      species.emplace_back(index,
+                           "s" + std::to_string(index),
+                           mass,
+                           charge,
+                           16u,
+                           0u,
+                           0u,
+                           ParticlePusher::BORIS,
+                           false,
+                           RadiativeDrag::NONE,
+                           EmissionType::NONE,
+                           0u,
+                           0u);
+    }
+
+    auto index() const -> unsigned int {
+      return 0u;
+    }
+
+    auto random_pool() -> random_number_pool_t& {
+      return pool;
+    }
+  };
+
   void check(bool condition, const std::string& msg) {
     if (not condition) {
       throw std::runtime_error(msg);
@@ -758,7 +790,8 @@ namespace {
    *     corresponding emitters are not touched, and the counter says so;
    *   - a probability above `max_probability` raises, at startup from the
    *     tables and at runtime from the kernel;
-   *   - `pair_weight != 1` without `particles.use_weights` raises.
+   *   - `pair_weight != 1` without `particles.use_weights` raises;
+   *   - lepton species whose charges do not cancel exactly are refused.
    */
   void test_refusals_and_capacity() {
     const metric_t metric {
@@ -878,6 +911,26 @@ namespace {
             arch::emission::bh::GetTables(weighted, dt);
           }),
           "refusal: pair_weight != 1 accepted without use_weights");
+    // the charges of the two lepton species must cancel exactly: a positron
+    // charge one unit in the last place above that is refused by the factory
+    const auto make_policy = [&](float positron_charge) {
+      MockDomain domain;
+      domain.add_species(1.0f, -1.0f);
+      domain.add_species(1.0f, positron_charge);
+      domain.add_species(1.0f, 1.0f);
+      kernel::sr::MakePusherPolicyEmission<metric_t, MockDomain, EmissionType::BETHE_HEITLER>(
+        domain,
+        params,
+        pusher_context(domain.species[2], dt));
+    };
+    check(not raises([&]() {
+      make_policy(1.0f);
+    }),
+          "refusal: exactly opposite lepton charges refused");
+    check(raises([&]() {
+            make_policy(std::nextafter(1.0f, 2.0f));
+          }),
+          "refusal: lepton charges that do not cancel exactly accepted");
     std::cout << "refusals: raised as expected" << std::endl;
 #endif
   }

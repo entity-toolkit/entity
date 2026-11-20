@@ -27,6 +27,8 @@
 #include "framework/parameters/parameters.h"
 #include "kernels/pushers/context.h"
 
+#include <cmath>
+
 namespace kernel::sr {
 
   template <MetricClass            M,
@@ -123,13 +125,14 @@ namespace kernel::sr {
                      "Bethe-Heitler lepton species must have mass = 1 (the "
                      "unit of mass is the electron mass)",
                      HERE);
-      // a pair is neutral: the charge of the emitting particle is conserved
-      raise::ErrorIf(
-        not(electrons.charge() < 0.0f) or
-          not cmp::AlmostEqual_host(positrons.charge(), -electrons.charge()),
-        "Bethe-Heitler lepton species must have opposite "
-        "charges (negative for electron_species)",
-        HERE);
+      // a pair is neutral: the two charges must cancel exactly as stored,
+      // or every pair would add the difference to the charge of the grid
+      raise::ErrorIf(not(electrons.charge() < 0.0f) or
+                       not std::isfinite(electrons.charge()) or
+                       not(positrons.charge() == -electrons.charge()),
+                     "Bethe-Heitler lepton species must have exactly opposite "
+                     "charges (negative for electron_species)",
+                     HERE);
       auto& tables = ::arch::emission::bh::GetTables(params, pusher_ctx.dt);
       return ::arch::emission::BetheHeitler<M>(electrons,
                                                positrons,
