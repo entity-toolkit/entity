@@ -791,6 +791,7 @@ namespace {
    *   - a probability above `max_probability` raises, at startup from the
    *     tables and at runtime from the kernel;
    *   - `pair_weight != 1` without `particles.use_weights` raises;
+   *   - a NaN optical depth or probability bound raises;
    *   - lepton species whose charges do not cancel exactly are refused.
    */
   void test_refusals_and_capacity() {
@@ -911,6 +912,20 @@ namespace {
             arch::emission::bh::GetTables(weighted, dt);
           }),
           "refusal: pair_weight != 1 accepted without use_weights");
+    // a NaN optical depth or probability bound is refused (it would
+    // otherwise switch the process off without a word)
+    const auto not_a_number = std::numeric_limits<real_t>::quiet_NaN();
+    check(raises([&]() {
+            arch::emission::bh::GetTables(make_params(not_a_number), dt);
+          }),
+          "refusal: NaN optical_depth accepted");
+    check(raises([&]() {
+            arch::emission::bh::GetTables(
+              make_params(optical_depth, ONE, not_a_number),
+              dt);
+          }),
+          "refusal: NaN max_probability accepted");
+
     // the charges of the two lepton species must cancel exactly: a positron
     // charge one unit in the last place above that is refused by the factory
     const auto make_policy = [&](float positron_charge) {

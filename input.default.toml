@@ -354,8 +354,9 @@
       #     @from: `.gamma_qed`
       #     @value: `(1 / gamma_qed)^2`
 
-    # Bethe-Heitler pair production by ions on a prescribed isotropic photon
-    # field (the photons are not simulated)
+    # Bethe-Heitler pair production by protons on a prescribed isotropic photon
+    # field (the photons are not simulated); the emitting species is treated as
+    # protons (Z = 1) whatever its charge
     [radiation.emission.bethe_heitler]
       # Index of species for the created electron (mass 1, negative charge)
       #   @required
@@ -366,10 +367,10 @@
       #   @required
       #   @type: ushort [> 0]
       positron_species   = 1
-      # Nominal Bethe-Heitler optical depth: `tau = n_ph * alpha * r_e^2 * 1`
-      # over a distance of 1 in physical units (n_ph = number density of the
-      # photons, alpha = fine-structure constant, r_e = classical electron
-      # radius)
+      # Nominal Bethe-Heitler optical depth over one code unit of length: `tau =
+      # n_ph * alpha * r_e^2 * L`, with `L` the physical length of one unit of
+      # the coordinates of `grid.extent` (n_ph = number density of the photons,
+      # alpha = fine-structure constant, r_e = classical electron radius)
       #   @required
       #   @type: float [>= 0.0]
       #   @note: Interaction rate of a particle per unit time is `tau *

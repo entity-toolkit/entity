@@ -1,6 +1,6 @@
 /**
  * @file archetypes/emission/bethe_heitler.h
- * @brief Emission policy for Bethe-Heitler pair production by ions on a
+ * @brief Emission policy for Bethe-Heitler pair production by protons on a
  *        prescribed isotropic photon field
  * @implements
  *   - arch::emission::bh::Counters
@@ -19,15 +19,18 @@
  * has the kinetic energy `K = mu_d u^2 / (gamma + 1)` in units of `m_e c^2`
  * and is treated as a proton of Lorentz factor `Gamma_p = 1 + K / mass_ratio`,
  * so that a reduced mass ratio in the dynamics does not change the energy
- * scale of the process.
+ * scale of the process. The cross sections are those of a proton (Z = 1): the
+ * charge of the emitting species does not enter.
  *
  * @note
  * At each timestep, for each emitting particle:
  *   - the probability of one interaction is
  *       p = optical_depth * J(Gamma_p) * dt / pair_weight
  *     with J the tabulated interaction rate (units of alpha r_e^2 c per unit
- *     photon density); one uniform number decides (at most one interaction
- *     per particle per step, so `p` has to be small);
+ *     photon density) and `optical_depth = n_ph alpha r_e^2 L`, L being the
+ *     physical length of one code unit of length (the unit of the extent of
+ *     the grid); one uniform number decides (at most one interaction per
+ *     particle per step, so `p` has to be small);
  *   - the outcome (photon energy and the two lepton momenta) is drawn from
  *     the Born cross sections in the rest frame of the proton and boosted to
  *     the simulation frame;
@@ -174,7 +177,13 @@ namespace arch::emission {
 
       inline auto get_double(const prm::Parameters& params,
                              const std::string&     name) -> double {
-        return static_cast<double>(get<real_t>(params, name));
+        const auto value = static_cast<double>(get<real_t>(params, name));
+        // comparisons with a NaN are false: it would pass the range checks
+        // and switch the process off without a word
+        raise::ErrorIf(not std::isfinite(value),
+                       "Bethe-Heitler " + name + " must be finite",
+                       HERE);
+        return value;
       }
 
       inline auto make_bath(const prm::Parameters& params)

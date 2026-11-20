@@ -10,6 +10,7 @@
 
 #include <toml11/toml.hpp>
 
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>
@@ -165,6 +166,22 @@ namespace ntt {
           raise::Error("radiation.emission.bethe_heitler.photon_spectrum must "
                        "be mono, powerlaw or blackbody",
                        HERE);
+        }
+        // comparisons with a NaN are false: it would pass the checks below
+        for (const auto& value : { bethe_heitler_optical_depth,
+                                   bethe_heitler_mass_ratio,
+                                   bethe_heitler_pair_weight,
+                                   bethe_heitler_max_probability,
+                                   bethe_heitler_max_loss_fraction,
+                                   bethe_heitler_gamma_max,
+                                   bethe_heitler_photon_energy,
+                                   bethe_heitler_photon_energy_min,
+                                   bethe_heitler_photon_energy_max,
+                                   bethe_heitler_photon_index,
+                                   bethe_heitler_photon_temperature }) {
+          raise::ErrorIf(value.has_value() and not std::isfinite(value.value()),
+                         "Bethe-Heitler parameters must be finite",
+                         HERE);
         }
         raise::ErrorIf(bethe_heitler_electron_species.value() ==
                          bethe_heitler_positron_species.value(),
