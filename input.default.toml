@@ -254,7 +254,7 @@
   #     @from: `scales.larmor0`
   #     @value: `1 / larmor0`
 
-# Radiative drag and photon emission parameters
+# Radiative drag and emission parameters
 [radiation]
 
   # Radiation reaction (drag) parameters
@@ -278,7 +278,7 @@
       #          "compton"`
       gamma_rad = 1.0
 
-  # Photon emission parameters
+  # Photon and pair emission parameters
   [radiation.emission]
 
     # Synchrotron emission parameters
@@ -353,6 +353,90 @@
       #     @type: float
       #     @from: `.gamma_qed`
       #     @value: `(1 / gamma_qed)^2`
+
+    # Bethe-Heitler pair production by protons on a prescribed isotropic photon
+    # field (the photons are not simulated); the emitting species is treated as
+    # protons (Z = 1) whatever its charge
+    [radiation.emission.bethe_heitler]
+      # Index of species for the created electron (mass 1, negative charge)
+      #   @required
+      #   @type: ushort [> 0]
+      electron_species   = 1
+      # Index of species for the created positron (mass 1, charge opposite to
+      # the electron species)
+      #   @required
+      #   @type: ushort [> 0]
+      positron_species   = 1
+      # Nominal Bethe-Heitler optical depth over one code unit of length: `tau =
+      # n_ph * alpha * r_e^2 * L`, with `L` the physical length of one unit of
+      # the coordinates of `grid.extent` (n_ph = number density of the photons,
+      # alpha = fine-structure constant, r_e = classical electron radius)
+      #   @required
+      #   @type: float [>= 0.0]
+      #   @note: Interaction rate of a particle per unit time is `tau *
+      #          J(Gamma_p)` with the tabulated dimensionless rate `J`
+      optical_depth      = 0.0
+      # Physical proton-to-electron mass ratio: an emitting particle of kinetic
+      # energy `K` (units of `m_e c^2`) is treated as a proton of Lorentz factor
+      # `Gamma_p = 1 + K / mass_ratio`
+      #   @type: float [> 0.0]
+      #   @default: 1836.15267343
+      mass_ratio         = 1836.15267343
+      # Weight of the created leptons relative to the emitting particle (each
+      # macro-pair stands for `pair_weight` interactions)
+      #   @type: float [> 0.0]
+      #   @default: 1.0
+      #   @note: Values other than 1 require `particles.use_weights = true`
+      pair_weight        = 1.0
+      # Largest admissible interaction probability per particle per timestep (at
+      # most one interaction per step is drawn)
+      #   @type: float [0.0 -> 1.0]
+      #   @default: 0.1
+      #   @note: The run stops if `tau * J * dt / pair_weight` exceeds it
+      #          anywhere on the tables
+      max_probability    = 0.1
+      # Largest fraction of its kinetic energy a particle may lose in one
+      # interaction; outcomes above it are skipped and counted
+      #   @type: float [0.0 -> 1.0]
+      #   @default: 0.04
+      max_loss_fraction  = 0.04
+      # Upper edge in `Gamma_p` of the rate tables; particles above it do not
+      # interact (and are counted)
+      #   @type: float [>= 0.0]
+      #   @default: 0.0
+      #   @note: 0 = largest value for which the rest-frame photon energy stays
+      #          below min(0.05 * mass_ratio, 1000) `m_e c^2`
+      gamma_max          = 0.0
+      # Spectrum of the photon field in the simulation frame
+      #   @type: string
+      #   @default: "mono"
+      #   @enum: "mono", "powerlaw", "blackbody"
+      #   @note: Photon energies are in units of `m_e c^2` and must stay below 2
+      photon_spectrum    = "mono"
+      # Photon energy for `photon_spectrum = "mono"`
+      #   @type: float [0.0 -> 2.0]
+      #   @note: [required] for `photon_spectrum = "mono"`
+      photon_energy      = 1.0
+      # Lower end of the spectrum for `photon_spectrum = "powerlaw"` or
+      # `"blackbody"`
+      #   @type: float [>= 0.0]
+      #   @note: [required] for `photon_spectrum = "powerlaw"`; defaults to 0
+      #          for `"blackbody"`
+      photon_energy_min  = 0.0
+      # Upper end of the spectrum for `photon_spectrum = "powerlaw"` or
+      # `"blackbody"`
+      #   @type: float [0.0 -> 2.0]
+      #   @note: [required] for `photon_spectrum = "powerlaw"` and `"blackbody"`
+      photon_energy_max  = 1.0
+      # Index `p` of the number spectrum `dn / d eps ~ eps^(-p)` for
+      # `photon_spectrum = "powerlaw"`
+      #   @type: float
+      #   @note: [required] for `photon_spectrum = "powerlaw"`
+      photon_index       = 0.0
+      # Temperature `k T / m_e c^2` for `photon_spectrum = "blackbody"`
+      #   @type: float [> 0.0]
+      #   @note: [required] for `photon_spectrum = "blackbody"`
+      photon_temperature = 1.0
 
 # Parameters for two-body interactions
 [two_body]
@@ -612,7 +696,7 @@
     # Particle emission policy for the species
     #   @type: string
     #   @default: "None"
-    #   @enum: "None", "Synchrotron", "Compton", "Custom"
+    #   @enum: "None", "Synchrotron", "Compton", "Bethe_Heitler", "Custom"
     #   @note: Only one emission mechanism allowed
     #   @note: Appropriate radiation drag flag will be applied automatically
     #          (unless explicitly set to "None")

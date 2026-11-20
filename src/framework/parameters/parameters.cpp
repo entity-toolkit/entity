@@ -293,11 +293,14 @@ namespace ntt {
     /* extra physics ------------------------------------------------------ */
     params::Extra                     extra_params {};
     const std::map<std::string, bool> extra_extra_flags = {
-      {     "synchrotron_drag",isPromised("radiation.drag.synchrotron.gamma_rad")                               },
-      {         "compton_drag",          isPromised("radiation.drag.compton.gamma_rad") },
-      { "synchrotron_emission",
-       isPromised("radiation.emission.synchrotron.photon_species")                     },
-      {     "compton_emission", isPromised("radiation.emission.compton.photon_species") }
+      {       "synchrotron_drag",isPromised("radiation.drag.synchrotron.gamma_rad")                                 },
+      {           "compton_drag",     isPromised("radiation.drag.compton.gamma_rad") },
+      {   "synchrotron_emission",
+       isPromised("radiation.emission.synchrotron.photon_species")                  },
+      {       "compton_emission",
+       isPromised("radiation.emission.compton.photon_species")                      },
+      { "bethe_heitler_emission",
+       isPromised("radiation.emission.bethe_heitler.electron_species")              }
     };
     extra_params.read(extra_extra_flags, toml_data, this);
     extra_params.setParams(extra_extra_flags, this);

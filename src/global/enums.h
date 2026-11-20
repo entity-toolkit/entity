@@ -17,7 +17,7 @@
  *
  *   - enum ntt::ParticlePusher    // photon, boris, vay, gca, none
  *   - enum ntt::RadiativeDrag     // compton, synchrotron, none
- *   - enum ntt::EmissionType      // none, synchrotron, inversecompton, custom
+ *   - enum ntt::EmissionType      // none, synchrotron, inversecompton, custom, bethe_heitler
  *   - enum ntt::OutputSmoothingTypeFlag // none, const, spline
  *
  * @namespaces:
@@ -378,10 +378,11 @@ namespace ntt {
 
   namespace EmissionType {
     enum EmissionTypeFlag_ : uint8_t {
-      NONE        = 0,
-      SYNCHROTRON = 1,
-      COMPTON     = 2,
-      CUSTOM      = 3,
+      NONE          = 0,
+      SYNCHROTRON   = 1,
+      COMPTON       = 2,
+      CUSTOM        = 3,
+      BETHE_HEITLER = 4,
     };
 
     inline auto to_string(uint8_t flags) -> std::string {
@@ -394,6 +395,8 @@ namespace ntt {
           return "compton";
         case CUSTOM:
           return "custom";
+        case BETHE_HEITLER:
+          return "bethe_heitler";
         default:
           return "unknown";
       }
