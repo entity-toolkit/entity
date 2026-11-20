@@ -45,6 +45,12 @@ namespace {
   const double GAMMA_P    = 10.0;
   const double GAMMA_MAX  = 12.0;
 
+  void check(bool condition, const std::string& msg) {
+    if (not condition) {
+      throw std::runtime_error(msg);
+    }
+  }
+
   auto make_params(real_t optical_depth,
                    real_t pair_weight     = ONE,
                    real_t max_probability = static_cast<real_t>(0.1),
@@ -294,17 +300,23 @@ namespace {
                                 params,
                                 tables,
                                 random_pool };
-    if (write_previous) {
-      push_emitters(emitters, emission, metric, EB, dt);
-    } else {
-      push_emitters(emitters, WithoutPreviousPosition { emission }, metric, EB, dt);
-    }
-    const auto n_injected = emission.numbers_injected();
-    electrons.set_npart(electrons.npart() + n_injected[0]);
-    electrons.set_counter(electrons.counter() + n_injected[0]);
-    positrons.set_npart(positrons.npart() + n_injected[1]);
-    positrons.set_counter(positrons.counter() + n_injected[1]);
-    return n_injected[0];
+    // the push, then what the engine does with the answers of the policy:
+    // the species it names receive the numbers of particles it reports
+    const auto       push_and_count = [&](const auto& policy) -> npart_t {
+      push_emitters(emitters, policy, metric, EB, dt);
+      const auto species    = policy.emitted_species_indices();
+      const auto n_injected = policy.numbers_injected();
+      check(species.size() == 2u and n_injected.size() == 2u and
+              species[0] == electrons.index() and species[1] == positrons.index(),
+            "the policy does not name the electron and the positron species");
+      electrons.set_npart(electrons.npart() + n_injected[0]);
+      electrons.set_counter(electrons.counter() + n_injected[0]);
+      positrons.set_npart(positrons.npart() + n_injected[1]);
+      positrons.set_counter(positrons.counter() + n_injected[1]);
+      return n_injected[0];
+    };
+    return write_previous ? push_and_count(emission)
+                          : push_and_count(WithoutPreviousPosition { emission });
   }
 
   void push_plain(species_t&                    species,
@@ -459,12 +471,6 @@ namespace {
       return pool;
     }
   };
-
-  void check(bool condition, const std::string& msg) {
-    if (not condition) {
-      throw std::runtime_error(msg);
-    }
-  }
 
   /*
    * Charge conservation of the newly created pairs. One step of 2000
