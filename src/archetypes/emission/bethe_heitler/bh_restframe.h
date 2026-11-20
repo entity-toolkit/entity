@@ -77,6 +77,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(__linux__)
+  #include <sched.h>
+#endif
+
 namespace arch::bh::rf {
 
   // ------------------------------------------------------------------------ //
@@ -834,18 +838,45 @@ namespace arch::bh::rf {
   // ------------------------------------------------------------------------ //
 
   /**
+   * @brief Largest number of host threads the build of the tables may start
+   * @note Initially the number of processors this process is allowed to run
+   *       on: its affinity mask where the system has one (so that an MPI rank
+   *       bound to its cores does not use those of its neighbours), the
+   *       hardware concurrency elsewhere. The caller may lower it.
+   */
+  inline auto thread_limit() -> unsigned& {
+    static unsigned limit = []() {
+      unsigned n = std::thread::hardware_concurrency();
+#if defined(__linux__)
+      cpu_set_t mask;
+      CPU_ZERO(&mask);
+      if (sched_getaffinity(0, sizeof(mask), &mask) == 0) {
+        const auto allowed = static_cast<unsigned>(CPU_COUNT(&mask));
+        if (allowed > 0u and (n == 0u or allowed < n)) {
+          n = allowed;
+        }
+      }
+#endif
+      return std::max(1u, n);
+    }();
+    return limit;
+  }
+
+  /**
    * @brief Call f(i) for every i in [0, n) on host threads
-   * @param n_threads number of threads (0: as many as the hardware offers)
+   * @param n_threads number of threads (0: as many as `thread_limit()`
+   *        allows; never more than that)
    * @note An exception thrown by f is rethrown in the calling thread
+   * @note Every index is computed by one call of f, so the result does not
+   *       depend on the number of threads
    */
   template <class F>
   inline void parallel_for_index(std::size_t n, F&& f, unsigned n_threads = 0) {
     if (n == 0) {
       return;
     }
-    if (n_threads == 0) {
-      n_threads = std::max(1u, std::thread::hardware_concurrency());
-    }
+    const unsigned limit = thread_limit();
+    n_threads = (n_threads == 0) ? limit : std::min(n_threads, limit);
     n_threads = static_cast<unsigned>(std::min<std::size_t>(n_threads, n));
     if (n_threads <= 1) {
       for (std::size_t i = 0; i < n; ++i) {

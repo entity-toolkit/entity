@@ -230,6 +230,17 @@ namespace arch::emission {
       inline auto build(const prm::Parameters& params) -> std::unique_ptr<Tables> {
         auto T        = std::make_unique<Tables>();
         T->tables_key = tables_key(params);
+#if defined(KOKKOS_ENABLE_OPENMP) || defined(KOKKOS_ENABLE_THREADS)
+        // the tables are built on host threads: never more than the
+        // processors of this process (see `thread_limit`), and with a threaded
+        // host execution space never more than its threads
+        {
+          auto&      limit        = ::arch::bh::rf::thread_limit();
+          const auto host_threads = static_cast<unsigned>(
+            Kokkos::DefaultHostExecutionSpace().concurrency());
+          limit = std::max(1u, std::min(limit, host_threads));
+        }
+#endif
         try {
           const auto                          bath = make_bath(params);
           ::arch::bh::Quadrature              quadrature;
