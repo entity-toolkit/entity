@@ -421,17 +421,21 @@ namespace render {
       }
 
       // ---- march at global sample positions t_k = k*ds ------------------- //
-      const real_t inv_range = (vmax > vmin) ? (ONE / (vmax - vmin)) : ZERO;
-      const real_t log_vmin  = log_scale ? math::log10(vmin) : ZERO;
-      const real_t tube_inv_range = (tube_vmax > tube_vmin)
-                                      ? (ONE / (tube_vmax - tube_vmin))
-                                      : ZERO;
-      const real_t tube_log_vmin  = (tube_log and tube_vmin > ZERO)
-                                      ? math::log10(tube_vmin)
-                                      : ZERO;
+      // a log scale maps log10(s) over [log10 vmin, log10 vmax] (as the colorbar)
+      const real_t log_vmin      = log_scale ? math::log10(vmin) : ZERO;
+      const real_t span          = log_scale ? (math::log10(vmax) - log_vmin)
+                                             : (vmax - vmin);
+      const real_t inv_range     = (span > ZERO) ? (ONE / span) : ZERO;
+      const real_t tube_log_vmin = (tube_log and tube_vmin > ZERO)
+                                     ? math::log10(tube_vmin)
+                                     : ZERO;
+      const real_t tube_span     = (tube_log and tube_vmin > ZERO)
+                                     ? (math::log10(tube_vmax) - tube_log_vmin)
+                                     : (tube_vmax - tube_vmin);
+      const real_t tube_inv_range = (tube_span > ZERO) ? (ONE / tube_span) : ZERO;
       // first global sample index inside this segment: t_k >= t_enter
-      const real_t k0             = math::ceil(t_enter / ds);
-      real_t       t              = k0 * ds;
+      const real_t k0    = math::ceil(t_enter / ds);
+      real_t       t     = k0 * ds;
       real_t       acc_r = ZERO, acc_g = ZERO, acc_b = ZERO, acc_a = ZERO;
       int          steps = 0;
       while (t < t_exit and steps < max_steps) {

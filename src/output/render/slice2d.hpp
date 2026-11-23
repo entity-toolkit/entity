@@ -409,15 +409,18 @@ namespace render {
       real_t cr = ZERO, cg = ZERO, cb = ZERO;
       bool   painted = false;
       if (heatmap_on) {
-        const real_t s         = sample(cc1, cc2);
-        // normalize through the transfer-function range
-        const real_t inv_range = (vhi > vlo) ? (ONE / (vhi - vlo)) : ZERO;
+        const real_t s = sample(cc1, cc2);
+        // normalize through the transfer-function range; a log scale maps
+        // log10(s) over [log10 vlo, log10 vhi] (as the colorbar)
         real_t       uu;
         if (log_scale) {
           const real_t log_vlo = math::log10(vlo);
-          uu = (s > ZERO) ? (math::log10(s) - log_vlo) * inv_range : -ONE;
+          const real_t span    = math::log10(vhi) - log_vlo;
+          const real_t inv_log = (span > ZERO) ? (ONE / span) : ZERO;
+          uu = (s > ZERO) ? (math::log10(s) - log_vlo) * inv_log : -ONE;
         } else {
-          uu = (s - vlo) * inv_range;
+          const real_t inv_range = (vhi > vlo) ? (ONE / (vhi - vlo)) : ZERO;
+          uu                     = (s - vlo) * inv_range;
         }
         if (uu < ZERO) {
           uu = ZERO;
