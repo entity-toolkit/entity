@@ -49,11 +49,14 @@ namespace metric {
 
     Minkowski(const std::vector<ncells_t>& res,
               const boundaries_t<real_t>&  ext,
-              const std::map<std::string, real_t>& = {})
+              const std::map<std::string, real_t>& = {},
+              bool compute_dxMin                   = true)
       : MetricBase<D> { res, ext }
       , dx { (x1_max - x1_min) / nx1 }
       , dx_inv { ONE / dx } {
-      set_dxMin(find_dxMin());
+      if (compute_dxMin) {
+        set_dxMin(find_dxMin());
+      }
       const auto epsilon = std::numeric_limits<real_t>::epsilon() *
                            static_cast<real_t>(100.0);
       if constexpr (D != Dim::_1D) {

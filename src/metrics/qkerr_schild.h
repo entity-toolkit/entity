@@ -75,7 +75,8 @@ namespace metric {
 
     QKerrSchild(const std::vector<ncells_t>&         res,
                 const boundaries_t<real_t>&          ext,
-                const std::map<std::string, real_t>& params)
+                const std::map<std::string, real_t>& params,
+                bool                                 compute_dxMin = true)
       : MetricBase<D> { res, ext }
       , a { params.at("a") }
       , rh_ { ONE + math::sqrt(ONE - SQR(a)) }
@@ -91,7 +92,9 @@ namespace metric {
       , deta_inv { ONE / deta }
       , dphi_inv { ONE / dphi }
       , small_angle { eta2theta(HALF * deta) < constant::SMALL_ANGLE } {
-      set_dxMin(find_dxMin());
+      if (compute_dxMin) {
+        set_dxMin(find_dxMin());
+      }
     }
 
     [[nodiscard]]

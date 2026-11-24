@@ -67,12 +67,18 @@ namespace ntt {
     }
 
     void set_resolution_and_extent(const std::vector<ncells_t>& new_res,
-                                   const boundaries_t<real_t>&  new_extent) {
+                                   const boundaries_t<real_t>&  new_extent,
+                                   bool recompute_dxMin = true) {
       raise::ErrorIf(new_res.size() != D, "invalid resolution dim", HERE);
-      this->m_resolution = new_res;
-      m_extent           = new_extent;
+      const auto saved_dxMin = metric.dxMin();
+      this->m_resolution     = new_res;
+      m_extent               = new_extent;
       metric.~M();
-      new (&metric) M { this->m_resolution, m_extent, m_metric_params_raw };
+      new (&metric)
+        M { this->m_resolution, m_extent, m_metric_params_raw, recompute_dxMin };
+      if (not recompute_dxMin) {
+        metric.set_dxMin(saved_dxMin);
+      }
     }
 
     /**

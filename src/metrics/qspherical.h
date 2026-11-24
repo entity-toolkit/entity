@@ -58,7 +58,8 @@ namespace metric {
 
     QSpherical(const std::vector<ncells_t>&         res,
                const boundaries_t<real_t>&          ext,
-               const std::map<std::string, real_t>& params)
+               const std::map<std::string, real_t>& params,
+               bool                                 compute_dxMin = true)
       : MetricBase<D> { res, ext }
       , r0 { params.at("r0") }
       , h { params.at("h") }
@@ -72,7 +73,9 @@ namespace metric {
       , deta_inv { ONE / deta }
       , dphi_inv { ONE / dphi }
       , small_angle { eta2theta(HALF * deta) < constant::SMALL_ANGLE } {
-      set_dxMin(find_dxMin());
+      if (compute_dxMin) {
+        set_dxMin(find_dxMin());
+      }
     }
 
     ~QSpherical() = default;
